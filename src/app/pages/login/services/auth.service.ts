@@ -191,6 +191,16 @@ export class AuthService {
     }
 
     /**
+     * Manejar el callback de Google OAuth2
+     */
+    handleGoogleCallback(token: string, user: User): void {
+        this.tokenSubject.next(token);
+        this.currentUserSubject.next(user);
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+    }
+
+    /**
      * Verificar estado de conexión con Google
      */
     getGoogleStatus(): Observable<GoogleStatus> {
@@ -245,31 +255,6 @@ export class AuthService {
         }>(`${environment.apiUrl}/auth/google/config-status`);
     }
 
-    /**
-     * Manejar callback de Google OAuth2
-     */
-    handleGoogleCallback(): void {
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
-        const userParam = urlParams.get('user');
-
-        if (token && userParam) {
-            try {
-                const user = JSON.parse(decodeURIComponent(userParam));
-                this.tokenSubject.next(token);
-                this.currentUserSubject.next(user);
-                localStorage.setItem('auth_token', token);
-                localStorage.setItem('user', JSON.stringify(user));
-
-                // Limpiar URL y redirigir
-                window.history.replaceState({}, document.title, window.location.pathname);
-                this.router.navigate(['/calendario']);
-            } catch (error) {
-                console.error('Error parsing Google callback:', error);
-                this.router.navigate(['/ingreso']);
-            }
-        }
-    }
 
     /**
      * Cerrar sesión
