@@ -1,0 +1,137 @@
+/* Estilos para el menú hamburguesa */
+.menu {
+  background-color: #000000;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+
+  /* Transiciones suaves para elementos interactivos */
+  transition: all 0.3s ease;
+
+  /* Estilos para elementos del menú */
+  .menu-item {
+    padding: 0.75rem 1rem;
+    color: #ffffff;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      transform: translateX(4px);
+    }
+
+    &:active {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+  }
+}
+
+/* Animaciones para el botón hamburguesa */
+.hamburger-button {
+  position: relative;
+  width: 24px;
+  height: 24px;
+
+  .hamburger-line {
+    position: absolute;
+    width: 20px;
+    height: 2px;
+    background-color: #ffffff;
+    transition: all 0.3s ease-in-out;
+
+    &:nth-child(1) {
+      top: 4px;
+    }
+
+    &:nth-child(2) {
+      top: 11px;
+    }
+
+    &:nth-child(3) {
+      top: 18px;
+    }
+  }
+
+  &.open {
+    .hamburger-line {
+      &:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+      }
+
+      &:nth-child(2) {
+        opacity: 0;
+      }
+
+      &:nth-child(3) {
+        transform: rotate(-45deg) translate(7px, -12px);
+      }
+    }
+  }
+}
+
+/* Animaciones para el menú lateral */
+.menu-slide {
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+
+  &.open {
+    transform: translateX(0);
+  }
+}
+
+/* Overlay con fade in/out */
+.menu-overlay {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+
+  &.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Efectos hover para items del menú */
+.menu-item {
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+  }
+
+  &:hover::before {
+    left: 100%;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 240px;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+
+    &.open {
+      transform: translateX(0);
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .menu {
+    position: static;
+    transform: none;
+    height: auto;
+    width: auto;
+  }
+}

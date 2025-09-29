@@ -1,1 +1,76 @@
 /* You can add global styles to this file, and also import other style files */
+@use './styles/variables' as vars;
+
+@import url('https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
+/* PrimeIcons */
+@import 'primeicons/primeicons.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset global básico - PrimeNG manejará los estilos */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.playfair-display {
+  font-family: 'Playfair Display', serif;
+}
+
+/* Configuración del body */
+body {
+  padding-bottom: var(--safe-area-bottom, 0px) !important;
+  padding-left: var(--safe-area-left, 0px) !important;
+  padding-right: var(--safe-area-right, 0px) !important;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  font-family: 'Alan Sans', sans-serif;
+}
+
+/* Solo excepciones específicas para el menú lateral */
+.menu {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.text-primary-foreground {
+  color: #ffffff !important;
+}
+
+/* Estilos específicos para botón secundario */
+.p-button.p-button-secondary {
+  background-color: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+  transition: all 0.2s ease !important;
+}
+
+.p-button.p-button-secondary:hover {
+  background-color: #f9fafb !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+  transform: translateY(-1px) !important;
+}
+
+.p-button.p-button-secondary:active {
+  background-color: #f3f4f6 !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+  transform: translateY(0) !important;
+}
+
+.p-button.p-button-secondary:focus {
+  border: 1px solid #000000 !important;
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.25) !important;
+  outline: none !important;
+}
+
+/* Asegurar que los iconos también sean negros en botones secundarios */
+.p-button.p-button-secondary .p-button-icon {
+  color: #000000 !important;
+}

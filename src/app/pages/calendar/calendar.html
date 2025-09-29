@@ -1,0 +1,33 @@
+<div class="p-4">
+  <h1 class="text-3xl font-bold mb-6">Calendario</h1>
+
+  <!-- Ejemplo de componentes PrimeNG con color primario negro -->
+  <div class="space-y-4">
+    <div class="flex gap-4">
+      <p-button label="Botón Principal" icon="pi pi-check"></p-button>
+      <p-button label="Botón Secundario" severity="secondary" icon="pi pi-times"></p-button>
+      <p-button label="Botón Success" severity="success"></p-button>
+    </div>
+
+    <div class="mt-4 p-4 bg-gray-100 rounded-lg">
+      <h3 class="text-lg font-semibold mb-2">Estilos de botones:</h3>
+      <ul class="text-sm space-y-1">
+        <li><strong>Primario:</strong> Fondo negro, texto blanco</li>
+        <li><strong>Secundario:</strong> Fondo blanco, borde negro, texto negro</li>
+        <li><strong>Success:</strong> Fondo verde, texto blanco</li>
+      </ul>
+    </div>
+
+    <div class="flex gap-4 items-center">
+      <p-checkbox [(ngModel)]="checked" [binary]="true" inputId="binary"></p-checkbox>
+      <label for="binary">Checkbox con color primario negro</label>
+    </div>
+
+    <div class="flex gap-4 items-center">
+      <p-radiobutton [(ngModel)]="radioValue" value="option1" inputId="radio1"></p-radiobutton>
+      <label for="radio1">Radio Button</label>
+    </div>
+
+    <input pInputText placeholder="Campo de texto con borde negro" class="w-full" />
+  </div>
+</div>

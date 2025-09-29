@@ -1,0 +1,125 @@
+/* Estilos específicos para el componente Login */
+
+/* Animaciones suaves */
+.login-container {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilos para inputs personalizados */
+.p-inputtext {
+  border-radius: 0.75rem !important;
+  border: 1px solid #e5e7eb !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+
+  &:focus {
+    border-color: #000000 !important;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1) !important;
+    outline: none !important;
+  }
+
+  &.p-invalid {
+    border-color: #ef4444 !important;
+  }
+}
+
+/* Estilos para botones */
+.p-button {
+  border-radius: 0.75rem !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+
+  &:not(.p-button-secondary) {
+    background-color: #f97316 !important;
+    border-color: #f97316 !important;
+
+    &:hover {
+      background-color: #ea580c !important;
+      border-color: #ea580c !important;
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Estilos para botones secundarios (redes sociales) */
+.p-button-secondary {
+  font-size: 0.75rem !important;
+  padding: 0.5rem 0.75rem !important;
+
+  .p-button-icon {
+    margin-right: 0.25rem !important;
+  }
+}
+
+/* Estilos para la tarjeta del formulario */
+.login-card {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Efectos hover para enlaces */
+a {
+  transition: color 0.2s ease;
+
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .login-container {
+    padding: 1rem;
+  }
+
+  .login-card {
+    padding: 1.5rem !important;
+  }
+
+  .p-button-secondary {
+    font-size: 0.7rem !important;
+    padding: 0.4rem 0.5rem !important;
+  }
+}
+
+/* Estilos para el indicador de carga */
+.p-button .p-button-loading-icon {
+  margin-right: 0.5rem;
+}
+
+/* Mejoras de accesibilidad */
+.p-inputtext:focus-visible {
+  outline: 2px solid #000000;
+  outline-offset: 2px;
+}
+
+/* Estilos para el separador */
+.separator {
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: #e5e7eb;
+  }
+}

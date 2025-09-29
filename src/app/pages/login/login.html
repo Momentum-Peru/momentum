@@ -1,0 +1,120 @@
+<div class="min-h-screen bg-black flex items-center justify-center p-4 login-container">
+  <!-- Toast para mensajes -->
+  <p-toast></p-toast>
+  <!-- Contenedor principal -->
+  <div class="w-full max-w-md">
+    <!-- Logo y header -->
+    <div class="flex justify-center mb-8 w-full">
+      <img src="/images/logo_b.png" alt="Logo" />
+    </div>
+
+    <!-- Tarjeta del formulario -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 login-card w-full">
+      <!-- Título del formulario -->
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-black mb-2">Ingreso</h2>
+      </div>
+
+      <!-- Formulario -->
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
+        <!-- Campo Email/Phone -->
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-gray-700">Correo</label>
+          <div class="relative">
+            <input
+              pInputText
+              formControlName="email"
+              placeholder="Enter your email or phone number"
+              class="w-full"
+              [class.p-invalid]="isFieldInvalid('email')"
+            />
+            <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div class="w-4 h-4 border-2 border-gray-300 rounded-full"></div>
+            </div>
+          </div>
+          @if (isFieldInvalid('email')) {
+          <small class="text-red-500 text-xs">
+            {{ getFieldError('email') }}
+          </small>
+          }
+        </div>
+
+        <!-- Campo Password -->
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-gray-700">Contraseña</label>
+          <div class="relative">
+            <input
+              pInputText
+              formControlName="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              placeholder="Enter your password"
+              class="w-full"
+              [class.p-invalid]="isFieldInvalid('password')"
+            />
+            <button
+              type="button"
+              class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              (click)="togglePassword()"
+            >
+              {{ showPassword() ? 'Ocultar' : 'Ver' }}
+            </button>
+          </div>
+          @if (isFieldInvalid('password')) {
+          <small class="text-red-500 text-xs">
+            {{ getFieldError('password') }}
+          </small>
+          }
+        </div>
+
+        <!-- Enlace de ayuda -->
+        <div class="text-center">
+          <a href="#" class="text-sm text-gray-600 hover:text-gray-800"
+            >¿Tienes problemas para ingresar?</a
+          >
+        </div>
+
+        <!-- Botón de login -->
+        <p-button
+          label="Ingresar"
+          type="submit"
+          [loading]="isLoading()"
+          styleClass="w-full mt-4"
+          [disabled]="loginForm.invalid"
+        ></p-button>
+
+        <!-- Separador -->
+        <div class="relative my-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-200"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white text-gray-500">— O Ingresar con —</span>
+          </div>
+        </div>
+
+        <!-- Botones de redes sociales -->
+        <p-button
+          label="G Google"
+          severity="secondary"
+          icon="pi pi-google"
+          styleClass="w-full mt-4"
+          (onClick)="onGoogleLogin()"
+        ></p-button>
+        <div class="grid grid-cols-3 gap-3 w-full"></div>
+
+        <!-- Enlace de registro -->
+        <div class="text-center mt-6">
+          <span class="text-sm text-gray-600">¿No tienes una cuenta? </span>
+          <a href="/registro" class="text-sm font-medium text-black hover:underline"
+            >Solicitar Ahora</a
+          >
+        </div>
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-8">
+      <p class="text-xs text-gray-500">Copyright @MayaAgent 2024 | Política de Privacidad</p>
+    </div>
+  </div>
+</div>

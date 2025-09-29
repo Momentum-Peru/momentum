@@ -1,0 +1,23 @@
+/* Variables CSS mínimas - PrimeNG manejará la mayoría de estilos */
+:root {
+  /* Solo variables esenciales para el menú lateral */
+  --menu-bg-color: #000000;
+  --menu-text-color: #ffffff;
+
+  /* Variables para fuentes personalizadas */
+  --font-primary: 'Alan Sans', sans-serif;
+  --font-display: 'Playfair Display', serif;
+
+  /* Variables adicionales para asegurar color primario negro */
+  --p-primary-color: #000000;
+  --p-primary-color-text: #ffffff;
+  --p-primary-color-contrast: #ffffff;
+
+  /* Variables para botón secundario */
+  --p-button-secondary-background: #ffffff;
+  --p-button-secondary-border-color: #000000;
+  --p-button-secondary-color: #000000;
+  --p-button-secondary-hover-background: #f9fafb;
+  --p-button-secondary-hover-border-color: #000000;
+  --p-button-secondary-hover-color: #000000;
+}
