@@ -25,6 +25,10 @@ export const routes: Routes = [
                 path: 'calendario',
                 loadComponent: () => import('./pages/calendar/calendar').then(m => m.Calendar),
             },
+            {
+                path: 'telefono',
+                loadComponent: () => import('./pages/telefono/telefono').then(m => m.Telefono),
+            },
         ],
     },
     // Ruta por defecto - redirigir según autenticación

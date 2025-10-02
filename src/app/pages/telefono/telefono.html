@@ -1,0 +1,190 @@
+<div class="p-6">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Teléfono</h1>
+    <p class="text-gray-600">Gestiona tu número de teléfono para recibir notificaciones</p>
+  </div>
+
+  <!-- Estado del teléfono -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <i class="pi pi-phone text-2xl text-blue-600"></i>
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900">Mi Teléfono</h3>
+          <p class="text-sm text-gray-600">
+            @if (phoneData()) { Teléfono registrado y configurado } @else { Registra tu número de
+            teléfono }
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        @if (phoneData()) {
+        <!-- Estado con teléfono -->
+        <div class="flex items-center space-x-2">
+          @if (phoneData()?.isVerified) {
+          <span class="text-green-600">
+            <i class="pi pi-check-circle text-lg"></i>
+          </span>
+          <span class="text-sm font-medium text-green-600">Verificado</span>
+          } @else {
+          <span class="text-yellow-600">
+            <i class="pi pi-clock text-lg"></i>
+          </span>
+          <span class="text-sm font-medium text-yellow-600">Pendiente</span>
+          }
+        </div>
+        } @else {
+        <!-- Estado sin teléfono -->
+        <div class="flex items-center space-x-2 text-gray-500">
+          <i class="pi pi-times-circle text-lg"></i>
+          <span class="text-sm font-medium">No registrado</span>
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Información del teléfono si existe -->
+    @if (phoneData()) {
+    <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div>
+          <span class="font-medium text-gray-700">Número:</span>
+          <span class="text-gray-600 ml-2">{{ phoneData()?.phone }}</span>
+        </div>
+        <div>
+          <span class="font-medium text-gray-700">Estado:</span>
+          <span class="text-gray-600 ml-2">
+            @if (phoneData()?.isActive) {
+            <span class="text-green-600">Activo</span>
+            } @else {
+            <span class="text-red-600">Inactivo</span>
+            }
+          </span>
+        </div>
+        <div>
+          <span class="font-medium text-gray-700">Verificado:</span>
+          <span class="text-gray-600 ml-2">
+            @if (phoneData()?.isVerified) {
+            <span class="text-green-600">Sí</span>
+            } @else {
+            <span class="text-yellow-600">No</span>
+            }
+          </span>
+        </div>
+        <div>
+          <span class="font-medium text-gray-700">Registrado:</span>
+          <span class="text-gray-600 ml-2">{{ formatDate(phoneData()?.createdAt) }}</span>
+        </div>
+      </div>
+    </div>
+    }
+  </div>
+
+  <!-- Formulario de teléfono -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4">
+      @if (phoneData()) { Actualizar Teléfono } @else { Registrar Teléfono }
+    </h2>
+
+    <form [formGroup]="phoneForm" (ngSubmit)="onSubmit()" class="space-y-4">
+      <!-- Selector de País -->
+      <div class="space-y-2">
+        <label for="country" class="text-sm font-medium text-gray-700">País</label>
+        <select
+          id="country"
+          formControlName="country"
+          class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          [class.border-red-500]="isFieldInvalid('country')"
+          (change)="onCountryChange($event)"
+        >
+          <option value="">Selecciona un país</option>
+          @for (country of countries; track country.code) {
+          <option [value]="country.code" [selected]="selectedCountry()?.code === country.code">
+            {{ country.flag }} {{ country.name }} ({{ country.dialCode }})
+          </option>
+          }
+        </select>
+        @if (isFieldInvalid('country')) {
+        <small class="text-red-500 text-xs">{{ getFieldError('country') }}</small>
+        }
+      </div>
+
+      <!-- Número de Teléfono -->
+      <div class="space-y-2">
+        <label class="text-sm font-medium text-gray-700">Número de Teléfono</label>
+        <div class="flex">
+          <div
+            class="flex items-center px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md"
+          >
+            <span class="text-sm text-gray-600">{{ selectedCountry()?.dialCode || '+51' }}</span>
+          </div>
+          <input
+            pInputText
+            formControlName="phone"
+            placeholder="123456789"
+            class="flex-1 rounded-l-none"
+            [class.p-invalid]="isFieldInvalid('phone')"
+          />
+        </div>
+        @if (isFieldInvalid('phone')) {
+        <small class="text-red-500 text-xs">{{ getFieldError('phone') }}</small>
+        }
+        <small class="text-gray-500 text-xs"> Solo números (6-15 dígitos) </small>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="flex flex-col sm:flex-row gap-3 pt-4">
+        @if (phoneData()) {
+        <!-- Botones para teléfono existente -->
+        <p-button
+          label="Actualizar"
+          type="submit"
+          [loading]="isLoading()"
+          [disabled]="phoneForm.invalid"
+          class="flex-1"
+        />
+        <p-button
+          label="Eliminar"
+          severity="danger"
+          icon="pi pi-trash"
+          (onClick)="confirmDeletePhone()"
+          [loading]="isDeleting()"
+          class="flex-1 sm:flex-none"
+        />
+        } @else {
+        <!-- Botón para nuevo teléfono -->
+        <p-button
+          label="Registrar Teléfono"
+          type="submit"
+          [loading]="isLoading()"
+          [disabled]="phoneForm.invalid"
+          class="w-full"
+        />
+        }
+      </div>
+    </form>
+
+    <!-- Información adicional -->
+    <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+      <div class="flex items-start space-x-3">
+        <i class="pi pi-info-circle text-blue-600 mt-1"></i>
+        <div class="text-sm text-blue-800">
+          <p class="font-medium mb-1">¿Para qué usamos tu teléfono?</p>
+          <ul class="space-y-1 text-blue-700">
+            <li>• Permitir que el agente reconozca tu número</li>
+            <li>• Facilitar la interacción con el agente</li>
+            <li>• Personalizar la experiencia de usuario</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast para mensajes -->
+  <p-toast></p-toast>
+
+  <!-- Diálogo de confirmación -->
+  <p-confirmdialog></p-confirmdialog>
+</div>

@@ -21,6 +21,11 @@ export class Menu {
       link: '/calendario',
       label: 'Calendario',
       icon: 'pi pi-calendar'
+    },
+    {
+      link: '/telefono',
+      label: 'Teléfono',
+      icon: 'pi pi-phone'
     }
   ]);
 

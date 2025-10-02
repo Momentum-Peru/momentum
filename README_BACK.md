@@ -45,6 +45,18 @@ Esta API proporciona un sistema completo de autenticación con JWT y Google OAut
 | `GET`    | `/users/:id` | Obtener usuario por ID     | ✅ JWT        | admin, moderator |
 | `DELETE` | `/users/:id` | Eliminar usuario           | ✅ JWT        | admin            |
 
+### 📱 **Gestión de Teléfonos**
+
+| Método   | Endpoint               | Descripción                  | Autenticación | Roles       |
+| -------- | ---------------------- | ---------------------------- | ------------- | ----------- |
+| `POST`   | `/phones`              | Crear teléfono               | ✅ JWT        | admin, user |
+| `GET`    | `/phones`              | Lista paginada de teléfonos  | ✅ JWT        | admin       |
+| `GET`    | `/phones/:id`          | Obtener teléfono por ID      | ✅ JWT        | admin, user |
+| `GET`    | `/phones/user/:userId` | Obtener teléfono por usuario | ✅ JWT        | admin, user |
+| `PATCH`  | `/phones/:id`          | Actualizar teléfono          | ✅ JWT        | admin, user |
+| `PATCH`  | `/phones/:id/verify`   | Verificar teléfono           | ✅ JWT        | admin       |
+| `DELETE` | `/phones/:id`          | Eliminar teléfono            | ✅ JWT        | admin, user |
+
 ---
 
 ## 🔍 Detalles de Endpoints
@@ -440,6 +452,251 @@ Authorization: Bearer <jwt_token>
 
 ---
 
+### 📱 **Gestión de Teléfonos**
+
+#### `POST /phones`
+
+**Descripción**: Crea un nuevo teléfono para un usuario.
+
+**Headers**:
+
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Body**:
+
+```json
+{
+  "userId": "507f1f77bcf86cd799439011",
+  "phone": "+1234567890",
+  "isActive": true,
+  "isVerified": false
+}
+```
+
+**Respuesta (201)**:
+
+```json
+{
+  "id": "507f1f77bcf86cd799439012",
+  "userId": "507f1f77bcf86cd799439011",
+  "phone": "+1234567890",
+  "isActive": true,
+  "isVerified": false,
+  "verifiedAt": null,
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Códigos de Error**:
+
+- `400`: Datos de entrada inválidos
+- `409`: El usuario ya tiene un teléfono activo o el número ya está en uso
+
+#### `GET /phones`
+
+**Descripción**: Obtiene una lista paginada de todos los teléfonos (solo administradores).
+
+**Headers**:
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Query Parameters**:
+
+- `page` (opcional): Número de página (por defecto: 1)
+- `limit` (opcional): Límite de resultados por página (por defecto: 10)
+
+**Respuesta (200)**:
+
+```json
+{
+  "data": [
+    {
+      "id": "507f1f77bcf86cd799439012",
+      "userId": "507f1f77bcf86cd799439011",
+      "phone": "+1234567890",
+      "isActive": true,
+      "isVerified": false,
+      "verifiedAt": null,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 10,
+  "totalPages": 1
+}
+```
+
+**Códigos de Error**:
+
+- `401`: Token de acceso requerido
+- `403`: Acceso denegado - Se requieren permisos de administrador
+
+#### `GET /phones/:id`
+
+**Descripción**: Obtiene un teléfono específico por su ID.
+
+**Headers**:
+
+```
+Authorization: Bearer <token>
+```
+
+**Respuesta (200)**:
+
+```json
+{
+  "id": "507f1f77bcf86cd799439012",
+  "userId": "507f1f77bcf86cd799439011",
+  "phone": "+1234567890",
+  "isActive": true,
+  "isVerified": false,
+  "verifiedAt": null,
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Códigos de Error**:
+
+- `401`: Token de acceso requerido
+- `404`: Teléfono no encontrado
+
+#### `GET /phones/user/:userId`
+
+**Descripción**: Obtiene el teléfono activo de un usuario específico.
+
+**Headers**:
+
+```
+Authorization: Bearer <token>
+```
+
+**Respuesta (200)**:
+
+```json
+{
+  "id": "507f1f77bcf86cd799439012",
+  "userId": "507f1f77bcf86cd799439011",
+  "phone": "+1234567890",
+  "isActive": true,
+  "isVerified": false,
+  "verifiedAt": null,
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Códigos de Error**:
+
+- `401`: Token de acceso requerido
+- `404`: Usuario no encontrado o sin teléfono
+
+#### `PATCH /phones/:id`
+
+**Descripción**: Actualiza los datos de un teléfono existente.
+
+**Headers**:
+
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Body**:
+
+```json
+{
+  "phone": "+0987654321",
+  "isActive": true,
+  "isVerified": true
+}
+```
+
+**Respuesta (200)**:
+
+```json
+{
+  "id": "507f1f77bcf86cd799439012",
+  "userId": "507f1f77bcf86cd799439011",
+  "phone": "+0987654321",
+  "isActive": true,
+  "isVerified": true,
+  "verifiedAt": "2024-01-15T10:30:00.000Z",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
+
+**Códigos de Error**:
+
+- `401`: Token de acceso requerido
+- `404`: Teléfono no encontrado
+- `409`: El número de teléfono ya está en uso
+
+#### `PATCH /phones/:id/verify`
+
+**Descripción**: Marca un teléfono como verificado (solo administradores).
+
+**Headers**:
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Respuesta (200)**:
+
+```json
+{
+  "id": "507f1f77bcf86cd799439012",
+  "userId": "507f1f77bcf86cd799439011",
+  "phone": "+1234567890",
+  "isActive": true,
+  "isVerified": true,
+  "verifiedAt": "2024-01-15T10:30:00.000Z",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
+
+**Códigos de Error**:
+
+- `401`: Token de acceso requerido
+- `403`: Acceso denegado - Se requieren permisos de administrador
+- `404`: Teléfono no encontrado
+
+#### `DELETE /phones/:id`
+
+**Descripción**: Elimina un teléfono (soft delete).
+
+**Headers**:
+
+```
+Authorization: Bearer <token>
+```
+
+**Respuesta (200)**:
+
+```json
+{
+  "message": "Teléfono eliminado exitosamente"
+}
+```
+
+**Códigos de Error**:
+
+- `401`: Token de acceso requerido
+- `404`: Teléfono no encontrado
+
+---
+
 ## 🔐 **Autenticación y Autorización**
 
 ### **JWT Token**
@@ -501,6 +758,17 @@ Authorization: Bearer <jwt_token>
 4. DELETE /users/:id → Eliminar usuario (solo admin)
 ```
 
+### **4. Gestión de Teléfonos**
+
+```
+1. POST /auth/login → Autenticarse
+2. POST /phones → Crear teléfono para usuario
+3. GET /phones/user/:userId → Obtener teléfono de usuario
+4. PATCH /phones/:id → Actualizar teléfono
+5. PATCH /phones/:id/verify → Verificar teléfono (admin)
+6. DELETE /phones/:id → Eliminar teléfono
+```
+
 ---
 
 ## 📊 **Modelos de Datos**
@@ -537,6 +805,21 @@ Authorization: Bearer <jwt_token>
   tokenCreatedAt: Date;
   lastRefreshedAt: Date;
   isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### **Phone**
+
+```typescript
+{
+  id: string;
+  userId: string;
+  phone: string;
+  isActive: boolean;
+  isVerified: boolean;
+  verifiedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -617,6 +900,27 @@ const googleInfo = await fetch('http://localhost:3026/auth/google/token-info', {
     'Content-Type': 'application/json',
   },
 });
+
+// Crear teléfono
+const phone = await fetch('http://localhost:3026/phones', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    userId: '507f1f77bcf86cd799439011',
+    phone: '+1234567890',
+  }),
+});
+
+// Obtener teléfono de usuario
+const userPhone = await fetch('http://localhost:3026/phones/user/507f1f77bcf86cd799439011', {
+  headers: {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  },
+});
 ```
 
 ---
@@ -627,7 +931,8 @@ const googleInfo = await fetch('http://localhost:3026/auth/google/token-info', {
 2. **Implementar frontend** usando los endpoints documentados
 3. **Probar flujo completo** de autenticación
 4. **Implementar funcionalidades de calendario** usando los tokens de Google
-5. **Configurar monitoreo** y logs
-6. **Desplegar en producción** con HTTPS
+5. **Implementar gestión de teléfonos** en el frontend
+6. **Configurar monitoreo** y logs
+7. **Desplegar en producción** con HTTPS
 
 ¡El sistema está completamente documentado y listo para ser integrado con cualquier frontend! 🚀

@@ -31,12 +31,14 @@ export class Calendar implements OnInit {
     this.checkGoogleStatus();
 
     // Escuchar cambios en la URL para refrescar el estado después del callback
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe(async params => {
       if (params['google_connected'] === 'true') {
         // Refrescar el estado después de conectar con Google
-        setTimeout(() => {
-          this.checkGoogleStatus();
-        }, 1000);
+        try {
+          await this.checkGoogleStatus();
+        } catch (error) {
+          console.error('Error en post-callback de Google:', error);
+        }
       }
     });
   }
@@ -48,16 +50,7 @@ export class Calendar implements OnInit {
     try {
       const status = await firstValueFrom(this.authService.getGoogleStatus());
       this.googleConnected.set(status.hasGoogleConnected);
-
-      if (status.hasGoogleConnected) {
-        // Obtener información detallada de los tokens
-        try {
-          const tokenInfo = await firstValueFrom(this.authService.getGoogleTokenInfo());
-          this.googleStatus.set(tokenInfo);
-        } catch (error) {
-          console.warn('No se pudo obtener información de tokens:', error);
-        }
-      }
+      this.googleStatus.set(status);
     } catch (error) {
       console.error('Error verificando estado de Google:', error);
       this.googleConnected.set(false);

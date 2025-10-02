@@ -52,6 +52,20 @@ export interface GoogleStatus {
     email?: string;
 }
 
+export interface GoogleAssociationRequest {
+    userId: string;
+    tokenId: string;
+    email: string;
+}
+
+export interface GoogleAssociationResponse {
+    email: string;
+    id: string;
+    isActive: boolean;
+    tokenId: string;
+    userId: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -82,7 +96,7 @@ export class AuthService {
      * Obtiene el usuario actual
      */
     getCurrentUser(): User | null {
-        return this.currentUserSubject.value;
+        return JSON.parse(localStorage.getItem('user') || 'null');
     }
 
     /**
@@ -230,11 +244,27 @@ export class AuthService {
     }
 
     /**
+     * Asociar Google Calendar con usuario autenticado
+     */
+    associateGoogleCalendar(payload: GoogleAssociationRequest): Observable<GoogleAssociationResponse> {
+        return this.http.post<GoogleAssociationResponse>(
+            `${environment.apiUrl}/auth/associations/associate`,
+            payload,
+            { headers: this.getAuthHeaders() }
+        );
+    }
+
+    /**
      * Desconectar cuenta de Google
      */
     disconnectGoogle(): Observable<{ message: string; disconnectedAt: string }> {
+        const currentUser = this.getCurrentUser();
+        if (!currentUser?.id) {
+            throw new Error('Usuario no autenticado para desconectar Google');
+        }
+
         return this.http.post<{ message: string; disconnectedAt: string }>(
-            `${environment.apiUrl}/auth/google/disconnect`,
+            `${environment.apiUrl}/auth/google/disconnect/${currentUser.id}`,
             {},
             { headers: this.getAuthHeaders() }
         );
