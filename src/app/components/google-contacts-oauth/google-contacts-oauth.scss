@@ -1,0 +1,55 @@
+// Estilos específicos para el componente OAuth de Google Contacts
+.google-contacts-oauth {
+  .oauth-button {
+    transition: all 0.2s ease-in-out;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+  }
+
+  .info-section {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 0.5rem;
+
+    .info-title {
+      color: #1e40af;
+      font-weight: 500;
+    }
+
+    .info-list {
+      color: #1e3a8a;
+
+      li {
+        margin-bottom: 0.25rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+
+  .google-icon {
+    color: #4285f4;
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .description {
+    color: #6b7280;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+}
+
+// Responsive design
+@media (max-width: 640px) {
+  .google-contacts-oauth {
+    .oauth-button {
+      width: 100%;
+    }
+  }
+}

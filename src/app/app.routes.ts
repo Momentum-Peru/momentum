@@ -17,6 +17,18 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/google-callback/google-callback').then(m => m.GoogleCallbackComponent),
     },
     {
+        path: 'auth/email/google/callback',
+        loadComponent: () => import('./pages/email-oauth-callback/email-oauth-callback').then(m => m.EmailOAuthCallbackComponent),
+    },
+    {
+        path: 'auth/email/outlook/callback',
+        loadComponent: () => import('./pages/email-oauth-callback/email-oauth-callback').then(m => m.EmailOAuthCallbackComponent),
+    },
+    {
+        path: 'auth/contacts/google/callback',
+        loadComponent: () => import('./pages/google-contacts-callback/google-contacts-callback').then(m => m.GoogleContactsCallbackComponent),
+    },
+    {
         path: '',
         loadComponent: () => import('./layouts/main/main').then(m => m.Main),
         canActivate: [requireAuthGuard],
@@ -29,12 +41,26 @@ export const routes: Routes = [
                 path: 'telefono',
                 loadComponent: () => import('./pages/telefono/telefono').then(m => m.Telefono),
             },
+            {
+                path: 'cuentas-email',
+                loadComponent: () => import('./pages/email-accounts/email-accounts').then(m => m.EmailAccountsComponent),
+            },
+            {
+                path: 'contactos',
+                loadComponent: () => import('./pages/contacts/contacts').then(m => m.ContactsComponent),
+            },
+            {
+                path: '**',
+                redirectTo: 'calendario',
+                pathMatch: 'full'
+            }
+
         ],
     },
     // Ruta por defecto - redirigir según autenticación
     {
         path: '**',
-        redirectTo: 'calendario',
+        redirectTo: '',
         pathMatch: 'full'
     }
 

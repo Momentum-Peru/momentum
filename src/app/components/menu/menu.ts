@@ -26,6 +26,16 @@ export class Menu {
       link: '/telefono',
       label: 'Teléfono',
       icon: 'pi pi-phone'
+    },
+    {
+      link: '/cuentas-email',
+      label: 'Cuentas de Email',
+      icon: 'pi pi-envelope'
+    },
+    {
+      link: '/contactos',
+      label: 'Contactos',
+      icon: 'pi pi-users'
     }
   ]);
 

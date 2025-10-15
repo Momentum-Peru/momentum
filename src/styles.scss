@@ -17,6 +17,19 @@
   box-sizing: border-box;
 }
 
+/* Prevenir desbordamiento horizontal */
+html {
+  overflow-x: hidden;
+}
+
+/* Asegurar que todos los contenedores principales no se desborden */
+.container,
+.main-content,
+.page-content {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 .playfair-display {
   font-family: 'Playfair Display', serif;
 }

@@ -1,0 +1,173 @@
+<div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+  <!-- Header -->
+  <div class="p-3 md:p-4 border-b border-gray-200">
+    <h3 class="text-base md:text-lg font-semibold text-gray-900">Nueva Cuenta de Email</h3>
+    <p class="text-xs md:text-sm text-gray-600 mt-1">Configura una nueva cuenta SMTP o IMAP</p>
+  </div>
+
+  <!-- Content -->
+  <div class="p-4 md:p-6">
+    <form [formGroup]="emailForm" (ngSubmit)="onSubmitForm()" class="space-y-3 md:space-y-4">
+      <!-- Nombre de la cuenta -->
+      <div class="space-y-2">
+        <label for="name" class="block text-xs md:text-sm font-medium text-gray-700">
+          Nombre de la Cuenta *
+        </label>
+        <input
+          id="name"
+          type="text"
+          formControlName="name"
+          placeholder="Mi cuenta de Gmail"
+          class="w-full p-2 md:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+          [class.border-red-500]="hasFieldError('name')"
+        />
+        <div *ngIf="hasFieldError('name')" class="text-red-600 text-xs md:text-sm">
+          {{ getFieldError('name') }}
+        </div>
+      </div>
+
+      <!-- Tipo de conexión -->
+      <div class="space-y-2">
+        <label for="provider" class="block text-xs md:text-sm font-medium text-gray-700">
+          Tipo de Conexión *
+        </label>
+        <select
+          id="provider"
+          formControlName="provider"
+          class="w-full p-2 md:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+          [class.border-red-500]="hasFieldError('provider')"
+        >
+          <option value="smtp">SMTP</option>
+          <option value="imap">IMAP</option>
+        </select>
+        <div *ngIf="hasFieldError('provider')" class="text-red-600 text-xs md:text-sm">
+          {{ getFieldError('provider') }}
+        </div>
+      </div>
+
+      <!-- Host -->
+      <div class="space-y-2">
+        <label for="host" class="block text-xs md:text-sm font-medium text-gray-700">
+          Servidor (Host) *
+        </label>
+        <input
+          id="host"
+          type="text"
+          formControlName="host"
+          placeholder="smtp.gmail.com"
+          class="w-full p-2 md:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+          [class.border-red-500]="hasFieldError('host')"
+        />
+        <div *ngIf="hasFieldError('host')" class="text-red-600 text-xs md:text-sm">
+          {{ getFieldError('host') }}
+        </div>
+      </div>
+
+      <!-- Puerto -->
+      <div class="space-y-2">
+        <label for="port" class="block text-xs md:text-sm font-medium text-gray-700">
+          Puerto *
+        </label>
+        <input
+          id="port"
+          type="number"
+          formControlName="port"
+          placeholder="587"
+          class="w-full p-2 md:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+          [class.border-red-500]="hasFieldError('port')"
+        />
+        <div *ngIf="hasFieldError('port')" class="text-red-600 text-xs md:text-sm">
+          {{ getFieldError('port') }}
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="space-y-2">
+        <label for="email" class="block text-xs md:text-sm font-medium text-gray-700">
+          Dirección de Email *
+        </label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="tu@email.com"
+          class="w-full p-2 md:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+          [class.border-red-500]="hasFieldError('email')"
+        />
+        <div *ngIf="hasFieldError('email')" class="text-red-600 text-xs md:text-sm">
+          {{ getFieldError('email') }}
+        </div>
+      </div>
+
+      <!-- Contraseña -->
+      <div class="space-y-2">
+        <label for="password" class="block text-xs md:text-sm font-medium text-gray-700">
+          Contraseña *
+        </label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="Tu contraseña de email"
+          class="w-full p-2 md:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+          [class.border-red-500]="hasFieldError('password')"
+        />
+        <div *ngIf="hasFieldError('password')" class="text-red-600 text-xs md:text-sm">
+          {{ getFieldError('password') }}
+        </div>
+      </div>
+
+      <!-- Conexión segura -->
+      <div class="flex items-center space-x-3">
+        <input
+          id="secure"
+          type="checkbox"
+          formControlName="secure"
+          class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+        />
+        <label for="secure" class="text-xs md:text-sm font-medium text-gray-700">
+          Usar conexión segura (SSL/TLS)
+        </label>
+      </div>
+
+      <!-- Información adicional -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4">
+        <div class="flex items-start space-x-3">
+          <i class="pi pi-info-circle text-blue-600 mt-0.5 text-sm md:text-base"></i>
+          <div class="text-xs md:text-sm text-blue-800">
+            <p class="font-medium mb-1">Información importante:</p>
+            <ul class="list-disc list-inside space-y-1">
+              <li>
+                Para Gmail, necesitas habilitar la verificación en 2 pasos y generar una contraseña
+                de aplicación
+              </li>
+              <li>Para Outlook/Hotmail, usa tu contraseña normal o una contraseña de aplicación</li>
+              <li>Los puertos recomendados son 587 (TLS) para SMTP y 993 (SSL) para IMAP</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Footer -->
+  <div
+    class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 p-3 md:p-4 border-t border-gray-200"
+  >
+    <p-button
+      label="Cancelar"
+      severity="secondary"
+      (onClick)="onCancel.emit()"
+      [disabled]="isLoading()"
+      class="w-full sm:w-auto"
+    />
+    <p-button
+      [label]="isEditing() ? 'Actualizar Cuenta' : 'Crear Cuenta'"
+      icon="pi pi-check"
+      (onClick)="onSubmitForm()"
+      [loading]="isLoading()"
+      [disabled]="emailForm.invalid"
+      class="w-full sm:w-auto"
+    />
+  </div>
+</div>

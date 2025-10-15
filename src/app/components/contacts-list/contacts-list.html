@@ -1,0 +1,209 @@
+<div class="space-y-4 max-w-full overflow-hidden">
+  <!-- Header con filtros -->
+  <div class="bg-white rounded-lg shadow-md border border-gray-200 p-3 md:p-4">
+    <div class="flex flex-col gap-4">
+      <!-- Título y botón de refrescar -->
+      <div class="flex items-center justify-between">
+        <h3 class="text-base md:text-lg font-semibold text-gray-900">Contactos</h3>
+        <p-button
+          icon="pi pi-refresh"
+          severity="secondary"
+          size="small"
+          [loading]="isLoading()"
+          (onClick)="refreshContacts()"
+          pTooltip="Refrescar lista"
+        />
+      </div>
+
+      <!-- Filtros -->
+      <div class="flex flex-col sm:flex-row gap-2 md:gap-3">
+        <!-- Búsqueda -->
+        <div class="relative flex-1 min-w-0">
+          <i
+            class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+          ></i>
+          <input
+            type="text"
+            pInputText
+            placeholder="Buscar contactos..."
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchChange()"
+            class="pl-12 pr-10 py-2 w-full min-w-0"
+          />
+        </div>
+
+        <!-- Filtro por fuente -->
+        <select
+          [(ngModel)]="selectedSource"
+          (ngModelChange)="onFilterSourceChange()"
+          class="w-full sm:w-32 md:w-40 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="all">Todos</option>
+          <option value="local">Locales</option>
+          <option value="google_contacts">Google</option>
+        </select>
+
+        <!-- Filtro por estado -->
+        <select
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onFilterStatusChange()"
+          class="w-full sm:w-32 md:w-40 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="all">Todos</option>
+          <option value="true">Activos</option>
+          <option value="false">Inactivos</option>
+        </select>
+
+        <!-- Botón limpiar filtros -->
+        <p-button
+          icon="pi pi-times"
+          severity="secondary"
+          size="small"
+          (onClick)="clearFilters()"
+          pTooltip="Limpiar filtros"
+          class="w-full sm:w-auto"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de contactos -->
+  @if (isLoading()) {
+  <!-- Estado de carga -->
+  <div class="text-center py-8">
+    <i class="pi pi-spin pi-spinner text-2xl text-gray-400 mb-2"></i>
+    <p class="text-gray-600">Cargando contactos...</p>
+  </div>
+  } @else if (contacts().length === 0) {
+  <!-- Estado vacío -->
+  <div class="text-center py-8">
+    <i class="pi pi-users text-4xl text-gray-400 mb-4"></i>
+    <h4 class="text-lg font-medium text-gray-900 mb-2">No hay contactos</h4>
+    <p class="text-gray-600">Agrega tu primer contacto para comenzar</p>
+  </div>
+  } @else {
+  <!-- Lista de contactos -->
+  <div class="grid gap-3 md:gap-4">
+    @for (contact of contacts(); track contact._id) {
+    <div
+      class="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 overflow-hidden"
+    >
+      <!-- Header -->
+      <div class="p-3 md:p-4 border-b border-gray-200">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div class="flex items-center space-x-3 min-w-0">
+            <i
+              [class]="getSourceIcon(contact.source)"
+              class="text-lg md:text-xl text-blue-600 flex-shrink-0"
+            ></i>
+            <div class="min-w-0 flex-1">
+              <h4 class="text-base md:text-lg font-semibold text-gray-900 truncate">
+                {{ contact.name }}
+              </h4>
+              <p class="text-xs md:text-sm text-gray-600">{{ getSourceText(contact.source) }}</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 flex-wrap">
+            <p-tag
+              [value]="getSourceText(contact.source)"
+              [severity]="getSourceSeverity(contact.source)"
+              icon="pi pi-circle-fill"
+              class="text-xs"
+            />
+            <p-tag
+              [value]="getStatusText(contact.isActive)"
+              [severity]="getStatusSeverity(contact.isActive)"
+              icon="pi pi-circle-fill"
+              class="text-xs"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="p-3 md:p-4">
+        <!-- Información del contacto -->
+        <div class="grid grid-cols-1 gap-3 md:gap-4 mb-3 md:mb-4">
+          @if (contact.email) {
+          <div class="min-w-0">
+            <span class="text-xs md:text-sm font-medium text-gray-700">Email:</span>
+            <span class="text-xs md:text-sm text-gray-600 ml-2 break-all">{{ contact.email }}</span>
+          </div>
+          } @if (contact.phone) {
+          <div class="min-w-0">
+            <span class="text-xs md:text-sm font-medium text-gray-700">Teléfono:</span>
+            <span class="text-xs md:text-sm text-gray-600 ml-2">{{ contact.phone }}</span>
+          </div>
+          } @if (contact.company) {
+          <div class="min-w-0">
+            <span class="text-xs md:text-sm font-medium text-gray-700">Empresa:</span>
+            <span class="text-xs md:text-sm text-gray-600 ml-2 truncate">{{
+              contact.company
+            }}</span>
+          </div>
+          } @if (contact.jobTitle) {
+          <div class="min-w-0">
+            <span class="text-xs md:text-sm font-medium text-gray-700">Cargo:</span>
+            <span class="text-xs md:text-sm text-gray-600 ml-2 truncate">{{
+              contact.jobTitle
+            }}</span>
+          </div>
+          } @if (contact.address) {
+          <div class="min-w-0 md:col-span-2">
+            <span class="text-xs md:text-sm font-medium text-gray-700">Dirección:</span>
+            <span class="text-xs md:text-sm text-gray-600 ml-2 break-words">{{
+              contact.address
+            }}</span>
+          </div>
+          } @if (contact.notes) {
+          <div class="min-w-0 md:col-span-2">
+            <span class="text-xs md:text-sm font-medium text-gray-700">Notas:</span>
+            <span class="text-xs md:text-sm text-gray-600 ml-2 break-words">{{
+              contact.notes
+            }}</span>
+          </div>
+          }
+        </div>
+
+        <!-- Fechas -->
+        <div class="text-xs text-gray-500 border-t border-gray-100 pt-2">
+          <span>Creado: {{ formatDate(contact.createdAt) }}</span>
+          @if (contact.updatedAt !== contact.createdAt) {
+          <span class="ml-2 md:ml-4">Actualizado: {{ formatDate(contact.updatedAt) }}</span>
+          }
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex flex-col sm:flex-row justify-end gap-2 p-3 md:p-4 border-t border-gray-200">
+        <!-- Botón de editar (solo para contactos locales) -->
+        @if (!isGoogleContact(contact)) {
+        <p-button
+          label="Editar"
+          icon="pi pi-pencil"
+          severity="secondary"
+          size="small"
+          (onClick)="editContact(contact)"
+          class="w-full sm:w-auto"
+        />
+        }
+
+        <!-- Botón de eliminar -->
+        <p-button
+          label="Eliminar"
+          icon="pi pi-trash"
+          severity="danger"
+          size="small"
+          (onClick)="confirmDelete(contact)"
+          [loading]="deletingContactId() === contact._id"
+          class="w-full sm:w-auto"
+        />
+      </div>
+    </div>
+    }
+  </div>
+  }
+
+  <!-- Dialog de confirmación -->
+  <p-confirmDialog></p-confirmDialog>
+</div>

@@ -1,0 +1,115 @@
+// Estilos específicos para la página de callback de Google Contacts
+.google-contacts-callback {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f9fafb;
+  padding: 3rem 1rem;
+
+  .callback-container {
+    max-width: 28rem;
+    width: 100%;
+
+    .logo-section {
+      text-align: center;
+
+      .logo-icon {
+        margin: 0 auto;
+        height: 3rem;
+        width: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .google-icon {
+          font-size: 2.5rem;
+          color: #2563eb;
+        }
+      }
+
+      .title {
+        margin-top: 1.5rem;
+        font-size: 1.875rem;
+        font-weight: 800;
+        color: #111827;
+      }
+
+      .subtitle {
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        color: #6b7280;
+      }
+    }
+
+    .status-section {
+      text-align: center;
+
+      .status-icon {
+        margin: 0 auto;
+        height: 4rem;
+        width: 4rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &.loading {
+          .spinner {
+            font-size: 2rem;
+            color: #2563eb;
+          }
+        }
+
+        &.success {
+          .check-icon {
+            font-size: 2.5rem;
+            color: #059669;
+          }
+        }
+
+        &.error {
+          .error-icon {
+            font-size: 2.5rem;
+            color: #dc2626;
+          }
+        }
+      }
+
+      .status-title {
+        margin-top: 1rem;
+        font-size: 1.125rem;
+        font-weight: 500;
+        color: #111827;
+      }
+
+      .status-message {
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        color: #6b7280;
+      }
+
+      .action-button {
+        margin-top: 1.5rem;
+
+        .p-button {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 640px) {
+  .google-contacts-callback {
+    padding: 2rem 1rem;
+
+    .callback-container {
+      .logo-section {
+        .title {
+          font-size: 1.5rem;
+        }
+      }
+    }
+  }
+}

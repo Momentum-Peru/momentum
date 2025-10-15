@@ -1,0 +1,52 @@
+/* Estilos específicos para el componente de lista de cuentas de email */
+
+.p-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.p-card:hover {
+  border-color: #3b82f6;
+}
+
+.p-tag {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Animaciones suaves para las transiciones */
+.transition-shadow {
+  transition-property: box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Estilos para los estados de las cuentas */
+.status-active {
+  color: #059669;
+}
+
+.status-inactive {
+  color: #6b7280;
+}
+
+.status-error {
+  color: #dc2626;
+}
+
+.status-testing {
+  color: #d97706;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .grid-cols-1.md\\:grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .flex.justify-end.space-x-2 {
+    flex-direction: column;
+    space-x: 0;
+    gap: 0.5rem;
+  }
+}

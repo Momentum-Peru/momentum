@@ -8,6 +8,7 @@ import { providePrimeNG } from 'primeng/config';
 import { MessageService } from 'primeng/api';
 import MayaPreset from './themes/maya-preset';
 import { authInterceptor } from './interceptors/auth.interceptor';
+import { tokenInterceptor } from './interceptors/token.interceptor';
 import { AuthService } from './pages/login/services/auth.service';
 
 
@@ -21,7 +22,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideAnimationsAsync(),
     provideHttpClient(
-      withInterceptors([authInterceptor])
+      withInterceptors([tokenInterceptor, authInterceptor])
     ),
     MessageService,
     providePrimeNG({
