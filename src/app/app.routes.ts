@@ -50,6 +50,10 @@ export const routes: Routes = [
                 path: 'daily-reports',
                 loadComponent: () => import('./pages/daily-reports/daily-reports').then(m => m.DailyExpensesPage),
             },
+            {
+                path: 'users',
+                loadComponent: () => import('./pages/users/users').then(m => m.UsersPage),
+            },
 
             {
                 path: '**',

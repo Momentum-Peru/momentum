@@ -1,0 +1,335 @@
+<div class="p-4 space-y-4">
+  <!-- Toast para notificaciones -->
+  <p-toast></p-toast>
+
+  <!-- Diálogo de confirmación -->
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Header con búsqueda y filtros -->
+  <div class="space-y-4">
+    <!-- Búsqueda principal -->
+    <div class="w-full">
+      <div class="relative">
+        <i
+          class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+        ></i>
+        <input
+          pInputText
+          placeholder="Buscar usuarios por nombre o email..."
+          [ngModel]="query()"
+          (ngModelChange)="setQuery($event)"
+          class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+        />
+      </div>
+    </div>
+
+    <!-- Filtros y botones en grid responsivo -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <!-- Filtro de rol -->
+      <div class="w-full">
+        <p-select
+          [options]="roleOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="roleFilter()"
+          (ngModelChange)="setRoleFilter($event)"
+          placeholder="Filtrar por rol"
+          class="w-full"
+        ></p-select>
+      </div>
+
+      <!-- Filtro de estado -->
+      <div class="w-full">
+        <p-select
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="setStatusFilter($event)"
+          placeholder="Estado"
+          class="w-full"
+        ></p-select>
+      </div>
+
+      <!-- Botón limpiar filtros -->
+      <div class="w-full">
+        <button
+          pButton
+          type="button"
+          label="Limpiar filtros"
+          icon="pi pi-filter-slash"
+          class="p-button-outlined w-full"
+          (click)="clearFilters()"
+          [disabled]="!query() && !roleFilter() && !statusFilter()"
+        ></button>
+      </div>
+
+      <!-- Botón nuevo usuario -->
+      <div class="w-full">
+        <button
+          pButton
+          type="button"
+          label="Nuevo usuario"
+          icon="pi pi-user-plus"
+          class="w-full"
+          (click)="newUser()"
+        ></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de usuarios -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <p-table
+        [value]="users"
+        [loading]="loading()"
+        styleClass="p-datatable-sm"
+        [scrollable]="true"
+        scrollHeight="flex"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th class="text-left min-w-[200px]">Usuario</th>
+            <th class="text-left min-w-[200px] hidden sm:table-cell">Email</th>
+            <th class="text-center min-w-[120px]">Rol</th>
+            <th class="text-center min-w-[100px] hidden md:table-cell">Estado</th>
+            <th class="text-center min-w-[150px] hidden lg:table-cell">Último acceso</th>
+            <th class="text-center min-w-[120px]">Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-user>
+          <tr class="hover:bg-gray-50 transition-colors">
+            <!-- Información del usuario -->
+            <td class="py-3">
+              <div class="flex items-center space-x-3">
+                <div
+                  class="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="pi pi-user text-gray-600 text-sm"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="font-medium text-gray-900 truncate">{{ user.name }}</div>
+                  <div class="text-xs sm:text-sm text-gray-500 truncate">ID: {{ user.id }}</div>
+                  <!-- Email en móvil -->
+                  <div class="text-xs text-gray-600 sm:hidden truncate">{{ user.email }}</div>
+                  @if (user.googleId) {
+                  <div class="text-xs text-blue-600 flex items-center gap-1 sm:hidden">
+                    <i class="pi pi-google"></i>
+                    Google
+                  </div>
+                  }
+                </div>
+              </div>
+            </td>
+
+            <!-- Email (oculto en móvil) -->
+            <td class="py-3 hidden sm:table-cell">
+              <div class="text-sm text-gray-900 truncate">{{ user.email }}</div>
+              @if (user.googleId) {
+              <div class="text-xs text-blue-600 flex items-center gap-1">
+                <i class="pi pi-google"></i>
+                Google
+              </div>
+              }
+            </td>
+
+            <!-- Rol -->
+            <td class="py-3 text-center">
+              <span
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                [class]="getRoleBadgeClass(user.role)"
+              >
+                <i class="pi pi-shield mr-1 hidden sm:inline"></i>
+                <span class="sm:hidden">{{ getRoleLabel(user.role).charAt(0) }}</span>
+                <span class="hidden sm:inline">{{ getRoleLabel(user.role) }}</span>
+              </span>
+            </td>
+
+            <!-- Estado (oculto en móvil y tablet) -->
+            <td class="py-3 text-center hidden md:table-cell">
+              <span
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                [class]="getStatusBadgeClass(user.isActive)"
+              >
+                <i class="pi pi-circle-fill mr-1 text-xs"></i>
+                {{ user.isActive ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+
+            <!-- Último acceso (oculto en móvil, tablet y desktop pequeño) -->
+            <td class="py-3 text-center text-sm text-gray-500 hidden lg:table-cell">
+              @if (user.lastLogin) {
+              {{ user.lastLogin | date : 'short' }}
+              } @else {
+              <span class="text-gray-400">Nunca</span>
+              }
+            </td>
+
+            <!-- Acciones -->
+            <td class="py-3 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <!-- Editar - Deshabilitado -->
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  class="p-button-text p-button-sm text-gray-400 cursor-not-allowed"
+                  (click)="editUser(user)"
+                  pTooltip="Editar usuario (No disponible)"
+                  tooltipPosition="top"
+                  [disabled]="true"
+                ></button>
+
+                <!-- Cambiar estado - Deshabilitado -->
+                <button
+                  pButton
+                  [icon]="user.isActive ? 'pi pi-user-minus' : 'pi pi-user-plus'"
+                  class="p-button-text p-button-sm text-gray-400 cursor-not-allowed"
+                  (click)="toggleUserStatus(user)"
+                  [pTooltip]="'Cambiar estado (No disponible)'"
+                  tooltipPosition="top"
+                  [disabled]="true"
+                ></button>
+
+                <!-- Eliminar -->
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  class="p-button-text p-button-sm text-red-600 hover:text-red-800"
+                  (click)="confirmDelete(user)"
+                  pTooltip="Desactivar usuario"
+                  tooltipPosition="top"
+                ></button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <!-- Mensaje cuando no hay datos -->
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6" class="text-center py-8 text-gray-500">
+              <div class="flex items-center gap-5 justify-center">
+                <i class="pi pi-users text-4xl text-gray-300"></i>
+                <div class="flex flex-col items-start">
+                  <div class="text-lg font-medium">No se encontraron usuarios</div>
+                  <div class="text-sm">Intenta ajustar los filtros de búsqueda</div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+
+  <!-- Diálogo de edición/creación -->
+  <p-dialog
+    [visible]="showDialog()"
+    [modal]="true"
+    [style]="{ width: '90vw', maxWidth: '32rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    (onHide)="closeDialog()"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-user-edit text-lg"></i>
+        {{ editing()?._id ? 'Editar usuario' : 'Nuevo usuario' }}
+      </div>
+    </ng-template>
+
+    <div class="space-y-4">
+      <!-- Nombre -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+        <input
+          pInputText
+          placeholder="Ingresa el nombre completo"
+          [ngModel]="editing()?.name"
+          (ngModelChange)="onEditChange('name', $event)"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Email -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+        <input
+          pInputText
+          placeholder="usuario@ejemplo.com"
+          [ngModel]="editing()?.email"
+          (ngModelChange)="onEditChange('email', $event)"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Rol -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Rol</label>
+        <p-select
+          [options]="roleOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="editing()?.role"
+          (ngModelChange)="onEditChange('role', $event)"
+          placeholder="Selecciona un rol"
+          class="w-full"
+        ></p-select>
+      </div>
+
+      <!-- Contraseña (solo para nuevos usuarios) -->
+      @if (!editing()?._id) {
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+        <input
+          pInputText
+          type="password"
+          placeholder="Ingresa una contraseña segura"
+          [ngModel]="editing()?.password"
+          (ngModelChange)="onEditChange('password', $event)"
+          class="w-full"
+        />
+      </div>
+      }
+
+      <!-- Información adicional para usuarios existentes -->
+      @if (editing()?._id) {
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <div class="flex items-start gap-2">
+          <i class="pi pi-info-circle text-blue-600 mt-0.5"></i>
+          <div class="text-sm text-blue-800">
+            <div class="font-medium mb-1">Información adicional:</div>
+            <ul class="space-y-1 text-xs">
+              <li>• Para cambiar la contraseña, el usuario debe usar "Olvidé mi contraseña"</li>
+              <li>• Los cambios de rol se aplicarán inmediatamente</li>
+              <li>• El estado activo/inactivo se puede cambiar desde la tabla</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2">
+        <button
+          pButton
+          label="Cancelar"
+          class="p-button-text"
+          (click)="closeDialog()"
+          [disabled]="loading()"
+        ></button>
+        <button
+          pButton
+          [label]="editing()?._id ? 'Actualizar' : 'Crear'"
+          [icon]="editing()?._id ? 'pi pi-save' : 'pi pi-user-plus'"
+          (click)="save()"
+          [loading]="loading()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</div>

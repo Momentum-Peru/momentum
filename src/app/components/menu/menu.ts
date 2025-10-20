@@ -9,7 +9,7 @@ import { filter, Subscription } from 'rxjs';
   standalone: true,
   imports: [Button, RouterModule],
   templateUrl: './menu.html',
-  styleUrl: './menu.scss'
+  styleUrl: './menu.scss',
 })
 export class Menu implements OnInit, OnDestroy {
   private router = inject(Router);
@@ -38,19 +38,20 @@ export class Menu implements OnInit, OnDestroy {
     { link: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
     { link: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
     { link: '/daily-reports', label: 'Gastos Diarios', icon: 'pi pi-calendar' },
+    { link: '/users', label: 'Usuarios', icon: 'pi pi-users' },
     { link: '/telefono', label: 'Teléfono', icon: 'pi pi-phone' },
   ]);
 
   ngOnInit() {
     // Suscribirse a cambios de ruta
     this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
+      .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
         this.currentRoute.set(event.url);
       });
 
     // Suscribirse a cambios del usuario
-    this.userSubscription = this.authService.currentUser$.subscribe(user => {
+    this.userSubscription = this.authService.currentUser$.subscribe((user) => {
       this.loadUserInfo();
     });
 
@@ -92,7 +93,7 @@ export class Menu implements OnInit, OnDestroy {
    * Alterna el estado del menú
    */
   toggleMenu(): void {
-    this.isMenuOpen.update(value => !value);
+    this.isMenuOpen.update((value) => !value);
   }
 
   /**
