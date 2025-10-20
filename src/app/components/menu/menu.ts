@@ -39,7 +39,6 @@ export class Menu implements OnInit, OnDestroy {
     { link: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
     { link: '/daily-reports', label: 'Gastos Diarios', icon: 'pi pi-calendar' },
     { link: '/users', label: 'Usuarios', icon: 'pi pi-users' },
-    { link: '/telefono', label: 'Teléfono', icon: 'pi pi-phone' },
   ]);
 
   ngOnInit() {
