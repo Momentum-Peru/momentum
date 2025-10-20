@@ -92,13 +92,12 @@
 
   <!-- Modal de documentos -->
   <p-dialog
-    [visible]="showDocumentsDialog()"
+    [(visible)]="showDocumentsDialog"
     [modal]="true"
     [style]="{ width: '70rem' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
-    (onHide)="closeDocuments()"
   >
     <ng-template pTemplate="header">
       <div class="flex items-center gap-2">
@@ -265,13 +264,12 @@
 
   <!-- Modal de edición/creación -->
   <p-dialog
-    [visible]="showDialog()"
+    [(visible)]="showDialog"
     [modal]="true"
     [style]="{ width: '50rem' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
-    (onHide)="closeDialog()"
   >
     <ng-template pTemplate="header">
       {{ editing()?._id ? 'Editar requerimiento' : 'Nuevo requerimiento' }}

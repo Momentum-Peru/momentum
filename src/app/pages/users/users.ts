@@ -5,6 +5,7 @@ import {
   signal,
   OnInit,
   OnDestroy,
+  effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -107,6 +108,15 @@ export class UsersPage implements OnInit, OnDestroy {
       });
 
     this.loadUsers();
+  }
+
+  constructor() {
+    // Efecto para manejar el cierre del diálogo
+    effect(() => {
+      if (!this.showDialog()) {
+        this.editing.set(null);
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -253,7 +263,6 @@ export class UsersPage implements OnInit, OnDestroy {
    */
   closeDialog() {
     this.showDialog.set(false);
-    this.editing.set(null);
   }
 
   /**

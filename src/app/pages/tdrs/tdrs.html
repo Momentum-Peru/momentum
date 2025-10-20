@@ -60,13 +60,12 @@
   </p-table>
 
   <p-dialog
-    [visible]="showDialog()"
+    [(visible)]="showDialog"
     [modal]="true"
     [style]="{ width: '32rem' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
-    (onHide)="closeDialog()"
   >
     <ng-template pTemplate="header">
       {{ editing()?._id ? 'Editar TDR' : 'Nuevo TDR' }}

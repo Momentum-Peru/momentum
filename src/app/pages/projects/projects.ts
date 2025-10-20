@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -52,6 +52,15 @@ export class ProjectsPage implements OnInit {
   ngOnInit() {
     this.load();
     this.loadClients();
+  }
+
+  constructor() {
+    // Efecto para manejar el cierre del diálogo
+    effect(() => {
+      if (!this.showDialog()) {
+        this.editing.set(null);
+      }
+    });
   }
 
   load() {
@@ -134,7 +143,6 @@ export class ProjectsPage implements OnInit {
 
   closeDialog() {
     this.showDialog.set(false);
-    this.editing.set(null);
   }
 
   onEditChange(field: keyof Project, value: any) {

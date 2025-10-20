@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -92,6 +92,23 @@ export class RequirementsPage {
     this.clientsApi.list().subscribe((v) => this.clients.set(v));
   }
 
+  constructor() {
+    // Efecto para manejar el cierre del diálogo principal
+    effect(() => {
+      if (!this.showDialog()) {
+        this.editing.set(null);
+      }
+    });
+
+    // Efecto para manejar el cierre del diálogo de documentos
+    effect(() => {
+      if (!this.showDocumentsDialog()) {
+        this.documentsViewing.set(null);
+        this.selectedFiles.set([]);
+      }
+    });
+  }
+
   load() {
     const q = this.query();
     const url = q
@@ -142,7 +159,6 @@ export class RequirementsPage {
   }
   closeDialog() {
     this.showDialog.set(false);
-    this.editing.set(null);
   }
 
   onEditChange<K extends keyof RequirementItem>(key: K, value: RequirementItem[K]) {
@@ -243,7 +259,6 @@ export class RequirementsPage {
 
   closeDocuments() {
     this.showDocumentsDialog.set(false);
-    this.documentsViewing.set(null);
   }
 
   onFileInputChange(event: Event) {
