@@ -10,7 +10,7 @@
     <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
   </div>
 
-  <p-table [value]="items()" [tableStyle]="{ 'min-width': '50rem' }">
+  <p-table [value]="filteredItems()" [tableStyle]="{ 'min-width': '50rem' }">
     <ng-template pTemplate="header">
       <tr>
         <th>Código</th>
@@ -129,6 +129,7 @@
             (ngModelChange)="onEditChange('clientId', $event)"
             placeholder="Seleccionar cliente"
             class="w-full"
+            [showClear]="true"
           ></p-select>
         </div>
         <div>
@@ -183,6 +184,7 @@
             placeholder="Seleccionar fecha"
             appendTo="body"
             iconDisplay="input"
+            [showClear]="true"
             class="w-full"
           ></p-datepicker>
         </div>
@@ -195,6 +197,7 @@
             placeholder="Seleccionar fecha"
             appendTo="body"
             iconDisplay="input"
+            [showClear]="true"
             class="w-full"
           ></p-datepicker>
         </div>

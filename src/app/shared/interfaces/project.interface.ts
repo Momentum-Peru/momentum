@@ -1,21 +1,21 @@
 export interface Project {
-    _id?: string;
-    name: string;
-    description?: string;
-    code: string;
-    clientId: string; // Relacionado con el _id del cliente
-    status: 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
-    startDate?: string;
-    endDate?: string;
-    location?: string;
-    budget?: number;
-    notes?: string;
-    isActive?: boolean;
-    createdAt?: string;
-    updatedAt?: string;
+  _id?: string;
+  name: string;
+  description?: string;
+  code: string;
+  clientId: string | { _id: string; name: string; taxId?: string }; // Relacionado con el _id del cliente
+  status: 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
+  startDate?: string | Date;
+  endDate?: string | Date;
+  location?: string;
+  budget?: number;
+  notes?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ProjectOption {
-    label: string;
-    value: string;
+  label: string;
+  value: string;
 }
