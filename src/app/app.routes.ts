@@ -13,45 +13,47 @@ export const routes: Routes = [
         canActivate: [publicGuard]
     },
     {
-        path: 'auth/callback',
-        loadComponent: () => import('./pages/google-callback/google-callback').then(m => m.GoogleCallbackComponent),
-    },
-    {
-        path: 'auth/email/google/callback',
-        loadComponent: () => import('./pages/email-oauth-callback/email-oauth-callback').then(m => m.EmailOAuthCallbackComponent),
-    },
-    {
-        path: 'auth/email/outlook/callback',
-        loadComponent: () => import('./pages/email-oauth-callback/email-oauth-callback').then(m => m.EmailOAuthCallbackComponent),
-    },
-    {
-        path: 'auth/contacts/google/callback',
-        loadComponent: () => import('./pages/google-contacts-callback/google-contacts-callback').then(m => m.GoogleContactsCallbackComponent),
-    },
-    {
         path: '',
         loadComponent: () => import('./layouts/main/main').then(m => m.Main),
         canActivate: [requireAuthGuard],
         children: [
-            {
-                path: 'calendario',
-                loadComponent: () => import('./pages/calendar/calendar').then(m => m.Calendar),
-            },
+
             {
                 path: 'telefono',
                 loadComponent: () => import('./pages/telefono/telefono').then(m => m.Telefono),
             },
             {
-                path: 'cuentas-email',
-                loadComponent: () => import('./pages/email-accounts/email-accounts').then(m => m.EmailAccountsComponent),
+                path: 'clients',
+                loadComponent: () => import('./pages/clients/clients').then(m => m.ClientsPage),
             },
             {
-                path: 'contactos',
-                loadComponent: () => import('./pages/contacts/contacts').then(m => m.ContactsComponent),
+                path: 'requirements',
+                loadComponent: () => import('./pages/requirements/requirements').then(m => m.RequirementsPage),
             },
+            {
+                path: 'tdrs',
+                loadComponent: () => import('./pages/tdrs/tdrs').then(m => m.TdrsPage),
+            },
+            {
+                path: 'quotes',
+                loadComponent: () => import('./pages/quotes/quotes').then(m => m.QuotesPage),
+            },
+            {
+                path: 'orders',
+                loadComponent: () => import('./pages/orders/orders').then(m => m.OrdersPage),
+            },
+            {
+                path: 'projects',
+                loadComponent: () => import('./pages/projects/projects').then(m => m.ProjectsPage),
+            },
+            {
+                path: 'daily-reports',
+                loadComponent: () => import('./pages/daily-reports/daily-reports').then(m => m.DailyExpensesPage),
+            },
+
             {
                 path: '**',
-                redirectTo: 'calendario',
+                redirectTo: 'clients',
                 pathMatch: 'full'
             }
 

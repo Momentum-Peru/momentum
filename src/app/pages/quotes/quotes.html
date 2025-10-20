@@ -1,0 +1,144 @@
+<div class="p-4 space-y-4">
+  <div class="flex items-center gap-2">
+    <input
+      pInputText
+      placeholder="Buscar"
+      [ngModel]="query()"
+      (ngModelChange)="setQuery($event)"
+      class="w-full"
+    />
+    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
+  </div>
+
+  <p-table [value]="items()">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Número</th>
+        <th>Cliente</th>
+        <th>Total</th>
+        <th>Estado</th>
+        <th>Docs</th>
+        <th></th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-row>
+      <tr>
+        <td>{{ row.number }}</td>
+        <td>{{ row.clientName }}</td>
+        <td>{{ row.total | number : '1.2-2' }}</td>
+        <td>{{ row.status }}</td>
+        <td>
+          <input type="file" (change)="onFileChange($event, row)" />
+        </td>
+        <td class="text-right space-x-1">
+          <button
+            pButton
+            icon="pi pi-file-pdf"
+            class="p-button-text"
+            (click)="openPdf(row)"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-send"
+            class="p-button-text"
+            (click)="setStatus(row, 'sent')"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-check"
+            class="p-button-text"
+            (click)="setStatus(row, 'accepted')"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-times"
+            class="p-button-text"
+            (click)="setStatus(row, 'rejected')"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-pencil"
+            class="p-button-text"
+            (click)="editItem(row)"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-trash"
+            class="p-button-text p-button-danger"
+            (click)="remove(row)"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-dialog
+    [visible]="showDialog()"
+    [modal]="true"
+    [style]="{ width: '48rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    (onHide)="closeDialog()"
+  >
+    <ng-template pTemplate="header">
+      {{ editing()?._id ? 'Editar cotización' : 'Nueva cotización' }}
+    </ng-template>
+    <div class="grid gap-3">
+      <p-select
+        [options]="clients()"
+        optionLabel="name"
+        optionValue="_id"
+        [ngModel]="editing()?.clientId"
+        (ngModelChange)="onEditChange('clientId', $event)"
+        placeholder="Selecciona cliente"
+      ></p-select>
+      <input
+        pInputText
+        placeholder="Cliente"
+        [ngModel]="editing()?.clientName"
+        (ngModelChange)="onEditChange('clientName', $event)"
+      />
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <div class="font-semibold">Items</div>
+          <button pButton icon="pi pi-plus" class="p-button-text" (click)="addItem()"></button>
+        </div>
+        <div class="space-y-2">
+          <div
+            class="grid grid-cols-12 items-center gap-2"
+            *ngFor="let it of editing()?.items; let i = index"
+          >
+            <input
+              class="col-span-6"
+              pInputText
+              placeholder="Descripción"
+              [ngModel]="editing()!.items[i].description"
+              (ngModelChange)="editing()!.items[i].description = $event"
+            />
+            <input
+              class="col-span-3"
+              pInputText
+              type="number"
+              placeholder="Cantidad"
+              [ngModel]="editing()!.items[i].qty"
+              (ngModelChange)="editing()!.items[i].qty = $event"
+            />
+            <input
+              class="col-span-3"
+              pInputText
+              type="number"
+              placeholder="Precio"
+              [ngModel]="editing()!.items[i].price"
+              (ngModelChange)="editing()!.items[i].price = $event"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
+      <button pButton label="Guardar" (click)="save()"></button>
+    </ng-template>
+  </p-dialog>
+</div>

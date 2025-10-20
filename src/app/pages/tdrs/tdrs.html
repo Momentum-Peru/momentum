@@ -1,0 +1,105 @@
+<div class="p-4 space-y-4">
+  <div class="flex items-center gap-2">
+    <input
+      pInputText
+      placeholder="Buscar"
+      [ngModel]="query()"
+      (ngModelChange)="setQuery($event)"
+      class="w-full"
+    />
+    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
+  </div>
+
+  <p-table [value]="items()">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Cliente</th>
+        <th>Tipo</th>
+        <th>Aprobado</th>
+        <th>Docs</th>
+        <th></th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-row>
+      <tr>
+        <td>{{ row.clientId }}</td>
+        <td>{{ row.type }}</td>
+        <td>
+          <span
+            class="px-2 py-1 rounded text-white"
+            [ngClass]="row.approved ? 'bg-green-500' : 'bg-gray-400'"
+            >{{ row.approved ? 'Sí' : 'No' }}</span
+          >
+        </td>
+        <td>
+          <input type="file" (change)="onFileChange($event, row)" />
+        </td>
+        <td class="text-right">
+          <button
+            pButton
+            icon="pi pi-check"
+            class="p-button-text"
+            (click)="approve(row)"
+            [disabled]="row.approved"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-pencil"
+            class="p-button-text"
+            (click)="editItem(row)"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-trash"
+            class="p-button-text p-button-danger"
+            (click)="remove(row)"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-dialog
+    [visible]="showDialog()"
+    [modal]="true"
+    [style]="{ width: '32rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    (onHide)="closeDialog()"
+  >
+    <ng-template pTemplate="header">
+      {{ editing()?._id ? 'Editar TDR' : 'Nuevo TDR' }}
+    </ng-template>
+    <div class="grid gap-3">
+      <p-select
+        [options]="clients()"
+        optionLabel="name"
+        optionValue="_id"
+        [ngModel]="editing()?.clientId"
+        (ngModelChange)="onEditChange('clientId', $event)"
+        placeholder="Selecciona cliente"
+      ></p-select>
+      <p-selectButton
+        [options]="tdrTypeOptions"
+        [ngModel]="editing()?.type"
+        (ngModelChange)="onEditChange('type', $event)"
+      ></p-selectButton>
+      <input
+        pInputText
+        placeholder="Resumen"
+        [ngModel]="editing()?.summary"
+        (ngModelChange)="onEditChange('summary', $event)"
+      />
+    </div>
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="showDialog.set(false)"
+      ></button>
+      <button pButton label="Guardar" (click)="save()"></button>
+    </ng-template>
+  </p-dialog>
+</div>

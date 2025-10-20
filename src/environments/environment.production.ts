@@ -1,3 +1,3 @@
 export const environment = {
-    apiUrl: 'https://mayaagent-back.marcostorresalarcon.com'
+    apiUrl: 'https://tec.marcostorresalarcon.com'
 };

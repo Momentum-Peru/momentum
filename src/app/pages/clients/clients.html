@@ -1,0 +1,313 @@
+<div class="p-4 space-y-4">
+  <div class="flex items-center gap-2">
+    <input
+      pInputText
+      placeholder="Buscar"
+      [ngModel]="query()"
+      (ngModelChange)="setQuery($event)"
+      class="w-full"
+    />
+    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
+  </div>
+
+  <p-table [value]="items()" [tableStyle]="{ 'min-width': '50rem' }">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Nombre</th>
+        <th>RUC/DNI</th>
+        <th>Ubicación</th>
+        <th>Contactos</th>
+        <th></th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-row>
+      <tr>
+        <td>{{ row.name }}</td>
+        <td>{{ row.taxId }}</td>
+        <td>
+          @if (row.ubicacion) {
+          <div class="text-sm">
+            @if (row.ubicacion.paisCodigo) {
+            <div class="font-medium">{{ getCountryName(row.ubicacion.paisCodigo) }}</div>
+            } @if (row.ubicacion.provinciaCodigo) {
+            <div class="text-gray-600">{{ getProvinceName(row.ubicacion.provinciaCodigo) }}</div>
+            } @if (row.ubicacion.distritoCodigo) {
+            <div class="text-gray-500">{{ getDistrictName(row.ubicacion.distritoCodigo) }}</div>
+            } @if (row.ubicacion.direccion) {
+            <div class="text-xs text-gray-400 mt-1">{{ row.ubicacion.direccion }}</div>
+            }
+          </div>
+          } @else {
+          <span class="text-gray-400 text-sm">Sin ubicación</span>
+          }
+        </td>
+        <td>
+          <button
+            pButton
+            type="button"
+            label="Ver contactos"
+            icon="pi pi-users"
+            class="p-button-text"
+            (click)="openContacts(row)"
+          ></button>
+        </td>
+        <td class="text-right">
+          <button
+            pButton
+            icon="pi pi-pencil"
+            class="p-button-text"
+            (click)="editItem(row)"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-trash"
+            class="p-button-text p-button-danger"
+            (click)="remove(row)"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <!-- Modal de contactos -->
+  <p-dialog
+    [visible]="showContactsDialog()"
+    [modal]="true"
+    [style]="{ width: '42rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    (onHide)="closeContacts()"
+  >
+    <ng-template pTemplate="header"> Contactos — {{ contactsClientName() }} </ng-template>
+    <div class="space-y-2">
+      <p-table [value]="contactsViewing() ?? []">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Nombre</th>
+            <th>Área</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-contact>
+          <tr>
+            <td>{{ contact.name }}</td>
+            <td>{{ contact.area }}</td>
+            <td>{{ contact.email }}</td>
+            <td>{{ contact.phone }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeContacts()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    [visible]="showDialog()"
+    [modal]="true"
+    [style]="{ width: '50rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    (onHide)="closeDialog()"
+  >
+    <ng-template pTemplate="header">
+      {{ editing()?._id ? 'Editar cliente' : 'Nuevo cliente' }}
+    </ng-template>
+    <div class="grid gap-3">
+      <input
+        pInputText
+        name="clientName"
+        placeholder="Nombre"
+        [ngModel]="editing()?.name"
+        (ngModelChange)="onEditChange('name', $event)"
+      />
+      <input
+        pInputText
+        name="clientTaxId"
+        placeholder="RUC/DNI"
+        [ngModel]="editing()?.taxId"
+        (ngModelChange)="onEditChange('taxId', $event)"
+      />
+
+      <!-- Sección de Ubicación -->
+      <div class="border-t pt-3">
+        <h4 class="text-lg font-semibold mb-3">Ubicación</h4>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          <!-- País -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">País *</label>
+            <p-select
+              [options]="countries()"
+              optionLabel="nombre"
+              optionValue="codigo"
+              [ngModel]="selectedCountry()?.codigo"
+              (ngModelChange)="onCountryChange(findCountryByCode($event))"
+              placeholder="Seleccionar país"
+              [showClear]="true"
+              class="w-full"
+            >
+              <ng-template let-country pTemplate="item">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">{{ country.nombre }}</span>
+                  <span class="text-sm text-gray-500">({{ country.codigo }})</span>
+                </div>
+              </ng-template>
+            </p-select>
+          </div>
+
+          <!-- Provincia -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Provincia/Estado</label>
+            <p-select
+              [options]="provinces()"
+              optionLabel="nombre"
+              optionValue="codigo"
+              [ngModel]="selectedProvince()?.codigo"
+              (ngModelChange)="onProvinceChange(findProvinceByCode($event))"
+              placeholder="Seleccionar provincia"
+              [showClear]="true"
+              [disabled]="!selectedCountry()"
+              class="w-full"
+            >
+              <ng-template let-province pTemplate="item">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">{{ province.nombre }}</span>
+                  <span class="text-sm text-gray-500">({{ province.codigo }})</span>
+                </div>
+              </ng-template>
+            </p-select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          <!-- Distrito -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Distrito/Municipio</label>
+            <p-select
+              [options]="districts()"
+              optionLabel="nombre"
+              optionValue="codigo"
+              [ngModel]="selectedDistrict()?.codigo"
+              (ngModelChange)="onDistrictChange(findDistrictByCode($event))"
+              placeholder="Seleccionar distrito"
+              [showClear]="true"
+              [disabled]="!selectedProvince()"
+              class="w-full"
+            >
+              <ng-template let-district pTemplate="item">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">{{ district.nombre }}</span>
+                  <span class="text-sm text-gray-500">({{ district.codigo }})</span>
+                </div>
+              </ng-template>
+            </p-select>
+          </div>
+
+          <!-- Dirección específica -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Dirección específica</label>
+            <input
+              pInputText
+              placeholder="Av. Principal 123, Oficina 456"
+              [ngModel]="editing()?.ubicacion?.direccion"
+              (ngModelChange)="onDireccionChange($event)"
+              class="w-full"
+            />
+          </div>
+        </div>
+
+        <!-- Resumen de ubicación seleccionada -->
+        @if (selectedCountry() || selectedProvince() || selectedDistrict()) {
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <h5 class="font-medium text-blue-800 mb-2">Ubicación seleccionada:</h5>
+          <div class="text-sm text-blue-700 space-y-1">
+            @if (selectedCountry()) {
+            <div>
+              <strong>País:</strong> {{ selectedCountry()?.nombre }} ({{
+                selectedCountry()?.codigo
+              }})
+            </div>
+            } @if (selectedProvince()) {
+            <div>
+              <strong>Provincia:</strong> {{ selectedProvince()?.nombre }} ({{
+                selectedProvince()?.codigo
+              }})
+            </div>
+            } @if (selectedDistrict()) {
+            <div>
+              <strong>Distrito:</strong> {{ selectedDistrict()?.nombre }} ({{
+                selectedDistrict()?.codigo
+              }})
+            </div>
+            } @if (editing()?.ubicacion?.direccion) {
+            <div><strong>Dirección:</strong> {{ editing()?.ubicacion?.direccion }}</div>
+            }
+          </div>
+        </div>
+        }
+      </div>
+
+      <div class="border-t pt-3">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-lg font-semibold">Contactos</h4>
+          <button
+            pButton
+            type="button"
+            label="Agregar Contacto"
+            icon="pi pi-plus"
+            (click)="addContact()"
+            class="p-button-sm"
+          ></button>
+        </div>
+
+        @for (contact of editing()?.contacts; track $index) {
+        <div class="border rounded p-3 mb-2 bg-gray-50">
+          <div class="grid grid-cols-2 gap-2 mb-2">
+            <input
+              pInputText
+              placeholder="Nombre del contacto"
+              [ngModel]="contact.name"
+              (ngModelChange)="updateContact($index, 'name', $event)"
+            />
+            <input
+              pInputText
+              placeholder="Área/Departamento"
+              [ngModel]="contact.area"
+              (ngModelChange)="updateContact($index, 'area', $event)"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-2 mb-2">
+            <input
+              pInputText
+              placeholder="Email"
+              [ngModel]="contact.email"
+              (ngModelChange)="updateContact($index, 'email', $event)"
+            />
+            <input
+              pInputText
+              placeholder="Teléfono"
+              [ngModel]="contact.phone"
+              (ngModelChange)="updateContact($index, 'phone', $event)"
+            />
+          </div>
+          <button
+            pButton
+            icon="pi pi-trash"
+            class="p-button-text p-button-danger p-button-sm"
+            (click)="removeContact($index)"
+          ></button>
+        </div>
+        }
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
+      <button pButton label="Guardar" (click)="save()"></button>
+    </ng-template>
+  </p-dialog>
+</div>

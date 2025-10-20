@@ -1,0 +1,498 @@
+<div class="p-4 space-y-4">
+  <div class="flex items-center gap-2">
+    <input
+      pInputText
+      placeholder="Buscar gastos diarios..."
+      [ngModel]="query()"
+      (ngModelChange)="setQuery($event)"
+      class="w-full"
+    />
+    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
+  </div>
+
+  <p-table [value]="items()" [tableStyle]="{ 'min-width': '50rem' }">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Título</th>
+        <th>Fecha</th>
+        <th>Proyecto</th>
+        <th>Estado</th>
+        <th>Total</th>
+        <th>Compras</th>
+        <th></th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-row>
+      <tr>
+        <td>
+          <div class="max-w-xs">
+            <p class="font-semibold truncate">{{ row.title }}</p>
+            <p class="text-sm text-gray-600 truncate">{{ row.dailySummary }}</p>
+          </div>
+        </td>
+        <td>{{ row.date | date : 'dd/MM/yyyy' }}</td>
+        <td>{{ getProjectName(row.projectId) }}</td>
+        <td>
+          <span
+            class="px-2 py-1 rounded-full text-xs font-medium"
+            [class]="getStatusClass(row.status)"
+          >
+            {{ getStatusLabel(row.status) }}
+          </span>
+        </td>
+        <td>
+          <span class="font-semibold">{{
+            row.totalAmount | currency : 'PEN' : 'symbol' : '1.2-2'
+          }}</span>
+        </td>
+        <td>
+          <span class="text-sm">{{ row.purchases.length }} compra(s)</span>
+        </td>
+        <td class="text-right">
+          @if (row.status === 'DRAFT') {
+          <button
+            pButton
+            icon="pi pi-pencil"
+            class="p-button-text"
+            (click)="editItem(row)"
+            pTooltip="Editar gasto"
+            tooltipPosition="top"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-send"
+            class="p-button-text p-button-info"
+            (click)="submitForApproval(row)"
+            pTooltip="Enviar para aprobación"
+            tooltipPosition="top"
+          ></button>
+          } @if (row.status === 'SUBMITTED') {
+          <button
+            pButton
+            icon="pi pi-check"
+            class="p-button-text p-button-success"
+            (click)="approve(row)"
+            pTooltip="Aprobar"
+            tooltipPosition="top"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-times"
+            class="p-button-text p-button-danger"
+            (click)="reject(row)"
+            pTooltip="Rechazar"
+            tooltipPosition="top"
+          ></button>
+          }
+          <button
+            pButton
+            icon="pi pi-trash"
+            class="p-button-text p-button-danger"
+            (click)="remove(row)"
+            pTooltip="Eliminar gasto"
+            tooltipPosition="top"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <!-- Modal de edición/creación -->
+  <p-dialog
+    [visible]="showDialog()"
+    [modal]="true"
+    [style]="{ width: '70rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    (onHide)="closeDialog()"
+  >
+    <ng-template pTemplate="header">
+      {{ editing()?._id ? 'Editar gasto diario' : 'Nuevo gasto diario' }}
+    </ng-template>
+
+    <div class="grid gap-4">
+      <!-- Título y Fecha -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+          <input
+            pInputText
+            name="expenseTitle"
+            placeholder="Trabajo en sitio - Proyecto ABC"
+            [ngModel]="editing()?.title"
+            (ngModelChange)="onEditChange('title', $event)"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+          <p-datepicker
+            [ngModel]="editing()?.date"
+            (ngModelChange)="onEditChange('date', $event)"
+            dateFormat="dd/mm/yy"
+            placeholder="Seleccionar fecha"
+            appendTo="body"
+            iconDisplay="input"
+            class="w-full"
+          ></p-datepicker>
+        </div>
+      </div>
+
+      <!-- Proyecto y Estado -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Proyecto *</label>
+          <p-select
+            [options]="projects()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="editing()?.projectId"
+            (ngModelChange)="onEditChange('projectId', $event)"
+            placeholder="Seleccionar proyecto"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+          <p-select
+            [options]="statusOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="editing()?.status"
+            (ngModelChange)="onEditChange('status', $event)"
+            placeholder="Seleccionar estado"
+            class="w-full"
+          ></p-select>
+        </div>
+      </div>
+
+      <!-- Observaciones -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700">Observaciones</label>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-plus"
+            size="small"
+            (click)="addObservation()"
+            class="p-button-sm"
+            label="Agregar Observación"
+          ></button>
+        </div>
+
+        @if (editing()?.observations && editing()!.observations.length > 0) {
+        <div class="space-y-3">
+          @for (observation of editing()!.observations; track $index) {
+          <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-sm font-medium text-gray-700">Observación {{ $index + 1 }}</h4>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-trash"
+                size="small"
+                (click)="removeObservation($index)"
+                class="p-button-sm p-button-danger"
+              ></button>
+            </div>
+
+            <div class="grid gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Descripción *</label>
+                <input
+                  pInputText
+                  placeholder="Clima favorable para trabajar"
+                  [ngModel]="observation.description"
+                  (ngModelChange)="observation.description = $event"
+                  class="w-full"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1"
+                  >Notas adicionales</label
+                >
+                <pTextarea
+                  placeholder="Sin lluvia, temperatura ideal"
+                  [ngModel]="observation.notes"
+                  (ngModelChange)="observation.notes = $event"
+                  rows="2"
+                  class="w-full"
+                ></pTextarea>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1"
+                  >Fecha de observación</label
+                >
+                <p-datepicker
+                  [ngModel]="observation.observationDate"
+                  (ngModelChange)="observation.observationDate = $event"
+                  dateFormat="dd/mm/yy"
+                  placeholder="Seleccionar fecha"
+                  appendTo="body"
+                  iconDisplay="input"
+                  class="w-full"
+                ></p-datepicker>
+              </div>
+
+              <!-- Documentos de la observación -->
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Documentos/Fotos</label>
+                <div class="space-y-2">
+                  <!-- Input para subir archivo -->
+                  <input
+                    type="file"
+                    accept="image/*,.pdf,.doc,.docx"
+                    (change)="onObservationFileSelect($event, $index)"
+                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+
+                  <!-- Lista de documentos existentes -->
+                  @if (observation.documents && observation.documents.length > 0) {
+                  <div class="space-y-1">
+                    @for (doc of observation.documents; track doc) {
+                    <div class="flex items-center justify-between bg-white p-2 rounded border">
+                      <div class="flex items-center gap-2">
+                        <i [class]="getFileIcon(doc)" [class]="getFileTypeColor(doc)"></i>
+                        <span class="text-sm text-gray-700">{{ doc.split('/').pop() }}</span>
+                      </div>
+                      <div class="flex gap-1">
+                        <button
+                          pButton
+                          type="button"
+                          icon="pi pi-eye"
+                          size="small"
+                          (click)="viewDocument(doc)"
+                          class="p-button-sm p-button-text"
+                          pTooltip="Ver documento"
+                        ></button>
+                        <button
+                          pButton
+                          type="button"
+                          icon="pi pi-download"
+                          size="small"
+                          (click)="downloadDocument(doc)"
+                          class="p-button-sm p-button-text"
+                          pTooltip="Descargar documento"
+                        ></button>
+                        <button
+                          pButton
+                          type="button"
+                          icon="pi pi-trash"
+                          size="small"
+                          (click)="removeObservationDocument($index, doc)"
+                          class="p-button-sm p-button-text p-button-danger"
+                          pTooltip="Eliminar documento"
+                        ></button>
+                      </div>
+                    </div>
+                    }
+                  </div>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+        } @else {
+        <div class="text-center py-4 text-gray-500">
+          <i class="pi pi-info-circle text-2xl mb-2"></i>
+          <p>No hay observaciones. Haz clic en "Agregar Observación" para comenzar.</p>
+        </div>
+        }
+      </div>
+
+      <!-- Resumen del día -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Resumen del día *</label>
+        <pTextarea
+          placeholder="Instalación de sistema eléctrico en planta baja. Se completó el 60% del trabajo planificado."
+          [ngModel]="editing()?.dailySummary"
+          (ngModelChange)="onEditChange('dailySummary', $event)"
+          rows="3"
+          class="w-full"
+        ></pTextarea>
+      </div>
+
+      <!-- Sección de Compras -->
+      <div class="border-t pt-4">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-lg font-semibold">Compras</h4>
+          <button
+            pButton
+            type="button"
+            label="Agregar Compra"
+            icon="pi pi-plus"
+            size="small"
+            (click)="addPurchase()"
+          ></button>
+        </div>
+
+        @if (selectedPurchases().length > 0) {
+        <div class="space-y-3">
+          @for (purchase of selectedPurchases(); track $index) {
+          <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+                <input
+                  pInputText
+                  placeholder="Taxi al sitio de trabajo"
+                  [ngModel]="purchase.description"
+                  (ngModelChange)="updatePurchase($index, 'description', $event)"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
+                <input
+                  pInputText
+                  type="number"
+                  step="0.01"
+                  placeholder="25.50"
+                  [ngModel]="purchase.amount"
+                  (ngModelChange)="updatePurchase($index, 'amount', $event)"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
+                <p-select
+                  [options]="categories()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="purchase.categoryId"
+                  (ngModelChange)="updatePurchase($index, 'categoryId', $event)"
+                  placeholder="Seleccionar categoría"
+                  class="w-full"
+                ></p-select>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
+                <input
+                  pInputText
+                  placeholder="Taxi Express"
+                  [ngModel]="purchase.vendor"
+                  (ngModelChange)="updatePurchase($index, 'vendor', $event)"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+                <input
+                  pInputText
+                  placeholder="Viaje de ida y vuelta"
+                  [ngModel]="purchase.notes"
+                  (ngModelChange)="updatePurchase($index, 'notes', $event)"
+                  class="w-full"
+                />
+              </div>
+            </div>
+
+            <!-- Documentos de la compra -->
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Documentos/Fotos (Facturas, Recibos)</label
+              >
+              <div class="space-y-2">
+                <!-- Input para subir archivo -->
+                <input
+                  type="file"
+                  accept="image/*,.pdf,.doc,.docx"
+                  (change)="onPurchaseFileSelect($event, $index)"
+                  class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                />
+
+                <!-- Lista de documentos existentes -->
+                @if (purchase.documents && purchase.documents.length > 0) {
+                <div class="space-y-1">
+                  @for (doc of purchase.documents; track doc) {
+                  <div class="flex items-center justify-between bg-white p-2 rounded border">
+                    <div class="flex items-center gap-2">
+                      <i [class]="getFileIcon(doc)" [class]="getFileTypeColor(doc)"></i>
+                      <span class="text-sm text-gray-700">{{ doc.split('/').pop() }}</span>
+                    </div>
+                    <div class="flex gap-1">
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-eye"
+                        size="small"
+                        (click)="viewDocument(doc)"
+                        class="p-button-sm p-button-text"
+                        pTooltip="Ver documento"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-download"
+                        size="small"
+                        (click)="downloadDocument(doc)"
+                        class="p-button-sm p-button-text"
+                        pTooltip="Descargar documento"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-trash"
+                        size="small"
+                        (click)="removePurchaseDocument($index, doc)"
+                        class="p-button-sm p-button-text p-button-danger"
+                        pTooltip="Eliminar documento"
+                      ></button>
+                    </div>
+                  </div>
+                  }
+                </div>
+                }
+              </div>
+            </div>
+
+            <div class="flex justify-end">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-trash"
+                class="p-button-text p-button-danger p-button-sm"
+                (click)="removePurchase($index)"
+                pTooltip="Eliminar compra"
+                tooltipPosition="top"
+              ></button>
+            </div>
+          </div>
+          }
+        </div>
+        } @else {
+        <div class="text-center py-8 text-gray-500">
+          <i class="pi pi-shopping-cart text-4xl mb-2"></i>
+          <p>No hay compras registradas</p>
+          <p class="text-sm">Haz clic en "Agregar Compra" para comenzar</p>
+        </div>
+        }
+
+        <!-- Total -->
+        @if (selectedPurchases().length > 0) {
+        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="flex justify-between items-center">
+            <span class="font-medium text-blue-800">Total de Compras:</span>
+            <span class="text-xl font-bold text-blue-900">
+              {{ calculateTotalAmount() | currency : 'PEN' : 'symbol' : '1.2-2' }}
+            </span>
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
+      <button pButton label="Guardar" (click)="save()"></button>
+    </ng-template>
+  </p-dialog>
+</div>

@@ -1,0 +1,235 @@
+<div class="p-4 space-y-4">
+  <div class="flex items-center gap-2">
+    <input
+      pInputText
+      placeholder="Buscar proyectos..."
+      [ngModel]="query()"
+      (ngModelChange)="setQuery($event)"
+      class="w-full"
+    />
+    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
+  </div>
+
+  <p-table [value]="items()" [tableStyle]="{ 'min-width': '50rem' }">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Código</th>
+        <th>Nombre</th>
+        <th>Cliente</th>
+        <th>Estado</th>
+        <th>Ubicación</th>
+        <th>Presupuesto</th>
+        <th>Fecha Inicio</th>
+        <th>Fecha Fin</th>
+        <th></th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-row>
+      <tr>
+        <td>
+          <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{{ row.code }}</span>
+        </td>
+        <td>
+          <div class="max-w-xs">
+            <p class="font-semibold truncate">{{ row.name }}</p>
+            <p class="text-sm text-gray-600 truncate">{{ row.description }}</p>
+          </div>
+        </td>
+        <td>{{ getClientName(row.clientId) }}</td>
+        <td>
+          <span
+            class="px-2 py-1 rounded-full text-xs font-medium"
+            [class]="getStatusClass(row.status)"
+          >
+            {{ getStatusLabel(row.status) }}
+          </span>
+        </td>
+        <td>
+          <span class="text-sm">{{ row.location || 'Sin ubicación' }}</span>
+        </td>
+        <td>
+          <span class="font-semibold">{{
+            row.budget | currency : 'USD' : 'symbol' : '1.0-0'
+          }}</span>
+        </td>
+        <td>{{ row.startDate | date : 'dd/MM/yyyy' }}</td>
+        <td>{{ row.endDate | date : 'dd/MM/yyyy' }}</td>
+        <td class="text-right">
+          <button
+            pButton
+            icon="pi pi-pencil"
+            class="p-button-text"
+            (click)="editItem(row)"
+            pTooltip="Editar proyecto"
+            tooltipPosition="top"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-trash"
+            class="p-button-text p-button-danger"
+            (click)="remove(row)"
+            pTooltip="Eliminar proyecto"
+            tooltipPosition="top"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <!-- Modal de edición/creación -->
+  <p-dialog
+    [visible]="showDialog()"
+    [modal]="true"
+    [style]="{ width: '50rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    (onHide)="closeDialog()"
+  >
+    <ng-template pTemplate="header">
+      {{ editing()?._id ? 'Editar proyecto' : 'Nuevo proyecto' }}
+    </ng-template>
+
+    <div class="grid gap-4">
+      <!-- Código y Nombre -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Código *</label>
+          <input
+            pInputText
+            name="projectCode"
+            placeholder="PROJ-2024-001"
+            [ngModel]="editing()?.code"
+            (ngModelChange)="onEditChange('code', $event)"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+          <input
+            pInputText
+            name="projectName"
+            placeholder="Nombre del proyecto"
+            [ngModel]="editing()?.name"
+            (ngModelChange)="onEditChange('name', $event)"
+            class="w-full"
+          />
+        </div>
+      </div>
+
+      <!-- Cliente y Estado -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
+          <p-select
+            [options]="clients()"
+            optionLabel="name"
+            optionValue="_id"
+            [ngModel]="editing()?.clientId"
+            (ngModelChange)="onEditChange('clientId', $event)"
+            placeholder="Seleccionar cliente"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Estado *</label>
+          <p-select
+            [options]="statusOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="editing()?.status"
+            (ngModelChange)="onEditChange('status', $event)"
+            placeholder="Seleccionar estado"
+            class="w-full"
+          ></p-select>
+        </div>
+      </div>
+
+      <!-- Ubicación y Presupuesto -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+          <input
+            pInputText
+            name="projectLocation"
+            placeholder="Av. Principal 123, Lima"
+            [ngModel]="editing()?.location"
+            (ngModelChange)="onEditChange('location', $event)"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Presupuesto</label>
+          <input
+            pInputText
+            name="projectBudget"
+            type="number"
+            placeholder="50000"
+            [ngModel]="editing()?.budget"
+            (ngModelChange)="onEditChange('budget', $event)"
+            class="w-full"
+          />
+        </div>
+      </div>
+
+      <!-- Fechas -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio</label>
+          <p-datepicker
+            [ngModel]="editing()?.startDate"
+            (ngModelChange)="onEditChange('startDate', $event)"
+            dateFormat="dd/mm/yy"
+            placeholder="Seleccionar fecha"
+            appendTo="body"
+            iconDisplay="input"
+            class="w-full"
+          ></p-datepicker>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Fin</label>
+          <p-datepicker
+            [ngModel]="editing()?.endDate"
+            (ngModelChange)="onEditChange('endDate', $event)"
+            dateFormat="dd/mm/yy"
+            placeholder="Seleccionar fecha"
+            appendTo="body"
+            iconDisplay="input"
+            class="w-full"
+          ></p-datepicker>
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+        <textarea
+          pTextarea
+          placeholder="Descripción del proyecto"
+          [ngModel]="editing()?.description"
+          (ngModelChange)="onEditChange('description', $event)"
+          rows="3"
+          class="w-full"
+        ></textarea>
+      </div>
+
+      <!-- Notas -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+        <textarea
+          pTextarea
+          placeholder="Notas adicionales"
+          [ngModel]="editing()?.notes"
+          (ngModelChange)="onEditChange('notes', $event)"
+          rows="2"
+          class="w-full"
+        ></textarea>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
+      <button pButton label="Guardar" (click)="save()"></button>
+    </ng-template>
+  </p-dialog>
+</div>

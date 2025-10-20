@@ -1,43 +1,92 @@
-import { Component, signal, HostListener, inject } from '@angular/core';
-import { AuthService } from '../../pages/login/services/auth.service';
+import { Component, signal, HostListener, inject, OnInit, OnDestroy } from '@angular/core';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { AuthService, User } from '../../pages/login/services/auth.service';
 import { Button } from 'primeng/button';
+import { filter, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [Button],
+  imports: [Button, RouterModule],
   templateUrl: './menu.html',
   styleUrl: './menu.scss'
 })
-export class Menu {
-  private authService = inject(AuthService);
+export class Menu implements OnInit, OnDestroy {
+  private router = inject(Router);
+
+  // Hacer el servicio público para acceso desde el template
+  authService = inject(AuthService);
 
   // Estado del menú hamburguesa
   isMenuOpen = signal(false);
 
+  // Ruta actual
+  currentRoute = signal('');
+
+  // Nombre de usuario
+  userName = signal('Usuario');
+
+  // Suscripción para limpiar
+  private userSubscription?: Subscription;
+
   // Items del menú
   menuItems = signal([
-    {
-      link: '/calendario',
-      label: 'Calendario',
-      icon: 'pi pi-calendar'
-    },
-    {
-      link: '/telefono',
-      label: 'Teléfono',
-      icon: 'pi pi-phone'
-    },
-    {
-      link: '/cuentas-email',
-      label: 'Cuentas de Email',
-      icon: 'pi pi-envelope'
-    },
-    {
-      link: '/contactos',
-      label: 'Contactos',
-      icon: 'pi pi-users'
-    }
+    { link: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
+    { link: '/requirements', label: 'Requerimientos', icon: 'pi pi-inbox' },
+    { link: '/tdrs', label: 'TDRs', icon: 'pi pi-file' },
+    { link: '/quotes', label: 'Cotizaciones', icon: 'pi pi-dollar' },
+    { link: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
+    { link: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
+    { link: '/daily-reports', label: 'Gastos Diarios', icon: 'pi pi-calendar' },
+    { link: '/telefono', label: 'Teléfono', icon: 'pi pi-phone' },
   ]);
+
+  ngOnInit() {
+    // Suscribirse a cambios de ruta
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe((event: NavigationEnd) => {
+        this.currentRoute.set(event.url);
+      });
+
+    // Suscribirse a cambios del usuario
+    this.userSubscription = this.authService.currentUser$.subscribe(user => {
+      this.loadUserInfo();
+    });
+
+    // Cargar información inicial del usuario
+    this.loadUserInfo();
+  }
+
+  ngOnDestroy() {
+    if (this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
+  }
+
+  /**
+   * Carga la información del usuario
+   */
+  private loadUserInfo(): void {
+    const user = this.authService.getCurrentUser();
+    console.log('Menu - Usuario actual:', user); // Debug log
+
+    if (user) {
+      const displayName = user.name || user.email || 'Usuario';
+      console.log('Menu - Nombre a mostrar:', displayName); // Debug log
+      this.userName.set(displayName);
+    } else {
+      console.log('Menu - No hay usuario autenticado'); // Debug log
+      this.userName.set('Usuario');
+    }
+  }
+
+  /**
+   * Verifica si una ruta está activa
+   */
+  isActiveRoute(route: string): boolean {
+    return this.currentRoute() === route;
+  }
 
   /**
    * Alterna el estado del menú
@@ -80,5 +129,12 @@ export class Menu {
   onLogout(): void {
     this.closeMenu();
     this.authService.logout();
+  }
+
+  /**
+   * Refresca la información del usuario (método público para debug)
+   */
+  refreshUserInfo(): void {
+    this.loadUserInfo();
   }
 }

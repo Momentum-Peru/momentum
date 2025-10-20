@@ -118,7 +118,7 @@ export class AuthService {
         const user = localStorage.getItem('user');
         if (token && user) {
             this.tokenSubject.next(token);
-            this.currentUserSubject.next(user as unknown as User);
+            this.currentUserSubject.next(JSON.parse(user));
             return true;
         }
         return false;
