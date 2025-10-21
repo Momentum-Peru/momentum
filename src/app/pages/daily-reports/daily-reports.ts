@@ -12,6 +12,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DailyExpensesApiService } from '../../shared/services/daily-reports-api.service';
 import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { ExpenseCategoriesApiService } from '../../shared/services/categories-api.service';
+import { AuthService } from '../login/services/auth.service';
 import {
   DailyExpense,
   Purchase,
@@ -42,6 +43,7 @@ export class DailyExpensesPage implements OnInit {
   private readonly dailyExpensesApi = inject(DailyExpensesApiService);
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly categoriesApi = inject(ExpenseCategoriesApiService);
+  private readonly authService = inject(AuthService);
 
   items = signal<DailyExpense[]>([]);
   projects = signal<ProjectOption[]>([]);
@@ -77,7 +79,7 @@ export class DailyExpensesPage implements OnInit {
   load() {
     this.dailyExpensesApi.list().subscribe({
       next: (data) => this.items.set(data),
-      error: (error) => console.error('Error loading daily expenses:', error),
+      error: (error) => console.error('Error loading daily reports:', error),
     });
   }
 
@@ -101,6 +103,7 @@ export class DailyExpensesPage implements OnInit {
   }
 
   newItem() {
+    const currentUser = this.authService.getCurrentUser();
     this.editing.set({
       title: '',
       date: new Date().toISOString().split('T')[0],
@@ -108,7 +111,7 @@ export class DailyExpensesPage implements OnInit {
       purchases: [],
       totalAmount: 0,
       dailySummary: '',
-      userId: 'current-user-id', // TODO: Obtener del servicio de auth
+      userId: currentUser?.id || '',
       projectId: '',
       status: 'DRAFT',
     });
@@ -161,8 +164,7 @@ export class DailyExpensesPage implements OnInit {
   }
 
   updateTotalAmount() {
-    const total = this.calculateTotalAmount();
-    this.onEditChange('totalAmount', total);
+    // El totalAmount se calcula en el backend, no se envía desde el frontend
   }
 
   calculateTotalAmount(): number {
@@ -186,7 +188,6 @@ export class DailyExpensesPage implements OnInit {
         purchaseDate: p.purchaseDate || new Date().toISOString(),
         documents: p.documents || [],
       })),
-      totalAmount: this.calculateTotalAmount(),
       dailySummary: item.dailySummary.trim(),
       userId: item.userId,
       projectId: item.projectId,
@@ -199,7 +200,7 @@ export class DailyExpensesPage implements OnInit {
           this.load();
           this.closeDialog();
         },
-        error: (error) => console.error('Error updating daily expense:', error),
+        error: (error) => console.error('Error updating daily report:', error),
       });
     } else {
       this.dailyExpensesApi.create(payload as DailyExpense).subscribe({
@@ -207,17 +208,17 @@ export class DailyExpensesPage implements OnInit {
           this.load();
           this.closeDialog();
         },
-        error: (error) => console.error('Error creating daily expense:', error),
+        error: (error) => console.error('Error creating daily report:', error),
       });
     }
   }
 
   remove(item: DailyExpense) {
     if (!item._id) return;
-    if (confirm('¿Estás seguro de eliminar este gasto diario?')) {
+    if (confirm('¿Estás seguro de eliminar este reporte diario?')) {
       this.dailyExpensesApi.delete(item._id).subscribe({
         next: () => this.load(),
-        error: (error) => console.error('Error deleting daily expense:', error),
+        error: (error) => console.error('Error deleting daily report:', error),
       });
     }
   }
@@ -226,7 +227,7 @@ export class DailyExpensesPage implements OnInit {
     if (!item._id) return;
     this.dailyExpensesApi.submit(item._id).subscribe({
       next: () => this.load(),
-      error: (error) => console.error('Error submitting expense:', error),
+      error: (error) => console.error('Error submitting report:', error),
     });
   }
 
@@ -234,7 +235,7 @@ export class DailyExpensesPage implements OnInit {
     if (!item._id) return;
     this.dailyExpensesApi.approve(item._id, 'APPROVED').subscribe({
       next: () => this.load(),
-      error: (error) => console.error('Error approving expense:', error),
+      error: (error) => console.error('Error approving report:', error),
     });
   }
 
@@ -244,7 +245,7 @@ export class DailyExpensesPage implements OnInit {
     if (reason) {
       this.dailyExpensesApi.approve(item._id, 'REJECTED', reason).subscribe({
         next: () => this.load(),
-        error: (error) => console.error('Error rejecting expense:', error),
+        error: (error) => console.error('Error rejecting report:', error),
       });
     }
   }

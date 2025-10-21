@@ -2,9 +2,10 @@
   <div class="flex items-center gap-2">
     <input
       pInputText
-      placeholder="Buscar gastos diarios..."
+      placeholder="Buscar reportes diarios..."
       [ngModel]="query()"
       (ngModelChange)="setQuery($event)"
+      name="searchQuery"
       class="w-full"
     />
     <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
@@ -55,7 +56,7 @@
             icon="pi pi-pencil"
             class="p-button-text"
             (click)="editItem(row)"
-            pTooltip="Editar gasto"
+            pTooltip="Editar reporte"
             tooltipPosition="top"
           ></button>
           <button
@@ -89,7 +90,7 @@
             icon="pi pi-trash"
             class="p-button-text p-button-danger"
             (click)="remove(row)"
-            pTooltip="Eliminar gasto"
+            pTooltip="Eliminar reporte"
             tooltipPosition="top"
           ></button>
         </td>
@@ -107,7 +108,7 @@
     [closable]="true"
   >
     <ng-template pTemplate="header">
-      {{ editing()?._id ? 'Editar gasto diario' : 'Nuevo gasto diario' }}
+      {{ editing()?._id ? 'Editar reporte diario' : 'Nuevo reporte diario' }}
     </ng-template>
 
     <div class="grid gap-4">
@@ -129,6 +130,7 @@
           <p-datepicker
             [ngModel]="editing()?.date"
             (ngModelChange)="onEditChange('date', $event)"
+            name="expenseDate"
             dateFormat="dd/mm/yy"
             placeholder="Seleccionar fecha"
             appendTo="body"
@@ -148,6 +150,7 @@
             optionValue="value"
             [ngModel]="editing()?.projectId"
             (ngModelChange)="onEditChange('projectId', $event)"
+            name="expenseProject"
             placeholder="Seleccionar proyecto"
             class="w-full"
           ></p-select>
@@ -160,6 +163,7 @@
             optionValue="value"
             [ngModel]="editing()?.status"
             (ngModelChange)="onEditChange('status', $event)"
+            name="expenseStatus"
             placeholder="Seleccionar estado"
             class="w-full"
           ></p-select>
@@ -205,6 +209,7 @@
                   placeholder="Clima favorable para trabajar"
                   [ngModel]="observation.description"
                   (ngModelChange)="observation.description = $event"
+                  name="observation-description-{{ $index }}"
                   class="w-full"
                 />
               </div>
@@ -213,13 +218,15 @@
                 <label class="block text-xs font-medium text-gray-600 mb-1"
                   >Notas adicionales</label
                 >
-                <pTextarea
+                <textarea
+                  pTextarea
                   placeholder="Sin lluvia, temperatura ideal"
                   [ngModel]="observation.notes"
                   (ngModelChange)="observation.notes = $event"
+                  name="observation-notes-{{ $index }}"
                   rows="2"
                   class="w-full"
-                ></pTextarea>
+                ></textarea>
               </div>
 
               <div>
@@ -229,6 +236,7 @@
                 <p-datepicker
                   [ngModel]="observation.observationDate"
                   (ngModelChange)="observation.observationDate = $event"
+                  name="observation-date-{{ $index }}"
                   dateFormat="dd/mm/yy"
                   placeholder="Seleccionar fecha"
                   appendTo="body"
@@ -308,13 +316,15 @@
       <!-- Resumen del día -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Resumen del día *</label>
-        <pTextarea
+        <textarea
+          pTextarea
           placeholder="Instalación de sistema eléctrico en planta baja. Se completó el 60% del trabajo planificado."
           [ngModel]="editing()?.dailySummary"
           (ngModelChange)="onEditChange('dailySummary', $event)"
+          name="expenseSummary"
           rows="3"
           class="w-full"
-        ></pTextarea>
+        ></textarea>
       </div>
 
       <!-- Sección de Compras -->
@@ -343,6 +353,7 @@
                   placeholder="Taxi al sitio de trabajo"
                   [ngModel]="purchase.description"
                   (ngModelChange)="updatePurchase($index, 'description', $event)"
+                  name="purchase-description-{{ $index }}"
                   class="w-full"
                 />
               </div>
@@ -355,6 +366,7 @@
                   placeholder="25.50"
                   [ngModel]="purchase.amount"
                   (ngModelChange)="updatePurchase($index, 'amount', $event)"
+                  name="purchase-amount-{{ $index }}"
                   class="w-full"
                 />
               </div>
@@ -366,6 +378,7 @@
                   optionValue="value"
                   [ngModel]="purchase.categoryId"
                   (ngModelChange)="updatePurchase($index, 'categoryId', $event)"
+                  name="purchase-category-{{ $index }}"
                   placeholder="Seleccionar categoría"
                   class="w-full"
                 ></p-select>
@@ -379,6 +392,7 @@
                   placeholder="Taxi Express"
                   [ngModel]="purchase.vendor"
                   (ngModelChange)="updatePurchase($index, 'vendor', $event)"
+                  name="purchase-vendor-{{ $index }}"
                   class="w-full"
                 />
               </div>
@@ -389,6 +403,7 @@
                   placeholder="Viaje de ida y vuelta"
                   [ngModel]="purchase.notes"
                   (ngModelChange)="updatePurchase($index, 'notes', $event)"
+                  name="purchase-notes-{{ $index }}"
                   class="w-full"
                 />
               </div>
