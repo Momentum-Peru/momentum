@@ -33,9 +33,9 @@ export class Menu implements OnInit, OnDestroy {
   menuItems = signal([
     { link: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
     { link: '/requirements', label: 'Requerimientos', icon: 'pi pi-inbox' },
-    { link: '/tdrs', label: 'TDRs', icon: 'pi pi-file' },
+    // { link: '/tdrs', label: 'TDRs', icon: 'pi pi-file' },
     { link: '/quotes', label: 'Cotizaciones', icon: 'pi pi-dollar' },
-    { link: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
+    // { link: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
     { link: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
     { link: '/daily-reports', label: 'Reportes Diarios', icon: 'pi pi-calendar' },
     { link: '/users', label: 'Usuarios', icon: 'pi pi-users' },
