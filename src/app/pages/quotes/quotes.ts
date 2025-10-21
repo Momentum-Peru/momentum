@@ -93,6 +93,7 @@ export class QuotesPage {
     total: 0,
     pages: 0,
   });
+  total = signal<number>(0);
 
   // Formulario reactivo
   quoteForm = this.fb.group({
@@ -122,15 +123,17 @@ export class QuotesPage {
     { label: 'Aprobada', value: 'Aprobada' as QuoteState },
   ];
 
-  // Computed para total
-  total = computed(() => {
+  // Método para calcular el total
+  calculateTotal() {
     const items = this.quoteForm.get('items')?.value || [];
-    return items.reduce((sum: number, item: any) => {
+    const total = items.reduce((sum: number, item: any) => {
       const qty = Number(item.qty) || 0;
       const price = Number(item.price) || 0;
       return sum + qty * price;
     }, 0);
-  });
+    this.total.set(total);
+    return total;
+  }
 
   // Computed para items del formulario
   get itemsFormArray() {
@@ -254,10 +257,20 @@ export class QuotesPage {
       price: [item?.price || 0, [Validators.required, Validators.min(0)]],
     });
     this.itemsFormArray.push(itemGroup);
+
+    // Recalcular total cuando se agrega un item
+    setTimeout(() => this.calculateTotal(), 0);
   }
 
   removeItem(index: number) {
     this.itemsFormArray.removeAt(index);
+    // Recalcular total cuando se elimina un item
+    setTimeout(() => this.calculateTotal(), 0);
+  }
+
+  onItemChange() {
+    // Recalcular total cuando cambian los valores de los items
+    setTimeout(() => this.calculateTotal(), 0);
   }
 
   saveQuote() {
@@ -278,7 +291,7 @@ export class QuotesPage {
       createDate: formValue.createDate!.toISOString(),
       sendDate: formValue.sendDate?.toISOString(),
       items: formValue.items as QuoteItem[],
-      total: this.total(),
+      total: this.calculateTotal(),
       notes: formValue.notes || undefined,
       documents: formValue.documents || [],
     };

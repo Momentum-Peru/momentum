@@ -265,6 +265,7 @@
                 formControlName="description"
                 placeholder="Descripción del item"
                 class="w-full"
+                (ngModelChange)="onItemChange()"
               />
             </div>
             <div class="col-span-2">
@@ -277,6 +278,7 @@
                 incrementButtonIcon="pi pi-plus"
                 decrementButtonIcon="pi pi-minus"
                 class="w-full"
+                (onInput)="onItemChange()"
               ></p-inputNumber>
             </div>
             <div class="col-span-3">
@@ -288,6 +290,7 @@
                 currency="USD"
                 locale="en-US"
                 class="w-full"
+                (onInput)="onItemChange()"
               ></p-inputNumber>
             </div>
             <div class="col-span-1">
