@@ -93,7 +93,6 @@ export class QuotesPage {
     total: 0,
     pages: 0,
   });
-  total = signal<number>(0);
   selectedFiles = signal<File[]>([]);
   existingDocuments = signal<string[]>([]);
 

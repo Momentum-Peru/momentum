@@ -48,7 +48,6 @@
           <th class="text-left">Cliente</th>
           <th class="text-left">Proyecto</th>
           <th class="text-left">Estado</th>
-          <th class="text-right">Total</th>
           <th class="text-left">Fecha Creación</th>
           <th class="text-left">Documentos</th>
           <th class="text-center">Acciones</th>
@@ -78,11 +77,6 @@
               [severity]="getStateSeverity(quote.state)"
               [class]="getStateClass(quote.state)"
             ></p-tag>
-          </td>
-          <td class="text-right">
-            <span class="font-semibold text-green-600">
-              {{ quote.total | currency : 'USD' : 'symbol' : '1.2-2' }}
-            </span>
           </td>
           <td>
             <span class="text-sm text-gray-600">
@@ -147,7 +141,7 @@
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="8" class="text-center py-8">
+          <td colspan="7" class="text-center py-8">
             <div class="flex flex-col items-center gap-2 text-gray-500">
               <i class="pi pi-inbox text-4xl"></i>
               <p>No se encontraron cotizaciones</p>
