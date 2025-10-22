@@ -28,7 +28,9 @@ export const appConfig: ApplicationConfig = {
     providePrimeNG({
       theme: {
         preset: MayaPreset,
-      }
+      },
+      ripple: false,
+      inputStyle: 'outlined'
     }),
     provideRouter(routes),
     {

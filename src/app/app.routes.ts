@@ -51,10 +51,18 @@ export const routes: Routes = [
         path: 'users',
         loadComponent: () => import('./pages/users/users').then((m) => m.UsersPage),
       },
+      {
+        path: 'tasks',
+        loadComponent: () => import('./pages/tasks/tasks').then((m) => m.TasksPage),
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.DashboardPage),
+      },
 
       {
         path: '**',
-        redirectTo: 'clients',
+        redirectTo: 'dashboard',
         pathMatch: 'full',
       },
     ],
