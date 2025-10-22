@@ -6,6 +6,7 @@ export interface Observation {
     description: string;
     notes?: string;
     observationDate: string; // Fecha específica de la observación
+    observationTime?: string; // Hora específica de la observación (formato HH:mm)
     documents: string[]; // URLs de documentos/fotos
 }
 

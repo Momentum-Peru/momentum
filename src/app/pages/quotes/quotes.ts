@@ -123,22 +123,22 @@ export class QuotesPage {
     { label: 'Aprobada', value: 'Aprobada' as QuoteState },
   ];
 
-  // Método para calcular el total
-  calculateTotal() {
-    const items = this.quoteForm.get('items')?.value || [];
-    const total = items.reduce((sum: number, item: any) => {
-      const qty = Number(item.qty) || 0;
-      const price = Number(item.price) || 0;
-      return sum + qty * price;
-    }, 0);
-    this.total.set(total);
-    return total;
-  }
+  // Método para calcular el total - REMOVIDO: Ya no se manejan items
+  // calculateTotal() {
+  //   const items = this.quoteForm.get('items')?.value || [];
+  //   const total = items.reduce((sum: number, item: any) => {
+  //     const qty = Number(item.qty) || 0;
+  //     const price = Number(item.price) || 0;
+  //     return sum + qty * price;
+  //   }, 0);
+  //   this.total.set(total);
+  //   return total;
+  // }
 
-  // Computed para items del formulario
-  get itemsFormArray() {
-    return this.quoteForm.get('items') as FormArray;
-  }
+  // Computed para items del formulario - REMOVIDO: Ya no se manejan items
+  // get itemsFormArray() {
+  //   return this.quoteForm.get('items') as FormArray;
+  // }
 
   constructor() {
     // Efecto para manejar el cierre del diálogo
@@ -146,15 +146,15 @@ export class QuotesPage {
       if (!this.showDialog()) {
         this.editing.set(null);
         this.quoteForm.reset();
-        this.itemsFormArray.clear();
+        // this.itemsFormArray.clear(); // REMOVIDO: Ya no se manejan items
       }
     });
 
-    // Efecto para actualizar el total cuando cambian los items
-    effect(() => {
-      // El total se calcula automáticamente en el computed
-      // No necesitamos actualizar el formulario aquí
-    });
+    // Efecto para actualizar el total cuando cambian los items - REMOVIDO
+    // effect(() => {
+    //   // El total se calcula automáticamente en el computed
+    //   // No necesitamos actualizar el formulario aquí
+    // });
   }
 
   ngOnInit() {
@@ -214,11 +214,11 @@ export class QuotesPage {
     this.quoteForm.reset({
       state: 'Pendiente',
       createDate: new Date(),
-      items: [],
+      // items: [], // REMOVIDO: Ya no se manejan items
       documents: [],
     });
-    this.itemsFormArray.clear();
-    this.addItem();
+    // this.itemsFormArray.clear(); // REMOVIDO: Ya no se manejan items
+    // this.addItem(); // REMOVIDO: Ya no se manejan items
     this.showDialog.set(true);
   }
 
@@ -229,9 +229,9 @@ export class QuotesPage {
     const clientId = typeof quote.clientId === 'object' ? quote.clientId._id : quote.clientId;
     const projectId = typeof quote.projectId === 'object' ? quote.projectId._id : quote.projectId;
 
-    // Limpiar y llenar el FormArray de items
-    this.itemsFormArray.clear();
-    quote.items.forEach((item) => this.addItem(item));
+    // Limpiar y llenar el FormArray de items - REMOVIDO: Ya no se manejan items
+    // this.itemsFormArray.clear();
+    // quote.items.forEach((item) => this.addItem(item));
 
     this.quoteForm.patchValue({
       clientId,
@@ -250,28 +250,29 @@ export class QuotesPage {
     this.showDialog.set(false);
   }
 
-  addItem(item?: QuoteItem) {
-    const itemGroup = this.fb.group({
-      description: [item?.description || '', Validators.required],
-      qty: [item?.qty || 1, [Validators.required, Validators.min(1)]],
-      price: [item?.price || 0, [Validators.required, Validators.min(0)]],
-    });
-    this.itemsFormArray.push(itemGroup);
+  // Métodos para manejar items - REMOVIDOS: Ya no se manejan items
+  // addItem(item?: QuoteItem) {
+  //   const itemGroup = this.fb.group({
+  //     description: [item?.description || '', Validators.required],
+  //     qty: [item?.qty || 1, [Validators.required, Validators.min(1)]],
+  //     price: [item?.price || 0, [Validators.required, Validators.min(0)]],
+  //   });
+  //   this.itemsFormArray.push(itemGroup);
 
-    // Recalcular total cuando se agrega un item
-    setTimeout(() => this.calculateTotal(), 0);
-  }
+  //   // Recalcular total cuando se agrega un item
+  //   setTimeout(() => this.calculateTotal(), 0);
+  // }
 
-  removeItem(index: number) {
-    this.itemsFormArray.removeAt(index);
-    // Recalcular total cuando se elimina un item
-    setTimeout(() => this.calculateTotal(), 0);
-  }
+  // removeItem(index: number) {
+  //   this.itemsFormArray.removeAt(index);
+  //   // Recalcular total cuando se elimina un item
+  //   setTimeout(() => this.calculateTotal(), 0);
+  // }
 
-  onItemChange() {
-    // Recalcular total cuando cambian los valores de los items
-    setTimeout(() => this.calculateTotal(), 0);
-  }
+  // onItemChange() {
+  //   // Recalcular total cuando cambian los valores de los items
+  //   setTimeout(() => this.calculateTotal(), 0);
+  // }
 
   saveQuote() {
     if (this.quoteForm.invalid) {
@@ -290,8 +291,8 @@ export class QuotesPage {
       state: formValue.state!,
       createDate: formValue.createDate!.toISOString(),
       sendDate: formValue.sendDate?.toISOString(),
-      items: formValue.items as QuoteItem[],
-      total: this.calculateTotal(),
+      // items: formValue.items as QuoteItem[], // REMOVIDO: Ya no se manejan items
+      // total: this.calculateTotal(), // REMOVIDO: Ya no se calcula total automáticamente
       notes: formValue.notes || undefined,
       documents: formValue.documents || [],
     };

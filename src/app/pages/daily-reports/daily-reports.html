@@ -229,20 +229,36 @@
                 ></textarea>
               </div>
 
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1"
-                  >Fecha de observación</label
-                >
-                <p-datepicker
-                  [ngModel]="observation.observationDate"
-                  (ngModelChange)="observation.observationDate = $event"
-                  name="observation-date-{{ $index }}"
-                  dateFormat="dd/mm/yy"
-                  placeholder="Seleccionar fecha"
-                  appendTo="body"
-                  iconDisplay="input"
-                  class="w-full"
-                ></p-datepicker>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1"
+                    >Fecha de observación</label
+                  >
+                  <p-datepicker
+                    [ngModel]="observation.observationDate"
+                    (ngModelChange)="observation.observationDate = $event"
+                    name="observation-date-{{ $index }}"
+                    dateFormat="dd/mm/yy"
+                    placeholder="Seleccionar fecha"
+                    appendTo="body"
+                    iconDisplay="input"
+                    class="w-full"
+                  ></p-datepicker>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1"
+                    >Hora de observación</label
+                  >
+                  <input
+                    pInputText
+                    type="time"
+                    placeholder="HH:mm"
+                    [ngModel]="observation.observationTime"
+                    (ngModelChange)="observation.observationTime = $event"
+                    name="observation-time-{{ $index }}"
+                    class="w-full"
+                  />
+                </div>
               </div>
 
               <!-- Documentos de la observación -->
