@@ -192,14 +192,28 @@ export class QuotesPage {
   loadClients() {
     this.clientsApi.list().subscribe({
       next: (clients) => this.clients.set(clients),
-      error: (error) => console.error('Error loading clients:', error),
+      error: (error) => {
+        console.error('Error loading clients:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los clientes',
+        });
+      },
     });
   }
 
   loadProjects() {
     this.projectsApi.list().subscribe({
       next: (projects) => this.projects.set(projects),
-      error: (error) => console.error('Error loading projects:', error),
+      error: (error) => {
+        console.error('Error loading projects:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los proyectos',
+        });
+      },
     });
   }
 
@@ -276,10 +290,13 @@ export class QuotesPage {
 
   saveQuote() {
     if (this.quoteForm.invalid) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validación',
-        detail: 'Por favor complete todos los campos requeridos',
+      const validationErrors = this.validateForm();
+      validationErrors.forEach((error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error de validación',
+          detail: error,
+        });
       });
       return;
     }
@@ -316,7 +333,7 @@ export class QuotesPage {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Error al guardar la cotización',
+          detail: this.getErrorMessage(error),
         });
       },
     });
@@ -337,7 +354,7 @@ export class QuotesPage {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Error al actualizar el estado',
+          detail: this.getErrorMessage(error),
         });
       },
     });
@@ -363,7 +380,7 @@ export class QuotesPage {
             this.messageService.add({
               severity: 'error',
               summary: 'Error',
-              detail: 'Error al eliminar la cotización',
+              detail: this.getErrorMessage(error),
             });
           },
         });
@@ -388,7 +405,7 @@ export class QuotesPage {
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'Error al subir los documentos',
+            detail: this.getErrorMessage(error),
           });
         },
       });
@@ -398,6 +415,42 @@ export class QuotesPage {
   openPdf(quote: Quote) {
     const pdfUrl = this.quotesApi.generatePdf(quote._id!);
     window.open(pdfUrl, '_blank');
+  }
+
+  onFileSelect(event: any) {
+    const files = event.files;
+    if (files && files.length > 0) {
+      // Validar tamaño de archivos (10MB máximo)
+      const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+      const validFiles = files.filter((file: File) => {
+        if (file.size > maxSize) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error de validación',
+            detail: `El archivo ${file.name} es demasiado grande. Máximo 10MB.`,
+          });
+          return false;
+        }
+        return true;
+      });
+
+      if (validFiles.length > 0) {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: `${validFiles.length} archivo(s) seleccionado(s) correctamente`,
+        });
+      }
+    }
+  }
+
+  onFileError(event: any) {
+    console.error('Error en selección de archivos:', event);
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Error al seleccionar archivos. Verifique el formato y tamaño.',
+    });
   }
 
   getClientName(clientId: string | { _id: string; name: string; taxId?: string }): string {
@@ -492,5 +545,81 @@ export class QuotesPage {
       default:
         return 'pi pi-circle';
     }
+  }
+
+  // Método para validar el formulario
+  private validateForm(): string[] {
+    const errors: string[] = [];
+    const form = this.quoteForm;
+
+    // Validar cliente
+    if (!form.get('clientId')?.value) {
+      errors.push('El cliente es requerido');
+    }
+
+    // Validar proyecto
+    if (!form.get('projectId')?.value) {
+      errors.push('El proyecto es requerido');
+    }
+
+    // Validar fecha de creación
+    if (!form.get('createDate')?.value) {
+      errors.push('La fecha de creación es requerida');
+    }
+
+    // Validar estado
+    if (!form.get('state')?.value) {
+      errors.push('El estado es requerido');
+    }
+
+    return errors;
+  }
+
+  // Método para obtener mensaje de error de la API
+  private getErrorMessage(error: any): string {
+    // Manejar errores de validación específicos
+    if (error.error?.message) {
+      const message = error.error.message;
+
+      // Si es un array de mensajes, unirlos
+      if (Array.isArray(message)) {
+        return message.join(', ');
+      }
+
+      // Traducir mensajes comunes de validación
+      if (message.includes('clientId should not be empty')) {
+        return 'El cliente es requerido';
+      }
+      if (message.includes('projectId should not be empty')) {
+        return 'El proyecto es requerido';
+      }
+      if (message.includes('state should not be empty')) {
+        return 'El estado es requerido';
+      }
+      if (message.includes('createDate should not be empty')) {
+        return 'La fecha de creación es requerida';
+      }
+      if (message.includes('clientId must be a valid ObjectId')) {
+        return 'El cliente seleccionado no es válido';
+      }
+      if (message.includes('projectId must be a valid ObjectId')) {
+        return 'El proyecto seleccionado no es válido';
+      }
+      if (message.includes('state must be one of the following values')) {
+        return 'El estado seleccionado no es válido';
+      }
+
+      return message;
+    }
+
+    if (error.error?.error) {
+      return error.error.error;
+    }
+
+    if (error.message) {
+      return error.message;
+    }
+
+    return 'Ha ocurrido un error inesperado';
   }
 }

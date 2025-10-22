@@ -9,6 +9,8 @@ import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 
 interface Contact {
   name: string;
@@ -77,6 +79,7 @@ interface ClientItem {
     DialogModule,
     SelectModule,
     TooltipModule,
+    ToastModule,
   ],
   templateUrl: './clients.html',
   styleUrls: ['./clients.scss'],
@@ -84,6 +87,7 @@ interface ClientItem {
 })
 export class ClientsPage {
   private readonly http = inject(HttpClient);
+  private readonly messageService = inject(MessageService);
   private readonly baseUrl = environment.apiUrl;
 
   items = signal<ClientItem[]>([]);
@@ -157,6 +161,20 @@ export class ClientsPage {
   save() {
     const item = this.editing();
     if (!item) return;
+
+    // Validar campos requeridos
+    const validationErrors = this.validateForm(item);
+    if (validationErrors.length > 0) {
+      validationErrors.forEach((error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error de validación',
+          detail: error,
+        });
+      });
+      return;
+    }
+
     // Construimos un payload limpio evitando enviar campos prohibidos/solo lectura
     const payload: Pick<ClientItem, 'name' | 'taxId' | 'ubicacion' | 'contacts'> = {
       name: item.name,
@@ -169,16 +187,50 @@ export class ClientsPage {
         area: c.area,
       })),
     };
+
     const req = item._id
       ? this.http.patch<ClientItem>(`${this.baseUrl}/clients/${item._id}`, payload)
       : this.http.post<ClientItem>(`${this.baseUrl}/clients`, payload);
-    req.subscribe(() => {
-      this.closeDialog();
-      this.load();
+
+    req.subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: item._id ? 'Cliente actualizado correctamente' : 'Cliente creado correctamente',
+        });
+        this.closeDialog();
+        this.load();
+      },
+      error: (error) => {
+        console.error('Error al guardar cliente:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: this.getErrorMessage(error),
+        });
+      },
     });
   }
   remove(item: ClientItem) {
-    this.http.delete(`${this.baseUrl}/clients/${item._id}`).subscribe(() => this.load());
+    this.http.delete(`${this.baseUrl}/clients/${item._id}`).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Cliente eliminado correctamente',
+        });
+        this.load();
+      },
+      error: (error) => {
+        console.error('Error al eliminar cliente:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: this.getErrorMessage(error),
+        });
+      },
+    });
   }
 
   addContact() {
@@ -357,5 +409,89 @@ export class ClientsPage {
         }
       }, 100);
     }
+  }
+
+  // Método para validar el formulario
+  private validateForm(item: ClientItem): string[] {
+    const errors: string[] = [];
+
+    // Validar nombre del cliente
+    if (!item.name || item.name.trim() === '') {
+      errors.push('El nombre del cliente es requerido');
+    }
+
+    // Validar país (ubicación)
+    if (!item.ubicacion?.paisCodigo) {
+      errors.push('El país es requerido');
+    }
+
+    // Validar dirección si se proporciona
+    if (item.ubicacion?.direccion && item.ubicacion.direccion.trim().length < 5) {
+      errors.push('La dirección debe tener al menos 5 caracteres');
+    }
+
+    // Validar contactos
+    if (!item.contacts || item.contacts.length === 0) {
+      errors.push('Debe agregar al menos un contacto');
+    } else {
+      item.contacts.forEach((contact, index) => {
+        if (!contact.name || contact.name.trim() === '') {
+          errors.push(`El nombre del contacto ${index + 1} es requerido`);
+        }
+        if (!contact.email || contact.email.trim() === '') {
+          errors.push(`El email del contacto ${index + 1} es requerido`);
+        } else if (!this.isValidEmail(contact.email)) {
+          errors.push(`El email del contacto ${index + 1} no tiene un formato válido`);
+        }
+        if (!contact.area || contact.area.trim() === '') {
+          errors.push(`El área del contacto ${index + 1} es requerida`);
+        }
+      });
+    }
+
+    return errors;
+  }
+
+  // Método para validar formato de email
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  // Método para obtener mensaje de error de la API
+  private getErrorMessage(error: any): string {
+    // Manejar errores de validación específicos
+    if (error.error?.message) {
+      const message = error.error.message;
+
+      // Traducir mensajes comunes de validación
+      if (message.includes('ubicacion.direccion must be longer than or equal to 5 characters')) {
+        return 'La dirección debe tener al menos 5 caracteres';
+      }
+      if (message.includes('name should not be empty')) {
+        return 'El nombre del cliente es requerido';
+      }
+      if (message.includes('contacts should not be empty')) {
+        return 'Debe agregar al menos un contacto';
+      }
+      if (message.includes('email must be an email')) {
+        return 'El formato del email no es válido';
+      }
+      if (message.includes('paisCodigo should not be empty')) {
+        return 'El país es requerido';
+      }
+
+      return message;
+    }
+
+    if (error.error?.error) {
+      return error.error.error;
+    }
+
+    if (error.message) {
+      return error.message;
+    }
+
+    return 'Ha ocurrido un error inesperado';
   }
 }

@@ -12,6 +12,8 @@ import { FileUploadModule } from 'primeng/fileupload';
 import { DatePickerModule } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { UploadService } from '../../shared/services/upload.service';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
 
@@ -60,6 +62,7 @@ interface RequirementItem {
     DatePickerModule,
     SelectModule,
     TooltipModule,
+    ToastModule,
   ],
   templateUrl: './requirements.html',
   styleUrls: ['./requirements.scss'],
@@ -70,6 +73,7 @@ export class RequirementsPage {
   private readonly upload = inject(UploadService);
   private readonly baseUrl = environment.apiUrl;
   private readonly clientsApi = inject(ClientsApiService);
+  private readonly messageService = inject(MessageService);
 
   items = signal<RequirementItem[]>([]);
   clients = signal<ClientOption[]>([]);
@@ -89,7 +93,17 @@ export class RequirementsPage {
 
   ngOnInit() {
     this.load();
-    this.clientsApi.list().subscribe((v) => this.clients.set(v));
+    this.clientsApi.list().subscribe({
+      next: (v) => this.clients.set(v),
+      error: (error) => {
+        console.error('Error loading clients:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los clientes',
+        });
+      },
+    });
   }
 
   constructor() {
@@ -114,7 +128,17 @@ export class RequirementsPage {
     const url = q
       ? `${this.baseUrl}/requirements?q=${encodeURIComponent(q)}`
       : `${this.baseUrl}/requirements`;
-    this.http.get<RequirementItem[]>(url).subscribe((v) => this.items.set(v));
+    this.http.get<RequirementItem[]>(url).subscribe({
+      next: (v) => this.items.set(v),
+      error: (error) => {
+        console.error('Error loading requirements:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los requerimientos',
+        });
+      },
+    });
   }
 
   setQuery(v: string) {
@@ -186,6 +210,19 @@ export class RequirementsPage {
     const item = this.editing();
     if (!item) return;
 
+    // Validar campos requeridos
+    const validationErrors = this.validateForm(item);
+    if (validationErrors.length > 0) {
+      validationErrors.forEach((error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error de validación',
+          detail: error,
+        });
+      });
+      return;
+    }
+
     // Convertir fechas de Date a string ISO si es necesario
     const formatDate = (date: string | Date | undefined): string | undefined => {
       if (!date) return undefined;
@@ -234,22 +271,48 @@ export class RequirementsPage {
       : this.http.post<RequirementItem>(`${this.baseUrl}/requirements`, payload);
     req.subscribe({
       next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: item._id
+            ? 'Requerimiento actualizado correctamente'
+            : 'Requerimiento creado correctamente',
+        });
         this.closeDialog();
         this.load();
       },
       error: (error) => {
         console.error('Error al guardar:', error);
-        if (error.error?.message) {
-          alert(`Error: ${error.error.message.join('\n')}`);
-        } else {
-          alert('Error al guardar el requerimiento');
-        }
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: this.getErrorMessage(error),
+        });
       },
     });
   }
 
   remove(item: RequirementItem) {
-    this.http.delete(`${this.baseUrl}/requirements/${item._id}`).subscribe(() => this.load());
+    if (confirm('¿Estás seguro de eliminar este requerimiento?')) {
+      this.http.delete(`${this.baseUrl}/requirements/${item._id}`).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Requerimiento eliminado correctamente',
+          });
+          this.load();
+        },
+        error: (error) => {
+          console.error('Error al eliminar requerimiento:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: this.getErrorMessage(error),
+          });
+        },
+      });
+    }
   }
 
   openDocuments(item: RequirementItem) {
@@ -271,7 +334,11 @@ export class RequirementsPage {
     const maxSize = 10 * 1024 * 1024; // 10MB en bytes
     const validFiles = files.filter((file) => {
       if (file.size > maxSize) {
-        alert(`El archivo ${file.name} es demasiado grande. Máximo 10MB.`);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error de validación',
+          detail: `El archivo ${file.name} es demasiado grande. Máximo 10MB.`,
+        });
         return false;
       }
       return true;
@@ -307,12 +374,21 @@ export class RequirementsPage {
 
     if (!requirementId) {
       console.error('No se puede subir documento: el requerimiento no tiene ID');
-      alert('Error: El requerimiento debe estar guardado antes de subir documentos');
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'El requerimiento debe estar guardado antes de subir documentos',
+      });
       return;
     }
 
     if (!files || !files.length) {
       console.error('No se pueden subir documentos: no hay archivos seleccionados');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No hay archivos seleccionados para subir',
+      });
       return;
     }
 
@@ -327,11 +403,20 @@ export class RequirementsPage {
         .subscribe({
           next: (response) => {
             console.log(`Documento ${file.name} subido exitosamente:`, response);
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: `Documento ${file.name} subido correctamente`,
+            });
             this.load(); // Recargar para obtener documentos actualizados
           },
           error: (error) => {
             console.error(`Error al subir documento ${file.name}:`, error);
-            alert(`Error al subir ${file.name}: ${error.message || 'Error desconocido'}`);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: `Error al subir ${file.name}: ${this.getErrorMessage(error)}`,
+            });
           },
         });
     });
@@ -363,7 +448,11 @@ export class RequirementsPage {
 
     // Si no se puede abrir (por ejemplo, por políticas de CORS), mostrar mensaje
     if (!newWindow) {
-      alert('No se puede abrir el documento directamente. Usa el botón de descarga.');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No se puede abrir el documento directamente. Usa el botón de descarga.',
+      });
     }
   }
 
@@ -435,6 +524,11 @@ export class RequirementsPage {
       .subscribe({
         next: () => {
           console.log('Documento eliminado exitosamente');
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Documento eliminado correctamente',
+          });
           this.load(); // Recargar para obtener la lista actualizada
           // Actualizar el requirement en el diálogo si está abierto
           const currentRequirement = this.documentsViewing();
@@ -447,8 +541,140 @@ export class RequirementsPage {
         },
         error: (error) => {
           console.error('Error al eliminar documento:', error);
-          alert('Error al eliminar el documento');
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: this.getErrorMessage(error),
+          });
         },
       });
+  }
+
+  // Método para validar el formulario
+  private validateForm(item: RequirementItem): string[] {
+    const errors: string[] = [];
+
+    // Validar código
+    if (!item.codigo || item.codigo.trim() === '') {
+      errors.push('El código del requerimiento es requerido');
+    }
+
+    // Validar título
+    if (!item.title || item.title.trim() === '') {
+      errors.push('El título del requerimiento es requerido');
+    }
+
+    // Validar descripción
+    if (!item.descripcion || item.descripcion.trim() === '') {
+      errors.push('La descripción del requerimiento es requerida');
+    }
+
+    // Validar centro de costo
+    if (!item.centroCosto || item.centroCosto.trim() === '') {
+      errors.push('El centro de costo es requerido');
+    }
+
+    // Validar fecha de emisión
+    if (!item.fechaEmision) {
+      errors.push('La fecha de emisión es requerida');
+    }
+
+    // Validar fecha de requerimiento
+    if (!item.fechaRequerimiento) {
+      errors.push('La fecha de requerimiento es requerida');
+    }
+
+    // Validar solicitante
+    if (!item.solicitante) {
+      errors.push('La información del solicitante es requerida');
+    } else {
+      if (!item.solicitante.nombre || item.solicitante.nombre.trim() === '') {
+        errors.push('El nombre del solicitante es requerido');
+      }
+      if (!item.solicitante.codigo || item.solicitante.codigo.trim() === '') {
+        errors.push('El código del solicitante es requerido');
+      }
+      if (!item.solicitante.cargo || item.solicitante.cargo.trim() === '') {
+        errors.push('El cargo del solicitante es requerido');
+      }
+    }
+
+    // Validar aprobador (opcional, pero si se proporciona debe estar completo)
+    if (item.aprobador) {
+      if (!item.aprobador.nombre || item.aprobador.nombre.trim() === '') {
+        errors.push(
+          'El nombre del aprobador es requerido si se proporciona información del aprobador'
+        );
+      }
+      if (!item.aprobador.codigo || item.aprobador.codigo.trim() === '') {
+        errors.push(
+          'El código del aprobador es requerido si se proporciona información del aprobador'
+        );
+      }
+      if (!item.aprobador.cargo || item.aprobador.cargo.trim() === '') {
+        errors.push(
+          'El cargo del aprobador es requerido si se proporciona información del aprobador'
+        );
+      }
+    }
+
+    return errors;
+  }
+
+  // Método para obtener mensaje de error de la API
+  private getErrorMessage(error: any): string {
+    // Manejar errores de validación específicos
+    if (error.error?.message) {
+      const message = error.error.message;
+
+      // Si es un array de mensajes, unirlos
+      if (Array.isArray(message)) {
+        return message.join(', ');
+      }
+
+      // Traducir mensajes comunes de validación
+      if (message.includes('codigo should not be empty')) {
+        return 'El código del requerimiento es requerido';
+      }
+      if (message.includes('title should not be empty')) {
+        return 'El título del requerimiento es requerido';
+      }
+      if (message.includes('descripcion should not be empty')) {
+        return 'La descripción del requerimiento es requerida';
+      }
+      if (message.includes('centroCosto should not be empty')) {
+        return 'El centro de costo es requerido';
+      }
+      if (message.includes('fechaEmision should not be empty')) {
+        return 'La fecha de emisión es requerida';
+      }
+      if (message.includes('fechaRequerimiento should not be empty')) {
+        return 'La fecha de requerimiento es requerida';
+      }
+      if (message.includes('solicitante should not be empty')) {
+        return 'La información del solicitante es requerida';
+      }
+      if (message.includes('solicitante.nombre should not be empty')) {
+        return 'El nombre del solicitante es requerido';
+      }
+      if (message.includes('solicitante.codigo should not be empty')) {
+        return 'El código del solicitante es requerido';
+      }
+      if (message.includes('solicitante.cargo should not be empty')) {
+        return 'El cargo del solicitante es requerido';
+      }
+
+      return message;
+    }
+
+    if (error.error?.error) {
+      return error.error.error;
+    }
+
+    if (error.message) {
+      return error.message;
+    }
+
+    return 'Ha ocurrido un error inesperado';
   }
 }

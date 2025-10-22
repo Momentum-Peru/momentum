@@ -191,7 +191,7 @@ export class UsersPage implements OnInit, OnDestroy {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudieron cargar los usuarios',
+          detail: this.getErrorMessage(error),
         });
         this._users.set([]);
         this.loading.set(false);
@@ -281,6 +281,19 @@ export class UsersPage implements OnInit, OnDestroy {
     const userData = this.editing();
     if (!userData) return;
 
+    // Validar campos requeridos
+    const validationErrors = this.validateForm(userData);
+    if (validationErrors.length > 0) {
+      validationErrors.forEach((error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error de validación',
+          detail: error,
+        });
+      });
+      return;
+    }
+
     this.loading.set(true);
 
     if (userData._id) {
@@ -306,7 +319,7 @@ export class UsersPage implements OnInit, OnDestroy {
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'No se pudo actualizar el usuario',
+            detail: this.getErrorMessage(error),
           });
           this.loading.set(false);
         },
@@ -335,7 +348,7 @@ export class UsersPage implements OnInit, OnDestroy {
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'No se pudo crear el usuario',
+            detail: this.getErrorMessage(error),
           });
           this.loading.set(false);
         },
@@ -378,7 +391,7 @@ export class UsersPage implements OnInit, OnDestroy {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo eliminar el usuario',
+          detail: this.getErrorMessage(error),
         });
         this.loading.set(false);
       },
@@ -426,5 +439,107 @@ export class UsersPage implements OnInit, OnDestroy {
    */
   getStatusBadgeClass(isActive: boolean): string {
     return isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+  }
+
+  /**
+   * Valida el formulario de usuario
+   */
+  private validateForm(userData: UserFormData): string[] {
+    const errors: string[] = [];
+
+    // Validar nombre
+    if (!userData.name || userData.name.trim() === '') {
+      errors.push('El nombre es requerido');
+    }
+
+    // Validar email
+    if (!userData.email || userData.email.trim() === '') {
+      errors.push('El email es requerido');
+    } else if (!this.isValidEmail(userData.email)) {
+      errors.push('El formato del email no es válido');
+    }
+
+    // Validar rol
+    if (!userData.role || userData.role.trim() === '') {
+      errors.push('El rol es requerido');
+    }
+
+    // Validar contraseña solo para nuevos usuarios
+    if (!userData._id) {
+      if (!userData.password || userData.password.trim() === '') {
+        errors.push('La contraseña es requerida para nuevos usuarios');
+      } else if (userData.password.length < 6) {
+        errors.push('La contraseña debe tener al menos 6 caracteres');
+      }
+    }
+
+    return errors;
+  }
+
+  /**
+   * Valida el formato de email
+   */
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  /**
+   * Obtiene el mensaje de error de la API
+   */
+  private getErrorMessage(error: any): string {
+    // Manejar errores de validación específicos
+    if (error.error?.message) {
+      const message = error.error.message;
+
+      // Si es un array de mensajes, unirlos
+      if (Array.isArray(message)) {
+        return message.join(', ');
+      }
+
+      // Traducir mensajes comunes de validación
+      if (message.includes('name should not be empty')) {
+        return 'El nombre es requerido';
+      }
+      if (message.includes('email should not be empty')) {
+        return 'El email es requerido';
+      }
+      if (message.includes('email must be an email')) {
+        return 'El formato del email no es válido';
+      }
+      if (message.includes('role should not be empty')) {
+        return 'El rol es requerido';
+      }
+      if (message.includes('password should not be empty')) {
+        return 'La contraseña es requerida';
+      }
+      if (message.includes('password must be longer than or equal to 6 characters')) {
+        return 'La contraseña debe tener al menos 6 caracteres';
+      }
+      if (message.includes('email already exists')) {
+        return 'Ya existe un usuario con este email';
+      }
+      if (message.includes('user not found')) {
+        return 'Usuario no encontrado';
+      }
+      if (message.includes('insufficient permissions')) {
+        return 'No tienes permisos para realizar esta acción';
+      }
+      if (message.includes('cannot delete own account')) {
+        return 'No puedes eliminar tu propia cuenta';
+      }
+
+      return message;
+    }
+
+    if (error.error?.error) {
+      return error.error.error;
+    }
+
+    if (error.message) {
+      return error.message;
+    }
+
+    return 'Ha ocurrido un error inesperado';
   }
 }

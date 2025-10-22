@@ -8,6 +8,8 @@ import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { ClientsApiService } from '../../shared/services/clients-api.service';
 import { Project } from '../../shared/interfaces/project.interface';
@@ -26,6 +28,7 @@ import { ClientOption } from '../../shared/services/clients-api.service';
     SelectModule,
     DatePickerModule,
     TooltipModule,
+    ToastModule,
   ],
   templateUrl: './projects.html',
   styleUrl: './projects.scss',
@@ -33,6 +36,7 @@ import { ClientOption } from '../../shared/services/clients-api.service';
 export class ProjectsPage implements OnInit {
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly clientsApi = inject(ClientsApiService);
+  private readonly messageService = inject(MessageService);
 
   items = signal<Project[]>([]);
   filteredItems = signal<Project[]>([]);
@@ -69,14 +73,28 @@ export class ProjectsPage implements OnInit {
         this.items.set(data);
         this.applyFilters();
       },
-      error: (error) => console.error('Error loading projects:', error),
+      error: (error) => {
+        console.error('Error loading projects:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los proyectos',
+        });
+      },
     });
   }
 
   loadClients() {
     this.clientsApi.list().subscribe({
       next: (data) => this.clients.set(data),
-      error: (error) => console.error('Error loading clients:', error),
+      error: (error) => {
+        console.error('Error loading clients:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los clientes',
+        });
+      },
     });
   }
 
@@ -157,6 +175,19 @@ export class ProjectsPage implements OnInit {
     const item = this.editing();
     if (!item) return;
 
+    // Validar campos requeridos
+    const validationErrors = this.validateForm(item);
+    if (validationErrors.length > 0) {
+      validationErrors.forEach((error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error de validación',
+          detail: error,
+        });
+      });
+      return;
+    }
+
     // Convertir fechas de Date a string ISO si es necesario
     const formatDate = (date: string | Date | undefined): string | undefined => {
       if (!date) return undefined;
@@ -183,18 +214,42 @@ export class ProjectsPage implements OnInit {
     if (item._id) {
       this.projectsApi.update(item._id, payload).subscribe({
         next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Proyecto actualizado correctamente',
+          });
           this.load();
           this.closeDialog();
         },
-        error: (error) => console.error('Error updating project:', error),
+        error: (error) => {
+          console.error('Error updating project:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: this.getErrorMessage(error),
+          });
+        },
       });
     } else {
       this.projectsApi.create(payload as Project).subscribe({
         next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Proyecto creado correctamente',
+          });
           this.load();
           this.closeDialog();
         },
-        error: (error) => console.error('Error creating project:', error),
+        error: (error) => {
+          console.error('Error creating project:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: this.getErrorMessage(error),
+          });
+        },
       });
     }
   }
@@ -203,8 +258,22 @@ export class ProjectsPage implements OnInit {
     if (!item._id) return;
     if (confirm('¿Estás seguro de eliminar este proyecto?')) {
       this.projectsApi.delete(item._id).subscribe({
-        next: () => this.load(),
-        error: (error) => console.error('Error deleting project:', error),
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Proyecto eliminado correctamente',
+          });
+          this.load();
+        },
+        error: (error) => {
+          console.error('Error deleting project:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: this.getErrorMessage(error),
+          });
+        },
       });
     }
   }
@@ -256,5 +325,100 @@ export class ProjectsPage implements OnInit {
     // Si clientId es un string, buscar en la lista de clientes
     const client = this.clients().find((c) => c._id === clientId);
     return client?.name || 'Cliente no encontrado';
+  }
+
+  // Método para validar el formulario
+  private validateForm(item: Project): string[] {
+    const errors: string[] = [];
+
+    // Validar código
+    if (!item.code || item.code.trim() === '') {
+      errors.push('El código del proyecto es requerido');
+    }
+
+    // Validar nombre
+    if (!item.name || item.name.trim() === '') {
+      errors.push('El nombre del proyecto es requerido');
+    }
+
+    // Validar cliente
+    if (!item.clientId || (typeof item.clientId === 'string' && item.clientId.trim() === '')) {
+      errors.push('El cliente es requerido');
+    }
+
+    // Validar estado
+    if (!item.status || item.status.trim() === '') {
+      errors.push('El estado es requerido');
+    }
+
+    // Validar presupuesto si se proporciona
+    if (item.budget !== undefined && item.budget < 0) {
+      errors.push('El presupuesto no puede ser negativo');
+    }
+
+    // Validar fechas si se proporcionan
+    if (item.startDate && item.endDate) {
+      const startDate = new Date(item.startDate);
+      const endDate = new Date(item.endDate);
+      if (startDate > endDate) {
+        errors.push('La fecha de inicio no puede ser posterior a la fecha de fin');
+      }
+    }
+
+    return errors;
+  }
+
+  // Método para obtener mensaje de error de la API
+  private getErrorMessage(error: any): string {
+    // Manejar errores de validación específicos
+    if (error.error?.message) {
+      const message = error.error.message;
+
+      // Si es un array de mensajes, unirlos
+      if (Array.isArray(message)) {
+        return message.join(', ');
+      }
+
+      // Traducir mensajes comunes de validación
+      if (message.includes('code should not be empty')) {
+        return 'El código del proyecto es requerido';
+      }
+      if (message.includes('name should not be empty')) {
+        return 'El nombre del proyecto es requerido';
+      }
+      if (message.includes('clientId should not be empty')) {
+        return 'El cliente es requerido';
+      }
+      if (message.includes('status should not be empty')) {
+        return 'El estado es requerido';
+      }
+      if (message.includes('clientId must be a valid ObjectId')) {
+        return 'El cliente seleccionado no es válido';
+      }
+      if (message.includes('status must be one of the following values')) {
+        return 'El estado seleccionado no es válido';
+      }
+      if (message.includes('budget must be a positive number')) {
+        return 'El presupuesto debe ser un número positivo';
+      }
+      if (message.includes('startDate must be a valid date')) {
+        return 'La fecha de inicio no es válida';
+      }
+      if (message.includes('endDate must be a valid date')) {
+        return 'La fecha de fin no es válida';
+      }
+
+      return message;
+    }
+
+    if (error.error?.error) {
+      return error.error.error;
+    }
+
+    if (error.message) {
+      return error.message;
+    }
+
+    return 'Ha ocurrido un error inesperado';
   }
 }

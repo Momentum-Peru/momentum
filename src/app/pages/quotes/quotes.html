@@ -260,6 +260,8 @@
           [maxFileSize]="10000000"
           [multiple]="true"
           chooseLabel="Seleccionar archivos"
+          (onSelect)="onFileSelect($event)"
+          (onError)="onFileError($event)"
           class="w-full"
         ></p-fileUpload>
         <small class="text-gray-500"
