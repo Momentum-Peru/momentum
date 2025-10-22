@@ -94,6 +94,8 @@ export class QuotesPage {
     pages: 0,
   });
   total = signal<number>(0);
+  selectedFiles = signal<File[]>([]);
+  existingDocuments = signal<string[]>([]);
 
   // Formulario reactivo
   quoteForm = this.fb.group({
@@ -225,6 +227,8 @@ export class QuotesPage {
 
   newQuote() {
     this.editing.set(null);
+    this.selectedFiles.set([]);
+    this.existingDocuments.set([]);
     this.quoteForm.reset({
       state: 'Pendiente',
       createDate: new Date(),
@@ -238,14 +242,17 @@ export class QuotesPage {
 
   editQuote(quote: Quote) {
     this.editing.set(quote);
+    this.selectedFiles.set([]); // Limpiar archivos seleccionados al editar
 
     // Convertir clientId y projectId si vienen como objetos
     const clientId = typeof quote.clientId === 'object' ? quote.clientId._id : quote.clientId;
     const projectId = typeof quote.projectId === 'object' ? quote.projectId._id : quote.projectId;
 
-    // Limpiar y llenar el FormArray de items - REMOVIDO: Ya no se manejan items
-    // this.itemsFormArray.clear();
-    // quote.items.forEach((item) => this.addItem(item));
+    // Asegurar que los documentos estén disponibles
+    const documents = quote.documents || [];
+
+    // Cargar documentos existentes
+    this.existingDocuments.set(documents);
 
     this.quoteForm.patchValue({
       clientId,
@@ -254,8 +261,11 @@ export class QuotesPage {
       createDate: new Date(quote.createDate),
       sendDate: quote.sendDate ? new Date(quote.sendDate) : null,
       notes: quote.notes || '',
-      documents: quote.documents || [],
+      documents: documents,
     });
+
+    // Asegurar que el objeto de edición tenga los documentos
+    this.editing.update((quote) => (quote ? { ...quote, documents } : null));
 
     this.showDialog.set(true);
   }
@@ -311,7 +321,7 @@ export class QuotesPage {
       // items: formValue.items as QuoteItem[], // REMOVIDO: Ya no se manejan items
       // total: this.calculateTotal(), // REMOVIDO: Ya no se calcula total automáticamente
       notes: formValue.notes || undefined,
-      documents: formValue.documents || [],
+      // No incluir documents en la actualización para evitar sobrescribir los existentes
     };
 
     const operation = this.editing()?._id
@@ -319,14 +329,52 @@ export class QuotesPage {
       : this.quotesApi.create(quoteData);
 
     operation.subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: this.editing()?._id ? 'Cotización actualizada' : 'Cotización creada',
-        });
-        this.closeDialog();
-        this.loadQuotes();
+      next: (savedQuote) => {
+        // Si hay archivos seleccionados, subirlos
+        const filesToUpload = this.selectedFiles();
+
+        if (filesToUpload.length > 0) {
+          const quoteId = this.editing()?._id || savedQuote._id!;
+          this.quotesApi.uploadDocuments(quoteId, filesToUpload).subscribe({
+            next: (result) => {
+              // Si estamos editando, actualizar la lista de documentos existentes
+              if (this.editing()?._id) {
+                const newDocuments = result.documents || [];
+                this.existingDocuments.set(newDocuments);
+              }
+
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: this.editing()?._id
+                  ? 'Cotización actualizada y documentos subidos correctamente'
+                  : 'Cotización creada y documentos subidos correctamente',
+              });
+              this.closeDialog();
+              this.loadQuotes();
+            },
+            error: (uploadError) => {
+              console.error('Error uploading files:', uploadError);
+              this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: this.editing()?._id
+                  ? 'Cotización actualizada pero hubo un error al subir algunos documentos'
+                  : 'Cotización creada pero hubo un error al subir algunos documentos',
+              });
+              this.closeDialog();
+              this.loadQuotes();
+            },
+          });
+        } else {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: this.editing()?._id ? 'Cotización actualizada' : 'Cotización creada',
+          });
+          this.closeDialog();
+          this.loadQuotes();
+        }
       },
       error: (error) => {
         console.error('Error saving quote:', error);
@@ -413,12 +461,32 @@ export class QuotesPage {
   }
 
   openPdf(quote: Quote) {
-    const pdfUrl = this.quotesApi.generatePdf(quote._id!);
-    window.open(pdfUrl, '_blank');
+    // Si hay documentos subidos, abrir el primero
+    if (quote.documents && quote.documents.length > 0) {
+      const firstDocument = quote.documents[0];
+      window.open(firstDocument, '_blank');
+    } else {
+      // Si no hay documentos, generar el PDF de la cotización
+      const pdfUrl = this.quotesApi.generatePdf(quote._id!);
+      window.open(pdfUrl, '_blank');
+    }
   }
 
   onFileSelect(event: any) {
-    const files = event.files;
+    // El p-fileUpload puede enviar los archivos en diferentes estructuras
+    let files: File[] = [];
+
+    if (event.files && Array.isArray(event.files)) {
+      files = event.files;
+    } else if (event.files && event.files.length !== undefined) {
+      // Convertir FileList a Array
+      files = Array.from(event.files);
+    } else if (event.currentFiles && Array.isArray(event.currentFiles)) {
+      files = event.currentFiles;
+    } else if (event.target && event.target.files) {
+      files = Array.from(event.target.files);
+    }
+
     if (files && files.length > 0) {
       // Validar tamaño de archivos (10MB máximo)
       const maxSize = 10 * 1024 * 1024; // 10MB en bytes
@@ -435,6 +503,20 @@ export class QuotesPage {
       });
 
       if (validFiles.length > 0) {
+        // Almacenar los archivos seleccionados
+        const currentFiles = this.selectedFiles();
+        const updatedFiles = [...currentFiles, ...validFiles];
+        this.selectedFiles.set(updatedFiles);
+
+        // Actualizar el FormControl con los nombres de archivos para mostrar en el formulario
+        const currentDocuments = this.quoteForm.get('documents')?.value || [];
+        const newDocumentNames = validFiles.map((file: File) => file.name);
+        const updatedDocuments = [...currentDocuments, ...newDocumentNames];
+
+        this.quoteForm.patchValue({
+          documents: updatedDocuments,
+        });
+
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
@@ -450,6 +532,81 @@ export class QuotesPage {
       severity: 'error',
       summary: 'Error',
       detail: 'Error al seleccionar archivos. Verifique el formato y tamaño.',
+    });
+  }
+
+  removeSelectedFile(index: number) {
+    const currentFiles = this.selectedFiles();
+    const currentDocuments = this.quoteForm.get('documents')?.value || [];
+
+    // Remover archivo de la lista
+    const updatedFiles = currentFiles.filter((_, i) => i !== index);
+    const updatedDocuments = currentDocuments.filter((_, i) => i !== index);
+
+    this.selectedFiles.set(updatedFiles);
+    this.quoteForm.patchValue({
+      documents: updatedDocuments,
+    });
+  }
+
+  getDocumentName(documentUrl: string): string {
+    // Extraer el nombre del archivo de la URL
+    const urlParts = documentUrl.split('/');
+    const fileName = urlParts[urlParts.length - 1];
+    // Remover parámetros de query si los hay
+    return fileName.split('?')[0];
+  }
+
+  openDocument(documentUrl: string) {
+    window.open(documentUrl, '_blank');
+  }
+
+  removeExistingDocument(index: number) {
+    if (!this.editing()) return;
+
+    const currentDocuments = this.existingDocuments();
+    const documentToRemove = currentDocuments[index];
+
+    // Confirmar eliminación
+    this.confirmationService.confirm({
+      message: '¿Estás seguro de eliminar este documento?',
+      header: 'Confirmar eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.quotesApi.removeDocument(this.editing()!._id!, documentToRemove).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Documento eliminado correctamente',
+            });
+
+            // Actualizar la lista de documentos existentes
+            const updatedDocuments = currentDocuments.filter((_, i) => i !== index);
+            this.existingDocuments.set(updatedDocuments);
+
+            // Actualizar el formulario
+            this.quoteForm.patchValue({
+              documents: updatedDocuments,
+            });
+
+            // Actualizar el objeto de edición
+            this.editing.update((quote) =>
+              quote ? { ...quote, documents: updatedDocuments } : null
+            );
+
+            this.loadQuotes();
+          },
+          error: (error) => {
+            console.error('Error removing document:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: this.getErrorMessage(error),
+            });
+          },
+        });
+      },
     });
   }
 

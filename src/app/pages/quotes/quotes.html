@@ -99,11 +99,21 @@
                 icon="pi pi-file-pdf"
                 class="p-button-text p-button-sm"
                 (click)="openPdf(quote)"
-                pTooltip="Ver PDF"
+                pTooltip="Ver documento"
                 tooltipPosition="top"
               ></button>
 
-              <p-menu #stateMenu [model]="getStateMenuItems(quote)" [popup]="true"></p-menu>
+              <p-menu
+                #stateMenu
+                [model]="getStateMenuItems(quote)"
+                [popup]="true"
+                [appendTo]="'body'"
+                [baseZIndex]="1000"
+                [autoZIndex]="true"
+                [showTransitionOptions]="'0ms'"
+                [hideTransitionOptions]="'0ms'"
+                styleClass="p-menu-sm"
+              ></p-menu>
               <button
                 pButton
                 icon="pi pi-cog"
@@ -267,6 +277,73 @@
         <small class="text-gray-500"
           >Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG. Máximo 10MB por archivo.</small
         >
+
+        <!-- Documentos existentes (solo al editar) -->
+        @if (editing() && existingDocuments().length > 0) {
+        <div class="mt-3 space-y-2">
+          <p class="text-sm font-medium text-gray-700">Documentos existentes:</p>
+          <div class="space-y-1">
+            @for (doc of existingDocuments(); track $index) {
+            <div class="flex items-center justify-between bg-blue-50 px-3 py-2 rounded-md">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-file text-blue-500"></i>
+                <span class="text-sm text-gray-700">{{ getDocumentName(doc) }}</span>
+                <span class="text-xs text-gray-500">(Documento existente)</span>
+              </div>
+              <div class="flex gap-1">
+                <button
+                  type="button"
+                  pButton
+                  icon="pi pi-eye"
+                  class="p-button-text p-button-sm"
+                  (click)="openDocument(doc)"
+                  pTooltip="Ver documento"
+                  tooltipPosition="top"
+                ></button>
+                <button
+                  type="button"
+                  pButton
+                  icon="pi pi-times"
+                  class="p-button-text p-button-sm p-button-danger"
+                  (click)="removeExistingDocument($index)"
+                  pTooltip="Eliminar documento"
+                  tooltipPosition="top"
+                ></button>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+        <!-- Lista de archivos seleccionados -->
+        @if (selectedFiles().length > 0) {
+        <div class="mt-3 space-y-2">
+          <p class="text-sm font-medium text-gray-700">Archivos seleccionados:</p>
+          <div class="space-y-1">
+            @for (file of selectedFiles(); track $index) {
+            <div class="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-file text-gray-500"></i>
+                <span class="text-sm text-gray-700">{{ file.name }}</span>
+                <span class="text-xs text-gray-500"
+                  >({{ (file.size / 1024 / 1024).toFixed(2) }} MB)</span
+                >
+              </div>
+              <button
+                type="button"
+                pButton
+                icon="pi pi-times"
+                class="p-button-text p-button-sm p-button-danger"
+                (click)="removeSelectedFile($index)"
+                pTooltip="Eliminar archivo"
+                tooltipPosition="top"
+              ></button>
+            </div>
+            }
+          </div>
+        </div>
+        }
       </div>
     </form>
 
