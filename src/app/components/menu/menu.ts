@@ -1,6 +1,6 @@
 import { Component, signal, HostListener, inject, OnInit, OnDestroy } from '@angular/core';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
-import { AuthService, User } from '../../pages/login/services/auth.service';
+import { AuthService } from '../../pages/login/services/auth.service';
 import { Button } from 'primeng/button';
 import { filter, Subscription } from 'rxjs';
 
@@ -31,12 +31,14 @@ export class Menu implements OnInit, OnDestroy {
 
   // Items del menú
   menuItems = signal([
+    { link: '/dashboard', label: 'Dashboard', icon: 'pi pi-chart-line' },
     { link: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
     { link: '/requirements', label: 'Requerimientos', icon: 'pi pi-inbox' },
     // { link: '/tdrs', label: 'TDRs', icon: 'pi pi-file' },
     { link: '/quotes', label: 'Cotizaciones', icon: 'pi pi-dollar' },
     // { link: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
     { link: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
+    { link: '/tasks', label: 'Tareas', icon: 'pi pi-check-square' },
     { link: '/daily-reports', label: 'Reportes Diarios', icon: 'pi pi-calendar' },
     { link: '/users', label: 'Usuarios', icon: 'pi pi-users' },
   ]);
@@ -69,14 +71,11 @@ export class Menu implements OnInit, OnDestroy {
    */
   private loadUserInfo(): void {
     const user = this.authService.getCurrentUser();
-    console.log('Menu - Usuario actual:', user); // Debug log
 
     if (user) {
       const displayName = user.name || user.email || 'Usuario';
-      console.log('Menu - Nombre a mostrar:', displayName); // Debug log
       this.userName.set(displayName);
     } else {
-      console.log('Menu - No hay usuario autenticado'); // Debug log
       this.userName.set('Usuario');
     }
   }

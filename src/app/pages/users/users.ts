@@ -155,21 +155,21 @@ export class UsersPage implements OnInit, OnDestroy {
     console.log('Status filter actual:', this.statusFilter());
 
     this.usersApi.listWithFilters(filters).subscribe({
-      next: (users) => {
-        console.log('Usuarios recibidos:', users);
+      next: (response) => {
+        console.log('Respuesta recibida:', response);
 
         // Filtrado del lado del cliente como fallback
-        let filteredUsers = users || [];
+        let filteredUsers = response?.users || [];
 
         // Aplicar filtro de estado si la API no lo procesó correctamente
         if (filters.isActive !== undefined) {
-          filteredUsers = filteredUsers.filter((user) => user.isActive === filters.isActive);
+          filteredUsers = filteredUsers.filter((user: any) => user.isActive === filters.isActive);
           console.log('Usuarios filtrados por estado:', filteredUsers);
         }
 
         // Aplicar filtro de rol si la API no lo procesó correctamente
         if (filters.role) {
-          filteredUsers = filteredUsers.filter((user) => user.role === filters.role);
+          filteredUsers = filteredUsers.filter((user: any) => user.role === filters.role);
           console.log('Usuarios filtrados por rol:', filteredUsers);
         }
 
@@ -177,7 +177,7 @@ export class UsersPage implements OnInit, OnDestroy {
         if (filters.q) {
           const query = filters.q.toLowerCase();
           filteredUsers = filteredUsers.filter(
-            (user) =>
+            (user: any) =>
               user.name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query)
           );
           console.log('Usuarios filtrados por búsqueda:', filteredUsers);
