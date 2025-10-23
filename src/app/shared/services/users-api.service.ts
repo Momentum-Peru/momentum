@@ -40,7 +40,7 @@ export interface UsersListResponse {
   users: User[];
   total: number;
   page: number;
-  limit: number;
+  totalPages: number;
 }
 
 export interface UsersSearchParams {
@@ -68,7 +68,7 @@ export class UsersApiService {
    */
   listWithFilters(params?: UsersSearchParams): Observable<UsersListResponse> {
     return this.http.get<UsersListResponse>(`${this.baseUrl}/users`, {
-      params: params as any
+      params: params as any,
     });
   }
 
