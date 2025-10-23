@@ -110,8 +110,15 @@ export class TasksApiService {
     this.setLoading(true);
     this.setError(null);
 
-    return this.http.put<Task>(`${this.baseUrl}/tasks/${id}`, taskData).pipe(
+    console.log('🔄 Actualizando tarea:', {
+      id: id,
+      taskData: taskData,
+      endpoint: `${this.baseUrl}/tasks/${id}`,
+    });
+
+    return this.http.patch<Task>(`${this.baseUrl}/tasks/${id}`, taskData).pipe(
       tap((updatedTask) => {
+        console.log('✅ Tarea actualizada exitosamente:', updatedTask);
         const currentTasks = this.tasks();
         const index = currentTasks.findIndex((task) => task._id === id);
         if (index !== -1) {

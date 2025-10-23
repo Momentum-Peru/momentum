@@ -1,4 +1,14 @@
-import { Component, Input, Output, EventEmitter, OnInit, inject, signal } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 
@@ -40,7 +50,7 @@ import { take } from 'rxjs';
         </p>
       </div>
 
-      <form [formGroup]="taskForm()" (ngSubmit)="onSubmit()" class="space-y-6">
+      <form [formGroup]="taskForm" (ngSubmit)="onSubmit()" class="space-y-6">
         <!-- Loading State -->
         <div *ngIf="loading()" class="flex justify-center items-center py-8">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -57,12 +67,12 @@ import { take } from 'rxjs';
             formControlName="title"
             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             [class.border-red-500]="
-              taskForm().get('title')?.invalid && taskForm().get('title')?.touched
+              taskForm.get('title')?.invalid && taskForm.get('title')?.touched
             "
             placeholder="Ingresa el título de la tarea"
           />
           <p
-            *ngIf="taskForm().get('title')?.invalid && taskForm().get('title')?.touched"
+            *ngIf="taskForm.get('title')?.invalid && taskForm.get('title')?.touched"
             class="text-red-500 text-sm"
           >
             El título es requerido y debe tener al menos 3 caracteres.
@@ -94,7 +104,7 @@ import { take } from 'rxjs';
               formControlName="status"
               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               [class.border-red-500]="
-                taskForm().get('status')?.invalid && taskForm().get('status')?.touched
+                taskForm.get('status')?.invalid && taskForm.get('status')?.touched
               "
             >
               <option value="">Selecciona el estado</option>
@@ -103,7 +113,7 @@ import { take } from 'rxjs';
               <option value="Terminada">Terminada</option>
             </select>
             <p
-              *ngIf="taskForm().get('status')?.invalid && taskForm().get('status')?.touched"
+              *ngIf="taskForm.get('status')?.invalid && taskForm.get('status')?.touched"
               class="text-red-500 text-sm"
             >
               El estado es requerido.
@@ -120,7 +130,7 @@ import { take } from 'rxjs';
               formControlName="priority"
               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               [class.border-red-500]="
-                taskForm().get('priority')?.invalid && taskForm().get('priority')?.touched
+                taskForm.get('priority')?.invalid && taskForm.get('priority')?.touched
               "
             >
               <option value="">Selecciona la prioridad</option>
@@ -130,7 +140,7 @@ import { take } from 'rxjs';
               <option value="Crítica">Crítica</option>
             </select>
             <p
-              *ngIf="taskForm().get('priority')?.invalid && taskForm().get('priority')?.touched"
+              *ngIf="taskForm.get('priority')?.invalid && taskForm.get('priority')?.touched"
               class="text-red-500 text-sm"
             >
               La prioridad es requerida.
@@ -149,7 +159,7 @@ import { take } from 'rxjs';
               formControlName="assignedTo"
               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               [class.border-red-500]="
-                taskForm().get('assignedTo')?.invalid && taskForm().get('assignedTo')?.touched
+                taskForm.get('assignedTo')?.invalid && taskForm.get('assignedTo')?.touched
               "
             >
               <option value="">Selecciona un usuario</option>
@@ -159,7 +169,7 @@ import { take } from 'rxjs';
               </option>
             </select>
             <p
-              *ngIf="taskForm().get('assignedTo')?.invalid && taskForm().get('assignedTo')?.touched"
+              *ngIf="taskForm.get('assignedTo')?.invalid && taskForm.get('assignedTo')?.touched"
               class="text-red-500 text-sm"
             >
               Debes seleccionar un usuario.
@@ -205,7 +215,7 @@ import { take } from 'rxjs';
           </button>
           <button
             type="submit"
-            [disabled]="taskForm().invalid || loading()"
+            [disabled]="taskForm.invalid || loading()"
             class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span *ngIf="loading()" class="flex items-center">
@@ -228,7 +238,7 @@ import { take } from 'rxjs';
     `,
   ],
 })
-export class NativeTaskFormComponent implements OnInit {
+export class NativeTaskFormComponent implements OnInit, OnChanges {
   private readonly fb = inject(FormBuilder);
   private readonly tasksApiService = inject(TasksApiService);
   private readonly usersApiService = inject(UsersApiService);
@@ -239,7 +249,7 @@ export class NativeTaskFormComponent implements OnInit {
   @Output() save = new EventEmitter<CreateTaskRequest | UpdateTaskRequest>();
   @Output() cancel = new EventEmitter<void>();
 
-  public readonly taskForm = signal<FormGroup>(this.createForm());
+  public taskForm: FormGroup = this.createForm();
   public readonly users = signal<User[]>([]);
   public readonly usersLoading = signal<boolean>(false);
   public readonly loading = signal<boolean>(false);
@@ -249,6 +259,13 @@ export class NativeTaskFormComponent implements OnInit {
   ngOnInit(): void {
     this.loadUsers();
     this.initializeForm();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['task']) {
+      console.log('🔄 Tarea cambió, reinicializando formulario:', changes['task'].currentValue);
+      this.initializeForm();
+    }
   }
 
   /**
@@ -272,16 +289,38 @@ export class NativeTaskFormComponent implements OnInit {
   private initializeForm(): void {
     if (this.task) {
       this.isEditing.set(true);
-      const form = this.taskForm();
-      form.patchValue({
+
+      // Extraer el ID del assignedTo si es un objeto
+      const assignedToId =
+        typeof this.task.assignedTo === 'object' && this.task.assignedTo !== null
+          ? (this.task.assignedTo as any)._id
+          : this.task.assignedTo;
+
+      console.log('🔄 Inicializando formulario para edición:', {
+        task: this.task,
+        assignedToId: assignedToId,
+        isEditing: true,
+      });
+
+      // Resetear el formulario primero
+      this.taskForm.reset();
+
+      // Llenar con los datos de la tarea
+      this.taskForm.patchValue({
         title: this.task.title,
         description: this.task.description,
         status: this.task.status,
         priority: this.task.priority,
-        assignedTo: this.task.assignedTo,
+        assignedTo: assignedToId,
         dueDate: this.task.dueDate ? new Date(this.task.dueDate).toISOString().split('T')[0] : null,
         tags: Array.isArray(this.task.tags) ? this.task.tags.join(', ') : this.task.tags || '',
       });
+
+      console.log('✅ Formulario llenado con datos:', this.taskForm.value);
+    } else {
+      this.isEditing.set(false);
+      this.taskForm.reset();
+      console.log('🔄 Inicializando formulario para creación');
     }
   }
 
@@ -314,9 +353,9 @@ export class NativeTaskFormComponent implements OnInit {
    * Maneja el envío del formulario
    */
   public onSubmit(): void {
-    if (this.taskForm().valid) {
+    if (this.taskForm.valid) {
       this.loading.set(true);
-      const formValue = this.taskForm().value;
+      const formValue = this.taskForm.value;
       const currentUser = this.authService.getCurrentUser();
 
       if (!currentUser) {
@@ -331,7 +370,8 @@ export class NativeTaskFormComponent implements OnInit {
 
       const taskData = {
         ...formValue,
-        createdBy: currentUser.id,
+        // Solo agregar createdBy si es una nueva tarea
+        ...(this.isEditing() ? {} : { createdBy: currentUser.id }),
         dueDate: formValue.dueDate ? new Date(formValue.dueDate).toISOString() : undefined,
         tags: formValue.tags
           ? formValue.tags
@@ -370,8 +410,8 @@ export class NativeTaskFormComponent implements OnInit {
         },
       });
     } else {
-      Object.keys(this.taskForm().controls).forEach((key) => {
-        this.taskForm().get(key)?.markAsTouched();
+      Object.keys(this.taskForm.controls).forEach((key) => {
+        this.taskForm.get(key)?.markAsTouched();
       });
       this.messageService.add({
         severity: 'error',
