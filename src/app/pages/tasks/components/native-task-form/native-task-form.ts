@@ -1,14 +1,4 @@
-import {
-  Component,
-  Input,
-  Output,
-  EventEmitter,
-  OnInit,
-  OnChanges,
-  SimpleChanges,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 
@@ -238,7 +228,7 @@ import { take } from 'rxjs';
     `,
   ],
 })
-export class NativeTaskFormComponent implements OnInit, OnChanges {
+export class NativeTaskFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly tasksApiService = inject(TasksApiService);
   private readonly usersApiService = inject(UsersApiService);
@@ -259,12 +249,6 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     this.loadUsers();
     this.initializeForm();
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['task'] && !changes['task'].firstChange) {
-      this.initializeForm();
-    }
   }
 
   /**
@@ -347,8 +331,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
 
       const taskData = {
         ...formValue,
-        // Solo agregar createdBy si es una nueva tarea
-        ...(this.isEditing() ? {} : { createdBy: currentUser.id }),
+        createdBy: currentUser.id,
         dueDate: formValue.dueDate ? new Date(formValue.dueDate).toISOString() : undefined,
         tags: formValue.tags
           ? formValue.tags
@@ -357,6 +340,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
               .filter((tag: string) => tag.length > 0)
           : [],
       };
+
+      console.log('Form values:', formValue);
+      console.log('Task data to send:', taskData);
 
       const task = this.task;
       const operation = task

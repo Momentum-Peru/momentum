@@ -16,8 +16,6 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { MenuModule } from 'primeng/menu';
-import { TableModule } from 'primeng/table';
-import { TooltipModule } from 'primeng/tooltip';
 
 // PrimeNG Services
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -58,8 +56,6 @@ import {
     ToolbarModule,
     SplitButtonModule,
     MenuModule,
-    TableModule,
-    TooltipModule,
     NativeKanbanBoardComponent,
     NativeTaskFormComponent,
     NativeTaskStatsComponent,
@@ -95,22 +91,9 @@ import {
         </div>
       </div>
 
-      <!-- Search and Stats -->
-      <div class="mb-6 space-y-4">
-        <!-- Search Bar -->
-        <div class="flex items-center gap-2">
-          <input
-            pInputText
-            placeholder="Buscar tareas..."
-            [ngModel]="searchQuery()"
-            (ngModelChange)="setSearchQuery($event)"
-            class="w-full"
-          />
-        </div>
-
-        <!-- Stats Cards -->
-        <app-native-task-stats [stats]="tasksService.taskStats()"> </app-native-task-stats>
-      </div>
+      <!-- Stats Cards -->
+      <app-native-task-stats [stats]="tasksService.taskStats()" class="mb-6">
+      </app-native-task-stats>
 
       <!-- Loading State -->
       @if (tasksService.loading()) {
@@ -124,98 +107,23 @@ import {
       <p-message severity="error" [text]="tasksService.error()!" class="mb-6"> </p-message>
       }
 
-      <!-- Tasks Table -->
-      @if (!tasksService.loading() && !tasksService.error() && (filteredTasks() || []).length > 0) {
-      <p-table [value]="filteredTasks()" [tableStyle]="{ 'min-width': '50rem' }">
-        <ng-template pTemplate="header">
-          <tr>
-            <th>Título</th>
-            <th>Descripción</th>
-            <th>Estado</th>
-            <th>Prioridad</th>
-            <th>Asignado a</th>
-            <th>Fecha Límite</th>
-            <th>Etiquetas</th>
-            <th></th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-row>
-          <tr>
-            <td>
-              <div class="max-w-xs">
-                <p class="font-semibold truncate">{{ row.title }}</p>
-              </div>
-            </td>
-            <td>
-              <div class="max-w-xs">
-                <p class="text-sm text-gray-600 truncate">
-                  {{ row.description || 'Sin descripción' }}
-                </p>
-              </div>
-            </td>
-            <td>
-              <span
-                class="px-2 py-1 rounded-full text-xs font-medium"
-                [class]="getStatusClass(row.status)"
-              >
-                {{ getStatusLabel(row.status) }}
-              </span>
-            </td>
-            <td>
-              <span
-                class="px-2 py-1 rounded-full text-xs font-medium"
-                [class]="getPriorityClass(row.priority)"
-              >
-                {{ getPriorityLabel(row.priority) }}
-              </span>
-            </td>
-            <td>
-              <span class="text-sm">{{ getAssignedUserName(row.assignedTo) }}</span>
-            </td>
-            <td>
-              <span class="text-sm">{{ row.dueDate | date : 'dd/MM/yyyy' }}</span>
-            </td>
-            <td>
-              @if (row.tags && row.tags.length > 0) {
-              <div class="flex flex-wrap gap-1">
-                @for (tag of row.tags; track tag) {
-                <span
-                  class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800"
-                >
-                  {{ tag }}
-                </span>
-                }
-              </div>
-              } @else {
-              <span class="text-gray-400 text-sm">Sin etiquetas</span>
-              }
-            </td>
-            <td class="text-right">
-              <button
-                pButton
-                icon="pi pi-pencil"
-                class="p-button-text"
-                (click)="openTaskForm(row)"
-                pTooltip="Editar tarea"
-                tooltipPosition="top"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-text p-button-danger"
-                (click)="confirmDeleteTask(row)"
-                pTooltip="Eliminar tarea"
-                tooltipPosition="top"
-              ></button>
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+      <!-- Native Kanban Board -->
+      @if (!tasksService.loading() && !tasksService.error() && (tasksService.tasks() || []).length >
+      0) {
+      <app-native-kanban-board
+        [tasksByStatus]="tasksService.tasksByStatus()"
+        [loading]="tasksService.loading()"
+        (taskStatusChanged)="onTaskStatusChanged($event)"
+        (editTask)="openTaskForm($event)"
+        (deleteTask)="confirmDeleteTask($event)"
+        (viewTask)="viewTaskDetails($event)"
+      >
+      </app-native-kanban-board>
       }
 
       <!-- Empty State -->
-      @if (!tasksService.loading() && !tasksService.error() && (filteredTasks() || []).length === 0)
-      {
+      @if (!tasksService.loading() && !tasksService.error() && (tasksService.tasks() || []).length
+      === 0) {
       <div class="text-center py-12">
         <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
         <h3 class="text-xl font-semibold text-gray-600 mb-2">No hay tareas</h3>
@@ -274,8 +182,6 @@ export class TasksPage implements OnInit {
   public readonly formLoading = signal<boolean>(false);
   public readonly filters = signal<TasksSearchParams>({});
   public readonly showTaskDetails = signal<boolean>(false);
-  public readonly searchQuery = signal<string>('');
-  public readonly filteredTasks = signal<Task[]>([]);
 
   constructor() {
     // Efecto para manejar el cierre del diálogo
@@ -284,11 +190,6 @@ export class TasksPage implements OnInit {
         this.selectedTask.set(null);
         this.isEditing.set(false);
       }
-    });
-
-    // Efecto para filtrar tareas cuando cambie la búsqueda
-    effect(() => {
-      this.applyFilters();
     });
   }
 
@@ -303,7 +204,6 @@ export class TasksPage implements OnInit {
     this.tasksService.getTasks(this.filters()).subscribe({
       next: () => {
         // Tareas cargadas exitosamente
-        this.applyFilters();
       },
       error: (error) => {
         this.messageService.add({
@@ -327,21 +227,7 @@ export class TasksPage implements OnInit {
    */
   public openTaskForm(task?: Task): void {
     if (task) {
-      // Preparar la tarea para edición
-      const editedTask = {
-        ...task,
-        // Asegurar que assignedTo sea un string si viene como objeto
-        assignedTo:
-          typeof task.assignedTo === 'object' &&
-          task.assignedTo !== null &&
-          '_id' in task.assignedTo
-            ? (task.assignedTo as any)._id
-            : task.assignedTo,
-        // Convertir fechas de string a Date si es necesario
-        dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
-      };
-
-      this.selectedTask.set(editedTask);
+      this.selectedTask.set(task);
       this.isEditing.set(true);
     } else {
       this.selectedTask.set(null);
@@ -376,53 +262,33 @@ export class TasksPage implements OnInit {
   }
 
   /**
-   * Establece la consulta de búsqueda
-   */
-  public setSearchQuery(query: string): void {
-    this.searchQuery.set(query);
-  }
-
-  /**
-   * Aplica filtros a las tareas
-   */
-  private applyFilters(): void {
-    const allTasks = this.tasksService.tasks() || [];
-    const query = this.searchQuery().toLowerCase().trim();
-
-    let filtered = [...allTasks];
-
-    if (query) {
-      filtered = filtered.filter(
-        (task) =>
-          task.title.toLowerCase().includes(query) ||
-          (task.description && task.description.toLowerCase().includes(query)) ||
-          task.status.toLowerCase().includes(query) ||
-          task.priority.toLowerCase().includes(query) ||
-          (task.tags && task.tags.some((tag) => tag.toLowerCase().includes(query)))
-      );
-    }
-
-    this.filteredTasks.set(filtered);
-  }
-
-  /**
    * Maneja el cambio de estado de tareas (drag and drop)
    */
   public onTaskStatusChanged(event: DragDropEvent): void {
-    this.tasksService.updateTask(event.taskId, { status: event.newStatus }).subscribe({
-      next: () => {
+    console.log('🔄 Actualizando estado de tarea:', {
+      taskId: event.taskId,
+      newStatus: event.newStatus,
+    });
+
+    this.tasksService.updateTaskStatus(event).subscribe({
+      next: (updatedTask) => {
+        console.log('✅ Tarea actualizada exitosamente:', updatedTask);
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
-          detail: 'Estado de tarea actualizado',
+          detail: `Tarea movida a ${event.newStatus}`,
         });
+        // No necesitamos refrescar porque el servicio ya actualiza la lista local
       },
       error: (error) => {
+        console.error('❌ Error al actualizar tarea:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
           detail: 'No se pudo actualizar el estado de la tarea',
         });
+        // Refrescar la lista para revertir el cambio visual
+        this.refreshTasks();
       },
     });
   }
@@ -479,74 +345,5 @@ export class TasksPage implements OnInit {
   public closeTaskDetails(): void {
     this.showTaskDetails.set(false);
     this.selectedTask.set(null);
-  }
-
-  /**
-   * Obtiene la etiqueta del estado
-   */
-  public getStatusLabel(status: string): string {
-    const statusLabels: { [key: string]: string } = {
-      Pendiente: 'Pendiente',
-      'En curso': 'En curso',
-      Terminada: 'Terminada',
-    };
-    return statusLabels[status] || status;
-  }
-
-  /**
-   * Obtiene la clase CSS para el estado
-   */
-  public getStatusClass(status: string): string {
-    switch (status) {
-      case 'Pendiente':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'En curso':
-        return 'bg-blue-100 text-blue-800';
-      case 'Terminada':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  }
-
-  /**
-   * Obtiene la etiqueta de prioridad
-   */
-  public getPriorityLabel(priority: string): string {
-    const priorityLabels: { [key: string]: string } = {
-      Baja: 'Baja',
-      Media: 'Media',
-      Alta: 'Alta',
-      Crítica: 'Crítica',
-    };
-    return priorityLabels[priority] || priority;
-  }
-
-  /**
-   * Obtiene la clase CSS para la prioridad
-   */
-  public getPriorityClass(priority: string): string {
-    switch (priority) {
-      case 'Baja':
-        return 'bg-green-100 text-green-800';
-      case 'Media':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Alta':
-        return 'bg-orange-100 text-orange-800';
-      case 'Crítica':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  }
-
-  /**
-   * Obtiene el nombre del usuario asignado
-   */
-  public getAssignedUserName(assignedTo: any): string {
-    if (typeof assignedTo === 'object' && assignedTo !== null && 'name' in assignedTo) {
-      return assignedTo.name;
-    }
-    return 'Usuario no encontrado';
   }
 }

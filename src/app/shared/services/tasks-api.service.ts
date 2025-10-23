@@ -110,7 +110,7 @@ export class TasksApiService {
     this.setLoading(true);
     this.setError(null);
 
-    return this.http.patch<Task>(`${this.baseUrl}/tasks/${id}`, taskData).pipe(
+    return this.http.put<Task>(`${this.baseUrl}/tasks/${id}`, taskData).pipe(
       tap((updatedTask) => {
         const currentTasks = this.tasks();
         const index = currentTasks.findIndex((task) => task._id === id);
@@ -132,13 +132,20 @@ export class TasksApiService {
     this.setLoading(true);
     this.setError(null);
 
+    console.log('🔄 Actualizando estado de tarea en servicio:', {
+      taskId: dragEvent.taskId,
+      newStatus: dragEvent.newStatus,
+      toStatus: dragEvent.toStatus,
+    });
+
     return this.http
       .patch<Task>(`${this.baseUrl}/tasks/${dragEvent.taskId}/status`, {
-        status: dragEvent.toStatus,
+        status: dragEvent.newStatus || dragEvent.toStatus,
         position: dragEvent.newPosition,
       })
       .pipe(
         tap((updatedTask) => {
+          console.log('✅ Tarea actualizada en servicio:', updatedTask);
           const currentTasks = this.tasks();
           const index = currentTasks.findIndex((task) => task._id === dragEvent.taskId);
           if (index !== -1) {
