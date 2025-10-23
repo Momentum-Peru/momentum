@@ -1,10 +1,21 @@
-import { Component, Input, Output, EventEmitter, OnInit, inject, signal } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 
 // Services
 import { TasksApiService } from '../../../../shared/services/tasks-api.service';
 import { UsersApiService } from '../../../../shared/services/users-api.service';
+import { AuthService } from '../../../login/services/auth.service';
 
 // Interfaces
 import {
@@ -97,9 +108,9 @@ import { take } from 'rxjs';
               "
             >
               <option value="">Selecciona el estado</option>
-              <option value="pending">Pendiente</option>
-              <option value="in_progress">En Progreso</option>
-              <option value="completed">Completada</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="En curso">En curso</option>
+              <option value="Terminada">Terminada</option>
             </select>
             <p
               *ngIf="taskForm().get('status')?.invalid && taskForm().get('status')?.touched"
@@ -123,9 +134,10 @@ import { take } from 'rxjs';
               "
             >
               <option value="">Selecciona la prioridad</option>
-              <option value="low">Baja</option>
-              <option value="medium">Media</option>
-              <option value="high">Alta</option>
+              <option value="Baja">Baja</option>
+              <option value="Media">Media</option>
+              <option value="Alta">Alta</option>
+              <option value="Crítica">Crítica</option>
             </select>
             <p
               *ngIf="taskForm().get('priority')?.invalid && taskForm().get('priority')?.touched"
@@ -140,19 +152,28 @@ import { take } from 'rxjs';
           <!-- Assigned To Field -->
           <div class="space-y-2">
             <label for="assignedTo" class="block text-sm font-medium text-gray-700">
-              Asignar a
+              Asignar a <span class="text-red-500">*</span>
             </label>
             <select
               id="assignedTo"
               formControlName="assignedTo"
               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              [class.border-red-500]="
+                taskForm().get('assignedTo')?.invalid && taskForm().get('assignedTo')?.touched
+              "
             >
               <option value="">Selecciona un usuario</option>
               <option *ngIf="usersLoading()" disabled>Cargando usuarios...</option>
-              <option *ngFor="let user of users() || []; trackBy: trackByUserId" [value]="user._id">
+              <option *ngFor="let user of users() || []; trackBy: trackByUserId" [value]="user.id">
                 {{ user.name }}
               </option>
             </select>
+            <p
+              *ngIf="taskForm().get('assignedTo')?.invalid && taskForm().get('assignedTo')?.touched"
+              class="text-red-500 text-sm"
+            >
+              Debes seleccionar un usuario.
+            </p>
           </div>
 
           <!-- Due Date Field -->
@@ -217,10 +238,11 @@ import { take } from 'rxjs';
     `,
   ],
 })
-export class NativeTaskFormComponent implements OnInit {
+export class NativeTaskFormComponent implements OnInit, OnChanges {
   private readonly fb = inject(FormBuilder);
   private readonly tasksApiService = inject(TasksApiService);
   private readonly usersApiService = inject(UsersApiService);
+  private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
 
   @Input() task: Task | undefined;
@@ -239,6 +261,12 @@ export class NativeTaskFormComponent implements OnInit {
     this.initializeForm();
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['task'] && !changes['task'].firstChange) {
+      this.initializeForm();
+    }
+  }
+
   /**
    * Crea el formulario reactivo
    */
@@ -246,9 +274,9 @@ export class NativeTaskFormComponent implements OnInit {
     return this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
       description: [''],
-      status: ['pending', [Validators.required]],
-      priority: ['medium', [Validators.required]],
-      assignedTo: [null],
+      status: ['Pendiente', [Validators.required]],
+      priority: ['Media', [Validators.required]],
+      assignedTo: [null, [Validators.required]],
       dueDate: [null],
       tags: [''],
     });
@@ -305,9 +333,22 @@ export class NativeTaskFormComponent implements OnInit {
     if (this.taskForm().valid) {
       this.loading.set(true);
       const formValue = this.taskForm().value;
+      const currentUser = this.authService.getCurrentUser();
+
+      if (!currentUser) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo obtener la información del usuario actual.',
+        });
+        this.loading.set(false);
+        return;
+      }
 
       const taskData = {
         ...formValue,
+        // Solo agregar createdBy si es una nueva tarea
+        ...(this.isEditing() ? {} : { createdBy: currentUser.id }),
         dueDate: formValue.dueDate ? new Date(formValue.dueDate).toISOString() : undefined,
         tags: formValue.tags
           ? formValue.tags
@@ -365,6 +406,6 @@ export class NativeTaskFormComponent implements OnInit {
    * TrackBy function para el ngFor de usuarios
    */
   public trackByUserId(index: number, user: User): string {
-    return user._id;
+    return user.id;
   }
 }
