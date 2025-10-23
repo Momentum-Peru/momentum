@@ -31,7 +31,7 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
   template: `
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Pending Column -->
-      <div class="bg-gray-50 rounded-lg p-4">
+      <div class="bg-gray-100 rounded-lg p-4">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
             <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
