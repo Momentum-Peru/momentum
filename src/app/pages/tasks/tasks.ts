@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -30,7 +30,12 @@ import { NativeTaskFormComponent } from './components/native-task-form/native-ta
 import { NativeTaskStatsComponent } from './components/native-task-stats/native-task-stats';
 
 // Interfaces
-import { Task, TaskStatus, TasksSearchParams, DragDropEvent } from '../../shared/interfaces/task.interface';
+import {
+  Task,
+  TaskStatus,
+  TasksSearchParams,
+  DragDropEvent,
+} from '../../shared/interfaces/task.interface';
 
 @Component({
   selector: 'app-tasks',
@@ -53,7 +58,7 @@ import { Task, TaskStatus, TasksSearchParams, DragDropEvent } from '../../shared
     MenuModule,
     NativeKanbanBoardComponent,
     NativeTaskFormComponent,
-    NativeTaskStatsComponent
+    NativeTaskStatsComponent,
   ],
   providers: [ConfirmationService, MessageService],
   template: `
@@ -66,92 +71,88 @@ import { Task, TaskStatus, TasksSearchParams, DragDropEvent } from '../../shared
             <p class="text-gray-600 mt-1">Organiza y gestiona tus tareas con el tablero Kanban</p>
           </div>
           <div class="flex items-center gap-3">
-            <p-button 
-              icon="pi pi-refresh" 
-              [text]="true" 
+            <p-button
+              icon="pi pi-refresh"
+              [text]="true"
               severity="secondary"
               (onClick)="refreshTasks()"
               [loading]="tasksService.loading()"
-              pTooltip="Actualizar tareas">
+              pTooltip="Actualizar tareas"
+            >
             </p-button>
-            <p-button 
-              icon="pi pi-plus" 
+            <p-button
+              icon="pi pi-plus"
               label="Nueva Tarea"
               (onClick)="openTaskForm()"
-              severity="primary">
+              severity="primary"
+            >
             </p-button>
           </div>
         </div>
       </div>
 
-
       <!-- Stats Cards -->
-      <app-native-task-stats 
-        [stats]="tasksService.taskStats()"
-        class="mb-6">
+      <app-native-task-stats [stats]="tasksService.taskStats()" class="mb-6">
       </app-native-task-stats>
 
       <!-- Loading State -->
       @if (tasksService.loading()) {
-        <div class="flex justify-center items-center py-12">
-          <p-progressSpinner 
-            styleClass="w-8 h-8"
-            strokeWidth="4">
-          </p-progressSpinner>
-        </div>
+      <div class="flex justify-center items-center py-12">
+        <p-progressSpinner styleClass="w-8 h-8" strokeWidth="4"> </p-progressSpinner>
+      </div>
       }
 
       <!-- Error State -->
       @if (tasksService.error()) {
-        <p-message 
-          severity="error" 
-          [text]="tasksService.error()!"
-          class="mb-6">
-        </p-message>
+      <p-message severity="error" [text]="tasksService.error()!" class="mb-6"> </p-message>
       }
 
       <!-- Native Kanban Board -->
-      @if (!tasksService.loading() && !tasksService.error() && (tasksService.tasks() || []).length > 0) {
-        <app-native-kanban-board
-          [tasksByStatus]="tasksService.tasksByStatus()"
-          [loading]="tasksService.loading()"
-          (taskStatusChanged)="onTaskStatusChanged($event)"
-          (editTask)="openTaskForm($event)"
-          (deleteTask)="confirmDeleteTask($event)"
-          (viewTask)="viewTaskDetails($event)">
-        </app-native-kanban-board>
+      @if (!tasksService.loading() && !tasksService.error() && (tasksService.tasks() || []).length >
+      0) {
+      <app-native-kanban-board
+        [tasksByStatus]="tasksService.tasksByStatus()"
+        [loading]="tasksService.loading()"
+        (taskStatusChanged)="onTaskStatusChanged($event)"
+        (editTask)="openTaskForm($event)"
+        (deleteTask)="confirmDeleteTask($event)"
+        (viewTask)="viewTaskDetails($event)"
+      >
+      </app-native-kanban-board>
       }
 
       <!-- Empty State -->
-      @if (!tasksService.loading() && !tasksService.error() && (tasksService.tasks() || []).length === 0) {
-        <div class="text-center py-12">
-          <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
-          <h3 class="text-xl font-semibold text-gray-600 mb-2">No hay tareas</h3>
-          <p class="text-gray-500 mb-6">Comienza creando tu primera tarea</p>
-          <p-button 
-            icon="pi pi-plus" 
-            label="Crear Primera Tarea"
-            (onClick)="openTaskForm()"
-            severity="primary">
-          </p-button>
-        </div>
+      @if (!tasksService.loading() && !tasksService.error() && (tasksService.tasks() || []).length
+      === 0) {
+      <div class="text-center py-12">
+        <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-600 mb-2">No hay tareas</h3>
+        <p class="text-gray-500 mb-6">Comienza creando tu primera tarea</p>
+        <p-button
+          icon="pi pi-plus"
+          label="Crear Primera Tarea"
+          (onClick)="openTaskForm()"
+          severity="primary"
+        >
+        </p-button>
+      </div>
       }
     </div>
 
     <!-- Native Task Form Dialog -->
-    <p-dialog 
+    <p-dialog
       [modal]="true"
-      [visible]="showTaskForm()"
+      [(visible)]="showTaskForm"
       [style]="{ width: '700px' }"
       [closable]="true"
-      (onHide)="closeTaskForm()">
-      <app-native-task-form 
+    >
+      <app-native-task-form
         [task]="selectedTask() || undefined"
         (save)="onTaskSave($event)"
-        (cancel)="closeTaskForm()">
+        (cancel)="closeTaskForm()"
+      >
       </app-native-task-form>
     </p-dialog>
-
 
     <!-- Confirm Dialog -->
     <p-confirmDialog></p-confirmDialog>
@@ -159,12 +160,14 @@ import { Task, TaskStatus, TasksSearchParams, DragDropEvent } from '../../shared
     <!-- Toast Messages -->
     <p-toast></p-toast>
   `,
-  styles: [`
-    :host {
-      display: block;
-      width: 100%;
-    }
-  `]
+  styles: [
+    `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `,
+  ],
 })
 export class TasksPage implements OnInit {
   public readonly tasksService = inject(TasksApiService);
@@ -179,6 +182,16 @@ export class TasksPage implements OnInit {
   public readonly formLoading = signal<boolean>(false);
   public readonly filters = signal<TasksSearchParams>({});
   public readonly showTaskDetails = signal<boolean>(false);
+
+  constructor() {
+    // Efecto para manejar el cierre del diálogo
+    effect(() => {
+      if (!this.showTaskForm()) {
+        this.selectedTask.set(null);
+        this.isEditing.set(false);
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.loadTasks();
@@ -196,9 +209,9 @@ export class TasksPage implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudieron cargar las tareas'
+          detail: 'No se pudieron cargar las tareas',
         });
-      }
+      },
     });
   }
 
@@ -228,8 +241,6 @@ export class TasksPage implements OnInit {
    */
   public closeTaskForm(): void {
     this.showTaskForm.set(false);
-    this.selectedTask.set(null);
-    this.isEditing.set(false);
   }
 
   /**
@@ -247,7 +258,7 @@ export class TasksPage implements OnInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
-          detail: this.isEditing() ? 'Tarea actualizada' : 'Tarea creada'
+          detail: this.isEditing() ? 'Tarea actualizada' : 'Tarea creada',
         });
         this.closeTaskForm();
         this.formLoading.set(false);
@@ -256,10 +267,10 @@ export class TasksPage implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo guardar la tarea'
+          detail: 'No se pudo guardar la tarea',
         });
         this.formLoading.set(false);
-      }
+      },
     });
   }
 
@@ -280,16 +291,16 @@ export class TasksPage implements OnInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
-          detail: 'Estado de tarea actualizado'
+          detail: 'Estado de tarea actualizado',
         });
       },
       error: (error) => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo actualizar el estado de la tarea'
+          detail: 'No se pudo actualizar el estado de la tarea',
         });
-      }
+      },
     });
   }
 
@@ -305,7 +316,7 @@ export class TasksPage implements OnInit {
       rejectLabel: 'Cancelar',
       accept: () => {
         this.deleteTask(task._id);
-      }
+      },
     });
   }
 
@@ -318,16 +329,16 @@ export class TasksPage implements OnInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
-          detail: 'Tarea eliminada'
+          detail: 'Tarea eliminada',
         });
       },
       error: (error) => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo eliminar la tarea'
+          detail: 'No se pudo eliminar la tarea',
         });
-      }
+      },
     });
   }
 
@@ -346,5 +357,4 @@ export class TasksPage implements OnInit {
     this.showTaskDetails.set(false);
     this.selectedTask.set(null);
   }
-
 }
