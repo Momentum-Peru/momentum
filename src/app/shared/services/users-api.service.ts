@@ -1,20 +1,16 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-
-export interface UserOption {
-  _id: string;
-  name: string;
-  email: string;
-}
+import { UserOption } from '../interfaces/menu-permission.interface';
 
 export interface User {
-  id: string;
   _id: string;
+  id: string; // Para compatibilidad con código existente
   name: string;
   email: string;
-  role: 'user' | 'moderator' | 'admin';
+  role: 'user' | 'moderator' | 'admin'; // Tipos específicos para compatibilidad
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -24,26 +20,18 @@ export interface UserCreateRequest {
   name: string;
   email: string;
   password: string;
-  role: string;
+  role: 'user' | 'moderator' | 'admin';
   isActive?: boolean;
 }
 
 export interface UserUpdateRequest {
   name?: string;
   email?: string;
-  password?: string;
-  role?: string;
+  role?: 'user' | 'moderator' | 'admin';
   isActive?: boolean;
 }
 
-export interface UsersListResponse {
-  users: User[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
-
-export interface UsersSearchParams {
+export interface UserFilters {
   search?: string;
   role?: string;
   isActive?: boolean;
@@ -51,52 +39,80 @@ export interface UsersSearchParams {
   limit?: number;
 }
 
-@Injectable({ providedIn: 'root' })
+export interface UserResponse {
+  data: User[];
+  users: User[]; // Para compatibilidad con código existente
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+@Injectable({
+  providedIn: 'root',
+})
 export class UsersApiService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = environment.apiUrl;
+  private readonly baseUrl = `${environment.apiUrl}/users`;
 
   /**
-   * Obtiene la lista de usuarios
+   * Obtiene la lista de usuarios para el selector
    */
-  list(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.baseUrl}/users`);
+  list(): Observable<UserOption[]> {
+    return this.http.get<{ users: User[] }>(this.baseUrl).pipe(
+      map((response) =>
+        response.users.map((user) => ({
+          _id: user._id || user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        }))
+      )
+    );
   }
 
   /**
    * Obtiene la lista de usuarios con filtros
    */
-  listWithFilters(params?: UsersSearchParams): Observable<UsersListResponse> {
-    return this.http.get<UsersListResponse>(`${this.baseUrl}/users`, {
-      params: params as any,
-    });
+  listWithFilters(filters: UserFilters = {}): Observable<UserResponse> {
+    const params = new URLSearchParams();
+
+    if (filters.search) params.append('search', filters.search);
+    if (filters.role) params.append('role', filters.role);
+    if (filters.isActive !== undefined) params.append('isActive', filters.isActive.toString());
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+
+    return this.http.get<UserResponse>(`${this.baseUrl}?${params.toString()}`);
   }
 
   /**
    * Obtiene un usuario por ID
    */
   getById(id: string): Observable<User> {
-    return this.http.get<User>(`${this.baseUrl}/users/${id}`);
+    return this.http.get<User>(`${this.baseUrl}/${id}`);
   }
 
   /**
    * Crea un nuevo usuario
    */
-  create(userData: UserCreateRequest): Observable<User> {
-    return this.http.post<User>(`${this.baseUrl}/users`, userData);
+  create(user: UserCreateRequest): Observable<User> {
+    return this.http.post<User>(this.baseUrl, user);
   }
 
   /**
-   * Actualiza un usuario
+   * Actualiza un usuario existente
    */
-  update(id: string, userData: UserUpdateRequest): Observable<User> {
-    return this.http.put<User>(`${this.baseUrl}/users/${id}`, userData);
+  update(id: string, user: UserUpdateRequest): Observable<User> {
+    return this.http.patch<User>(`${this.baseUrl}/${id}`, user);
   }
 
   /**
    * Elimina un usuario
    */
   delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/users/${id}`);
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 }

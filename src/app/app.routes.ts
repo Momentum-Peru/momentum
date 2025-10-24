@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { requireAuthGuard, publicGuard } from './guards/auth.guard';
+import { MenuPermissionGuard } from './guards/menu-permission.guard';
 
 export const routes: Routes = [
   {
@@ -13,6 +14,11 @@ export const routes: Routes = [
     canActivate: [publicGuard],
   },
   {
+    path: 'unauthorized',
+    loadComponent: () =>
+      import('./pages/unauthorized/unauthorized').then((m) => m.UnauthorizedPage),
+  },
+  {
     path: '',
     loadComponent: () => import('./layouts/main/main').then((m) => m.Main),
     canActivate: [requireAuthGuard],
@@ -20,50 +26,78 @@ export const routes: Routes = [
       {
         path: 'clients',
         loadComponent: () => import('./pages/clients/clients').then((m) => m.ClientsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/clients' },
       },
       {
         path: 'requirements',
         loadComponent: () =>
           import('./pages/requirements/requirements').then((m) => m.RequirementsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/requirements' },
       },
       {
         path: 'tdrs',
         loadComponent: () => import('./pages/tdrs/tdrs').then((m) => m.TdrsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/tdrs' },
       },
       {
         path: 'quotes',
         loadComponent: () => import('./pages/quotes/quotes').then((m) => m.QuotesPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/quotes' },
       },
       {
         path: 'orders',
         loadComponent: () => import('./pages/orders/orders').then((m) => m.OrdersPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/orders' },
       },
       {
         path: 'projects',
         loadComponent: () => import('./pages/projects/projects').then((m) => m.ProjectsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/projects' },
       },
       {
         path: 'daily-reports',
         loadComponent: () =>
           import('./pages/daily-reports/daily-reports').then((m) => m.DailyExpensesPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/daily-reports' },
       },
       {
         path: 'users',
         loadComponent: () => import('./pages/users/users').then((m) => m.UsersPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/users' },
       },
       {
         path: 'tasks',
         loadComponent: () => import('./pages/tasks/tasks').then((m) => m.TasksPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/tasks' },
       },
       {
         path: 'documents',
         loadComponent: () => import('./pages/documents/documents').then((m) => m.DocumentsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/documents' },
       },
       {
         path: 'dashboard',
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.DashboardPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/dashboard' },
       },
-
+      {
+        path: 'menu-permissions',
+        loadComponent: () =>
+          import('./pages/menu-permissions/menu-permissions').then((m) => m.MenuPermissionsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/menu-permissions' },
+      },
       {
         path: '**',
         redirectTo: 'dashboard',

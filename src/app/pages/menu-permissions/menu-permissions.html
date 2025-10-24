@@ -1,0 +1,295 @@
+<div class="p-4 space-y-6">
+  <p-toast></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Header con estadísticas -->
+  <div class="bg-white rounded-lg shadow-sm border p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-2xl font-bold text-gray-900">Gestión de Permisos de Menú</h1>
+      <div class="flex gap-2">
+        <button
+          pButton
+          type="button"
+          (click)="newItem()"
+          label="Nuevo Permiso"
+          icon="pi pi-plus"
+        ></button>
+      </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-blue-50 rounded-lg p-4">
+        <div class="flex items-center">
+          <i class="pi pi-list text-blue-600 text-2xl mr-3"></i>
+          <div>
+            <p class="text-sm font-medium text-blue-600">Total Permisos</p>
+            <p class="text-2xl font-bold text-blue-900">{{ totalPermissions() }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-green-50 rounded-lg p-4">
+        <div class="flex items-center">
+          <i class="pi pi-check-circle text-green-600 text-2xl mr-3"></i>
+          <div>
+            <p class="text-sm font-medium text-green-600">Activos</p>
+            <p class="text-2xl font-bold text-green-900">{{ activePermissions() }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-red-50 rounded-lg p-4">
+        <div class="flex items-center">
+          <i class="pi pi-times-circle text-red-600 text-2xl mr-3"></i>
+          <div>
+            <p class="text-sm font-medium text-red-600">Inactivos</p>
+            <p class="text-2xl font-bold text-red-900">{{ inactivePermissions() }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="bg-white rounded-lg shadow-sm border p-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
+        <input
+          pInputText
+          placeholder="Buscar por ruta o usuario..."
+          [ngModel]="query()"
+          (ngModelChange)="setQuery($event)"
+          class="w-full"
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Usuario</label>
+        <p-select
+          [options]="users() || []"
+          optionLabel="name"
+          optionValue="_id"
+          [ngModel]="selectedUser()"
+          (ngModelChange)="setSelectedUser($event)"
+          placeholder="Filtrar por usuario"
+          [showClear]="true"
+          class="w-full"
+        ></p-select>
+      </div>
+      <div class="flex items-end">
+        <button
+          pButton
+          type="button"
+          (click)="query.set(''); selectedUser.set('')"
+          label="Limpiar Filtros"
+          icon="pi pi-filter-slash"
+          class="p-button-outlined w-full"
+        ></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de permisos -->
+  <div class="bg-white rounded-lg shadow-sm border">
+    <!-- Controles de paginación superiores -->
+    <div class="flex items-center justify-between p-4 border-b">
+      <div class="flex items-center space-x-4">
+        <span class="text-sm text-gray-700">
+          Mostrando {{ (currentPage() - 1) * pageSize() + 1 }} -
+          {{ Math.min(currentPage() * pageSize(), totalItems()) }} de {{ totalItems() }} permisos
+        </span>
+        <div class="flex items-center space-x-2">
+          <label class="text-sm text-gray-700">Por página:</label>
+          <select
+            [ngModel]="pageSize()"
+            (ngModelChange)="setPageSize($event)"
+            class="border rounded px-2 py-1 text-sm"
+          >
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2" *ngIf="totalPages() > 1">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-angle-double-left"
+          class="p-button-text p-button-sm"
+          [disabled]="currentPage() === 1"
+          (click)="goToPage(1)"
+          pTooltip="Primera página"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-angle-left"
+          class="p-button-text p-button-sm"
+          [disabled]="currentPage() === 1"
+          (click)="previousPage()"
+          pTooltip="Página anterior"
+        ></button>
+        <span class="text-sm text-gray-700 px-2">
+          Página {{ currentPage() }} de {{ totalPages() }}
+        </span>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-angle-right"
+          class="p-button-text p-button-sm"
+          [disabled]="currentPage() === totalPages()"
+          (click)="nextPage()"
+          pTooltip="Página siguiente"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-angle-double-right"
+          class="p-button-text p-button-sm"
+          [disabled]="currentPage() === totalPages()"
+          (click)="goToPage(totalPages())"
+          pTooltip="Última página"
+        ></button>
+      </div>
+    </div>
+
+    <!-- Indicador de carga -->
+    <div *ngIf="loading()" class="flex items-center justify-center py-8">
+      <i class="pi pi-spin pi-spinner text-2xl text-blue-600 mr-2"></i>
+      <span class="text-gray-600">Cargando permisos...</span>
+    </div>
+
+    <p-table
+      [value]="filteredItems()"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [loading]="loading()"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Usuario</th>
+          <th>Ruta</th>
+          <th>Estado</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <div class="flex items-center">
+              <i class="pi pi-user text-gray-400 mr-2"></i>
+              <span class="font-medium">{{ getUserName(row) }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{{ row.route }}</span>
+          </td>
+          <td>
+            <span
+              class="px-2 py-1 rounded-full text-xs font-medium"
+              [class]="getStatusClass(row.isActive)"
+            >
+              {{ getStatusLabel(row.isActive) }}
+            </span>
+          </td>
+          <td class="text-right">
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text p-button-sm"
+              (click)="editItem(row)"
+              pTooltip="Editar permiso"
+              tooltipPosition="top"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-text p-button-danger p-button-sm"
+              (click)="remove(row)"
+              pTooltip="Eliminar permiso"
+              tooltipPosition="top"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="text-center py-8 text-gray-500">
+            <i class="pi pi-inbox text-4xl mb-2 block"></i>
+            No se encontraron permisos
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Modal de edición/creación -->
+  <p-dialog
+    [(visible)]="showDialog"
+    [modal]="true"
+    [style]="{ width: '50rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    [appendTo]="'body'"
+    [baseZIndex]="10000"
+  >
+    <ng-template pTemplate="header">
+      {{ editing()?._id ? 'Editar Permiso' : 'Nuevo Permiso' }}
+    </ng-template>
+
+    <div class="grid gap-4">
+      <!-- Usuario -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Usuario *</label>
+        <p-select
+          [options]="users() || []"
+          optionLabel="name"
+          optionValue="_id"
+          [ngModel]="editing()?.userId"
+          (ngModelChange)="onEditChange('userId', $event)"
+          placeholder="Seleccionar usuario"
+          class="w-full"
+          [appendTo]="'body'"
+          [virtualScroll]="true"
+          [filter]="true"
+          filterBy="name,email"
+        ></p-select>
+      </div>
+
+      <!-- Ruta -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Ruta *</label>
+        <p-select
+          [options]="predefinedRoutes"
+          [ngModel]="editing()?.route"
+          (ngModelChange)="onEditChange('route', $event)"
+          placeholder="Seleccionar ruta"
+          class="w-full"
+          [showClear]="true"
+          [appendTo]="'body'"
+          [filter]="true"
+        ></p-select>
+      </div>
+
+      <!-- Estado -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+        <p-select
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="editing()?.isActive"
+          (ngModelChange)="onEditChange('isActive', $event)"
+          placeholder="Seleccionar estado"
+          class="w-full"
+          [appendTo]="'body'"
+        ></p-select>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
+      <button pButton label="Guardar" (click)="save()"></button>
+    </ng-template>
+  </p-dialog>
+</div>

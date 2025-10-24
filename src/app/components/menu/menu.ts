@@ -1,6 +1,15 @@
-import { Component, signal, HostListener, inject, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  signal,
+  HostListener,
+  inject,
+  OnInit,
+  OnDestroy,
+  computed,
+} from '@angular/core';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../pages/login/services/auth.service';
+import { MenuService } from '../../shared/services/menu.service';
 import { Button } from 'primeng/button';
 import { filter, Subscription } from 'rxjs';
 
@@ -13,6 +22,7 @@ import { filter, Subscription } from 'rxjs';
 })
 export class Menu implements OnInit, OnDestroy {
   private router = inject(Router);
+  private menuService = inject(MenuService);
 
   // Hacer el servicio público para acceso desde el template
   authService = inject(AuthService);
@@ -29,22 +39,38 @@ export class Menu implements OnInit, OnDestroy {
   // Suscripción para limpiar
   private userSubscription?: Subscription;
 
-  // Items del menú
-  menuItems = signal([
+  // Items del menú (todos los elementos disponibles)
+  allMenuItems = signal([
     { link: '/dashboard', label: 'Dashboard', icon: 'pi pi-chart-line' },
     { link: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
     { link: '/requirements', label: 'Requerimientos', icon: 'pi pi-inbox' },
-    // { link: '/tdrs', label: 'TDRs', icon: 'pi pi-file' },
+    { link: '/tdrs', label: 'TDRs', icon: 'pi pi-file' },
     { link: '/quotes', label: 'Cotizaciones', icon: 'pi pi-dollar' },
-    // { link: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
+    { link: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
     { link: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
     { link: '/documents', label: 'Documentos', icon: 'pi pi-file' },
     { link: '/tasks', label: 'Tareas', icon: 'pi pi-check-square' },
     { link: '/daily-reports', label: 'Reportes Diarios', icon: 'pi pi-calendar' },
     { link: '/users', label: 'Usuarios', icon: 'pi pi-users' },
+    { link: '/menu-permissions', label: 'Permisos', icon: 'pi pi-shield' },
   ]);
 
+  // Items del menú filtrados por permisos
+  menuItems = computed(() => {
+    const filtered = this.allMenuItems().filter((item) => this.menuService.canAccess(item.link));
+    console.log('Menu items filtered by permissions:', filtered);
+    return filtered;
+  });
+
+  // Computed para verificar si el usuario tiene algún permiso
+  hasAnyPermission = computed(() => {
+    return this.menuItems().length > 0;
+  });
+
   ngOnInit() {
+    // Inicializar el servicio de menú para cargar permisos
+    this.menuService.initialize();
+
     // Suscribirse a cambios de ruta
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
@@ -55,6 +81,8 @@ export class Menu implements OnInit, OnDestroy {
     // Suscribirse a cambios del usuario
     this.userSubscription = this.authService.currentUser$.subscribe((user) => {
       this.loadUserInfo();
+      // Refrescar permisos cuando cambie el usuario
+      this.menuService.refreshPermissions();
     });
 
     // Cargar información inicial del usuario
