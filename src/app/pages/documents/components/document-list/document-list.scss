@@ -1,0 +1,133 @@
+/* Estilos para la lista de documentos */
+.p-datatable {
+  @apply border border-gray-200 rounded-lg shadow-sm;
+}
+
+.p-datatable .p-datatable-header {
+  @apply bg-gray-50 border-b border-gray-200;
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  @apply bg-gray-50 text-gray-700 font-semibold text-sm border-b border-gray-200;
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  @apply border-b border-gray-100;
+}
+
+.p-datatable .p-datatable-tbody > tr:hover {
+  @apply bg-gray-50;
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  @apply py-3 px-4 text-sm;
+}
+
+/* Estilos para paginador */
+.p-paginator {
+  @apply bg-white border-t border-gray-200 px-4 py-3;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page {
+  @apply border border-gray-300 text-gray-700 hover:bg-gray-100;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+  @apply bg-blue-600 text-white border-blue-600;
+}
+
+/* Estilos para tags de estado */
+.p-tag {
+  @apply text-xs font-medium px-2 py-1;
+}
+
+.p-tag.p-tag-success {
+  @apply bg-green-100 text-green-800;
+}
+
+.p-tag.p-tag-warning {
+  @apply bg-orange-100 text-orange-800;
+}
+
+.p-tag.p-tag-danger {
+  @apply bg-red-100 text-red-800;
+}
+
+.p-tag.p-tag-info {
+  @apply bg-blue-100 text-blue-800;
+}
+
+/* Estilos para badges */
+.p-badge {
+  @apply text-xs font-medium;
+}
+
+/* Estilos para botones de acción */
+.p-button.p-button-sm {
+  @apply px-2 py-1 text-xs;
+}
+
+.p-button.p-button-text {
+  @apply hover:bg-gray-100;
+}
+
+/* Estilos para skeleton loading */
+.p-skeleton {
+  @apply bg-gray-200 rounded;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .p-datatable {
+    @apply text-xs;
+  }
+
+  .p-datatable .p-datatable-tbody > tr > td {
+    @apply py-2 px-2;
+  }
+
+  .p-datatable .p-datatable-thead > tr > th {
+    @apply px-2 py-2;
+  }
+
+  .p-paginator {
+    @apply px-2 py-2;
+  }
+
+  .p-paginator .p-paginator-pages {
+    @apply flex-wrap gap-1;
+  }
+}
+
+/* Animaciones */
+.p-datatable .p-datatable-tbody > tr {
+  transition: background-color 0.2s ease-in-out;
+}
+
+.p-button {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Estilos para scroll */
+.p-datatable-scrollable .p-datatable-scrollable-body {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+.p-datatable-scrollable .p-datatable-scrollable-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.p-datatable-scrollable .p-datatable-scrollable-body::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+.p-datatable-scrollable .p-datatable-scrollable-body::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.p-datatable-scrollable .p-datatable-scrollable-body::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}

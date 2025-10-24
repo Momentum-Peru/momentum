@@ -1,0 +1,250 @@
+<div class="p-4">
+  <p-toast></p-toast>
+
+  <form [formGroup]="documentForm" (ngSubmit)="onSubmit()" class="space-y-6">
+    <!-- Información Básica -->
+    <p-card header="Información Básica" class="shadow-sm">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Número de Documento -->
+        <div class="flex flex-col">
+          <label for="numeroDocumento" class="text-sm font-medium text-gray-700 mb-2">
+            Número de Documento <span class="text-red-500">*</span>
+          </label>
+          <p-inputNumber
+            id="numeroDocumento"
+            formControlName="numeroDocumento"
+            [useGrouping]="false"
+            [min]="1"
+            placeholder="Ingrese el número de documento"
+            [class]="hasError('numeroDocumento') ? 'p-invalid' : ''"
+            class="w-full"
+          >
+          </p-inputNumber>
+          <small *ngIf="hasError('numeroDocumento')" class="text-red-500 mt-1">
+            {{ getErrorMessage('numeroDocumento') }}
+          </small>
+        </div>
+
+        <!-- Serie -->
+        <div class="flex flex-col">
+          <label for="serie" class="text-sm font-medium text-gray-700 mb-2"> Serie </label>
+          <p-inputNumber
+            id="serie"
+            formControlName="serie"
+            [useGrouping]="false"
+            [min]="1"
+            placeholder="Ingrese la serie"
+            class="w-full"
+          >
+          </p-inputNumber>
+        </div>
+
+        <!-- Proyecto -->
+        <div class="flex flex-col">
+          <label for="proyectoId" class="text-sm font-medium text-gray-700 mb-2">
+            Proyecto <span class="text-red-500">*</span>
+          </label>
+          <p-select
+            id="proyectoId"
+            formControlName="proyectoId"
+            [options]="projectOptions()"
+            placeholder="Seleccione un proyecto"
+            [class]="hasError('proyectoId') ? 'p-invalid' : ''"
+            class="w-full"
+          >
+          </p-select>
+          <small *ngIf="hasError('proyectoId')" class="text-red-500 mt-1">
+            {{ getErrorMessage('proyectoId') }}
+          </small>
+        </div>
+
+        <!-- Categoría -->
+        <div class="flex flex-col">
+          <label for="categoria" class="text-sm font-medium text-gray-700 mb-2"> Categoría </label>
+          <p-select
+            id="categoria"
+            formControlName="categoria"
+            [options]="categoryOptions"
+            placeholder="Seleccione una categoría"
+            class="w-full"
+          >
+          </p-select>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Fechas -->
+    <p-card header="Fechas" class="shadow-sm">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Fecha de Emisión -->
+        <div class="flex flex-col">
+          <label for="fechaEmision" class="text-sm font-medium text-gray-700 mb-2">
+            Fecha de Emisión
+          </label>
+          <p-datepicker
+            id="fechaEmision"
+            formControlName="fechaEmision"
+            placeholder="Seleccione fecha de emisión"
+            [showIcon]="true"
+            dateFormat="dd/mm/yy"
+            class="w-full"
+          >
+          </p-datepicker>
+        </div>
+
+        <!-- Fecha de Vencimiento -->
+        <div class="flex flex-col">
+          <label for="fechaVencimiento" class="text-sm font-medium text-gray-700 mb-2">
+            Fecha de Vencimiento
+          </label>
+          <p-datepicker
+            id="fechaVencimiento"
+            formControlName="fechaVencimiento"
+            placeholder="Seleccione fecha de vencimiento"
+            [showIcon]="true"
+            dateFormat="dd/mm/yy"
+            class="w-full"
+          >
+          </p-datepicker>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Información Adicional -->
+    <p-card header="Información Adicional" class="shadow-sm">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Documento de Referencia -->
+        <div class="flex flex-col">
+          <label for="documentoReferencia" class="text-sm font-medium text-gray-700 mb-2">
+            Documento de Referencia
+          </label>
+          <p-inputNumber
+            id="documentoReferencia"
+            formControlName="documentoReferencia"
+            [useGrouping]="false"
+            [min]="1"
+            placeholder="Ingrese documento de referencia"
+            class="w-full"
+          >
+          </p-inputNumber>
+        </div>
+
+        <!-- Total -->
+        <div class="flex flex-col">
+          <label for="total" class="text-sm font-medium text-gray-700 mb-2">
+            Total <span class="text-red-500">*</span>
+          </label>
+          <p-inputNumber
+            id="total"
+            formControlName="total"
+            [min]="0"
+            [maxFractionDigits]="2"
+            mode="currency"
+            currency="PEN"
+            locale="es-PE"
+            placeholder="0.00"
+            [class]="hasError('total') ? 'p-invalid' : ''"
+            class="w-full"
+          >
+          </p-inputNumber>
+          <small *ngIf="hasError('total')" class="text-red-500 mt-1">
+            {{ getErrorMessage('total') }}
+          </small>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Archivos -->
+    <p-card header="Documentos Adjuntos" class="shadow-sm">
+      <!-- Archivos Existentes -->
+      <div *ngIf="existingFiles().length > 0" class="mb-4">
+        <h4 class="text-sm font-medium text-gray-700 mb-3">Archivos Actuales:</h4>
+        <div class="space-y-2">
+          <div
+            *ngFor="let fileUrl of existingFiles()"
+            class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+          >
+            <div class="flex items-center gap-3">
+              <i class="pi pi-file text-blue-600"></i>
+              <span class="text-sm text-gray-700">{{ getFileName(fileUrl) }}</span>
+            </div>
+            <p-button
+              icon="pi pi-trash"
+              severity="danger"
+              size="small"
+              [text]="true"
+              (onClick)="removeExistingFile(fileUrl)"
+              pTooltip="Eliminar archivo"
+            >
+            </p-button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subir Nuevos Archivos -->
+      <div>
+        <h4 class="text-sm font-medium text-gray-700 mb-3">Subir Nuevos Archivos:</h4>
+        <p-fileUpload
+          mode="basic"
+          name="files[]"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+          maxFileSize="10000000"
+          [multiple]="true"
+          [auto]="false"
+          (onSelect)="onFileSelect($event)"
+          chooseLabel="Seleccionar Archivos"
+          class="w-full"
+        >
+        </p-fileUpload>
+
+        <!-- Lista de archivos seleccionados -->
+        <div *ngIf="uploadedFiles().length > 0" class="mt-4">
+          <h5 class="text-sm font-medium text-gray-600 mb-2">Archivos Seleccionados:</h5>
+          <div class="space-y-2">
+            <div
+              *ngFor="let file of uploadedFiles()"
+              class="flex items-center justify-between p-2 bg-blue-50 rounded border"
+            >
+              <div class="flex items-center gap-2">
+                <i class="pi pi-file text-blue-600"></i>
+                <span class="text-sm text-gray-700">{{ file.name }}</span>
+                <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
+              </div>
+              <p-button
+                icon="pi pi-times"
+                severity="danger"
+                size="small"
+                [text]="true"
+                (onClick)="removeFile(file)"
+                pTooltip="Quitar archivo"
+              >
+              </p-button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Botones de Acción -->
+    <div class="flex justify-end gap-3 pt-4 border-t">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        severity="secondary"
+        [text]="true"
+        (onClick)="onCancel()"
+        [disabled]="loading()"
+      >
+      </p-button>
+
+      <p-button
+        [label]="document ? 'Actualizar' : 'Crear'"
+        icon="pi pi-check"
+        type="submit"
+        [loading]="loading()"
+        [disabled]="documentForm.invalid"
+      >
+      </p-button>
+    </div>
+  </form>
+</div>

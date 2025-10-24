@@ -1,0 +1,177 @@
+<div class="w-full">
+  <!-- Estado de carga -->
+  <div *ngIf="loading" class="space-y-4">
+    <p-card>
+      <div class="space-y-3">
+        <p-skeleton height="2rem" width="100%"></p-skeleton>
+        <p-skeleton height="2rem" width="100%"></p-skeleton>
+        <p-skeleton height="2rem" width="100%"></p-skeleton>
+        <p-skeleton height="2rem" width="100%"></p-skeleton>
+        <p-skeleton height="2rem" width="100%"></p-skeleton>
+      </div>
+    </p-card>
+  </div>
+
+  <!-- Lista de documentos -->
+  <div *ngIf="!loading && hasDocuments()">
+    <p-table
+      [value]="documents"
+      [paginator]="true"
+      [rows]="pageSize"
+      [totalRecords]="totalRecords"
+      [lazy]="true"
+      (onLazyLoad)="onPageChange($event)"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} documentos"
+      [rowsPerPageOptions]="[5, 10, 20, 50]"
+      styleClass="p-datatable-sm"
+      [scrollable]="true"
+      scrollHeight="600px"
+    >
+      <!-- Columnas de la tabla -->
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="text-left">Número</th>
+          <th class="text-left">Proyecto</th>
+          <th class="text-left">Categoría</th>
+          <th class="text-left">Fecha Emisión</th>
+          <th class="text-left">Fecha Vencimiento</th>
+          <th class="text-right">Total</th>
+          <th class="text-center">Estado</th>
+          <th class="text-center">Archivos</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-document>
+        <tr class="hover:bg-gray-50 transition-colors">
+          <!-- Número de documento -->
+          <td class="font-medium text-gray-900">
+            {{ formatDocumentNumber(document) }}
+          </td>
+
+          <!-- Proyecto -->
+          <td>
+            <div class="flex flex-col">
+              <span class="font-medium text-gray-900">{{ getProjectName(document) }}</span>
+              <span class="text-sm text-gray-500">{{ getProjectCode(document) }}</span>
+            </div>
+          </td>
+
+          <!-- Categoría -->
+          <td>
+            <span
+              *ngIf="document.categoria; else noCategory"
+              class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+            >
+              {{ document.categoria }}
+            </span>
+            <ng-template #noCategory>
+              <span class="text-gray-400 text-sm">-</span>
+            </ng-template>
+          </td>
+
+          <!-- Fecha de emisión -->
+          <td>
+            <span class="text-sm text-gray-700">
+              {{ formatDate(document.fechaEmision) }}
+            </span>
+          </td>
+
+          <!-- Fecha de vencimiento -->
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-700">
+                {{ formatDate(document.fechaVencimiento) }}
+              </span>
+              <i
+                *ngIf="isOverdue(document)"
+                class="pi pi-exclamation-triangle text-orange-500"
+                pTooltip="Documento vencido"
+              >
+              </i>
+            </div>
+          </td>
+
+          <!-- Total -->
+          <td class="text-right">
+            <span class="font-semibold text-gray-900">
+              {{ formatCurrency(document.total) }}
+            </span>
+          </td>
+
+          <!-- Estado -->
+          <td class="text-center">
+            <p-tag
+              [value]="getStatusText(document)"
+              [severity]="getStatusSeverity(document)"
+              [rounded]="true"
+            >
+            </p-tag>
+          </td>
+
+          <!-- Archivos -->
+          <td class="text-center">
+            <div class="flex items-center justify-center gap-1">
+              <p-badge [value]="document.documentos?.length || 0" severity="info" size="small">
+              </p-badge>
+              <i class="pi pi-file text-gray-400"></i>
+            </div>
+          </td>
+
+          <!-- Acciones -->
+          <td class="text-center">
+            <div class="flex items-center justify-center gap-2">
+              <!-- Botón Editar -->
+              <p-button
+                icon="pi pi-pencil"
+                size="small"
+                severity="info"
+                [text]="true"
+                (onClick)="onEdit(document)"
+                pTooltip="Editar documento"
+              >
+              </p-button>
+
+              <!-- Botón Eliminar -->
+              <p-button
+                icon="pi pi-trash"
+                size="small"
+                severity="danger"
+                [text]="true"
+                (onClick)="onDelete(document)"
+                pTooltip="Eliminar documento"
+              >
+              </p-button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <!-- Mensaje cuando no hay datos -->
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="text-center py-8">
+            <div class="flex flex-col items-center gap-3 text-gray-500">
+              <i class="pi pi-file text-4xl"></i>
+              <span class="text-lg font-medium">No hay documentos</span>
+              <span class="text-sm">Los documentos aparecerán aquí una vez que se creen</span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Estado vacío -->
+  <div *ngIf="!loading && !hasDocuments()" class="text-center py-12">
+    <div class="flex flex-col items-center gap-4 text-gray-500">
+      <i class="pi pi-file text-6xl"></i>
+      <h3 class="text-xl font-medium">No hay documentos</h3>
+      <p class="text-sm max-w-md">
+        No se encontraron documentos con los filtros aplicados. Intenta ajustar los filtros o crear
+        un nuevo documento.
+      </p>
+    </div>
+  </div>
+</div>

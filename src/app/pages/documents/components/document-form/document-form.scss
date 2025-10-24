@@ -1,0 +1,90 @@
+/* Estilos para el formulario de documentos */
+.p-card {
+  @apply border border-gray-200 rounded-lg;
+}
+
+.p-card .p-card-header {
+  @apply bg-gray-50 border-b border-gray-200 text-gray-800 font-semibold;
+}
+
+.p-card .p-card-content {
+  @apply p-4;
+}
+
+/* Estilos para campos de entrada */
+.p-inputnumber,
+.p-dropdown,
+.p-calendar,
+.p-fileupload {
+  @apply w-full;
+}
+
+.p-inputnumber .p-inputnumber-input,
+.p-dropdown .p-dropdown-label,
+.p-calendar .p-inputtext {
+  @apply w-full border border-gray-300 rounded-md px-3 py-2 text-sm;
+}
+
+.p-inputnumber .p-inputnumber-input:focus,
+.p-dropdown .p-dropdown-label:focus,
+.p-calendar .p-inputtext:focus {
+  @apply border-blue-500 ring-1 ring-blue-500 outline-none;
+}
+
+/* Estilos para campos con error */
+.p-invalid .p-inputnumber-input,
+.p-invalid .p-dropdown-label,
+.p-invalid .p-calendar .p-inputtext {
+  @apply border-red-500 ring-1 ring-red-500;
+}
+
+/* Estilos para file upload */
+.p-fileupload {
+  @apply border-2 border-dashed border-gray-300 rounded-lg p-4 text-center;
+}
+
+.p-fileupload:hover {
+  @apply border-blue-400 bg-blue-50;
+}
+
+.p-fileupload .p-button {
+  @apply bg-blue-600 hover:bg-blue-700;
+}
+
+/* Estilos para archivos seleccionados */
+.file-item {
+  @apply flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200;
+}
+
+.file-item:hover {
+  @apply bg-gray-100;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .grid-cols-1.md\\:grid-cols-2 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .flex.justify-end {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .flex.justify-end .p-button {
+    width: 100%;
+  }
+}
+
+/* Animaciones */
+.p-button {
+  transition: all 0.2s ease-in-out;
+}
+
+.p-card {
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.p-card:hover {
+  @apply shadow-md;
+}

@@ -1,0 +1,47 @@
+/* Estilos específicos para la página de documentos */
+.p-dialog .p-dialog-header {
+  @apply bg-blue-50 border-b border-blue-200;
+}
+
+.p-dialog .p-dialog-title {
+  @apply text-blue-800 font-semibold;
+}
+
+.p-toolbar {
+  @apply bg-white border border-gray-200 rounded-lg shadow-sm;
+}
+
+.p-toolbar .p-toolbar-group-left {
+  @apply flex items-center;
+}
+
+.p-toolbar .p-toolbar-group-right {
+  @apply flex items-center gap-2;
+}
+
+/* Animaciones suaves para transiciones */
+.p-dialog {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Estilos para el estado de carga */
+.loading-overlay {
+  @apply absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .p-dialog {
+    width: 95vw !important;
+    margin: 0.5rem !important;
+  }
+
+  .p-toolbar {
+    @apply flex-col gap-4;
+  }
+
+  .p-toolbar .p-toolbar-group-left,
+  .p-toolbar .p-toolbar-group-right {
+    @apply w-full justify-center;
+  }
+}

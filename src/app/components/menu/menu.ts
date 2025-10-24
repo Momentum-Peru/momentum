@@ -38,6 +38,7 @@ export class Menu implements OnInit, OnDestroy {
     { link: '/quotes', label: 'Cotizaciones', icon: 'pi pi-dollar' },
     // { link: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
     { link: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
+    { link: '/documents', label: 'Documentos', icon: 'pi pi-file' },
     { link: '/tasks', label: 'Tareas', icon: 'pi pi-check-square' },
     { link: '/daily-reports', label: 'Reportes Diarios', icon: 'pi pi-calendar' },
     { link: '/users', label: 'Usuarios', icon: 'pi pi-users' },

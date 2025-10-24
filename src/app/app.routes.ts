@@ -56,6 +56,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/tasks/tasks').then((m) => m.TasksPage),
       },
       {
+        path: 'documents',
+        loadComponent: () => import('./pages/documents/documents').then((m) => m.DocumentsPage),
+      },
+      {
         path: 'dashboard',
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.DashboardPage),
       },

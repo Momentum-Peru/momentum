@@ -1,0 +1,78 @@
+/* Estilos para los filtros de documentos */
+.p-card {
+  @apply border border-gray-200 rounded-lg;
+}
+
+.p-card .p-card-content {
+  @apply p-4;
+}
+
+/* Estilos para campos de entrada */
+.p-inputnumber,
+.p-dropdown,
+.p-calendar {
+  @apply w-full;
+}
+
+.p-inputnumber .p-inputnumber-input,
+.p-dropdown .p-dropdown-label,
+.p-calendar .p-inputtext {
+  @apply w-full border border-gray-300 rounded-md px-3 py-2 text-sm;
+}
+
+.p-inputnumber .p-inputnumber-input:focus,
+.p-dropdown .p-dropdown-label:focus,
+.p-calendar .p-inputtext:focus {
+  @apply border-blue-500 ring-1 ring-blue-500 outline-none;
+}
+
+/* Estilos para el divider */
+.p-divider {
+  @apply border-gray-200;
+}
+
+.p-divider.p-divider-horizontal {
+  @apply my-4;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-4,
+  .grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .flex.justify-end {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .flex.justify-end .p-button {
+    width: 100%;
+  }
+}
+
+/* Animaciones */
+.p-button {
+  transition: all 0.2s ease-in-out;
+}
+
+.p-card {
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.p-card:hover {
+  @apply shadow-md;
+}
+
+/* Estilos para labels */
+label {
+  @apply text-gray-700 font-medium;
+}
+
+/* Estilos para placeholders */
+.p-inputnumber .p-inputnumber-input::placeholder,
+.p-dropdown .p-dropdown-label.p-placeholder,
+.p-calendar .p-inputtext::placeholder {
+  @apply text-gray-400;
+}
