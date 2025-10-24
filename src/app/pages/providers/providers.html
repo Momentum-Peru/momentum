@@ -1,0 +1,596 @@
+<div class="p-4 space-y-4">
+  <p-toast></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Header con estadísticas -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <h1 class="text-2xl font-bold text-gray-800">Gestión de Proveedores</h1>
+      @if (stats()) {
+      <div class="flex items-center gap-2 text-sm text-gray-600">
+        <span class="flex items-center gap-1">
+          <i class="pi pi-users text-blue-500"></i>
+          {{ stats()?.total }} total
+        </span>
+        <span class="flex items-center gap-1">
+          <i class="pi pi-check-circle text-green-500"></i>
+          {{ stats()?.active }} activos
+        </span>
+        <span class="flex items-center gap-1">
+          <i class="pi pi-star text-yellow-500"></i>
+          {{ stats()?.averageRating?.toFixed(1) || '0.0' }} avg
+        </span>
+      </div>
+      }
+    </div>
+    <div class="flex items-center gap-2">
+      <button
+        pButton
+        type="button"
+        label="Estadísticas"
+        icon="pi pi-chart-bar"
+        class="p-button-outlined"
+        (click)="openStats()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Nuevo Proveedor"
+        icon="pi pi-plus"
+        (click)="newItem()"
+      ></button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+          <input
+            pInputText
+            placeholder="Nombre, RUC, email..."
+            [ngModel]="query()"
+            (ngModelChange)="setQuery($event)"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Servicio</label>
+          <p-select
+            [options]="availableServices()"
+            [ngModel]="selectedService()"
+            (ngModelChange)="setService($event)"
+            placeholder="Todos los servicios"
+            [showClear]="true"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+          <p-select
+            [options]="[
+              { label: 'Todos', value: null },
+              { label: 'Activos', value: true },
+              { label: 'Inactivos', value: false }
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="selectedStatus()"
+            (ngModelChange)="setStatus($event)"
+            placeholder="Todos los estados"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div class="flex items-end">
+          <button
+            pButton
+            type="button"
+            label="Limpiar"
+            icon="pi pi-filter-slash"
+            class="p-button-outlined w-full"
+            (click)="clearFilters()"
+          ></button>
+        </div>
+      </div>
+    </ng-template>
+  </p-card>
+
+  <!-- Tabla de proveedores -->
+  <p-table [value]="items()" [tableStyle]="{ 'min-width': '50rem' }" [paginator]="true" [rows]="10">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Proveedor</th>
+        <th>Servicios</th>
+        <th>Ubicación</th>
+        <th>Contactos</th>
+        <th>Calificación</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-row>
+      <tr>
+        <td>
+          <div class="space-y-1">
+            <div class="font-semibold text-gray-900">{{ row.name }}</div>
+            @if (row.taxId) {
+            <div class="text-sm text-gray-500">RUC: {{ row.taxId }}</div>
+            } @if (row.website) {
+            <div class="text-sm">
+              <a
+                [href]="row.website"
+                target="_blank"
+                class="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              >
+                <i class="pi pi-external-link text-xs"></i>
+                Sitio web
+              </a>
+            </div>
+            }
+          </div>
+        </td>
+        <td>
+          <div class="flex flex-wrap gap-1">
+            @for (service of row.services; track service) {
+            <p-chip [label]="service" styleClass="text-xs"></p-chip>
+            }
+          </div>
+        </td>
+        <td>
+          @if (row.ubicacion) {
+          <div class="text-sm">
+            @if (row.ubicacion.paisCodigo) {
+            <div class="font-medium">{{ getCountryName(row.ubicacion.paisCodigo) }}</div>
+            } @if (row.ubicacion.provinciaCodigo) {
+            <div class="text-gray-600">{{ getProvinceName(row.ubicacion.provinciaCodigo) }}</div>
+            } @if (row.ubicacion.distritoCodigo) {
+            <div class="text-gray-500">{{ getDistrictName(row.ubicacion.distritoCodigo) }}</div>
+            } @if (row.ubicacion.direccion) {
+            <div class="text-xs text-gray-400 mt-1">{{ row.ubicacion.direccion }}</div>
+            }
+          </div>
+          } @else {
+          <span class="text-gray-400 text-sm">Sin ubicación</span>
+          }
+        </td>
+        <td>
+          <button
+            pButton
+            type="button"
+            label="Ver contactos"
+            icon="pi pi-users"
+            class="p-button-text p-button-sm"
+            (click)="openContacts(row)"
+          ></button>
+        </td>
+        <td>
+          <div class="flex items-center gap-2">
+            <p-rating
+              [ngModel]="row.rating || 0"
+              (ngModelChange)="updateRating(row, $event)"
+            ></p-rating>
+            <span class="text-sm text-gray-600">{{ row.rating || 0 }}</span>
+          </div>
+        </td>
+        <td>
+          @if (row.isActive) {
+          <p-tag value="Activo" severity="success"></p-tag>
+          } @else {
+          <p-tag value="Inactivo" severity="danger"></p-tag>
+          }
+        </td>
+        <td class="text-right">
+          <div class="flex items-center gap-1">
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text p-button-sm"
+              pTooltip="Editar"
+              (click)="editItem(row)"
+            ></button>
+            <button
+              pButton
+              class="p-button-text p-button-sm"
+              [pTooltip]="row.isActive ? 'Desactivar' : 'Activar'"
+              (click)="toggleActive(row)"
+            >
+              <i [class]="row.isActive ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+            </button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-text p-button-sm p-button-danger"
+              pTooltip="Eliminar"
+              (click)="remove(row)"
+            ></button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <!-- Modal de contactos -->
+  <p-dialog
+    [(visible)]="showContactsDialog"
+    [modal]="true"
+    [style]="{ width: '42rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-users text-blue-500"></i>
+        Contactos — {{ contactsProviderName() }}
+      </div>
+    </ng-template>
+    <div class="space-y-2">
+      <p-table [value]="contactsViewing() ?? []">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Nombre</th>
+            <th>Área</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-contact>
+          <tr>
+            <td>{{ contact.name }}</td>
+            <td>{{ contact.area }}</td>
+            <td>{{ contact.email }}</td>
+            <td>{{ contact.phone || '-' }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeContacts()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de estadísticas -->
+  <p-dialog
+    [(visible)]="showStatsDialog"
+    [modal]="true"
+    [style]="{ width: '32rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-chart-bar text-blue-500"></i>
+        Estadísticas de Proveedores
+      </div>
+    </ng-template>
+    @if (stats()) {
+    <div class="grid grid-cols-2 gap-4">
+      <p-card>
+        <ng-template pTemplate="content">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-blue-600">{{ stats()?.total }}</div>
+            <div class="text-sm text-gray-600">Total</div>
+          </div>
+        </ng-template>
+      </p-card>
+      <p-card>
+        <ng-template pTemplate="content">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-green-600">{{ stats()?.active }}</div>
+            <div class="text-sm text-gray-600">Activos</div>
+          </div>
+        </ng-template>
+      </p-card>
+      <p-card>
+        <ng-template pTemplate="content">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-red-600">{{ stats()?.inactive }}</div>
+            <div class="text-sm text-gray-600">Inactivos</div>
+          </div>
+        </ng-template>
+      </p-card>
+      <p-card>
+        <ng-template pTemplate="content">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-yellow-600">
+              {{ stats()?.averageRating?.toFixed(1) || '0.0' }}
+            </div>
+            <div class="text-sm text-gray-600">Calificación Promedio</div>
+          </div>
+        </ng-template>
+      </p-card>
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal principal de edición/creación -->
+  <p-dialog
+    [(visible)]="showDialog"
+    [modal]="true"
+    [style]="{ width: '60rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-building text-blue-500"></i>
+        {{ editing()?._id ? 'Editar Proveedor' : 'Nuevo Proveedor' }}
+      </div>
+    </ng-template>
+    <div class="grid gap-4">
+      <!-- Información básica -->
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-info-circle text-blue-500"></i>
+            Información Básica
+          </div>
+        </ng-template>
+        <ng-template pTemplate="content">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+              <input
+                pInputText
+                placeholder="Nombre del proveedor"
+                [ngModel]="editing()?.name"
+                (ngModelChange)="onEditChange('name', $event)"
+                class="w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">RUC/DNI</label>
+              <input
+                pInputText
+                placeholder="RUC o DNI"
+                [ngModel]="editing()?.taxId"
+                (ngModelChange)="onEditChange('taxId', $event)"
+                class="w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Sitio Web (opcional)</label
+              >
+              <input
+                pInputText
+                placeholder="https://ejemplo.com"
+                [ngModel]="editing()?.website"
+                (ngModelChange)="onEditChange('website', $event)"
+                class="w-full"
+              />
+              <div class="text-xs text-gray-500 mt-1">
+                Campo opcional. Ingresa la URL del sitio web del proveedor.
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Calificación</label>
+              <p-rating
+                [ngModel]="editing()?.rating"
+                (ngModelChange)="onEditChange('rating', $event)"
+              ></p-rating>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+              <textarea
+                pInputText
+                placeholder="Descripción del proveedor y servicios que ofrece"
+                [ngModel]="editing()?.description"
+                (ngModelChange)="onEditChange('description', $event)"
+                [rows]="3"
+                class="w-full"
+              ></textarea>
+            </div>
+            <div class="md:col-span-2">
+              <div class="flex items-center gap-2">
+                <p-checkbox
+                  [ngModel]="editing()?.isActive"
+                  (ngModelChange)="onEditChange('isActive', $event)"
+                  [binary]="true"
+                ></p-checkbox>
+                <label class="text-sm font-medium text-gray-700">Proveedor activo</label>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </p-card>
+
+      <!-- Servicios -->
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-cog text-green-500"></i>
+            Servicios Ofrecidos *
+          </div>
+        </ng-template>
+        <ng-template pTemplate="content">
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Servicios (separados por comas)</label
+              >
+              <input
+                pInputText
+                placeholder="Ej: construcción, pintura, electricidad, plomería"
+                [ngModel]="editing()?.services?.join(', ')"
+                (ngModelChange)="updateServicesFromText($event)"
+                class="w-full"
+              />
+              <div class="text-xs text-gray-500 mt-1">
+                Escribe los servicios separados por comas. Ej: construcción, pintura, electricidad
+              </div>
+            </div>
+            @if (editing()?.services?.length) {
+            <div class="flex flex-wrap gap-2">
+              @for (service of editing()?.services; track service) {
+              <p-chip [label]="service" styleClass="text-xs"></p-chip>
+              }
+            </div>
+            }
+          </div>
+        </ng-template>
+      </p-card>
+
+      <!-- Ubicación -->
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-map-marker text-orange-500"></i>
+            Ubicación
+          </div>
+        </ng-template>
+        <ng-template pTemplate="content">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">País *</label>
+              <p-select
+                [options]="countries()"
+                optionLabel="nombre"
+                optionValue="codigo"
+                [ngModel]="selectedCountry()?.codigo"
+                (ngModelChange)="onCountryChange(findCountryByCode($event))"
+                placeholder="Seleccionar país"
+                [showClear]="true"
+                class="w-full"
+              >
+                <ng-template let-country pTemplate="item">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium">{{ country.nombre }}</span>
+                    <span class="text-sm text-gray-500">({{ country.codigo }})</span>
+                  </div>
+                </ng-template>
+              </p-select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Provincia/Estado</label>
+              <p-select
+                [options]="provinces()"
+                optionLabel="nombre"
+                optionValue="codigo"
+                [ngModel]="selectedProvince()?.codigo"
+                (ngModelChange)="onProvinceChange(findProvinceByCode($event))"
+                placeholder="Seleccionar provincia"
+                [showClear]="true"
+                [disabled]="!selectedCountry()"
+                class="w-full"
+              >
+                <ng-template let-province pTemplate="item">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium">{{ province.nombre }}</span>
+                    <span class="text-sm text-gray-500">({{ province.codigo }})</span>
+                  </div>
+                </ng-template>
+              </p-select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Distrito/Municipio</label>
+              <p-select
+                [options]="districts()"
+                optionLabel="nombre"
+                optionValue="codigo"
+                [ngModel]="selectedDistrict()?.codigo"
+                (ngModelChange)="onDistrictChange(findDistrictByCode($event))"
+                placeholder="Seleccionar distrito"
+                [showClear]="true"
+                [disabled]="!selectedProvince()"
+                class="w-full"
+              >
+                <ng-template let-district pTemplate="item">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium">{{ district.nombre }}</span>
+                    <span class="text-sm text-gray-500">({{ district.codigo }})</span>
+                  </div>
+                </ng-template>
+              </p-select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Dirección específica</label
+              >
+              <input
+                pInputText
+                placeholder="Av. Principal 123, Oficina 456"
+                [ngModel]="editing()?.ubicacion?.direccion"
+                (ngModelChange)="onDireccionChange($event)"
+                class="w-full"
+              />
+            </div>
+          </div>
+        </ng-template>
+      </p-card>
+
+      <!-- Contactos -->
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-users text-purple-500"></i>
+              Contactos *
+            </div>
+            <button
+              pButton
+              type="button"
+              label="Agregar Contacto"
+              icon="pi pi-plus"
+              (click)="addContact()"
+              class="p-button-sm"
+            ></button>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="content">
+          <div class="space-y-3">
+            @for (contact of editing()?.contacts; track $index) {
+            <div class="border rounded-lg p-4 bg-gray-50">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <input
+                  pInputText
+                  placeholder="Nombre del contacto"
+                  [ngModel]="contact.name"
+                  (ngModelChange)="updateContact($index, 'name', $event)"
+                />
+                <input
+                  pInputText
+                  placeholder="Área/Departamento"
+                  [ngModel]="contact.area"
+                  (ngModelChange)="updateContact($index, 'area', $event)"
+                />
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <input
+                  pInputText
+                  placeholder="Email"
+                  [ngModel]="contact.email"
+                  (ngModelChange)="updateContact($index, 'email', $event)"
+                />
+                <input
+                  pInputText
+                  placeholder="Teléfono"
+                  [ngModel]="contact.phone"
+                  (ngModelChange)="updateContact($index, 'phone', $event)"
+                />
+              </div>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-danger p-button-sm"
+                (click)="removeContact($index)"
+              ></button>
+            </div>
+            }
+          </div>
+        </ng-template>
+      </p-card>
+    </div>
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
+      <button pButton label="Guardar" (click)="save()"></button>
+    </ng-template>
+  </p-dialog>
+</div>

@@ -43,6 +43,7 @@ export class Menu implements OnInit, OnDestroy {
   allMenuItems = signal([
     { link: '/dashboard', label: 'Dashboard', icon: 'pi pi-chart-line' },
     { link: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
+    { link: '/providers', label: 'Proveedores', icon: 'pi pi-building' },
     { link: '/requirements', label: 'Requerimientos', icon: 'pi pi-inbox' },
     { link: '/tdrs', label: 'TDRs', icon: 'pi pi-file' },
     { link: '/quotes', label: 'Cotizaciones', icon: 'pi pi-dollar' },
@@ -58,7 +59,6 @@ export class Menu implements OnInit, OnDestroy {
   // Items del menú filtrados por permisos
   menuItems = computed(() => {
     const filtered = this.allMenuItems().filter((item) => this.menuService.canAccess(item.link));
-    console.log('Menu items filtered by permissions:', filtered);
     return filtered;
   });
 

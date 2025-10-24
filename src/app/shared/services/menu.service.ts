@@ -30,7 +30,6 @@ export class MenuService {
    */
   loadUserPermissions(): void {
     const currentUser = this.authService.getCurrentUser();
-    console.log('Loading permissions for user:', currentUser);
 
     if (!currentUser?.id) {
       console.log('No user ID found, setting empty permissions');
@@ -38,14 +37,11 @@ export class MenuService {
       return;
     }
 
-    console.log('Fetching permissions for user ID:', currentUser.id);
     this.menuPermissionsApi.getByUserId(currentUser.id).subscribe({
       next: (permissions) => {
-        console.log('Loaded permissions:', permissions);
         this.userPermissions.set(permissions);
       },
       error: (error) => {
-        console.error('Error loading user permissions:', error);
         this.userPermissions.set([]);
       },
     });
@@ -79,7 +75,6 @@ export class MenuService {
   canAccess(route: string): boolean {
     const allowedRoutes = this.allowedRoutes();
     const hasAccess = allowedRoutes.includes(route);
-    console.log(`Checking access to ${route}:`, hasAccess, 'Allowed routes:', allowedRoutes);
     return hasAccess;
   }
 

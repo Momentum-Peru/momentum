@@ -99,6 +99,12 @@ export const routes: Routes = [
         data: { menuPermission: '/menu-permissions' },
       },
       {
+        path: 'providers',
+        loadComponent: () => import('./pages/providers/providers').then((m) => m.ProvidersPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/providers' },
+      },
+      {
         path: '**',
         redirectTo: 'dashboard',
         pathMatch: 'full',

@@ -87,6 +87,7 @@ export class MenuPermissionsPage implements OnInit {
     '/dashboard',
     '/projects',
     '/clients',
+    '/providers',
     '/quotes',
     '/orders',
     '/requirements',
