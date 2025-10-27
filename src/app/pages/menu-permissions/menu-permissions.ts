@@ -24,6 +24,15 @@ import {
   UserOption,
 } from '../../shared/interfaces/menu-permission.interface';
 
+// Interfaz para agrupar permisos por usuario
+export interface UserPermissionsGroup {
+  user: UserOption;
+  permissions: MenuPermissionWithUser[];
+  totalPermissions: number;
+  activePermissions: number;
+  inactivePermissions: number;
+}
+
 @Component({
   selector: 'app-menu-permissions',
   imports: [
@@ -55,17 +64,20 @@ export class MenuPermissionsPage implements OnInit {
   // Signals para el estado del componente
   items = signal<MenuPermissionWithUser[]>([]);
   filteredItems = signal<MenuPermissionWithUser[]>([]);
+  userGroups = signal<UserPermissionsGroup[]>([]);
+  filteredUserGroups = signal<UserPermissionsGroup[]>([]);
   users = signal<UserOption[]>([]);
   query = signal('');
   selectedUser = signal<string>('');
   showDialog = signal(false);
-  editing = signal<MenuPermission | null>(null);
+  editing = signal<{
+    userId: string;
+    selectedRoutes: string[];
+    isEditing: boolean;
+  } | null>(null);
+  expandedRows = signal<Set<string>>(new Set());
 
-  // Signals para paginación
-  currentPage = signal(1);
-  pageSize = signal(50);
-  totalItems = signal(0);
-  totalPages = signal(0);
+  // Signal para carga
   loading = signal(false);
 
   // Exponer Math para usar en el template
@@ -75,6 +87,7 @@ export class MenuPermissionsPage implements OnInit {
   totalPermissions = computed(() => this.items().length);
   activePermissions = computed(() => this.items().filter((item) => item.isActive).length);
   inactivePermissions = computed(() => this.items().filter((item) => !item.isActive).length);
+  totalUsers = computed(() => this.userGroups().length);
 
   // Opciones para el formulario
   statusOptions = [
@@ -100,8 +113,9 @@ export class MenuPermissionsPage implements OnInit {
   ];
 
   ngOnInit() {
-    this.load();
+    // Cargar usuarios y permisos
     this.loadUsers();
+    this.load();
   }
 
   constructor() {
@@ -116,22 +130,23 @@ export class MenuPermissionsPage implements OnInit {
     effect(() => {
       this.applyFilters();
     });
+
+    // Re-agrupar cuando cambien los usuarios
+    effect(() => {
+      const users = this.users();
+      if (users.length > 0 && this.items().length > 0) {
+        this.groupPermissionsByUser();
+      }
+    });
   }
 
-  load(page: number = 1) {
+  load() {
     this.loading.set(true);
 
-    const query: MenuPermissionQuery = {
-      page,
-      limit: this.pageSize(),
-    };
-
-    this.menuPermissionsApi.list(query).subscribe({
+    // Cargar todos los permisos con límite máximo permitido (1000)
+    this.menuPermissionsApi.list({ page: 1, limit: 1000 }).subscribe({
       next: (response) => {
         this.items.set(response.data);
-        this.totalItems.set(response.pagination.total);
-        this.totalPages.set(response.pagination.pages);
-        this.currentPage.set(page);
         this.loading.set(false);
       },
       error: (error) => {
@@ -146,19 +161,60 @@ export class MenuPermissionsPage implements OnInit {
     });
   }
 
+  groupPermissionsByUser() {
+    const permissions = this.items();
+    const usersMap = new Map<string, UserPermissionsGroup>();
+
+    // Agrupar permisos por usuario
+    permissions.forEach((permission) => {
+      const userId =
+        typeof permission.userId === 'object' ? permission.userId._id : permission.userId;
+      const userInfo =
+        typeof permission.userId === 'object'
+          ? permission.userId
+          : this.users().find((u) => u._id === userId) || {
+              _id: userId,
+              name: 'Usuario desconocido',
+              email: '',
+              role: '',
+            };
+
+      if (!usersMap.has(userId)) {
+        usersMap.set(userId, {
+          user: userInfo,
+          permissions: [],
+          totalPermissions: 0,
+          activePermissions: 0,
+          inactivePermissions: 0,
+        });
+      }
+
+      const group = usersMap.get(userId)!;
+      group.permissions.push(permission);
+      group.totalPermissions++;
+      if (permission.isActive) {
+        group.activePermissions++;
+      } else {
+        group.inactivePermissions++;
+      }
+    });
+
+    // Convertir el map a array y actualizar
+    this.userGroups.set(Array.from(usersMap.values()));
+    this.applyFilters();
+  }
+
   loadUsers() {
     console.log('Loading users...');
     this.usersApi.list().subscribe({
       next: (data) => {
         console.log('Users API response:', data);
-        // Asegurar que siempre sea un array
         const usersArray = Array.isArray(data) ? data : [];
         console.log('Setting users to:', usersArray);
         this.users.set(usersArray);
       },
       error: (error) => {
         console.error('Error loading users:', error);
-        // En caso de error, inicializar con array vacío
         this.users.set([]);
         this.messageService.add({
           severity: 'error',
@@ -177,168 +233,203 @@ export class MenuPermissionsPage implements OnInit {
     this.selectedUser.set(userId);
   }
 
-  // Métodos para paginación
-  goToPage(page: number) {
-    if (page >= 1 && page <= this.totalPages()) {
-      this.load(page);
-    }
-  }
-
-  nextPage() {
-    const nextPage = this.currentPage() + 1;
-    if (nextPage <= this.totalPages()) {
-      this.goToPage(nextPage);
-    }
-  }
-
-  previousPage() {
-    const prevPage = this.currentPage() - 1;
-    if (prevPage >= 1) {
-      this.goToPage(prevPage);
-    }
-  }
-
-  setPageSize(size: string | number) {
-    this.pageSize.set(Number(size));
-    this.load(1); // Recargar desde la primera página
-  }
-
   applyFilters() {
-    let filtered = [...this.items()];
+    let filtered = [...this.userGroups()];
 
-    // Filtro por texto (búsqueda en ruta y nombre de usuario)
+    // Filtro por texto (búsqueda en nombre de usuario)
     const query = this.query().toLowerCase().trim();
     if (query) {
       filtered = filtered.filter(
-        (item) =>
-          item.route.toLowerCase().includes(query) ||
-          (typeof item.userId === 'object' && item.userId.name.toLowerCase().includes(query))
+        (group) =>
+          group.user.name.toLowerCase().includes(query) ||
+          group.user.email.toLowerCase().includes(query)
       );
     }
 
     // Filtro por usuario
     const selectedUser = this.selectedUser();
     if (selectedUser) {
-      filtered = filtered.filter((item) => {
-        if (typeof item.userId === 'object') {
-          return item.userId._id === selectedUser;
-        }
-        return item.userId === selectedUser;
-      });
+      filtered = filtered.filter((group) => group.user._id === selectedUser);
     }
 
-    this.filteredItems.set(filtered);
+    this.filteredUserGroups.set(filtered);
   }
 
   newItem() {
     this.editing.set({
       userId: '',
-      route: '',
-      isActive: true,
+      selectedRoutes: [],
+      isEditing: false,
     });
     this.showDialog.set(true);
   }
 
-  editItem(item: MenuPermissionWithUser) {
-    const editedItem: MenuPermission = {
-      _id: item._id,
-      userId: typeof item.userId === 'object' ? item.userId._id : item.userId,
-      route: item.route,
-      isActive: item.isActive,
-    };
+  editUserPermissions(group: UserPermissionsGroup) {
+    const userPermissions = group.permissions.filter((p) => p.isActive);
+    const routes = userPermissions.map((p) => p.route);
 
-    this.editing.set(editedItem);
+    this.editing.set({
+      userId: group.user._id,
+      selectedRoutes: routes,
+      isEditing: true,
+    });
     this.showDialog.set(true);
+  }
+
+  toggleRow(userId: string) {
+    const expanded = this.expandedRows();
+    if (expanded.has(userId)) {
+      expanded.delete(userId);
+    } else {
+      expanded.add(userId);
+    }
+    this.expandedRows.set(new Set(expanded));
   }
 
   closeDialog() {
     this.showDialog.set(false);
   }
 
-  onEditChange(field: keyof MenuPermission, value: any) {
+  onEditChange(field: string, value: any) {
     const current = this.editing();
     if (current) {
       this.editing.set({ ...current, [field]: value });
     }
   }
 
+  toggleRoute(route: string) {
+    const current = this.editing();
+    if (!current) return;
+
+    const selectedRoutes = current.selectedRoutes;
+    const index = selectedRoutes.indexOf(route);
+
+    if (index === -1) {
+      selectedRoutes.push(route);
+    } else {
+      selectedRoutes.splice(index, 1);
+    }
+
+    this.editing.set({ ...current, selectedRoutes: [...selectedRoutes] });
+  }
+
+  isRouteSelected(route: string): boolean {
+    const current = this.editing();
+    if (!current) return false;
+    return current.selectedRoutes.includes(route);
+  }
+
+  selectAllRoutes() {
+    const current = this.editing();
+    if (!current) return;
+
+    const allRoutes = [...this.predefinedRoutes];
+    this.editing.set({
+      ...current,
+      selectedRoutes: allRoutes,
+    });
+  }
+
+  deselectAllRoutes() {
+    const current = this.editing();
+    if (!current) return;
+
+    this.editing.set({
+      ...current,
+      selectedRoutes: [],
+    });
+  }
+
   save() {
     const item = this.editing();
     if (!item) return;
 
-    // Validar campos requeridos
-    const validationErrors = this.validateForm(item);
-    if (validationErrors.length > 0) {
-      validationErrors.forEach((error) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error de validación',
-          detail: error,
-        });
+    if (!item.userId || item.userId.trim() === '') {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error de validación',
+        detail: 'El usuario es requerido',
       });
       return;
     }
 
-    const payload = {
-      userId: item.userId.trim(),
-      route: item.route.trim(),
-      isActive: item.isActive,
+    if (!item.selectedRoutes || item.selectedRoutes.length === 0) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error de validación',
+        detail: 'Debes seleccionar al menos una ruta',
+      });
+      return;
+    }
+
+    const payload: AssignPermissionsRequest = {
+      userId: item.userId,
+      permissions: item.selectedRoutes.map((route) => ({
+        route: route,
+        isActive: true,
+      })),
     };
 
-    if (item._id) {
-      this.menuPermissionsApi.update(item._id, payload).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Permiso actualizado correctamente',
-          });
-          this.load();
-          this.menuService.refreshPermissions(); // Actualizar el menú
-          this.closeDialog();
-        },
-        error: (error) => {
-          console.error('Error updating permission:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: this.getErrorMessage(error),
-          });
-        },
-      });
-    } else {
-      this.menuPermissionsApi.create(payload).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Permiso creado correctamente',
-          });
-          this.load();
-          this.menuService.refreshPermissions(); // Actualizar el menú
-          this.closeDialog();
-        },
-        error: (error) => {
-          console.error('Error creating permission:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: this.getErrorMessage(error),
-          });
-        },
-      });
-    }
+    this.menuPermissionsApi.assignPermissions(payload).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Permisos asignados correctamente',
+        });
+        this.load();
+        this.menuService.refreshPermissions();
+        this.closeDialog();
+      },
+      error: (error) => {
+        console.error('Error assigning permissions:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: this.getErrorMessage(error),
+        });
+      },
+    });
   }
 
-  remove(item: MenuPermissionWithUser) {
-    if (!item._id) return;
+  removeUserPermissions(group: UserPermissionsGroup) {
+    this.confirmationService.confirm({
+      message: `¿Estás seguro de eliminar todos los permisos de ${group.user.name}?`,
+      header: 'Confirmar eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.menuPermissionsApi.deleteByUserId(group.user._id).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Permisos eliminados correctamente',
+            });
+            this.load();
+            this.menuService.refreshPermissions();
+          },
+          error: (error) => {
+            console.error('Error deleting user permissions:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: this.getErrorMessage(error),
+            });
+          },
+        });
+      },
+    });
+  }
+
+  removeSinglePermission(permission: MenuPermissionWithUser) {
+    if (!permission._id) return;
 
     this.confirmationService.confirm({
       message: '¿Estás seguro de eliminar este permiso?',
       header: 'Confirmar eliminación',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        this.menuPermissionsApi.delete(item._id!).subscribe({
+        this.menuPermissionsApi.delete(permission._id!).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',
@@ -346,7 +437,7 @@ export class MenuPermissionsPage implements OnInit {
               detail: 'Permiso eliminado correctamente',
             });
             this.load();
-            this.menuService.refreshPermissions(); // Actualizar el menú
+            this.menuService.refreshPermissions();
           },
           error: (error) => {
             console.error('Error deleting permission:', error);
@@ -361,7 +452,10 @@ export class MenuPermissionsPage implements OnInit {
     });
   }
 
-  // Métodos de utilidad
+  isExpanded(userId: string): boolean {
+    return this.expandedRows().has(userId);
+  }
+
   getUserName(item: MenuPermissionWithUser): string {
     if (typeof item.userId === 'object') {
       return item.userId.name;
@@ -380,35 +474,6 @@ export class MenuPermissionsPage implements OnInit {
     return isActive ? 'Activo' : 'Inactivo';
   }
 
-  // Validaciones
-  private validateForm(item: MenuPermission): string[] {
-    const errors: string[] = [];
-
-    if (!item.userId || item.userId.trim() === '') {
-      errors.push('El usuario es requerido');
-    }
-
-    if (!item.route || item.route.trim() === '') {
-      errors.push('La ruta es requerida');
-    }
-
-    return errors;
-  }
-
-  private validatePermissions(
-    permissions: Omit<MenuPermission, '_id' | 'userId' | 'createdAt' | 'updatedAt'>[]
-  ): string[] {
-    const errors: string[] = [];
-
-    permissions.forEach((permission, index) => {
-      if (!permission.route || permission.route.trim() === '') {
-        errors.push(`La ruta del permiso ${index + 1} es requerida`);
-      }
-    });
-
-    return errors;
-  }
-
   private getErrorMessage(error: any): string {
     if (error.error?.message) {
       const message = error.error.message;
@@ -417,7 +482,6 @@ export class MenuPermissionsPage implements OnInit {
         return message.join(', ');
       }
 
-      // Traducir mensajes comunes de validación
       if (message.includes('userId should not be empty')) {
         return 'El usuario es requerido';
       }

@@ -122,6 +122,47 @@
   }
 }
 
+// Estilos para el ícono de expansión
+.pi-angle-down {
+  transition: transform 0.2s;
+}
+
+.pi-angle-up {
+  transition: transform 0.2s;
+}
+
+.rotated {
+  transform: rotate(180deg);
+}
+
+// Estilos para los badges de conteo
+.bg-purple-100 {
+  background-color: #f3e8ff;
+}
+
+.bg-purple-900 {
+  color: #581c87;
+}
+
+// Estilos para las rutas seleccionables
+.cursor-pointer {
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #3b82f6;
+  }
+}
+
+// Estilos para la tabla de usuarios
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+tbody tr {
+  transition: background-color 0.15s;
+}
+
 // Responsive adjustments
 @media (max-width: 768px) {
   :host ::ng-deep {
