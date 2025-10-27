@@ -50,6 +50,11 @@
 
   .p-dialog-content {
     padding: 1.5rem;
+    overflow: visible !important;
+  }
+
+  .p-dialog {
+    overflow: visible !important;
   }
 }
 
