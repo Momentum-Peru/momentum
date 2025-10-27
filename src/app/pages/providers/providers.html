@@ -1,6 +1,5 @@
 <div class="p-4 space-y-4">
   <p-toast></p-toast>
-  <p-confirmDialog></p-confirmDialog>
 
   <!-- Header con estadísticas -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -64,7 +63,9 @@
             (ngModelChange)="setService($event)"
             placeholder="Todos los servicios"
             [showClear]="true"
+            [appendTo]="'body'"
             class="w-full"
+            [appendTo]="'body'"
           ></p-select>
         </div>
         <div>
@@ -81,6 +82,7 @@
             (ngModelChange)="setStatus($event)"
             placeholder="Todos los estados"
             class="w-full"
+            [appendTo]="'body'"
           ></p-select>
         </div>
         <div class="flex items-end">
