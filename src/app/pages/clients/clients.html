@@ -149,6 +149,7 @@
               placeholder="Seleccionar país"
               [showClear]="true"
               class="w-full"
+              [appendTo]="'body'"
             >
               <ng-template let-country pTemplate="item">
                 <div class="flex items-center gap-2">
@@ -172,6 +173,7 @@
               [showClear]="true"
               [disabled]="!selectedCountry()"
               class="w-full"
+              [appendTo]="'body'"
             >
               <ng-template let-province pTemplate="item">
                 <div class="flex items-center gap-2">
@@ -197,6 +199,7 @@
               [showClear]="true"
               [disabled]="!selectedProvince()"
               class="w-full"
+              [appendTo]="'body'"
             >
               <ng-template let-district pTemplate="item">
                 <div class="flex items-center gap-2">
