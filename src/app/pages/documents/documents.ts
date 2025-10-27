@@ -11,9 +11,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 
 import { DocumentsApiService } from '../../shared/services/documents-api.service';
-import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { Document, DocumentFilters } from '../../shared/interfaces/document.interface';
-import { Project } from '../../shared/interfaces/project.interface';
 import { DocumentFormComponent } from './components/document-form/document-form';
 import { DocumentListComponent } from './components/document-list/document-list';
 import { DocumentFiltersComponent } from './components/document-filters/document-filters';
@@ -41,13 +39,11 @@ import { DocumentFiltersComponent } from './components/document-filters/document
 })
 export class DocumentsPage implements OnInit {
     private readonly documentsApi = inject(DocumentsApiService);
-    private readonly projectsApi = inject(ProjectsApiService);
     private readonly messageService = inject(MessageService);
     private readonly confirmationService = inject(ConfirmationService);
 
     // Estado de la página
     documents = signal<Document[]>([]);
-    projects = signal<Project[]>([]);
     loading = signal(false);
     showFormDialog = signal(false);
     editingDocument = signal<Document | null>(null);
@@ -57,10 +53,10 @@ export class DocumentsPage implements OnInit {
     totalRecords = signal(0);
     currentPage = signal(1);
     pageSize = signal(10);
+    first = signal(0);
 
     ngOnInit(): void {
         this.loadDocuments();
-        this.loadProjects();
     }
 
     /**
@@ -94,25 +90,12 @@ export class DocumentsPage implements OnInit {
     }
 
     /**
-     * Cargar proyectos para filtros
-     */
-    loadProjects(): void {
-        this.projectsApi.listActive().subscribe({
-            next: (projects) => {
-                this.projects.set(projects);
-            },
-            error: (error: any) => {
-                console.error('Error al cargar proyectos:', error);
-            }
-        });
-    }
-
-    /**
      * Manejar filtros aplicados
      */
     onFiltersApplied(filters: DocumentFilters): void {
         this.currentFilters.set(filters);
         this.currentPage.set(1);
+        this.first.set(0);
         this.loadDocuments();
     }
 
@@ -120,8 +103,10 @@ export class DocumentsPage implements OnInit {
      * Manejar cambio de página
      */
     onPageChange(event: { page: number; first: number; rows: number }): void {
+        // event.page ya es 0-based desde el cálculo en document-list
         this.currentPage.set(event.page + 1);
         this.pageSize.set(event.rows);
+        this.first.set(event.first);
         this.loadDocuments();
     }
 

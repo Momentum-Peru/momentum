@@ -25,11 +25,7 @@
   </div>
 
   <!-- Filtros -->
-  <app-document-filters
-    [projects]="projects()"
-    [loading]="loading()"
-    (filtersApplied)="onFiltersApplied($event)"
-  >
+  <app-document-filters [loading]="loading()" (filtersApplied)="onFiltersApplied($event)">
   </app-document-filters>
 
   <!-- Lista de documentos -->
@@ -40,6 +36,7 @@
       [totalRecords]="totalRecords()"
       [currentPage]="currentPage()"
       [pageSize]="pageSize()"
+      [first]="first()"
       (pageChange)="onPageChange($event)"
       (editDocument)="openEditForm($event)"
       (deleteDocument)="confirmDelete($event)"
@@ -61,7 +58,6 @@
   >
     <app-document-form
       [document]="editingDocument()"
-      [projects]="projects()"
       (documentSaved)="onDocumentSaved()"
       (cancel)="closeFormDialog()"
     >
