@@ -880,10 +880,8 @@ export class DailyExpensesPage implements OnInit {
       errors.push('El resumen del día es requerido');
     }
 
-    // Validar compras
-    if (this.selectedPurchases().length === 0) {
-      errors.push('Debe agregar al menos una compra');
-    } else {
+    // Validar compras (opcional)
+    if (this.selectedPurchases().length > 0) {
       this.selectedPurchases().forEach((purchase, index) => {
         if (!purchase.description || purchase.description.trim() === '') {
           errors.push(`La descripción de la compra ${index + 1} es requerida`);
