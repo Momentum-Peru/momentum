@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, inject, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -58,6 +59,10 @@ export class DailyExpensesPage implements OnInit {
   editing = signal<DailyExpense | null>(null);
   viewing = signal<DailyExpense | null>(null);
   selectedPurchases = signal<Purchase[]>([]);
+
+  // Sistema de archivos pendientes para reportes nuevos
+  pendingObservationFiles = signal<Map<number, File[]>>(new Map());
+  pendingPurchaseFiles = signal<Map<number, File[]>>(new Map());
 
   // Filtrar items basado en la búsqueda
   filteredItems = computed(() => {
@@ -119,9 +124,10 @@ export class DailyExpensesPage implements OnInit {
 
   load() {
     this.dailyExpensesApi.list().subscribe({
-      next: (data) => this.items.set(data),
+      next: (data) => {
+        this.items.set(data);
+      },
       error: (error) => {
-        console.error('Error loading daily reports:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -135,7 +141,6 @@ export class DailyExpensesPage implements OnInit {
     this.projectsApi.getOptions().subscribe({
       next: (data) => this.projects.set(data),
       error: (error) => {
-        console.error('Error loading projects:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -149,7 +154,6 @@ export class DailyExpensesPage implements OnInit {
     this.categoriesApi.getOptions().subscribe({
       next: (data) => this.categories.set(data),
       error: (error) => {
-        console.error('Error loading categories:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -177,6 +181,11 @@ export class DailyExpensesPage implements OnInit {
       status: 'DRAFT',
     });
     this.selectedPurchases.set([]);
+
+    // Limpiar archivos pendientes al crear nuevo item
+    this.pendingObservationFiles.set(new Map());
+    this.pendingPurchaseFiles.set(new Map());
+
     this.showDialog.set(true);
   }
 
@@ -210,7 +219,8 @@ export class DailyExpensesPage implements OnInit {
         const dateObj = new Date(editedItem.date);
         editedItem.date = dateObj.toISOString();
       } catch (e) {
-        console.warn('Error parsing date:', e);
+        // Si hay error al parsear la fecha, usar la fecha actual
+        return new Date();
       }
     }
 
@@ -239,21 +249,33 @@ export class DailyExpensesPage implements OnInit {
         );
         if (!categoryExists) {
           // La categoría ya no existe, mantener el categoryId pero se mostrará como "Categoría no encontrada"
-          console.warn(
-            `Categoría con ID ${normalizedPurchase.categoryId} no encontrada en la lista`
-          );
         }
       }
 
       return normalizedPurchase;
     });
 
+    // Normalizar las observaciones para convertir fechas a objetos Date
+    editedItem.observations = editedItem.observations?.map((observation) => {
+      const normalizedObservation = {
+        ...observation,
+        observationDate: (observation.observationDate
+          ? new Date(observation.observationDate)
+          : new Date()) as any, // Tipo temporal para el datepicker
+      };
+      return normalizedObservation;
+    });
+
     this.editing.set(editedItem);
     this.selectedPurchases.set(normalizedPurchases);
     this.showDialog.set(true);
+    return;
   }
 
   closeDialog() {
+    // Limpiar archivos pendientes al cerrar el diálogo
+    this.pendingObservationFiles.set(new Map());
+    this.pendingPurchaseFiles.set(new Map());
     this.showDialog.set(false);
   }
 
@@ -338,21 +360,41 @@ export class DailyExpensesPage implements OnInit {
       return;
     }
 
-    // Validar que projectId sea un string no vacío
-    if (!item.projectId || typeof item.projectId !== 'string' || item.projectId.trim() === '') {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error de validación',
-        detail: 'Debe seleccionar un proyecto válido',
-      });
-      return;
+    // Validar que el proyecto existe en la lista de proyectos disponibles (solo si se proporciona)
+    if (item.projectId && typeof item.projectId === 'string' && item.projectId.trim() !== '') {
+      const projectExists = this.projects().some((p) => p.value === item.projectId);
+      if (!projectExists) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error de validación',
+          detail:
+            'El proyecto seleccionado ya no está disponible. Por favor, seleccione otro proyecto.',
+        });
+        return;
+      }
     }
 
+    // Función para convertir fechas de Date a string ISO si es necesario
+    const formatObservationDate = (date: string | Date | undefined): string => {
+      if (!date) return new Date().toISOString();
+      if (date instanceof Date) {
+        return date.toISOString();
+      }
+      return date;
+    };
+
     // Crear payload base
-    const basePayload = {
+    const basePayload: any = {
       title: item.title.trim(),
       date: item.date,
-      observations: item.observations || [],
+      observations: item.observations
+        ? item.observations.map((obs) => ({
+            ...obs,
+            observationDate: formatObservationDate(obs.observationDate),
+            // Filtrar documentos pendientes (que empiezan con "pending:")
+            documents: obs.documents?.filter((doc) => !doc.startsWith('pending:')) || [],
+          }))
+        : [],
       purchases: this.selectedPurchases().map((p) => ({
         description: p.description.trim(),
         amount: p.amount,
@@ -360,12 +402,17 @@ export class DailyExpensesPage implements OnInit {
         notes: p.notes?.trim() || '',
         vendor: p.vendor?.trim() || '',
         purchaseDate: p.purchaseDate || new Date().toISOString(),
-        documents: p.documents || [],
+        // Filtrar documentos pendientes (que empiezan con "pending:")
+        documents: p.documents?.filter((doc) => !doc.startsWith('pending:')) || [],
       })),
       dailySummary: item.dailySummary.trim(),
-      projectId: item.projectId.trim(),
       status: item.status,
     };
+
+    // Solo incluir projectId si no está vacío
+    if (item.projectId && typeof item.projectId === 'string' && item.projectId.trim() !== '') {
+      basePayload.projectId = item.projectId.trim();
+    }
 
     if (item._id) {
       // Para actualización, no incluir userId
@@ -380,7 +427,6 @@ export class DailyExpensesPage implements OnInit {
           this.closeDialog();
         },
         error: (error) => {
-          console.error('Error updating daily report:', error);
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
@@ -402,17 +448,29 @@ export class DailyExpensesPage implements OnInit {
       };
 
       this.dailyExpensesApi.create(createPayload as DailyExpense).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Reporte diario creado correctamente',
-          });
-          this.load();
-          this.closeDialog();
+        next: (createdReport) => {
+          // Subir archivos pendientes después de crear el reporte
+          this.uploadPendingFiles(createdReport._id!)
+            .then(() => {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: 'Reporte diario creado correctamente',
+              });
+              this.load();
+              this.closeDialog();
+            })
+            .catch((error) => {
+              this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'Reporte creado pero algunos archivos no se pudieron subir',
+              });
+              this.load();
+              this.closeDialog();
+            });
         },
         error: (error) => {
-          console.error('Error creating daily report:', error);
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
@@ -421,6 +479,43 @@ export class DailyExpensesPage implements OnInit {
         },
       });
     }
+  }
+
+  // Método para subir archivos pendientes después de crear el reporte
+  private async uploadPendingFiles(reportId: string): Promise<void> {
+    const pendingObservationFiles = this.pendingObservationFiles();
+    const pendingPurchaseFiles = this.pendingPurchaseFiles();
+
+    const uploadPromises: Promise<any>[] = [];
+
+    // Subir archivos de observaciones pendientes
+    for (const [observationIndex, files] of pendingObservationFiles) {
+      for (const file of files) {
+        const promise = firstValueFrom(
+          this.dailyExpensesApi.uploadObservationDocument(reportId, observationIndex, file)
+        );
+        uploadPromises.push(promise);
+      }
+    }
+
+    // Subir archivos de compras pendientes
+    for (const [purchaseIndex, files] of pendingPurchaseFiles) {
+      for (const file of files) {
+        const promise = firstValueFrom(
+          this.dailyExpensesApi.uploadPurchaseDocument(reportId, purchaseIndex, file)
+        );
+        uploadPromises.push(promise);
+      }
+    }
+
+    // Esperar a que todos los archivos se suban
+    if (uploadPromises.length > 0) {
+      await Promise.all(uploadPromises);
+    }
+
+    // Limpiar archivos pendientes
+    this.pendingObservationFiles.set(new Map());
+    this.pendingPurchaseFiles.set(new Map());
   }
 
   remove(item: DailyExpense) {
@@ -436,7 +531,6 @@ export class DailyExpensesPage implements OnInit {
           this.load();
         },
         error: (error) => {
-          console.error('Error deleting daily report:', error);
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
@@ -459,7 +553,6 @@ export class DailyExpensesPage implements OnInit {
         this.load();
       },
       error: (error) => {
-        console.error('Error submitting report:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -481,7 +574,6 @@ export class DailyExpensesPage implements OnInit {
         this.load();
       },
       error: (error) => {
-        console.error('Error approving report:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -505,7 +597,6 @@ export class DailyExpensesPage implements OnInit {
           this.load();
         },
         error: (error) => {
-          console.error('Error rejecting report:', error);
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
@@ -667,6 +758,23 @@ export class DailyExpensesPage implements OnInit {
     this.editing.set({ ...editing });
   }
 
+  // Método para verificar sincronización con el backend
+  private async verifyBackendSync(reportId: string): Promise<boolean> {
+    try {
+      const backendReport = await firstValueFrom(this.dailyExpensesApi.getById(reportId));
+      const localReport = this.editing();
+
+      if (!localReport) return false;
+
+      const backendObservationsCount = backendReport.observations?.length || 0;
+      const localObservationsCount = localReport.observations?.length || 0;
+
+      return backendObservationsCount === localObservationsCount;
+    } catch (error) {
+      return false;
+    }
+  }
+
   // Métodos para manejar documentos de observaciones
   onObservationFileSelect(event: Event, observationIndex: number): void {
     const target = event.target as HTMLInputElement;
@@ -674,15 +782,139 @@ export class DailyExpensesPage implements OnInit {
     if (!files || files.length === 0) return;
 
     const editing = this.editing();
-    if (!editing || !editing._id) return;
+    if (!editing) return;
 
     const file = files[0];
-    this.dailyExpensesApi.uploadObservationDocument(editing._id, observationIndex, file).subscribe({
-      next: (response) => {
-        // Actualizar la observación con el nuevo documento
-        editing.observations[observationIndex].documents.push(response.url);
+    target.value = ''; // Limpiar el input
+
+    // Si el reporte ya existe en el backend, subir inmediatamente
+    if (editing._id) {
+      // Validar que la observación existe en el estado local
+      if (!editing.observations[observationIndex]) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'La observación no existe en el índice especificado',
+        });
+        return;
+      }
+
+      // Verificar si hay inconsistencias potenciales con el backend
+      // Si el índice es mayor que 0, verificar sincronización
+      if (observationIndex > 0) {
+        // Verificar sincronización de forma asíncrona
+        this.verifyBackendSync(editing._id)
+          .then((isSynced) => {
+            if (!isSynced) {
+              // La observación es nueva (agregada durante la edición)
+              this.saveFileAsPending(observationIndex, file, 'observation');
+            } else {
+              // La observación existe en el backend, proceder con subida normal
+              this.uploadFileToBackend(editing._id!, observationIndex, file, 'observation');
+            }
+          })
+          .catch((error) => {
+            // En caso de error, tratar como nueva observación
+            this.saveFileAsPending(observationIndex, file, 'observation');
+          });
+      } else {
+        // Índice 0, debería existir en el backend
+        this.uploadFileToBackend(editing._id!, observationIndex, file, 'observation');
+      }
+    } else {
+      // Si el reporte es nuevo, guardar el archivo como pendiente
+      this.saveFileAsPending(observationIndex, file, 'observation');
+    }
+  }
+
+  // Método para guardar archivos como pendientes
+  private saveFileAsPending(index: number, file: File, type: 'observation' | 'purchase'): void {
+    if (type === 'observation') {
+      const pendingFiles = this.pendingObservationFiles();
+      const currentFiles = pendingFiles.get(index) || [];
+      currentFiles.push(file);
+      pendingFiles.set(index, currentFiles);
+      this.pendingObservationFiles.set(new Map(pendingFiles));
+
+      // Mostrar el archivo en la interfaz como pendiente
+      const editing = this.editing();
+      if (editing) {
+        editing.observations[index].documents.push(`pending:${file.name}`);
         this.editing.set({ ...editing });
-        target.value = ''; // Limpiar el input
+      }
+    } else {
+      const pendingFiles = this.pendingPurchaseFiles();
+      const currentFiles = pendingFiles.get(index) || [];
+      currentFiles.push(file);
+      pendingFiles.set(index, currentFiles);
+      this.pendingPurchaseFiles.set(new Map(pendingFiles));
+
+      // Mostrar el archivo en la interfaz como pendiente
+      const editing = this.editing();
+      if (editing) {
+        editing.purchases[index].documents.push(`pending:${file.name}`);
+        this.editing.set({ ...editing });
+      }
+    }
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Archivo preparado',
+      detail: 'El archivo se subirá al guardar el reporte',
+    });
+  }
+
+  // Método para subir archivos al backend
+  private uploadFileToBackend(
+    reportId: string,
+    index: number,
+    file: File,
+    type: 'observation' | 'purchase'
+  ): void {
+    const uploadObservable =
+      type === 'observation'
+        ? this.dailyExpensesApi.uploadObservationDocument(reportId, index, file)
+        : this.dailyExpensesApi.uploadPurchaseDocument(reportId, index, file);
+
+    uploadObservable.subscribe({
+      next: (response) => {
+        const editing = this.editing();
+        if (!editing) return;
+
+        if (type === 'observation') {
+          // Extraer la nueva URL del documento de la observación actualizada
+          const updatedObservation = response.observations[index];
+          if (updatedObservation && updatedObservation.documents) {
+            const previousDocuments = editing.observations[index].documents;
+            const newDocuments = updatedObservation.documents;
+
+            const newDocumentUrls = newDocuments.filter(
+              (doc: string) => !previousDocuments.includes(doc) && !doc.startsWith('pending:')
+            );
+
+            if (newDocumentUrls.length > 0) {
+              editing.observations[index].documents.push(...newDocumentUrls);
+            }
+          }
+        } else {
+          // Extraer la nueva URL del documento de la compra actualizada
+          const updatedPurchase = response.purchases[index];
+          if (updatedPurchase && updatedPurchase.documents) {
+            const previousDocuments = editing.purchases[index].documents;
+            const newDocuments = updatedPurchase.documents;
+
+            const newDocumentUrls = newDocuments.filter(
+              (doc: string) => !previousDocuments.includes(doc) && !doc.startsWith('pending:')
+            );
+
+            if (newDocumentUrls.length > 0) {
+              editing.purchases[index].documents.push(...newDocumentUrls);
+            }
+          }
+        }
+
+        this.editing.set({ ...editing });
+
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
@@ -690,12 +922,23 @@ export class DailyExpensesPage implements OnInit {
         });
       },
       error: (error) => {
-        console.error('Error uploading observation document:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Error al subir el documento',
-        });
+        if (error.status === 404) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Sincronización requerida',
+            detail: `La ${type} ${
+              index + 1
+            } no existe en el servidor. Recargando datos para sincronizar...`,
+          });
+          this.load();
+          this.closeDialog();
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Error al subir el documento',
+          });
+        }
       },
     });
   }
@@ -704,14 +947,41 @@ export class DailyExpensesPage implements OnInit {
     const editing = this.editing();
     if (!editing || !editing._id) return;
 
+    const observation = editing.observations[observationIndex];
+
+    // Verificar que la observación existe
+    if (!observation) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'La observación no existe en el índice especificado',
+      });
+      return;
+    }
+
+    // Verificar que el documento existe en la observación
+    if (!observation.documents.includes(documentUrl)) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'El documento no existe en esta observación',
+      });
+      return;
+    }
+
     this.dailyExpensesApi
       .deleteObservationDocument(editing._id, observationIndex, documentUrl)
       .subscribe({
         next: () => {
+          // Recargar los datos del backend para sincronizar
+          this.load();
+
+          // Actualizar el estado local también
           editing.observations[observationIndex].documents = editing.observations[
             observationIndex
           ].documents.filter((url) => url !== documentUrl);
           this.editing.set({ ...editing });
+
           this.messageService.add({
             severity: 'success',
             summary: 'Éxito',
@@ -719,12 +989,22 @@ export class DailyExpensesPage implements OnInit {
           });
         },
         error: (error) => {
-          console.error('Error deleting observation document:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Error al eliminar el documento',
-          });
+          // Si la observación no existe, recargar los datos y cerrar el diálogo
+          if (error.status === 404) {
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'Advertencia',
+              detail: 'La observación no existe. Recargando datos...',
+            });
+            this.load();
+            this.closeDialog(); // Cerrar el diálogo para evitar inconsistencias
+          } else {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Error al eliminar el documento',
+            });
+          }
         },
       });
   }
@@ -736,44 +1016,90 @@ export class DailyExpensesPage implements OnInit {
     if (!files || files.length === 0) return;
 
     const editing = this.editing();
-    if (!editing || !editing._id) return;
+    if (!editing) return;
 
     const file = files[0];
-    this.dailyExpensesApi.uploadPurchaseDocument(editing._id, purchaseIndex, file).subscribe({
-      next: (response) => {
-        // Actualizar la compra con el nuevo documento
-        editing.purchases[purchaseIndex].documents.push(response.url);
-        this.editing.set({ ...editing });
-        target.value = ''; // Limpiar el input
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Documento subido correctamente',
-        });
-      },
-      error: (error) => {
-        console.error('Error uploading purchase document:', error);
+    target.value = ''; // Limpiar el input
+
+    // Si el reporte ya existe en el backend, subir inmediatamente
+    if (editing._id) {
+      // Validar que la compra existe en el estado local
+      if (!editing.purchases[purchaseIndex]) {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Error al subir el documento',
+          detail: 'La compra no existe en el índice especificado',
         });
-      },
-    });
+        return;
+      }
+
+      // Verificar si la compra existe en el backend
+      // Si el índice es mayor que 0, podría ser una nueva compra agregada durante la edición
+      if (purchaseIndex > 0) {
+        // Verificar sincronización para determinar si es una nueva compra
+        this.verifyBackendSync(editing._id)
+          .then((isSynced) => {
+            if (!isSynced) {
+              // La compra es nueva (agregada durante la edición)
+              this.saveFileAsPending(purchaseIndex, file, 'purchase');
+            } else {
+              // La compra existe en el backend, proceder con subida normal
+              this.uploadFileToBackend(editing._id!, purchaseIndex, file, 'purchase');
+            }
+          })
+          .catch((error) => {
+            // En caso de error, tratar como nueva compra
+            this.saveFileAsPending(purchaseIndex, file, 'purchase');
+          });
+      } else {
+        // Índice 0, debería existir en el backend
+        this.uploadFileToBackend(editing._id!, purchaseIndex, file, 'purchase');
+      }
+    } else {
+      // Si el reporte es nuevo, guardar el archivo como pendiente
+      this.saveFileAsPending(purchaseIndex, file, 'purchase');
+    }
   }
 
   removePurchaseDocument(purchaseIndex: number, documentUrl: string): void {
     const editing = this.editing();
     if (!editing || !editing._id) return;
 
+    const purchase = editing.purchases[purchaseIndex];
+
+    // Verificar que la compra existe
+    if (!purchase) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'La compra no existe en el índice especificado',
+      });
+      return;
+    }
+
+    // Verificar que el documento existe en la compra
+    if (!purchase.documents.includes(documentUrl)) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'El documento no existe en esta compra',
+      });
+      return;
+    }
+
     this.dailyExpensesApi
       .deletePurchaseDocument(editing._id, purchaseIndex, documentUrl)
       .subscribe({
         next: () => {
+          // Recargar los datos del backend para sincronizar
+          this.load();
+
+          // Actualizar el estado local también
           editing.purchases[purchaseIndex].documents = editing.purchases[
             purchaseIndex
           ].documents.filter((url) => url !== documentUrl);
           this.editing.set({ ...editing });
+
           this.messageService.add({
             severity: 'success',
             summary: 'Éxito',
@@ -781,18 +1107,33 @@ export class DailyExpensesPage implements OnInit {
           });
         },
         error: (error) => {
-          console.error('Error deleting purchase document:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Error al eliminar el documento',
-          });
+          // Si la compra no existe, recargar los datos y cerrar el diálogo
+          if (error.status === 404) {
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'Advertencia',
+              detail: 'La compra no existe. Recargando datos...',
+            });
+            this.load();
+            this.closeDialog(); // Cerrar el diálogo para evitar inconsistencias
+          } else {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Error al eliminar el documento',
+            });
+          }
         },
       });
   }
 
   // Métodos auxiliares para documentos
   getFileIcon(url: string): string {
+    // Validar que la URL existe y es una cadena válida
+    if (!url || typeof url !== 'string') {
+      return 'pi pi-file'; // Icono por defecto para URLs inválidas
+    }
+
     const extension = url.split('.').pop()?.toLowerCase();
     switch (extension) {
       case 'pdf':
@@ -814,6 +1155,11 @@ export class DailyExpensesPage implements OnInit {
   }
 
   getFileTypeColor(url: string): string {
+    // Validar que la URL existe y es una cadena válida
+    if (!url || typeof url !== 'string') {
+      return 'text-gray-600'; // Color por defecto para URLs inválidas
+    }
+
     const extension = url.split('.').pop()?.toLowerCase();
     switch (extension) {
       case 'pdf':
@@ -835,10 +1181,17 @@ export class DailyExpensesPage implements OnInit {
   }
 
   viewDocument(url: string): void {
+    if (!url || typeof url !== 'string') {
+      return;
+    }
     window.open(url, '_blank');
   }
 
   downloadDocument(url: string): void {
+    if (!url || typeof url !== 'string') {
+      return;
+    }
+
     const link = document.createElement('a');
     link.href = url;
     link.download = url.split('/').pop() || 'documento';
@@ -861,11 +1214,9 @@ export class DailyExpensesPage implements OnInit {
       errors.push('La fecha es requerida');
     }
 
-    // Validar proyecto
-    // Verificar que projectId existe y es un string válido
-    if (!item.projectId || typeof item.projectId !== 'string' || item.projectId.trim() === '') {
-      errors.push('El proyecto es requerido');
-    } else {
+    // Validar proyecto (opcional)
+    // Solo validar si se proporciona un proyecto
+    if (item.projectId && typeof item.projectId === 'string' && item.projectId.trim() !== '') {
       // Verificar que el proyecto existe en la lista de proyectos disponibles
       const projectExists = this.projects().some((p) => p.value === item.projectId);
       if (!projectExists) {
