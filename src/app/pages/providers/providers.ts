@@ -78,7 +78,6 @@ interface District {
     Rating,
     Tag,
     Card,
-    ConfirmDialog,
   ],
   templateUrl: './providers.html',
   styleUrls: ['./providers.scss'],
