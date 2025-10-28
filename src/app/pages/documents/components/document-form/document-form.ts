@@ -13,6 +13,7 @@ import { DividerModule } from 'primeng/divider';
 import { ToastModule } from 'primeng/toast';
 
 import { DocumentsApiService } from '../../../../shared/services/documents-api.service';
+import { ProjectsApiService } from '../../../../shared/services/projects-api.service';
 import { Document, ProjectReference } from '../../../../shared/interfaces/document.interface';
 import { Project } from '../../../../shared/interfaces/project.interface';
 
@@ -39,16 +40,17 @@ import { Project } from '../../../../shared/interfaces/project.interface';
 })
 export class DocumentFormComponent implements OnInit {
     @Input({ required: true }) document: Document | null = null;
-    @Input({ required: true }) projects: Project[] = [];
     @Output() documentSaved = new EventEmitter<void>();
     @Output() cancel = new EventEmitter<void>();
 
     private readonly fb = inject(FormBuilder);
     private readonly documentsApi = inject(DocumentsApiService);
+    private readonly projectsApi = inject(ProjectsApiService);
     private readonly messageService = inject(MessageService);
 
     documentForm!: FormGroup;
     loading = signal(false);
+    loadingProjects = signal(false);
     uploadedFiles = signal<File[]>([]);
     existingFiles = signal<string[]>([]);
 
@@ -67,7 +69,7 @@ export class DocumentFormComponent implements OnInit {
 
     ngOnInit(): void {
         this.initializeForm();
-        this.setupProjectOptions();
+        this.loadProjects();
 
         if (this.document) {
             this.populateForm();
@@ -91,14 +93,29 @@ export class DocumentFormComponent implements OnInit {
     }
 
     /**
-     * Configurar opciones de proyectos
+     * Cargar proyectos desde el backend
      */
-    private setupProjectOptions(): void {
-        const options = this.projects.map(project => ({
-            label: `${project.name} (${project.code})`,
-            value: project._id!
-        }));
-        this.projectOptions.set(options);
+    private loadProjects(): void {
+        this.loadingProjects.set(true);
+        this.projectsApi.listActive().subscribe({
+            next: (projects) => {
+                const options = projects.map(project => ({
+                    label: `${project.name} (${project.code})`,
+                    value: project._id!
+                }));
+                this.projectOptions.set(options);
+                this.loadingProjects.set(false);
+            },
+            error: (error: any) => {
+                console.error('Error al cargar proyectos:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudieron cargar los proyectos'
+                });
+                this.loadingProjects.set(false);
+            }
+        });
     }
 
     /**

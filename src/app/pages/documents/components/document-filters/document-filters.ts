@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, signal, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -8,9 +9,10 @@ import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
+import { ToastModule } from 'primeng/toast';
 
 import { DocumentFilters } from '../../../../shared/interfaces/document.interface';
-import { Project } from '../../../../shared/interfaces/project.interface';
+import { ProjectsApiService } from '../../../../shared/services/projects-api.service';
 
 @Component({
     selector: 'app-document-filters',
@@ -24,21 +26,25 @@ import { Project } from '../../../../shared/interfaces/project.interface';
         SelectModule,
         DatePickerModule,
         CardModule,
-        DividerModule
+        DividerModule,
+        ToastModule
     ],
     templateUrl: './document-filters.html',
     styleUrl: './document-filters.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    providers: [MessageService]
 })
 export class DocumentFiltersComponent implements OnInit {
-    @Input({ required: true }) projects: Project[] = [];
     @Input({ required: true }) loading: boolean = false;
     @Output() filtersApplied = new EventEmitter<DocumentFilters>();
 
     private readonly fb = inject(FormBuilder);
+    private readonly projectsApi = inject(ProjectsApiService);
+    private readonly messageService = inject(MessageService);
 
     filtersForm!: FormGroup;
     showAdvancedFilters = signal(false);
+    projectOptions = signal<{ label: string; value: string }[]>([]);
 
     // Opciones para categorías
     categoryOptions = [
@@ -60,6 +66,7 @@ export class DocumentFiltersComponent implements OnInit {
 
     ngOnInit(): void {
         this.initializeForm();
+        this.loadProjects();
     }
 
     /**
@@ -82,17 +89,29 @@ export class DocumentFiltersComponent implements OnInit {
     }
 
     /**
-     * Obtener opciones de proyectos para el dropdown
+     * Cargar proyectos desde el backend
      */
-    get projectOptions() {
-        const options = [{ label: 'Todos los proyectos', value: '' }];
-        this.projects.forEach(project => {
-            options.push({
-                label: `${project.name} (${project.code})`,
-                value: project._id!
-            });
+    private loadProjects(): void {
+        this.projectsApi.listActive().subscribe({
+            next: (projects) => {
+                const options = [{ label: 'Todos los proyectos', value: '' }];
+                projects.forEach(project => {
+                    options.push({
+                        label: `${project.name} (${project.code})`,
+                        value: project._id!
+                    });
+                });
+                this.projectOptions.set(options);
+            },
+            error: (error: any) => {
+                console.error('Error al cargar proyectos:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudieron cargar los proyectos'
+                });
+            }
         });
-        return options;
     }
 
     /**

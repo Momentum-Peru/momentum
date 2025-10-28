@@ -35,6 +35,7 @@ export class DocumentListComponent {
     @Input({ required: true }) totalRecords: number = 0;
     @Input({ required: true }) currentPage: number = 1;
     @Input({ required: true }) pageSize: number = 10;
+    @Input({ required: true }) first: number = 0;
     @Input({ required: true }) trackByFn!: (index: number, item: Document) => string;
 
     @Output() pageChange = new EventEmitter<{ page: number; first: number; rows: number }>();
@@ -122,8 +123,18 @@ export class DocumentListComponent {
      * Manejar cambio de página
      */
     onPageChange(event: any): void {
+        // Prevenir loop: si el evento coincide con el estado actual, no hacer nada
+        if (event.first === this.first && event.rows === this.pageSize) {
+            return;
+        }
+
+        // Calcular el número de página basándose en first y rows
+        const page = event.first >= 0 && event.rows > 0
+            ? Math.floor(event.first / event.rows)
+            : 0;
+
         this.pageChange.emit({
-            page: event.page,
+            page: page,
             first: event.first,
             rows: event.rows
         });
