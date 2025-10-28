@@ -85,7 +85,9 @@ export class QuotesPage {
   projects = signal<Project[]>([]);
   query = signal<string>('');
   showDialog = signal<boolean>(false);
+  showDetailsDialog = signal<boolean>(false);
   editing = signal<Quote | null>(null);
+  viewingQuote = signal<Quote | null>(null);
   loading = signal<boolean>(false);
   pagination = signal({
     page: 1,
@@ -148,6 +150,13 @@ export class QuotesPage {
         this.editing.set(null);
         this.quoteForm.reset();
         // this.itemsFormArray.clear(); // REMOVIDO: Ya no se manejan items
+      }
+    });
+
+    // Efecto para manejar el cierre del diálogo de detalles
+    effect(() => {
+      if (!this.showDetailsDialog()) {
+        this.viewingQuote.set(null);
       }
     });
 
@@ -271,6 +280,15 @@ export class QuotesPage {
 
   closeDialog() {
     this.showDialog.set(false);
+  }
+
+  viewDetails(quote: Quote) {
+    this.viewingQuote.set(quote);
+    this.showDetailsDialog.set(true);
+  }
+
+  closeDetails() {
+    this.showDetailsDialog.set(false);
   }
 
   // Métodos para manejar items - REMOVIDOS: Ya no se manejan items

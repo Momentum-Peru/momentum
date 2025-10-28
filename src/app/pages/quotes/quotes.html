@@ -57,7 +57,9 @@
       <ng-template pTemplate="body" let-quote>
         <tr>
           <td>
-            <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+            <span
+              class="font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
+            >
               {{ quote.number }}
             </span>
           </td>
@@ -79,12 +81,14 @@
             ></p-tag>
           </td>
           <td>
-            <span class="text-sm text-gray-600">
+            <span class="text-sm text-gray-600 dark:text-gray-300">
               {{ quote.createDate | date : 'dd/MM/yyyy' }}
             </span>
           </td>
           <td>
-            <span class="text-sm text-gray-600"> {{ quote.documents?.length || 0 }} docs </span>
+            <span class="text-sm text-gray-600 dark:text-gray-300">
+              {{ quote.documents?.length || 0 }} docs
+            </span>
           </td>
           <td class="text-center">
             <div class="flex gap-1 justify-center">
@@ -108,6 +112,15 @@
                 [hideTransitionOptions]="'0ms'"
                 styleClass="p-menu-sm"
               ></p-menu>
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm"
+                (click)="viewDetails(quote)"
+                pTooltip="Ver detalles"
+                tooltipPosition="top"
+              ></button>
+
               <button
                 pButton
                 icon="pi pi-cog"
@@ -352,6 +365,159 @@
           [disabled]="quoteForm.invalid"
         ></button>
       </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de detalles de la cotización -->
+  <p-dialog
+    [(visible)]="showDetailsDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '60rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-eye text-blue-500"></i>
+        Detalles de la Cotización — {{ viewingQuote()?.number }}
+      </div>
+    </ng-template>
+    @if (viewingQuote()) {
+    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+      <!-- Información básica -->
+      <div class="mb-6">
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-info-circle text-blue-500"></i>
+          Información Básica
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Número</label
+            >
+            <div
+              class="text-gray-900 dark:text-gray-100 font-mono font-medium bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
+            >
+              {{ viewingQuote()?.number }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              <p-tag
+                [value]="viewingQuote()?.state"
+                [severity]="getStateSeverity(viewingQuote()?.state ?? 'Pendiente')"
+              ></p-tag>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Cliente</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-medium">
+              {{ getClientName(viewingQuote()?.clientId ?? '') }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Proyecto</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ getProjectName(viewingQuote()?.projectId ?? '') }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Creación</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingQuote()?.createDate | date : 'dd/MM/yyyy' }}
+            </div>
+          </div>
+          @if (viewingQuote()?.expirationDate) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Vencimiento</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingQuote()?.expirationDate | date : 'dd/MM/yyyy' }}
+            </div>
+          </div>
+          } @if (viewingQuote()?.total) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Total</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-semibold text-lg">
+              ${{ viewingQuote()?.total | number : '1.2-2' }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Notas -->
+      @if (viewingQuote()?.notes) {
+      <div class="mb-6">
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-file-edit text-green-500"></i>
+          Notas
+        </h3>
+        <div
+          class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-white dark:bg-gray-700 p-4 rounded border"
+        >
+          {{ viewingQuote()?.notes }}
+        </div>
+      </div>
+      }
+
+      <!-- Documentos -->
+      @if (viewingQuote()?.documents?.length) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-file text-indigo-500"></i>
+          Documentos Adjuntos ({{ viewingQuote()?.documents?.length }})
+        </h3>
+        <div class="space-y-2">
+          @for (document of viewingQuote()?.documents; track document) {
+          <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
+            <i class="pi pi-file text-gray-500"></i>
+            <a
+              [href]="document"
+              target="_blank"
+              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+            >
+              <i class="pi pi-external-link text-xs"></i>
+              Ver documento
+            </a>
+          </div>
+          }
+        </div>
+      </div>
+      } @else {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-file text-indigo-500"></i>
+          Documentos Adjuntos
+        </h3>
+        <div class="text-gray-500 dark:text-gray-400">No hay documentos adjuntos</div>
+      </div>
+      }
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
     </ng-template>
   </p-dialog>
 </div>

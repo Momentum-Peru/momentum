@@ -12,6 +12,7 @@ export interface Quote {
   number: string;
   createDate: string | Date;
   sendDate?: string | Date;
+  expirationDate?: string | Date;
   documents: string[];
   items: QuoteItem[];
   total: number;
