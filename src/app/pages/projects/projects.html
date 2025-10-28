@@ -28,7 +28,10 @@
     <ng-template pTemplate="body" let-row>
       <tr>
         <td>
-          <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{{ row.code }}</span>
+          <span
+            class="font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
+            >{{ row.code }}</span
+          >
         </td>
         <td>
           <div class="max-w-xs">
@@ -56,6 +59,14 @@
         <td>{{ row.startDate | date : 'dd/MM/yyyy' }}</td>
         <td>{{ row.endDate | date : 'dd/MM/yyyy' }}</td>
         <td class="text-right">
+          <button
+            pButton
+            icon="pi pi-eye"
+            class="p-button-text"
+            (click)="viewDetails(row)"
+            pTooltip="Ver detalles"
+            tooltipPosition="top"
+          ></button>
           <button
             pButton
             icon="pi pi-pencil"
@@ -212,7 +223,7 @@
           [ngModel]="editing()?.description"
           (ngModelChange)="onEditChange('description', $event)"
           rows="3"
-          class="w-full"
+          class="w-full text-gray-900 dark:text-gray-900"
         ></textarea>
       </div>
 
@@ -225,7 +236,7 @@
           [ngModel]="editing()?.notes"
           (ngModelChange)="onEditChange('notes', $event)"
           rows="2"
-          class="w-full"
+          class="w-full text-gray-900 dark:text-gray-900"
         ></textarea>
       </div>
     </div>
@@ -233,6 +244,158 @@
     <ng-template pTemplate="footer">
       <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
       <button pButton label="Guardar" (click)="save()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de detalles del proyecto -->
+  <p-dialog
+    [(visible)]="showDetailsDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '60rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-eye text-blue-500"></i>
+        Detalles del Proyecto — {{ viewingProject()?.name }}
+      </div>
+    </ng-template>
+    @if (viewingProject()) {
+    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+      <!-- Información básica -->
+      <div class="mb-6">
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-info-circle text-blue-500"></i>
+          Información Básica
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Código</label
+            >
+            <div
+              class="text-gray-900 dark:text-gray-100 font-mono font-medium bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
+            >
+              {{ viewingProject()?.code }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              <span
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                [class]="getStatusClass(viewingProject()?.status ?? '')"
+              >
+                {{ getStatusLabel(viewingProject()?.status ?? '') }}
+              </span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Cliente</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-medium">
+              {{ getClientName(viewingProject()?.clientId ?? '') }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Ubicación</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingProject()?.location || 'Sin ubicación' }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Presupuesto</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-semibold text-lg">
+              {{ viewingProject()?.budget | currency : 'USD' : 'symbol' : '1.0-0' }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado Activo</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              <span
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                [class]="
+                  viewingProject()?.isActive
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                "
+              >
+                {{ viewingProject()?.isActive ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+          </div>
+          @if (viewingProject()?.startDate) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Inicio</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingProject()?.startDate | date : 'dd/MM/yyyy' }}
+            </div>
+          </div>
+          } @if (viewingProject()?.endDate) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Fin</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingProject()?.endDate | date : 'dd/MM/yyyy' }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      @if (viewingProject()?.description) {
+      <div class="mb-6">
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-file-edit text-green-500"></i>
+          Descripción
+        </h3>
+        <div
+          class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-white dark:bg-gray-700 p-4 rounded border"
+        >
+          {{ viewingProject()?.description }}
+        </div>
+      </div>
+      }
+
+      <!-- Notas -->
+      @if (viewingProject()?.notes) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-sticky-note text-yellow-500"></i>
+          Notas
+        </h3>
+        <div
+          class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-white dark:bg-gray-700 p-4 rounded border"
+        >
+          {{ viewingProject()?.notes }}
+        </div>
+      </div>
+      }
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
     </ng-template>
   </p-dialog>
 </div>

@@ -43,7 +43,9 @@ export class ProjectsPage implements OnInit {
   clients = signal<ClientOption[]>([]);
   query = signal('');
   showDialog = signal(false);
+  showDetailsDialog = signal(false);
   editing = signal<Project | null>(null);
+  viewingProject = signal<Project | null>(null);
 
   statusOptions = [
     { label: 'Planificación', value: 'PLANNING' },
@@ -63,6 +65,13 @@ export class ProjectsPage implements OnInit {
     effect(() => {
       if (!this.showDialog()) {
         this.editing.set(null);
+      }
+    });
+
+    // Efecto para manejar el cierre del diálogo de detalles
+    effect(() => {
+      if (!this.showDetailsDialog()) {
+        this.viewingProject.set(null);
       }
     });
   }
@@ -161,6 +170,15 @@ export class ProjectsPage implements OnInit {
 
   closeDialog() {
     this.showDialog.set(false);
+  }
+
+  viewDetails(project: Project) {
+    this.viewingProject.set(project);
+    this.showDetailsDialog.set(true);
+  }
+
+  closeDetails() {
+    this.showDetailsDialog.set(false);
   }
 
   onEditChange(field: keyof Project, value: any) {
