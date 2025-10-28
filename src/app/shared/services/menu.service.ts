@@ -32,7 +32,6 @@ export class MenuService {
     const currentUser = this.authService.getCurrentUser();
 
     if (!currentUser?.id) {
-      console.log('No user ID found, setting empty permissions');
       this.userPermissions.set([]);
       return;
     }

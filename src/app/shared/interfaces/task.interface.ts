@@ -17,11 +17,10 @@ export interface TaskComment {
   _id: string;
   taskId: string;
   content: string;
-  authorId: string;
-  authorName: string;
+  createdBy: string; // ID del usuario que creó el comentario
   createdAt: Date | string;
   updatedAt: Date | string;
-  files: TaskFile[];
+  attachments?: TaskFile[];
 }
 
 export interface Task {
@@ -36,8 +35,8 @@ export interface Task {
   createdByName?: string; // User name for display
   dueDate?: Date | string;
   tags: string[];
-  comments: TaskComment[];
-  files: TaskFile[];
+  info?: TaskComment[]; // Comentarios/información de la tarea
+  files?: TaskFile[];
   createdAt: Date | string;
   updatedAt: Date | string;
   isActive: boolean;
@@ -68,6 +67,7 @@ export interface UpdateTaskRequest {
 export interface CreateTaskCommentRequest {
   content: string;
   taskId: string;
+  createdBy: string;
 }
 
 export interface UpdateTaskCommentRequest {

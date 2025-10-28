@@ -31,13 +31,17 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
   template: `
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Pending Column -->
-      <div class="bg-gray-100 rounded-lg p-4">
+      <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
+          >
             <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
             Pendientes
           </h3>
-          <span class="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm font-medium">
+          <span
+            class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-sm font-medium"
+          >
             {{ pendingTasks().length }}
           </span>
         </div>
@@ -61,9 +65,9 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
             </app-native-task-card>
           </div>
           } @if (pendingTasks().length === 0) {
-          <div class="text-center py-8 text-gray-500">
+          <div class="text-center py-8 text-gray-500 dark:text-gray-400">
             <svg
-              class="w-12 h-12 mx-auto mb-2 text-gray-300"
+              class="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -82,13 +86,17 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
       </div>
 
       <!-- In Progress Column -->
-      <div class="bg-blue-50 rounded-lg p-4">
+      <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
+          >
             <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
             En Progreso
           </h3>
-          <span class="bg-blue-200 text-blue-700 px-2 py-1 rounded-full text-sm font-medium">
+          <span
+            class="bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full text-sm font-medium"
+          >
             {{ inProgressTasks().length }}
           </span>
         </div>
@@ -112,9 +120,9 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
             </app-native-task-card>
           </div>
           } @if (inProgressTasks().length === 0) {
-          <div class="text-center py-8 text-gray-500">
+          <div class="text-center py-8 text-gray-500 dark:text-gray-400">
             <svg
-              class="w-12 h-12 mx-auto mb-2 text-gray-300"
+              class="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -133,13 +141,17 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
       </div>
 
       <!-- Completed Column -->
-      <div class="bg-green-50 rounded-lg p-4">
+      <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
+          >
             <div class="w-3 h-3 bg-green-500 rounded-full"></div>
             Completadas
           </h3>
-          <span class="bg-green-200 text-green-700 px-2 py-1 rounded-full text-sm font-medium">
+          <span
+            class="bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300 px-2 py-1 rounded-full text-sm font-medium"
+          >
             {{ completedTasks().length }}
           </span>
         </div>
@@ -163,9 +175,9 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
             </app-native-task-card>
           </div>
           } @if (completedTasks().length === 0) {
-          <div class="text-center py-8 text-gray-500">
+          <div class="text-center py-8 text-gray-500 dark:text-gray-400">
             <svg
-              class="w-12 h-12 mx-auto mb-2 text-gray-300"
+              class="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -297,25 +309,11 @@ export class NativeKanbanBoardComponent implements OnInit, OnChanges {
 
     const newStatus = statusMap[currentContainer];
 
-    console.log('🔄 Drag & Drop Event:', {
-      previousContainer,
-      currentContainer,
-      newStatus,
-      isSameContainer: event.previousContainer === event.container,
-    });
-
     if (event.previousContainer === event.container) {
       // Reordenar dentro de la misma columna
-      console.log('📋 Reordenando dentro de la misma columna');
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {
       // Mover entre columnas
-      console.log('🔄 Moviendo entre columnas:', {
-        from: previousContainer,
-        to: currentContainer,
-        newStatus,
-      });
-
       transferArrayItem(
         event.previousContainer.data,
         event.container.data,
@@ -328,15 +326,8 @@ export class NativeKanbanBoardComponent implements OnInit, OnChanges {
       const task = event.container.data[event.currentIndex] as Task;
 
       if (!task || !task._id) {
-        console.error('❌ Error: No se pudo obtener la tarea del drop event');
         return;
       }
-
-      console.log('📤 Emitiendo cambio de estado:', {
-        taskId: task._id,
-        taskTitle: task.title,
-        newStatus,
-      });
 
       this.taskStatusChanged.emit({
         taskId: task._id,

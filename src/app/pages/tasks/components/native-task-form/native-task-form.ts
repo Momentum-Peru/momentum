@@ -263,7 +263,6 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['task']) {
-      console.log('🔄 Tarea cambió, reinicializando formulario:', changes['task'].currentValue);
       this.initializeForm();
     }
   }
@@ -296,12 +295,6 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
           ? (this.task.assignedTo as any)._id
           : this.task.assignedTo;
 
-      console.log('🔄 Inicializando formulario para edición:', {
-        task: this.task,
-        assignedToId: assignedToId,
-        isEditing: true,
-      });
-
       // Resetear el formulario primero
       this.taskForm.reset();
 
@@ -315,12 +308,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         dueDate: this.task.dueDate ? new Date(this.task.dueDate).toISOString().split('T')[0] : null,
         tags: Array.isArray(this.task.tags) ? this.task.tags.join(', ') : this.task.tags || '',
       });
-
-      console.log('✅ Formulario llenado con datos:', this.taskForm.value);
     } else {
       this.isEditing.set(false);
       this.taskForm.reset();
-      console.log('🔄 Inicializando formulario para creación');
     }
   }
 
@@ -338,7 +328,6 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
           this.usersLoading.set(false);
         },
         error: (err) => {
-          console.error('Error loading users', err);
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
@@ -381,9 +370,6 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
           : [],
       };
 
-      console.log('Form values:', formValue);
-      console.log('Task data to send:', taskData);
-
       const task = this.task;
       const operation = task
         ? this.tasksApiService.updateTask(task._id, taskData as UpdateTaskRequest)
@@ -400,7 +386,6 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
           this.loading.set(false);
         },
         error: (err) => {
-          console.error('Error saving task', err);
           this.messageService.add({
             severity: 'error',
             summary: 'Error',

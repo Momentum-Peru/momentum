@@ -28,6 +28,7 @@ import { TaskCommentsApiService } from '../../shared/services/task-comments-api.
 import { NativeKanbanBoardComponent } from './components/native-kanban-board/native-kanban-board';
 import { NativeTaskFormComponent } from './components/native-task-form/native-task-form';
 import { NativeTaskStatsComponent } from './components/native-task-stats/native-task-stats';
+import { TaskDetailsComponent } from './components/task-details/task-details';
 
 // Interfaces
 import {
@@ -59,16 +60,19 @@ import {
     NativeKanbanBoardComponent,
     NativeTaskFormComponent,
     NativeTaskStatsComponent,
+    TaskDetailsComponent,
   ],
   providers: [ConfirmationService, MessageService],
   template: `
-    <div class="min-h-screen bg-gray-50 p-6">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <!-- Header -->
       <div class="mb-6">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-3xl font-bold text-gray-900">Gestión de Tareas</h1>
-            <p class="text-gray-600 mt-1">Organiza y gestiona tus tareas con el tablero Kanban</p>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Gestión de Tareas</h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">
+              Organiza y gestiona tus tareas con el tablero Kanban
+            </p>
           </div>
           <div class="flex items-center gap-3">
             <p-button
@@ -125,9 +129,9 @@ import {
       @if (!tasksService.loading() && !tasksService.error() && (tasksService.tasks() || []).length
       === 0) {
       <div class="text-center py-12">
-        <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
-        <h3 class="text-xl font-semibold text-gray-600 mb-2">No hay tareas</h3>
-        <p class="text-gray-500 mb-6">Comienza creando tu primera tarea</p>
+        <i class="pi pi-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">No hay tareas</h3>
+        <p class="text-gray-500 dark:text-gray-500 mb-6">Comienza creando tu primera tarea</p>
         <p-button
           icon="pi pi-plus"
           label="Crear Primera Tarea"
@@ -159,6 +163,14 @@ import {
 
     <!-- Toast Messages -->
     <p-toast></p-toast>
+
+    <!-- Task Details Dialog -->
+    <app-task-details
+      [task]="selectedTask()"
+      [visible]="showTaskDetails"
+      (close)="closeTaskDetails()"
+    >
+    </app-task-details>
   `,
   styles: [
     `
@@ -265,14 +277,8 @@ export class TasksPage implements OnInit {
    * Maneja el cambio de estado de tareas (drag and drop)
    */
   public onTaskStatusChanged(event: DragDropEvent): void {
-    console.log('🔄 Actualizando estado de tarea:', {
-      taskId: event.taskId,
-      newStatus: event.newStatus,
-    });
-
     this.tasksService.updateTaskStatus(event).subscribe({
       next: (updatedTask) => {
-        console.log('✅ Tarea actualizada exitosamente:', updatedTask);
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
@@ -281,7 +287,6 @@ export class TasksPage implements OnInit {
         // No necesitamos refrescar porque el servicio ya actualiza la lista local
       },
       error: (error) => {
-        console.error('❌ Error al actualizar tarea:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',

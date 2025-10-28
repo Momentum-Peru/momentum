@@ -10,14 +10,16 @@ import { Task, TaskStatus } from '../../../../shared/interfaces/task.interface';
   imports: [CommonModule],
   template: `
     <div
-      class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer"
       (click)="onCardClick()"
       [class.border-red-300]="isOverdue()"
+      [class.dark:border-red-500]="isOverdue()"
       [class.bg-red-50]="isOverdue()"
+      [class.dark:bg-red-900/20]="isOverdue()"
     >
       <!-- Header -->
       <div class="flex items-start justify-between mb-3">
-        <h3 class="text-sm font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 flex-1 mr-2">
           {{ task.title }}
         </h3>
         <div class="flex items-center gap-1">
@@ -33,7 +35,7 @@ import { Task, TaskStatus } from '../../../../shared/interfaces/task.interface';
 
       <!-- Description -->
       @if (task.description) {
-      <p class="text-sm text-gray-600 mb-3 line-clamp-2">
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
         {{ task.description }}
       </p>
       }
@@ -43,7 +45,7 @@ import { Task, TaskStatus } from '../../../../shared/interfaces/task.interface';
       <div class="flex flex-wrap gap-1 mb-3">
         @for (tag of task.tags; track tag) {
         <span
-          class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800"
+          class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
         >
           {{ tag }}
         </span>
@@ -52,7 +54,7 @@ import { Task, TaskStatus } from '../../../../shared/interfaces/task.interface';
       }
 
       <!-- Footer -->
-      <div class="flex items-center justify-between text-xs text-gray-500">
+      <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
         <!-- Due Date -->
         @if (task.dueDate) {
         <div class="flex items-center gap-1">
@@ -64,7 +66,11 @@ import { Task, TaskStatus } from '../../../../shared/interfaces/task.interface';
               d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
             ></path>
           </svg>
-          <span [class.text-red-600]="isOverdue()" [class.font-semibold]="isOverdue()">
+          <span
+            [class.text-red-600]="isOverdue()"
+            [class.dark:text-red-400]="isOverdue()"
+            [class.font-semibold]="isOverdue()"
+          >
             {{ formatDate(task.dueDate) }}
           </span>
         </div>
@@ -105,7 +111,7 @@ import { Task, TaskStatus } from '../../../../shared/interfaces/task.interface';
 
       <!-- Overdue Warning -->
       @if (isOverdue()) {
-      <div class="mt-2 p-2 bg-red-100 border border-red-200 rounded text-xs text-red-800">
+      <div class="mt-2 p-2 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-800 dark:text-red-200">
         <div class="flex items-center gap-1">
           <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
             <path
@@ -157,15 +163,15 @@ export class NativeTaskCardComponent {
   public getPriorityClass(): string {
     switch (this.task.priority) {
       case 'Alta':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200';
       case 'Media':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
       case 'Baja':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
       case 'Crítica':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
     }
   }
 
