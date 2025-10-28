@@ -60,7 +60,7 @@
           icon="pi pi-filter-slash"
           class="p-button-outlined w-full"
           (click)="clearFilters()"
-          [disabled]="!query() && !roleFilter() && !statusFilter()"
+          [disabled]="!query() && !roleFilter() && statusFilter() === 'true'"
         ></button>
       </div>
 
@@ -170,26 +170,24 @@
             <!-- Acciones -->
             <td class="py-3 text-center">
               <div class="flex items-center justify-center gap-1">
-                <!-- Editar - Deshabilitado -->
+                <!-- Editar -->
                 <button
                   pButton
                   icon="pi pi-pencil"
-                  class="p-button-text p-button-sm text-gray-400 cursor-not-allowed"
+                  class="p-button-text p-button-sm text-blue-600 hover:text-blue-800"
                   (click)="editUser(user)"
-                  pTooltip="Editar usuario (No disponible)"
+                  pTooltip="Editar usuario"
                   tooltipPosition="top"
-                  [disabled]="true"
                 ></button>
 
-                <!-- Cambiar estado - Deshabilitado -->
+                <!-- Cambiar estado -->
                 <button
                   pButton
                   [icon]="user.isActive ? 'pi pi-user-minus' : 'pi pi-user-plus'"
-                  class="p-button-text p-button-sm text-gray-400 cursor-not-allowed"
+                  class="p-button-text p-button-sm text-orange-600 hover:text-orange-800"
                   (click)="toggleUserStatus(user)"
-                  [pTooltip]="'Cambiar estado (No disponible)'"
+                  [pTooltip]="user.isActive ? 'Desactivar usuario' : 'Activar usuario'"
                   tooltipPosition="top"
-                  [disabled]="true"
                 ></button>
 
                 <!-- Eliminar -->
@@ -198,7 +196,7 @@
                   icon="pi pi-trash"
                   class="p-button-text p-button-sm text-red-600 hover:text-red-800"
                   (click)="confirmDelete(user)"
-                  pTooltip="Desactivar usuario"
+                  pTooltip="Eliminar usuario"
                   tooltipPosition="top"
                 ></button>
               </div>

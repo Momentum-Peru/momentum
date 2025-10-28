@@ -23,10 +23,10 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import {
   UsersApiService,
+  User,
   UserCreateRequest,
   UserUpdateRequest,
 } from '../../shared/services/users-api.service';
-import { User } from '../../pages/login/services/auth.service';
 
 interface UserFormData {
   _id?: string;
@@ -68,7 +68,7 @@ export class UsersPage implements OnInit, OnDestroy {
   private _users = signal<User[]>([]);
   query = signal<string>('');
   roleFilter = signal<string>('');
-  statusFilter = signal<string>('');
+  statusFilter = signal<string>('true'); // Por defecto mostrar solo activos
   showDialog = signal<boolean>(false);
   editing = signal<UserFormData | null>(null);
   loading = signal<boolean>(false);
@@ -91,7 +91,7 @@ export class UsersPage implements OnInit, OnDestroy {
   ];
 
   statusOptions = [
-    { label: 'Todos', value: '' },
+    { label: 'Todos', value: 'all' },
     { label: 'Activos', value: 'true' },
     { label: 'Inactivos', value: 'false' },
   ];
@@ -131,11 +131,11 @@ export class UsersPage implements OnInit, OnDestroy {
     this.loading.set(true);
 
     // Construir filtros solo con valores válidos
-    const filters: { q?: string; role?: string; isActive?: boolean } = {};
+    const filters: { search?: string; role?: string; isActive?: boolean } = {};
 
     const query = this.query().trim();
     if (query) {
-      filters.q = query;
+      filters.search = query;
     }
 
     const role = this.roleFilter();
@@ -144,43 +144,36 @@ export class UsersPage implements OnInit, OnDestroy {
     }
 
     const status = this.statusFilter();
-    if (status) {
+    // Solo aplicar filtro si no es 'all' (todos)
+    if (status && status !== 'all') {
       filters.isActive = status === 'true';
     }
-
-    // Debug: mostrar filtros aplicados
-    console.log('Filtros aplicados:', filters);
-    console.log('Query actual:', this.query());
-    console.log('Role filter actual:', this.roleFilter());
-    console.log('Status filter actual:', this.statusFilter());
+    // Si status es 'all' o está vacío, no enviar isActive para mostrar todos
 
     this.usersApi.listWithFilters(filters).subscribe({
       next: (response) => {
-        console.log('Respuesta recibida:', response);
-
         // Filtrado del lado del cliente como fallback
         let filteredUsers = response?.users || [];
 
         // Aplicar filtro de estado si la API no lo procesó correctamente
+        // Solo filtrar si isActive está definido (no undefined)
         if (filters.isActive !== undefined) {
           filteredUsers = filteredUsers.filter((user: any) => user.isActive === filters.isActive);
-          console.log('Usuarios filtrados por estado:', filteredUsers);
         }
+        // Si isActive es undefined, mostrar todos (activos e inactivos)
 
         // Aplicar filtro de rol si la API no lo procesó correctamente
         if (filters.role) {
           filteredUsers = filteredUsers.filter((user: any) => user.role === filters.role);
-          console.log('Usuarios filtrados por rol:', filteredUsers);
         }
 
         // Aplicar filtro de búsqueda si la API no lo procesó correctamente
-        if (filters.q) {
-          const query = filters.q.toLowerCase();
+        if (filters.search) {
+          const query = filters.search.toLowerCase();
           filteredUsers = filteredUsers.filter(
             (user: any) =>
               user.name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query)
           );
-          console.log('Usuarios filtrados por búsqueda:', filteredUsers);
         }
 
         this._users.set(Array.isArray(filteredUsers) ? filteredUsers : []);
@@ -229,7 +222,7 @@ export class UsersPage implements OnInit, OnDestroy {
   clearFilters() {
     this.query.set('');
     this.roleFilter.set('');
-    this.statusFilter.set('');
+    this.statusFilter.set('true'); // Por defecto mostrar solo activos
     this.loadUsers();
   }
 
@@ -248,14 +241,15 @@ export class UsersPage implements OnInit, OnDestroy {
 
   /**
    * Abre el diálogo para editar un usuario existente
-   * NOTA: Funcionalidad deshabilitada - backend no implementado
    */
   editUser(user: User) {
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Funcionalidad no disponible',
-      detail: 'La edición de usuarios no está implementada en el backend',
+    this.editing.set({
+      _id: user._id || user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
     });
+    this.showDialog.set(true);
   }
 
   /**
@@ -400,13 +394,41 @@ export class UsersPage implements OnInit, OnDestroy {
 
   /**
    * Cambia el estado activo/inactivo de un usuario
-   * NOTA: Funcionalidad deshabilitada - backend no implementado
    */
   toggleUserStatus(user: User) {
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Funcionalidad no disponible',
-      detail: 'El cambio de estado de usuarios no está implementado en el backend',
+    const newStatus = !user.isActive;
+    const statusLabel = newStatus ? 'activar' : 'desactivar';
+
+    this.confirmationService.confirm({
+      message: `¿Estás seguro de que quieres ${statusLabel} al usuario "${user.name}"?`,
+      header: 'Confirmar cambio de estado',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: `Sí, ${statusLabel}`,
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.loading.set(true);
+        const userId = user._id || user.id;
+
+        this.usersApi.update(userId, { isActive: newStatus }).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: `Usuario ${statusLabel} correctamente`,
+            });
+            this.loadUsers();
+          },
+          error: (error) => {
+            console.error('Error cambiando estado del usuario:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: this.getErrorMessage(error),
+            });
+            this.loading.set(false);
+          },
+        });
+      },
     });
   }
 

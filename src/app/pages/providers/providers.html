@@ -1,13 +1,12 @@
 <div class="p-4 space-y-4">
   <p-toast></p-toast>
-  <p-confirmDialog></p-confirmDialog>
 
   <!-- Header con estadísticas -->
-  <div class="flex items-center justify-between">
-    <div class="flex items-center gap-4">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="flex flex-col md:flex-row md:items-center gap-4">
       <h1 class="text-2xl font-bold text-gray-800">Gestión de Proveedores</h1>
       @if (stats()) {
-      <div class="flex items-center gap-2 text-sm text-gray-600">
+      <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
         <span class="flex items-center gap-1">
           <i class="pi pi-users text-blue-500"></i>
           {{ stats()?.total }} total
@@ -23,7 +22,7 @@
       </div>
       }
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
       <button
         pButton
         type="button"
@@ -64,7 +63,9 @@
             (ngModelChange)="setService($event)"
             placeholder="Todos los servicios"
             [showClear]="true"
+            [appendTo]="'body'"
             class="w-full"
+            [appendTo]="'body'"
           ></p-select>
         </div>
         <div>
@@ -81,6 +82,7 @@
             (ngModelChange)="setStatus($event)"
             placeholder="Todos los estados"
             class="w-full"
+            [appendTo]="'body'"
           ></p-select>
         </div>
         <div class="flex items-end">
@@ -98,124 +100,140 @@
   </p-card>
 
   <!-- Tabla de proveedores -->
-  <p-table [value]="items()" [tableStyle]="{ 'min-width': '50rem' }" [paginator]="true" [rows]="10">
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Proveedor</th>
-        <th>Servicios</th>
-        <th>Ubicación</th>
-        <th>Contactos</th>
-        <th>Calificación</th>
-        <th>Estado</th>
-        <th>Acciones</th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-row>
-      <tr>
-        <td>
-          <div class="space-y-1">
-            <div class="font-semibold text-gray-900">{{ row.name }}</div>
-            @if (row.taxId) {
-            <div class="text-sm text-gray-500">RUC: {{ row.taxId }}</div>
-            } @if (row.website) {
-            <div class="text-sm">
-              <a
-                [href]="row.website"
-                target="_blank"
-                class="text-blue-600 hover:text-blue-800 flex items-center gap-1"
-              >
-                <i class="pi pi-external-link text-xs"></i>
-                Sitio web
-              </a>
+  <div class="overflow-x-auto">
+    <p-table
+      [value]="items()"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [paginator]="true"
+      [rows]="10"
+      [responsiveLayout]="'scroll'"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="whitespace-nowrap">Proveedor</th>
+          <th class="whitespace-nowrap">Servicios</th>
+          <th class="whitespace-nowrap">Ubicación</th>
+          <th class="whitespace-nowrap">Contactos</th>
+          <th class="whitespace-nowrap">Calificación</th>
+          <th class="whitespace-nowrap">Estado</th>
+          <th class="whitespace-nowrap">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <div class="space-y-1 min-w-[200px]">
+              <div class="font-semibold text-gray-900 break-words">{{ row.name }}</div>
+              @if (row.taxId) {
+              <div class="text-sm text-gray-500 break-words">RUC: {{ row.taxId }}</div>
+              } @if (row.website) {
+              <div class="text-sm">
+                <a
+                  [href]="row.website"
+                  target="_blank"
+                  class="text-blue-600 hover:text-blue-800 flex items-center gap-1 break-all"
+                >
+                  <i class="pi pi-external-link text-xs"></i>
+                  Sitio web
+                </a>
+              </div>
+              }
             </div>
+          </td>
+          <td>
+            <div class="flex flex-wrap gap-1 max-w-[300px]">
+              @for (service of row.services; track service) {
+              <p-chip [label]="service" styleClass="text-xs"></p-chip>
+              }
+            </div>
+          </td>
+          <td>
+            @if (row.ubicacion) {
+            <div class="text-sm min-w-[200px] max-w-[300px]">
+              @if (row.ubicacion.paisCodigo) {
+              <div class="font-medium break-words">
+                {{ getCountryName(row.ubicacion.paisCodigo) }}
+              </div>
+              } @if (row.ubicacion.provinciaCodigo) {
+              <div class="text-gray-600 break-words">
+                {{ getProvinceName(row.ubicacion.provinciaCodigo) }}
+              </div>
+              } @if (row.ubicacion.distritoCodigo) {
+              <div class="text-gray-500 break-words">
+                {{ getDistrictName(row.ubicacion.distritoCodigo) }}
+              </div>
+              } @if (row.ubicacion.direccion) {
+              <div class="text-xs text-gray-400 mt-1 break-words">
+                {{ row.ubicacion.direccion }}
+              </div>
+              }
+            </div>
+            } @else {
+            <span class="text-gray-400 text-sm">Sin ubicación</span>
             }
-          </div>
-        </td>
-        <td>
-          <div class="flex flex-wrap gap-1">
-            @for (service of row.services; track service) {
-            <p-chip [label]="service" styleClass="text-xs"></p-chip>
-            }
-          </div>
-        </td>
-        <td>
-          @if (row.ubicacion) {
-          <div class="text-sm">
-            @if (row.ubicacion.paisCodigo) {
-            <div class="font-medium">{{ getCountryName(row.ubicacion.paisCodigo) }}</div>
-            } @if (row.ubicacion.provinciaCodigo) {
-            <div class="text-gray-600">{{ getProvinceName(row.ubicacion.provinciaCodigo) }}</div>
-            } @if (row.ubicacion.distritoCodigo) {
-            <div class="text-gray-500">{{ getDistrictName(row.ubicacion.distritoCodigo) }}</div>
-            } @if (row.ubicacion.direccion) {
-            <div class="text-xs text-gray-400 mt-1">{{ row.ubicacion.direccion }}</div>
-            }
-          </div>
-          } @else {
-          <span class="text-gray-400 text-sm">Sin ubicación</span>
-          }
-        </td>
-        <td>
-          <button
-            pButton
-            type="button"
-            label="Ver contactos"
-            icon="pi pi-users"
-            class="p-button-text p-button-sm"
-            (click)="openContacts(row)"
-          ></button>
-        </td>
-        <td>
-          <div class="flex items-center gap-2">
-            <p-rating
-              [ngModel]="row.rating || 0"
-              (ngModelChange)="updateRating(row, $event)"
-            ></p-rating>
-            <span class="text-sm text-gray-600">{{ row.rating || 0 }}</span>
-          </div>
-        </td>
-        <td>
-          @if (row.isActive) {
-          <p-tag value="Activo" severity="success"></p-tag>
-          } @else {
-          <p-tag value="Inactivo" severity="danger"></p-tag>
-          }
-        </td>
-        <td class="text-right">
-          <div class="flex items-center gap-1">
+          </td>
+          <td>
             <button
               pButton
-              icon="pi pi-pencil"
+              type="button"
+              label="Ver contactos"
+              icon="pi pi-users"
               class="p-button-text p-button-sm"
-              pTooltip="Editar"
-              (click)="editItem(row)"
+              (click)="openContacts(row)"
             ></button>
-            <button
-              pButton
-              class="p-button-text p-button-sm"
-              [pTooltip]="row.isActive ? 'Desactivar' : 'Activar'"
-              (click)="toggleActive(row)"
-            >
-              <i [class]="row.isActive ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-            </button>
-            <button
-              pButton
-              icon="pi pi-trash"
-              class="p-button-text p-button-sm p-button-danger"
-              pTooltip="Eliminar"
-              (click)="remove(row)"
-            ></button>
-          </div>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
+          </td>
+          <td>
+            <div class="flex items-center gap-2">
+              <p-rating
+                [ngModel]="row.rating || 0"
+                (ngModelChange)="updateRating(row, $event)"
+              ></p-rating>
+              <span class="text-sm text-gray-600">{{ row.rating || 0 }}</span>
+            </div>
+          </td>
+          <td>
+            @if (row.isActive) {
+            <p-tag value="Activo" severity="success"></p-tag>
+            } @else {
+            <p-tag value="Inactivo" severity="danger"></p-tag>
+            }
+          </td>
+          <td class="text-right">
+            <div class="flex items-center gap-1">
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text p-button-sm"
+                pTooltip="Editar"
+                (click)="editItem(row)"
+              ></button>
+              <button
+                pButton
+                class="p-button-text p-button-sm"
+                [pTooltip]="row.isActive ? 'Desactivar' : 'Activar'"
+                (click)="toggleActive(row)"
+              >
+                <i [class]="row.isActive ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+              </button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-sm p-button-danger"
+                pTooltip="Eliminar"
+                (click)="remove(row)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
 
   <!-- Modal de contactos -->
   <p-dialog
     [(visible)]="showContactsDialog"
     [modal]="true"
-    [style]="{ width: '42rem' }"
+    [style]="{ width: '90vw', maxWidth: '42rem' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
@@ -226,22 +244,22 @@
         Contactos — {{ contactsProviderName() }}
       </div>
     </ng-template>
-    <div class="space-y-2">
-      <p-table [value]="contactsViewing() ?? []">
+    <div class="space-y-2 overflow-x-auto">
+      <p-table [value]="contactsViewing() ?? []" [tableStyle]="{ 'min-width': '30rem' }">
         <ng-template pTemplate="header">
           <tr>
-            <th>Nombre</th>
-            <th>Área</th>
-            <th>Email</th>
-            <th>Teléfono</th>
+            <th class="whitespace-nowrap">Nombre</th>
+            <th class="whitespace-nowrap">Área</th>
+            <th class="whitespace-nowrap">Email</th>
+            <th class="whitespace-nowrap">Teléfono</th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-contact>
           <tr>
-            <td>{{ contact.name }}</td>
-            <td>{{ contact.area }}</td>
-            <td>{{ contact.email }}</td>
-            <td>{{ contact.phone || '-' }}</td>
+            <td class="break-words">{{ contact.name }}</td>
+            <td class="break-words">{{ contact.area }}</td>
+            <td class="break-words">{{ contact.email }}</td>
+            <td class="break-words">{{ contact.phone || '-' }}</td>
           </tr>
         </ng-template>
       </p-table>
@@ -255,7 +273,7 @@
   <p-dialog
     [(visible)]="showStatsDialog"
     [modal]="true"
-    [style]="{ width: '32rem' }"
+    [style]="{ width: '90vw', maxWidth: '32rem' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
@@ -267,7 +285,7 @@
       </div>
     </ng-template>
     @if (stats()) {
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <p-card>
         <ng-template pTemplate="content">
           <div class="text-center">
@@ -313,7 +331,7 @@
   <p-dialog
     [(visible)]="showDialog"
     [modal]="true"
-    [style]="{ width: '60rem' }"
+    [style]="{ width: '95vw', maxWidth: '60rem' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"

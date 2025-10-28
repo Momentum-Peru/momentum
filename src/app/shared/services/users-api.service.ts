@@ -34,7 +34,7 @@ export interface UserUpdateRequest {
 export interface UserFilters {
   search?: string;
   role?: string;
-  isActive?: boolean;
+  isActive?: boolean | undefined;
   page?: number;
   limit?: number;
 }
@@ -85,7 +85,9 @@ export class UsersApiService {
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
 
-    return this.http.get<UserResponse>(`${this.baseUrl}?${params.toString()}`);
+    // Si no se especifica isActive, no enviar el parámetro para que el backend muestre solo activos por defecto
+    const url = params.toString() ? `${this.baseUrl}?${params.toString()}` : this.baseUrl;
+    return this.http.get<UserResponse>(url);
   }
 
   /**

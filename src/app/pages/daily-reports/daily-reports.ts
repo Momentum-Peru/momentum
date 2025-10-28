@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject, effect } from '@angular/core';
+import { Component, OnInit, signal, inject, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -20,8 +20,8 @@ import {
   Purchase,
   Observation,
 } from '../../shared/interfaces/daily-report.interface';
-import { ProjectOption } from '../../shared/interfaces/project.interface';
-import { CategoryOption } from '../../shared/interfaces/category.interface';
+import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
+import { CategoryOption, ExpenseCategory } from '../../shared/interfaces/category.interface';
 
 @Component({
   selector: 'app-daily-expenses',
@@ -54,8 +54,42 @@ export class DailyExpensesPage implements OnInit {
   categories = signal<CategoryOption[]>([]);
   query = signal('');
   showDialog = signal(false);
+  showViewDialog = signal(false);
   editing = signal<DailyExpense | null>(null);
+  viewing = signal<DailyExpense | null>(null);
   selectedPurchases = signal<Purchase[]>([]);
+
+  // Filtrar items basado en la búsqueda
+  filteredItems = computed(() => {
+    const searchQuery = this.query().toLowerCase().trim();
+    if (!searchQuery) {
+      return this.items();
+    }
+    return this.items().filter((item) => {
+      const titleMatch = item.title?.toLowerCase().includes(searchQuery) ?? false;
+      const summaryMatch = item.dailySummary?.toLowerCase().includes(searchQuery) ?? false;
+      const dateMatch = item.date?.toLowerCase().includes(searchQuery) ?? false;
+
+      // Buscar en observaciones
+      const observationsMatch =
+        item.observations?.some(
+          (obs) =>
+            obs.description?.toLowerCase().includes(searchQuery) ||
+            obs.notes?.toLowerCase().includes(searchQuery)
+        ) ?? false;
+
+      // Buscar en compras
+      const purchasesMatch =
+        item.purchases?.some(
+          (purchase) =>
+            purchase.description?.toLowerCase().includes(searchQuery) ||
+            purchase.vendor?.toLowerCase().includes(searchQuery) ||
+            purchase.notes?.toLowerCase().includes(searchQuery)
+        ) ?? false;
+
+      return titleMatch || summaryMatch || dateMatch || observationsMatch || purchasesMatch;
+    });
+  });
 
   statusOptions = [
     { label: 'Borrador', value: 'DRAFT' },
@@ -76,6 +110,9 @@ export class DailyExpensesPage implements OnInit {
       if (!this.showDialog()) {
         this.editing.set(null);
         this.selectedPurchases.set([]);
+      }
+      if (!this.showViewDialog()) {
+        this.viewing.set(null);
       }
     });
   }
@@ -122,9 +159,8 @@ export class DailyExpensesPage implements OnInit {
     });
   }
 
-  setQuery(event: Event) {
-    const target = event.target as HTMLInputElement;
-    this.query.set(target.value);
+  setQuery(value: string) {
+    this.query.set(value);
   }
 
   newItem() {
@@ -145,8 +181,75 @@ export class DailyExpensesPage implements OnInit {
   }
 
   editItem(item: DailyExpense) {
-    this.editing.set({ ...item });
-    this.selectedPurchases.set([...item.purchases]);
+    // Crear una copia del item para editar
+    const editedItem = { ...item };
+
+    // Si projectId es un objeto (populado), extraer el _id
+    if (
+      editedItem.projectId &&
+      typeof editedItem.projectId === 'object' &&
+      '_id' in editedItem.projectId &&
+      editedItem.projectId._id
+    ) {
+      editedItem.projectId = editedItem.projectId._id;
+    }
+
+    // Si el proyecto ha sido eliminado, limpiar el projectId para que el usuario pueda seleccionar uno nuevo
+    if (editedItem.projectId && typeof editedItem.projectId === 'string') {
+      const projectExists = this.projects().some((p) => p.value === editedItem.projectId);
+      if (!projectExists) {
+        // El proyecto ya no existe, establecer a string vacío para que el usuario seleccione uno nuevo
+        editedItem.projectId = '';
+      }
+    }
+
+    // Convertir la fecha a formato Date si viene como string ISO
+    if (editedItem.date && typeof editedItem.date === 'string') {
+      try {
+        // Si la fecha viene en formato ISO, convertirla a formato Date
+        const dateObj = new Date(editedItem.date);
+        editedItem.date = dateObj.toISOString();
+      } catch (e) {
+        console.warn('Error parsing date:', e);
+      }
+    }
+
+    // Normalizar las compras para asegurar que categoryId sea un string
+    const normalizedPurchases = item.purchases.map((purchase) => {
+      const normalizedPurchase = { ...purchase };
+
+      // Si categoryId está como objeto poblado, extraer el _id
+      if (
+        purchase.categoryId &&
+        typeof purchase.categoryId === 'object' &&
+        '_id' in purchase.categoryId
+      ) {
+        normalizedPurchase.categoryId = (purchase.categoryId as any)._id;
+      }
+
+      // Asegurar que categoryId sea un string válido
+      if (normalizedPurchase.categoryId && typeof normalizedPurchase.categoryId !== 'string') {
+        normalizedPurchase.categoryId = String(normalizedPurchase.categoryId);
+      }
+
+      // Verificar que la categoría existe en la lista actual
+      if (normalizedPurchase.categoryId && typeof normalizedPurchase.categoryId === 'string') {
+        const categoryExists = this.categories().some(
+          (c) => c.value === normalizedPurchase.categoryId
+        );
+        if (!categoryExists) {
+          // La categoría ya no existe, mantener el categoryId pero se mostrará como "Categoría no encontrada"
+          console.warn(
+            `Categoría con ID ${normalizedPurchase.categoryId} no encontrada en la lista`
+          );
+        }
+      }
+
+      return normalizedPurchase;
+    });
+
+    this.editing.set(editedItem);
+    this.selectedPurchases.set(normalizedPurchases);
     this.showDialog.set(true);
   }
 
@@ -154,10 +257,32 @@ export class DailyExpensesPage implements OnInit {
     this.showDialog.set(false);
   }
 
+  viewItem(item: DailyExpense) {
+    this.viewing.set(item);
+    this.showViewDialog.set(true);
+  }
+
+  closeViewDialog() {
+    this.showViewDialog.set(false);
+  }
+
   onEditChange(field: keyof DailyExpense, value: any) {
     const current = this.editing();
     if (current) {
       this.editing.set({ ...current, [field]: value });
+    }
+  }
+
+  onDateChange(value: Date | Date[] | null) {
+    if (Array.isArray(value)) {
+      return;
+    }
+
+    if (value instanceof Date) {
+      const dateString = value.toISOString().split('T')[0];
+      this.onEditChange('date', dateString);
+    } else if (value === null) {
+      this.onEditChange('date', '');
     }
   }
 
@@ -213,7 +338,18 @@ export class DailyExpensesPage implements OnInit {
       return;
     }
 
-    const payload = {
+    // Validar que projectId sea un string no vacío
+    if (!item.projectId || typeof item.projectId !== 'string' || item.projectId.trim() === '') {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error de validación',
+        detail: 'Debe seleccionar un proyecto válido',
+      });
+      return;
+    }
+
+    // Crear payload base
+    const basePayload = {
       title: item.title.trim(),
       date: item.date,
       observations: item.observations || [],
@@ -227,13 +363,13 @@ export class DailyExpensesPage implements OnInit {
         documents: p.documents || [],
       })),
       dailySummary: item.dailySummary.trim(),
-      userId: item.userId,
-      projectId: item.projectId,
+      projectId: item.projectId.trim(),
       status: item.status,
     };
 
     if (item._id) {
-      this.dailyExpensesApi.update(item._id, payload).subscribe({
+      // Para actualización, no incluir userId
+      this.dailyExpensesApi.update(item._id, basePayload).subscribe({
         next: () => {
           this.messageService.add({
             severity: 'success',
@@ -253,7 +389,19 @@ export class DailyExpensesPage implements OnInit {
         },
       });
     } else {
-      this.dailyExpensesApi.create(payload as DailyExpense).subscribe({
+      // Para creación, incluir userId
+      const createPayload = {
+        ...basePayload,
+        userId: (() => {
+          // Extraer userId si es un objeto
+          if (typeof item.userId === 'object' && item.userId !== null && '_id' in item.userId) {
+            return item.userId._id;
+          }
+          return item.userId as string;
+        })(),
+      };
+
+      this.dailyExpensesApi.create(createPayload as DailyExpense).subscribe({
         next: () => {
           this.messageService.add({
             severity: 'success',
@@ -376,26 +524,122 @@ export class DailyExpensesPage implements OnInit {
   getStatusClass(status: string): string {
     switch (status) {
       case 'DRAFT':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
       case 'SUBMITTED':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
       case 'APPROVED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
       case 'REJECTED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
     }
   }
 
-  getProjectName(projectId: string): string {
-    const project = this.projects().find((p) => p.value === projectId);
-    return project?.label || 'Proyecto no encontrado';
+  // Obtener la fecha en formato Date para el datepicker
+  getEditDate = computed(() => {
+    const editing = this.editing();
+    if (!editing || !editing.date) {
+      return null;
+    }
+
+    try {
+      // Convertir string ISO a objeto Date
+      return new Date(editing.date);
+    } catch (e) {
+      return null;
+    }
+  });
+
+  getProjectName(projectId: string | Project | null | undefined): string {
+    if (!projectId) {
+      return 'Sin proyecto';
+    }
+
+    // Si projectId es un objeto Project (populado), usar el nombre directamente
+    if (typeof projectId === 'object' && 'name' in projectId) {
+      return projectId.name || 'Sin proyecto';
+    }
+
+    // Si projectId es un string, buscar en la lista de proyectos
+    if (typeof projectId === 'string') {
+      const project = this.projects().find((p) => p.value === projectId);
+      return project?.label || 'Sin proyecto';
+    }
+
+    return 'Sin proyecto';
   }
 
-  getCategoryName(categoryId: string): string {
-    const category = this.categories().find((c) => c.value === categoryId);
-    return category?.label || 'Categoría no encontrada';
+  getCategoryName(categoryId: string | ExpenseCategory | null | undefined): string {
+    if (!categoryId) {
+      return 'Categoría eliminada';
+    }
+
+    // Si es un objeto ExpenseCategory, usar el nombre directamente
+    if (typeof categoryId === 'object' && 'name' in categoryId) {
+      return categoryId.name || 'Categoría no encontrada';
+    }
+
+    // Si es un string, buscar en la lista de categorías
+    if (typeof categoryId === 'string') {
+      const category = this.categories().find((c) => c.value === categoryId);
+      return category?.label || 'Categoría no encontrada';
+    }
+
+    return 'Categoría eliminada';
+  }
+
+  // Verificar si el proyecto en edición ha sido eliminado
+  isProjectDeleted(): boolean {
+    const editing = this.editing();
+    // Solo mostrar alerta si estamos editando (tiene _id) y el proyecto fue eliminado
+    if (!editing || !editing._id) {
+      return false;
+    }
+    if (!editing.projectId) {
+      return true;
+    }
+
+    // Si projectId es un objeto, no está eliminado
+    if (typeof editing.projectId === 'object') {
+      return false;
+    }
+
+    // Si projectId es un string, verificar si existe en la lista de proyectos
+    if (typeof editing.projectId === 'string') {
+      const projectExists = this.projects().some((p) => p.value === editing.projectId);
+      return !projectExists;
+    }
+
+    return true;
+  }
+
+  // Verificar si el reporte pertenece al usuario actual
+  isMyReport(item: DailyExpense): boolean {
+    const currentUser = this.authService.getCurrentUser();
+
+    if (!currentUser || !currentUser.id) {
+      return false;
+    }
+
+    // Si userId es un objeto (populado), extraer el _id
+    let userId: string | null = null;
+
+    if (item.userId) {
+      if (typeof item.userId === 'object' && '_id' in item.userId) {
+        // El userId es un objeto, extraer el _id
+        userId = (item.userId as any)._id;
+      } else if (typeof item.userId === 'string') {
+        // El userId es un string
+        userId = item.userId;
+      }
+    }
+
+    if (!userId) {
+      return false;
+    }
+
+    return userId === currentUser.id;
   }
 
   // Métodos para manejar observaciones
@@ -618,8 +862,17 @@ export class DailyExpensesPage implements OnInit {
     }
 
     // Validar proyecto
-    if (!item.projectId || item.projectId.trim() === '') {
+    // Verificar que projectId existe y es un string válido
+    if (!item.projectId || typeof item.projectId !== 'string' || item.projectId.trim() === '') {
       errors.push('El proyecto es requerido');
+    } else {
+      // Verificar que el proyecto existe en la lista de proyectos disponibles
+      const projectExists = this.projects().some((p) => p.value === item.projectId);
+      if (!projectExists) {
+        errors.push(
+          'El proyecto seleccionado ya no está disponible. Por favor, seleccione otro proyecto.'
+        );
+      }
     }
 
     // Validar resumen del día
@@ -638,8 +891,23 @@ export class DailyExpensesPage implements OnInit {
         if (!purchase.amount || purchase.amount <= 0) {
           errors.push(`El monto de la compra ${index + 1} debe ser mayor a 0`);
         }
-        if (!purchase.categoryId || purchase.categoryId.trim() === '') {
+        // Validar categoría
+        if (
+          !purchase.categoryId ||
+          typeof purchase.categoryId !== 'string' ||
+          purchase.categoryId.trim() === ''
+        ) {
           errors.push(`La categoría de la compra ${index + 1} es requerida`);
+        } else {
+          // Verificar que la categoría existe en la lista de categorías disponibles
+          const categoryExists = this.categories().some((c) => c.value === purchase.categoryId);
+          if (!categoryExists) {
+            errors.push(
+              `La categoría de la compra ${
+                index + 1
+              } ya no está disponible. Por favor, seleccione otra categoría.`
+            );
+          }
         }
       });
     }
@@ -658,6 +926,17 @@ export class DailyExpensesPage implements OnInit {
 
   // Método para obtener mensaje de error de la API
   private getErrorMessage(error: any): string {
+    // Manejar errores de permisos primero
+    if (error.status === 403) {
+      if (error.error?.message?.includes('No puedes enviar gastos de otros usuarios')) {
+        return 'No puedes enviar reportes de otros usuarios';
+      }
+      if (error.error?.message?.includes('No puedes aprobar')) {
+        return 'No tienes permisos para aprobar este reporte';
+      }
+      return 'No tienes permisos para realizar esta acción';
+    }
+
     // Manejar errores de validación específicos
     if (error.error?.message) {
       const message = error.error.message;
