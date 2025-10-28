@@ -80,8 +80,10 @@ export class RequirementsPage {
   query = signal<string>('');
   showDialog = signal<boolean>(false);
   showDocumentsDialog = signal<boolean>(false);
+  showDetailsDialog = signal<boolean>(false);
   editing = signal<RequirementItem | null>(null);
   documentsViewing = signal<RequirementItem | null>(null);
+  viewingRequirement = signal<RequirementItem | null>(null);
   selectedFiles = signal<File[]>([]);
 
   // Opciones para dropdowns
@@ -119,6 +121,13 @@ export class RequirementsPage {
       if (!this.showDocumentsDialog()) {
         this.documentsViewing.set(null);
         this.selectedFiles.set([]);
+      }
+    });
+
+    // Efecto para manejar el cierre del diálogo de detalles
+    effect(() => {
+      if (!this.showDetailsDialog()) {
+        this.viewingRequirement.set(null);
       }
     });
   }
@@ -322,6 +331,15 @@ export class RequirementsPage {
 
   closeDocuments() {
     this.showDocumentsDialog.set(false);
+  }
+
+  viewDetails(requirement: RequirementItem) {
+    this.viewingRequirement.set(requirement);
+    this.showDetailsDialog.set(true);
+  }
+
+  closeDetails() {
+    this.showDetailsDialog.set(false);
   }
 
   onFileInputChange(event: Event) {
