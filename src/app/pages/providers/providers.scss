@@ -1,1 +1,47 @@
 // Estilos específicos para el componente de proveedores
+
+/* Estilos simples para el modal de detalles en modo oscuro */
+:host ::ng-deep {
+  .p-dialog {
+    .p-dialog-content {
+      // Labels en modo oscuro
+      .text-gray-700 {
+        @apply dark:text-gray-300;
+      }
+
+      // Texto principal en modo oscuro
+      .text-gray-900 {
+        @apply dark:text-gray-100;
+      }
+
+      // Texto secundario en modo oscuro
+      .text-gray-600 {
+        @apply dark:text-gray-400;
+      }
+
+      // Texto deshabilitado en modo oscuro
+      .text-gray-500 {
+        @apply dark:text-gray-400;
+      }
+
+      // Enlaces en modo oscuro
+      .text-blue-600 {
+        @apply dark:text-blue-400;
+      }
+
+      .hover\:text-blue-800:hover {
+        @apply dark:hover:text-blue-300;
+      }
+
+      // Fondos de tarjetas en modo oscuro
+      .bg-gray-50 {
+        @apply dark:bg-gray-800;
+      }
+
+      // Bordes en modo oscuro
+      .border-gray-200 {
+        @apply dark:border-gray-700;
+      }
+    }
+  }
+}

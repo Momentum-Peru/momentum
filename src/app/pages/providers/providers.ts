@@ -101,6 +101,8 @@ export class ProvidersPage {
   contactsProviderName = signal<string>('');
   showStatsDialog = signal<boolean>(false);
   stats = signal<ProviderStats | null>(null);
+  showDetailsDialog = signal<boolean>(false);
+  viewingProvider = signal<Provider | null>(null);
 
   // Ubicaciones
   countries = signal<Country[]>([]);
@@ -133,6 +135,13 @@ export class ProvidersPage {
       if (!this.showContactsDialog()) {
         this.contactsViewing.set(null);
         this.contactsProviderName.set('');
+      }
+    });
+
+    // Efecto para manejar el cierre del diálogo de detalles
+    effect(() => {
+      if (!this.showDetailsDialog()) {
+        this.viewingProvider.set(null);
       }
     });
   }
@@ -413,6 +422,15 @@ export class ProvidersPage {
 
   closeStats() {
     this.showStatsDialog.set(false);
+  }
+
+  viewDetails(provider: Provider) {
+    this.viewingProvider.set(provider);
+    this.showDetailsDialog.set(true);
+  }
+
+  closeDetails() {
+    this.showDetailsDialog.set(false);
   }
 
   loadStats() {
