@@ -14,7 +14,7 @@ export interface Purchase {
   _id?: string;
   description: string;
   amount: number;
-  categoryId: string;
+  categoryId: string | ExpenseCategory; // Puede venir populado como objeto
   category?: ExpenseCategory; // Para enriquecimiento de datos
   notes?: string;
   vendor?: string;

@@ -55,6 +55,14 @@
           <span class="text-sm">{{ row.purchases.length }} compra(s)</span>
         </td>
         <td class="text-right">
+          <button
+            pButton
+            icon="pi pi-eye"
+            class="p-button-text"
+            (click)="viewItem(row)"
+            pTooltip="Ver detalles"
+            tooltipPosition="top"
+          ></button>
           @if (row.status === 'DRAFT') {
           <button
             pButton
@@ -533,6 +541,264 @@
     <ng-template pTemplate="footer">
       <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
       <button pButton label="Guardar" (click)="save()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo de visualización (solo lectura) -->
+  <p-dialog
+    [(visible)]="showViewDialog"
+    [modal]="true"
+    [style]="{ width: '70rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold">Ver detalles del reporte</span>
+    </ng-template>
+
+    @if (viewing()) {
+    <div class="grid gap-4">
+      <!-- Información básica -->
+      <div class="grid grid-cols-2 gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Título</label
+          >
+          <p class="text-gray-900 dark:text-gray-100">{{ viewing()!.title }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Fecha</label
+          >
+          <p class="text-gray-900 dark:text-gray-100">
+            {{ viewing()!.date | date : 'dd/MM/yyyy' }}
+          </p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Proyecto</label
+          >
+          <p class="text-gray-900 dark:text-gray-100">{{ getProjectName(viewing()!.projectId) }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Estado</label
+          >
+          <span
+            class="px-2 py-1 rounded-full text-xs font-medium"
+            [class]="getStatusClass(viewing()!.status)"
+          >
+            {{ getStatusLabel(viewing()!.status) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Resumen del día -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Resumen del día</label
+        >
+        <p class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+          {{ viewing()!.dailySummary }}
+        </p>
+      </div>
+
+      <!-- Observaciones -->
+      @if (viewing()!.observations && viewing()!.observations.length > 0) {
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >Observaciones</label
+        >
+        <div class="space-y-3">
+          @for (observation of viewing()!.observations; track $index) {
+          <div
+            class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800"
+          >
+            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Observación {{ $index + 1 }}
+            </h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Descripción:</span>
+                <p class="text-gray-900 dark:text-gray-100">{{ observation.description }}</p>
+              </div>
+              @if (observation.notes) {
+              <div>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Notas:</span>
+                <p class="text-gray-900 dark:text-gray-100">{{ observation.notes }}</p>
+              </div>
+              } @if (observation.observationDate) {
+              <div>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Fecha:</span>
+                <p class="text-gray-900 dark:text-gray-100">
+                  {{ observation.observationDate | date : 'dd/MM/yyyy' }}
+                </p>
+              </div>
+              } @if (observation.observationTime) {
+              <div>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Hora:</span>
+                <p class="text-gray-900 dark:text-gray-100">{{ observation.observationTime }}</p>
+              </div>
+              }
+              <!-- Documentos -->
+              @if (observation.documents && observation.documents.length > 0) {
+              <div>
+                <span class="text-xs text-gray-600 dark:text-gray-400 mb-1 block"
+                  >Documentos/Fotos:</span
+                >
+                <div class="space-y-1">
+                  @for (doc of observation.documents; track doc) {
+                  <div
+                    class="flex items-center justify-between bg-white dark:bg-gray-700 p-2 rounded border border-gray-200 dark:border-gray-600"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i [class]="getFileIcon(doc)" [class]="getFileTypeColor(doc)"></i>
+                      <span class="text-sm text-gray-700 dark:text-gray-300">{{
+                        doc.split('/').pop()
+                      }}</span>
+                    </div>
+                    <div class="flex gap-1">
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-eye"
+                        size="small"
+                        (click)="viewDocument(doc)"
+                        class="p-button-sm p-button-text"
+                        pTooltip="Ver documento"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-download"
+                        size="small"
+                        (click)="downloadDocument(doc)"
+                        class="p-button-sm p-button-text"
+                        pTooltip="Descargar documento"
+                      ></button>
+                    </div>
+                  </div>
+                  }
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Compras -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <label class="block text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3"
+          >Compras</label
+        >
+        <div class="space-y-3">
+          @for (purchase of viewing()!.purchases; track $index) {
+          <div
+            class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800"
+          >
+            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Compra {{ $index + 1 }}
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+              <div>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Descripción:</span>
+                <p class="text-gray-900 dark:text-gray-100">{{ purchase.description }}</p>
+              </div>
+              <div>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Monto:</span>
+                <p class="text-gray-900 dark:text-gray-100 font-semibold">
+                  {{ purchase.amount | currency : 'PEN' : 'symbol' : '1.2-2' }}
+                </p>
+              </div>
+              <div>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Categoría:</span>
+                <p class="text-gray-900 dark:text-gray-100">
+                  {{ getCategoryName(purchase.categoryId) }}
+                </p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              @if (purchase.vendor) {
+              <div>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Proveedor:</span>
+                <p class="text-gray-900 dark:text-gray-100">{{ purchase.vendor }}</p>
+              </div>
+              } @if (purchase.notes) {
+              <div>
+                <span class="text-xs text-gray-600 dark:text-gray-400">Notas:</span>
+                <p class="text-gray-900 dark:text-gray-100">{{ purchase.notes }}</p>
+              </div>
+              }
+            </div>
+            <!-- Documentos de la compra -->
+            @if (purchase.documents && purchase.documents.length > 0) {
+            <div>
+              <span class="text-xs text-gray-600 dark:text-gray-400 mb-1 block"
+                >Documentos/Fotos:</span
+              >
+              <div class="space-y-1">
+                @for (doc of purchase.documents; track doc) {
+                <div
+                  class="flex items-center justify-between bg-white dark:bg-gray-700 p-2 rounded border border-gray-200 dark:border-gray-600"
+                >
+                  <div class="flex items-center gap-2">
+                    <i [class]="getFileIcon(doc)" [class]="getFileTypeColor(doc)"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300">{{
+                      doc.split('/').pop()
+                    }}</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button
+                      pButton
+                      type="button"
+                      icon="pi pi-eye"
+                      size="small"
+                      (click)="viewDocument(doc)"
+                      class="p-button-sm p-button-text"
+                      pTooltip="Ver documento"
+                    ></button>
+                    <button
+                      pButton
+                      type="button"
+                      icon="pi pi-download"
+                      size="small"
+                      (click)="downloadDocument(doc)"
+                      class="p-button-sm p-button-text"
+                      pTooltip="Descargar documento"
+                    ></button>
+                  </div>
+                </div>
+                }
+              </div>
+            </div>
+            }
+          </div>
+          }
+        </div>
+
+        <!-- Total -->
+        @if (viewing()!.purchases.length > 0) {
+        <div
+          class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+        >
+          <div class="flex justify-between items-center">
+            <span class="font-medium text-blue-800 dark:text-blue-300">Total de Compras:</span>
+            <span class="text-xl font-bold text-blue-900 dark:text-blue-200">
+              {{ viewing()!.totalAmount | currency : 'PEN' : 'symbol' : '1.2-2' }}
+            </span>
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" (click)="closeViewDialog()"></button>
     </ng-template>
   </p-dialog>
 </div>

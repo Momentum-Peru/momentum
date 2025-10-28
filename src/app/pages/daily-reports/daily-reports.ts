@@ -21,7 +21,7 @@ import {
   Observation,
 } from '../../shared/interfaces/daily-report.interface';
 import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
-import { CategoryOption } from '../../shared/interfaces/category.interface';
+import { CategoryOption, ExpenseCategory } from '../../shared/interfaces/category.interface';
 
 @Component({
   selector: 'app-daily-expenses',
@@ -54,7 +54,9 @@ export class DailyExpensesPage implements OnInit {
   categories = signal<CategoryOption[]>([]);
   query = signal('');
   showDialog = signal(false);
+  showViewDialog = signal(false);
   editing = signal<DailyExpense | null>(null);
+  viewing = signal<DailyExpense | null>(null);
   selectedPurchases = signal<Purchase[]>([]);
 
   // Filtrar items basado en la búsqueda
@@ -108,6 +110,9 @@ export class DailyExpensesPage implements OnInit {
       if (!this.showDialog()) {
         this.editing.set(null);
         this.selectedPurchases.set([]);
+      }
+      if (!this.showViewDialog()) {
+        this.viewing.set(null);
       }
     });
   }
@@ -209,13 +214,56 @@ export class DailyExpensesPage implements OnInit {
       }
     }
 
+    // Normalizar las compras para asegurar que categoryId sea un string
+    const normalizedPurchases = item.purchases.map((purchase) => {
+      const normalizedPurchase = { ...purchase };
+
+      // Si categoryId está como objeto poblado, extraer el _id
+      if (
+        purchase.categoryId &&
+        typeof purchase.categoryId === 'object' &&
+        '_id' in purchase.categoryId
+      ) {
+        normalizedPurchase.categoryId = (purchase.categoryId as any)._id;
+      }
+
+      // Asegurar que categoryId sea un string válido
+      if (normalizedPurchase.categoryId && typeof normalizedPurchase.categoryId !== 'string') {
+        normalizedPurchase.categoryId = String(normalizedPurchase.categoryId);
+      }
+
+      // Verificar que la categoría existe en la lista actual
+      if (normalizedPurchase.categoryId && typeof normalizedPurchase.categoryId === 'string') {
+        const categoryExists = this.categories().some(
+          (c) => c.value === normalizedPurchase.categoryId
+        );
+        if (!categoryExists) {
+          // La categoría ya no existe, mantener el categoryId pero se mostrará como "Categoría no encontrada"
+          console.warn(
+            `Categoría con ID ${normalizedPurchase.categoryId} no encontrada en la lista`
+          );
+        }
+      }
+
+      return normalizedPurchase;
+    });
+
     this.editing.set(editedItem);
-    this.selectedPurchases.set([...item.purchases]);
+    this.selectedPurchases.set(normalizedPurchases);
     this.showDialog.set(true);
   }
 
   closeDialog() {
     this.showDialog.set(false);
+  }
+
+  viewItem(item: DailyExpense) {
+    this.viewing.set(item);
+    this.showViewDialog.set(true);
+  }
+
+  closeViewDialog() {
+    this.showViewDialog.set(false);
   }
 
   onEditChange(field: keyof DailyExpense, value: any) {
@@ -300,15 +348,8 @@ export class DailyExpensesPage implements OnInit {
       return;
     }
 
-    // Extraer userId si es un objeto
-    let userId: string;
-    if (typeof item.userId === 'object' && item.userId !== null && '_id' in item.userId) {
-      userId = item.userId._id;
-    } else {
-      userId = item.userId as string;
-    }
-
-    const payload = {
+    // Crear payload base
+    const basePayload = {
       title: item.title.trim(),
       date: item.date,
       observations: item.observations || [],
@@ -322,13 +363,13 @@ export class DailyExpensesPage implements OnInit {
         documents: p.documents || [],
       })),
       dailySummary: item.dailySummary.trim(),
-      userId: userId,
       projectId: item.projectId.trim(),
       status: item.status,
     };
 
     if (item._id) {
-      this.dailyExpensesApi.update(item._id, payload).subscribe({
+      // Para actualización, no incluir userId
+      this.dailyExpensesApi.update(item._id, basePayload).subscribe({
         next: () => {
           this.messageService.add({
             severity: 'success',
@@ -348,7 +389,19 @@ export class DailyExpensesPage implements OnInit {
         },
       });
     } else {
-      this.dailyExpensesApi.create(payload as DailyExpense).subscribe({
+      // Para creación, incluir userId
+      const createPayload = {
+        ...basePayload,
+        userId: (() => {
+          // Extraer userId si es un objeto
+          if (typeof item.userId === 'object' && item.userId !== null && '_id' in item.userId) {
+            return item.userId._id;
+          }
+          return item.userId as string;
+        })(),
+      };
+
+      this.dailyExpensesApi.create(createPayload as DailyExpense).subscribe({
         next: () => {
           this.messageService.add({
             severity: 'success',
@@ -471,15 +524,15 @@ export class DailyExpensesPage implements OnInit {
   getStatusClass(status: string): string {
     switch (status) {
       case 'DRAFT':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
       case 'SUBMITTED':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
       case 'APPROVED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
       case 'REJECTED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
     }
   }
 
@@ -517,12 +570,23 @@ export class DailyExpensesPage implements OnInit {
     return 'Sin proyecto';
   }
 
-  getCategoryName(categoryId: string | null | undefined): string {
-    if (!categoryId || typeof categoryId !== 'string') {
+  getCategoryName(categoryId: string | ExpenseCategory | null | undefined): string {
+    if (!categoryId) {
       return 'Categoría eliminada';
     }
-    const category = this.categories().find((c) => c.value === categoryId);
-    return category?.label || 'Categoría no encontrada';
+
+    // Si es un objeto ExpenseCategory, usar el nombre directamente
+    if (typeof categoryId === 'object' && 'name' in categoryId) {
+      return categoryId.name || 'Categoría no encontrada';
+    }
+
+    // Si es un string, buscar en la lista de categorías
+    if (typeof categoryId === 'string') {
+      const category = this.categories().find((c) => c.value === categoryId);
+      return category?.label || 'Categoría no encontrada';
+    }
+
+    return 'Categoría eliminada';
   }
 
   // Verificar si el proyecto en edición ha sido eliminado
