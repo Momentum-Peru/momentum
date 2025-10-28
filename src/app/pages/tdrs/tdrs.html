@@ -52,6 +52,13 @@
         <td class="text-right">
           <button
             pButton
+            icon="pi pi-eye"
+            class="p-button-text p-button-sm"
+            pTooltip="Ver detalles"
+            (click)="viewDetails(row)"
+          ></button>
+          <button
+            pButton
             icon="pi pi-check"
             class="p-button-text"
             (click)="approve(row)"
@@ -242,6 +249,151 @@
         </div>
         <button pButton label="Cerrar" class="p-button-text" (click)="closeDocuments()"></button>
       </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de detalles del TDR -->
+  <p-dialog
+    [(visible)]="showDetailsDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '60rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-eye text-blue-500"></i>
+        Detalles del TDR — {{ viewingTdr()?.clientId?.name || 'TDR' }}
+      </div>
+    </ng-template>
+    @if (viewingTdr()) {
+    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+      <!-- Información básica -->
+      <div class="mb-6">
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-info-circle text-blue-500"></i>
+          Información Básica
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Cliente</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-medium">
+              {{ viewingTdr()?.clientId?.name || 'No especificado' }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Tipo</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              <span
+                class="px-2 py-1 rounded text-xs font-medium"
+                [class]="{
+                  'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
+                    viewingTdr()?.type === 'client',
+                  'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
+                    viewingTdr()?.type === 'tecmeing'
+                }"
+              >
+                {{ viewingTdr()?.type === 'client' ? 'Cliente' : 'Tecmeing' }}
+              </span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado de Aprobación</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              <span
+                class="px-2 py-1 rounded text-white text-xs font-medium"
+                [class]="viewingTdr()?.approved ? 'bg-green-500' : 'bg-gray-400'"
+              >
+                {{ viewingTdr()?.approved ? 'Aprobado' : 'Pendiente' }}
+              </span>
+            </div>
+          </div>
+          @if (viewingTdr()?.createdAt) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Creación</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingTdr()?.createdAt | date : 'dd/MM/yyyy HH:mm' }}
+            </div>
+          </div>
+          } @if (viewingTdr()?.updatedAt) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Última Actualización</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingTdr()?.updatedAt | date : 'dd/MM/yyyy HH:mm' }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Resumen -->
+      @if (viewingTdr()?.summary) {
+      <div class="mb-6">
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-file-edit text-green-500"></i>
+          Resumen
+        </h3>
+        <div class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+          {{ viewingTdr()?.summary }}
+        </div>
+      </div>
+      }
+
+      <!-- Documentos -->
+      @if (viewingTdr()?.documents?.length) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-file text-indigo-500"></i>
+          Documentos Adjuntos ({{ viewingTdr()?.documents?.length }})
+        </h3>
+        <div class="space-y-2">
+          @for (document of viewingTdr()?.documents; track document) {
+          <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
+            <i class="pi pi-file text-gray-500"></i>
+            <a
+              [href]="document"
+              target="_blank"
+              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+            >
+              <i class="pi pi-external-link text-xs"></i>
+              Ver documento
+            </a>
+          </div>
+          }
+        </div>
+      </div>
+      } @else {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-file text-indigo-500"></i>
+          Documentos Adjuntos
+        </h3>
+        <div class="text-gray-500 dark:text-gray-400">No hay documentos adjuntos</div>
+      </div>
+      }
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
     </ng-template>
   </p-dialog>
 

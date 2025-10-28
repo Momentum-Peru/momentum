@@ -26,6 +26,8 @@ interface TdrItem {
   summary?: string;
   approved?: boolean;
   documents?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 @Component({
@@ -58,8 +60,10 @@ export class TdrsPage {
   query = signal<string>('');
   showDialog = signal<boolean>(false);
   showDocumentsDialog = signal<boolean>(false);
+  showDetailsDialog = signal<boolean>(false);
   editing = signal<TdrItem | null>(null);
   documentsViewing = signal<TdrItem | null>(null);
+  viewingTdr = signal<TdrItem | null>(null);
   selectedFiles = signal<File[]>([]);
   clients = signal<ClientOption[]>([]);
   tdrTypeOptions = [
@@ -85,6 +89,13 @@ export class TdrsPage {
       if (!this.showDocumentsDialog()) {
         this.documentsViewing.set(null);
         this.selectedFiles.set([]);
+      }
+    });
+
+    // Efecto para manejar el cierre del diálogo de detalles
+    effect(() => {
+      if (!this.showDetailsDialog()) {
+        this.viewingTdr.set(null);
       }
     });
   }
@@ -229,6 +240,15 @@ export class TdrsPage {
 
   closeDocuments() {
     this.showDocumentsDialog.set(false);
+  }
+
+  viewDetails(tdr: TdrItem) {
+    this.viewingTdr.set(tdr);
+    this.showDetailsDialog.set(true);
+  }
+
+  closeDetails() {
+    this.showDetailsDialog.set(false);
   }
 
   onFileInputChange(event: Event) {
