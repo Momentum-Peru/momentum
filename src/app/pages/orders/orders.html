@@ -1,8 +1,9 @@
 <div class="p-4 space-y-4">
+  <p-toast></p-toast>
   <div class="flex items-center gap-2">
     <input
       pInputText
-      placeholder="Buscar"
+      placeholder="Buscar órdenes..."
       [ngModel]="query()"
       (ngModelChange)="setQuery($event)"
       class="w-full"
@@ -10,25 +11,63 @@
     <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
   </div>
 
-  <p-table [value]="items()">
+  <p-table [value]="items()" [tableStyle]="{ 'min-width': '80rem' }">
     <ng-template pTemplate="header">
       <tr>
         <th>Número</th>
         <th>Cliente</th>
         <th>Tipo</th>
-        <th>Docs</th>
+        <th>Documentos</th>
+        <th>Fecha Creación</th>
         <th></th>
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-row>
       <tr>
-        <td>{{ row.number }}</td>
-        <td>{{ row.clientName }}</td>
-        <td>{{ row.type }}</td>
         <td>
-          <input type="file" (change)="onFileChange($event, row)" />
+          <span class="font-mono text-sm">{{ row.number }}</span>
         </td>
+        <td>
+          <div class="max-w-xs">
+            <p class="font-semibold truncate">{{ row.clientName }}</p>
+            <p class="text-sm text-gray-600 truncate">{{ row.clientId }}</p>
+          </div>
+        </td>
+        <td>
+          <span
+            class="px-2 py-1 rounded-full text-xs font-medium"
+            [class]="{
+              'bg-blue-100 text-blue-800': row.type === 'purchase',
+              'bg-green-100 text-green-800': row.type === 'service'
+            }"
+          >
+            {{ row.type === 'purchase' ? 'Compra' : 'Servicio' }}
+          </span>
+        </td>
+        <td>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600">{{ row.documents?.length || 0 }} docs</span>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-upload"
+              label="Documentos"
+              class="p-button-text p-button-sm"
+              (click)="openDocuments(row)"
+              pTooltip="Gestionar documentos"
+              tooltipPosition="top"
+            ></button>
+          </div>
+        </td>
+        <td>{{ row.createdAt | date : 'dd/MM/yyyy' }}</td>
         <td class="text-right">
+          <button
+            pButton
+            icon="pi pi-eye"
+            class="p-button-text p-button-sm"
+            pTooltip="Ver detalles"
+            (click)="viewDetails(row)"
+          ></button>
           <button
             pButton
             icon="pi pi-pencil"
@@ -46,10 +85,304 @@
     </ng-template>
   </p-table>
 
+  <!-- Modal de documentos -->
+  <p-dialog
+    [(visible)]="showDocumentsDialog"
+    [modal]="true"
+    [style]="{ width: '70rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-file text-blue-500"></i>
+        <span>Gestión de Documentos — {{ documentsViewing()?.number }}</span>
+      </div>
+    </ng-template>
+
+    <div class="space-y-6">
+      <!-- Upload de archivos -->
+      <div class="bg-gray-50 rounded-lg p-6">
+        <h4 class="text-lg font-semibold text-gray-800 mb-4">Subir Nuevos Documentos</h4>
+        <!-- Input de archivos nativo -->
+        <div class="space-y-4">
+          <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <input
+              type="file"
+              #fileInput
+              multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg"
+              (change)="onFileInputChange($event)"
+              class="hidden"
+            />
+
+            <div class="flex flex-col items-center justify-center py-8">
+              <i class="pi pi-cloud-upload text-5xl text-gray-400 mb-4"></i>
+              <p class="text-lg font-medium text-gray-700 mb-2">Selecciona archivos para subir</p>
+              <p class="text-sm text-gray-500 mb-4">o arrastra y suelta archivos aquí</p>
+
+              <button
+                pButton
+                type="button"
+                label="Seleccionar Archivos"
+                icon="pi pi-upload"
+                (click)="fileInput.click()"
+                class="mb-4"
+              ></button>
+
+              <div class="text-xs text-gray-400 space-y-1">
+                <p>
+                  <strong>Formatos soportados:</strong> PDF, DOC, DOCX, XLS, XLSX, TXT, PNG, JPG,
+                  JPEG
+                </p>
+                <p><strong>Tamaño máximo:</strong> 10MB por archivo</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de archivos seleccionados -->
+          @if (selectedFiles().length > 0) {
+          <div class="space-y-2">
+            <h5 class="font-medium text-gray-800">Archivos seleccionados:</h5>
+            @for (file of selectedFiles(); track file.name) {
+            <div class="flex items-center justify-between p-2 bg-white rounded border">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-file text-blue-500"></i>
+                <span class="text-sm">{{ file.name }}</span>
+                <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
+              </div>
+              <button
+                pButton
+                icon="pi pi-times"
+                class="p-button-text p-button-danger p-button-sm"
+                (click)="removeSelectedFile(file)"
+              ></button>
+            </div>
+            }
+
+            <!-- Botones de acción -->
+            <div class="flex gap-2 pt-2">
+              <button
+                pButton
+                type="button"
+                label="Subir Archivos"
+                icon="pi pi-upload"
+                (click)="uploadSelectedFiles()"
+                [disabled]="selectedFiles().length === 0"
+                class="flex-1"
+              ></button>
+              <button
+                pButton
+                type="button"
+                label="Limpiar"
+                icon="pi pi-times"
+                class="p-button-text"
+                (click)="clearSelectedFiles()"
+                [disabled]="selectedFiles().length === 0"
+              ></button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Lista de documentos existentes -->
+      @if (documentsViewing()?.documents?.length) {
+      <div class="space-y-3">
+        <h4 class="text-lg font-semibold text-gray-800">
+          Documentos Adjuntos ({{ documentsViewing()?.documents?.length }})
+        </h4>
+        <div class="grid gap-3">
+          @for (doc of documentsViewing()?.documents; track $index) {
+          <div
+            class="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors"
+          >
+            <div class="flex items-center gap-4">
+              <div class="flex-shrink-0">
+                <i [class]="getFileIcon(doc) + ' text-2xl ' + getFileTypeColor(doc)"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-gray-900 truncate">{{ doc.split('/').pop() }}</p>
+                <p class="text-sm text-gray-500 truncate">{{ doc }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm"
+                (click)="viewDocument(doc)"
+                pTooltip="Ver documento"
+                tooltipPosition="top"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-download"
+                class="p-button-text p-button-sm"
+                (click)="downloadDocument(doc)"
+                pTooltip="Descargar documento"
+                tooltipPosition="top"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-danger p-button-sm"
+                (click)="removeDocument(doc)"
+                pTooltip="Eliminar documento"
+                tooltipPosition="top"
+              ></button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      } @else {
+      <div class="text-center py-12 bg-gray-50 rounded-lg">
+        <i class="pi pi-file text-4xl text-gray-400 mb-3"></i>
+        <p class="text-gray-600 font-medium">No hay documentos adjuntos</p>
+        <p class="text-sm text-gray-500 mt-1">Sube documentos usando el área de arriba</p>
+      </div>
+      }
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-between items-center">
+        <div class="text-sm text-gray-500">
+          @if (documentsViewing()?.documents?.length) {
+          {{ documentsViewing()?.documents?.length }} documento(s) adjunto(s) }
+        </div>
+        <button pButton label="Cerrar" class="p-button-text" (click)="closeDocuments()"></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de detalles de la orden -->
+  <p-dialog
+    [(visible)]="showDetailsDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '60rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-eye text-blue-500"></i>
+        Detalles de la Orden — {{ viewingOrder()?.number }}
+      </div>
+    </ng-template>
+    @if (viewingOrder()) {
+    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+      <!-- Información básica -->
+      <div class="mb-6">
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-info-circle text-blue-500"></i>
+          Información Básica
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Número de Orden</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-mono font-medium">
+              {{ viewingOrder()?.number }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Tipo</label
+            >
+            <span
+              class="px-2 py-1 rounded-full text-xs font-medium"
+              [class]="{
+                'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
+                  viewingOrder()?.type === 'purchase',
+                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
+                  viewingOrder()?.type === 'service'
+              }"
+            >
+              {{ viewingOrder()?.type === 'purchase' ? 'Compra' : 'Servicio' }}
+            </span>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Cliente</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingOrder()?.clientName }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >ID Cliente</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-mono text-sm">
+              {{ viewingOrder()?.clientId }}
+            </div>
+          </div>
+          @if (viewingOrder()?.createdAt) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Creación</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingOrder()?.createdAt | date : 'dd/MM/yyyy HH:mm' }}
+            </div>
+          </div>
+          } @if (viewingOrder()?.updatedAt) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Última Actualización</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingOrder()?.updatedAt | date : 'dd/MM/yyyy HH:mm' }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Documentos -->
+      @if (viewingOrder()?.documents?.length) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-file text-indigo-500"></i>
+          Documentos Adjuntos
+        </h3>
+        <div class="space-y-2">
+          @for (document of viewingOrder()?.documents; track document) {
+          <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
+            <i class="pi pi-file text-gray-500"></i>
+            <a
+              [href]="document"
+              target="_blank"
+              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+            >
+              <i class="pi pi-external-link text-xs"></i>
+              Ver documento
+            </a>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de edición/creación -->
   <p-dialog
     [(visible)]="showDialog"
     [modal]="true"
-    [style]="{ width: '32rem' }"
+    [style]="{ width: '40rem' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
@@ -57,34 +390,63 @@
     <ng-template pTemplate="header">
       {{ editing()?._id ? 'Editar orden' : 'Nueva orden' }}
     </ng-template>
-    <div class="grid gap-3">
-      <p-select
-        [options]="clients()"
-        optionLabel="name"
-        optionValue="_id"
-        [ngModel]="editing()?.clientId"
-        (ngModelChange)="onEditChange('clientId', $event)"
-        placeholder="Selecciona cliente"
-      ></p-select>
-      <input
-        pInputText
-        placeholder="Cliente"
-        [ngModel]="editing()?.clientName"
-        (ngModelChange)="onEditChange('clientName', $event)"
-      />
-      <input
-        pInputText
-        placeholder="Número"
-        [ngModel]="editing()?.number"
-        (ngModelChange)="onEditChange('number', $event)"
-      />
-      <input
-        pInputText
-        placeholder="Tipo (purchase/service)"
-        [ngModel]="editing()?.type"
-        (ngModelChange)="onEditChange('type', $event)"
-      />
+
+    <div class="grid gap-4">
+      <!-- Cliente -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
+        <p-select
+          [options]="clients()"
+          optionLabel="name"
+          optionValue="_id"
+          [ngModel]="editing()?.clientId"
+          (ngModelChange)="onClientChange($event)"
+          placeholder="Seleccionar cliente"
+          appendTo="body"
+          class="w-full"
+        ></p-select>
+      </div>
+
+      <!-- Nombre del cliente -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente *</label>
+        <input
+          pInputText
+          placeholder="Nombre del cliente"
+          [ngModel]="editing()?.clientName"
+          (ngModelChange)="onEditChange('clientName', $event)"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Número y Tipo -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Número *</label>
+          <input
+            pInputText
+            placeholder="ORD-2024-001"
+            [ngModel]="editing()?.number"
+            (ngModelChange)="onEditChange('number', $event)"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
+          <p-select
+            [options]="tipos"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="editing()?.type"
+            (ngModelChange)="onEditChange('type', $event)"
+            placeholder="Seleccionar tipo"
+            appendTo="body"
+            class="w-full"
+          ></p-select>
+        </div>
+      </div>
     </div>
+
     <ng-template pTemplate="footer">
       <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
       <button pButton label="Guardar" (click)="save()"></button>
