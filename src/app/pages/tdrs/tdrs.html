@@ -420,6 +420,7 @@
           (ngModelChange)="onClientChange($event)"
           placeholder="Selecciona cliente"
           class="w-full"
+          appendTo="body"
         ></p-select>
       </div>
       <div>
@@ -428,6 +429,7 @@
           [options]="tdrTypeOptions"
           [ngModel]="editing()?.type"
           (ngModelChange)="onEditChange('type', $event)"
+          appendTo="body"
         ></p-selectButton>
       </div>
       <div>
