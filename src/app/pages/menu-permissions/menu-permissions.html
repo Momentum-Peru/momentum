@@ -146,95 +146,92 @@
           </tr>
         </thead>
         <tbody>
-          <ng-container *ngFor="let group of filteredUserGroups()">
-            <tr
-              class="border-b hover:bg-gray-50 cursor-pointer"
-              (click)="toggleRow(group.user._id)"
-            >
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <i class="pi pi-user text-gray-400 mr-3"></i>
-                  <div>
-                    <div class="text-sm font-medium text-gray-900">{{ group.user.name }}</div>
-                    <div class="text-sm text-gray-500">{{ group.user.email }}</div>
-                  </div>
+          @for (group of filteredUserGroups(); track group.user._id) {
+          <tr class="border-b hover:bg-gray-50 cursor-pointer" (click)="toggleRow(group.user._id)">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <i class="pi pi-user text-gray-400 mr-3"></i>
+                <div>
+                  <div class="text-sm font-medium text-gray-900">{{ group.user.name }}</div>
+                  <div class="text-sm text-gray-500">{{ group.user.email }}</div>
                 </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  class="px-2 py-1 text-sm font-semibold text-purple-900 bg-purple-100 rounded-full"
-                >
-                  {{ group.totalPermissions }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  class="px-2 py-1 text-sm font-semibold text-green-800 bg-green-100 rounded-full"
-                >
-                  {{ group.activePermissions }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 py-1 text-sm font-semibold text-red-800 bg-red-100 rounded-full">
-                  {{ group.inactivePermissions }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button
-                  pButton
-                  [icon]="isExpanded(group.user._id) ? 'pi pi-angle-up' : 'pi pi-angle-down'"
-                  class="p-button-text p-button-sm mr-2"
-                  pTooltip="Ver detalles"
-                  tooltipPosition="top"
-                ></button>
-                <button
-                  pButton
-                  icon="pi pi-pencil"
-                  class="p-button-text p-button-sm mr-2"
-                  (click)="$event.stopPropagation(); editUserPermissions(group)"
-                  pTooltip="Editar permisos"
-                  tooltipPosition="top"
-                ></button>
-                <button
-                  pButton
-                  icon="pi pi-trash"
-                  class="p-button-text p-button-danger p-button-sm"
-                  (click)="$event.stopPropagation(); removeUserPermissions(group)"
-                  pTooltip="Eliminar todos los permisos"
-                  tooltipPosition="top"
-                ></button>
-              </td>
-            </tr>
-            <!-- Detalles expandidos -->
-            <tr *ngIf="isExpanded(group.user._id)" class="bg-gray-50">
-              <td colspan="5" class="px-6 py-4">
-                <div class="space-y-2">
-                  <h4 class="text-sm font-semibold text-gray-900 mb-3">Permisos:</h4>
-                  <div class="flex flex-wrap gap-2">
-                    <ng-container *ngFor="let permission of group.permissions">
-                      <div class="flex items-center space-x-2 bg-white border rounded-lg px-3 py-2">
-                        <span class="font-mono text-sm text-gray-700">{{ permission.route }}</span>
-                        <span
-                          class="px-2 py-1 rounded-full text-xs font-medium"
-                          [class]="getStatusClass(permission.isActive)"
-                        >
-                          {{ getStatusLabel(permission.isActive) }}
-                        </span>
-                        <button
-                          pButton
-                          icon="pi pi-trash"
-                          class="p-button-text p-button-sm p-button-danger"
-                          (click)="removeSinglePermission(permission)"
-                          pTooltip="Eliminar permiso"
-                          tooltipPosition="top"
-                        ></button>
-                      </div>
-                    </ng-container>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                class="px-2 py-1 text-sm font-semibold text-purple-900 bg-purple-100 rounded-full"
+              >
+                {{ group.totalPermissions }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                class="px-2 py-1 text-sm font-semibold text-green-800 bg-green-100 rounded-full"
+              >
+                {{ group.activePermissions }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 py-1 text-sm font-semibold text-red-800 bg-red-100 rounded-full">
+                {{ group.inactivePermissions }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <button
+                pButton
+                [icon]="isExpanded(group.user._id) ? 'pi pi-angle-up' : 'pi pi-angle-down'"
+                class="p-button-text p-button-sm mr-2"
+                pTooltip="Ver detalles"
+                tooltipPosition="top"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text p-button-sm mr-2"
+                (click)="$event.stopPropagation(); editUserPermissions(group)"
+                pTooltip="Editar permisos"
+                tooltipPosition="top"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-danger p-button-sm"
+                (click)="$event.stopPropagation(); removeUserPermissions(group)"
+                pTooltip="Eliminar todos los permisos"
+                tooltipPosition="top"
+              ></button>
+            </td>
+          </tr>
+          <!-- Detalles expandidos -->
+          <tr *ngIf="isExpanded(group.user._id)" class="bg-gray-50">
+            <td colspan="5" class="px-6 py-4">
+              <div class="space-y-2">
+                <h4 class="text-sm font-semibold text-gray-900 mb-3">Permisos:</h4>
+                <div class="flex flex-wrap gap-2">
+                  @for (permission of group.permissions; track permission._id) {
+                  <div class="flex items-center space-x-2 bg-white border rounded-lg px-3 py-2">
+                    <span class="font-mono text-sm text-gray-700">{{ permission.route }}</span>
+                    <span
+                      class="px-2 py-1 rounded-full text-xs font-medium"
+                      [class]="getStatusClass(permission.isActive)"
+                    >
+                      {{ getStatusLabel(permission.isActive) }}
+                    </span>
+                    <button
+                      pButton
+                      icon="pi pi-trash"
+                      class="p-button-text p-button-sm p-button-danger"
+                      (click)="removeSinglePermission(permission)"
+                      pTooltip="Eliminar permiso"
+                      tooltipPosition="top"
+                    ></button>
                   </div>
+                  }
                 </div>
-              </td>
-            </tr>
-          </ng-container>
+              </div>
+            </td>
+          </tr>
+          }
         </tbody>
       </table>
     </div>
@@ -261,10 +258,10 @@
       {{ editing()?.isEditing ? 'Editar Permisos' : 'Asignar Permisos' }}
     </ng-template>
 
-    <div class="grid gap-4">
+    <div class="grid gap-4 ">
       <!-- Usuario -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Usuario *</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Usuario *</label>
         <p-select
           [options]="users() || []"
           optionLabel="name"
@@ -284,7 +281,7 @@
       <!-- Selección múltiple de rutas -->
       <div>
         <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-medium text-gray-700">Permisos *</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Permisos *</label>
           <div class="flex gap-2">
             <button
               pButton
@@ -306,28 +303,35 @@
             ></button>
           </div>
         </div>
-        <p class="text-sm text-gray-500 mb-3">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
           Selecciona las rutas a las que tendrá acceso el usuario
         </p>
-        <div class="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto p-2 border rounded-lg">
+        <div class="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto p-2 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+          @for (route of predefinedRoutes(); track route) {
           <div
-            *ngFor="let route of predefinedRoutes"
-            class="flex items-center space-x-2 p-3 border rounded cursor-pointer hover:bg-gray-50 transition-colors"
+            class="flex items-center space-x-2 p-3 border dark:border-gray-600 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors bg-white dark:bg-gray-800"
             [class.bg-blue-50]="isRouteSelected(route)"
+            [class.dark:bg-blue-900/30]="isRouteSelected(route)"
             [class.border-blue-500]="isRouteSelected(route)"
+            [class.dark:border-blue-400]="isRouteSelected(route)"
             (click)="toggleRoute(route)"
           >
             <i
               class="pi text-base"
               [class.pi-check-square]="isRouteSelected(route)"
               [class.pi-square]="!isRouteSelected(route)"
+              [class.text-blue-600]="isRouteSelected(route)"
+              [class.dark:text-blue-400]="isRouteSelected(route)"
+              [class.text-gray-400]="!isRouteSelected(route)"
+              [class.dark:text-gray-500]="!isRouteSelected(route)"
             ></i>
-            <span class="font-mono text-sm">{{ route }}</span>
+            <span class="font-mono text-sm text-gray-700 dark:text-gray-300">{{ route }}</span>
           </div>
+          }
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            Seleccionados: {{ editing()?.selectedRoutes?.length || 0 }} permisos
+          </p>
         </div>
-        <p class="text-sm text-gray-500 mt-2">
-          Seleccionados: {{ editing()?.selectedRoutes?.length || 0 }} permisos
-        </p>
       </div>
     </div>
 

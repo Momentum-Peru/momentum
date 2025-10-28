@@ -16,6 +16,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { MenuPermissionsApiService } from '../../shared/services/menu-permissions-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { MenuService } from '../../shared/services/menu.service';
+import { MenuConfigService } from '../../shared/services/menu-config.service';
 import {
   MenuPermission,
   MenuPermissionWithUser,
@@ -58,6 +59,7 @@ export class MenuPermissionsPage implements OnInit {
   private readonly menuPermissionsApi = inject(MenuPermissionsApiService);
   private readonly usersApi = inject(UsersApiService);
   private readonly menuService = inject(MenuService);
+  private readonly menuConfig = inject(MenuConfigService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
 
@@ -95,22 +97,8 @@ export class MenuPermissionsPage implements OnInit {
     { label: 'Inactivo', value: false },
   ];
 
-  // Rutas predefinidas del sistema (solo las rutas, sin nombres ni iconos)
-  predefinedRoutes = [
-    '/dashboard',
-    '/projects',
-    '/clients',
-    '/providers',
-    '/quotes',
-    '/orders',
-    '/requirements',
-    '/tasks',
-    '/tdrs',
-    '/users',
-    '/daily-reports',
-    '/menu-permissions',
-    '/admin/settings',
-  ];
+  // Rutas predefinidas del sistema (extraídas automáticamente del servicio de configuración)
+  predefinedRoutes = computed(() => this.menuConfig.getProtectedRoutes());
 
   ngOnInit() {
     // Cargar usuarios y permisos
@@ -323,7 +311,7 @@ export class MenuPermissionsPage implements OnInit {
     const current = this.editing();
     if (!current) return;
 
-    const allRoutes = [...this.predefinedRoutes];
+    const allRoutes = [...this.predefinedRoutes()];
     this.editing.set({
       ...current,
       selectedRoutes: allRoutes,

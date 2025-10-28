@@ -10,6 +10,7 @@ import {
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../pages/login/services/auth.service';
 import { MenuService } from '../../shared/services/menu.service';
+import { MenuConfigService, MenuRoute } from '../../shared/services/menu-config.service';
 import { Button } from 'primeng/button';
 import { filter, Subscription } from 'rxjs';
 
@@ -23,6 +24,7 @@ import { filter, Subscription } from 'rxjs';
 export class Menu implements OnInit, OnDestroy {
   private router = inject(Router);
   private menuService = inject(MenuService);
+  private menuConfig = inject(MenuConfigService);
 
   // Hacer el servicio público para acceso desde el template
   authService = inject(AuthService);
@@ -39,26 +41,12 @@ export class Menu implements OnInit, OnDestroy {
   // Suscripción para limpiar
   private userSubscription?: Subscription;
 
-  // Items del menú (todos los elementos disponibles)
-  allMenuItems = signal([
-    { link: '/dashboard', label: 'Dashboard', icon: 'pi pi-chart-line' },
-    { link: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
-    { link: '/providers', label: 'Proveedores', icon: 'pi pi-building' },
-    { link: '/requirements', label: 'Requerimientos', icon: 'pi pi-inbox' },
-    { link: '/tdrs', label: 'TDRs', icon: 'pi pi-file' },
-    { link: '/quotes', label: 'Cotizaciones', icon: 'pi pi-dollar' },
-    { link: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
-    { link: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
-    { link: '/documents', label: 'Documentos', icon: 'pi pi-file' },
-    { link: '/tasks', label: 'Tareas', icon: 'pi pi-check-square' },
-    { link: '/daily-reports', label: 'Reportes Diarios', icon: 'pi pi-calendar' },
-    { link: '/users', label: 'Usuarios', icon: 'pi pi-users' },
-    { link: '/menu-permissions', label: 'Permisos', icon: 'pi pi-shield' },
-  ]);
+  // Items del menú (extraídos automáticamente del servicio de configuración)
+  allMenuItems = computed(() => this.menuConfig.getMenuRoutes());
 
   // Items del menú filtrados por permisos
   menuItems = computed(() => {
-    const filtered = this.allMenuItems().filter((item) => this.menuService.canAccess(item.link));
+    const filtered = this.allMenuItems().filter((item) => this.menuService.canAccess(item.path));
     return filtered;
   });
 
