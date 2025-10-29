@@ -3,13 +3,16 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
+import { InputText } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
-import { DialogModule } from 'primeng/dialog';
-import { SelectModule } from 'primeng/select';
-import { TooltipModule } from 'primeng/tooltip';
-import { ToastModule } from 'primeng/toast';
+import { Dialog } from 'primeng/dialog';
+import { Select } from 'primeng/select';
+import { Tooltip } from 'primeng/tooltip';
+import { Toast } from 'primeng/toast';
+import { Card } from 'primeng/card';
+import { ConfirmDialog } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
 import { MessageService } from 'primeng/api';
 
 interface Contact {
@@ -65,6 +68,13 @@ interface ClientItem {
   documents?: string[];
 }
 
+interface ClientStats {
+  total: number;
+  withLocation: number;
+  withoutLocation: number;
+  withContacts: number;
+}
+
 @Component({
   selector: 'app-clients',
   standalone: true,
@@ -73,13 +83,15 @@ interface ClientItem {
     HttpClientModule,
     FormsModule,
     ReactiveFormsModule,
-    InputTextModule,
+    InputText,
     ButtonModule,
     TableModule,
-    DialogModule,
-    SelectModule,
-    TooltipModule,
-    ToastModule,
+    Dialog,
+    Select,
+    Tooltip,
+    Toast,
+    Card,
+    ConfirmDialog,
   ],
   templateUrl: './clients.html',
   styleUrls: ['./clients.scss'],
@@ -88,15 +100,21 @@ interface ClientItem {
 export class ClientsPage {
   private readonly http = inject(HttpClient);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   private readonly baseUrl = environment.apiUrl;
 
   items = signal<ClientItem[]>([]);
   query = signal<string>('');
+  locationFilter = signal<string>('');
   showDialog = signal<boolean>(false);
   editing = signal<ClientItem | null>(null);
   showContactsDialog = signal<boolean>(false);
   contactsViewing = signal<Contact[] | null>(null);
   contactsClientName = signal<string>('');
+  showStatsDialog = signal<boolean>(false);
+  stats = signal<ClientStats | null>(null);
+  showDetailsDialog = signal<boolean>(false);
+  viewingClient = signal<ClientItem | null>(null);
 
   // Ubicaciones
   countries = signal<Country[]>([]);
@@ -109,6 +127,7 @@ export class ClientsPage {
   ngOnInit() {
     this.load();
     this.loadCountries();
+    this.loadStats();
   }
 
   constructor() {
@@ -124,6 +143,13 @@ export class ClientsPage {
       if (!this.showContactsDialog()) {
         this.contactsViewing.set(null);
         this.contactsClientName.set('');
+      }
+    });
+
+    // Efecto para manejar el cierre del diálogo de detalles
+    effect(() => {
+      if (!this.showDetailsDialog()) {
+        this.viewingClient.set(null);
       }
     });
   }
@@ -201,6 +227,7 @@ export class ClientsPage {
         });
         this.closeDialog();
         this.load();
+        this.loadStats();
       },
       error: (error) => {
         console.error('Error al guardar cliente:', error);
@@ -221,6 +248,7 @@ export class ClientsPage {
           detail: 'Cliente eliminado correctamente',
         });
         this.load();
+        this.loadStats();
       },
       error: (error) => {
         console.error('Error al eliminar cliente:', error);
@@ -493,5 +521,92 @@ export class ClientsPage {
     }
 
     return 'Ha ocurrido un error inesperado';
+  }
+
+  /**
+   * Actualiza el filtro de ubicación
+   */
+  setLocationFilter(value: string) {
+    this.locationFilter.set(value);
+    this.load();
+  }
+
+  /**
+   * Limpia todos los filtros
+   */
+  clearFilters() {
+    this.query.set('');
+    this.locationFilter.set('');
+    this.load();
+  }
+
+  /**
+   * Abre el modal de estadísticas
+   */
+  openStats() {
+    this.showStatsDialog.set(true);
+  }
+
+  /**
+   * Cierra el modal de estadísticas
+   */
+  closeStats() {
+    this.showStatsDialog.set(false);
+  }
+
+  /**
+   * Abre el modal de detalles del cliente
+   */
+  viewDetails(client: ClientItem) {
+    this.viewingClient.set(client);
+    this.showDetailsDialog.set(true);
+  }
+
+  /**
+   * Cierra el modal de detalles
+   */
+  closeDetails() {
+    this.showDetailsDialog.set(false);
+  }
+
+  /**
+   * Carga las estadísticas de clientes
+   */
+  loadStats() {
+    this.http.get<ClientItem[]>(`${this.baseUrl}/clients`).subscribe({
+      next: (clients) => {
+        const stats: ClientStats = {
+          total: clients.length,
+          withLocation: clients.filter((client) => client.ubicacion?.paisCodigo).length,
+          withoutLocation: clients.filter((client) => !client.ubicacion?.paisCodigo).length,
+          withContacts: clients.filter((client) => client.contacts?.length > 0).length,
+        };
+        this.stats.set(stats);
+      },
+      error: (error) => {
+        console.error('Error cargando estadísticas:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar las estadísticas',
+        });
+      },
+    });
+  }
+
+  /**
+   * Confirma y elimina un cliente
+   */
+  confirmDelete(client: ClientItem) {
+    this.confirmationService.confirm({
+      message: `¿Estás seguro de que quieres eliminar el cliente "${client.name}"?`,
+      header: 'Confirmar eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.remove(client);
+      },
+    });
   }
 }

@@ -11,14 +11,16 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { FormsModule } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
+import { InputText } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
-import { DialogModule } from 'primeng/dialog';
-import { SelectModule } from 'primeng/select';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToastModule } from 'primeng/toast';
-import { TooltipModule } from 'primeng/tooltip';
+import { Dialog } from 'primeng/dialog';
+import { Select } from 'primeng/select';
+import { ConfirmDialog } from 'primeng/confirmdialog';
+import { Toast } from 'primeng/toast';
+import { Tooltip } from 'primeng/tooltip';
+import { Tag } from 'primeng/tag';
+import { Card } from 'primeng/card';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import {
@@ -36,6 +38,13 @@ interface UserFormData {
   password?: string;
 }
 
+interface UserStats {
+  total: number;
+  active: number;
+  inactive: number;
+  admins: number;
+}
+
 @Component({
   selector: 'app-users',
   standalone: true,
@@ -43,14 +52,16 @@ interface UserFormData {
     CommonModule,
     HttpClientModule,
     FormsModule,
-    InputTextModule,
+    InputText,
     ButtonModule,
     TableModule,
-    DialogModule,
-    SelectModule,
-    ConfirmDialogModule,
-    ToastModule,
-    TooltipModule,
+    Dialog,
+    Select,
+    ConfirmDialog,
+    Toast,
+    Tooltip,
+    Tag,
+    Card,
   ],
   providers: [ConfirmationService, MessageService],
   templateUrl: './users.html',
@@ -72,6 +83,10 @@ export class UsersPage implements OnInit, OnDestroy {
   showDialog = signal<boolean>(false);
   editing = signal<UserFormData | null>(null);
   loading = signal<boolean>(false);
+  showStatsDialog = signal<boolean>(false);
+  stats = signal<UserStats | null>(null);
+  showDetailsDialog = signal<boolean>(false);
+  viewingUser = signal<User | null>(null);
 
   // Subject para debounce de búsqueda
   private searchSubject = new Subject<string>();
@@ -108,13 +123,21 @@ export class UsersPage implements OnInit, OnDestroy {
       });
 
     this.loadUsers();
+    this.loadStats();
   }
 
   constructor() {
-    // Efecto para manejar el cierre del diálogo
+    // Efecto para manejar el cierre del diálogo principal
     effect(() => {
       if (!this.showDialog()) {
         this.editing.set(null);
+      }
+    });
+
+    // Efecto para manejar el cierre del diálogo de detalles
+    effect(() => {
+      if (!this.showDetailsDialog()) {
+        this.viewingUser.set(null);
       }
     });
   }
@@ -178,6 +201,7 @@ export class UsersPage implements OnInit, OnDestroy {
 
         this._users.set(Array.isArray(filteredUsers) ? filteredUsers : []);
         this.loading.set(false);
+        this.loadStats();
       },
       error: (error) => {
         console.error('Error cargando usuarios:', error);
@@ -307,6 +331,7 @@ export class UsersPage implements OnInit, OnDestroy {
           });
           this.closeDialog();
           this.loadUsers();
+          this.loadStats();
         },
         error: (error) => {
           console.error('Error actualizando usuario:', error);
@@ -336,6 +361,7 @@ export class UsersPage implements OnInit, OnDestroy {
           });
           this.closeDialog();
           this.loadUsers();
+          this.loadStats();
         },
         error: (error) => {
           console.error('Error creando usuario:', error);
@@ -379,6 +405,7 @@ export class UsersPage implements OnInit, OnDestroy {
           detail: 'Usuario eliminado correctamente',
         });
         this.loadUsers();
+        this.loadStats();
       },
       error: (error) => {
         console.error('Error eliminando usuario:', error);
@@ -417,6 +444,7 @@ export class UsersPage implements OnInit, OnDestroy {
               detail: `Usuario ${statusLabel} correctamente`,
             });
             this.loadUsers();
+            this.loadStats();
           },
           error: (error) => {
             console.error('Error cambiando estado del usuario:', error);
@@ -446,13 +474,13 @@ export class UsersPage implements OnInit, OnDestroy {
   getRoleBadgeClass(role: string): string {
     switch (role) {
       case 'admin':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 'moderator':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'user':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   }
 
@@ -460,7 +488,9 @@ export class UsersPage implements OnInit, OnDestroy {
    * Obtiene la clase CSS para el badge de estado
    */
   getStatusBadgeClass(isActive: boolean): string {
-    return isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+    return isActive
+      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
   }
 
   /**
@@ -563,5 +593,60 @@ export class UsersPage implements OnInit, OnDestroy {
     }
 
     return 'Ha ocurrido un error inesperado';
+  }
+
+  /**
+   * Abre el modal de estadísticas
+   */
+  openStats() {
+    this.showStatsDialog.set(true);
+  }
+
+  /**
+   * Cierra el modal de estadísticas
+   */
+  closeStats() {
+    this.showStatsDialog.set(false);
+  }
+
+  /**
+   * Abre el modal de detalles del usuario
+   */
+  viewDetails(user: User) {
+    this.viewingUser.set(user);
+    this.showDetailsDialog.set(true);
+  }
+
+  /**
+   * Cierra el modal de detalles
+   */
+  closeDetails() {
+    this.showDetailsDialog.set(false);
+  }
+
+  /**
+   * Carga las estadísticas de usuarios
+   */
+  loadStats() {
+    this.usersApi.listWithFilters({}).subscribe({
+      next: (response) => {
+        const users = response?.users || [];
+        const stats: UserStats = {
+          total: users.length,
+          active: users.filter((user: any) => user.isActive).length,
+          inactive: users.filter((user: any) => !user.isActive).length,
+          admins: users.filter((user: any) => user.role === 'admin').length,
+        };
+        this.stats.set(stats);
+      },
+      error: (error) => {
+        console.error('Error cargando estadísticas:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar las estadísticas',
+        });
+      },
+    });
   }
 }

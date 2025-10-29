@@ -14,6 +14,8 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  lastLogin?: string; // Último acceso del usuario
+  googleId?: string; // ID de Google si está vinculado
 }
 
 export interface UserCreateRequest {

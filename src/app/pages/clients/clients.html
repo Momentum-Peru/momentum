@@ -1,74 +1,194 @@
 <div class="p-4 space-y-4">
   <p-toast></p-toast>
-  <div class="flex items-center gap-2">
-    <input
-      pInputText
-      placeholder="Buscar"
-      [ngModel]="query()"
-      (ngModelChange)="setQuery($event)"
-      class="w-full"
-    />
-    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Header con estadísticas -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="flex flex-col md:flex-row md:items-center gap-4">
+      <h1 class="text-2xl font-bold text-gray-800">Gestión de Clientes</h1>
+      @if (stats()) {
+      <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+        <span class="flex items-center gap-1">
+          <i class="pi pi-users text-blue-500"></i>
+          {{ stats()?.total }} total
+        </span>
+        <span class="flex items-center gap-1">
+          <i class="pi pi-map-marker text-green-500"></i>
+          {{ stats()?.withLocation }} con ubicación
+        </span>
+        <span class="flex items-center gap-1">
+          <i class="pi pi-phone text-purple-500"></i>
+          {{ stats()?.withContacts }} con contactos
+        </span>
+      </div>
+      }
+    </div>
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+      <button
+        pButton
+        type="button"
+        label="Estadísticas"
+        icon="pi pi-chart-bar"
+        class="p-button-outlined"
+        (click)="openStats()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Nuevo Cliente"
+        icon="pi pi-plus"
+        (click)="newItem()"
+      ></button>
+    </div>
   </div>
 
-  <p-table [value]="items()" [tableStyle]="{ 'min-width': '50rem' }">
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Nombre</th>
-        <th>RUC/DNI</th>
-        <th>Ubicación</th>
-        <th>Contactos</th>
-        <th></th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-row>
-      <tr>
-        <td>{{ row.name }}</td>
-        <td>{{ row.taxId }}</td>
-        <td>
-          @if (row.ubicacion) {
-          <div class="text-sm">
-            @if (row.ubicacion.paisCodigo) {
-            <div class="font-medium">{{ getCountryName(row.ubicacion.paisCodigo) }}</div>
-            } @if (row.ubicacion.provinciaCodigo) {
-            <div class="text-gray-600">{{ getProvinceName(row.ubicacion.provinciaCodigo) }}</div>
-            } @if (row.ubicacion.distritoCodigo) {
-            <div class="text-gray-500">{{ getDistrictName(row.ubicacion.distritoCodigo) }}</div>
-            } @if (row.ubicacion.direccion) {
-            <div class="text-xs text-gray-400 mt-1">{{ row.ubicacion.direccion }}</div>
-            }
-          </div>
-          } @else {
-          <span class="text-gray-400 text-sm">Sin ubicación</span>
-          }
-        </td>
-        <td>
+  <!-- Filtros -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+          <input
+            pInputText
+            placeholder="Nombre, RUC/DNI..."
+            [ngModel]="query()"
+            (ngModelChange)="setQuery($event)"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+          <p-select
+            [options]="[
+              { label: 'Todos', value: 'all' },
+              { label: 'Con ubicación', value: 'with' },
+              { label: 'Sin ubicación', value: 'without' }
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="locationFilter()"
+            (ngModelChange)="setLocationFilter($event)"
+            placeholder="Filtrar por ubicación"
+            [showClear]="true"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div class="flex items-end">
           <button
             pButton
             type="button"
-            label="Ver contactos"
-            icon="pi pi-users"
-            class="p-button-text"
-            (click)="openContacts(row)"
+            label="Limpiar"
+            icon="pi pi-filter-slash"
+            class="p-button-outlined w-full"
+            (click)="clearFilters()"
           ></button>
-        </td>
-        <td class="text-right">
-          <button
-            pButton
-            icon="pi pi-pencil"
-            class="p-button-text"
-            (click)="editItem(row)"
-          ></button>
-          <button
-            pButton
-            icon="pi pi-trash"
-            class="p-button-text p-button-danger"
-            (click)="remove(row)"
-          ></button>
-        </td>
-      </tr>
+        </div>
+      </div>
     </ng-template>
-  </p-table>
+  </p-card>
+
+  <!-- Tabla de clientes -->
+  <div class="overflow-x-auto">
+    <p-table
+      [value]="items()"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [paginator]="true"
+      [rows]="10"
+      [responsiveLayout]="'scroll'"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="whitespace-nowrap">Cliente</th>
+          <th class="whitespace-nowrap">RUC/DNI</th>
+          <th class="whitespace-nowrap">Ubicación</th>
+          <th class="whitespace-nowrap">Contactos</th>
+          <th class="whitespace-nowrap">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <div class="space-y-1 min-w-[200px]">
+              <div class="font-semibold text-gray-900 dark:text-gray-100 break-words">
+                {{ row.name }}
+              </div>
+              @if (row._id) {
+              <div class="text-sm text-gray-500 dark:text-gray-400 break-words">
+                ID: {{ row._id }}
+              </div>
+              }
+            </div>
+          </td>
+          <td>
+            <div class="text-sm min-w-[150px]">
+              <div class="break-words text-gray-900 dark:text-gray-100">{{ row.taxId || '-' }}</div>
+            </div>
+          </td>
+          <td>
+            @if (row.ubicacion) {
+            <div class="text-sm min-w-[200px] max-w-[300px]">
+              @if (row.ubicacion.paisCodigo) {
+              <div class="font-medium break-words text-gray-900 dark:text-gray-100">
+                {{ getCountryName(row.ubicacion.paisCodigo) }}
+              </div>
+              } @if (row.ubicacion.provinciaCodigo) {
+              <div class="text-gray-600 dark:text-gray-300 break-words">
+                {{ getProvinceName(row.ubicacion.provinciaCodigo) }}
+              </div>
+              } @if (row.ubicacion.distritoCodigo) {
+              <div class="text-gray-500 dark:text-gray-400 break-words">
+                {{ getDistrictName(row.ubicacion.distritoCodigo) }}
+              </div>
+              } @if (row.ubicacion.direccion) {
+              <div class="text-xs text-gray-400 dark:text-gray-500 mt-1 break-words">
+                {{ row.ubicacion.direccion }}
+              </div>
+              }
+            </div>
+            } @else {
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Sin ubicación</span>
+            }
+          </td>
+          <td>
+            <button
+              pButton
+              type="button"
+              label="Ver contactos"
+              icon="pi pi-users"
+              class="p-button-text p-button-sm"
+              (click)="openContacts(row)"
+            ></button>
+          </td>
+          <td class="text-right">
+            <div class="flex items-center gap-1">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm"
+                pTooltip="Ver detalles"
+                (click)="viewDetails(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text p-button-sm"
+                pTooltip="Editar"
+                (click)="editItem(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-sm p-button-danger"
+                pTooltip="Eliminar"
+                (click)="confirmDelete(row)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
 
   <!-- Modal de contactos -->
   <p-dialog
@@ -310,6 +430,240 @@
     <ng-template pTemplate="footer">
       <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
       <button pButton label="Guardar" (click)="save()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de estadísticas -->
+  <p-dialog
+    [(visible)]="showStatsDialog"
+    [modal]="true"
+    [style]="{ width: '90vw', maxWidth: '32rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-chart-bar text-blue-500"></i>
+        Estadísticas de Clientes
+      </div>
+    </ng-template>
+    @if (stats()) {
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <p-card>
+        <ng-template pTemplate="content">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-blue-600">{{ stats()?.total }}</div>
+            <div class="text-sm text-gray-600">Total</div>
+          </div>
+        </ng-template>
+      </p-card>
+      <p-card>
+        <ng-template pTemplate="content">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-green-600">{{ stats()?.withLocation }}</div>
+            <div class="text-sm text-gray-600">Con Ubicación</div>
+          </div>
+        </ng-template>
+      </p-card>
+      <p-card>
+        <ng-template pTemplate="content">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-red-600">{{ stats()?.withoutLocation }}</div>
+            <div class="text-sm text-gray-600">Sin Ubicación</div>
+          </div>
+        </ng-template>
+      </p-card>
+      <p-card>
+        <ng-template pTemplate="content">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-purple-600">{{ stats()?.withContacts }}</div>
+            <div class="text-sm text-gray-600">Con Contactos</div>
+          </div>
+        </ng-template>
+      </p-card>
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de detalles del cliente -->
+  <p-dialog
+    [(visible)]="showDetailsDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '60rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-eye text-blue-500"></i>
+        Detalles del Cliente — {{ viewingClient()?.name }}
+      </div>
+    </ng-template>
+    @if (viewingClient()) {
+    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+      <!-- Información básica -->
+      <div class="mb-6">
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-info-circle text-blue-500"></i>
+          Información Básica
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Nombre</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-medium">
+              {{ viewingClient()?.name }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >RUC/DNI</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingClient()?.taxId || 'No especificado' }}
+            </div>
+          </div>
+          @if (viewingClient()?._id) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >ID del Cliente</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingClient()?._id }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Ubicación -->
+      <div class="mb-6">
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-map-marker text-orange-500"></i>
+          Ubicación
+        </h3>
+        @if (viewingClient()?.ubicacion) {
+        <div class="space-y-2">
+          @if (viewingClient()?.ubicacion?.paisCodigo) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >País</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ getCountryName(viewingClient()?.ubicacion?.paisCodigo ?? '') }}
+            </div>
+          </div>
+          } @if (viewingClient()?.ubicacion?.provinciaCodigo) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Provincia/Estado</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ getProvinceName(viewingClient()?.ubicacion?.provinciaCodigo ?? '') }}
+            </div>
+          </div>
+          } @if (viewingClient()?.ubicacion?.distritoCodigo) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Distrito/Municipio</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ getDistrictName(viewingClient()?.ubicacion?.distritoCodigo ?? '') }}
+            </div>
+          </div>
+          } @if (viewingClient()?.ubicacion?.direccion) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Dirección</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingClient()?.ubicacion?.direccion }}
+            </div>
+          </div>
+          }
+        </div>
+        } @else {
+        <div class="text-gray-500 dark:text-gray-400">No se ha especificado ubicación</div>
+        }
+      </div>
+
+      <!-- Contactos -->
+      <div class="mb-6">
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-users text-purple-500"></i>
+          Contactos
+        </h3>
+        @if (viewingClient()?.contacts?.length) {
+        <div class="overflow-x-auto">
+          <p-table
+            [value]="viewingClient()?.contacts ?? []"
+            [tableStyle]="{ 'min-width': '30rem' }"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="whitespace-nowrap">Nombre</th>
+                <th class="whitespace-nowrap">Área</th>
+                <th class="whitespace-nowrap">Email</th>
+                <th class="whitespace-nowrap">Teléfono</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-contact>
+              <tr>
+                <td class="break-words">{{ contact.name }}</td>
+                <td class="break-words">{{ contact.area }}</td>
+                <td class="break-words">{{ contact.email }}</td>
+                <td class="break-words">{{ contact.phone || '-' }}</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+        } @else {
+        <div class="text-gray-500 dark:text-gray-400">No se han especificado contactos</div>
+        }
+      </div>
+
+      <!-- Documentos -->
+      @if (viewingClient()?.documents?.length) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-file text-indigo-500"></i>
+          Documentos
+        </h3>
+        <div class="space-y-2">
+          @for (document of viewingClient()?.documents; track document) {
+          <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
+            <i class="pi pi-file text-gray-500"></i>
+            <a
+              [href]="document"
+              target="_blank"
+              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+            >
+              <i class="pi pi-external-link text-xs"></i>
+              Ver documento
+            </a>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
     </ng-template>
   </p-dialog>
 </div>
