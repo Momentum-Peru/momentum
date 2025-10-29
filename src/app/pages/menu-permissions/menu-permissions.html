@@ -3,9 +3,9 @@
   <p-confirmDialog></p-confirmDialog>
 
   <!-- Header con estadísticas -->
-  <div class="bg-white rounded-lg shadow-sm border p-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-6">
     <div class="flex items-center justify-between mb-4">
-      <h1 class="text-2xl font-bold text-gray-900">Gestión de Permisos de Menú</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Gestión de Permisos de Menú</h1>
       <div class="flex gap-2">
         <button
           pButton
@@ -19,39 +19,39 @@
 
     <!-- Estadísticas -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-blue-50 rounded-lg p-4">
+      <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
         <div class="flex items-center">
-          <i class="pi pi-users text-blue-600 text-2xl mr-3"></i>
+          <i class="pi pi-users text-blue-600 dark:text-blue-400 text-2xl mr-3"></i>
           <div>
-            <p class="text-sm font-medium text-blue-600">Usuarios con Permisos</p>
-            <p class="text-2xl font-bold text-blue-900">{{ totalUsers() }}</p>
+            <p class="text-sm font-medium text-blue-600 dark:text-blue-400">Usuarios con Permisos</p>
+            <p class="text-2xl font-bold text-blue-900 dark:text-blue-300">{{ totalUsers() }}</p>
           </div>
         </div>
       </div>
-      <div class="bg-purple-50 rounded-lg p-4">
+      <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
         <div class="flex items-center">
-          <i class="pi pi-list text-purple-600 text-2xl mr-3"></i>
+          <i class="pi pi-list text-purple-600 dark:text-purple-400 text-2xl mr-3"></i>
           <div>
-            <p class="text-sm font-medium text-purple-600">Total Permisos</p>
-            <p class="text-2xl font-bold text-purple-900">{{ totalPermissions() }}</p>
+            <p class="text-sm font-medium text-purple-600 dark:text-purple-400">Total Permisos</p>
+            <p class="text-2xl font-bold text-purple-900 dark:text-purple-300">{{ totalPermissions() }}</p>
           </div>
         </div>
       </div>
-      <div class="bg-green-50 rounded-lg p-4">
+      <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
         <div class="flex items-center">
-          <i class="pi pi-check-circle text-green-600 text-2xl mr-3"></i>
+          <i class="pi pi-check-circle text-green-600 dark:text-green-400 text-2xl mr-3"></i>
           <div>
-            <p class="text-sm font-medium text-green-600">Activos</p>
-            <p class="text-2xl font-bold text-green-900">{{ activePermissions() }}</p>
+            <p class="text-sm font-medium text-green-600 dark:text-green-400">Activos</p>
+            <p class="text-2xl font-bold text-green-900 dark:text-green-300">{{ activePermissions() }}</p>
           </div>
         </div>
       </div>
-      <div class="bg-red-50 rounded-lg p-4">
+      <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
         <div class="flex items-center">
-          <i class="pi pi-times-circle text-red-600 text-2xl mr-3"></i>
+          <i class="pi pi-times-circle text-red-600 dark:text-red-400 text-2xl mr-3"></i>
           <div>
-            <p class="text-sm font-medium text-red-600">Inactivos</p>
-            <p class="text-2xl font-bold text-red-900">{{ inactivePermissions() }}</p>
+            <p class="text-sm font-medium text-red-600 dark:text-red-400">Inactivos</p>
+            <p class="text-2xl font-bold text-red-900 dark:text-red-300">{{ inactivePermissions() }}</p>
           </div>
         </div>
       </div>
@@ -59,10 +59,10 @@
   </div>
 
   <!-- Filtros -->
-  <div class="bg-white rounded-lg shadow-sm border p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-4">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Buscar</label>
         <input
           pInputText
           placeholder="Buscar por nombre o email..."
@@ -72,7 +72,7 @@
         />
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Usuario</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Usuario</label>
         <p-select
           [options]="users() || []"
           optionLabel="name"
@@ -98,10 +98,10 @@
   </div>
 
   <!-- Tabla de permisos agrupados por usuario -->
-  <div class="bg-white rounded-lg shadow-sm border">
-    <div class="flex items-center justify-between p-4 border-b">
+  <div class="bg-white rounded-lg shadow-sm dark:bg-gray-800">
+    <div class="flex items-center justify-between p-4 border-b dark:border-gray-700">
       <div class="flex items-center space-x-4">
-        <span class="text-sm text-gray-700">
+        <span class="text-sm text-gray-700 dark:text-gray-300">
           Mostrando {{ filteredUserGroups().length }} usuarios
         </span>
       </div>
@@ -109,137 +109,110 @@
 
     <!-- Indicador de carga -->
     <div *ngIf="loading()" class="flex items-center justify-center py-8">
-      <i class="pi pi-spin pi-spinner text-2xl text-blue-600 mr-2"></i>
-      <span class="text-gray-600">Cargando permisos...</span>
+      <i class="pi pi-spin pi-spinner text-2xl text-blue-600 dark:text-blue-400 mr-2"></i>
+      <span class="text-gray-600 dark:text-gray-400">Cargando permisos...</span>
     </div>
 
-    <!-- Tabla de usuarios con permisos -->
-    <div *ngIf="!loading()" class="overflow-x-auto">
-      <table class="w-full">
-        <thead>
-          <tr class="bg-gray-50 border-b">
-            <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Usuario
-            </th>
-            <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Total Permisos
-            </th>
-            <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Activos
-            </th>
-            <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Inactivos
-            </th>
-            <th
-              class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Acciones
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (group of filteredUserGroups(); track group.user._id) {
-          <tr class="border-b hover:bg-gray-50 cursor-pointer" (click)="toggleRow(group.user._id)">
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <i class="pi pi-user text-gray-400 mr-3"></i>
-                <div>
-                  <div class="text-sm font-medium text-gray-900">{{ group.user.name }}</div>
-                  <div class="text-sm text-gray-500">{{ group.user.email }}</div>
-                </div>
+    <!-- Tabla de usuarios con permisos usando PrimeNG -->
+    <p-table *ngIf="!loading()" [value]="filteredUserGroups()" [tableStyle]="{ 'min-width': '50rem' }">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Usuario</th>
+          <th>Total Permisos</th>
+          <th>Activos</th>
+          <th>Inactivos</th>
+          <th></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-group>
+        <tr>
+          <td>
+            <div class="flex items-center">
+              <i class="pi pi-user text-gray-400 dark:text-gray-500 mr-3"></i>
+              <div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ group.user.name }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">{{ group.user.email }}</div>
               </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span
-                class="px-2 py-1 text-sm font-semibold text-purple-900 bg-purple-100 rounded-full"
-              >
-                {{ group.totalPermissions }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span
-                class="px-2 py-1 text-sm font-semibold text-green-800 bg-green-100 rounded-full"
-              >
-                {{ group.activePermissions }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="px-2 py-1 text-sm font-semibold text-red-800 bg-red-100 rounded-full">
-                {{ group.inactivePermissions }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <button
-                pButton
-                [icon]="isExpanded(group.user._id) ? 'pi pi-angle-up' : 'pi pi-angle-down'"
-                class="p-button-text p-button-sm mr-2"
-                pTooltip="Ver detalles"
-                tooltipPosition="top"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-pencil"
-                class="p-button-text p-button-sm mr-2"
-                (click)="$event.stopPropagation(); editUserPermissions(group)"
-                pTooltip="Editar permisos"
-                tooltipPosition="top"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-text p-button-danger p-button-sm"
-                (click)="$event.stopPropagation(); removeUserPermissions(group)"
-                pTooltip="Eliminar todos los permisos"
-                tooltipPosition="top"
-              ></button>
-            </td>
-          </tr>
-          <!-- Detalles expandidos -->
-          <tr *ngIf="isExpanded(group.user._id)" class="bg-gray-50">
-            <td colspan="5" class="px-6 py-4">
-              <div class="space-y-2">
-                <h4 class="text-sm font-semibold text-gray-900 mb-3">Permisos:</h4>
-                <div class="flex flex-wrap gap-2">
-                  @for (permission of group.permissions; track permission._id) {
-                  <div class="flex items-center space-x-2 bg-white border rounded-lg px-3 py-2">
-                    <span class="font-mono text-sm text-gray-700">{{ permission.route }}</span>
-                    <span
-                      class="px-2 py-1 rounded-full text-xs font-medium"
-                      [class]="getStatusClass(permission.isActive)"
-                    >
-                      {{ getStatusLabel(permission.isActive) }}
-                    </span>
-                    <button
-                      pButton
-                      icon="pi pi-trash"
-                      class="p-button-text p-button-sm p-button-danger"
-                      (click)="removeSinglePermission(permission)"
-                      pTooltip="Eliminar permiso"
-                      tooltipPosition="top"
-                    ></button>
-                  </div>
-                  }
+            </div>
+          </td>
+          <td>
+            <span class="px-2 py-1 text-sm font-semibold text-purple-900 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+              {{ group.totalPermissions }}
+            </span>
+          </td>
+          <td>
+            <span class="px-2 py-1 text-sm font-semibold text-green-800 dark:text-green-300 bg-green-100 dark:bg-green-900/30 rounded-full">
+              {{ group.activePermissions }}
+            </span>
+          </td>
+          <td>
+            <span class="px-2 py-1 text-sm font-semibold text-red-800 dark:text-red-300 bg-red-100 dark:bg-red-900/30 rounded-full">
+              {{ group.inactivePermissions }}
+            </span>
+          </td>
+          <td class="text-right">
+            <button
+              pButton
+              [icon]="isExpanded(group.user._id) ? 'pi pi-angle-up' : 'pi pi-angle-down'"
+              class="p-button-text"
+              (click)="toggleRow(group.user._id)"
+              pTooltip="Ver detalles"
+              tooltipPosition="top"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text"
+              (click)="editUserPermissions(group)"
+              pTooltip="Editar permisos"
+              tooltipPosition="top"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-text p-button-danger"
+              (click)="removeUserPermissions(group)"
+              pTooltip="Eliminar todos los permisos"
+              tooltipPosition="top"
+            ></button>
+          </td>
+        </tr>
+        <!-- Detalles expandidos -->
+        <tr *ngIf="isExpanded(group.user._id)" class="bg-gray-50 dark:bg-gray-700">
+          <td colspan="5" class="p-6">
+            <div class="space-y-2">
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Permisos:</h4>
+              <div class="flex flex-wrap gap-2">
+                @for (permission of group.permissions; track permission._id) {
+                <div class="flex items-center space-x-2 bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg px-3 py-2">
+                  <span class="font-mono text-sm text-gray-700 dark:text-gray-300">{{ permission.route }}</span>
+                  <span
+                    class="px-2 py-1 rounded-full text-xs font-medium"
+                    [class]="getStatusClass(permission.isActive)"
+                  >
+                    {{ getStatusLabel(permission.isActive) }}
+                  </span>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-sm p-button-danger"
+                    (click)="removeSinglePermission(permission)"
+                    pTooltip="Eliminar permiso"
+                    tooltipPosition="top"
+                  ></button>
                 </div>
+                }
               </div>
-            </td>
-          </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
 
     <!-- Estado vacío -->
     <div *ngIf="!loading() && filteredUserGroups().length === 0" class="text-center py-8">
-      <i class="pi pi-inbox text-4xl text-gray-400 mb-2 block"></i>
-      <p class="text-gray-500">No se encontraron usuarios con permisos</p>
+      <i class="pi pi-inbox text-4xl text-gray-400 dark:text-gray-500 mb-2 block"></i>
+      <p class="text-gray-500 dark:text-gray-400">No se encontraron usuarios con permisos</p>
     </div>
   </div>
 
