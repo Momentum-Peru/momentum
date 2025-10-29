@@ -1,0 +1,69 @@
+# Nombre del workflow, aparecerá en la pestaña "Actions" de GitHub
+name: Deploy Angular App to S3 and CloudFront
+
+# 1. DISPARADOR (TRIGGER)
+# Esto define cuándo se debe ejecutar el pipeline.
+on:
+  push:
+    branches:
+      - main # Se ejecuta solo en 'push' (o merge) a la rama 'main'
+
+# 2. TRABAJOS (JOBS)
+# Lista de trabajos a ejecutar.
+jobs:
+  build-and-deploy:
+    # El tipo de máquina virtual que usará GitHub para ejecutar los pasos
+    runs-on: ubuntu-latest
+
+    # 3. PASOS (STEPS)
+    # Secuencia de tareas a ejecutar.
+    steps:
+      # Paso 1: Descargar el código
+      # Acción oficial de GitHub para clonar tu repositorio en el runner.
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Paso 2: Configurar el entorno de Node.js
+      # Acción oficial para instalar Node.js, necesario para Angular.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20 # ¡Asegúrate de que esta sea la versión de Node que usas!
+
+      # Paso 3: Instalar dependencias
+      # 'npm ci' (Clean Install) es la práctica recomendada para CI/CD
+      # Es más rápido y seguro que 'npm install'.
+      - name: Install Dependencies
+        run: npm ci
+
+      # Paso 4: Construir la aplicación Angular
+      # Ejecuta el script 'build' definido en tu 'package.json'.
+      # Esto debería ejecutar 'ng build --configuration production'
+      - name: Build Angular App
+        run: npm run build
+
+      # Paso 5: Configurar las credenciales de AWS
+      # Acción oficial de AWS para autenticar el runner usando los Secrets.
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1 # !! REEMPLAZA (ej: us-east-1)
+
+      # Paso 6: Subir archivos a S3
+      # Usa la AWS CLI (preinstalada) para sincronizar el build con el bucket.
+      - name: Deploy static site to S3 Bucket
+        run: |
+          aws s3 sync ./dist/mayaagent/browser s3://tecmeing-bucket --delete
+        # !! REEMPLAZA './ruta-a-tu-build' (ej: ./dist/nombre-del-proyecto)
+        # !! REEMPLAZA 'tu-bucket-name'
+        # '--delete' elimina archivos en S3 que ya no existen en tu build.
+
+      # Paso 7: Invalidar la caché de CloudFront
+      # Usa la AWS CLI para forzar a CloudFront a refrescar la caché.
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id E2EN6SUAODXQTL --paths "/*"
+        # !! REEMPLAZA 'tu-distribution-id' (ej: E123ABC456DEF)
+        # '/*' le dice a CloudFront que invalide todos los archivos.
