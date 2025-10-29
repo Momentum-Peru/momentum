@@ -108,6 +108,28 @@
   transition: all 0.2s ease-in-out;
 }
 
+/* Mobile accordion helpers */
+:host {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .p-button.p-button-text {
+    @apply w-full justify-start;
+  }
+}
+
 /* Estilos para scroll */
 .p-datatable-scrollable .p-datatable-scrollable-body {
   scrollbar-width: thin;

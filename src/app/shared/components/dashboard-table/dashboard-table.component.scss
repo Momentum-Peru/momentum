@@ -1,5 +1,6 @@
-/* Estilos específicos para la página de proyectos */
+/* Estilos para accordion desplegable en móvil */
 :host {
+  /* Animación fade-in para el contenido expandible */
   .animate-fade-in {
     animation: fadeIn 0.3s ease-in-out;
   }
@@ -14,8 +15,5 @@
       transform: translateY(0);
     }
   }
-
-  .p-button.p-button-text {
-    @apply w-full justify-start;
-  }
 }
+

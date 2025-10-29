@@ -87,6 +87,7 @@ export class UsersPage implements OnInit, OnDestroy {
   stats = signal<UserStats | null>(null);
   showDetailsDialog = signal<boolean>(false);
   viewingUser = signal<User | null>(null);
+  expandedRowIds = signal<Set<string>>(new Set());
 
   // Subject para debounce de búsqueda
   private searchSubject = new Subject<string>();
@@ -648,5 +649,27 @@ export class UsersPage implements OnInit, OnDestroy {
         });
       },
     });
+  }
+
+  /**
+   * Alterna la expansión de una fila en móvil
+   */
+  toggleRow(id?: string) {
+    if (!id) return;
+    const next = new Set(this.expandedRowIds());
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    this.expandedRowIds.set(next);
+  }
+
+  /**
+   * Verifica si una fila está expandida
+   */
+  isRowExpanded(id?: string): boolean {
+    if (!id) return false;
+    return this.expandedRowIds().has(id);
   }
 }

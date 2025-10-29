@@ -101,8 +101,8 @@
     </ng-template>
   </p-card>
 
-  <!-- Tabla de usuarios -->
-  <div class="overflow-x-auto">
+  <!-- Tabla de usuarios - Desktop -->
+  <div class="hidden md:block overflow-x-auto">
     <p-table
       [value]="users"
       [tableStyle]="{ 'min-width': '50rem' }"
@@ -117,7 +117,7 @@
           <th class="whitespace-nowrap">Rol</th>
           <th class="whitespace-nowrap">Estado</th>
           <th class="whitespace-nowrap">Último acceso</th>
-          <th class="whitespace-nowrap">Acciones</th>
+          <th class="whitespace-nowrap text-right">Acciones</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-user>
@@ -203,6 +203,168 @@
         </tr>
       </ng-template>
     </p-table>
+  </div>
+
+  <!-- Lista de usuarios - Móvil (accordion) -->
+  <div class="md:hidden space-y-3">
+    @for (user of users; track user.id || $index) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+    >
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        (click)="toggleRow(user.id)"
+      >
+        <div class="flex-1 text-left min-w-0 pr-4">
+          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+            {{ user.name }}
+          </div>
+          <div
+            class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 min-w-0"
+          >
+            <span class="truncate">{{ user.email }}</span>
+            <span>•</span>
+            <span
+              class="px-2 py-0.5 rounded-full text-[10px] font-medium"
+              [class]="getRoleBadgeClass(user.role)"
+            >
+              {{ getRoleLabel(user.role) }}
+            </span>
+            @if (user.isActive) {
+            <span
+              class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800"
+              >Activo</span
+            >
+            } @else {
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800"
+              >Inactivo</span
+            >
+            }
+          </div>
+        </div>
+        <div class="flex-shrink-0">
+          <i
+            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+            [class.pi-chevron-down]="!isRowExpanded(user.id)"
+            [class.pi-chevron-up]="isRowExpanded(user.id)"
+          ></i>
+        </div>
+      </button>
+
+      @if (isRowExpanded(user.id)) {
+      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+        <div class="px-4 py-4 space-y-4 text-sm">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Email
+              </div>
+              <div class="text-gray-900 dark:text-gray-100 break-words">{{ user.email }}</div>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Estado
+              </div>
+              <div class="text-gray-900 dark:text-gray-100">
+                @if (user.isActive) {
+                <p-tag value="Activo" severity="success"></p-tag>
+                } @else {
+                <p-tag value="Inactivo" severity="danger"></p-tag>
+                }
+              </div>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Rol
+              </div>
+              <div class="text-gray-900 dark:text-gray-100">
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                  [class]="getRoleBadgeClass(user.role)"
+                >
+                  <i class="pi pi-shield mr-1"></i>
+                  {{ getRoleLabel(user.role) }}
+                </span>
+              </div>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Último acceso
+              </div>
+              <div class="text-gray-900 dark:text-gray-100">
+                @if (user.lastLogin) {
+                {{ user.lastLogin | date : 'dd/MM/yyyy HH:mm' }}
+                } @else {
+                <span class="text-gray-400 dark:text-gray-500">Nunca</span>
+                }
+              </div>
+            </div>
+            @if (user.id) {
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                ID
+              </div>
+              <div class="text-gray-900 dark:text-gray-100 break-words text-xs">{{ user.id }}</div>
+            </div>
+            } @if (user.googleId) {
+            <div class="col-span-2">
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Autenticación
+              </div>
+              <div class="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                <i class="pi pi-google"></i>
+                <span>Cuenta vinculada con Google</span>
+              </div>
+            </div>
+            }
+          </div>
+
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+              Acciones
+            </div>
+            <div class="flex flex-col gap-2">
+              <button
+                pButton
+                icon="pi pi-eye"
+                label="Ver detalles"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="viewDetails(user)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                label="Editar"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="editUser(user)"
+              ></button>
+              <button
+                pButton
+                [icon]="user.isActive ? 'pi pi-user-minus' : 'pi pi-user-plus'"
+                [label]="user.isActive ? 'Desactivar' : 'Activar'"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="toggleUserStatus(user)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                label="Eliminar"
+                class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                (click)="confirmDelete(user)"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    } @if (users.length === 0 && !loading()) {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <i class="pi pi-inbox text-4xl mb-2"></i>
+      <p>No hay usuarios disponibles</p>
+    </div>
+    }
   </div>
 
   <!-- Diálogo de edición/creación -->

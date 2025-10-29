@@ -115,6 +115,7 @@ export class ClientsPage {
   stats = signal<ClientStats | null>(null);
   showDetailsDialog = signal<boolean>(false);
   viewingClient = signal<ClientItem | null>(null);
+  expandedRows = signal<Set<string>>(new Set());
 
   // Ubicaciones
   countries = signal<Country[]>([]);
@@ -608,5 +609,27 @@ export class ClientsPage {
         this.remove(client);
       },
     });
+  }
+
+  /**
+   * Alterna la expansión de una fila del accordion
+   */
+  toggleRow(rowId: string | undefined) {
+    if (!rowId) return;
+    const expanded = new Set(this.expandedRows());
+    if (expanded.has(rowId)) {
+      expanded.delete(rowId);
+    } else {
+      expanded.add(rowId);
+    }
+    this.expandedRows.set(expanded);
+  }
+
+  /**
+   * Verifica si una fila está expandida
+   */
+  isRowExpanded(rowId: string | undefined): boolean {
+    if (!rowId) return false;
+    return this.expandedRows().has(rowId);
   }
 }

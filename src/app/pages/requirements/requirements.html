@@ -11,92 +11,312 @@
     <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
   </div>
 
-  <p-table [value]="items()" [tableStyle]="{ 'min-width': '80rem' }">
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Código</th>
-        <th>Título</th>
-        <th>Solicitante</th>
-        <th>Cliente</th>
-        <th>Estado</th>
-        <th>Fecha Emisión</th>
-        <th>Centro Costo</th>
-        <th>Documentos</th>
-        <th></th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-row>
-      <tr>
-        <td>
-          <span class="font-mono text-sm">{{ row.codigo }}</span>
-        </td>
-        <td>
-          <div class="max-w-xs">
-            <p class="font-semibold truncate">{{ row.title }}</p>
-            <p class="text-sm text-gray-600 truncate">{{ row.descripcion }}</p>
+  <!-- Vista Desktop: Tabla normal -->
+  <div class="hidden md:block">
+    <p-table [value]="items()" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Código</th>
+          <th>Título</th>
+          <th>Solicitante</th>
+          <th>Cliente</th>
+          <th>Estado</th>
+          <th>Fecha Emisión</th>
+          <th>Centro Costo</th>
+          <th>Documentos</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <span class="font-mono text-sm">{{ row.codigo }}</span>
+          </td>
+          <td>
+            <div class="max-w-xs">
+              <p class="font-semibold truncate">{{ row.title }}</p>
+              <p class="text-sm text-gray-600 truncate">{{ row.descripcion }}</p>
+            </div>
+          </td>
+          <td>
+            <div class="max-w-xs">
+              <p class="font-medium text-sm">{{ row.solicitante?.nombre || '-' }}</p>
+              <p class="text-xs text-gray-500">{{ row.solicitante?.cargo || '-' }}</p>
+              <p class="text-xs text-gray-400 font-mono">{{ row.solicitante?.codigo || '-' }}</p>
+            </div>
+          </td>
+          <td>{{ row.clientId?.name || '-' }}</td>
+          <td>
+            <span
+              class="px-2 py-1 rounded-full text-xs font-medium"
+              [class]="{
+                'bg-green-100 text-green-800': row.estado === 'VIGENTE',
+                'bg-red-100 text-red-800': row.estado === 'ANULADO',
+                'bg-blue-100 text-blue-800': row.estado === 'ACTIVACIÓN'
+              }"
+            >
+              {{ row.estado }}
+            </span>
+          </td>
+          <td>{{ row.fechaEmision | date : 'dd/MM/yyyy' }}</td>
+          <td>{{ row.centroCosto }}</td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600">{{ row.documentos?.length || 0 }} docs</span>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-upload"
+                label="Documentos"
+                class="p-button-text p-button-sm"
+                (click)="openDocuments(row)"
+                pTooltip="Gestionar documentos"
+                tooltipPosition="top"
+              ></button>
+            </div>
+          </td>
+          <td class="text-right">
+            <div class="flex items-center justify-end gap-1">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm"
+                pTooltip="Ver detalles"
+                (click)="viewDetails(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text p-button-sm"
+                pTooltip="Editar"
+                (click)="editItem(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-sm p-button-danger"
+                pTooltip="Eliminar"
+                (click)="remove(row)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil: Accordion desplegable -->
+  <div class="md:hidden space-y-3">
+    @for (row of items(); track row._id || $index) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+    >
+      <!-- Header del accordion (siempre visible) -->
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        (click)="toggleRow(row._id)"
+      >
+        <div class="flex-1 text-left min-w-0 pr-4">
+          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+            {{ row.title }}
           </div>
-        </td>
-        <td>
-          <div class="max-w-xs">
-            <p class="font-medium text-sm">{{ row.solicitante?.nombre || '-' }}</p>
-            <p class="text-xs text-gray-500">{{ row.solicitante?.cargo || '-' }}</p>
-            <p class="text-xs text-gray-400 font-mono">{{ row.solicitante?.codigo || '-' }}</p>
+          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1 font-mono">
+            {{ row.codigo }}
           </div>
-        </td>
-        <td>{{ row.clientId?.name || '-' }}</td>
-        <td>
-          <span
-            class="px-2 py-1 rounded-full text-xs font-medium"
-            [class]="{
-              'bg-green-100 text-green-800': row.estado === 'VIGENTE',
-              'bg-red-100 text-red-800': row.estado === 'ANULADO',
-              'bg-blue-100 text-blue-800': row.estado === 'ACTIVACIÓN'
-            }"
-          >
-            {{ row.estado }}
-          </span>
-        </td>
-        <td>{{ row.fechaEmision | date : 'dd/MM/yyyy' }}</td>
-        <td>{{ row.centroCosto }}</td>
-        <td>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-600">{{ row.documentos?.length || 0 }} docs</span>
-            <button
-              pButton
-              type="button"
-              icon="pi pi-upload"
-              label="Documentos"
-              class="p-button-text p-button-sm"
-              (click)="openDocuments(row)"
-              pTooltip="Gestionar documentos"
-              tooltipPosition="top"
-            ></button>
+          <div class="mt-1">
+            <span
+              class="px-2 py-1 rounded-full text-xs font-medium"
+              [class]="{
+                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
+                  row.estado === 'VIGENTE',
+                'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200':
+                  row.estado === 'ANULADO',
+                'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
+                  row.estado === 'ACTIVACIÓN'
+              }"
+            >
+              {{ row.estado }}
+            </span>
           </div>
-        </td>
-        <td class="text-right">
-          <button
-            pButton
-            icon="pi pi-eye"
-            class="p-button-text p-button-sm"
-            pTooltip="Ver detalles"
-            (click)="viewDetails(row)"
-          ></button>
-          <button
-            pButton
-            icon="pi pi-pencil"
-            class="p-button-text"
-            (click)="editItem(row)"
-          ></button>
-          <button
-            pButton
-            icon="pi pi-trash"
-            class="p-button-text p-button-danger"
-            (click)="remove(row)"
-          ></button>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
+        </div>
+        <div class="flex-shrink-0">
+          <i
+            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+            [class.pi-chevron-down]="!isRowExpanded(row._id)"
+            [class.pi-chevron-up]="isRowExpanded(row._id)"
+          ></i>
+        </div>
+      </button>
+
+      <!-- Contenido del accordion (desplegable) -->
+      @if (isRowExpanded(row._id)) {
+      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+        <div class="px-4 py-4 space-y-4">
+          <!-- Código -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Código
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 font-mono break-words">
+              {{ row.codigo }}
+            </div>
+          </div>
+
+          <!-- Título -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Título
+            </div>
+            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words">
+              {{ row.title }}
+            </div>
+          </div>
+
+          <!-- Descripción -->
+          @if (row.descripcion) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Descripción
+            </div>
+            <div class="text-sm text-gray-700 dark:text-gray-300 break-words">
+              {{ row.descripcion }}
+            </div>
+          </div>
+          }
+
+          <!-- Solicitante -->
+          @if (row.solicitante) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Solicitante
+            </div>
+            <div class="text-sm space-y-1">
+              <div class="font-medium text-gray-900 dark:text-gray-100">
+                {{ row.solicitante.nombre || '-' }}
+              </div>
+              @if (row.solicitante.cargo) {
+              <div class="text-xs text-gray-600 dark:text-gray-400">
+                {{ row.solicitante.cargo }}
+              </div>
+              } @if (row.solicitante.codigo) {
+              <div class="text-xs text-gray-500 dark:text-gray-500 font-mono">
+                {{ row.solicitante.codigo }}
+              </div>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- Cliente -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Cliente
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">
+              {{ row.clientId?.name || '-' }}
+            </div>
+          </div>
+
+          <!-- Estado -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Estado
+            </div>
+            <div>
+              <span
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                [class]="{
+                  'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
+                    row.estado === 'VIGENTE',
+                  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200':
+                    row.estado === 'ANULADO',
+                  'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
+                    row.estado === 'ACTIVACIÓN'
+                }"
+              >
+                {{ row.estado }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Fecha Emisión -->
+          @if (row.fechaEmision) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Fecha Emisión
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">
+              {{ row.fechaEmision | date : 'dd/MM/yyyy' }}
+            </div>
+          </div>
+          }
+
+          <!-- Centro Costo -->
+          @if (row.centroCosto) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Centro Costo
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">{{ row.centroCosto }}</div>
+          </div>
+          }
+
+          <!-- Documentos -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Documentos
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600 dark:text-gray-400"
+                >{{ row.documentos?.length || 0 }} documentos</span
+              >
+              <button
+                pButton
+                type="button"
+                icon="pi pi-upload"
+                label="Gestionar"
+                class="p-button-text p-button-sm"
+                (click)="openDocuments(row)"
+              ></button>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+              Acciones
+            </div>
+            <div class="flex flex-col gap-2">
+              <button
+                pButton
+                icon="pi pi-eye"
+                label="Ver detalles"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="viewDetails(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                label="Editar"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="editItem(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                label="Eliminar"
+                class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                (click)="remove(row)"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    }
+  </div>
 
   <!-- Modal de documentos -->
   <p-dialog
