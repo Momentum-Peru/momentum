@@ -36,12 +36,12 @@ import { take } from 'rxjs';
   imports: [CommonModule, ReactiveFormsModule],
   providers: [MessageService],
   template: `
-    <div class="bg-white rounded-lg shadow-lg p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <div class="mb-6">
-        <h2 class="text-2xl font-bold text-gray-900">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ isEditing() ? 'Editar Tarea' : 'Crear Nueva Tarea' }}
         </h2>
-        <p class="text-gray-600 mt-1">
+        <p class="text-gray-600 dark:text-gray-300 mt-1">
           {{
             isEditing()
               ? 'Modifica los datos de la tarea'
@@ -58,14 +58,14 @@ import { take } from 'rxjs';
 
         <!-- Title Field -->
         <div class="space-y-2">
-          <label for="title" class="block text-sm font-medium text-gray-700">
+          <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Título <span class="text-red-500">*</span>
           </label>
           <input
             type="text"
             id="title"
             formControlName="title"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             [class.border-red-500]="
               taskForm.get('title')?.invalid && taskForm.get('title')?.touched
             "
@@ -81,14 +81,17 @@ import { take } from 'rxjs';
 
         <!-- Description Field -->
         <div class="space-y-2">
-          <label for="description" class="block text-sm font-medium text-gray-700">
+          <label
+            for="description"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Descripción
           </label>
           <textarea
             id="description"
             formControlName="description"
             rows="4"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             placeholder="Describe los detalles de la tarea"
           ></textarea>
         </div>
@@ -96,13 +99,13 @@ import { take } from 'rxjs';
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Status Field -->
           <div class="space-y-2">
-            <label for="status" class="block text-sm font-medium text-gray-700">
+            <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Estado <span class="text-red-500">*</span>
             </label>
             <select
               id="status"
               formControlName="status"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               [class.border-red-500]="
                 taskForm.get('status')?.invalid && taskForm.get('status')?.touched
               "
@@ -122,13 +125,16 @@ import { take } from 'rxjs';
 
           <!-- Priority Field -->
           <div class="space-y-2">
-            <label for="priority" class="block text-sm font-medium text-gray-700">
+            <label
+              for="priority"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Prioridad <span class="text-red-500">*</span>
             </label>
             <select
               id="priority"
               formControlName="priority"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               [class.border-red-500]="
                 taskForm.get('priority')?.invalid && taskForm.get('priority')?.touched
               "
@@ -151,13 +157,16 @@ import { take } from 'rxjs';
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Assigned To Field -->
           <div class="space-y-2">
-            <label for="assignedTo" class="block text-sm font-medium text-gray-700">
+            <label
+              for="assignedTo"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Asignar a <span class="text-red-500">*</span>
             </label>
             <select
               id="assignedTo"
               formControlName="assignedTo"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               [class.border-red-500]="
                 taskForm.get('assignedTo')?.invalid && taskForm.get('assignedTo')?.touched
               "
@@ -178,37 +187,41 @@ import { take } from 'rxjs';
 
           <!-- Due Date Field -->
           <div class="space-y-2">
-            <label for="dueDate" class="block text-sm font-medium text-gray-700">
+            <label for="dueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Fecha Límite
             </label>
             <input
               type="date"
               id="dueDate"
               formControlName="dueDate"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
         </div>
 
         <!-- Tags Field -->
         <div class="space-y-2">
-          <label for="tags" class="block text-sm font-medium text-gray-700"> Etiquetas </label>
+          <label for="tags" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Etiquetas
+          </label>
           <input
             type="text"
             id="tags"
             formControlName="tags"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             placeholder="Separar etiquetas con comas (ej: urgente, frontend, bug)"
           />
-          <p class="text-gray-500 text-sm">Separa múltiples etiquetas con comas</p>
+          <p class="text-gray-500 dark:text-gray-400 text-sm">
+            Separa múltiples etiquetas con comas
+          </p>
         </div>
 
         <!-- Form Actions -->
-        <div class="flex justify-end gap-3 pt-6 border-t border-gray-200">
+        <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-600">
           <button
             type="button"
             (click)="onCancel()"
-            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
             [disabled]="loading()"
           >
             Cancelar
@@ -216,7 +229,7 @@ import { take } from 'rxjs';
           <button
             type="submit"
             [disabled]="taskForm.invalid || loading()"
-            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span *ngIf="loading()" class="flex items-center">
               <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

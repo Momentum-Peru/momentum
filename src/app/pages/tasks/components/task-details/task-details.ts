@@ -58,24 +58,25 @@ import {
     <p-dialog
       [modal]="true"
       [(visible)]="visible"
-      [style]="{ width: '800px', maxWidth: '90vw' }"
+      [style]="{ width: '800px' }"
       [closable]="true"
-      [draggable]="false"
-      [resizable]="false"
-      [maximizable]="true"
-      header="Detalles de la Tarea"
       (onHide)="onClose()"
-      styleClass="task-details-dialog"
     >
       @if (task) {
-      <div class="task-details-content">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <!-- Header -->
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Detalles de la Tarea
+          </h2>
+        </div>
         <!-- Header Section -->
         <div class="mb-6">
           <div class="flex items-start justify-between mb-4">
             <div class="flex-1">
-              <h2 class="text-2xl font-bold text-gray-900 mb-2">
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
                 {{ task.title }}
-              </h2>
+              </h3>
               <div class="flex items-center gap-3 mb-3">
                 <!-- Status Badge -->
                 <p-tag
@@ -226,7 +227,7 @@ import {
             <p-progressSpinner styleClass="w-6 h-6" strokeWidth="4"></p-progressSpinner>
           </div>
           } @else if (task.info && task.info.length > 0) {
-          <p-scrollPanel [style]="{ height: '300px' }" styleClass="custom-scrollbar">
+          <p-scrollPanel [style]="{ height: '300px' }">
             <div class="space-y-4 pr-4">
               @for (comment of task.info; track comment._id) {
               <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 group">
@@ -330,7 +331,7 @@ import {
                   severity="secondary"
                   [text]="true"
                   type="button"
-                  (onClick)="resetCommentForm()"
+                  (onClick)="onClose()"
                 ></p-button>
                 <p-button
                   label="Agregar Comentario"
@@ -384,78 +385,6 @@ import {
     `
       :host {
         display: block;
-      }
-
-      :host ::ng-deep .task-details-dialog {
-        .p-dialog-header {
-          background: rgb(249 250 251);
-          border-bottom: 1px solid rgb(229 231 235);
-        }
-
-        .p-dialog-content {
-          background: white;
-          padding: 1.5rem;
-        }
-
-        .p-dialog-header .p-dialog-title {
-          color: rgb(17 24 39);
-          font-weight: 600;
-        }
-
-        .p-dialog-header .p-dialog-header-icon {
-          color: rgb(107 114 128);
-        }
-
-        .p-dialog-header .p-dialog-header-icon:hover {
-          color: rgb(55 65 81);
-        }
-      }
-
-      :host ::ng-deep .dark .task-details-dialog {
-        .p-dialog-header {
-          background: rgb(31 41 55);
-          border-bottom: 1px solid rgb(55 65 81);
-        }
-
-        .p-dialog-content {
-          background: rgb(17 24 39);
-        }
-
-        .p-dialog-header .p-dialog-title {
-          color: rgb(243 244 246);
-        }
-
-        .p-dialog-header .p-dialog-header-icon {
-          color: rgb(156 163 175);
-        }
-
-        .p-dialog-header .p-dialog-header-icon:hover {
-          color: rgb(209 213 219);
-        }
-      }
-
-      :host ::ng-deep .custom-scrollbar {
-        .p-scrollpanel-content {
-          padding-right: 0;
-        }
-
-        .p-scrollpanel-bar {
-          background: rgb(209 213 219);
-        }
-
-        .p-scrollpanel-bar:hover {
-          background: rgb(156 163 175);
-        }
-      }
-
-      :host ::ng-deep .dark .custom-scrollbar {
-        .p-scrollpanel-bar {
-          background: rgb(75 85 99);
-        }
-
-        .p-scrollpanel-bar:hover {
-          background: rgb(107 114 128);
-        }
       }
     `,
   ],
