@@ -3,109 +3,71 @@
   <div class="flex items-center gap-2">
     <input
       pInputText
-      placeholder="Buscar reportes diarios..."
+      placeholder="Buscar por fecha, hora o descripción..."
       [ngModel]="query()"
       (ngModelChange)="setQuery($event)"
       name="searchQuery"
       class="w-full"
     />
+    <p-datepicker
+      (ngModelChange)="onFilterDateChange($event)"
+      [ngModel]="filterDate() ? getEditDate() : null"
+      dateFormat="dd/mm/yy"
+      placeholder="Filtrar por fecha"
+      appendTo="body"
+      iconDisplay="input"
+      [selectionMode]="'single'"
+      class="w-full max-w-[180px]"
+    ></p-datepicker>
     <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
   </div>
 
-  <p-table [value]="filteredItems()" [tableStyle]="{ 'min-width': '50rem' }">
+  <p-table
+    [value]="filteredItems()"
+    [scrollable]="true"
+    scrollHeight="60vh"
+    styleClass="p-datatable-sm"
+  >
     <ng-template pTemplate="header">
       <tr>
-        <th>Título</th>
         <th>Fecha</th>
+        <th>Hora</th>
         <th>Proyecto</th>
-        <th>Estado</th>
-        <th>Total</th>
-        <th>Compras</th>
-        <th></th>
+        <th>Descripción</th>
+        <th class="text-right">Acciones</th>
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-row>
       <tr>
+        <td>{{ row.date | date : 'dd/MM/yyyy' }}</td>
+        <td>{{ row.time }}</td>
+        <td>
+          <span class="text-sm">{{ getProjectName(row.projectId) }}</span>
+        </td>
         <td>
           <div class="max-w-xs">
-            <p class="font-semibold truncate">{{ row.title }}</p>
-            <p class="text-sm text-gray-600 truncate">{{ row.dailySummary }}</p>
+            <p class="truncate">{{ row.description }}</p>
+            <div class="flex gap-2 mt-1 text-xs text-gray-500">
+              <i *ngIf="row.audioDescription" class="pi pi-volume-up"></i>
+              <i *ngIf="row.videoDescription" class="pi pi-video"></i>
+              <i *ngIf="row.photoDescription" class="pi pi-image"></i>
+              <span *ngIf="row.documents?.length">{{ row.documents?.length }} doc(s)</span>
+            </div>
           </div>
         </td>
-        <td>{{ row.date | date : 'dd/MM/yyyy' }}</td>
-        <td>
-          <span [class]="row.projectId ? '' : 'text-red-500 font-medium'">
-            {{ getProjectName(row.projectId) }}
-          </span>
-        </td>
-        <td>
-          <span
-            class="px-2 py-1 rounded-full text-xs font-medium"
-            [class]="getStatusClass(row.status)"
-          >
-            {{ getStatusLabel(row.status) }}
-          </span>
-        </td>
-        <td>
-          <span class="font-semibold">{{
-            row.totalAmount | currency : 'PEN' : 'symbol' : '1.2-2'
-          }}</span>
-        </td>
-        <td>
-          <span class="text-sm">{{ row.purchases.length }} compra(s)</span>
-        </td>
         <td class="text-right">
-          <button
-            pButton
-            icon="pi pi-eye"
-            class="p-button-text"
-            (click)="viewItem(row)"
-            pTooltip="Ver detalles"
-            tooltipPosition="top"
-          ></button>
-          @if (row.status === 'DRAFT') {
+          <button pButton icon="pi pi-eye" class="p-button-text" (click)="viewItem(row)"></button>
           <button
             pButton
             icon="pi pi-pencil"
             class="p-button-text"
             (click)="editItem(row)"
-            pTooltip="Editar reporte"
-            tooltipPosition="top"
           ></button>
-          @if (isMyReport(row)) {
-          <button
-            pButton
-            icon="pi pi-send"
-            class="p-button-text p-button-info"
-            (click)="submitForApproval(row)"
-            pTooltip="Enviar para aprobación"
-            tooltipPosition="top"
-          ></button>
-          } } @if (row.status === 'SUBMITTED') {
-          <button
-            pButton
-            icon="pi pi-check"
-            class="p-button-text p-button-success"
-            (click)="approve(row)"
-            pTooltip="Aprobar"
-            tooltipPosition="top"
-          ></button>
-          <button
-            pButton
-            icon="pi pi-times"
-            class="p-button-text p-button-danger"
-            (click)="reject(row)"
-            pTooltip="Rechazar"
-            tooltipPosition="top"
-          ></button>
-          }
           <button
             pButton
             icon="pi pi-trash"
             class="p-button-text p-button-danger"
             (click)="remove(row)"
-            pTooltip="Eliminar reporte"
-            tooltipPosition="top"
           ></button>
         </td>
       </tr>
@@ -116,35 +78,25 @@
   <p-dialog
     [(visible)]="showDialog"
     [modal]="true"
-    [style]="{ width: '70rem' }"
+    [style]="{ width: '95vw', maxWidth: '42rem' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
+    appendTo="body"
   >
     <ng-template pTemplate="header">
-      {{ editing()?._id ? 'Editar reporte diario' : 'Nuevo reporte diario' }}
+      {{ editing()?._id ? 'Editar reporte' : 'Nuevo reporte' }}
     </ng-template>
 
     <div class="grid gap-4">
-      <!-- Título y Fecha -->
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Título *</label>
-          <input
-            pInputText
-            name="expenseTitle"
-            placeholder="Trabajo en sitio - Proyecto ABC"
-            [ngModel]="editing()?.title"
-            (ngModelChange)="onEditChange('title', $event)"
-            class="w-full"
-          />
-        </div>
+      <!-- Fecha y Hora -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
           <p-datepicker
             [ngModel]="getEditDate()"
             (ngModelChange)="onDateChange($event)"
-            name="expenseDate"
+            name="reportDate"
             dateFormat="dd/mm/yy"
             placeholder="Seleccionar fecha"
             appendTo="body"
@@ -153,393 +105,164 @@
             class="w-full"
           ></p-datepicker>
         </div>
-      </div>
-
-      <!-- Proyecto y Estado -->
-      <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Proyecto</label>
-          <p-select
-            [options]="projects()"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="editing()?.projectId"
-            (ngModelChange)="onEditChange('projectId', $event)"
-            name="expenseProject"
-            [placeholder]="isProjectDeleted() ? 'Asignar proyecto' : 'Seleccionar proyecto'"
+          <label class="block text-sm font-medium text-gray-700 mb-1">Hora *</label>
+          <input
+            pInputText
+            type="time"
+            [ngModel]="editing()?.time"
+            (ngModelChange)="onEditChange('time', $event)"
+            name="reportTime"
             class="w-full"
-          ></p-select>
-          @if (isProjectDeleted()) {
-          <p class="text-xs text-amber-600 mt-1">Este reporte no tiene proyecto asignado</p>
-          }
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-          <p-select
-            [options]="statusOptions"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="editing()?.status"
-            (ngModelChange)="onEditChange('status', $event)"
-            name="expenseStatus"
-            placeholder="Seleccionar estado"
-            class="w-full"
-          ></p-select>
+          />
         </div>
       </div>
 
-      <!-- Observaciones -->
+      <!-- Proyecto (opcional) -->
       <div>
-        <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-medium text-gray-700">Observaciones</label>
-          <button
-            pButton
-            type="button"
-            icon="pi pi-plus"
-            size="small"
-            (click)="addObservation()"
-            class="p-button-sm"
-            label="Agregar Observación"
-          ></button>
-        </div>
-
-        @if (editing()?.observations && editing()!.observations.length > 0) {
-        <div class="space-y-3">
-          @for (observation of editing()!.observations; track $index; let observationIndex = $index)
-          {
-          <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-            <div class="flex items-center justify-between mb-2">
-              <h4 class="text-sm font-medium text-gray-700">
-                Observación {{ observationIndex + 1 }}
-              </h4>
-              <button
-                pButton
-                type="button"
-                icon="pi pi-trash"
-                size="small"
-                (click)="removeObservation(observationIndex)"
-                class="p-button-sm p-button-danger"
-              ></button>
-            </div>
-
-            <div class="grid gap-3">
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Descripción *</label>
-                <input
-                  pInputText
-                  placeholder="Clima favorable para trabajar"
-                  [ngModel]="observation.description"
-                  (ngModelChange)="observation.description = $event"
-                  name="observation-description-{{ observationIndex }}"
-                  class="w-full"
-                />
-              </div>
-
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1"
-                  >Notas adicionales</label
-                >
-                <textarea
-                  pTextarea
-                  placeholder="Sin lluvia, temperatura ideal"
-                  [ngModel]="observation.notes"
-                  (ngModelChange)="observation.notes = $event"
-                  name="observation-notes-{{ observationIndex }}"
-                  rows="2"
-                  class="w-full"
-                ></textarea>
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-medium text-gray-600 mb-1"
-                    >Fecha de observación</label
-                  >
-                  <p-datepicker
-                    [ngModel]="observation.observationDate"
-                    (ngModelChange)="observation.observationDate = $event"
-                    name="observation-date-{{ observationIndex }}"
-                    dateFormat="dd/mm/yy"
-                    placeholder="Seleccionar fecha"
-                    appendTo="body"
-                    iconDisplay="input"
-                    class="w-full"
-                  ></p-datepicker>
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-gray-600 mb-1"
-                    >Hora de observación</label
-                  >
-                  <input
-                    pInputText
-                    type="time"
-                    placeholder="HH:mm"
-                    [ngModel]="observation.observationTime"
-                    (ngModelChange)="observation.observationTime = $event"
-                    name="observation-time-{{ observationIndex }}"
-                    class="w-full"
-                  />
-                </div>
-              </div>
-
-              <!-- Documentos de la observación -->
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Documentos/Fotos</label>
-                <div class="space-y-2">
-                  <!-- Input para subir archivo -->
-                  <input
-                    type="file"
-                    accept="image/*,.pdf,.doc,.docx"
-                    (change)="onObservationFileSelect($event, observationIndex)"
-                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
-
-                  <!-- Lista de documentos existentes -->
-                  @if (observation.documents && observation.documents.length > 0) {
-                  <div class="space-y-1">
-                    @for (doc of observation.documents; track doc) { @if (doc && typeof doc ===
-                    'string' && doc.trim() !== '') {
-                    <div class="flex items-center justify-between bg-white p-2 rounded border">
-                      <div class="flex items-center gap-2">
-                        <i [class]="getFileIcon(doc)" [class]="getFileTypeColor(doc)"></i>
-                        <span class="text-sm text-gray-700">{{ doc.split('/').pop() }}</span>
-                      </div>
-                      <div class="flex gap-1">
-                        <button
-                          pButton
-                          type="button"
-                          icon="pi pi-eye"
-                          size="small"
-                          (click)="viewDocument(doc)"
-                          class="p-button-sm p-button-text"
-                          pTooltip="Ver documento"
-                        ></button>
-                        <button
-                          pButton
-                          type="button"
-                          icon="pi pi-download"
-                          size="small"
-                          (click)="downloadDocument(doc)"
-                          class="p-button-sm p-button-text"
-                          pTooltip="Descargar documento"
-                        ></button>
-                        <button
-                          pButton
-                          type="button"
-                          icon="pi pi-trash"
-                          size="small"
-                          (click)="removeObservationDocument(observationIndex, doc)"
-                          class="p-button-sm p-button-text p-button-danger"
-                          pTooltip="Eliminar documento"
-                        ></button>
-                      </div>
-                    </div>
-                    } }
-                  </div>
-                  }
-                </div>
-              </div>
-            </div>
-          </div>
-          }
-        </div>
-        } @else {
-        <div class="text-center py-4 text-gray-500">
-          <i class="pi pi-info-circle text-2xl mb-2"></i>
-          <p>No hay observaciones. Haz clic en "Agregar Observación" para comenzar.</p>
-        </div>
-        }
+        <label class="block text-sm font-medium text-gray-700 mb-1">Proyecto (opcional)</label>
+        <p-select
+          [options]="projects()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="editing()?.projectId"
+          (ngModelChange)="onEditChange('projectId', $event)"
+          name="reportProject"
+          placeholder="Seleccionar proyecto"
+          class="w-full"
+        ></p-select>
       </div>
 
-      <!-- Resumen del día -->
+      <!-- Descripción -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Resumen del día *</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
         <textarea
           pTextarea
-          placeholder="Instalación de sistema eléctrico en planta baja. Se completó el 60% del trabajo planificado."
-          [ngModel]="editing()?.dailySummary"
-          (ngModelChange)="onEditChange('dailySummary', $event)"
-          name="expenseSummary"
-          rows="3"
+          placeholder="Describe lo realizado..."
+          [ngModel]="editing()?.description"
+          (ngModelChange)="onEditChange('description', $event)"
+          name="reportDescription"
+          rows="4"
           class="w-full"
         ></textarea>
       </div>
 
-      <!-- Sección de Compras -->
-      <div class="border-t pt-4">
-        <div class="flex items-center justify-between mb-3">
-          <h4 class="text-lg font-semibold">Compras</h4>
+      <!-- Captura multimedia (mobile) -->
+      <div class="grid grid-cols-3 gap-2">
+        <div class="flex flex-col items-center">
           <button
             pButton
             type="button"
-            label="Agregar Compra"
-            icon="pi pi-plus"
-            size="small"
-            (click)="addPurchase()"
+            icon="pi pi-volume-up"
+            label="Audio"
+            (click)="audioInput.click()"
+            class="w-full"
           ></button>
+          <input
+            type="file"
+            #audioInput
+            accept="audio/*"
+            capture
+            (change)="onAudioSelected($event)"
+            class="hidden"
+          />
+          <small class="text-xs text-gray-500 mt-1" *ngIf="pendingAudio(); else audioSaved">
+            {{ pendingAudio()?.name }} seleccionado
+          </small>
+          <ng-template #audioSaved>
+            <small class="text-xs text-gray-500 mt-1" *ngIf="editing()?.audioDescription">
+              Audio listo
+            </small>
+          </ng-template>
         </div>
+        <div class="flex flex-col items-center">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-image"
+            label="Foto"
+            (click)="photoInput.click()"
+            class="w-full"
+          ></button>
+          <input
+            type="file"
+            #photoInput
+            accept="image/*"
+            capture="environment"
+            (change)="onPhotoSelected($event)"
+            class="hidden"
+          />
+          <small class="text-xs text-gray-500 mt-1" *ngIf="pendingPhoto(); else photoSaved">
+            {{ pendingPhoto()?.name }} seleccionada
+          </small>
+          <ng-template #photoSaved>
+            <small class="text-xs text-gray-500 mt-1" *ngIf="editing()?.photoDescription">
+              Foto lista
+            </small>
+          </ng-template>
+        </div>
+        <div class="flex flex-col items-center">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-video"
+            label="Video"
+            (click)="videoInput.click()"
+            class="w-full"
+          ></button>
+          <input
+            type="file"
+            #videoInput
+            accept="video/*"
+            capture
+            (change)="onVideoSelected($event)"
+            class="hidden"
+          />
+          <small class="text-xs text-gray-500 mt-1" *ngIf="pendingVideo(); else videoSaved">
+            {{ pendingVideo()?.name }} seleccionado
+          </small>
+          <ng-template #videoSaved>
+            <small class="text-xs text-gray-500 mt-1" *ngIf="editing()?.videoDescription">
+              Video listo
+            </small>
+          </ng-template>
+        </div>
+      </div>
 
-        @if (selectedPurchases().length > 0) {
-        <div class="space-y-3">
-          @for (purchase of selectedPurchases(); track $index; let purchaseIndex = $index) {
-          <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
-                <input
-                  pInputText
-                  placeholder="Taxi al sitio de trabajo"
-                  [ngModel]="purchase.description"
-                  (ngModelChange)="updatePurchase(purchaseIndex, 'description', $event)"
-                  name="purchase-description-{{ purchaseIndex }}"
-                  class="w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
-                <input
-                  pInputText
-                  type="number"
-                  step="0.01"
-                  placeholder="25.50"
-                  [ngModel]="purchase.amount"
-                  (ngModelChange)="updatePurchase(purchaseIndex, 'amount', $event)"
-                  name="purchase-amount-{{ purchaseIndex }}"
-                  class="w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
-                <p-select
-                  [options]="categories()"
-                  optionLabel="label"
-                  optionValue="value"
-                  [ngModel]="purchase.categoryId"
-                  (ngModelChange)="updatePurchase(purchaseIndex, 'categoryId', $event)"
-                  name="purchase-category-{{ purchaseIndex }}"
-                  placeholder="Seleccionar categoría"
-                  class="w-full"
-                ></p-select>
-              </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
-                <input
-                  pInputText
-                  placeholder="Taxi Express"
-                  [ngModel]="purchase.vendor"
-                  (ngModelChange)="updatePurchase(purchaseIndex, 'vendor', $event)"
-                  name="purchase-vendor-{{ purchaseIndex }}"
-                  class="w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Notas</label>
-                <input
-                  pInputText
-                  placeholder="Viaje de ida y vuelta"
-                  [ngModel]="purchase.notes"
-                  (ngModelChange)="updatePurchase(purchaseIndex, 'notes', $event)"
-                  name="purchase-notes-{{ purchaseIndex }}"
-                  class="w-full"
-                />
-              </div>
-            </div>
-
-            <!-- Documentos de la compra -->
-            <div class="mb-3">
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Documentos/Fotos (Facturas, Recibos)</label
-              >
-              <div class="space-y-2">
-                <!-- Input para subir archivo -->
-                <input
-                  type="file"
-                  accept="image/*,.pdf,.doc,.docx"
-                  (change)="onPurchaseFileSelect($event, purchaseIndex)"
-                  class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
-                />
-
-                <!-- Lista de documentos existentes -->
-                @if (purchase.documents && purchase.documents.length > 0) {
-                <div class="space-y-1">
-                  @for (doc of purchase.documents; track doc) { @if (doc && typeof doc === 'string'
-                  && doc.trim() !== '') {
-                  <div class="flex items-center justify-between bg-white p-2 rounded border">
-                    <div class="flex items-center gap-2">
-                      <i [class]="getFileIcon(doc)" [class]="getFileTypeColor(doc)"></i>
-                      <span class="text-sm text-gray-700">{{ doc.split('/').pop() }}</span>
-                    </div>
-                    <div class="flex gap-1">
-                      <button
-                        pButton
-                        type="button"
-                        icon="pi pi-eye"
-                        size="small"
-                        (click)="viewDocument(doc)"
-                        class="p-button-sm p-button-text"
-                        pTooltip="Ver documento"
-                      ></button>
-                      <button
-                        pButton
-                        type="button"
-                        icon="pi pi-download"
-                        size="small"
-                        (click)="downloadDocument(doc)"
-                        class="p-button-sm p-button-text"
-                        pTooltip="Descargar documento"
-                      ></button>
-                      <button
-                        pButton
-                        type="button"
-                        icon="pi pi-trash"
-                        size="small"
-                        (click)="removePurchaseDocument(purchaseIndex, doc)"
-                        class="p-button-sm p-button-text p-button-danger"
-                        pTooltip="Eliminar documento"
-                      ></button>
-                    </div>
-                  </div>
-                  } }
-                </div>
-                }
-              </div>
-            </div>
-
-            <div class="flex justify-end">
-              <button
-                pButton
-                type="button"
-                icon="pi pi-trash"
-                class="p-button-text p-button-danger p-button-sm"
-                (click)="removePurchase(purchaseIndex)"
-                pTooltip="Eliminar compra"
-                tooltipPosition="top"
-              ></button>
+      <!-- Adjuntar documentos (múltiples) -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Documentos</label>
+        <input
+          type="file"
+          multiple
+          (change)="onDocumentsSelected($event)"
+          class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+        />
+        <div
+          class="mt-2 space-y-1"
+          *ngIf="pendingDocuments().length || editing()?.documents?.length"
+        >
+          <!-- Pendientes -->
+          <div
+            class="flex items-center justify-between bg-blue-50 p-2 rounded border border-blue-200"
+            *ngFor="let pdoc of pendingDocuments()"
+          >
+            <div class="flex items-center gap-2">
+              <i class="pi pi-file"></i>
+              <span class="text-sm">{{ pdoc.name }}</span>
             </div>
           </div>
-          }
-        </div>
-        } @else {
-        <div class="text-center py-8 text-gray-500">
-          <i class="pi pi-shopping-cart text-4xl mb-2"></i>
-          <p>No hay compras registradas</p>
-          <p class="text-sm">Haz clic en "Agregar Compra" para comenzar</p>
-        </div>
-        }
-
-        <!-- Total -->
-        @if (selectedPurchases().length > 0) {
-        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div class="flex justify-between items-center">
-            <span class="font-medium text-blue-800">Total de Compras:</span>
-            <span class="text-xl font-bold text-blue-900">
-              {{ calculateTotalAmount() | currency : 'PEN' : 'symbol' : '1.2-2' }}
-            </span>
+          <!-- Existentes -->
+          <div
+            class="flex items-center justify-between bg-white p-2 rounded border"
+            *ngFor="let doc of editing()?.documents"
+          >
+            <div class="flex items-center gap-2">
+              <i class="pi pi-file"></i>
+              <span class="text-sm">{{ doc.split('/').pop() }}</span>
+            </div>
           </div>
         </div>
-        }
       </div>
     </div>
 
@@ -553,254 +276,81 @@
   <p-dialog
     [(visible)]="showViewDialog"
     [modal]="true"
-    [style]="{ width: '70rem' }"
+    [style]="{ width: '95vw', maxWidth: '42rem' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
+    appendTo="body"
   >
     <ng-template pTemplate="header">
       <span class="font-semibold">Ver detalles del reporte</span>
     </ng-template>
 
-    @if (viewing()) {
-    <div class="grid gap-4">
-      <!-- Información básica -->
-      <div class="grid grid-cols-2 gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="space-y-4" *ngIf="viewing() as v">
+      <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >Título</label
-          >
-          <p class="text-gray-900 dark:text-gray-100">{{ viewing()!.title }}</p>
+          <label class="block text-xs text-gray-500 mb-1">Fecha</label>
+          <div class="font-medium">{{ v.date | date : 'dd/MM/yyyy' }}</div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >Fecha</label
-          >
-          <p class="text-gray-900 dark:text-gray-100">
-            {{ viewing()!.date | date : 'dd/MM/yyyy' }}
-          </p>
+          <label class="block text-xs text-gray-500 mb-1">Hora</label>
+          <div class="font-medium">{{ v.time }}</div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >Proyecto</label
-          >
-          <p class="text-gray-900 dark:text-gray-100">{{ getProjectName(viewing()!.projectId) }}</p>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >Estado</label
-          >
-          <span
-            class="px-2 py-1 rounded-full text-xs font-medium"
-            [class]="getStatusClass(viewing()!.status)"
-          >
-            {{ getStatusLabel(viewing()!.status) }}
-          </span>
+          <label class="block text-xs text-gray-500 mb-1">Proyecto</label>
+          <div class="font-medium">{{ getProjectName(v.projectId) }}</div>
         </div>
       </div>
 
-      <!-- Resumen del día -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Resumen del día</label
-        >
-        <p class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
-          {{ viewing()!.dailySummary }}
-        </p>
+        <label class="block text-xs text-gray-500 mb-1">Descripción</label>
+        <p class="whitespace-pre-wrap">{{ v.description }}</p>
       </div>
 
-      <!-- Observaciones -->
-      @if (viewing()!.observations && viewing()!.observations.length > 0) {
-      <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-          >Observaciones</label
-        >
-        <div class="space-y-3">
-          @for (observation of viewing()!.observations; track $index) {
-          <div
-            class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800"
-          >
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Observación {{ $index + 1 }}
-            </h4>
-            <div class="space-y-2">
-              <div>
-                <span class="text-xs text-gray-600 dark:text-gray-400">Descripción:</span>
-                <p class="text-gray-900 dark:text-gray-100">{{ observation.description }}</p>
-              </div>
-              @if (observation.notes) {
-              <div>
-                <span class="text-xs text-gray-600 dark:text-gray-400">Notas:</span>
-                <p class="text-gray-900 dark:text-gray-100">{{ observation.notes }}</p>
-              </div>
-              } @if (observation.observationDate) {
-              <div>
-                <span class="text-xs text-gray-600 dark:text-gray-400">Fecha:</span>
-                <p class="text-gray-900 dark:text-gray-100">
-                  {{ observation.observationDate | date : 'dd/MM/yyyy' }}
-                </p>
-              </div>
-              } @if (observation.observationTime) {
-              <div>
-                <span class="text-xs text-gray-600 dark:text-gray-400">Hora:</span>
-                <p class="text-gray-900 dark:text-gray-100">{{ observation.observationTime }}</p>
-              </div>
-              }
-              <!-- Documentos -->
-              @if (observation.documents && observation.documents.length > 0) {
-              <div>
-                <span class="text-xs text-gray-600 dark:text-gray-400 mb-1 block"
-                  >Documentos/Fotos:</span
-                >
-                <div class="space-y-1">
-                  @for (doc of observation.documents; track doc) {
-                  <div
-                    class="flex items-center justify-between bg-white dark:bg-gray-700 p-2 rounded border border-gray-200 dark:border-gray-600"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i [class]="getFileIcon(doc)" [class]="getFileTypeColor(doc)"></i>
-                      <span class="text-sm text-gray-700 dark:text-gray-300">{{
-                        doc.split('/').pop()
-                      }}</span>
-                    </div>
-                    <div class="flex gap-1">
-                      <button
-                        pButton
-                        type="button"
-                        icon="pi pi-eye"
-                        size="small"
-                        (click)="viewDocument(doc)"
-                        class="p-button-sm p-button-text"
-                        pTooltip="Ver documento"
-                      ></button>
-                      <button
-                        pButton
-                        type="button"
-                        icon="pi pi-download"
-                        size="small"
-                        (click)="downloadDocument(doc)"
-                        class="p-button-sm p-button-text"
-                        pTooltip="Descargar documento"
-                      ></button>
-                    </div>
-                  </div>
-                  }
-                </div>
-              </div>
-              }
-            </div>
-          </div>
-          }
+      <div class="grid grid-cols-3 gap-3">
+        <div *ngIf="v.audioDescription">
+          <label class="block text-xs text-gray-500 mb-1">Audio</label>
+          <audio [src]="v.audioDescription!" controls class="w-full"></audio>
+        </div>
+        <div *ngIf="v.photoDescription">
+          <label class="block text-xs text-gray-500 mb-1">Foto</label>
+          <img [src]="v.photoDescription!" class="w-full rounded" />
+        </div>
+        <div *ngIf="v.videoDescription">
+          <label class="block text-xs text-gray-500 mb-1">Video</label>
+          <video [src]="v.videoDescription!" controls class="w-full rounded"></video>
         </div>
       </div>
-      }
 
-      <!-- Compras -->
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-        <label class="block text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3"
-          >Compras</label
-        >
-        <div class="space-y-3">
-          @for (purchase of viewing()!.purchases; track $index) {
+      <div *ngIf="v.documents?.length">
+        <label class="block text-xs text-gray-500 mb-2">Documentos</label>
+        <div class="space-y-1">
           <div
-            class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800"
+            class="flex items-center justify-between bg-white p-2 rounded border"
+            *ngFor="let doc of v.documents"
           >
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Compra {{ $index + 1 }}
-            </h4>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-              <div>
-                <span class="text-xs text-gray-600 dark:text-gray-400">Descripción:</span>
-                <p class="text-gray-900 dark:text-gray-100">{{ purchase.description }}</p>
-              </div>
-              <div>
-                <span class="text-xs text-gray-600 dark:text-gray-400">Monto:</span>
-                <p class="text-gray-900 dark:text-gray-100 font-semibold">
-                  {{ purchase.amount | currency : 'PEN' : 'symbol' : '1.2-2' }}
-                </p>
-              </div>
-              <div>
-                <span class="text-xs text-gray-600 dark:text-gray-400">Categoría:</span>
-                <p class="text-gray-900 dark:text-gray-100">
-                  {{ getCategoryName(purchase.categoryId) }}
-                </p>
-              </div>
+            <div class="flex items-center gap-2">
+              <i class="pi pi-file"></i>
+              <span class="text-sm">{{ doc.split('/').pop() }}</span>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              @if (purchase.vendor) {
-              <div>
-                <span class="text-xs text-gray-600 dark:text-gray-400">Proveedor:</span>
-                <p class="text-gray-900 dark:text-gray-100">{{ purchase.vendor }}</p>
-              </div>
-              } @if (purchase.notes) {
-              <div>
-                <span class="text-xs text-gray-600 dark:text-gray-400">Notas:</span>
-                <p class="text-gray-900 dark:text-gray-100">{{ purchase.notes }}</p>
-              </div>
-              }
+            <div class="flex gap-1">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm"
+                (click)="viewDocument(doc)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-download"
+                class="p-button-text p-button-sm"
+                (click)="downloadDocument(doc)"
+              ></button>
             </div>
-            <!-- Documentos de la compra -->
-            @if (purchase.documents && purchase.documents.length > 0) {
-            <div>
-              <span class="text-xs text-gray-600 dark:text-gray-400 mb-1 block"
-                >Documentos/Fotos:</span
-              >
-              <div class="space-y-1">
-                @for (doc of purchase.documents; track doc) {
-                <div
-                  class="flex items-center justify-between bg-white dark:bg-gray-700 p-2 rounded border border-gray-200 dark:border-gray-600"
-                >
-                  <div class="flex items-center gap-2">
-                    <i [class]="getFileIcon(doc)" [class]="getFileTypeColor(doc)"></i>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">{{
-                      doc.split('/').pop()
-                    }}</span>
-                  </div>
-                  <div class="flex gap-1">
-                    <button
-                      pButton
-                      type="button"
-                      icon="pi pi-eye"
-                      size="small"
-                      (click)="viewDocument(doc)"
-                      class="p-button-sm p-button-text"
-                      pTooltip="Ver documento"
-                    ></button>
-                    <button
-                      pButton
-                      type="button"
-                      icon="pi pi-download"
-                      size="small"
-                      (click)="downloadDocument(doc)"
-                      class="p-button-sm p-button-text"
-                      pTooltip="Descargar documento"
-                    ></button>
-                  </div>
-                </div>
-                }
-              </div>
-            </div>
-            }
-          </div>
-          }
-        </div>
-
-        <!-- Total -->
-        @if (viewing()!.purchases.length > 0) {
-        <div
-          class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
-        >
-          <div class="flex justify-between items-center">
-            <span class="font-medium text-blue-800 dark:text-blue-300">Total de Compras:</span>
-            <span class="text-xl font-bold text-blue-900 dark:text-blue-200">
-              {{ viewing()!.totalAmount | currency : 'PEN' : 'symbol' : '1.2-2' }}
-            </span>
           </div>
         </div>
-        }
       </div>
     </div>
-    }
 
     <ng-template pTemplate="footer">
       <button pButton label="Cerrar" (click)="closeViewDialog()"></button>
