@@ -8,9 +8,14 @@ import {
   SimpleChanges,
   inject,
   signal,
+  computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+
+// PrimeNG Components
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
 
 // Services
 import { TasksApiService } from '../../../../shared/services/tasks-api.service';
@@ -33,7 +38,7 @@ import { take } from 'rxjs';
 @Component({
   selector: 'app-native-task-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SelectModule, DatePickerModule],
   providers: [MessageService],
   template: `
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
@@ -102,19 +107,15 @@ import { take } from 'rxjs';
             <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Estado <span class="text-red-500">*</span>
             </label>
-            <select
+            <p-select
               id="status"
               formControlName="status"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              [class.border-red-500]="
-                taskForm.get('status')?.invalid && taskForm.get('status')?.touched
-              "
-            >
-              <option value="">Selecciona el estado</option>
-              <option value="Pendiente">Pendiente</option>
-              <option value="En curso">En curso</option>
-              <option value="Terminada">Terminada</option>
-            </select>
+              [options]="statusOptions"
+              placeholder="Selecciona el estado"
+              [appendTo]="'body'"
+              [class.p-invalid]="taskForm.get('status')?.invalid && taskForm.get('status')?.touched"
+              styleClass="w-full"
+            ></p-select>
             <p
               *ngIf="taskForm.get('status')?.invalid && taskForm.get('status')?.touched"
               class="text-red-500 text-sm"
@@ -131,20 +132,17 @@ import { take } from 'rxjs';
             >
               Prioridad <span class="text-red-500">*</span>
             </label>
-            <select
+            <p-select
               id="priority"
               formControlName="priority"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              [class.border-red-500]="
+              [options]="priorityOptions"
+              placeholder="Selecciona la prioridad"
+              [appendTo]="'body'"
+              [class.p-invalid]="
                 taskForm.get('priority')?.invalid && taskForm.get('priority')?.touched
               "
-            >
-              <option value="">Selecciona la prioridad</option>
-              <option value="Baja">Baja</option>
-              <option value="Media">Media</option>
-              <option value="Alta">Alta</option>
-              <option value="Crítica">Crítica</option>
-            </select>
+              styleClass="w-full"
+            ></p-select>
             <p
               *ngIf="taskForm.get('priority')?.invalid && taskForm.get('priority')?.touched"
               class="text-red-500 text-sm"
@@ -163,20 +161,18 @@ import { take } from 'rxjs';
             >
               Asignar a <span class="text-red-500">*</span>
             </label>
-            <select
+            <p-select
               id="assignedTo"
               formControlName="assignedTo"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              [class.border-red-500]="
+              [options]="userOptions()"
+              placeholder="Selecciona un usuario"
+              [appendTo]="'body'"
+              [class.p-invalid]="
                 taskForm.get('assignedTo')?.invalid && taskForm.get('assignedTo')?.touched
               "
-            >
-              <option value="">Selecciona un usuario</option>
-              <option *ngIf="usersLoading()" disabled>Cargando usuarios...</option>
-              <option *ngFor="let user of users() || []; trackBy: trackByUserId" [value]="user.id">
-                {{ user.name }}
-              </option>
-            </select>
+              styleClass="w-full"
+              [loading]="usersLoading()"
+            ></p-select>
             <p
               *ngIf="taskForm.get('assignedTo')?.invalid && taskForm.get('assignedTo')?.touched"
               class="text-red-500 text-sm"
@@ -190,12 +186,15 @@ import { take } from 'rxjs';
             <label for="dueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Fecha Límite
             </label>
-            <input
-              type="date"
+            <p-datePicker
               id="dueDate"
               formControlName="dueDate"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
+              placeholder="Selecciona una fecha"
+              dateFormat="dd/mm/yy"
+              styleClass="w-full"
+              [showIcon]="true"
+              [showButtonBar]="true"
+            ></p-datePicker>
           </div>
         </div>
 
@@ -269,6 +268,27 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
 
   public readonly isEditing = signal<boolean>(false);
 
+  // Options for selects
+  public readonly statusOptions = [
+    { label: 'Pendiente', value: 'Pendiente' },
+    { label: 'En curso', value: 'En curso' },
+    { label: 'Terminada', value: 'Terminada' },
+  ];
+
+  public readonly priorityOptions = [
+    { label: 'Baja', value: 'Baja' },
+    { label: 'Media', value: 'Media' },
+    { label: 'Alta', value: 'Alta' },
+    { label: 'Crítica', value: 'Crítica' },
+  ];
+
+  public readonly userOptions = computed(() => {
+    return this.users().map((user) => ({
+      label: user.name,
+      value: user.id,
+    }));
+  });
+
   ngOnInit(): void {
     this.loadUsers();
     this.initializeForm();
@@ -318,7 +338,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         status: this.task.status,
         priority: this.task.priority,
         assignedTo: assignedToId,
-        dueDate: this.task.dueDate ? new Date(this.task.dueDate).toISOString().split('T')[0] : null,
+        dueDate: this.task.dueDate ? new Date(this.task.dueDate) : null,
         tags: Array.isArray(this.task.tags) ? this.task.tags.join(', ') : this.task.tags || '',
       });
     } else {
@@ -374,7 +394,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         ...formValue,
         // Solo agregar createdBy si es una nueva tarea
         ...(this.isEditing() ? {} : { createdBy: currentUser.id }),
-        dueDate: formValue.dueDate ? new Date(formValue.dueDate).toISOString() : undefined,
+        dueDate: formValue.dueDate ? formValue.dueDate.toISOString() : undefined,
         tags: formValue.tags
           ? formValue.tags
               .split(',')
