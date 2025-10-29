@@ -225,22 +225,8 @@
         ></p-select>
       </div>
 
-      <!-- Descripción -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
-        <textarea
-          pTextarea
-          placeholder="Describe lo realizado..."
-          [ngModel]="editing()?.description"
-          (ngModelChange)="onEditChange('description', $event)"
-          name="reportDescription"
-          rows="4"
-          class="w-full"
-        ></textarea>
-      </div>
-
       <!-- Captura multimedia (mobile) -->
-      <div class="grid grid-cols-3 gap-2">
+      <div class="flex xl:flex-row flex-col gap-2">
         <div class="flex flex-col items-center">
           <button
             pButton
@@ -319,6 +305,20 @@
             </small>
           </ng-template>
         </div>
+      </div>
+
+      <!-- Descripción -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+        <textarea
+          pTextarea
+          placeholder="Describe lo realizado..."
+          [ngModel]="editing()?.description"
+          (ngModelChange)="onEditChange('description', $event)"
+          name="reportDescription"
+          rows="4"
+          class="w-full"
+        ></textarea>
       </div>
 
       <!-- Adjuntar documentos (múltiples) -->
