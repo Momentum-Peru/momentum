@@ -46,6 +46,7 @@ export class ProjectsPage implements OnInit {
   showDetailsDialog = signal(false);
   editing = signal<Project | null>(null);
   viewingProject = signal<Project | null>(null);
+  expandedRowIds = signal<Set<string>>(new Set());
 
   statusOptions = [
     { label: 'Planificación', value: 'PLANNING' },
@@ -179,6 +180,22 @@ export class ProjectsPage implements OnInit {
 
   closeDetails() {
     this.showDetailsDialog.set(false);
+  }
+
+  toggleRow(id?: string) {
+    if (!id) return;
+    const next = new Set(this.expandedRowIds());
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    this.expandedRowIds.set(next);
+  }
+
+  isRowExpanded(id?: string): boolean {
+    if (!id) return false;
+    return this.expandedRowIds().has(id);
   }
 
   onEditChange(field: keyof Project, value: any) {

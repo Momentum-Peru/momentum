@@ -28,8 +28,8 @@
     ></button>
   </div>
 
-  <!-- Tabla de cotizaciones -->
-  <div class="card">
+  <!-- Vista Desktop: Tabla normal -->
+  <div class="card hidden md:block">
     <p-table
       [value]="quotes()"
       [loading]="loading()"
@@ -39,7 +39,6 @@
       [showCurrentPageReport]="true"
       currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} cotizaciones"
       (onPage)="onPageChange($event)"
-      [tableStyle]="{ 'min-width': '50rem' }"
       styleClass="p-datatable-striped"
     >
       <ng-template pTemplate="header">
@@ -163,6 +162,224 @@
         </tr>
       </ng-template>
     </p-table>
+  </div>
+
+  <!-- Vista Móvil: Accordion desplegable -->
+  <div class="md:hidden space-y-3">
+    @for (quote of quotes(); track quote._id || $index) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+    >
+      <!-- Header del accordion (siempre visible) -->
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        (click)="toggleRow(quote._id)"
+      >
+        <div class="flex-1 text-left min-w-0 pr-4">
+          <div
+            class="font-mono text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded inline-block mb-1"
+          >
+            {{ quote.number }}
+          </div>
+          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate mt-2">
+            {{ getClientName(quote.clientId) }}
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+            {{ getProjectName(quote.projectId) }}
+          </div>
+          <div class="mt-2">
+            <p-tag
+              [value]="quote.state"
+              [severity]="getStateSeverity(quote.state)"
+              [class]="getStateClass(quote.state)"
+            ></p-tag>
+          </div>
+        </div>
+        <div class="flex-shrink-0">
+          <i
+            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+            [class.pi-chevron-down]="!isRowExpanded(quote._id)"
+            [class.pi-chevron-up]="isRowExpanded(quote._id)"
+          ></i>
+        </div>
+      </button>
+
+      <!-- Contenido del accordion (desplegable) -->
+      @if (isRowExpanded(quote._id)) {
+      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+        <div class="px-4 py-4 space-y-4">
+          <!-- Número -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Número
+            </div>
+            <div
+              class="font-mono text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded inline-block"
+            >
+              {{ quote.number }}
+            </div>
+          </div>
+
+          <!-- Cliente -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Cliente
+            </div>
+            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words">
+              {{ getClientName(quote.clientId) }}
+            </div>
+          </div>
+
+          <!-- Proyecto -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Proyecto
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+              {{ getProjectName(quote.projectId) }}
+            </div>
+          </div>
+
+          <!-- Estado -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Estado
+            </div>
+            <div>
+              <p-tag
+                [value]="quote.state"
+                [severity]="getStateSeverity(quote.state)"
+                [class]="getStateClass(quote.state)"
+              ></p-tag>
+            </div>
+          </div>
+
+          <!-- Fecha Creación -->
+          @if (quote.createDate) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Fecha Creación
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">
+              {{ quote.createDate | date : 'dd/MM/yyyy' }}
+            </div>
+          </div>
+          }
+
+          <!-- Fecha Envío -->
+          @if (quote.sendDate) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Fecha Envío
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">
+              {{ quote.sendDate | date : 'dd/MM/yyyy' }}
+            </div>
+          </div>
+          }
+
+          <!-- Total -->
+          @if (quote.total) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Total
+            </div>
+            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              ${{ quote.total | number : '1.2-2' }}
+            </div>
+          </div>
+          }
+
+          <!-- Documentos -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Documentos
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              {{ quote.documents?.length || 0 }} documentos
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+              Acciones
+            </div>
+            <div class="flex flex-col gap-2">
+              <button
+                pButton
+                icon="pi pi-file-pdf"
+                label="Ver documento"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="openPdf(quote)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-eye"
+                label="Ver detalles"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="viewDetails(quote)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-cog"
+                label="Cambiar estado"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="stateMenu.toggle($event)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                label="Editar"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="editQuote(quote)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                label="Eliminar"
+                class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                (click)="deleteQuote(quote)"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Menu de estado (oculto pero necesario para el botón) -->
+      <p-menu
+        #stateMenu
+        [model]="getStateMenuItems(quote)"
+        [popup]="true"
+        [appendTo]="'body'"
+        [baseZIndex]="1000"
+        [autoZIndex]="true"
+        [showTransitionOptions]="'0ms'"
+        [hideTransitionOptions]="'0ms'"
+        styleClass="p-menu-sm"
+      ></p-menu>
+    </div>
+    }
+
+    <!-- Estado vacío móvil -->
+    @if (!loading() && quotes().length === 0) {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <i class="pi pi-inbox text-4xl mb-2"></i>
+      <p>No se encontraron cotizaciones</p>
+    </div>
+    }
+
+    <!-- Estado de carga móvil -->
+    @if (loading()) {
+    <div class="flex justify-center items-center py-12">
+      <div class="flex flex-col items-center space-y-2">
+        <i class="pi pi-spin pi-spinner text-4xl text-blue-600"></i>
+        <p class="text-gray-600">Cargando cotizaciones...</p>
+      </div>
+    </div>
+    }
   </div>
 
   <!-- Modal de edición/creación -->

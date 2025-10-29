@@ -44,6 +44,8 @@ export class DocumentListComponent {
   @Output() viewDetails = new EventEmitter<Document>();
   @Output() manageFiles = new EventEmitter<Document>();
 
+  expandedRowIds: Set<string> = new Set();
+
   /**
    * Formatear fecha para mostrar
    */
@@ -182,5 +184,21 @@ export class DocumentListComponent {
    */
   hasDocuments(): boolean {
     return this.documents.length > 0;
+  }
+
+  toggleRow(id?: string): void {
+    if (!id) return;
+    if (this.expandedRowIds.has(id)) {
+      this.expandedRowIds.delete(id);
+    } else {
+      this.expandedRowIds.add(id);
+    }
+    // trigger change detection by reassigning a new Set
+    this.expandedRowIds = new Set(this.expandedRowIds);
+  }
+
+  isRowExpanded(id?: string): boolean {
+    if (!id) return false;
+    return this.expandedRowIds.has(id);
   }
 }

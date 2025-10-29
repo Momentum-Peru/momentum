@@ -11,79 +11,257 @@
     <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
   </div>
 
-  <p-table [value]="items()" [tableStyle]="{ 'min-width': '80rem' }">
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Número</th>
-        <th>Cliente</th>
-        <th>Tipo</th>
-        <th>Documentos</th>
-        <th>Fecha Creación</th>
-        <th></th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-row>
-      <tr>
-        <td>
-          <span class="font-mono text-sm">{{ row.number }}</span>
-        </td>
-        <td>
-          <div class="max-w-xs">
-            <p class="font-semibold truncate">{{ row.clientName }}</p>
-            <p class="text-sm text-gray-600 truncate">{{ row.clientId }}</p>
-          </div>
-        </td>
-        <td>
-          <span
-            class="px-2 py-1 rounded-full text-xs font-medium"
-            [class]="{
-              'bg-blue-100 text-blue-800': row.type === 'purchase',
-              'bg-green-100 text-green-800': row.type === 'service'
-            }"
-          >
-            {{ row.type === 'purchase' ? 'Compra' : 'Servicio' }}
-          </span>
-        </td>
-        <td>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-600">{{ row.documents?.length || 0 }} docs</span>
+  <!-- Vista Desktop: Tabla normal -->
+  <div class="hidden md:block">
+    <p-table [value]="items()">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Número</th>
+          <th>Cliente</th>
+          <th>Tipo</th>
+          <th>Documentos</th>
+          <th>Fecha Creación</th>
+          <th></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <span class="font-mono text-sm">{{ row.number }}</span>
+          </td>
+          <td>
+            <div class="max-w-xs">
+              <p class="font-semibold truncate">{{ row.clientName }}</p>
+              <p class="text-sm text-gray-600 truncate">{{ row.clientId }}</p>
+            </div>
+          </td>
+          <td>
+            <span
+              class="px-2 py-1 rounded-full text-xs font-medium"
+              [class]="{
+                'bg-blue-100 text-blue-800': row.type === 'purchase',
+                'bg-green-100 text-green-800': row.type === 'service'
+              }"
+            >
+              {{ row.type === 'purchase' ? 'Compra' : 'Servicio' }}
+            </span>
+          </td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600">{{ row.documents?.length || 0 }} docs</span>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-upload"
+                label="Documentos"
+                class="p-button-text p-button-sm"
+                (click)="openDocuments(row)"
+                pTooltip="Gestionar documentos"
+                tooltipPosition="top"
+              ></button>
+            </div>
+          </td>
+          <td>{{ row.createdAt | date : 'dd/MM/yyyy' }}</td>
+          <td class="text-right">
             <button
               pButton
-              type="button"
-              icon="pi pi-upload"
-              label="Documentos"
+              icon="pi pi-eye"
               class="p-button-text p-button-sm"
-              (click)="openDocuments(row)"
-              pTooltip="Gestionar documentos"
-              tooltipPosition="top"
+              pTooltip="Ver detalles"
+              (click)="viewDetails(row)"
             ></button>
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text"
+              (click)="editItem(row)"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-text p-button-danger"
+              (click)="remove(row)"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil: Accordion desplegable -->
+  <div class="md:hidden space-y-3">
+    @for (row of items(); track row._id || $index) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+    >
+      <!-- Header del accordion (siempre visible) -->
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        (click)="toggleRow(row._id)"
+      >
+        <div class="flex-1 text-left min-w-0 pr-4">
+          <div class="font-mono text-sm text-gray-900 dark:text-gray-100 mb-1">
+            {{ row.number }}
           </div>
-        </td>
-        <td>{{ row.createdAt | date : 'dd/MM/yyyy' }}</td>
-        <td class="text-right">
-          <button
-            pButton
-            icon="pi pi-eye"
-            class="p-button-text p-button-sm"
-            pTooltip="Ver detalles"
-            (click)="viewDetails(row)"
-          ></button>
-          <button
-            pButton
-            icon="pi pi-pencil"
-            class="p-button-text"
-            (click)="editItem(row)"
-          ></button>
-          <button
-            pButton
-            icon="pi pi-trash"
-            class="p-button-text p-button-danger"
-            (click)="remove(row)"
-          ></button>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
+          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate mt-2">
+            {{ row.clientName }}
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+            {{ row.clientId }}
+          </div>
+          <div class="mt-2">
+            <span
+              class="px-2 py-1 rounded-full text-xs font-medium"
+              [class]="{
+                'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
+                  row.type === 'purchase',
+                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
+                  row.type === 'service'
+              }"
+            >
+              {{ row.type === 'purchase' ? 'Compra' : 'Servicio' }}
+            </span>
+          </div>
+        </div>
+        <div class="flex-shrink-0">
+          <i
+            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+            [class.pi-chevron-down]="!isRowExpanded(row._id)"
+            [class.pi-chevron-up]="isRowExpanded(row._id)"
+          ></i>
+        </div>
+      </button>
+
+      <!-- Contenido del accordion (desplegable) -->
+      @if (isRowExpanded(row._id)) {
+      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+        <div class="px-4 py-4 space-y-4">
+          <!-- Número -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Número
+            </div>
+            <div class="font-mono text-sm text-gray-900 dark:text-gray-100">{{ row.number }}</div>
+          </div>
+
+          <!-- Cliente -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Cliente
+            </div>
+            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words">
+              {{ row.clientName }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 break-words mt-1">
+              {{ row.clientId }}
+            </div>
+          </div>
+
+          <!-- Tipo -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Tipo
+            </div>
+            <div>
+              <span
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                [class]="{
+                  'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
+                    row.type === 'purchase',
+                  'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
+                    row.type === 'service'
+                }"
+              >
+                {{ row.type === 'purchase' ? 'Compra' : 'Servicio' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Fecha Creación -->
+          @if (row.createdAt) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Fecha Creación
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">
+              {{ row.createdAt | date : 'dd/MM/yyyy' }}
+            </div>
+          </div>
+          }
+
+          <!-- Fecha Actualización -->
+          @if (row.updatedAt) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Última Actualización
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">
+              {{ row.updatedAt | date : 'dd/MM/yyyy' }}
+            </div>
+          </div>
+          }
+
+          <!-- Documentos -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Documentos
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              {{ row.documents?.length || 0 }} documentos
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+              Acciones
+            </div>
+            <div class="flex flex-col gap-2">
+              <button
+                pButton
+                icon="pi pi-upload"
+                label="Gestionar documentos"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="openDocuments(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-eye"
+                label="Ver detalles"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="viewDetails(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                label="Editar"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="editItem(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                label="Eliminar"
+                class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                (click)="remove(row)"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    }
+
+    <!-- Estado vacío móvil -->
+    @if (items().length === 0) {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <i class="pi pi-inbox text-4xl mb-2"></i>
+      <p>No se encontraron órdenes</p>
+    </div>
+    }
+  </div>
 
   <!-- Modal de documentos -->
   <p-dialog
