@@ -57,6 +57,7 @@
     [style]="{ width: '90vw', maxWidth: '800px' }"
     header="{{ editingDocument() ? 'Editar Documento' : 'Nuevo Documento' }}"
     (onHide)="closeFormDialog()"
+    appendTo="body"
   >
     <app-document-form
       [document]="editingDocument()"
@@ -74,6 +75,7 @@
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
+    appendTo="body"
   >
     <ng-template pTemplate="header">
       <div class="flex items-center gap-2">
@@ -218,6 +220,7 @@
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
+    appendTo="body"
   >
     <ng-template pTemplate="header">
       <div class="flex items-center gap-2">
