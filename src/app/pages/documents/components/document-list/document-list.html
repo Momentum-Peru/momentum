@@ -45,17 +45,21 @@
       </ng-template>
 
       <ng-template pTemplate="body" let-document>
-        <tr class="hover:bg-gray-50 transition-colors">
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <!-- Número de documento -->
-          <td class="font-medium text-gray-900">
+          <td class="font-medium text-gray-900 dark:text-gray-100">
             {{ formatDocumentNumber(document) }}
           </td>
 
           <!-- Proyecto -->
           <td>
             <div class="flex flex-col">
-              <span class="font-medium text-gray-900">{{ getProjectName(document) }}</span>
-              <span class="text-sm text-gray-500">{{ getProjectCode(document) }}</span>
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                getProjectName(document)
+              }}</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{
+                getProjectCode(document)
+              }}</span>
             </div>
           </td>
 
@@ -63,18 +67,18 @@
           <td>
             <span
               *ngIf="document.categoria; else noCategory"
-              class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+              class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full"
             >
               {{ document.categoria }}
             </span>
             <ng-template #noCategory>
-              <span class="text-gray-400 text-sm">-</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">-</span>
             </ng-template>
           </td>
 
           <!-- Fecha de emisión -->
           <td>
-            <span class="text-sm text-gray-700">
+            <span class="text-sm text-gray-700 dark:text-gray-300">
               {{ formatDate(document.fechaEmision) }}
             </span>
           </td>
@@ -82,12 +86,12 @@
           <!-- Fecha de vencimiento -->
           <td>
             <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-700">
+              <span class="text-sm text-gray-700 dark:text-gray-300">
                 {{ formatDate(document.fechaVencimiento) }}
               </span>
               <i
                 *ngIf="isOverdue(document)"
-                class="pi pi-exclamation-triangle text-orange-500"
+                class="pi pi-exclamation-triangle text-orange-500 dark:text-orange-400"
                 pTooltip="Documento vencido"
               >
               </i>
@@ -96,7 +100,7 @@
 
           <!-- Total -->
           <td class="text-right">
-            <span class="font-semibold text-gray-900">
+            <span class="font-semibold text-gray-900 dark:text-gray-100">
               {{ formatCurrency(document.total) }}
             </span>
           </td>
@@ -113,16 +117,37 @@
 
           <!-- Archivos -->
           <td class="text-center">
-            <div class="flex items-center justify-center gap-1">
-              <p-badge [value]="document.documentos?.length || 0" severity="info" size="small">
-              </p-badge>
-              <i class="pi pi-file text-gray-400"></i>
+            <div class="flex items-center justify-center gap-2">
+              <span class="text-sm text-gray-600 dark:text-gray-400"
+                >{{ document.documentos?.length || 0 }} docs</span
+              >
+              <p-button
+                icon="pi pi-upload"
+                label="Archivos"
+                size="small"
+                severity="info"
+                [text]="true"
+                (onClick)="onManageFiles(document)"
+                pTooltip="Gestionar archivos"
+              >
+              </p-button>
             </div>
           </td>
 
           <!-- Acciones -->
           <td class="text-center">
             <div class="flex items-center justify-center gap-2">
+              <!-- Botón Ver Detalles -->
+              <p-button
+                icon="pi pi-eye"
+                size="small"
+                severity="info"
+                [text]="true"
+                (onClick)="onViewDetails(document)"
+                pTooltip="Ver detalles"
+              >
+              </p-button>
+
               <!-- Botón Editar -->
               <p-button
                 icon="pi pi-pencil"

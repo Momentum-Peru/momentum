@@ -15,182 +15,483 @@ import { Document, DocumentFilters } from '../../shared/interfaces/document.inte
 import { DocumentFormComponent } from './components/document-form/document-form';
 import { DocumentListComponent } from './components/document-list/document-list';
 import { DocumentFiltersComponent } from './components/document-filters/document-filters';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
-    selector: 'app-documents',
-    standalone: true,
-    imports: [
-        CommonModule,
-        FormsModule,
-        ButtonModule,
-        CardModule,
-        ToolbarModule,
-        DialogModule,
-        ToastModule,
-        ConfirmDialogModule,
-        DocumentFormComponent,
-        DocumentListComponent,
-        DocumentFiltersComponent
-    ],
-    templateUrl: './documents.html',
-    styleUrl: './documents.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [MessageService, ConfirmationService]
+  selector: 'app-documents',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonModule,
+    CardModule,
+    ToolbarModule,
+    DialogModule,
+    ToastModule,
+    ConfirmDialogModule,
+    DocumentFormComponent,
+    DocumentListComponent,
+    DocumentFiltersComponent,
+  ],
+  templateUrl: './documents.html',
+  styleUrl: './documents.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [MessageService, ConfirmationService],
 })
 export class DocumentsPage implements OnInit {
-    private readonly documentsApi = inject(DocumentsApiService);
-    private readonly messageService = inject(MessageService);
-    private readonly confirmationService = inject(ConfirmationService);
+  private readonly documentsApi = inject(DocumentsApiService);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = environment.apiUrl;
 
-    // Estado de la página
-    documents = signal<Document[]>([]);
-    loading = signal(false);
-    showFormDialog = signal(false);
-    editingDocument = signal<Document | null>(null);
-    currentFilters = signal<DocumentFilters>({});
+  // Estado de la página
+  documents = signal<Document[]>([]);
+  loading = signal(false);
+  showFormDialog = signal(false);
+  showDetailsDialog = signal(false);
+  showFilesDialog = signal(false);
+  editingDocument = signal<Document | null>(null);
+  viewingDocument = signal<Document | null>(null);
+  filesViewingDocument = signal<Document | null>(null);
+  selectedFiles = signal<File[]>([]);
+  currentFilters = signal<DocumentFilters>({});
 
-    // Paginación
-    totalRecords = signal(0);
-    currentPage = signal(1);
-    pageSize = signal(10);
-    first = signal(0);
+  // Paginación
+  totalRecords = signal(0);
+  currentPage = signal(1);
+  pageSize = signal(10);
+  first = signal(0);
 
-    ngOnInit(): void {
-        this.loadDocuments();
-    }
+  ngOnInit(): void {
+    this.loadDocuments();
+  }
 
-    /**
-     * Cargar documentos con filtros actuales
-     */
-    loadDocuments(): void {
-        this.loading.set(true);
+  /**
+   * Cargar documentos con filtros actuales
+   */
+  loadDocuments(): void {
+    this.loading.set(true);
 
-        const filters: DocumentFilters = {
-            ...this.currentFilters(),
-            page: this.currentPage(),
-            limit: this.pageSize()
-        };
+    const filters: DocumentFilters = {
+      ...this.currentFilters(),
+      page: this.currentPage(),
+      limit: this.pageSize(),
+    };
 
-        this.documentsApi.list(filters).subscribe({
-            next: (response) => {
-                this.documents.set(response.documents);
-                this.totalRecords.set(response.total);
-                this.loading.set(false);
-            },
-            error: (error: any) => {
-                console.error('Error al cargar documentos:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'No se pudieron cargar los documentos'
-                });
-                this.loading.set(false);
-            }
+    this.documentsApi.list(filters).subscribe({
+      next: (response) => {
+        this.documents.set(response.documents);
+        this.totalRecords.set(response.total);
+        this.loading.set(false);
+      },
+      error: (error: any) => {
+        console.error('Error al cargar documentos:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar los documentos',
         });
-    }
+        this.loading.set(false);
+      },
+    });
+  }
 
-    /**
-     * Manejar filtros aplicados
-     */
-    onFiltersApplied(filters: DocumentFilters): void {
-        this.currentFilters.set(filters);
-        this.currentPage.set(1);
-        this.first.set(0);
-        this.loadDocuments();
-    }
+  /**
+   * Manejar filtros aplicados
+   */
+  onFiltersApplied(filters: DocumentFilters): void {
+    this.currentFilters.set(filters);
+    this.currentPage.set(1);
+    this.first.set(0);
+    this.loadDocuments();
+  }
 
-    /**
-     * Manejar cambio de página
-     */
-    onPageChange(event: { page: number; first: number; rows: number }): void {
-        // event.page ya es 0-based desde el cálculo en document-list
-        this.currentPage.set(event.page + 1);
-        this.pageSize.set(event.rows);
-        this.first.set(event.first);
-        this.loadDocuments();
-    }
+  /**
+   * Manejar cambio de página
+   */
+  onPageChange(event: { page: number; first: number; rows: number }): void {
+    // event.page ya es 0-based desde el cálculo en document-list
+    this.currentPage.set(event.page + 1);
+    this.pageSize.set(event.rows);
+    this.first.set(event.first);
+    this.loadDocuments();
+  }
 
-    /**
-     * Abrir formulario para crear documento
-     */
-    openCreateForm(): void {
-        this.editingDocument.set(null);
-        this.showFormDialog.set(true);
-    }
+  /**
+   * Abrir formulario para crear documento
+   */
+  openCreateForm(): void {
+    this.editingDocument.set(null);
+    this.showFormDialog.set(true);
+  }
 
-    /**
-     * Abrir formulario para editar documento
-     */
-    openEditForm(document: Document): void {
-        this.editingDocument.set(document);
-        this.showFormDialog.set(true);
-    }
+  /**
+   * Abrir formulario para editar documento
+   */
+  openEditForm(document: Document): void {
+    this.editingDocument.set(document);
+    this.showFormDialog.set(true);
+  }
 
-    /**
-     * Cerrar formulario
-     */
-    closeFormDialog(): void {
-        this.showFormDialog.set(false);
-        this.editingDocument.set(null);
-    }
+  /**
+   * Cerrar formulario
+   */
+  closeFormDialog(): void {
+    this.showFormDialog.set(false);
+    this.editingDocument.set(null);
+  }
 
-    /**
-     * Manejar documento guardado
-     */
-    onDocumentSaved(): void {
-        this.closeFormDialog();
+  /**
+   * Manejar documento guardado
+   */
+  onDocumentSaved(): void {
+    this.closeFormDialog();
+    this.loadDocuments();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: 'Documento guardado correctamente',
+    });
+  }
+
+  /**
+   * Confirmar eliminación de documento
+   */
+  confirmDelete(document: Document): void {
+    this.confirmationService.confirm({
+      message: `¿Está seguro de que desea eliminar el documento ${document.numeroDocumento}?`,
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.deleteDocument(document._id!);
+      },
+    });
+  }
+
+  /**
+   * Eliminar documento
+   */
+  private deleteDocument(id: string): void {
+    this.documentsApi.delete(id).subscribe({
+      next: () => {
         this.loadDocuments();
         this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Documento eliminado correctamente',
+        });
+      },
+      error: (error: any) => {
+        console.error('Error al eliminar documento:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo eliminar el documento',
+        });
+      },
+    });
+  }
+
+  /**
+   * TrackBy function para optimizar renderizado de lista
+   */
+  trackByDocumentId(index: number, document: Document): string {
+    return document._id || index.toString();
+  }
+
+  /**
+   * Ver detalles del documento
+   */
+  viewDocumentDetails(document: Document): void {
+    this.viewingDocument.set(document);
+    this.showDetailsDialog.set(true);
+  }
+
+  /**
+   * Cerrar modal de detalles
+   */
+  closeDetailsDialog(): void {
+    this.showDetailsDialog.set(false);
+    this.viewingDocument.set(null);
+  }
+
+  /**
+   * Abrir gestión de archivos
+   */
+  openFilesManagement(document: Document): void {
+    this.filesViewingDocument.set(document);
+    this.showFilesDialog.set(true);
+  }
+
+  /**
+   * Cerrar modal de archivos
+   */
+  closeFilesDialog(): void {
+    this.showFilesDialog.set(false);
+    this.filesViewingDocument.set(null);
+    this.selectedFiles.set([]);
+  }
+
+  /**
+   * Manejar selección de archivos
+   */
+  onFileInputChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+
+    // Validar tamaño de archivos (10MB máximo)
+    const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+    const validFiles = files.filter((file) => {
+      if (file.size > maxSize) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error de validación',
+          detail: `El archivo ${file.name} es demasiado grande. Máximo 10MB.`,
+        });
+        return false;
+      }
+      return true;
+    });
+
+    this.selectedFiles.set(validFiles);
+  }
+
+  /**
+   * Formatear tamaño de archivo
+   */
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Remover archivo seleccionado
+   */
+  removeSelectedFile(fileToRemove: File): void {
+    const currentFiles = this.selectedFiles();
+    const updatedFiles = currentFiles.filter((file) => file !== fileToRemove);
+    this.selectedFiles.set(updatedFiles);
+  }
+
+  /**
+   * Limpiar archivos seleccionados
+   */
+  clearSelectedFiles(): void {
+    this.selectedFiles.set([]);
+  }
+
+  /**
+   * Subir archivos seleccionados
+   */
+  uploadSelectedFiles(): void {
+    const files = this.selectedFiles();
+    const documentId = this.filesViewingDocument()?._id;
+
+    if (!documentId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'El documento debe estar guardado antes de subir archivos',
+      });
+      return;
+    }
+
+    if (!files || !files.length) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No hay archivos seleccionados para subir',
+      });
+      return;
+    }
+
+    // Subir todos los archivos en una sola request
+    const formData = new FormData();
+    files.forEach((file: File) => {
+      formData.append('files', file);
+    });
+
+    this.http.post<Document>(`${this.baseUrl}/documents/${documentId}/upload`, formData).subscribe({
+      next: (response) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: `${files.length} archivo(s) subido(s) correctamente`,
+        });
+        this.loadDocuments(); // Recargar para obtener archivos actualizados
+        // Actualizar el documento en el diálogo si está abierto
+        const currentDocument = this.filesViewingDocument();
+        if (currentDocument) {
+          this.filesViewingDocument.set(response);
+        }
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: `Error al subir archivos: ${this.getErrorMessage(error)}`,
+        });
+      },
+    });
+
+    this.clearSelectedFiles();
+  }
+
+  /**
+   * Descargar archivo
+   */
+  downloadFile(url: string): void {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = url.split('/').pop() || 'archivo';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  /**
+   * Ver archivo
+   */
+  viewFile(url: string): void {
+    const newWindow = window.open(url, '_blank');
+    if (!newWindow) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No se puede abrir el archivo directamente. Usa el botón de descarga.',
+      });
+    }
+  }
+
+  /**
+   * Obtener icono de archivo
+   */
+  getFileIcon(url: string): string {
+    const extension = url.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return 'pi pi-file-pdf';
+      case 'doc':
+      case 'docx':
+        return 'pi pi-file-word';
+      case 'xls':
+      case 'xlsx':
+        return 'pi pi-file-excel';
+      case 'txt':
+        return 'pi pi-file';
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+        return 'pi pi-image';
+      default:
+        return 'pi pi-file';
+    }
+  }
+
+  /**
+   * Obtener color del tipo de archivo
+   */
+  getFileTypeColor(url: string): string {
+    const extension = url.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return 'text-red-500';
+      case 'doc':
+      case 'docx':
+        return 'text-blue-500';
+      case 'xls':
+      case 'xlsx':
+        return 'text-green-500';
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+        return 'text-purple-500';
+      default:
+        return 'text-gray-500';
+    }
+  }
+
+  /**
+   * Eliminar archivo
+   */
+  removeFile(url: string): void {
+    const document = this.filesViewingDocument();
+    if (!document || !document._id) {
+      return;
+    }
+
+    if (!confirm('¿Estás seguro de eliminar este archivo?')) {
+      return;
+    }
+
+    // Filtrar el archivo del array
+    const updatedFiles = document.documentos?.filter((file) => file !== url) || [];
+
+    // Eliminar archivo usando el endpoint específico
+    const payload = {
+      fileUrl: url,
+    };
+
+    this.http
+      .delete<Document>(`${this.baseUrl}/documents/${document._id}/files`, { body: payload })
+      .subscribe({
+        next: (updatedDocument) => {
+          this.messageService.add({
             severity: 'success',
             summary: 'Éxito',
-            detail: 'Documento guardado correctamente'
-        });
-    }
+            detail: 'Archivo eliminado correctamente',
+          });
+          this.loadDocuments();
+          // Actualizar el documento en el diálogo si está abierto
+          const currentDocument = this.filesViewingDocument();
+          if (currentDocument) {
+            this.filesViewingDocument.set(updatedDocument);
+          }
+        },
+        error: (error) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: this.getErrorMessage(error),
+          });
+        },
+      });
+  }
 
-    /**
-     * Confirmar eliminación de documento
-     */
-    confirmDelete(document: Document): void {
-        this.confirmationService.confirm({
-            message: `¿Está seguro de que desea eliminar el documento ${document.numeroDocumento}?`,
-            header: 'Confirmar Eliminación',
-            icon: 'pi pi-exclamation-triangle',
-            acceptLabel: 'Sí, eliminar',
-            rejectLabel: 'Cancelar',
-            accept: () => {
-                this.deleteDocument(document._id!);
-            }
-        });
+  /**
+   * Obtener nombre del proyecto para mostrar en detalles
+   */
+  getProjectNameForDetails(document: Document | null): string {
+    if (!document?.proyectoId) return 'No especificado';
+    if (typeof document.proyectoId === 'string') {
+      return 'Proyecto no encontrado';
     }
+    return document.proyectoId.name;
+  }
 
-    /**
-     * Eliminar documento
-     */
-    private deleteDocument(id: string): void {
-        this.documentsApi.delete(id).subscribe({
-            next: () => {
-                this.loadDocuments();
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: 'Documento eliminado correctamente'
-                });
-            },
-            error: (error: any) => {
-                console.error('Error al eliminar documento:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'No se pudo eliminar el documento'
-                });
-            }
-        });
+  /**
+   * Obtener mensaje de error
+   */
+  private getErrorMessage(error: any): string {
+    if (error.error?.message) {
+      return error.error.message;
     }
-
-    /**
-     * TrackBy function para optimizar renderizado de lista
-     */
-    trackByDocumentId(index: number, document: Document): string {
-        return document._id || index.toString();
+    if (error.error?.error) {
+      return error.error.error;
     }
+    if (error.message) {
+      return error.message;
+    }
+    return 'Ha ocurrido un error inesperado';
+  }
 }

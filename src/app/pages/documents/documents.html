@@ -40,6 +40,8 @@
       (pageChange)="onPageChange($event)"
       (editDocument)="openEditForm($event)"
       (deleteDocument)="confirmDelete($event)"
+      (viewDetails)="viewDocumentDetails($event)"
+      (manageFiles)="openFilesManagement($event)"
       [trackByFn]="trackByDocumentId"
     >
     </app-document-list>
@@ -62,5 +64,321 @@
       (cancel)="closeFormDialog()"
     >
     </app-document-form>
+  </p-dialog>
+
+  <!-- Modal de detalles del documento -->
+  <p-dialog
+    [(visible)]="showDetailsDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '60rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-eye text-blue-500"></i>
+        Detalles del Documento — {{ viewingDocument()?.numeroDocumento }}
+      </div>
+    </ng-template>
+    @if (viewingDocument()) {
+    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+      <!-- Información básica -->
+      <div class="mb-6">
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-info-circle text-blue-500"></i>
+          Información Básica
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Número de Documento</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-mono font-medium">
+              {{ viewingDocument()?.numeroDocumento }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Serie</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingDocument()?.serie || 'No especificada' }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Proyecto</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ getProjectNameForDetails(viewingDocument()) }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Categoría</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingDocument()?.categoria || 'No especificada' }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Emisión</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingDocument()?.fechaEmision | date : 'dd/MM/yyyy' }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Vencimiento</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingDocument()?.fechaVencimiento | date : 'dd/MM/yyyy' }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Total</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-semibold">
+              {{ viewingDocument()?.total | currency : 'PEN' }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado</label
+            >
+            <span
+              class="px-2 py-1 rounded-full text-xs font-medium"
+              [class]="{
+                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
+                  viewingDocument()?.isActive,
+                'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200':
+                  !viewingDocument()?.isActive
+              }"
+            >
+              {{ viewingDocument()?.isActive ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+          @if (viewingDocument()?.createdAt) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Creación</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingDocument()?.createdAt | date : 'dd/MM/yyyy HH:mm' }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Archivos adjuntos -->
+      @if (viewingDocument()?.documentos?.length) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-file text-indigo-500"></i>
+          Archivos Adjuntos
+        </h3>
+        <div class="space-y-2">
+          @for (file of viewingDocument()?.documentos; track file) {
+          <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
+            <i class="pi pi-file text-gray-500"></i>
+            <a
+              [href]="file"
+              target="_blank"
+              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+            >
+              <i class="pi pi-external-link text-xs"></i>
+              Ver archivo
+            </a>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetailsDialog()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de gestión de archivos -->
+  <p-dialog
+    [(visible)]="showFilesDialog"
+    [modal]="true"
+    [style]="{ width: '70rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-file text-blue-500"></i>
+        <span>Gestión de Archivos — {{ filesViewingDocument()?.numeroDocumento }}</span>
+      </div>
+    </ng-template>
+
+    <div class="space-y-6">
+      <!-- Upload de archivos -->
+      <div class="bg-gray-50 rounded-lg p-6">
+        <h4 class="text-lg font-semibold text-gray-800 mb-4">Subir Nuevos Archivos</h4>
+        <!-- Input de archivos nativo -->
+        <div class="space-y-4">
+          <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <input
+              type="file"
+              #fileInput
+              multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg"
+              (change)="onFileInputChange($event)"
+              class="hidden"
+            />
+
+            <div class="flex flex-col items-center justify-center py-8">
+              <i class="pi pi-cloud-upload text-5xl text-gray-400 mb-4"></i>
+              <p class="text-lg font-medium text-gray-700 mb-2">Selecciona archivos para subir</p>
+              <p class="text-sm text-gray-500 mb-4">o arrastra y suelta archivos aquí</p>
+
+              <button
+                pButton
+                type="button"
+                label="Seleccionar Archivos"
+                icon="pi pi-upload"
+                (click)="fileInput.click()"
+                class="mb-4"
+              ></button>
+
+              <div class="text-xs text-gray-400 space-y-1">
+                <p>
+                  <strong>Formatos soportados:</strong> PDF, DOC, DOCX, XLS, XLSX, TXT, PNG, JPG,
+                  JPEG
+                </p>
+                <p><strong>Tamaño máximo:</strong> 10MB por archivo</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de archivos seleccionados -->
+          @if (selectedFiles().length > 0) {
+          <div class="space-y-2">
+            <h5 class="font-medium text-gray-800">Archivos seleccionados:</h5>
+            @for (file of selectedFiles(); track file.name) {
+            <div class="flex items-center justify-between p-2 bg-white rounded border">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-file text-blue-500"></i>
+                <span class="text-sm">{{ file.name }}</span>
+                <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
+              </div>
+              <button
+                pButton
+                icon="pi pi-times"
+                class="p-button-text p-button-danger p-button-sm"
+                (click)="removeSelectedFile(file)"
+              ></button>
+            </div>
+            }
+
+            <!-- Botones de acción -->
+            <div class="flex gap-2 pt-2">
+              <button
+                pButton
+                type="button"
+                label="Subir Archivos"
+                icon="pi pi-upload"
+                (click)="uploadSelectedFiles()"
+                [disabled]="selectedFiles().length === 0"
+                class="flex-1"
+              ></button>
+              <button
+                pButton
+                type="button"
+                label="Limpiar"
+                icon="pi pi-times"
+                class="p-button-text"
+                (click)="clearSelectedFiles()"
+                [disabled]="selectedFiles().length === 0"
+              ></button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Lista de archivos existentes -->
+      @if (filesViewingDocument()?.documentos?.length) {
+      <div class="space-y-3">
+        <h4 class="text-lg font-semibold text-gray-800">
+          Archivos Adjuntos ({{ filesViewingDocument()?.documentos?.length }})
+        </h4>
+        <div class="grid gap-3">
+          @for (file of filesViewingDocument()?.documentos; track $index) {
+          <div
+            class="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors"
+          >
+            <div class="flex items-center gap-4">
+              <div class="flex-shrink-0">
+                <i [class]="getFileIcon(file) + ' text-2xl ' + getFileTypeColor(file)"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-gray-900 truncate">{{ file.split('/').pop() }}</p>
+                <p class="text-sm text-gray-500 truncate">{{ file }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm"
+                (click)="viewFile(file)"
+                pTooltip="Ver archivo"
+                tooltipPosition="top"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-download"
+                class="p-button-text p-button-sm"
+                (click)="downloadFile(file)"
+                pTooltip="Descargar archivo"
+                tooltipPosition="top"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-danger p-button-sm"
+                (click)="removeFile(file)"
+                pTooltip="Eliminar archivo"
+                tooltipPosition="top"
+              ></button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      } @else {
+      <div class="text-center py-12 bg-gray-50 rounded-lg">
+        <i class="pi pi-file text-4xl text-gray-400 mb-3"></i>
+        <p class="text-gray-600 font-medium">No hay archivos adjuntos</p>
+        <p class="text-sm text-gray-500 mt-1">Sube archivos usando el área de arriba</p>
+      </div>
+      }
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-between items-center">
+        <div class="text-sm text-gray-500">
+          @if (filesViewingDocument()?.documentos?.length) {
+          {{ filesViewingDocument()?.documentos?.length }} archivo(s) adjunto(s) }
+        </div>
+        <button pButton label="Cerrar" class="p-button-text" (click)="closeFilesDialog()"></button>
+      </div>
+    </ng-template>
   </p-dialog>
 </div>
