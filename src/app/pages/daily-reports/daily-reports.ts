@@ -50,6 +50,8 @@ export class DailyExpensesPage implements OnInit {
   showViewDialog = signal(false);
   editing = signal<DailyReport | null>(null);
   viewing = signal<DailyReport | null>(null);
+  // Estado de expansión para vista móvil (accordion)
+  private expandedRowKeys = signal<Set<string>>(new Set());
 
   // Archivos seleccionados (pendientes) cuando aún no existe el reporte
   pendingAudio = signal<File | null>(null);
@@ -154,6 +156,23 @@ export class DailyExpensesPage implements OnInit {
         });
       },
     });
+  }
+
+  // Helpers de accordion móvil
+  private buildRowKey(item: DailyReport, index: number): string {
+    const base = `${item.date}T${item.time || '00:00'}`;
+    return item._id ? String(item._id) : `${base}#${index}`;
+  }
+
+  isRowExpandedByKey(key: string): boolean {
+    return this.expandedRowKeys().has(key);
+  }
+
+  toggleRowByKey(key: string): void {
+    const set = new Set(this.expandedRowKeys());
+    if (set.has(key)) set.delete(key);
+    else set.add(key);
+    this.expandedRowKeys.set(set);
   }
 
   setQuery(value: string) {

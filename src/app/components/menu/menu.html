@@ -34,7 +34,7 @@
 
 <!-- Menú lateral -->
 <nav
-  class="pt-7 fixed md:static top-0 left-0 h-full w-60 bg-black text-white z-50 transform transition-transform duration-300 ease-in-out md:transform-none"
+  class="pt-7 fixed md:static top-0 left-0 h-screen w-60 bg-black text-white z-50 transform transition-transform duration-300 ease-in-out md:transform-none flex flex-col"
   [class.-translate-x-full]="!isMenuOpen()"
   [class.translate-x-0]="isMenuOpen()"
 >
@@ -42,8 +42,8 @@
     <img width="120" src="/images/logo_b.png" alt="Logo" />
   </div>
 
-  <!-- Items del menú -->
-  <div class="flex flex-col space-y-2 p-4">
+  <!-- Items del menú (área scrollable en móvil) -->
+  <div class="flex-1 overflow-y-auto flex flex-col space-y-2 p-4">
     @if (hasAnyPermission()) { @for (item of menuItems(); track item.path) {
     <a
       [routerLink]="item.path"
@@ -72,8 +72,8 @@
     }
   </div>
 
-  <!-- Footer del menú -->
-  <div class="absolute bottom-4 w-full flex flex-col justify-center items-center">
+  <!-- Footer del menú (siempre visible, fuera del scroll) -->
+  <div class="w-full flex flex-col justify-center items-center p-4 md:mt-auto">
     <!-- Información del usuario y botón de cerrar sesión solo en móvil -->
     <div class="mb-4 md:hidden w-full px-4">
       <!-- Nombre de usuario -->

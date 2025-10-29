@@ -1,13 +1,13 @@
-<div class="p-4 space-y-4">
+<div class="p-4 space-y-4 mt-5">
   <p-toast></p-toast>
-  <div class="flex items-center gap-2">
+  <div class="flex flex-wrap items-center gap-2">
     <input
       pInputText
       placeholder="Buscar por fecha, hora o descripción..."
       [ngModel]="query()"
       (ngModelChange)="setQuery($event)"
       name="searchQuery"
-      class="w-full"
+      class="flex-1 min-w-[200px]"
     />
     <p-datepicker
       (ngModelChange)="onFilterDateChange($event)"
@@ -17,62 +17,154 @@
       appendTo="body"
       iconDisplay="input"
       [selectionMode]="'single'"
-      class=""
+      class="w-full xl:w-auto"
     ></p-datepicker>
-    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
+    <button
+      pButton
+      type="button"
+      (click)="newItem()"
+      label="Nuevo"
+      icon="pi pi-plus"
+      class="w-full xl:w-auto"
+    ></button>
   </div>
 
-  <p-table
-    [value]="filteredItems()"
-    [scrollable]="true"
-    scrollHeight="60vh"
-    styleClass="p-datatable-sm"
-  >
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Fecha</th>
-        <th>Hora</th>
-        <th>Proyecto</th>
-        <th>Descripción</th>
-        <th class="text-right">Acciones</th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-row>
-      <tr>
-        <td>{{ row.date | date : 'dd/MM/yyyy' }}</td>
-        <td>{{ row.time }}</td>
-        <td>
-          <span class="text-sm">{{ getProjectName(row.projectId) }}</span>
-        </td>
-        <td>
-          <div class="max-w-xs">
-            <p class="truncate">{{ row.description }}</p>
-            <div class="flex gap-2 mt-1 text-xs text-gray-500">
-              <i *ngIf="row.audioDescription" class="pi pi-volume-up"></i>
-              <i *ngIf="row.videoDescription" class="pi pi-video"></i>
-              <i *ngIf="row.photoDescription" class="pi pi-image"></i>
-              <span *ngIf="row.documents?.length">{{ row.documents?.length }} doc(s)</span>
+  <!-- Vista Desktop: Tabla -->
+  <div class="hidden md:block">
+    <p-table
+      [value]="filteredItems()"
+      [scrollable]="true"
+      scrollHeight="60vh"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Proyecto</th>
+          <th>Descripción</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ row.date | date : 'dd/MM/yyyy' }}</td>
+          <td>{{ row.time }}</td>
+          <td>
+            <span class="text-sm">{{ getProjectName(row.projectId) }}</span>
+          </td>
+          <td>
+            <div class="max-w-xs">
+              <p class="truncate">{{ row.description }}</p>
+              <div class="flex gap-2 mt-1 text-xs text-gray-500">
+                <i *ngIf="row.audioDescription" class="pi pi-volume-up"></i>
+                <i *ngIf="row.videoDescription" class="pi pi-video"></i>
+                <i *ngIf="row.photoDescription" class="pi pi-image"></i>
+                <span *ngIf="row.documents?.length">{{ row.documents?.length }} doc(s)</span>
+              </div>
             </div>
+          </td>
+          <td class="text-right">
+            <button pButton icon="pi pi-eye" class="p-button-text" (click)="viewItem(row)"></button>
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text"
+              (click)="editItem(row)"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-text p-button-danger"
+              (click)="remove(row)"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil: Lista tipo tarjetas -->
+  <div class="md:hidden space-y-3">
+    @for (row of filteredItems(); track row._id || $index; let i = $index) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+    >
+      <!-- Header clickable -->
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        (click)="toggleRowByKey(row._id || row.date + 'T' + (row.time || '00:00') + '#' + i)"
+      >
+        <div class="flex-1 text-left min-w-0 pr-4">
+          <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
+            {{ row.date | date : 'dd/MM/yyyy' }} · {{ row.time }}
           </div>
-        </td>
-        <td class="text-right">
-          <button pButton icon="pi pi-eye" class="p-button-text" (click)="viewItem(row)"></button>
-          <button
-            pButton
-            icon="pi pi-pencil"
-            class="p-button-text"
-            (click)="editItem(row)"
-          ></button>
-          <button
-            pButton
-            icon="pi pi-trash"
-            class="p-button-text p-button-danger"
-            (click)="remove(row)"
-          ></button>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
+          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+            {{ getProjectName(row.projectId) }}
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+            {{ row.description }}
+          </div>
+        </div>
+        <div class="flex-shrink-0">
+          <i
+            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+            [class.pi-chevron-down]="
+              !isRowExpandedByKey(row._id || row.date + 'T' + (row.time || '00:00') + '#' + i)
+            "
+            [class.pi-chevron-up]="
+              isRowExpandedByKey(row._id || row.date + 'T' + (row.time || '00:00') + '#' + i)
+            "
+          ></i>
+        </div>
+      </button>
+
+      <!-- Body collapsible -->
+      @if (isRowExpandedByKey(row._id || (row.date + 'T' + (row.time || '00:00') + '#' + i))) {
+      <div class="border-t border-gray-200 dark:border-gray-700">
+        <div class="px-4 py-4 space-y-3">
+          <div class="text-sm text-gray-700 dark:text-gray-300">
+            <div class="font-medium">Descripción</div>
+            <div class="mt-1 whitespace-pre-wrap break-words">{{ row.description }}</div>
+          </div>
+
+          <div class="flex items-center gap-2 text-xs text-gray-500">
+            <i *ngIf="row.audioDescription" class="pi pi-volume-up"></i>
+            <i *ngIf="row.videoDescription" class="pi pi-video"></i>
+            <i *ngIf="row.photoDescription" class="pi pi-image"></i>
+            <span *ngIf="row.documents?.length">{{ row.documents?.length }} doc(s)</span>
+          </div>
+
+          <div class="flex items-center gap-2 pt-2">
+            <button
+              pButton
+              icon="pi pi-eye"
+              label="Ver"
+              class="p-button-text p-button-sm"
+              (click)="viewItem(row)"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-pencil"
+              label="Editar"
+              class="p-button-text p-button-sm"
+              (click)="editItem(row)"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              label="Eliminar"
+              class="p-button-text p-button-danger p-button-sm"
+              (click)="remove(row)"
+            ></button>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    }
+  </div>
 
   <!-- Modal de edición/creación -->
   <p-dialog
