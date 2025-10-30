@@ -88,28 +88,22 @@
     </ng-template>
   </p-card>
 
-  <!-- Tabla de clientes -->
-  <div class="overflow-x-auto">
-    <p-table
-      [value]="items()"
-      [tableStyle]="{ 'min-width': '50rem' }"
-      [paginator]="true"
-      [rows]="10"
-      [responsiveLayout]="'scroll'"
-    >
+  <!-- Vista Desktop: Tabla normal -->
+  <div class="hidden md:block">
+    <p-table [value]="items()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
       <ng-template pTemplate="header">
         <tr>
-          <th class="whitespace-nowrap">Cliente</th>
-          <th class="whitespace-nowrap">RUC/DNI</th>
-          <th class="whitespace-nowrap">Ubicación</th>
-          <th class="whitespace-nowrap">Contactos</th>
-          <th class="whitespace-nowrap">Acciones</th>
+          <th>Cliente</th>
+          <th>RUC/DNI</th>
+          <th>Ubicación</th>
+          <th>Contactos</th>
+          <th class="text-right">Acciones</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
         <tr>
           <td>
-            <div class="space-y-1 min-w-[200px]">
+            <div class="space-y-1">
               <div class="font-semibold text-gray-900 dark:text-gray-100 break-words">
                 {{ row.name }}
               </div>
@@ -121,13 +115,13 @@
             </div>
           </td>
           <td>
-            <div class="text-sm min-w-[150px]">
+            <div class="text-sm">
               <div class="break-words text-gray-900 dark:text-gray-100">{{ row.taxId || '-' }}</div>
             </div>
           </td>
           <td>
             @if (row.ubicacion) {
-            <div class="text-sm min-w-[200px] max-w-[300px]">
+            <div class="text-sm">
               @if (row.ubicacion.paisCodigo) {
               <div class="font-medium break-words text-gray-900 dark:text-gray-100">
                 {{ getCountryName(row.ubicacion.paisCodigo) }}
@@ -161,7 +155,7 @@
             ></button>
           </td>
           <td class="text-right">
-            <div class="flex items-center gap-1">
+            <div class="flex items-center justify-end gap-1">
               <button
                 pButton
                 icon="pi pi-eye"
@@ -190,6 +184,152 @@
     </p-table>
   </div>
 
+  <!-- Vista Móvil: Accordion desplegable -->
+  <div class="md:hidden space-y-3">
+    @for (row of items(); track row._id || $index) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+    >
+      <!-- Header del accordion (siempre visible) -->
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        (click)="toggleRow(row._id)"
+      >
+        <div class="flex-1 text-left min-w-0 pr-4">
+          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+            {{ row.name }}
+          </div>
+          @if (row.taxId) {
+          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+            RUC/DNI: {{ row.taxId }}
+          </div>
+          }
+        </div>
+        <div class="flex-shrink-0">
+          <i
+            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+            [class.pi-chevron-down]="!isRowExpanded(row._id)"
+            [class.pi-chevron-up]="isRowExpanded(row._id)"
+          ></i>
+        </div>
+      </button>
+
+      <!-- Contenido del accordion (desplegable) -->
+      @if (isRowExpanded(row._id)) {
+      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+        <div class="px-4 py-4 space-y-4">
+          <!-- ID -->
+          @if (row._id) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              ID
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">{{ row._id }}</div>
+          </div>
+          }
+
+          <!-- RUC/DNI -->
+          @if (row.taxId) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              RUC/DNI
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+              {{ row.taxId }}
+            </div>
+          </div>
+          }
+
+          <!-- Ubicación -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Ubicación
+            </div>
+            @if (row.ubicacion) {
+            <div class="text-sm space-y-1">
+              @if (row.ubicacion.paisCodigo) {
+              <div class="font-medium break-words text-gray-900 dark:text-gray-100">
+                {{ getCountryName(row.ubicacion.paisCodigo) }}
+              </div>
+              } @if (row.ubicacion.provinciaCodigo) {
+              <div class="text-gray-600 dark:text-gray-300 break-words">
+                {{ getProvinceName(row.ubicacion.provinciaCodigo) }}
+              </div>
+              } @if (row.ubicacion.distritoCodigo) {
+              <div class="text-gray-500 dark:text-gray-400 break-words">
+                {{ getDistrictName(row.ubicacion.distritoCodigo) }}
+              </div>
+              } @if (row.ubicacion.direccion) {
+              <div class="text-xs text-gray-400 dark:text-gray-500 mt-1 break-words">
+                {{ row.ubicacion.direccion }}
+              </div>
+              }
+            </div>
+            } @else {
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Sin ubicación</span>
+            }
+          </div>
+
+          <!-- Contactos -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Contactos
+            </div>
+            <button
+              pButton
+              type="button"
+              label="Ver contactos"
+              icon="pi pi-users"
+              class="p-button-text p-button-sm w-full justify-start"
+              (click)="openContacts(row)"
+            ></button>
+          </div>
+
+          <!-- Acciones -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+              Acciones
+            </div>
+            <div class="flex flex-col gap-2">
+              <button
+                pButton
+                icon="pi pi-eye"
+                label="Ver detalles"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="viewDetails(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                label="Editar"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="editItem(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                label="Eliminar"
+                class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                (click)="confirmDelete(row)"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    }
+
+    <!-- Paginación móvil (simple) -->
+    @if (items().length === 0) {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <i class="pi pi-inbox text-4xl mb-2"></i>
+      <p>No hay clientes disponibles</p>
+    </div>
+    }
+  </div>
+
   <!-- Modal de contactos -->
   <p-dialog
     [(visible)]="showContactsDialog"
@@ -201,7 +341,12 @@
   >
     <ng-template pTemplate="header"> Contactos — {{ contactsClientName() }} </ng-template>
     <div class="space-y-2">
-      <p-table [value]="contactsViewing() ?? []">
+      <p-table
+        [value]="contactsViewing() ?? []"
+        [responsiveLayout]="'stack'"
+        breakpoint="960px"
+        styleClass="p-datatable-sm"
+      >
         <ng-template pTemplate="header">
           <tr>
             <th>Nombre</th>
@@ -212,10 +357,10 @@
         </ng-template>
         <ng-template pTemplate="body" let-contact>
           <tr>
-            <td>{{ contact.name }}</td>
-            <td>{{ contact.area }}</td>
-            <td>{{ contact.email }}</td>
-            <td>{{ contact.phone }}</td>
+            <td class="break-words">{{ contact.name }}</td>
+            <td class="break-words">{{ contact.area }}</td>
+            <td class="break-words">{{ contact.email }}</td>
+            <td class="break-words">{{ contact.phone || '-' }}</td>
           </tr>
         </ng-template>
       </p-table>
@@ -606,29 +751,29 @@
           Contactos
         </h3>
         @if (viewingClient()?.contacts?.length) {
-        <div class="overflow-x-auto">
-          <p-table
-            [value]="viewingClient()?.contacts ?? []"
-            [tableStyle]="{ 'min-width': '30rem' }"
-          >
-            <ng-template pTemplate="header">
-              <tr>
-                <th class="whitespace-nowrap">Nombre</th>
-                <th class="whitespace-nowrap">Área</th>
-                <th class="whitespace-nowrap">Email</th>
-                <th class="whitespace-nowrap">Teléfono</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-contact>
-              <tr>
-                <td class="break-words">{{ contact.name }}</td>
-                <td class="break-words">{{ contact.area }}</td>
-                <td class="break-words">{{ contact.email }}</td>
-                <td class="break-words">{{ contact.phone || '-' }}</td>
-              </tr>
-            </ng-template>
-          </p-table>
-        </div>
+        <p-table
+          [value]="viewingClient()?.contacts ?? []"
+          [responsiveLayout]="'stack'"
+          breakpoint="960px"
+          styleClass="p-datatable-sm"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Nombre</th>
+              <th>Área</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-contact>
+            <tr>
+              <td class="break-words">{{ contact.name }}</td>
+              <td class="break-words">{{ contact.area }}</td>
+              <td class="break-words">{{ contact.email }}</td>
+              <td class="break-words">{{ contact.phone || '-' }}</td>
+            </tr>
+          </ng-template>
+        </p-table>
         } @else {
         <div class="text-gray-500 dark:text-gray-400">No se han especificado contactos</div>
         }

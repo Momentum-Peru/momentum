@@ -11,82 +11,222 @@
     <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
   </div>
 
-  <p-table [value]="filteredItems()" [tableStyle]="{ 'min-width': '50rem' }">
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Código</th>
-        <th>Nombre</th>
-        <th>Cliente</th>
-        <th>Estado</th>
-        <th>Ubicación</th>
-        <th>Presupuesto</th>
-        <th>Fecha Inicio</th>
-        <th>Fecha Fin</th>
-        <th></th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-row>
-      <tr>
-        <td>
-          <span
-            class="font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
-            >{{ row.code }}</span
-          >
-        </td>
-        <td>
-          <div class="max-w-xs">
-            <p class="font-semibold truncate">{{ row.name }}</p>
-            <p class="text-sm text-gray-600 truncate">{{ row.description }}</p>
+  <!-- Vista Desktop: Tabla -->
+  <div class="hidden md:block">
+    <p-table
+      [value]="filteredItems()"
+      [paginator]="true"
+      [rows]="10"
+      styleClass="p-datatable-sm"
+      [tableStyle]="{ 'min-width': '50rem' }"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Cliente</th>
+          <th>Estado</th>
+          <th>Ubicación</th>
+          <th>Presupuesto</th>
+          <th>Fecha Inicio</th>
+          <th>Fecha Fin</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <span
+              class="font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
+              >{{ row.code }}</span
+            >
+          </td>
+          <td>
+            <div class="max-w-xs">
+              <p class="font-semibold truncate">{{ row.name }}</p>
+              <p class="text-sm text-gray-600 truncate">{{ row.description }}</p>
+            </div>
+          </td>
+          <td>{{ getClientName(row.clientId) }}</td>
+          <td>
+            <span
+              class="px-2 py-1 rounded-full text-xs font-medium"
+              [class]="getStatusClass(row.status)"
+            >
+              {{ getStatusLabel(row.status) }}
+            </span>
+          </td>
+          <td>
+            <span class="text-sm">{{ row.location || 'Sin ubicación' }}</span>
+          </td>
+          <td>
+            <span class="font-semibold">{{
+              row.budget | currency : 'USD' : 'symbol' : '1.0-0'
+            }}</span>
+          </td>
+          <td>{{ row.startDate | date : 'dd/MM/yyyy' }}</td>
+          <td>{{ row.endDate | date : 'dd/MM/yyyy' }}</td>
+          <td class="text-right flex items-center gap-2">
+            <button
+              pButton
+              icon="pi pi-eye"
+              class="p-button-text p-button-sm"
+              (click)="viewDetails(row)"
+              pTooltip="Ver detalles"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text p-button-sm"
+              (click)="editItem(row)"
+              pTooltip="Editar proyecto"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-text p-button-sm p-button-danger"
+              (click)="remove(row)"
+              pTooltip="Eliminar proyecto"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil: Lista tipo accordion -->
+  <div class="md:hidden space-y-3">
+    @for (row of filteredItems(); track row._id || $index) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+    >
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        (click)="toggleRow(row._id)"
+      >
+        <div class="flex-1 text-left min-w-0 pr-4">
+          <div class="flex items-center gap-2 min-w-0">
+            <span
+              class="font-mono text-xs bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-0.5 rounded flex-shrink-0"
+              >{{ row.code }}</span
+            >
+            <span class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{
+              row.name
+            }}</span>
           </div>
-        </td>
-        <td>{{ getClientName(row.clientId) }}</td>
-        <td>
-          <span
-            class="px-2 py-1 rounded-full text-xs font-medium"
-            [class]="getStatusClass(row.status)"
-          >
-            {{ getStatusLabel(row.status) }}
-          </span>
-        </td>
-        <td>
-          <span class="text-sm">{{ row.location || 'Sin ubicación' }}</span>
-        </td>
-        <td>
-          <span class="font-semibold">{{
-            row.budget | currency : 'USD' : 'symbol' : '1.0-0'
-          }}</span>
-        </td>
-        <td>{{ row.startDate | date : 'dd/MM/yyyy' }}</td>
-        <td>{{ row.endDate | date : 'dd/MM/yyyy' }}</td>
-        <td class="text-right">
-          <button
-            pButton
-            icon="pi pi-eye"
-            class="p-button-text"
-            (click)="viewDetails(row)"
-            pTooltip="Ver detalles"
-            tooltipPosition="top"
-          ></button>
-          <button
-            pButton
-            icon="pi pi-pencil"
-            class="p-button-text"
-            (click)="editItem(row)"
-            pTooltip="Editar proyecto"
-            tooltipPosition="top"
-          ></button>
-          <button
-            pButton
-            icon="pi pi-trash"
-            class="p-button-text p-button-danger"
-            (click)="remove(row)"
-            pTooltip="Eliminar proyecto"
-            tooltipPosition="top"
-          ></button>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
+          <div class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <span class="truncate">{{ getClientName(row.clientId) }}</span>
+            <span>•</span>
+            <span
+              class="px-2 py-0.5 rounded-full text-[10px] font-medium"
+              [class]="getStatusClass(row.status)"
+              >{{ getStatusLabel(row.status) }}</span
+            >
+          </div>
+        </div>
+        <div class="flex-shrink-0">
+          <i
+            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+            [class.pi-chevron-down]="!isRowExpanded(row._id)"
+            [class.pi-chevron-up]="isRowExpanded(row._id)"
+          ></i>
+        </div>
+      </button>
+
+      @if (isRowExpanded(row._id)) {
+      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+        <div class="px-4 py-4 space-y-4">
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Cliente
+              </div>
+              <div class="text-gray-900 dark:text-gray-100 break-words">
+                {{ getClientName(row.clientId) }}
+              </div>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Presupuesto
+              </div>
+              <div class="text-gray-900 dark:text-gray-100 font-semibold">
+                {{ row.budget | currency : 'USD' : 'symbol' : '1.0-0' }}
+              </div>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Inicio
+              </div>
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ row.startDate | date : 'dd/MM/yyyy' }}
+              </div>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Fin
+              </div>
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ row.endDate | date : 'dd/MM/yyyy' }}
+              </div>
+            </div>
+            <div class="col-span-2">
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Ubicación
+              </div>
+              <div class="text-gray-900 dark:text-gray-100 break-words">
+                {{ row.location || 'Sin ubicación' }}
+              </div>
+            </div>
+            @if (row.description) {
+            <div class="col-span-2">
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Descripción
+              </div>
+              <div class="text-gray-900 dark:text-gray-100 break-words">{{ row.description }}</div>
+            </div>
+            }
+          </div>
+
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+              Acciones
+            </div>
+            <div class="flex flex-col gap-2">
+              <button
+                pButton
+                icon="pi pi-eye"
+                label="Ver detalles"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="viewDetails(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                label="Editar"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="editItem(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                label="Eliminar"
+                class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                (click)="remove(row)"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    } @if (filteredItems().length === 0) {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <i class="pi pi-inbox text-4xl mb-2"></i>
+      <p>No hay proyectos disponibles</p>
+    </div>
+    }
+  </div>
 
   <!-- Modal de edición/creación -->
   <p-dialog
@@ -102,18 +242,23 @@
     </ng-template>
 
     <div class="grid gap-4">
-      <!-- Código y Nombre -->
+      <!-- Código (solo lectura) y Nombre -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Código *</label>
-          <input
-            pInputText
-            name="projectCode"
-            placeholder="PROJ-2024-001"
-            [ngModel]="editing()?.code"
-            (ngModelChange)="onEditChange('code', $event)"
-            class="w-full"
-          />
+          <label class="block text-sm font-medium text-gray-700 mb-1">Código</label>
+          <div class="w-full">
+            @if (editing()?._id) {
+            <span
+              class="inline-block font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
+              >{{ editing()?.code }}</span
+            >
+            } @else {
+            <span
+              class="inline-block font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
+              >{{ nextCode() ?? 1 }}</span
+            >
+            }
+          </div>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>

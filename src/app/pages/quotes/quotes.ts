@@ -97,6 +97,7 @@ export class QuotesPage {
   });
   selectedFiles = signal<File[]>([]);
   existingDocuments = signal<string[]>([]);
+  expandedRows = signal<Set<string>>(new Set());
 
   // Formulario reactivo
   quoteForm = this.fb.group({
@@ -795,5 +796,27 @@ export class QuotesPage {
     }
 
     return 'Ha ocurrido un error inesperado';
+  }
+
+  /**
+   * Alterna la expansión de una fila del accordion
+   */
+  toggleRow(rowId: string | undefined): void {
+    if (!rowId) return;
+    const expanded = new Set(this.expandedRows());
+    if (expanded.has(rowId)) {
+      expanded.delete(rowId);
+    } else {
+      expanded.add(rowId);
+    }
+    this.expandedRows.set(expanded);
+  }
+
+  /**
+   * Verifica si una fila está expandida
+   */
+  isRowExpanded(rowId: string | undefined): boolean {
+    if (!rowId) return false;
+    return this.expandedRows().has(rowId);
   }
 }

@@ -12,8 +12,8 @@
     </p-card>
   </div>
 
-  <!-- Lista de documentos -->
-  <div *ngIf="!loading && hasDocuments()">
+  <!-- Lista de documentos - Desktop -->
+  <div *ngIf="!loading && hasDocuments()" class="hidden md:block">
     <p-table
       [value]="documents"
       [paginator]="true"
@@ -187,6 +187,161 @@
         </tr>
       </ng-template>
     </p-table>
+  </div>
+
+  <!-- Lista de documentos - Móvil (accordion) -->
+  <div *ngIf="!loading && hasDocuments()" class="md:hidden space-y-3">
+    <ng-container *ngFor="let document of documents; trackBy: trackByFn">
+      <div
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+      >
+        <button
+          type="button"
+          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+          (click)="toggleRow(document._id)"
+        >
+          <div class="flex-1 text-left min-w-0 pr-4">
+            <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+              {{ formatDocumentNumber(document) }}
+            </div>
+            <div
+              class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 min-w-0"
+            >
+              <span class="truncate">{{ getProjectName(document) }}</span>
+              <span>•</span>
+              <span class="truncate">{{ formatDate(document.fechaEmision) }}</span>
+              <span>•</span>
+              <span
+                class="px-2 py-0.5 rounded-full text-[10px] font-medium"
+                [class]="
+                  getStatusSeverity(document) === 'success'
+                    ? 'bg-green-100 text-green-800'
+                    : getStatusSeverity(document) === 'warn'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : getStatusSeverity(document) === 'danger'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-blue-100 text-blue-800'
+                "
+              >
+                {{ getStatusText(document) }}
+              </span>
+            </div>
+          </div>
+          <div class="flex-shrink-0">
+            <i
+              class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+              [class.pi-chevron-down]="!isRowExpanded(document._id)"
+              [class.pi-chevron-up]="isRowExpanded(document._id)"
+            ></i>
+          </div>
+        </button>
+
+        <div
+          *ngIf="isRowExpanded(document._id)"
+          class="border-t border-gray-200 dark:border-gray-700 animate-fade-in"
+        >
+          <div class="px-4 py-4 space-y-4 text-sm">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Proyecto
+                </div>
+                <div class="text-gray-900 dark:text-gray-100 break-words">
+                  {{ getProjectName(document) }}
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 break-words">
+                  {{ getProjectCode(document) }}
+                </div>
+              </div>
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Total
+                </div>
+                <div class="text-gray-900 dark:text-gray-100 font-semibold">
+                  {{ formatCurrency(document.total) }}
+                </div>
+              </div>
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Emisión
+                </div>
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ formatDate(document.fechaEmision) }}
+                </div>
+              </div>
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Vencimiento
+                </div>
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ formatDate(document.fechaVencimiento) }}
+                </div>
+              </div>
+              <div class="col-span-2">
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Categoría
+                </div>
+                <div class="text-gray-900 dark:text-gray-100">
+                  <span
+                    *ngIf="document.categoria; else noCategoryMobile"
+                    class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full"
+                    >{{ document.categoria }}</span
+                  >
+                  <ng-template #noCategoryMobile
+                    ><span class="text-gray-400 dark:text-gray-500">-</span></ng-template
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                Acciones
+              </div>
+              <div class="flex flex-col gap-2">
+                <button
+                  pButton
+                  icon="pi pi-eye"
+                  label="Ver detalles"
+                  class="p-button-text p-button-sm w-full justify-start"
+                  (click)="onViewDetails(document)"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  label="Editar"
+                  class="p-button-text p-button-sm w-full justify-start"
+                  (click)="onEdit(document)"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-upload"
+                  label="Archivos"
+                  class="p-button-text p-button-sm w-full justify-start"
+                  (click)="onManageFiles(document)"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  label="Eliminar"
+                  class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                  (click)="onDelete(document)"
+                ></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Paginación simple para móvil -->
+    <p-paginator
+      [rows]="pageSize"
+      [first]="first"
+      [totalRecords]="totalRecords"
+      (onPageChange)="onPageChange($event)"
+      class="mt-2"
+    ></p-paginator>
   </div>
 
   <!-- Estado vacío -->

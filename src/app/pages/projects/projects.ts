@@ -46,6 +46,8 @@ export class ProjectsPage implements OnInit {
   showDetailsDialog = signal(false);
   editing = signal<Project | null>(null);
   viewingProject = signal<Project | null>(null);
+  expandedRowIds = signal<Set<string>>(new Set());
+  nextCode = signal<number | null>(null);
 
   statusOptions = [
     { label: 'Planificación', value: 'PLANNING' },
@@ -143,6 +145,11 @@ export class ProjectsPage implements OnInit {
       notes: '',
       isActive: true,
     });
+    this.nextCode.set(null);
+    this.projectsApi.getNextCode().subscribe({
+      next: (res) => this.nextCode.set(res.nextCode),
+      error: () => this.nextCode.set(null),
+    });
     this.showDialog.set(true);
   }
 
@@ -165,6 +172,7 @@ export class ProjectsPage implements OnInit {
     console.log('Clientes disponibles:', this.clients());
 
     this.editing.set(editedItem);
+    this.nextCode.set(null);
     this.showDialog.set(true);
   }
 
@@ -179,6 +187,22 @@ export class ProjectsPage implements OnInit {
 
   closeDetails() {
     this.showDetailsDialog.set(false);
+  }
+
+  toggleRow(id?: string) {
+    if (!id) return;
+    const next = new Set(this.expandedRowIds());
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    this.expandedRowIds.set(next);
+  }
+
+  isRowExpanded(id?: string): boolean {
+    if (!id) return false;
+    return this.expandedRowIds().has(id);
   }
 
   onEditChange(field: keyof Project, value: any) {
@@ -218,12 +242,11 @@ export class ProjectsPage implements OnInit {
     const payload = {
       name: item.name.trim(),
       description: item.description?.trim() || '',
-      code: item.code.trim(),
       clientId: item.clientId,
       status: item.status,
       startDate: formatDate(item.startDate),
       endDate: formatDate(item.endDate),
-      location: item.location?.trim() || '',
+      location: item.location && item.location.toString().trim() !== '' ? item.location.toString().trim() : undefined,
       budget: item.budget || 0,
       notes: item.notes?.trim() || '',
       isActive: item.isActive ?? true,
@@ -250,7 +273,7 @@ export class ProjectsPage implements OnInit {
         },
       });
     } else {
-      this.projectsApi.create(payload as Project).subscribe({
+      this.projectsApi.create(payload).subscribe({
         next: () => {
           this.messageService.add({
             severity: 'success',
@@ -349,10 +372,7 @@ export class ProjectsPage implements OnInit {
   private validateForm(item: Project): string[] {
     const errors: string[] = [];
 
-    // Validar código
-    if (!item.code || item.code.trim() === '') {
-      errors.push('El código del proyecto es requerido');
-    }
+    // El código se genera automáticamente en el backend
 
     // Validar nombre
     if (!item.name || item.name.trim() === '') {
@@ -394,13 +414,11 @@ export class ProjectsPage implements OnInit {
 
       // Si es un array de mensajes, unirlos
       if (Array.isArray(message)) {
-        return message.join(', ');
+        const filtered = message.filter((m: string) => !/c[oó]digo/i.test(m))
+        return filtered.join(', ');
       }
 
-      // Traducir mensajes comunes de validación
-      if (message.includes('code should not be empty')) {
-        return 'El código del proyecto es requerido';
-      }
+      // Traducir mensajes comunes de validación (actualizado: código ahora se genera automáticamente)
       if (message.includes('name should not be empty')) {
         return 'El nombre del proyecto es requerido';
       }
@@ -419,7 +437,18 @@ export class ProjectsPage implements OnInit {
       if (message.includes('budget must be a positive number')) {
         return 'El presupuesto debe ser un número positivo';
       }
-      if (message.includes('startDate must be a valid date')) {
+      // Variantes para fecha de inicio
+      if (
+        message.includes('startDate should not be empty') ||
+        message.includes('startDate should not be null or undefined')
+      ) {
+        return 'La fecha de inicio es obligatoria';
+      }
+      if (
+        message.includes('startDate must be a valid date') ||
+        message.includes('startDate must be a valid ISO 8601 date string') ||
+        message.includes('startDate must be a valid ISO 8601 date')
+      ) {
         return 'La fecha de inicio no es válida';
       }
       if (message.includes('endDate must be a valid date')) {

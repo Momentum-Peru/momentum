@@ -1,23 +1,25 @@
 <!-- Botón hamburguesa para móvil -->
 <button
-  class="m-4 md:hidden fixed top-4 right-4 z-50 p-2 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors duration-200"
+  class="m-3 md:hidden fixed top-2 right-2 z-50 p-2 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors duration-200"
   (click)="toggleMenu()"
   [attr.aria-label]="isMenuOpen() ? 'Cerrar menú' : 'Abrir menú'"
 >
   <div class="w-6 h-6 flex flex-col justify-center items-center relative">
     <span
-      class="block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out absolute"
+      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out"
       [class.rotate-45]="isMenuOpen()"
       [class.translate-y-0]="isMenuOpen()"
+      [class.-mt-2]="!isMenuOpen()"
     ></span>
     <span
-      class="block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out"
+      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out"
       [class.opacity-0]="isMenuOpen()"
     ></span>
     <span
-      class="block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out absolute"
+      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out"
       [class.-rotate-45]="isMenuOpen()"
       [class.translate-y-0]="isMenuOpen()"
+      [class.mt-2]="!isMenuOpen()"
     ></span>
   </div>
 </button>
@@ -34,7 +36,7 @@
 
 <!-- Menú lateral -->
 <nav
-  class="pt-7 fixed md:static top-0 left-0 h-full w-60 bg-black text-white z-50 transform transition-transform duration-300 ease-in-out md:transform-none"
+  class="pt-7 fixed md:static top-0 left-0 h-full w-60 bg-black text-white z-50 transform transition-transform duration-300 ease-in-out md:transform-none flex flex-col"
   [class.-translate-x-full]="!isMenuOpen()"
   [class.translate-x-0]="isMenuOpen()"
 >
@@ -43,7 +45,7 @@
   </div>
 
   <!-- Items del menú -->
-  <div class="flex flex-col space-y-2 p-4">
+  <div class="flex-1 overflow-y-auto flex flex-col space-y-2 p-4 pb-24">
     @if (hasAnyPermission()) { @for (item of menuItems(); track item.path) {
     <a
       [routerLink]="item.path"
@@ -73,7 +75,7 @@
   </div>
 
   <!-- Footer del menú -->
-  <div class="absolute bottom-4 w-full flex flex-col justify-center items-center">
+  <div class="mt-auto w-full flex flex-col justify-center items-center pb-4 md:pb-0">
     <!-- Información del usuario y botón de cerrar sesión solo en móvil -->
     <div class="mb-4 md:hidden w-full px-4">
       <!-- Nombre de usuario -->
@@ -81,17 +83,17 @@
         <div class="text-sm text-gray-300 mb-1">Conectado como:</div>
         <div class="text-white font-semibold text-lg">{{ userName() }}</div>
         <!-- Debug info - remover en producción -->
-        <div class="text-xs text-gray-400 mt-1">
+        <!-- <div class="text-xs text-gray-400 mt-1">
           Debug:
           {{
             authService.getCurrentUser()?.name ||
               authService.getCurrentUser()?.email ||
               'Sin usuario'
           }}
-        </div>
-        <button class="text-xs text-blue-300 underline mt-1" (click)="refreshUserInfo()">
-          Refrescar Usuario
-        </button>
+        </div> -->
+        <!-- <button class="text-xs text-blue-300 underline mt-1" (click)="refreshUserInfo()">
+          Refrescar
+        </button> -->
       </div>
 
       <!-- Botón de cerrar sesión -->

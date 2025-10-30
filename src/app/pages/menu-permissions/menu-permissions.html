@@ -113,8 +113,9 @@
       <span class="text-gray-600 dark:text-gray-400">Cargando permisos...</span>
     </div>
 
-    <!-- Tabla de usuarios con permisos usando PrimeNG -->
-    <p-table *ngIf="!loading()" [value]="filteredUserGroups()" [tableStyle]="{ 'min-width': '50rem' }">
+    <!-- Tabla de usuarios con permisos usando PrimeNG - Desktop -->
+    <div class="hidden md:block">
+      <p-table *ngIf="!loading()" [value]="filteredUserGroups()" [tableStyle]="{ 'min-width': '50rem' }">
       <ng-template pTemplate="header">
         <tr>
           <th>Usuario</th>
@@ -150,7 +151,7 @@
               {{ group.inactivePermissions }}
             </span>
           </td>
-          <td class="text-right">
+          <td class="text-right flex gap-2">
             <button
               pButton
               [icon]="isExpanded(group.user._id) ? 'pi pi-angle-up' : 'pi pi-angle-down'"
@@ -207,12 +208,154 @@
           </td>
         </tr>
       </ng-template>
-    </p-table>
+      </p-table>
+    </div>
 
-    <!-- Estado vacío -->
-    <div *ngIf="!loading() && filteredUserGroups().length === 0" class="text-center py-8">
-      <i class="pi pi-inbox text-4xl text-gray-400 dark:text-gray-500 mb-2 block"></i>
-      <p class="text-gray-500 dark:text-gray-400">No se encontraron usuarios con permisos</p>
+    <!-- Lista de usuarios - Móvil (accordion) -->
+    <div class="md:hidden space-y-3">
+      @if (!loading() && filteredUserGroups().length > 0) {
+        @for (group of filteredUserGroups(); track group.user._id || $index) {
+          <div
+            class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+          >
+            <button
+              type="button"
+              class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+              (click)="toggleRow(group.user._id)"
+            >
+              <div class="flex-1 text-left min-w-0 pr-4">
+                <div class="flex items-center">
+                  <i class="pi pi-user text-gray-400 dark:text-gray-500 mr-3 flex-shrink-0"></i>
+                  <div class="min-w-0">
+                    <div class="font-semibold text-gray-900 dark:text-white truncate">
+                      {{ group.user.name }}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {{ group.user.email }}
+                    </div>
+                    <div class="mt-1 flex items-center gap-2 text-xs">
+                      <span class="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-300 rounded-full font-medium">
+                        {{ group.totalPermissions }} permisos
+                      </span>
+                      <span class="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full font-medium">
+                        {{ group.activePermissions }} activos
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-shrink-0">
+                <i
+                  class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+                  [class.pi-chevron-down]="!isExpanded(group.user._id)"
+                  [class.pi-chevron-up]="isExpanded(group.user._id)"
+                ></i>
+              </div>
+            </button>
+
+            @if (isExpanded(group.user._id)) {
+              <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+                <div class="px-4 py-4 space-y-4">
+                  <div class="grid grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                        Total
+                      </div>
+                      <div class="text-gray-900 dark:text-gray-100 font-semibold">
+                        <span class="px-2 py-1 text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-300 rounded-full">
+                          {{ group.totalPermissions }}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                        Activos
+                      </div>
+                      <div class="text-gray-900 dark:text-gray-100 font-semibold">
+                        <span class="px-2 py-1 text-sm bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full">
+                          {{ group.activePermissions }}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                        Inactivos
+                      </div>
+                      <div class="text-gray-900 dark:text-gray-100 font-semibold">
+                        <span class="px-2 py-1 text-sm bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full">
+                          {{ group.inactivePermissions }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                      Permisos
+                    </div>
+                    <div class="flex flex-col gap-2">
+                      @for (permission of group.permissions; track permission._id) {
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded-lg px-3 py-2">
+                          <div class="flex-1 min-w-0">
+                            <span class="font-mono text-sm text-gray-700 dark:text-gray-300 break-words block">
+                              {{ permission.route }}
+                            </span>
+                          </div>
+                          <div class="flex items-center gap-2 flex-shrink-0">
+                            <span
+                              class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
+                              [class]="getStatusClass(permission.isActive)"
+                            >
+                              {{ getStatusLabel(permission.isActive) }}
+                            </span>
+                            <button
+                              pButton
+                              icon="pi pi-trash"
+                              class="p-button-text p-button-sm p-button-danger flex-shrink-0"
+                              (click)="removeSinglePermission(permission)"
+                              pTooltip="Eliminar permiso"
+                              tooltipPosition="top"
+                            ></button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                      Acciones
+                    </div>
+                    <div class="flex flex-col gap-2">
+                      <button
+                        pButton
+                        icon="pi pi-pencil"
+                        label="Editar permisos"
+                        class="p-button-text p-button-sm w-full justify-start"
+                        (click)="editUserPermissions(group)"
+                      ></button>
+                      <button
+                        pButton
+                        icon="pi pi-trash"
+                        label="Eliminar todos los permisos"
+                        class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                        (click)="removeUserPermissions(group)"
+                      ></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      }
+
+      @if (!loading() && filteredUserGroups().length === 0) {
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+          <i class="pi pi-inbox text-4xl mb-2"></i>
+          <p>No se encontraron usuarios con permisos</p>
+        </div>
+      }
     </div>
   </div>
 
