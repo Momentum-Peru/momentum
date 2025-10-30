@@ -51,7 +51,11 @@ export class ProjectsApiService {
     return this.http.get<Project>(`${this.baseUrl}/projects/code/${code}`);
   }
 
-  create(project: Project): Observable<Project> {
+  getNextCode(): Observable<{ nextCode: number }> {
+    return this.http.get<{ nextCode: number }>(`${this.baseUrl}/projects/next-code`);
+  }
+
+  create(project: Partial<Project>): Observable<Project> {
     return this.http.post<Project>(`${this.baseUrl}/projects`, project);
   }
 
