@@ -1,2 +1,6 @@
 /* Estilos específicos para la página de reportes diarios */
-
+::ng-deep {
+  p-datepicker input {
+    width: 100% !important;
+  }
+}
