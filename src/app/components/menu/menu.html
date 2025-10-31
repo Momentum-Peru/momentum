@@ -1,23 +1,25 @@
 <!-- Botón hamburguesa para móvil -->
 <button
-  class="m-4 md:hidden fixed top-4 right-4 z-50 p-2 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors duration-200"
+  class="m-3 md:hidden fixed top-2 right-2 z-50 p-2 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors duration-200"
   (click)="toggleMenu()"
   [attr.aria-label]="isMenuOpen() ? 'Cerrar menú' : 'Abrir menú'"
 >
   <div class="w-6 h-6 flex flex-col justify-center items-center relative">
     <span
-      class="block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out absolute"
+      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out"
       [class.rotate-45]="isMenuOpen()"
       [class.translate-y-0]="isMenuOpen()"
+      [class.-mt-2]="!isMenuOpen()"
     ></span>
     <span
-      class="block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out"
+      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out"
       [class.opacity-0]="isMenuOpen()"
     ></span>
     <span
-      class="block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out absolute"
+      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out"
       [class.-rotate-45]="isMenuOpen()"
       [class.translate-y-0]="isMenuOpen()"
+      [class.mt-2]="!isMenuOpen()"
     ></span>
   </div>
 </button>
@@ -34,7 +36,7 @@
 
 <!-- Menú lateral -->
 <nav
-  class="pt-7 fixed md:static top-0 left-0 h-screen w-60 bg-black text-white z-50 transform transition-transform duration-300 ease-in-out md:transform-none flex flex-col"
+  class="pt-7 fixed md:static top-0 left-0 h-full w-60 bg-black text-white z-50 transform transition-transform duration-300 ease-in-out md:transform-none flex flex-col"
   [class.-translate-x-full]="!isMenuOpen()"
   [class.translate-x-0]="isMenuOpen()"
 >
@@ -42,8 +44,8 @@
     <img width="120" src="/images/logo_b.png" alt="Logo" />
   </div>
 
-  <!-- Items del menú (área scrollable en móvil) -->
-  <div class="flex-1 overflow-y-auto flex flex-col space-y-2 p-4">
+  <!-- Items del menú -->
+  <div class="flex-1 overflow-y-auto flex flex-col space-y-2 p-4 pb-24">
     @if (hasAnyPermission()) { @for (item of menuItems(); track item.path) {
     <a
       [routerLink]="item.path"
@@ -72,8 +74,8 @@
     }
   </div>
 
-  <!-- Footer del menú (siempre visible, fuera del scroll) -->
-  <div class="w-full flex flex-col justify-center items-center p-4 md:mt-auto">
+  <!-- Footer del menú -->
+  <div class="mt-auto w-full flex flex-col justify-center items-center pb-4 md:pb-0">
     <!-- Información del usuario y botón de cerrar sesión solo en móvil -->
     <div class="mb-4 md:hidden w-full px-4">
       <!-- Nombre de usuario -->
