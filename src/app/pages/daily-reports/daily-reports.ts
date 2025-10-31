@@ -99,15 +99,21 @@ export class DailyExpensesPage implements OnInit {
   }
 
   load() {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser?.id) {
+      this.items.set([]);
+      return;
+    }
+
     const fd = this.filterDate();
     if (fd) {
       this.dailyExpensesApi
-        .listWithFilters({ startDate: fd, endDate: fd })
+        .listWithFilters({ userId: currentUser.id, startDate: fd, endDate: fd })
         .subscribe({
           next: (data) => {
             this.items.set(data);
           },
-          error: (error) => {
+          error: () => {
             this.messageService.add({
               severity: 'error',
               summary: 'Error',
@@ -118,18 +124,20 @@ export class DailyExpensesPage implements OnInit {
       return;
     }
 
-    this.dailyExpensesApi.list().subscribe({
-      next: (data) => {
-        this.items.set(data);
-      },
-      error: (error) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Error al cargar los reportes diarios',
-        });
-      },
-    });
+    this.dailyExpensesApi
+      .listWithFilters({ userId: currentUser.id })
+      .subscribe({
+        next: (data) => {
+          this.items.set(data);
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Error al cargar los reportes diarios',
+          });
+        },
+      });
   }
 
   onFilterDateChange(value: Date | null) {
