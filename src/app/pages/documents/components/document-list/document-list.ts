@@ -78,20 +78,42 @@ export class DocumentListComponent {
    * Obtener el nombre del proyecto
    */
   getProjectName(document: Document): string {
+    if (!document.proyectoId) {
+      return 'Sin proyecto';
+    }
+
+    // Si es un objeto con name (populado)
+    if (typeof document.proyectoId === 'object' && 'name' in document.proyectoId) {
+      return document.proyectoId.name || 'Sin proyecto';
+    }
+
+    // Si es string (no poblado), intentar mostrar algo útil
     if (typeof document.proyectoId === 'string') {
       return 'Proyecto no encontrado';
     }
-    return document.proyectoId.name;
+
+    return 'Sin proyecto';
   }
 
   /**
    * Obtener el código del proyecto
    */
   getProjectCode(document: Document): string {
+    if (!document.proyectoId) {
+      return '';
+    }
+
+    // Si es un objeto con code (populado)
+    if (typeof document.proyectoId === 'object' && 'code' in document.proyectoId) {
+      return document.proyectoId.code || '';
+    }
+
+    // Si es string (no poblado)
     if (typeof document.proyectoId === 'string') {
       return '';
     }
-    return document.proyectoId.code;
+
+    return '';
   }
 
   /**

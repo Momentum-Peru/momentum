@@ -176,6 +176,7 @@
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
+    [focusOnShow]="false"
     appendTo="body"
   >
     <ng-template pTemplate="header">
@@ -230,7 +231,25 @@
       <!-- Captura multimedia (mobile) -->
       <div class="flex xl:flex-row flex-col gap-2">
         <div class="flex flex-col items-center">
+          <!-- Botón de grabación para móvil (mantener presionado) -->
           <button
+            *ngIf="isMobile()"
+            pButton
+            type="button"
+            [icon]="isRecordingAudio() ? 'pi pi-stop-circle' : 'pi pi-volume-up'"
+            [label]="isRecordingAudio() ? 'Soltar para finalizar' : 'Mantén presionado para grabar'"
+            (touchstart)="startRecordingAudio($event)"
+            (touchend)="stopRecordingAudio($event)"
+            (touchcancel)="stopRecordingAudio($event)"
+            (mousedown)="startRecordingAudio($event)"
+            (mouseup)="stopRecordingAudio($event)"
+            (mouseleave)="stopRecordingAudio($event)"
+            [class]="isRecordingAudio() ? 'w-full p-button-danger' : 'w-full'"
+          ></button>
+
+          <!-- Input file para desktop (fallback) -->
+          <button
+            *ngIf="!isMobile()"
             pButton
             type="button"
             icon="pi pi-volume-up"
@@ -238,6 +257,7 @@
             (click)="audioInput.click()"
             class="w-full"
           ></button>
+
           <input
             type="file"
             #audioInput
@@ -246,11 +266,24 @@
             (change)="onAudioSelected($event)"
             class="hidden"
           />
-          <small class="text-xs text-gray-500 mt-1" *ngIf="pendingAudio(); else audioSaved">
+
+          <!-- Estado de grabación -->
+          <small *ngIf="isRecordingAudio()" class="text-xs text-red-500 mt-1 font-semibold">
+            Grabando: {{ formatRecordingTime(recordingTime()) }}
+          </small>
+
+          <!-- Audio pendiente o guardado -->
+          <small
+            *ngIf="!isRecordingAudio() && pendingAudio(); else audioSaved"
+            class="text-xs text-gray-500 mt-1"
+          >
             {{ pendingAudio()?.name }} seleccionado
           </small>
           <ng-template #audioSaved>
-            <small class="text-xs text-gray-500 mt-1" *ngIf="editing()?.audioDescription">
+            <small
+              *ngIf="!isRecordingAudio() && editing()?.audioDescription"
+              class="text-xs text-gray-500 mt-1"
+            >
               Audio listo
             </small>
           </ng-template>

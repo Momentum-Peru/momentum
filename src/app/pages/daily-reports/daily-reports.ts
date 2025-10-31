@@ -59,6 +59,15 @@ export class DailyExpensesPage implements OnInit {
   pendingPhoto = signal<File | null>(null);
   pendingDocuments = signal<File[]>([]);
 
+  // Estado de grabación de audio
+  isRecordingAudio = signal(false);
+  recordingTime = signal(0);
+  isMobile = signal(false);
+  private mediaRecorder: MediaRecorder | null = null;
+  private audioStream: MediaStream | null = null;
+  private audioChunks: Blob[] = [];
+  private recordingInterval: any = null;
+
   // Filtrado simple por texto
   filteredItems = computed(() => {
     const searchQuery = this.query().toLowerCase().trim();
@@ -82,12 +91,32 @@ export class DailyExpensesPage implements OnInit {
   ngOnInit() {
     this.load();
     this.loadProjects();
+    // Detectar si es móvil
+    this.isMobile.set(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
   }
 
   constructor() {
     // Efecto para manejar el cierre del diálogo
     effect(() => {
       if (!this.showDialog()) {
+        // Detener grabación si está activa
+        if (this.isRecordingAudio()) {
+          if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+          }
+          if (this.audioStream) {
+            this.audioStream.getTracks().forEach((track) => track.stop());
+            this.audioStream = null;
+          }
+          this.isRecordingAudio.set(false);
+          if (this.recordingInterval) {
+            clearInterval(this.recordingInterval);
+            this.recordingInterval = null;
+          }
+          this.recordingTime.set(0);
+          this.mediaRecorder = null;
+        }
+        
         this.editing.set(null);
         this.pendingAudio.set(null);
         this.pendingVideo.set(null);
@@ -289,6 +318,87 @@ export class DailyExpensesPage implements OnInit {
       this.pendingAudio.set(file);
     }
     input.value = '';
+  }
+
+  // Grabación de audio con botón presionado (mobile)
+  async startRecordingAudio(event: MouseEvent | TouchEvent) {
+    // Prevenir que se active el evento click si existe
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+
+    if (this.isRecordingAudio()) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.audioStream = stream;
+      this.mediaRecorder = new MediaRecorder(stream);
+      this.audioChunks = [];
+
+      this.mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          this.audioChunks.push(e.data);
+        }
+      };
+
+      this.mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        const audioFile = new File([audioBlob], `audio-${Date.now()}.webm`, { type: 'audio/webm' });
+        
+        if (this.editing()?._id) {
+          this.dailyExpensesApi.uploadAudio(this.editing()!._id!, audioFile).subscribe({
+            next: (updated) => this.editing.set(updated),
+            error: () => this.toastError('No se pudo subir el audio'),
+          });
+        } else {
+          this.pendingAudio.set(audioFile);
+        }
+
+        // Detener todos los tracks del stream
+        if (this.audioStream) {
+          this.audioStream.getTracks().forEach(track => track.stop());
+          this.audioStream = null;
+        }
+        this.mediaRecorder = null;
+      };
+
+      this.mediaRecorder.start();
+      this.isRecordingAudio.set(true);
+      this.recordingTime.set(0);
+
+      // Iniciar contador de tiempo
+      this.recordingInterval = setInterval(() => {
+        this.recordingTime.set(this.recordingTime() + 1);
+      }, 1000);
+
+    } catch (error) {
+      console.error('Error al iniciar la grabación:', error);
+      this.toastError('No se pudo acceder al micrófono. Por favor, permite el acceso al micrófono.');
+    }
+  }
+
+  stopRecordingAudio(event: MouseEvent | TouchEvent) {
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+
+    if (!this.isRecordingAudio() || !this.mediaRecorder) return;
+
+    this.mediaRecorder.stop();
+    this.isRecordingAudio.set(false);
+
+    if (this.recordingInterval) {
+      clearInterval(this.recordingInterval);
+      this.recordingInterval = null;
+    }
+    this.recordingTime.set(0);
+  }
+
+  // Formatear tiempo de grabación
+  formatRecordingTime(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
   onVideoSelected(event: Event) {
