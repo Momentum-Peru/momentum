@@ -87,3 +87,12 @@ body {
 .p-button.p-button-secondary .p-button-icon {
   color: #000000 !important;
 }
+
+/* Fix para iconos que desaparecen en p-dialog con hover (PrimeNG 20) */
+.p-dialog .pi:before,
+.p-dialog .pi:after,
+.p-dialog .p-button-icon,
+.p-dialog button .pi {
+  backface-visibility: visible !important;
+  -webkit-backface-visibility: visible !important;
+}

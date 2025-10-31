@@ -131,8 +131,33 @@ export class DocumentsPage implements OnInit {
    * Abrir formulario para editar documento
    */
   openEditForm(document: Document): void {
-    this.editingDocument.set(document);
-    this.showFormDialog.set(true);
+    if (!document._id) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'El documento no tiene un ID válido',
+      });
+      return;
+    }
+
+    // Cargar el documento completo desde el backend para asegurar que tenga todos los datos
+    this.loading.set(true);
+    this.documentsApi.getById(document._id).subscribe({
+      next: (fullDocument) => {
+        this.editingDocument.set(fullDocument);
+        this.showFormDialog.set(true);
+        this.loading.set(false);
+      },
+      error: (error: any) => {
+        console.error('Error al cargar documento:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo cargar el documento para editar',
+        });
+        this.loading.set(false);
+      },
+    });
   }
 
   /**

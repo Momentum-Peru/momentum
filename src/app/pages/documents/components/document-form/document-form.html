@@ -5,6 +5,18 @@
     <!-- Información Básica -->
     <p-card header="Información Básica" class="shadow-sm">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Serie -->
+        <div class="flex flex-col">
+          <label for="serie" class="text-sm font-medium text-gray-700 mb-2"> Serie </label>
+          <input
+            pInputText
+            id="serie"
+            formControlName="serie"
+            placeholder="Ingrese la serie"
+            class="w-full"
+          />
+        </div>
+
         <!-- Número de Documento -->
         <div class="flex flex-col">
           <label for="numeroDocumento" class="text-sm font-medium text-gray-700 mb-2">
@@ -25,37 +37,17 @@
           </small>
         </div>
 
-        <!-- Serie -->
-        <div class="flex flex-col">
-          <label for="serie" class="text-sm font-medium text-gray-700 mb-2"> Serie </label>
-          <p-inputNumber
-            id="serie"
-            formControlName="serie"
-            [useGrouping]="false"
-            [min]="1"
-            placeholder="Ingrese la serie"
-            class="w-full"
-          >
-          </p-inputNumber>
-        </div>
-
         <!-- Proyecto -->
         <div class="flex flex-col">
-          <label for="proyectoId" class="text-sm font-medium text-gray-700 mb-2">
-            Proyecto <span class="text-red-500">*</span>
-          </label>
+          <label for="proyectoId" class="text-sm font-medium text-gray-700 mb-2"> Proyecto </label>
           <p-select
             id="proyectoId"
             formControlName="proyectoId"
             [options]="projectOptions()"
             placeholder="Seleccione un proyecto"
-            [class]="hasError('proyectoId') ? 'p-invalid' : ''"
             class="w-full"
           >
           </p-select>
-          <small *ngIf="hasError('proyectoId')" class="text-red-500 mt-1">
-            {{ getErrorMessage('proyectoId') }}
-          </small>
         </div>
 
         <!-- Categoría -->
@@ -70,6 +62,26 @@
           >
           </p-select>
         </div>
+
+        <!-- Campo adicional para categoría "Otros" -->
+        @if (showCategoriaOtros()) {
+        <div class="flex flex-col md:col-span-2">
+          <label for="categoriaOtros" class="text-sm font-medium text-gray-700 mb-2">
+            Especifique la categoría <span class="text-red-500">*</span>
+          </label>
+          <input
+            pInputText
+            id="categoriaOtros"
+            formControlName="categoriaOtros"
+            placeholder="Ingrese la categoría"
+            [class]="hasError('categoriaOtros') ? 'p-invalid' : ''"
+            class="w-full"
+          />
+          <small *ngIf="hasError('categoriaOtros')" class="text-red-500 mt-1">
+            {{ getErrorMessage('categoriaOtros') }}
+          </small>
+        </div>
+        }
       </div>
     </p-card>
 
@@ -185,6 +197,7 @@
       <div>
         <h4 class="text-sm font-medium text-gray-700 mb-3">Subir Nuevos Archivos:</h4>
         <p-fileUpload
+          #fileUpload
           mode="basic"
           name="files[]"
           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"

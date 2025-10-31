@@ -32,9 +32,25 @@ export class DocumentsApiService {
 
         if (filters) {
             Object.entries(filters).forEach(([key, value]) => {
-                if (value !== undefined && value !== null && value !== '') {
-                    params = params.set(key, value.toString());
+                // Ignorar valores undefined, null o vacíos
+                if (value === undefined || value === null || value === '') {
+                    return;
                 }
+
+                // Convertir booleanos a string 'true'/'false'
+                if (typeof value === 'boolean') {
+                    params = params.set(key, value.toString());
+                    return;
+                }
+
+                // Para números, convertir a string
+                if (typeof value === 'number') {
+                    params = params.set(key, value.toString());
+                    return;
+                }
+
+                // Para strings y otros valores, convertir a string
+                params = params.set(key, String(value));
             });
         }
 
