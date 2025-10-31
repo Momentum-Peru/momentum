@@ -29,7 +29,7 @@ export interface DocumentFilters {
     proyectoId?: string;
     categoria?: string;
     numeroDocumento?: number;
-    serie?: number;
+    serie?: string;
     fechaEmisionDesde?: string;
     fechaEmisionHasta?: string;
     fechaVencimientoDesde?: string;

@@ -4,9 +4,12 @@ import {
   Output,
   EventEmitter,
   OnInit,
+  OnChanges,
+  SimpleChanges,
   signal,
   inject,
   ChangeDetectionStrategy,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -16,7 +19,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
-import { FileUploadModule } from 'primeng/fileupload';
+import { FileUploadModule, FileUpload } from 'primeng/fileupload';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { ToastModule } from 'primeng/toast';
@@ -47,7 +50,7 @@ import { Project } from '../../../../shared/interfaces/project.interface';
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [MessageService],
 })
-export class DocumentFormComponent implements OnInit {
+export class DocumentFormComponent implements OnInit, OnChanges {
   @Input({ required: true }) document: Document | null = null;
   @Output() documentSaved = new EventEmitter<void>();
   @Output() cancel = new EventEmitter<void>();
@@ -56,6 +59,8 @@ export class DocumentFormComponent implements OnInit {
   private readonly documentsApi = inject(DocumentsApiService);
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly messageService = inject(MessageService);
+
+  @ViewChild('fileUpload') fileUploadComponent!: FileUpload;
 
   documentForm!: FormGroup;
   loading = signal(false);
@@ -79,10 +84,75 @@ export class DocumentFormComponent implements OnInit {
   ngOnInit(): void {
     this.initializeForm();
     this.loadProjects();
+    this.setupCategoryValidation();
 
     if (this.document) {
       this.populateForm();
     }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Cuando cambia el documento (al abrir el diálogo de edición)
+    if (changes['document'] && this.documentForm) {
+      // Esperar a que los proyectos se carguen antes de poblar el formulario
+      if (this.document) {
+        // Si los proyectos ya están cargados, poblar directamente
+        // Si no, esperar a que se carguen (el populateForm se llama desde loadProjects)
+        const projectsLoaded = this.projectOptions().length > 0;
+        if (projectsLoaded) {
+          // Usar setTimeout para asegurar que el cambio de detección se ejecute
+          setTimeout(() => {
+            this.populateForm();
+          }, 0);
+        } else {
+          // Si los proyectos no están cargados, poblar después de cargarlos
+          this.loadingProjects.set(true);
+          this.projectsApi.listActive().subscribe({
+            next: (projects) => {
+              const options = projects.map((project) => ({
+                label: `${project.name} (${project.code})`,
+                value: project._id!,
+              }));
+              this.projectOptions.set(options);
+              this.loadingProjects.set(false);
+              setTimeout(() => {
+                this.populateForm();
+              }, 0);
+            },
+            error: (error: any) => {
+              console.error('Error al cargar proyectos:', error);
+              this.loadingProjects.set(false);
+              // Poblar el formulario de todos modos
+              setTimeout(() => {
+                this.populateForm();
+              }, 0);
+            },
+          });
+        }
+      } else {
+        // Si el documento es null, limpiar el formulario (crear nuevo)
+        this.resetForm();
+      }
+    }
+  }
+
+  /**
+   * Configurar validaciones del campo categoría
+   */
+  private setupCategoryValidation(): void {
+    // Escuchar cambios en el campo categoría para actualizar validaciones
+    this.documentForm.get('categoria')?.valueChanges.subscribe((categoria) => {
+      const categoriaOtrosControl = this.documentForm.get('categoriaOtros');
+      if (categoria === 'Otros') {
+        // Si se selecciona "Otros", hacer el campo requerido
+        categoriaOtrosControl?.setValidators([Validators.required]);
+      } else {
+        // Si se selecciona otra opción, limpiar el campo y quitar validaciones
+        categoriaOtrosControl?.setValue('');
+        categoriaOtrosControl?.clearValidators();
+      }
+      categoriaOtrosControl?.updateValueAndValidity({ emitEvent: false });
+    });
   }
 
   /**
@@ -91,9 +161,10 @@ export class DocumentFormComponent implements OnInit {
   private initializeForm(): void {
     this.documentForm = this.fb.group({
       numeroDocumento: ['', [Validators.required, Validators.min(1)]],
-      serie: ['', [Validators.min(1)]],
-      proyectoId: ['', Validators.required],
+      serie: [''],
+      proyectoId: [''],
       categoria: [''],
+      categoriaOtros: [''], // Campo para escribir cuando se selecciona "Otros"
       fechaEmision: [''],
       fechaVencimiento: [''],
       documentoReferencia: ['', [Validators.min(1)]],
@@ -132,14 +203,23 @@ export class DocumentFormComponent implements OnInit {
    */
   private populateForm(): void {
     if (this.document) {
+      // Verificar si la categoría está en las opciones predefinidas
+      const categoriaExiste = this.categoryOptions.some(
+        (opt) => opt.value === this.document!.categoria
+      );
+      
+      const esOtros = !categoriaExiste;
+      
       this.documentForm.patchValue({
         numeroDocumento: this.document.numeroDocumento,
         serie: this.document.serie,
-        proyectoId:
-          typeof this.document.proyectoId === 'string'
+        proyectoId: this.document.proyectoId
+          ? typeof this.document.proyectoId === 'string'
             ? this.document.proyectoId
-            : this.document.proyectoId._id,
-        categoria: this.document.categoria,
+            : this.document.proyectoId._id
+          : '',
+        categoria: categoriaExiste ? this.document.categoria : 'Otros',
+        categoriaOtros: categoriaExiste ? '' : this.document.categoria || '',
         fechaEmision: this.document.fechaEmision ? new Date(this.document.fechaEmision) : null,
         fechaVencimiento: this.document.fechaVencimiento
           ? new Date(this.document.fechaVencimiento)
@@ -147,6 +227,13 @@ export class DocumentFormComponent implements OnInit {
         documentoReferencia: this.document.documentoReferencia,
         total: this.document.total,
       });
+
+      // Si es "Otros", aplicar validación requerida
+      if (esOtros) {
+        const categoriaOtrosControl = this.documentForm.get('categoriaOtros');
+        categoriaOtrosControl?.setValidators([Validators.required]);
+        categoriaOtrosControl?.updateValueAndValidity({ emitEvent: false });
+      }
 
       this.existingFiles.set(this.document.documentos || []);
     }
@@ -226,17 +313,41 @@ export class DocumentFormComponent implements OnInit {
   private prepareFormData(): Partial<Document> {
     const formValue = this.documentForm.value;
 
-    return {
+    const formData: Partial<Document> = {
       numeroDocumento: formValue.numeroDocumento,
-      serie: formValue.serie || undefined,
-      proyectoId: formValue.proyectoId,
-      categoria: formValue.categoria || undefined,
-      fechaEmision: formValue.fechaEmision || undefined,
-      fechaVencimiento: formValue.fechaVencimiento || undefined,
-      documentoReferencia: formValue.documentoReferencia || undefined,
       total: formValue.total,
       documentos: this.existingFiles(),
     };
+
+    // Solo incluir campos opcionales si tienen valor
+    if (formValue.serie && formValue.serie.trim()) {
+      formData.serie = formValue.serie.trim();
+    }
+
+    if (formValue.proyectoId && formValue.proyectoId.trim()) {
+      formData.proyectoId = formValue.proyectoId.trim();
+    }
+
+    // Manejar categoría: si es "Otros", usar el valor del campo categoriaOtros
+    if (formValue.categoria === 'Otros' && formValue.categoriaOtros && formValue.categoriaOtros.trim()) {
+      formData.categoria = formValue.categoriaOtros.trim();
+    } else if (formValue.categoria && formValue.categoria !== 'Otros' && formValue.categoria.trim()) {
+      formData.categoria = formValue.categoria.trim();
+    }
+
+    if (formValue.fechaEmision) {
+      formData.fechaEmision = formValue.fechaEmision;
+    }
+
+    if (formValue.fechaVencimiento) {
+      formData.fechaVencimiento = formValue.fechaVencimiento;
+    }
+
+    if (formValue.documentoReferencia) {
+      formData.documentoReferencia = formValue.documentoReferencia;
+    }
+
+    return formData;
   }
 
   /**
@@ -299,6 +410,12 @@ export class DocumentFormComponent implements OnInit {
    */
   private finishSave(): void {
     this.loading.set(false);
+    
+    // Si es creación, limpiar el formulario
+    if (!this.document) {
+      this.resetForm();
+    }
+    
     this.documentSaved.emit();
     this.messageService.add({
       severity: 'success',
@@ -315,10 +432,25 @@ export class DocumentFormComponent implements OnInit {
   private handleError(message: string, error: any): void {
     console.error(message, error);
     this.loading.set(false);
+
+    // Intentar extraer el mensaje de error del backend
+    let errorMessage = message; // Mensaje por defecto
+
+    if (error?.error?.message) {
+      // Si el backend envió un mensaje específico, usarlo
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      // Si hay un mensaje de error de HTTP, usarlo
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      // Si el error es directamente un string, usarlo
+      errorMessage = error;
+    }
+
     this.messageService.add({
       severity: 'error',
       summary: 'Error',
-      detail: message,
+      detail: errorMessage,
     });
   }
 
@@ -335,7 +467,37 @@ export class DocumentFormComponent implements OnInit {
    * Cancelar formulario
    */
   onCancel(): void {
+    this.resetForm();
     this.cancel.emit();
+  }
+
+  /**
+   * Limpiar/resetear el formulario
+   */
+  private resetForm(): void {
+    // Resetear el formulario
+    this.documentForm.reset();
+    
+    // Limpiar archivos subidos y existentes
+    this.uploadedFiles.set([]);
+    this.existingFiles.set([]);
+    
+    // Limpiar el componente de carga de archivos
+    if (this.fileUploadComponent) {
+      this.fileUploadComponent.clear();
+    }
+    
+    // Restablecer validaciones del campo categoriaOtros
+    const categoriaOtrosControl = this.documentForm.get('categoriaOtros');
+    categoriaOtrosControl?.clearValidators();
+    categoriaOtrosControl?.updateValueAndValidity({ emitEvent: false });
+  }
+
+  /**
+   * Verificar si se debe mostrar el campo "Otros" para categoría
+   */
+  showCategoriaOtros(): boolean {
+    return this.documentForm.get('categoria')?.value === 'Otros';
   }
 
   /**
