@@ -1,0 +1,152 @@
+<div class="min-h-screen bg-black flex items-center justify-center p-4 lead-form-container">
+  <!-- Toast para mensajes -->
+  <p-toast></p-toast>
+  
+  <!-- Contenedor principal -->
+  <div class="w-full max-w-md">
+    <!-- Logo y header -->
+    <div class="flex justify-center mb-8 w-full">
+      <img src="/images/logo_b.png" alt="Logo Momentum" class="max-w-[150px]" />
+    </div>
+
+    <!-- Tarjeta del formulario -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 lead-form-card w-full">
+      <!-- Título del formulario -->
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-black mb-2">Solicitud de Contacto</h2>
+        <p class="text-sm text-gray-600">Completa el formulario y nos pondremos en contacto contigo</p>
+      </div>
+
+      <!-- Formulario -->
+      <form [formGroup]="leadForm" (ngSubmit)="onSubmit()" class="space-y-4">
+        <!-- Campo Nombre -->
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <i class="pi pi-user text-gray-500"></i>
+            Nombre completo
+          </label>
+          <div class="relative">
+            <input
+              pInputText
+              formControlName="name"
+              placeholder="Ingresa tu nombre completo"
+              class="w-full"
+              [class.p-invalid]="isFieldInvalid('name')"
+            />
+          </div>
+          @if (isFieldInvalid('name')) {
+          <small class="text-red-500 text-xs">
+            {{ getFieldError('name') }}
+          </small>
+          }
+        </div>
+
+        <!-- Campo Correo -->
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <i class="pi pi-envelope text-gray-500"></i>
+            Correo electrónico
+          </label>
+          <div class="relative">
+            <input
+              pInputText
+              formControlName="email"
+              type="email"
+              placeholder="tu.correo@ejemplo.com"
+              class="w-full"
+              [class.p-invalid]="isFieldInvalid('email')"
+            />
+          </div>
+          @if (isFieldInvalid('email')) {
+          <small class="text-red-500 text-xs">
+            {{ getFieldError('email') }}
+          </small>
+          }
+        </div>
+
+        <!-- Campo Teléfono -->
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <i class="pi pi-phone text-gray-500"></i>
+            Teléfono
+          </label>
+          <div class="relative">
+            <input
+              pInputText
+              formControlName="phone"
+              type="tel"
+              placeholder="+51 999 999 999"
+              class="w-full"
+              [class.p-invalid]="isFieldInvalid('phone')"
+            />
+          </div>
+          @if (isFieldInvalid('phone')) {
+          <small class="text-red-500 text-xs">
+            {{ getFieldError('phone') }}
+          </small>
+          }
+        </div>
+
+        <!-- Campo Empresa -->
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <i class="pi pi-building text-gray-500"></i>
+            Empresa
+          </label>
+          <div class="relative">
+            <input
+              pInputText
+              formControlName="company"
+              placeholder="Nombre de tu empresa"
+              class="w-full"
+              [class.p-invalid]="isFieldInvalid('company')"
+            />
+          </div>
+          @if (isFieldInvalid('company')) {
+          <small class="text-red-500 text-xs">
+            {{ getFieldError('company') }}
+          </small>
+          }
+        </div>
+
+        <!-- Campo DNI/RUC -->
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <i class="pi pi-id-card text-gray-500"></i>
+            DNI o RUC
+          </label>
+          <div class="relative">
+            <input
+              pInputText
+              formControlName="taxId"
+              placeholder="20123456789"
+              class="w-full"
+              [class.p-invalid]="isFieldInvalid('taxId')"
+            />
+          </div>
+          @if (isFieldInvalid('taxId')) {
+          <small class="text-red-500 text-xs">
+            {{ getFieldError('taxId') }}
+          </small>
+          }
+        </div>
+
+        <!-- Botón de envío -->
+        <p-button
+          label="Enviar Solicitud"
+          type="submit"
+          [loading]="isLoading()"
+          styleClass="w-full mt-6"
+          [disabled]="leadForm.invalid"
+          icon="pi pi-send"
+        ></p-button>
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-8">
+      <p class="text-xs text-gray-500">Copyright © Momentum 2025 | Política de Privacidad</p>
+    </div>
+  </div>
+</div>
+

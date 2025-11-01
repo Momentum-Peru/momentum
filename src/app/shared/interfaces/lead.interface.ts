@@ -53,7 +53,7 @@ export interface Lead {
     source: LeadSource;
     estimatedValue?: number;
     notes?: string;
-    assignedTo: string;
+    assignedTo?: string;
     documents?: string[];
     convertedToClientId?: string;
     convertedAt?: string;
@@ -70,7 +70,7 @@ export interface CreateLeadRequest {
     source?: LeadSource;
     estimatedValue?: number;
     notes?: string;
-    assignedTo: string;
+    assignedTo?: string;
 }
 
 export interface UpdateLeadRequest {

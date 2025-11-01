@@ -19,6 +19,10 @@ export const routes: Routes = [
       import('./pages/unauthorized/unauthorized').then((m) => m.UnauthorizedPage),
   },
   {
+    path: 'solicitud-contacto',
+    loadComponent: () => import('./pages/lead-form/lead-form').then((m) => m.LeadFormComponent),
+  },
+  {
     path: '',
     loadComponent: () => import('./layouts/main/main').then((m) => m.Main),
     canActivate: [requireAuthGuard],
