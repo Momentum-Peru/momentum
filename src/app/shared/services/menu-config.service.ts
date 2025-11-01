@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { MenuItem } from 'primeng/api';
 
 export interface MenuRoute {
   path: string;
@@ -21,17 +22,20 @@ export class MenuConfigService {
   private readonly routesConfig: RouteConfig[] = [
     { path: '/dashboard', label: 'Dashboard', icon: 'pi pi-chart-line' },
     { path: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
-    { path: '/providers', label: 'Proveedores', icon: 'pi pi-building' },
+    { path: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
+    { path: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
     { path: '/requirements', label: 'Requerimientos', icon: 'pi pi-inbox' },
     { path: '/tdrs', label: 'TDRs', icon: 'pi pi-file' },
     { path: '/quotes', label: 'Cotizaciones', icon: 'pi pi-dollar' },
-    { path: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
-    { path: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
+    { path: '/providers', label: 'Proveedores', icon: 'pi pi-building' },
     { path: '/documents', label: 'Documentos', icon: 'pi pi-file' },
     { path: '/tasks', label: 'Tareas', icon: 'pi pi-check-square' },
     { path: '/daily-reports', label: 'Reportes Diarios', icon: 'pi pi-calendar' },
     { path: '/users', label: 'Usuarios', icon: 'pi pi-users' },
     { path: '/menu-permissions', label: 'Permisos', icon: 'pi pi-shield' },
+    { path: '/leads', label: 'Leads', icon: 'pi pi-user-plus' },
+    { path: '/contacts-crm', label: 'Contactos CRM', icon: 'pi pi-address-book' },
+    { path: '/follow-ups', label: 'Seguimientos', icon: 'pi pi-calendar-plus' },
   ];
 
   /**
@@ -50,6 +54,119 @@ export class MenuConfigService {
       label: route.label,
       icon: route.icon,
     }));
+  }
+
+  /**
+   * Obtiene la estructura del menú con submenús organizados
+   * Retorna items de PrimeNG MenuItem para usar con PanelMenu
+   */
+  getMenuItemsWithSubmenus(): MenuItem[] {
+    return [
+      {
+        label: 'Dashboard',
+        icon: 'pi pi-chart-line',
+        routerLink: '/dashboard',
+      },
+      {
+        label: 'Administración',
+        icon: 'pi pi-cog',
+        items: [
+          {
+            label: 'Clientes',
+            icon: 'pi pi-briefcase',
+            routerLink: '/clients',
+          },
+          {
+            label: 'Proyectos',
+            icon: 'pi pi-folder',
+            routerLink: '/projects',
+          },
+          {
+            label: 'Órdenes',
+            icon: 'pi pi-shopping-cart',
+            routerLink: '/orders',
+          },
+          {
+            label: 'Requerimientos',
+            icon: 'pi pi-inbox',
+            routerLink: '/requirements',
+          },
+          {
+            label: 'TDRs',
+            icon: 'pi pi-file',
+            routerLink: '/tdrs',
+          },
+          {
+            label: 'Cotizaciones',
+            icon: 'pi pi-dollar',
+            routerLink: '/quotes',
+          },
+          {
+            label: 'Proveedores',
+            icon: 'pi pi-building',
+            routerLink: '/providers',
+          },
+          {
+            label: 'Documentos',
+            icon: 'pi pi-file',
+            routerLink: '/documents',
+          },
+        ],
+      },
+      {
+        label: 'Talento Humano',
+        icon: 'pi pi-users',
+        items: [
+          {
+            label: 'Tareas',
+            icon: 'pi pi-check-square',
+            routerLink: '/tasks',
+          },
+          {
+            label: 'Reportes Diarios',
+            icon: 'pi pi-calendar',
+            routerLink: '/daily-reports',
+          },
+        ],
+      },
+      {
+        label: 'Configuración',
+        icon: 'pi pi-sliders-h',
+        items: [
+          {
+            label: 'Usuarios',
+            icon: 'pi pi-users',
+            routerLink: '/users',
+          },
+          {
+            label: 'Permisos',
+            icon: 'pi pi-shield',
+            routerLink: '/menu-permissions',
+          },
+        ],
+      },
+      {
+        label: 'CRM',
+        icon: 'pi pi-sitemap',
+        items: [
+          {
+            label: 'Leads',
+            icon: 'pi pi-user-plus',
+            routerLink: '/leads',
+          },
+          {
+            label: 'Contactos CRM',
+            icon: 'pi pi-address-book',
+            routerLink: '/contacts-crm',
+          },
+          {
+            label: 'Seguimientos',
+            icon: 'pi pi-calendar-plus',
+            routerLink: '/follow-ups',
+          },
+        ],
+      },
+    ];
   }
 
   /**

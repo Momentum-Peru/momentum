@@ -45,26 +45,37 @@
   </div>
 
   <!-- Items del menú -->
-  <div class="flex-1 overflow-y-auto flex flex-col space-y-2 p-4 pb-24">
-    @if (hasAnyPermission()) { @for (item of menuItems(); track item.path) {
-    <a
-      [routerLink]="item.path"
-      [class]="
-        'flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ' +
-        (isActiveRoute(item.path)
-          ? 'bg-white bg-opacity-20 text-white border-l-4 border-white'
-          : 'text-white hover:bg-white hover:bg-opacity-10')
-      "
-      (click)="closeMenu()"
-    >
+  <div class="flex-1 overflow-y-auto flex flex-col space-y-1 p-2 pb-24">
+    @if (isLoadingPermissions()) {
+    <!-- Estado de carga -->
+    <div class="text-center py-8">
+      <i class="pi pi-spin pi-spinner text-4xl text-gray-400 mb-3"></i>
+      <p class="text-gray-300 text-sm">Cargando permisos...</p>
+    </div>
+    } @else if (hasAnyPermission()) {
+    <!-- Items directos (sin submenús) -->
+    @for (item of directMenuItems(); track getRouterLink(item) || item.label) {
+    <a [routerLink]="getRouterLink(item)" [class]="getMenuItemClasses(item)" (click)="closeMenu()">
       <i
         [class]="item.icon + ' text-lg group-hover:scale-110 transition-transform duration-200'"
       ></i>
       <span class="font-medium">{{ item.label }}</span>
-      @if (isActiveRoute(item.path)) {
+      @if (getRouterLink(item) && isActiveRoute(getRouterLink(item))) {
       <i class="pi pi-check ml-auto text-sm"></i>
       }
     </a>
+    }
+
+    <!-- PanelMenu de PrimeNG con submenús -->
+    @if (submenuItems().length > 0) {
+    <div class="w-full">
+      <p-panelMenu
+        [model]="submenuItems()"
+        [styleClass]="'custom-panelmenu'"
+        [multiple]="false"
+        (onPanelToggle)="onPanelToggle($event)"
+      ></p-panelMenu>
+    </div>
     } } @else {
     <div class="text-center py-8">
       <i class="pi pi-lock text-4xl text-gray-400 mb-3"></i>
@@ -82,18 +93,6 @@
       <div class="text-center mb-3">
         <div class="text-sm text-gray-300 mb-1">Conectado como:</div>
         <div class="text-white font-semibold text-lg">{{ userName() }}</div>
-        <!-- Debug info - remover en producción -->
-        <!-- <div class="text-xs text-gray-400 mt-1">
-          Debug:
-          {{
-            authService.getCurrentUser()?.name ||
-              authService.getCurrentUser()?.email ||
-              'Sin usuario'
-          }}
-        </div> -->
-        <!-- <button class="text-xs text-blue-300 underline mt-1" (click)="refreshUserInfo()">
-          Refrescar
-        </button> -->
       </div>
 
       <!-- Botón de cerrar sesión -->
@@ -106,6 +105,6 @@
       />
     </div>
 
-    <div class="text-xs text-gray-400 text-center">© Maya Agent 2025</div>
+    <div class="text-xs text-gray-400 text-center">© Momentum 2025</div>
   </div>
 </nav>

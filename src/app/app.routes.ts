@@ -105,6 +105,25 @@ export const routes: Routes = [
         data: { menuPermission: '/providers' },
       },
       {
+        path: 'leads',
+        loadComponent: () => import('./pages/leads/leads').then((m) => m.LeadsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/leads' },
+      },
+      {
+        path: 'contacts-crm',
+        loadComponent: () =>
+          import('./pages/contacts-crm/contacts-crm').then((m) => m.ContactsCrmPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/contacts-crm' },
+      },
+      {
+        path: 'follow-ups',
+        loadComponent: () => import('./pages/follow-ups/follow-ups').then((m) => m.FollowUpsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/follow-ups' },
+      },
+      {
         path: '**',
         redirectTo: 'dashboard',
         pathMatch: 'full',

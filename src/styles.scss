@@ -96,3 +96,47 @@ body {
   backface-visibility: visible !important;
   -webkit-backface-visibility: visible !important;
 }
+
+/* Estilos globales para PanelMenu dentro de menú con fondo negro */
+nav.bg-black .p-panelmenu,
+.bg-black .p-panelmenu,
+nav[class*='bg-black'] .p-panelmenu {
+  background: transparent !important;
+  color: #ffffff !important;
+}
+
+nav.bg-black .p-panelmenu .p-panelmenu-header-link,
+.bg-black .p-panelmenu .p-panelmenu-header-link,
+nav.bg-black .p-panelmenu .p-menuitem-link,
+.bg-black .p-panelmenu .p-menuitem-link,
+nav.bg-black .p-panelmenu .p-panelmenu-header-text,
+.bg-black .p-panelmenu .p-panelmenu-header-text,
+nav.bg-black .p-panelmenu .p-menuitem-text,
+.bg-black .p-panelmenu .p-menuitem-text,
+nav.bg-black .p-panelmenu .p-panelmenu-header-icon,
+.bg-black .p-panelmenu .p-panelmenu-header-icon,
+nav.bg-black .p-panelmenu .p-menuitem-icon,
+.bg-black .p-panelmenu .p-menuitem-icon,
+nav.bg-black .p-panelmenu i,
+.bg-black .p-panelmenu i,
+nav.bg-black .p-panelmenu span,
+.bg-black .p-panelmenu span,
+nav.bg-black .p-panelmenu a,
+.bg-black .p-panelmenu a {
+  color: #ffffff !important;
+}
+
+nav.bg-black .p-panelmenu .p-panelmenu-header-link,
+.bg-black .p-panelmenu .p-panelmenu-header-link,
+nav.bg-black .p-panelmenu .p-menuitem-link,
+.bg-black .p-panelmenu .p-menuitem-link {
+  background-color: transparent !important;
+}
+
+nav.bg-black .p-panelmenu .p-panelmenu-header-link:hover,
+.bg-black .p-panelmenu .p-panelmenu-header-link:hover,
+nav.bg-black .p-panelmenu .p-menuitem-link:hover,
+.bg-black .p-panelmenu .p-menuitem-link:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}

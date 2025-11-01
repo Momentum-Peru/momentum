@@ -1,0 +1,420 @@
+<div class="p-4 space-y-4">
+  <p-toast></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Gestión de Seguimientos</h1>
+    <button
+      pButton
+      type="button"
+      label="Nuevo Seguimiento"
+      icon="pi pi-plus"
+      (click)="newItem()"
+    ></button>
+  </div>
+
+  <!-- Filtros -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Estado</label
+          >
+          <p-select
+            [options]="statusOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="statusFilter()"
+            (ngModelChange)="setStatusFilter($event)"
+            placeholder="Filtrar por estado"
+            [showClear]="true"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Tipo</label
+          >
+          <p-select
+            [options]="typeOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="typeFilter()"
+            (ngModelChange)="setTypeFilter($event)"
+            placeholder="Filtrar por tipo"
+            [showClear]="true"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div class="flex items-end">
+          <button
+            pButton
+            type="button"
+            label="Limpiar"
+            icon="pi pi-filter-slash"
+            class="p-button-outlined w-full"
+            (click)="clearFilters()"
+          ></button>
+        </div>
+      </div>
+    </ng-template>
+  </p-card>
+
+  <!-- Vista Desktop: Tabla -->
+  <div class="hidden md:block">
+    <p-table [value]="items()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Título</th>
+          <th>Tipo</th>
+          <th>Estado</th>
+          <th>Fecha Programada</th>
+          <th>Asociado a</th>
+          <th>Usuario</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <div class="font-semibold text-gray-900 dark:text-gray-100 break-words">
+              {{ row.title }}
+            </div>
+          </td>
+          <td>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ getTypeLabel(row.type) }}
+            </span>
+          </td>
+          <td>
+            <p-tag
+              [value]="getStatusLabel(row.status)"
+              [severity]="getStatusSeverity(row.status)"
+            ></p-tag>
+          </td>
+          <td>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ row.scheduledDate | date : 'dd/MM/yyyy HH:mm' }}
+            </span>
+          </td>
+          <td>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              @if (row.leadId) {
+              <span>Lead: {{ getLeadName(row.leadId) }}</span>
+              } @else if (row.contactId) {
+              <span>Contacto: {{ getContactName(row.contactId) }}</span>
+              } @else if (row.clientId) {
+              <span>Cliente: {{ getClientName(row.clientId) }}</span>
+              } @else {
+              <span>-</span>
+              }
+            </div>
+          </td>
+          <td>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ getUserName(row.userId) }}
+            </span>
+          </td>
+          <td class="text-right">
+            <div class="flex items-center justify-end gap-1">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm"
+                pTooltip="Ver detalles"
+                (click)="viewDetails(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text p-button-sm"
+                pTooltip="Editar"
+                (click)="editItem(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-sm p-button-danger"
+                pTooltip="Eliminar"
+                (click)="remove(row)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil -->
+  <div class="md:hidden space-y-3">
+    @for (row of items(); track row._id || $index) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden"
+    >
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between"
+        (click)="toggleRow(row._id)"
+      >
+        <div class="flex-1 text-left">
+          <div class="font-semibold text-gray-900 dark:text-gray-100">{{ row.title }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            {{ getTypeLabel(row.type) }} - {{ row.scheduledDate | date : 'dd/MM/yyyy' }}
+          </div>
+          <p-tag
+            [value]="getStatusLabel(row.status)"
+            [severity]="statusColors[row.status] || 'info'"
+            styleClass="text-xs mt-1"
+          ></p-tag>
+        </div>
+        <i
+          class="pi transition-transform duration-200"
+          [class.pi-chevron-down]="!isRowExpanded(row._id)"
+          [class.pi-chevron-up]="isRowExpanded(row._id)"
+        ></i>
+      </button>
+      @if (isRowExpanded(row._id)) {
+      <div class="px-4 pb-4 space-y-2 border-t">
+        <div><strong>Descripción:</strong> {{ row.description }}</div>
+        <div><strong>Usuario:</strong> {{ getUserName(row.userId) }}</div>
+        <div class="flex gap-2">
+          <button
+            pButton
+            icon="pi pi-eye"
+            label="Ver"
+            class="p-button-text p-button-sm"
+            (click)="viewDetails(row)"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-pencil"
+            label="Editar"
+            class="p-button-text p-button-sm"
+            (click)="editItem(row)"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-trash"
+            label="Eliminar"
+            class="p-button-text p-button-sm p-button-danger"
+            (click)="remove(row)"
+          ></button>
+        </div>
+      </div>
+      }
+    </div>
+    }
+  </div>
+
+  <!-- Modal de creación/edición -->
+  <p-dialog
+    [(visible)]="showDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '50rem' }"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <ng-template pTemplate="header">
+      {{ editing()?._id ? 'Editar Seguimiento' : 'Nuevo Seguimiento' }}
+    </ng-template>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Título *</label
+        >
+        <input
+          pInputText
+          [ngModel]="editing()?.title"
+          (ngModelChange)="onEditChange('title', $event)"
+          class="w-full"
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Descripción *</label
+        >
+        <textarea
+          pTextarea
+          rows="4"
+          [ngModel]="editing()?.description"
+          (ngModelChange)="onEditChange('description', $event)"
+          class="w-full"
+        ></textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Tipo *</label
+          >
+          <p-select
+            [options]="typeOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="editing()?.type"
+            (ngModelChange)="onEditChange('type', $event)"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Estado</label
+          >
+          <p-select
+            [options]="statusOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="editing()?.status"
+            (ngModelChange)="onEditChange('status', $event)"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Fecha Programada *</label
+        >
+        <p-datepicker
+          [ngModel]="getScheduledDate()"
+          (ngModelChange)="onScheduledDateChange($event)"
+          [showTime]="true"
+          [hourFormat]="'24'"
+          [appendTo]="'body'"
+          class="w-full"
+        ></p-datepicker>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Usuario *</label
+        >
+        <p-select
+          [options]="users()"
+          optionLabel="name"
+          optionValue="_id"
+          [ngModel]="editing()?.userId"
+          (ngModelChange)="onEditChange('userId', $event)"
+          [appendTo]="'body'"
+          class="w-full"
+        ></p-select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Asociar a (seleccionar uno)</label
+        >
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Lead</label>
+            <p-select
+              [options]="leads()"
+              optionLabel="name"
+              optionValue="_id"
+              [ngModel]="editing()?.leadId"
+              (ngModelChange)="onEditChange('leadId', $event)"
+              placeholder="Seleccionar lead"
+              [appendTo]="'body'"
+              class="w-full"
+            ></p-select>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Contacto</label>
+            <p-select
+              [options]="contacts()"
+              optionLabel="name"
+              optionValue="_id"
+              [ngModel]="editing()?.contactId"
+              (ngModelChange)="onEditChange('contactId', $event)"
+              placeholder="Seleccionar contacto"
+              [appendTo]="'body'"
+              class="w-full"
+            ></p-select>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Cliente</label>
+            <p-select
+              [options]="clients()"
+              optionLabel="name"
+              optionValue="_id"
+              [ngModel]="editing()?.clientId"
+              (ngModelChange)="onEditChange('clientId', $event)"
+              placeholder="Seleccionar cliente"
+              [appendTo]="'body'"
+              class="w-full"
+            ></p-select>
+          </div>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Resultado</label
+        >
+        <textarea
+          pTextarea
+          rows="3"
+          [ngModel]="editing()?.outcome"
+          (ngModelChange)="onEditChange('outcome', $event)"
+          placeholder="Resultado del seguimiento..."
+          class="w-full"
+        ></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Próximo Seguimiento</label
+        >
+        <p-datepicker
+          [ngModel]="getNextFollowUpDate()"
+          (ngModelChange)="onNextFollowUpDateChange($event)"
+          [showTime]="true"
+          [hourFormat]="'24'"
+          [appendTo]="'body'"
+          class="w-full"
+        ></p-datepicker>
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
+      <button pButton label="Guardar" (click)="save()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de detalles -->
+  <p-dialog
+    [(visible)]="showDetailsDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '40rem' }"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <ng-template pTemplate="header"> Detalles del Seguimiento </ng-template>
+    @if (viewingFollowUp()) {
+    <div class="space-y-4">
+      <div><strong>Título:</strong> {{ viewingFollowUp()?.title }}</div>
+      <div><strong>Descripción:</strong> {{ viewingFollowUp()?.description }}</div>
+      <div><strong>Tipo:</strong> {{ getTypeLabel(viewingFollowUp()?.type || 'CALL') }}</div>
+      <div>
+        <strong>Estado:</strong> {{ getStatusLabel(viewingFollowUp()?.status || 'SCHEDULED') }}
+      </div>
+      <div>
+        <strong>Fecha Programada:</strong>
+        {{ viewingFollowUp()?.scheduledDate | date : 'dd/MM/yyyy HH:mm' }}
+      </div>
+      <div><strong>Usuario:</strong> {{ getUserName(viewingFollowUp()?.userId || '') }}</div>
+      @if (viewingFollowUp()?.outcome) {
+      <div><strong>Resultado:</strong> {{ viewingFollowUp()?.outcome }}</div>
+      } @if (viewingFollowUp()?.nextFollowUpDate) {
+      <div>
+        <strong>Próximo Seguimiento:</strong>
+        {{ viewingFollowUp()?.nextFollowUpDate | date : 'dd/MM/yyyy HH:mm' }}
+      </div>
+      }
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+    </ng-template>
+  </p-dialog>
+</div>

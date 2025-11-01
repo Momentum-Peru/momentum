@@ -1,0 +1,1072 @@
+<div class="p-4 space-y-4">
+  <p-toast></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Header con estadísticas -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="flex flex-col md:flex-row md:items-center gap-4">
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Gestión de Leads</h1>
+      @if (stats()) {
+      <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <span class="flex items-center gap-1">
+          <i class="pi pi-users text-blue-500"></i>
+          {{ stats()?.total }} total
+        </span>
+        <span class="flex items-center gap-1">
+          <i class="pi pi-dollar text-green-500"></i>
+          ${{ stats()?.totalValue | number : '1.0-0' }}
+        </span>
+      </div>
+      }
+    </div>
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+      <button
+        pButton
+        type="button"
+        label="Estadísticas"
+        icon="pi pi-chart-bar"
+        class="p-button-outlined"
+        (click)="openStats()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Nuevo Lead"
+        icon="pi pi-plus"
+        (click)="newItem()"
+      ></button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Buscar</label
+          >
+          <input
+            pInputText
+            placeholder="Nombre, email, empresa..."
+            [ngModel]="query()"
+            (ngModelChange)="setQuery($event)"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Estado</label
+          >
+          <p-select
+            [options]="statusOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="statusFilter()"
+            (ngModelChange)="setStatusFilter($event)"
+            placeholder="Filtrar por estado"
+            [showClear]="true"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Origen</label
+          >
+          <p-select
+            [options]="sourceOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="sourceFilter()"
+            (ngModelChange)="setSourceFilter($event)"
+            placeholder="Filtrar por origen"
+            [showClear]="true"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div class="flex items-end">
+          <button
+            pButton
+            type="button"
+            label="Limpiar"
+            icon="pi pi-filter-slash"
+            class="p-button-outlined w-full"
+            (click)="clearFilters()"
+          ></button>
+        </div>
+      </div>
+    </ng-template>
+  </p-card>
+
+  <!-- Vista Desktop: Tabla normal -->
+  <div class="hidden md:block">
+    <p-table [value]="items()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Lead</th>
+          <th>Contacto</th>
+          <th>Estado</th>
+          <th>Origen</th>
+          <th>Valor Estimado</th>
+          <th>Asignado a</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <div class="space-y-1">
+              <div class="font-semibold text-gray-900 dark:text-gray-100 break-words">
+                {{ row.name }}
+              </div>
+              @if (row.company?.name) {
+              <div class="text-sm text-gray-500 dark:text-gray-400 break-words">
+                {{ row.company?.name }}
+              </div>
+              }
+            </div>
+          </td>
+          <td>
+            <div class="text-sm space-y-1">
+              <div class="break-words text-gray-900 dark:text-gray-100">
+                {{ row.contact.name }}
+              </div>
+              <div class="text-gray-500 dark:text-gray-400 break-words">
+                {{ row.contact.email }}
+              </div>
+              @if (row.contact.phone) {
+              <div class="text-gray-400 dark:text-gray-500 text-xs break-words">
+                {{ row.contact.phone }}
+              </div>
+              }
+            </div>
+          </td>
+          <td>
+            <p-tag
+              [value]="getStatusLabel(row.status)"
+              [severity]="getStatusSeverity(row.status)"
+            ></p-tag>
+          </td>
+          <td>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ getSourceLabel(row.source) }}
+            </span>
+          </td>
+          <td>
+            @if (row.estimatedValue) {
+            <span class="font-medium text-gray-900 dark:text-gray-100">
+              ${{ row.estimatedValue | number : '1.0-0' }}
+            </span>
+            } @else {
+            <span class="text-gray-400 dark:text-gray-500 text-sm">-</span>
+            }
+          </td>
+          <td>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ getUserName(row.assignedTo) }}
+            </span>
+          </td>
+          <td class="text-right">
+            <div class="flex items-center justify-end gap-1">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm"
+                pTooltip="Ver detalles"
+                (click)="viewDetails(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text p-button-sm"
+                pTooltip="Editar"
+                (click)="editItem(row)"
+              ></button>
+              @if (row.status !== 'CONVERTED') {
+              <button
+                pButton
+                icon="pi pi-check-circle"
+                class="p-button-text p-button-sm p-button-success"
+                pTooltip="Convertir a Cliente"
+                (click)="openConvertDialog(row)"
+              ></button>
+              }
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-sm p-button-danger"
+                pTooltip="Eliminar"
+                (click)="remove(row)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil: Accordion desplegable -->
+  <div class="md:hidden space-y-3">
+    @for (row of items(); track row._id || $index) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+    >
+      <!-- Header del accordion -->
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        (click)="toggleRow(row._id)"
+      >
+        <div class="flex-1 text-left min-w-0 pr-4">
+          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+            {{ row.name }}
+          </div>
+          @if (row.contact.email) {
+          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+            {{ row.contact.email }}
+          </div>
+          }
+          <div class="flex items-center gap-2 mt-1">
+            <p-tag
+              [value]="getStatusLabel(row.status)"
+              [severity]="statusColors[row.status] || 'info'"
+              styleClass="text-xs"
+            ></p-tag>
+            @if (row.estimatedValue) {
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              ${{ row.estimatedValue | number : '1.0-0' }}
+            </span>
+            }
+          </div>
+        </div>
+        <div class="flex-shrink-0">
+          <i
+            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+            [class.pi-chevron-down]="!isRowExpanded(row._id)"
+            [class.pi-chevron-up]="isRowExpanded(row._id)"
+          ></i>
+        </div>
+      </button>
+
+      <!-- Contenido del accordion -->
+      @if (isRowExpanded(row._id)) {
+      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+        <div class="px-4 py-4 space-y-4">
+          <!-- Contacto -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Contacto
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+              {{ row.contact.name }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+              {{ row.contact.email }}
+            </div>
+            @if (row.contact.phone) {
+            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+              {{ row.contact.phone }}
+            </div>
+            }
+          </div>
+
+          <!-- Empresa -->
+          @if (row.company?.name) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Empresa
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+              {{ row.company?.name }}
+            </div>
+          </div>
+          }
+
+          <!-- Estado y Origen -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Estado
+              </div>
+              <p-tag
+                [value]="getStatusLabel(row.status)"
+                [severity]="statusColors[row.status] || 'info'"
+                styleClass="text-xs"
+              ></p-tag>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Origen
+              </div>
+              <div class="text-sm text-gray-900 dark:text-gray-100">
+                {{ getSourceLabel(row.source) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Asignado a -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Asignado a
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">
+              {{ getUserName(row.assignedTo) }}
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+              Acciones
+            </div>
+            <div class="flex flex-col gap-2">
+              <button
+                pButton
+                icon="pi pi-eye"
+                label="Ver detalles"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="viewDetails(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                label="Editar"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="editItem(row)"
+              ></button>
+              @if (row.status !== 'CONVERTED') {
+              <button
+                pButton
+                icon="pi pi-check-circle"
+                label="Convertir a Cliente"
+                class="p-button-text p-button-sm p-button-success w-full justify-start"
+                (click)="openConvertDialog(row)"
+              ></button>
+              }
+              <button
+                pButton
+                icon="pi pi-trash"
+                label="Eliminar"
+                class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                (click)="remove(row)"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    } @if (items().length === 0) {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <i class="pi pi-inbox text-4xl mb-2"></i>
+      <p>No hay leads disponibles</p>
+    </div>
+    }
+  </div>
+
+  <!-- Modal de creación/edición -->
+  <p-dialog
+    [(visible)]="showDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '50rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      {{ editing()?._id ? 'Editar Lead' : 'Nuevo Lead' }}
+    </ng-template>
+    <div class="space-y-4 max-h-[70vh] overflow-y-auto">
+      <!-- Información Básica -->
+      <div>
+        <h4 class="text-lg font-semibold mb-3">Información Básica</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nombre del Lead *
+            </label>
+            <input
+              pInputText
+              placeholder="Nombre del lead"
+              [ngModel]="editing()?.name"
+              (ngModelChange)="onEditChange('name', $event)"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Asignado a *
+            </label>
+            <p-select
+              [options]="users()"
+              optionLabel="name"
+              optionValue="_id"
+              [ngModel]="editing()?.assignedTo"
+              (ngModelChange)="onEditChange('assignedTo', $event)"
+              placeholder="Seleccionar usuario"
+              [appendTo]="'body'"
+              class="w-full"
+            ></p-select>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Estado
+            </label>
+            <p-select
+              [options]="statusOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="editing()?.status"
+              (ngModelChange)="onEditChange('status', $event)"
+              [appendTo]="'body'"
+              class="w-full"
+            ></p-select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Origen
+            </label>
+            <p-select
+              [options]="sourceOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="editing()?.source"
+              (ngModelChange)="onEditChange('source', $event)"
+              [appendTo]="'body'"
+              class="w-full"
+            ></p-select>
+          </div>
+        </div>
+        <div class="mt-3">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Valor Estimado
+          </label>
+          <p-inputNumber
+            [ngModel]="editing()?.estimatedValue"
+            (ngModelChange)="onEditChange('estimatedValue', $event)"
+            mode="decimal"
+            [min]="0"
+            [showButtons]="true"
+            currency="USD"
+            locale="en-US"
+            class="w-full"
+          ></p-inputNumber>
+        </div>
+      </div>
+
+      <!-- Información de Contacto -->
+      <div class="border-t pt-4">
+        <h4 class="text-lg font-semibold mb-3">Información de Contacto *</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nombre del Contacto *
+            </label>
+            <input
+              pInputText
+              placeholder="Nombre completo"
+              [ngModel]="editing()?.contact?.name"
+              (ngModelChange)="onContactChange('name', $event)"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Email *
+            </label>
+            <input
+              pInputText
+              type="email"
+              placeholder="email@ejemplo.com"
+              [ngModel]="editing()?.contact?.email"
+              (ngModelChange)="onContactChange('email', $event)"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Teléfono
+            </label>
+            <input
+              pInputText
+              placeholder="+51 987654321"
+              [ngModel]="editing()?.contact?.phone"
+              (ngModelChange)="onContactChange('phone', $event)"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Cargo
+            </label>
+            <input
+              pInputText
+              placeholder="Gerente de TI"
+              [ngModel]="editing()?.contact?.position"
+              (ngModelChange)="onContactChange('position', $event)"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Departamento
+            </label>
+            <input
+              pInputText
+              placeholder="Tecnología"
+              [ngModel]="editing()?.contact?.department"
+              (ngModelChange)="onContactChange('department', $event)"
+              class="w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Información de Empresa -->
+      <div class="border-t pt-4">
+        <h4 class="text-lg font-semibold mb-3">Información de Empresa (Opcional)</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nombre de la Empresa
+            </label>
+            <input
+              pInputText
+              placeholder="Nombre de la empresa"
+              [ngModel]="editing()?.company?.name"
+              (ngModelChange)="onCompanyChange('name', $event)"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              RUC/DNI
+            </label>
+            <input
+              pInputText
+              placeholder="20123456789"
+              [ngModel]="editing()?.company?.taxId"
+              (ngModelChange)="onCompanyChange('taxId', $event)"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Sector
+            </label>
+            <input
+              pInputText
+              placeholder="Tecnología"
+              [ngModel]="editing()?.company?.sector"
+              (ngModelChange)="onCompanyChange('sector', $event)"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Tamaño de Empresa
+            </label>
+            <input
+              pInputText
+              placeholder="50-100 empleados"
+              [ngModel]="editing()?.company?.companySize"
+              (ngModelChange)="onCompanyChange('companySize', $event)"
+              class="w-full"
+            />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Sitio Web
+            </label>
+            <input
+              pInputText
+              placeholder="https://www.ejemplo.com"
+              [ngModel]="editing()?.company?.website"
+              (ngModelChange)="onCompanyChange('website', $event)"
+              class="w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Ubicación -->
+      <div class="border-t pt-4">
+        <h4 class="text-lg font-semibold mb-3">Ubicación (Opcional)</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              País
+            </label>
+            <p-select
+              [options]="countries()"
+              optionLabel="nombre"
+              optionValue="codigo"
+              [ngModel]="selectedCountry()?.codigo"
+              (ngModelChange)="onCountryChange(findCountryByCode($event))"
+              placeholder="Seleccionar país"
+              [showClear]="true"
+              [appendTo]="'body'"
+              class="w-full"
+            ></p-select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Provincia/Estado
+            </label>
+            <p-select
+              [options]="provinces()"
+              optionLabel="nombre"
+              optionValue="codigo"
+              [ngModel]="selectedProvince()?.codigo"
+              (ngModelChange)="onProvinceChange(findProvinceByCode($event))"
+              placeholder="Seleccionar provincia"
+              [showClear]="true"
+              [disabled]="!selectedCountry()"
+              [appendTo]="'body'"
+              class="w-full"
+            ></p-select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Distrito/Municipio
+            </label>
+            <p-select
+              [options]="districts()"
+              optionLabel="nombre"
+              optionValue="codigo"
+              [ngModel]="selectedDistrict()?.codigo"
+              (ngModelChange)="onDistrictChange(findDistrictByCode($event))"
+              placeholder="Seleccionar distrito"
+              [showClear]="true"
+              [disabled]="!selectedProvince()"
+              [appendTo]="'body'"
+              class="w-full"
+            ></p-select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Dirección
+            </label>
+            <input
+              pInputText
+              placeholder="Av. Principal 123"
+              [ngModel]="editing()?.location?.direccion"
+              (ngModelChange)="onDireccionChange($event)"
+              class="w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Notas -->
+      <div class="border-t pt-4">
+        <h4 class="text-lg font-semibold mb-3">Notas</h4>
+        <textarea
+          pTextarea
+          rows="4"
+          placeholder="Notas adicionales sobre el lead..."
+          [ngModel]="editing()?.notes"
+          (ngModelChange)="onEditChange('notes', $event)"
+          class="w-full"
+        ></textarea>
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
+      <button pButton label="Guardar" (click)="save()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de detalles -->
+  <p-dialog
+    [(visible)]="showDetailsDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '60rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-eye text-blue-500"></i>
+        Detalles del Lead — {{ viewingLead()?.name }}
+      </div>
+    </ng-template>
+    @if (viewingLead()) {
+    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg space-y-6">
+      <!-- Información básica -->
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-info-circle text-blue-500"></i>
+          Información Básica
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Nombre</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-medium">
+              {{ viewingLead()?.name }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado</label
+            >
+            <p-tag
+              [value]="getStatusLabel(viewingLead()?.status || 'NEW')"
+              [severity]="getStatusSeverity(viewingLead()?.status || 'NEW')"
+            ></p-tag>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Origen</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ getSourceLabel(viewingLead()?.source || 'OTHER') }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Asignado a</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ getUserName(viewingLead()?.assignedTo || '') }}
+            </div>
+          </div>
+          @if (viewingLead()?.estimatedValue) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Valor Estimado</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-medium">
+              ${{ viewingLead()?.estimatedValue | number : '1.0-0' }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Contacto -->
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-user text-purple-500"></i>
+          Información de Contacto
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Nombre</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingLead()?.contact?.name }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Email</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingLead()?.contact?.email }}
+            </div>
+          </div>
+          @if (viewingLead()?.contact?.phone) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Teléfono</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingLead()?.contact?.phone }}
+            </div>
+          </div>
+          } @if (viewingLead()?.contact?.position) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Cargo</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingLead()?.contact?.position }}
+            </div>
+          </div>
+          } @if (viewingLead()?.contact?.department) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Departamento</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingLead()?.contact?.department }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Empresa -->
+      @if (viewingLead()?.company) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-building text-orange-500"></i>
+          Información de Empresa
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          @if (viewingLead()?.company?.name) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Nombre</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingLead()?.company?.name }}
+            </div>
+          </div>
+          } @if (viewingLead()?.company?.taxId) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >RUC/DNI</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingLead()?.company?.taxId }}
+            </div>
+          </div>
+          } @if (viewingLead()?.company?.sector) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Sector</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingLead()?.company?.sector }}
+            </div>
+          </div>
+          } @if (viewingLead()?.company?.companySize) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Tamaño</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingLead()?.company?.companySize }}
+            </div>
+          </div>
+          } @if (viewingLead()?.company?.website) {
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Sitio Web</label
+            >
+            <a
+              [href]="viewingLead()?.company?.website"
+              target="_blank"
+              class="text-blue-600 hover:text-blue-800 dark:text-blue-400"
+            >
+              {{ viewingLead()?.company?.website }}
+            </a>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Ubicación -->
+      @if (viewingLead()?.location) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-map-marker text-green-500"></i>
+          Ubicación
+        </h3>
+        <div class="space-y-2">
+          @if (viewingLead()?.location?.paisCodigo) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >País</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ getCountryName(viewingLead()?.location?.paisCodigo || '') }}
+            </div>
+          </div>
+          } @if (viewingLead()?.location?.provinciaCodigo) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Provincia</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ getProvinceName(viewingLead()?.location?.provinciaCodigo || '') }}
+            </div>
+          </div>
+          } @if (viewingLead()?.location?.distritoCodigo) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Distrito</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ getDistrictName(viewingLead()?.location?.distritoCodigo || '') }}
+            </div>
+          </div>
+          } @if (viewingLead()?.location?.direccion) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Dirección</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingLead()?.location?.direccion }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Notas -->
+      @if (viewingLead()?.notes) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-file-edit text-indigo-500"></i>
+          Notas
+        </h3>
+        <div class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+          {{ viewingLead()?.notes }}
+        </div>
+      </div>
+      }
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de convertir a cliente -->
+  <p-dialog
+    [(visible)]="showConvertDialog"
+    [modal]="true"
+    [style]="{ width: '90vw', maxWidth: '32rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-check-circle text-green-500"></i>
+        Convertir Lead a Cliente
+      </div>
+    </ng-template>
+    @if (convertingLead()) {
+    <div class="space-y-4">
+      <p class="text-gray-700 dark:text-gray-300">
+        Selecciona el cliente al que se convertirá el lead
+        <strong>{{ convertingLead()?.name }}</strong>
+      </p>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Cliente *
+        </label>
+        <p-select
+          [options]="clients()"
+          optionLabel="name"
+          optionValue="_id"
+          placeholder="Seleccionar cliente"
+          [appendTo]="'body'"
+          class="w-full"
+          [ngModel]="selectedClientId()"
+          (ngModelChange)="selectedClientId.set($event)"
+        ></p-select>
+      </div>
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeConvert()"></button>
+      <button
+        pButton
+        label="Convertir"
+        class="p-button-success"
+        (click)="convertToClient()"
+        [disabled]="!selectedClientId()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de estadísticas -->
+  <p-dialog
+    [(visible)]="showStatsDialog"
+    [modal]="true"
+    [style]="{ width: '90vw', maxWidth: '40rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-chart-bar text-blue-500"></i>
+        Estadísticas de Leads
+      </div>
+    </ng-template>
+    @if (stats()) {
+    <div class="space-y-4">
+      <!-- Totales -->
+      <div class="grid grid-cols-2 gap-4">
+        <p-card>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-blue-600">{{ stats()?.total }}</div>
+              <div class="text-sm text-gray-600">Total</div>
+            </div>
+          </ng-template>
+        </p-card>
+        <p-card>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-green-600">
+                ${{ stats()?.totalValue | number : '1.0-0' }}
+              </div>
+              <div class="text-sm text-gray-600">Valor Total</div>
+            </div>
+          </ng-template>
+        </p-card>
+      </div>
+
+      <!-- Por Estado -->
+      <div>
+        <h4 class="text-lg font-semibold mb-3">Por Estado</h4>
+        <div class="grid grid-cols-2 gap-2">
+          @for (status of statusOptions; track status.value) {
+          <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ status.label }}</span>
+            <span class="font-medium text-gray-900 dark:text-gray-100">
+              {{ getStatusCount(status.value) }}
+            </span>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Por Origen -->
+      <div>
+        <h4 class="text-lg font-semibold mb-3">Por Origen</h4>
+        <div class="grid grid-cols-2 gap-2">
+          @for (source of sourceOptions; track source.value) {
+          <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ source.label }}</span>
+            <span class="font-medium text-gray-900 dark:text-gray-100">
+              {{ getSourceCount(source.value) }}
+            </span>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()"></button>
+    </ng-template>
+  </p-dialog>
+</div>

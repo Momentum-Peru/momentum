@@ -1,25 +1,202 @@
-/* Estilos para el menú hamburguesa */
-.menu {
-  background-color: #000000;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+/* Estilos personalizados para PanelMenu de PrimeNG */
+:host ::ng-deep {
+  .custom-panelmenu {
+    background: transparent !important;
+    border: none !important;
+    width: 100%;
+    color: #ffffff !important;
 
-  /* Transiciones suaves para elementos interactivos */
-  transition: all 0.3s ease;
+    // Estilos para headers de paneles (submenús)
+    .p-panelmenu-header {
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0.5rem;
+      margin-bottom: 0.25rem;
+      padding: 0 !important;
 
-  /* Estilos para elementos del menú */
-  .menu-item {
-    padding: 0.75rem 1rem;
-    color: #ffffff;
-    transition: all 0.2s ease;
+      .p-panelmenu-header-link {
+        background: transparent !important;
+        border: none !important;
+        color: #ffffff !important;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        width: 100%;
+        display: flex;
+        align-items: center;
 
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-      transform: translateX(4px);
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        &:focus {
+          box-shadow: none !important;
+          outline: none !important;
+        }
+
+        .p-panelmenu-header-text {
+          color: #ffffff !important;
+          font-weight: 500;
+        }
+
+        .p-panelmenu-header-icon {
+          color: #ffffff !important;
+        }
+
+        &[aria-expanded='true'] {
+          background-color: rgba(255, 255, 255, 0.15) !important;
+        }
+      }
     }
 
-    &:active {
-      background-color: rgba(255, 255, 255, 0.2);
+    // Estilos para contenido de paneles (submenús)
+    .p-panelmenu-content {
+      background: transparent !important;
+      border: none !important;
+      padding: 0.25rem 0 !important;
+      margin-left: 1rem;
+      box-shadow: none !important;
+
+      .p-menuitem {
+        margin-bottom: 0.125rem;
+
+        .p-menuitem-link {
+          background: transparent !important;
+          border: none !important;
+          color: rgba(255, 255, 255, 0.9) !important;
+          padding: 0.625rem 1rem;
+          border-radius: 0.5rem;
+          transition: all 0.2s ease;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          text-decoration: none;
+
+          &:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+          }
+
+          &:focus {
+            box-shadow: none !important;
+            outline: none !important;
+          }
+
+          &.p-menuitem-link-active,
+          &.p-focus,
+          &[aria-current='page'] {
+            background-color: rgba(255, 255, 255, 0.2) !important;
+            color: #ffffff !important;
+            border-left: 4px solid #ffffff !important;
+            padding-left: calc(1rem - 4px);
+          }
+
+          .p-menuitem-icon {
+            color: rgba(255, 255, 255, 0.9) !important;
+            margin-right: 0.75rem;
+            font-size: 1rem;
+          }
+
+          .p-menuitem-text {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 400;
+          }
+        }
+      }
     }
+
+    // Estilos para items sin submenú (items directos como Dashboard)
+    > .p-menuitem {
+      margin-bottom: 0.25rem;
+
+      .p-menuitem-link {
+        background: transparent !important;
+        border: none !important;
+        color: #ffffff !important;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        &:focus {
+          box-shadow: none !important;
+          outline: none !important;
+        }
+
+        &.p-menuitem-link-active,
+        &.p-focus,
+        &[aria-current='page'] {
+          background-color: rgba(255, 255, 255, 0.2) !important;
+          border-left: 4px solid #ffffff !important;
+          padding-left: calc(1rem - 4px);
+        }
+
+        .p-menuitem-icon {
+          color: #ffffff !important;
+          margin-right: 0.75rem;
+          font-size: 1rem;
+        }
+
+        .p-menuitem-text {
+          color: #ffffff !important;
+          font-weight: 500;
+        }
+      }
+    }
+
+    // Asegurar que todos los elementos anidados tengan el color correcto
+    .p-icon,
+    .p-panelmenu-header-icon,
+    i {
+      color: #ffffff !important;
+    }
+  }
+
+  // Override para cualquier estilo de PrimeNG que pueda estar afectando
+  .p-panelmenu,
+  .p-panelmenu.p-component,
+  .p-panelmenu .p-panelmenu-panel {
+    background: transparent !important;
+    border: none !important;
+    color: #ffffff !important;
+  }
+
+  .p-panelmenu .p-panelmenu-panel .p-panelmenu-header {
+    background: transparent !important;
+    border: none !important;
+    color: #ffffff !important;
+  }
+
+  .p-panelmenu .p-panelmenu-panel .p-panelmenu-content {
+    background: transparent !important;
+    border: none !important;
+    color: #ffffff !important;
+  }
+
+  // Asegurar que todos los links y spans dentro del panelmenu tengan color blanco
+  .p-panelmenu a,
+  .p-panelmenu span,
+  .p-panelmenu .p-menuitem-link,
+  .p-panelmenu .p-panelmenu-header-link {
+    color: #ffffff !important;
+  }
+
+  // Override de cualquier fondo blanco que PrimeNG pueda estar aplicando
+  .p-panelmenu .p-panelmenu-header-link,
+  .p-panelmenu .p-menuitem-link {
+    background-color: transparent !important;
+  }
+
+  .p-panelmenu .p-panelmenu-header-link:hover,
+  .p-panelmenu .p-menuitem-link:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
   }
 }
 

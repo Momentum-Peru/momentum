@@ -2,7 +2,7 @@ import { definePreset } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
 
 /**
- * Preset personalizado de Maya Agent
+ * Preset personalizado de Momentum
  * Basado en el tema Aura de PrimeNG con color primario negro
  */
 const MayaPreset = definePreset(Aura, {
