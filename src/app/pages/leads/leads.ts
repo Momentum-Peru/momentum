@@ -589,7 +589,10 @@ export class LeadsPage implements OnInit {
         return district ? district.nombre : codigo;
     }
 
-    getUserName(id: string): string {
+    getUserName(id: string | undefined): string {
+        if (!id) {
+            return 'Sin asignar';
+        }
         const user = this.users().find((u) => u._id === id);
         return user ? user.name : id;
     }

@@ -737,7 +737,7 @@
               >Asignado a</label
             >
             <div class="text-gray-900 dark:text-gray-100">
-              {{ getUserName(viewingLead()?.assignedTo || '') }}
+              {{ getUserName(viewingLead()?.assignedTo) }}
             </div>
           </div>
           @if (viewingLead()?.estimatedValue) {
