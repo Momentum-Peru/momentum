@@ -1,4 +1,4 @@
-# 📚 Documentación Completa de Endpoints - MayaAgent API
+# 📚 Documentación Completa de Endpoints - Momentum API
 
 ## 🚀 Resumen General
 
@@ -70,7 +70,7 @@ Esta API proporciona un sistema completo de autenticación con JWT y Google OAut
 **Respuesta**:
 
 ```json
-"MayaAgent API - Sistema de autenticación y gestión de usuarios"
+"Momentum API - Sistema de autenticación y gestión de usuarios"
 ```
 
 ---
@@ -844,7 +844,7 @@ Authorization: Bearer <jwt_token>
 
 ```env
 # Base de datos
-MONGO_URI=mongodb://localhost:27017/mayaagent
+MONGO_URI=mongodb://localhost:27017/Momentum
 
 # JWT
 JWT_SECRET=tu_jwt_secret_super_seguro

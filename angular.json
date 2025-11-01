@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "mayaagent": {
+    "momentum": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -69,10 +69,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "mayaagent:build:production"
+              "buildTarget": "momentum:build:production"
             },
             "development": {
-              "buildTarget": "mayaagent:build:development"
+              "buildTarget": "momentum:build:development"
             }
           },
           "defaultConfiguration": "development"

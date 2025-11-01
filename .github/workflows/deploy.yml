@@ -55,7 +55,7 @@ jobs:
       # Usa la AWS CLI (preinstalada) para sincronizar el build con el bucket.
       - name: Deploy static site to S3 Bucket
         run: |
-          aws s3 sync ./dist/mayaagent/browser s3://tecmeing-bucket --delete
+          aws s3 sync ./dist/momentum/browser s3://tecmeing-bucket --delete
         # !! REEMPLAZA './ruta-a-tu-build' (ej: ./dist/nombre-del-proyecto)
         # !! REEMPLAZA 'tu-bucket-name'
         # '--delete' elimina archivos en S3 que ya no existen en tu build.
