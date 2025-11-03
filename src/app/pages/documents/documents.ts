@@ -8,13 +8,15 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService } from 'primeng/api';
 
-import { DocumentsApiService } from '../../shared/services/documents-api.service';
+import { DocumentsApiService, ScanInvoiceResponse } from '../../shared/services/documents-api.service';
 import { Document, DocumentFilters } from '../../shared/interfaces/document.interface';
 import { DocumentFormComponent } from './components/document-form/document-form';
 import { DocumentListComponent } from './components/document-list/document-list';
 import { DocumentFiltersComponent } from './components/document-filters/document-filters';
+import { DocumentScannerComponent } from './components/document-scanner/document-scanner';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
@@ -30,9 +32,11 @@ import { environment } from '../../../environments/environment';
     DialogModule,
     ToastModule,
     ConfirmDialogModule,
+    TooltipModule,
     DocumentFormComponent,
     DocumentListComponent,
     DocumentFiltersComponent,
+    DocumentScannerComponent,
   ],
   templateUrl: './documents.html',
   styleUrl: './documents.scss',
@@ -52,6 +56,7 @@ export class DocumentsPage implements OnInit {
   showFormDialog = signal(false);
   showDetailsDialog = signal(false);
   showFilesDialog = signal(false);
+  showScannerDialog = signal(false);
   editingDocument = signal<Document | null>(null);
   viewingDocument = signal<Document | null>(null);
   filesViewingDocument = signal<Document | null>(null);
@@ -125,6 +130,42 @@ export class DocumentsPage implements OnInit {
   openCreateForm(): void {
     this.editingDocument.set(null);
     this.showFormDialog.set(true);
+  }
+
+  /**
+   * Abrir diálogo de escaneo
+   */
+  openScannerDialog(): void {
+    this.showScannerDialog.set(true);
+  }
+
+  /**
+   * Cerrar diálogo de escaneo
+   */
+  closeScannerDialog(): void {
+    this.showScannerDialog.set(false);
+  }
+
+  /**
+   * Manejar escaneo completado
+   */
+  onScanComplete(response: ScanInvoiceResponse): void {
+    this.closeScannerDialog();
+    this.loadDocuments();
+    
+    if (response.document) {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: `Documento ${response.scannedData.categoria} creado correctamente`,
+      });
+    } else {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: `Documento ${response.scannedData.categoria} escaneado correctamente`,
+      });
+    }
   }
 
   /**
