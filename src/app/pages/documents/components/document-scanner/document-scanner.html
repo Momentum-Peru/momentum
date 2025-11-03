@@ -11,7 +11,7 @@
 >
   <ng-template pTemplate="header">
     <div class="flex items-center gap-2">
-      <i class="pi pi-scan text-blue-500"></i>
+      <i class="pi pi-camera text-blue-500"></i>
       <span class="text-lg font-semibold text-gray-800 dark:text-gray-200">
         Escanear Documento
       </span>
@@ -28,8 +28,9 @@
             <p class="font-medium mb-1">Instrucciones:</p>
             <ul class="list-disc list-inside space-y-1 text-xs">
               <li>Suba una imagen clara de la factura o documento</li>
-              <li>Formatos soportados: JPEG, PNG, WebP</li>
+              <li>Formatos soportados: JPEG, PNG, WebP, PDF</li>
               <li>Tamaño máximo: 10MB</li>
+              <li>Puede tomar una foto o seleccionar de galería/archivos</li>
               <li>El sistema extraerá automáticamente todos los datos</li>
             </ul>
           </div>
@@ -44,13 +45,14 @@
       </label>
       @if (!selectedFile()) {
       <p-fileUpload
+        #fileUpload
         mode="basic"
-        accept="image/*"
+        accept="image/*,application/pdf"
         [maxFileSize]="10485760"
         (onSelect)="onFileSelect($event)"
         (onError)="removeFile()"
-        chooseLabel="Seleccionar Imagen"
-        chooseIcon="pi pi-upload"
+        chooseLabel="Escanear o Seleccionar"
+        chooseIcon="pi pi-camera"
         class="w-full"
       >
       </p-fileUpload>
@@ -59,11 +61,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3 flex-1">
             @if (previewUrl()) {
-            <img
-              [src]="previewUrl()!"
-              alt="Preview"
-              class="w-16 h-16 object-cover rounded"
-            />
+            <img [src]="previewUrl()!" alt="Preview" class="w-16 h-16 object-cover rounded" />
             } @else {
             <i class="pi pi-image text-3xl text-gray-400"></i>
             }
@@ -97,9 +95,7 @@
         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
           Escaneando documento...
         </span>
-        <span class="text-sm text-gray-500 dark:text-gray-400">
-          {{ progress() }}%
-        </span>
+        <span class="text-sm text-gray-500 dark:text-gray-400"> {{ progress() }}% </span>
       </div>
       <p-progressBar [value]="progress()" class="w-full"></p-progressBar>
       <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -122,7 +118,7 @@
       ></p-button>
       <p-button
         label="Escanear"
-        icon="pi pi-scan"
+        icon="pi pi-camera"
         severity="primary"
         (onClick)="startScan()"
         [disabled]="!selectedFile() || scanning()"
@@ -131,4 +127,3 @@
     </div>
   </ng-template>
 </p-dialog>
-

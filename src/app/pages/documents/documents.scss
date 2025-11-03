@@ -44,7 +44,7 @@
   }
 
   .p-toolbar {
-    @apply flex-col gap-4;
+    @apply flex-col gap-4 justify-start;
   }
 
   .p-toolbar .p-toolbar-group-left,

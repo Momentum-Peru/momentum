@@ -13,34 +13,12 @@
         </div>
       </ng-template>
       <ng-template pTemplate="right">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap sm:justify-end justify-start">
           <p-button
-            label="Escanear"
-            icon="pi pi-scan"
+            label="Escanear Documento"
+            icon="pi pi-camera"
             (onClick)="openScannerDialog()"
-            severity="success"
-            [outlined]="true"
-            class="hidden sm:inline-flex"
-          >
-          </p-button>
-          <p-button
-            icon="pi pi-scan"
-            (onClick)="openScannerDialog()"
-            severity="success"
-            [outlined]="true"
-            [rounded]="true"
-            [text]="true"
-            class="sm:hidden"
-            pTooltip="Escanear Documento"
-            tooltipPosition="bottom"
-          >
-          </p-button>
-          <p-button
-            label="Nuevo"
-            icon="pi pi-plus"
-            (onClick)="openCreateForm()"
-            severity="primary"
-            class="hidden sm:inline-flex"
+            severity="secondary"
           >
           </p-button>
           <p-button
@@ -48,7 +26,6 @@
             icon="pi pi-plus"
             (onClick)="openCreateForm()"
             severity="primary"
-            class="sm:hidden"
           >
           </p-button>
         </div>
