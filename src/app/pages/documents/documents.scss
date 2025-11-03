@@ -51,4 +51,9 @@
   .p-toolbar .p-toolbar-group-right {
     @apply w-full justify-center;
   }
+
+  :host ::ng-deep .p-toolbar-start{
+    @apply w-full;
+  }
+
 }

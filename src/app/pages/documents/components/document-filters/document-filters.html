@@ -65,6 +65,8 @@
           [text]="true"
           (onClick)="toggleAdvancedFilters()"
           [loading]="loading"
+          class="w-full lg:w-auto"
+          styleClass="w-full lg:w-auto"
         >
         </p-button>
       </div>
@@ -82,7 +84,8 @@
               pInputText
               formControlName="serie"
               placeholder="Serie del documento"
-              class="w-full"
+              class="w-full lg:w-auto"
+              styleClass="w-full lg:w-auto"
             />
           </div>
 
@@ -94,7 +97,8 @@
               placeholder="Seleccionar fecha"
               [showIcon]="true"
               dateFormat="dd/mm/yy"
-              class="w-full"
+              class="w-full lg:w-auto"
+              styleClass="w-full lg:w-auto"
             >
             </p-datepicker>
           </div>
@@ -107,7 +111,8 @@
               placeholder="Seleccionar fecha"
               [showIcon]="true"
               dateFormat="dd/mm/yy"
-              class="w-full"
+              class="w-full lg:w-auto"
+              styleClass="w-full lg:w-auto"
             >
             </p-datepicker>
           </div>
@@ -120,7 +125,8 @@
               placeholder="Seleccionar fecha"
               [showIcon]="true"
               dateFormat="dd/mm/yy"
-              class="w-full"
+              class="w-full lg:w-auto"
+              styleClass="w-full lg:w-auto"
             >
             </p-datepicker>
           </div>
@@ -182,10 +188,19 @@
           [text]="true"
           (onClick)="clearFilters()"
           [disabled]="loading"
+          class="w-full lg:w-auto"
+          styleClass="w-full lg:w-auto"
         >
         </p-button>
 
-        <p-button label="Aplicar Filtros" icon="pi pi-search" type="submit" [loading]="loading">
+        <p-button
+          label="Aplicar Filtros"
+          icon="pi pi-search"
+          type="submit"
+          [loading]="loading"
+          class="w-full lg:w-auto"
+          styleClass="w-full lg:w-auto"
+        >
         </p-button>
       </div>
     </form>
