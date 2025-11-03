@@ -11,7 +11,10 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService } from 'primeng/api';
 
-import { DocumentsApiService, ScanInvoiceResponse } from '../../shared/services/documents-api.service';
+import {
+  DocumentsApiService,
+  ScanInvoiceResponse,
+} from '../../shared/services/documents-api.service';
 import { Document, DocumentFilters } from '../../shared/interfaces/document.interface';
 import { DocumentFormComponent } from './components/document-form/document-form';
 import { DocumentListComponent } from './components/document-list/document-list';
@@ -152,7 +155,7 @@ export class DocumentsPage implements OnInit {
   onScanComplete(response: ScanInvoiceResponse): void {
     this.closeScannerDialog();
     this.loadDocuments();
-    
+
     if (response.document) {
       this.messageService.add({
         severity: 'success',
