@@ -13,6 +13,8 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
 import { SelectModule } from 'primeng/select';
+import { forkJoin } from 'rxjs';
+import { catchError, map, of } from 'rxjs';
 
 interface Client {
   _id: string;
@@ -67,6 +69,7 @@ export class TdrsPage {
   selectedFiles = signal<File[]>([]);
   clients = signal<ClientOption[]>([]);
   expandedRows = signal<Set<string>>(new Set());
+  isDragging = signal<boolean>(false);
   tdrTypeOptions = [
     { label: 'Cliente', value: 'client' },
     { label: 'Tecmeing', value: 'tecmeing' },
@@ -255,22 +258,61 @@ export class TdrsPage {
   onFileInputChange(event: Event) {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files || []);
+    this.processFiles(files);
+  }
 
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+
+    const files = Array.from(event.dataTransfer?.files || []);
+    if (files.length > 0) {
+      this.processFiles(files);
+    }
+  }
+
+  private processFiles(files: File[]) {
     // Validar tamaño de archivos (10MB máximo)
     const maxSize = 10 * 1024 * 1024; // 10MB en bytes
-    const validFiles = files.filter((file) => {
+    const validFiles: File[] = [];
+    const invalidFiles: File[] = [];
+
+    files.forEach((file) => {
       if (file.size > maxSize) {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error de validación',
-          detail: `El archivo ${file.name} es demasiado grande. Máximo 10MB.`,
-        });
-        return false;
+        invalidFiles.push(file);
+      } else {
+        validFiles.push(file);
       }
-      return true;
     });
 
-    this.selectedFiles.set(validFiles);
+    // Mostrar errores para archivos inválidos
+    invalidFiles.forEach((file) => {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error de validación',
+        detail: `El archivo ${file.name} es demasiado grande. Máximo 10MB.`,
+      });
+    });
+
+    // Agregar archivos válidos a los seleccionados (no reemplazar, sino agregar)
+    if (validFiles.length > 0) {
+      const currentFiles = this.selectedFiles();
+      const newFiles = [...currentFiles, ...validFiles];
+      this.selectedFiles.set(newFiles);
+    }
   }
 
   formatFileSize(bytes: number): string {
@@ -287,8 +329,11 @@ export class TdrsPage {
     this.selectedFiles.set(updatedFiles);
   }
 
-  clearSelectedFiles() {
+  clearSelectedFiles(fileInput?: HTMLInputElement) {
     this.selectedFiles.set([]);
+    if (fileInput) {
+      fileInput.value = '';
+    }
   }
 
   uploadSelectedFiles() {
@@ -313,32 +358,89 @@ export class TdrsPage {
       return;
     }
 
-    // Subir cada archivo individualmente
-    files.forEach((file: File, index: number) => {
+    // Subir todos los archivos en paralelo, manejando errores individuales
+    const uploadRequests = files.map((file: File) => {
       const formData = new FormData();
       formData.append('file', file);
+      return this.http.post(`${this.baseUrl}/tdrs/${tdrId}/documents`, formData).pipe(
+        map(() => ({ success: true, fileName: file.name })),
+        catchError((error) => {
+          console.error(`Error al subir ${file.name}:`, error);
+          return of({
+            success: false,
+            fileName: file.name,
+            error: this.getErrorMessage(error),
+          });
+        })
+      );
+    });
 
-      this.http.post(`${this.baseUrl}/tdrs/${tdrId}/documents`, formData).subscribe({
-        next: (response) => {
+    forkJoin(uploadRequests).subscribe({
+      next: (results) => {
+        const successful = results.filter((r) => r.success).length;
+        const failed = results.filter((r) => !r.success);
+
+        if (successful > 0) {
           this.messageService.add({
             severity: 'success',
             summary: 'Éxito',
-            detail: `Documento ${file.name} subido correctamente`,
+            detail: `${successful} documento(s) subido(s) correctamente${
+              failed.length > 0 ? ` (${failed.length} fallido(s))` : ''
+            }`,
           });
-          this.load(); // Recargar para obtener documentos actualizados
-        },
-        error: (error) => {
-          console.error(`Error al subir documento ${file.name}:`, error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: `Error al subir ${file.name}: ${this.getErrorMessage(error)}`,
-          });
-        },
-      });
-    });
 
-    this.clearSelectedFiles();
+          // Recargar el TDR específico para obtener los documentos actualizados
+          this.reloadCurrentTdr(tdrId);
+        }
+
+        if (failed.length > 0) {
+          // Mostrar errores individuales
+          failed.forEach((result) => {
+            const errorMessage = 'error' in result ? result.error : 'Error desconocido';
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error al subir archivo',
+              detail: `${result.fileName}: ${errorMessage}`,
+            });
+          });
+        }
+
+        // Limpiar archivos seleccionados solo si todos fueron exitosos
+        if (failed.length === 0) {
+          this.clearSelectedFiles();
+        }
+      },
+      error: (error) => {
+        console.error('Error inesperado al subir documentos:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: `Error inesperado: ${this.getErrorMessage(error)}`,
+        });
+      },
+    });
+  }
+
+  /**
+   * Recarga el TDR actual que se está visualizando
+   */
+  private reloadCurrentTdr(tdrId: string) {
+    this.http.get<TdrItem>(`${this.baseUrl}/tdrs/${tdrId}`).subscribe({
+      next: (updatedTdr) => {
+        // Actualizar el TDR que se está visualizando en el modal
+        this.documentsViewing.set(updatedTdr);
+
+        // Actualizar también en la lista de items
+        const currentItems = this.items();
+        const updatedItems = currentItems.map((item) => (item._id === tdrId ? updatedTdr : item));
+        this.items.set(updatedItems);
+      },
+      error: (error) => {
+        console.error('Error al recargar TDR:', error);
+        // Si falla, recargar toda la lista como fallback
+        this.load();
+      },
+    });
   }
 
   downloadDocument(url: string) {
@@ -426,11 +528,8 @@ export class TdrsPage {
           summary: 'Éxito',
           detail: 'Documento eliminado correctamente',
         });
-        this.load();
-        const currentTdr = this.documentsViewing();
-        if (currentTdr) {
-          this.documentsViewing.set({ ...currentTdr, documents: updatedDocuments });
-        }
+        // Recargar el TDR específico para obtener los documentos actualizados
+        this.reloadCurrentTdr(tdr._id!);
       },
       error: (error) => {
         console.error('Error al eliminar documento:', error);

@@ -80,6 +80,7 @@
                 icon="pi pi-trash"
                 class="p-button-text p-button-sm p-button-danger"
                 pTooltip="Eliminar"
+                [tooltipOptions]="{ appendTo: 'body', tooltipPosition: 'left' }"
                 (click)="remove(row)"
               ></button>
             </div>
@@ -282,7 +283,16 @@
       <div class="bg-gray-50 rounded-lg p-6">
         <h4 class="text-lg font-semibold text-gray-800 mb-4">Subir Nuevos Documentos</h4>
         <div class="space-y-4">
-          <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+          <div
+            class="border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer"
+            [class.border-gray-300]="!isDragging()"
+            [class.border-blue-400]="isDragging()"
+            [class.bg-blue-50]="isDragging()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+            (click)="fileInput.click()"
+          >
             <input
               type="file"
               #fileInput
@@ -292,8 +302,14 @@
               class="hidden"
             />
 
-            <div class="flex flex-col items-center justify-center py-8">
-              <i class="pi pi-cloud-upload text-5xl text-gray-400 mb-4"></i>
+            <div class="flex flex-col items-center justify-center py-8 pointer-events-none">
+              <i
+                class="pi pi-cloud-upload mb-4 transition-colors"
+                [class.text-5xl]="!isDragging()"
+                [class.text-6xl]="isDragging()"
+                [class.text-gray-400]="!isDragging()"
+                [class.text-blue-500]="isDragging()"
+              ></i>
               <p class="text-lg font-medium text-gray-700 mb-2">Selecciona archivos para subir</p>
               <p class="text-sm text-gray-500 mb-4">o arrastra y suelta archivos aquí</p>
 
@@ -302,8 +318,8 @@
                 type="button"
                 label="Seleccionar Archivos"
                 icon="pi pi-upload"
-                (click)="fileInput.click()"
-                class="mb-4"
+                (click)="$event.stopPropagation(); fileInput.click()"
+                class="mb-4 pointer-events-auto"
               ></button>
 
               <div class="text-xs text-gray-400 space-y-1">
@@ -312,6 +328,7 @@
                   JPEG
                 </p>
                 <p><strong>Tamaño máximo:</strong> 10MB por archivo</p>
+                <p><strong>Múltiples archivos:</strong> Puedes seleccionar varios a la vez</p>
               </div>
             </div>
           </div>
@@ -324,7 +341,7 @@
             <div class="flex items-center justify-between p-2 bg-white rounded border">
               <div class="flex items-center gap-2">
                 <i class="pi pi-file text-blue-500"></i>
-                <span class="text-sm">{{ file.name }}</span>
+                <span class="text-sm dark:text-gray-400">{{ file.name }}</span>
                 <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
               </div>
               <button
@@ -345,7 +362,7 @@
                 icon="pi pi-upload"
                 (click)="uploadSelectedFiles()"
                 [disabled]="selectedFiles().length === 0"
-                class="flex-1"
+                class="flex-1 w-full"
               ></button>
               <button
                 pButton
@@ -353,7 +370,7 @@
                 label="Limpiar"
                 icon="pi pi-times"
                 class="p-button-text"
-                (click)="clearSelectedFiles()"
+                (click)="clearSelectedFiles(fileInput)"
                 [disabled]="selectedFiles().length === 0"
               ></button>
             </div>
@@ -365,24 +382,24 @@
       <!-- Lista de documentos existentes -->
       @if (documentsViewing()?.documents?.length) {
       <div class="space-y-3">
-        <h4 class="text-lg font-semibold text-gray-800">
+        <h4 class="text-lg font-semibold text-gray-800 dark:text-white">
           Documentos Adjuntos ({{ documentsViewing()?.documents?.length }})
         </h4>
         <div class="grid gap-3">
           @for (doc of documentsViewing()?.documents; track $index) {
           <div
-            class="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors"
+            class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors"
           >
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
               <div class="flex-shrink-0">
-                <i [class]="getFileIcon(doc) + ' text-2xl ' + getFileTypeColor(doc)"></i>
+                <i [class]="getFileIcon(doc) + ' text-xl sm:text-2xl ' + getFileTypeColor(doc)"></i>
               </div>
-              <div class="min-w-0 flex-1">
-                <p class="font-medium text-gray-900 truncate">{{ doc.split('/').pop() }}</p>
-                <p class="text-sm text-gray-500 truncate">{{ doc }}</p>
+              <div class="min-w-0 flex-1 overflow-hidden">
+                <p class="font-medium text-gray-900 break-words">{{ doc.split('/').pop() }}</p>
+                <p class="text-sm text-gray-500 break-words line-clamp-2">{{ doc }}</p>
               </div>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-shrink-0 sm:self-center">
               <button
                 pButton
                 icon="pi pi-eye"
