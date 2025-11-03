@@ -4,15 +4,16 @@
 
   <!-- Header con estadísticas -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-6">
-    <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Gestión de Permisos de Menú</h1>
-      <div class="flex gap-2">
+      <div class="flex gap-2 w-full sm:w-auto">
         <button
           pButton
           type="button"
           (click)="newItem()"
           label="Nuevo Permiso"
           icon="pi pi-plus"
+          class="w-full sm:w-auto"
         ></button>
       </div>
     </div>
@@ -396,15 +397,15 @@
 
       <!-- Selección múltiple de rutas -->
       <div>
-        <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center justify-between mb-2 flex-wrap gap-4">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Permisos *</label>
-          <div class="flex gap-2">
+          <div class="flex gap-2 w-full sm:w-auto">
             <button
               pButton
               type="button"
               label="Seleccionar Todos"
               icon="pi pi-check"
-              class="p-button-success p-button-sm"
+              class="p-button-success p-button-sm w-full sm:w-auto"
               (click)="selectAllRoutes()"
               pTooltip="Seleccionar todos los permisos"
             ></button>
@@ -413,7 +414,7 @@
               type="button"
               label="Deseleccionar Todos"
               icon="pi pi-times"
-              class="p-button-danger p-button-sm"
+              class="p-button-danger p-button-sm w-full sm:w-auto"
               (click)="deselectAllRoutes()"
               pTooltip="Deseleccionar todos los permisos"
             ></button>
