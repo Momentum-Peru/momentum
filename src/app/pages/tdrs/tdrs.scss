@@ -18,6 +18,22 @@
 
   /* Mejorar la apariencia de los botones en el accordion móvil */
   .p-button.p-button-text {
-    @apply w-full justify-start;
+    @apply justify-start;
+  }
+
+  /* Estilos para documentos con texto largo */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Asegurar que los textos largos se ajusten bien */
+  .break-words {
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 }

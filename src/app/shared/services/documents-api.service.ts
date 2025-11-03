@@ -118,4 +118,48 @@ export class DocumentsApiService {
         const payload: DocumentFileDeleteRequest = { fileUrl };
         return this.http.delete<Document>(`${this.baseUrl}/documents/${id}/files`, { body: payload });
     }
+
+    /**
+     * Escanear una factura desde una imagen usando LangChain
+     * @param file Archivo de imagen a escanear
+     * @param proyectoId ID del proyecto (opcional)
+     * @param autoCreate Si se debe crear el documento automáticamente después del escaneo
+     */
+    scanInvoice(file: File, proyectoId?: string, autoCreate: boolean = true): Observable<ScanInvoiceResponse> {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        if (proyectoId) {
+            formData.append('proyectoId', proyectoId);
+        }
+        
+        formData.append('autoCreate', autoCreate.toString());
+
+        return this.http.post<ScanInvoiceResponse>(`${this.baseUrl}/documents/scan`, formData);
+    }
+}
+
+/**
+ * Respuesta del escaneo de factura
+ */
+export interface ScanInvoiceResponse {
+    scannedData: {
+        categoria: string;
+        numeroDocumento: number;
+        serie?: string;
+        fechaEmision?: string;
+        fechaVencimiento?: string;
+        documentoReferencia?: number;
+        total: number;
+        razonSocial?: string;
+        ruc?: string;
+        direccion?: string;
+        moneda?: string;
+        subtotal?: number;
+        igv?: number;
+        otrosImpuestos?: number;
+        observaciones?: string;
+    };
+    document?: Document;
+    imageUrl: string;
 }

@@ -1,0 +1,134 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', maxWidth: '600px' }"
+  [blockScroll]="true"
+  appendTo="body"
+>
+  <ng-template pTemplate="header">
+    <div class="flex items-center gap-2">
+      <i class="pi pi-scan text-blue-500"></i>
+      <span class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+        Escanear Documento
+      </span>
+    </div>
+  </ng-template>
+
+  <div class="flex flex-col gap-4">
+    <!-- Información -->
+    <p-card class="w-full">
+      <ng-template pTemplate="content">
+        <div class="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <i class="pi pi-info-circle text-blue-500 mt-1"></i>
+          <div class="flex-1 text-sm text-gray-700 dark:text-gray-300">
+            <p class="font-medium mb-1">Instrucciones:</p>
+            <ul class="list-disc list-inside space-y-1 text-xs">
+              <li>Suba una imagen clara de la factura o documento</li>
+              <li>Formatos soportados: JPEG, PNG, WebP</li>
+              <li>Tamaño máximo: 10MB</li>
+              <li>El sistema extraerá automáticamente todos los datos</li>
+            </ul>
+          </div>
+        </div>
+      </ng-template>
+    </p-card>
+
+    <!-- Selector de archivo -->
+    <div class="w-full">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        Seleccionar imagen del documento
+      </label>
+      @if (!selectedFile()) {
+      <p-fileUpload
+        mode="basic"
+        accept="image/*"
+        [maxFileSize]="10485760"
+        (onSelect)="onFileSelect($event)"
+        (onError)="removeFile()"
+        chooseLabel="Seleccionar Imagen"
+        chooseIcon="pi pi-upload"
+        class="w-full"
+      >
+      </p-fileUpload>
+      } @else {
+      <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3 flex-1">
+            @if (previewUrl()) {
+            <img
+              [src]="previewUrl()!"
+              alt="Preview"
+              class="w-16 h-16 object-cover rounded"
+            />
+            } @else {
+            <i class="pi pi-image text-3xl text-gray-400"></i>
+            }
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                {{ selectedFile()?.name }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ formatFileSize(selectedFile()?.size || 0) }}
+              </p>
+            </div>
+          </div>
+          <p-button
+            icon="pi pi-times"
+            severity="danger"
+            [text]="true"
+            [rounded]="true"
+            (onClick)="removeFile()"
+            [disabled]="scanning()"
+            pTooltip="Remover archivo"
+          ></p-button>
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Progreso de escaneo -->
+    @if (scanning()) {
+    <div class="w-full">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Escaneando documento...
+        </span>
+        <span class="text-sm text-gray-500 dark:text-gray-400">
+          {{ progress() }}%
+        </span>
+      </div>
+      <p-progressBar [value]="progress()" class="w-full"></p-progressBar>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+        <i class="pi pi-spin pi-spinner mr-1"></i>
+        Procesando con IA... Por favor espere.
+      </p>
+    </div>
+    }
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        severity="secondary"
+        [text]="true"
+        (onClick)="closeDialog()"
+        [disabled]="scanning()"
+      ></p-button>
+      <p-button
+        label="Escanear"
+        icon="pi pi-scan"
+        severity="primary"
+        (onClick)="startScan()"
+        [disabled]="!selectedFile() || scanning()"
+        [loading]="scanning()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
