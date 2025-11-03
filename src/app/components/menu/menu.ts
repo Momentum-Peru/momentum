@@ -89,12 +89,19 @@ export class Menu implements OnInit, OnDestroy {
     // Cargar información inicial del usuario
     this.loadUserInfo();
 
+    // Inicializar la ruta actual (solo la ruta, sin query params)
+    const initialUrl = this.router.url.split('?')[0];
+    this.currentRoute.set(initialUrl);
+    this.loadMenuItems();
+
     // Suscribirse a cambios de ruta
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
-        this.currentRoute.set(event.url);
-        this.loadMenuItems();
+        // Solo la ruta, sin query params
+        const url = event.url.split('?')[0];
+        this.currentRoute.set(url);
+        this.loadMenuItems(); // Recargar items para actualizar estado activo
         // Cerrar el menú móvil al navegar
         this.closeMenu();
       });
@@ -148,6 +155,17 @@ export class Menu implements OnInit, OnDestroy {
   }
 
   /**
+   * Verifica si algún item dentro de un grupo tiene una ruta activa
+   */
+  private hasActiveChild(items: MenuItem[] | undefined): boolean {
+    if (!items) return false;
+    return items.some((subItem) => {
+      const routerLink = this.getRouterLink(subItem);
+      return routerLink && this.isActiveRoute(routerLink);
+    });
+  }
+
+  /**
    * Filtra los items del menú según los permisos del usuario
    */
   private filterMenuItemsByPermissions(items: MenuItem[]): MenuItem[] {
@@ -155,29 +173,62 @@ export class Menu implements OnInit, OnDestroy {
       .map((item) => {
         // Si tiene submenús, filtrarlos también
         if (item.items && item.items.length > 0) {
-          const filteredSubItems = item.items.filter((subItem) => {
-            if (subItem.routerLink) {
-              return this.menuService.canAccess(subItem.routerLink as string);
-            }
-            return true;
-          });
+          const filteredSubItems = item.items
+            .filter((subItem) => {
+              if (subItem.routerLink) {
+                return this.menuService.canAccess(subItem.routerLink as string);
+              }
+              return true;
+            })
+            .map((subItem) => {
+              // Marcar como activo si la ruta coincide
+              const routerLink = this.getRouterLink(subItem);
+              const isActive = routerLink && this.isActiveRoute(routerLink);
+
+              // Combinar styleClass existente con la clase activa si aplica
+              const existingStyleClass = subItem.styleClass || '';
+              const activeStyleClass = isActive ? 'p-menuitem-link-active' : '';
+              const combinedStyleClass = [existingStyleClass, activeStyleClass]
+                .filter(Boolean)
+                .join(' ');
+
+              const itemWithClass: MenuItem = {
+                ...subItem,
+                ...(combinedStyleClass && { styleClass: combinedStyleClass }),
+                // Agregar routerLinkActiveOptions para que PrimeNG detecte la ruta activa
+                routerLinkActiveOptions: { exact: false },
+                // Agregar routerLinkActiveClass para asegurar que se aplique la clase
+                routerLinkActiveClass: 'p-menuitem-link-active',
+              };
+              return itemWithClass;
+            });
 
           // Si no tiene submenús válidos, retornar null para excluirlo
           if (filteredSubItems.length === 0) {
             return null;
           }
 
-          // Retornar el item con submenús filtrados
+          // Verificar si algún subitem está activo para expandir el panel automáticamente
+          const hasActive = this.hasActiveChild(filteredSubItems);
+
+          // Retornar el item con submenús filtrados y expandido si tiene un item activo
           return {
             ...item,
             items: filteredSubItems,
+            expanded: hasActive, // Expandir automáticamente si tiene un item activo
           };
         }
 
         // Si es un item sin submenús, verificar permiso
         if (item.routerLink) {
           if (this.menuService.canAccess(item.routerLink as string)) {
-            return item;
+            // Marcar como activo si la ruta coincide (aunque routerLinkActive también lo manejará)
+            const routerLink = this.getRouterLink(item);
+            const isActive = this.isActiveRoute(routerLink);
+            return {
+              ...item,
+              ...(isActive && { styleClass: 'menu-item-active' }),
+            };
           }
           return null;
         }
@@ -210,8 +261,26 @@ export class Menu implements OnInit, OnDestroy {
   /**
    * Verifica si una ruta está activa
    */
-  isActiveRoute(route: string): boolean {
-    return this.currentRoute() === route;
+  isActiveRoute(route: string | undefined): boolean {
+    if (!route) return false;
+    const current = this.currentRoute();
+
+    // Normalizar rutas (eliminar trailing slash si existe, excepto para '/')
+    const normalizedRoute = route.endsWith('/') && route !== '/' ? route.slice(0, -1) : route;
+    const normalizedCurrent = current.endsWith('/') && current !== '/' ? current.slice(0, -1) : current;
+
+    // Comparar rutas exactas
+    if (normalizedCurrent === normalizedRoute) return true;
+
+    // Si la ruta del menú no es '/', verificar si la ruta actual empieza con ella
+    if (normalizedRoute !== '/' && normalizedRoute !== '') {
+      // Verificar si la ruta actual empieza con la ruta del menú seguida de '/'
+      // Esto permite que /clients/edit coincida con /clients
+      return normalizedCurrent.startsWith(normalizedRoute + '/') || normalizedCurrent === normalizedRoute;
+    }
+
+    // Para '/', solo coincidir exactamente
+    return false;
   }
 
   /**
@@ -227,19 +296,7 @@ export class Menu implements OnInit, OnDestroy {
     return '';
   }
 
-  /**
-   * Obtiene las clases CSS para un item del menú
-   */
-  getMenuItemClasses(item: MenuItem): string {
-    const baseClasses = 'flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group';
-    const routerLink = this.getRouterLink(item);
-
-    if (routerLink && this.isActiveRoute(routerLink)) {
-      return `${baseClasses} bg-white bg-opacity-20 text-white border-l-4 border-white`;
-    }
-
-    return `${baseClasses} text-white hover:bg-white hover:bg-opacity-10`;
-  }
+  // Método removido - las clases ahora están directamente en el HTML
 
   /**
    * Maneja la expansión/colapso de paneles del menú

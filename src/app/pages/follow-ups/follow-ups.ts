@@ -3,7 +3,6 @@ import {
     Component,
     inject,
     signal,
-    effect,
     OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -112,48 +111,89 @@ export class FollowUpsPage implements OnInit {
         CANCELLED: 'danger',
     };
 
+    // Cache para las fechas para evitar crear nuevos objetos Date en cada render
+    private cachedScheduledDate: Date | null = null;
+    private cachedScheduledDateString: string | null = null;
+    private cachedNextFollowUpDate: Date | null = null;
+    private cachedNextFollowUpDateString: string | null = null;
+
     getScheduledDate(): Date | null {
-        const date = this.editing()?.scheduledDate;
-        return date ? new Date(date) : null;
+        const dateString = this.editing()?.scheduledDate;
+        if (!dateString) {
+            this.cachedScheduledDate = null;
+            this.cachedScheduledDateString = null;
+            return null;
+        }
+
+        // Solo crear un nuevo Date si la string cambió
+        if (this.cachedScheduledDateString !== dateString) {
+            this.cachedScheduledDate = new Date(dateString);
+            this.cachedScheduledDateString = dateString;
+        }
+
+        return this.cachedScheduledDate;
     }
 
     getNextFollowUpDate(): Date | null {
-        const date = this.editing()?.nextFollowUpDate;
-        return date ? new Date(date) : null;
+        const dateString = this.editing()?.nextFollowUpDate;
+        if (!dateString) {
+            this.cachedNextFollowUpDate = null;
+            this.cachedNextFollowUpDateString = null;
+            return null;
+        }
+
+        // Solo crear un nuevo Date si la string cambió
+        if (this.cachedNextFollowUpDateString !== dateString) {
+            this.cachedNextFollowUpDate = new Date(dateString);
+            this.cachedNextFollowUpDateString = dateString;
+        }
+
+        return this.cachedNextFollowUpDate;
     }
 
     onScheduledDateChange(date: Date | null) {
         if (date) {
-            this.onEditChange('scheduledDate', date.toISOString());
+            const dateString = date.toISOString();
+            // Evitar actualización innecesaria si el valor es el mismo
+            if (this.editing()?.scheduledDate !== dateString) {
+                this.onEditChange('scheduledDate', dateString);
+            }
+        } else {
+            if (this.editing()?.scheduledDate !== undefined) {
+                this.onEditChange('scheduledDate', undefined as any);
+            }
         }
     }
 
     onNextFollowUpDateChange(date: Date | null) {
         if (date) {
-            this.onEditChange('nextFollowUpDate', date.toISOString());
+            const dateString = date.toISOString();
+            // Evitar actualización innecesaria si el valor es el mismo
+            if (this.editing()?.nextFollowUpDate !== dateString) {
+                this.onEditChange('nextFollowUpDate', dateString);
+            }
+        } else {
+            if (this.editing()?.nextFollowUpDate !== undefined) {
+                this.onEditChange('nextFollowUpDate', undefined as any);
+            }
         }
     }
 
+    // Flags para controlar carga lazy
+    private usersLoaded = signal<boolean>(false);
+    private clientsLoaded = signal<boolean>(false);
+    private leadsLoaded = signal<boolean>(false);
+    private contactsLoaded = signal<boolean>(false);
+
     ngOnInit() {
         this.load();
+        // Cargar usuarios inmediatamente ya que se usan en la tabla
         this.loadUsers();
-        this.loadClients();
-        this.loadLeads();
-        this.loadContacts();
     }
 
     constructor() {
-        effect(() => {
-            if (!this.showDialog()) {
-                this.editing.set(null);
-            }
-        });
-
-        effect(() => {
-            if (!this.showDetailsDialog()) {
-                this.viewingFollowUp.set(null);
-            }
-        });
+        // No usar efectos aquí para evitar loops infinitos
+        // La limpieza se manejará manualmente en closeDialog() y closeDetails()
     }
 
     load() {
@@ -219,14 +259,30 @@ export class FollowUpsPage implements OnInit {
     }
 
     newItem() {
-        this.editing.set({
+        // Cargar datos si no se han cargado antes
+        if (!this.clientsLoaded()) {
+            this.loadClients();
+            this.clientsLoaded.set(true);
+        }
+        if (!this.leadsLoaded()) {
+            this.loadLeads();
+            this.leadsLoaded.set(true);
+        }
+        if (!this.contactsLoaded()) {
+            this.loadContacts();
+            this.contactsLoaded.set(true);
+        }
+
+        // Preparar el objeto de edición antes de abrir el diálogo
+        const newEditing: Partial<FollowUp> = {
             title: '',
             description: '',
             type: 'CALL',
             status: 'SCHEDULED',
             scheduledDate: new Date().toISOString(),
             userId: '',
-        });
+        };
+        this.editing.set(newEditing);
         this.showDialog.set(true);
     }
 
@@ -242,15 +298,29 @@ export class FollowUpsPage implements OnInit {
 
     closeDialog() {
         this.showDialog.set(false);
+        // Limpiar editing y cache cuando se cierra el diálogo
+        this.editing.set(null);
+        this.cachedScheduledDate = null;
+        this.cachedScheduledDateString = null;
+        this.cachedNextFollowUpDate = null;
+        this.cachedNextFollowUpDateString = null;
     }
 
     closeDetails() {
         this.showDetailsDialog.set(false);
+        // Limpiar viewingFollowUp cuando se cierra el diálogo de detalles
+        this.viewingFollowUp.set(null);
     }
 
     onEditChange<K extends keyof FollowUp>(key: K, value: FollowUp[K]) {
         const cur = this.editing();
         if (!cur) return;
+
+        // Evitar actualización si el valor no cambió
+        if (cur[key] === value) {
+            return;
+        }
+
         this.editing.set({ ...cur, [key]: value });
     }
 
@@ -384,22 +454,34 @@ export class FollowUpsPage implements OnInit {
         return this.statusColors[status] || 'info';
     }
 
-    getUserName(id: string): string {
+    getUserName(id: string | undefined): string {
+        if (!id) {
+            return 'Sin asignar';
+        }
         const user = this.users().find((u) => u._id === id);
         return user ? user.name : id;
     }
 
-    getLeadName(id: string): string {
+    getLeadName(id: string | undefined): string {
+        if (!id) {
+            return '-';
+        }
         const lead = this.leads().find((l) => l._id === id);
         return lead ? lead.name : id;
     }
 
-    getContactName(id: string): string {
+    getContactName(id: string | undefined): string {
+        if (!id) {
+            return '-';
+        }
         const contact = this.contacts().find((c) => c._id === id);
         return contact ? contact.name : id;
     }
 
-    getClientName(id: string): string {
+    getClientName(id: string | undefined): string {
+        if (!id) {
+            return '-';
+        }
         const client = this.clients().find((c) => c._id === id);
         return client ? client.name : id;
     }

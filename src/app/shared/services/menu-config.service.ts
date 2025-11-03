@@ -36,6 +36,7 @@ export class MenuConfigService {
     { path: '/leads', label: 'Leads', icon: 'pi pi-user-plus' },
     { path: '/contacts-crm', label: 'Contactos CRM', icon: 'pi pi-address-book' },
     { path: '/follow-ups', label: 'Seguimientos', icon: 'pi pi-calendar-plus' },
+    { path: '/companies-crm', label: 'Empresas Momentum', icon: 'pi pi-building' },
   ];
 
   /**
@@ -163,6 +164,11 @@ export class MenuConfigService {
             label: 'Seguimientos',
             icon: 'pi pi-calendar-plus',
             routerLink: '/follow-ups',
+          },
+          {
+            label: 'Empresas',
+            icon: 'pi pi-building',
+            routerLink: '/companies-crm',
           },
         ],
       },

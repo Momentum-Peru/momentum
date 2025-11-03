@@ -29,6 +29,8 @@ import { LeadsApiService } from '../../shared/services/leads-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
+import { CompaniesApiService } from '../../shared/services/companies-api.service';
+import { CompanyOption } from '../../shared/interfaces/company.interface';
 import {
     Lead,
     LeadStatus,
@@ -37,6 +39,8 @@ import {
     LeadCompany,
     LeadLocation,
     LeadStatistics,
+    CreateLeadRequest,
+    UpdateLeadRequest,
 } from '../../shared/interfaces/lead.interface';
 
 interface Country {
@@ -88,6 +92,7 @@ export class LeadsPage implements OnInit {
     private readonly leadsApi = inject(LeadsApiService);
     private readonly usersApi = inject(UsersApiService);
     private readonly clientsApi = inject(ClientsApiService);
+    private readonly companiesApi = inject(CompaniesApiService);
     private readonly messageService = inject(MessageService);
     private readonly confirmationService = inject(ConfirmationService);
     private readonly http = inject(HttpClient);
@@ -99,6 +104,7 @@ export class LeadsPage implements OnInit {
     statusFilter = signal<LeadStatus | ''>('');
     sourceFilter = signal<LeadSource | ''>('');
     assignedToFilter = signal<string>('');
+    companyIdFilter = signal<string>('');
     showDialog = signal<boolean>(false);
     showStatsDialog = signal<boolean>(false);
     showDetailsDialog = signal<boolean>(false);
@@ -112,6 +118,7 @@ export class LeadsPage implements OnInit {
     // Selectores
     users = signal<UserOption[]>([]);
     clients = signal<ClientOption[]>([]);
+    companies = signal<CompanyOption[]>([]);
     countries = signal<Country[]>([]);
     provinces = signal<Province[]>([]);
     districts = signal<District[]>([]);
@@ -158,6 +165,7 @@ export class LeadsPage implements OnInit {
         this.load();
         this.loadUsers();
         this.loadClients();
+        this.loadCompanies();
         this.loadCountries();
         this.loadStats();
     }
@@ -189,6 +197,7 @@ export class LeadsPage implements OnInit {
         if (this.statusFilter()) params.status = this.statusFilter();
         if (this.sourceFilter()) params.source = this.sourceFilter();
         if (this.assignedToFilter()) params.assignedTo = this.assignedToFilter();
+        if (this.companyIdFilter()) params.companyId = this.companyIdFilter();
 
         this.leadsApi.list(params).subscribe({
             next: (leads) => this.items.set(leads),
@@ -214,6 +223,13 @@ export class LeadsPage implements OnInit {
         this.clientsApi.list().subscribe({
             next: (clients) => this.clients.set(clients),
             error: () => this.clients.set([]),
+        });
+    }
+
+    loadCompanies() {
+        this.companiesApi.listActiveAsOptions().subscribe({
+            next: (companies) => this.companies.set(companies),
+            error: () => this.companies.set([]),
         });
     }
 
@@ -274,11 +290,17 @@ export class LeadsPage implements OnInit {
         this.loadStats();
     }
 
+    setCompanyIdFilter(value: string) {
+        this.companyIdFilter.set(value);
+        this.load();
+    }
+
     clearFilters() {
         this.query.set('');
         this.statusFilter.set('');
         this.sourceFilter.set('');
         this.assignedToFilter.set('');
+        this.companyIdFilter.set('');
         this.load();
         this.loadStats();
     }
@@ -359,41 +381,86 @@ export class LeadsPage implements OnInit {
             return;
         }
 
-        const payload: any = {
-            name: item.name,
-            contact: item.contact,
-            company: item.company,
-            location: item.location,
-            status: item.status,
-            source: item.source,
-            estimatedValue: item.estimatedValue,
-            notes: item.notes,
-            assignedTo: item.assignedTo,
-        };
+        // Después de la validación, sabemos que name y contact existen
+        // Hacer type narrowing explícito para TypeScript
+        const name = item.name;
+        const contact = item.contact;
 
-        const req = item._id
-            ? this.leadsApi.update(item._id, payload)
-            : this.leadsApi.create(payload);
+        if (!name || !contact) {
+            return;
+        }
 
-        req.subscribe({
-            next: () => {
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: item._id ? 'Lead actualizado correctamente' : 'Lead creado correctamente',
-                });
-                this.closeDialog();
-                this.load();
-                this.loadStats();
-            },
-            error: (error) => {
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: this.getErrorMessage(error),
-                });
-            },
-        });
+        // Ahora TypeScript sabe que name y contact no son undefined
+        if (item._id) {
+            // Actualizar lead existente - solo campos permitidos en UpdateLeadRequest
+            const updatePayload: UpdateLeadRequest = {
+                name,
+                contact,
+                company: item.company,
+                location: item.location,
+                status: item.status,
+                source: item.source,
+                estimatedValue: item.estimatedValue,
+                notes: item.notes,
+                assignedTo: item.assignedTo,
+                companyId: item.companyId,
+            };
+
+            this.leadsApi.update(item._id, updatePayload).subscribe({
+                next: () => {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Éxito',
+                        detail: 'Lead actualizado correctamente',
+                    });
+                    this.closeDialog();
+                    this.load();
+                    this.loadStats();
+                },
+                error: (error) => {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: this.getErrorMessage(error),
+                    });
+                },
+            });
+        } else {
+            // Crear nuevo lead - solo campos permitidos en CreateLeadRequest
+            // Después de la validación y el check anterior, sabemos que name y contact existen
+            const createPayload: CreateLeadRequest = {
+                name,
+                contact,
+                company: item.company,
+                location: item.location,
+                status: item.status || 'NEW',
+                source: item.source || 'OTHER',
+                estimatedValue: item.estimatedValue,
+                notes: item.notes,
+                assignedTo: item.assignedTo,
+                companyId: item.companyId,
+            };
+
+            this.leadsApi.create(createPayload).subscribe({
+                next: () => {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Éxito',
+                        detail: 'Lead creado correctamente',
+                    });
+                    this.closeDialog();
+                    this.load();
+                    this.loadStats();
+                },
+                error: (error) => {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: this.getErrorMessage(error),
+                    });
+                },
+            });
+        }
     }
 
     remove(item: Lead) {
@@ -610,6 +677,18 @@ export class LeadsPage implements OnInit {
         return [{ label: 'Todos', value: '' }, ...this.clients().map(c => ({ label: c.name, value: c._id }))];
     }
 
+    getCompanyFilterOptions() {
+        return this.companies().map(c => ({ label: c.name, value: c._id }));
+    }
+
+    getCompanyName(id: string | undefined): string {
+        if (!id) {
+            return '-';
+        }
+        const company = this.companies().find((c) => c._id === id);
+        return company ? company.name : id;
+    }
+
     getStatusCount(status: LeadStatus | ''): number {
         if (!status || !this.stats()) return 0;
         return this.stats()?.byStatus[status] || 0;
@@ -660,6 +739,10 @@ export class LeadsPage implements OnInit {
 
         if (!item.assignedTo || item.assignedTo.trim() === '') {
             errors.push('Debe asignar el lead a un usuario');
+        }
+
+        if (!item.companyId || item.companyId.trim() === '') {
+            errors.push('Debe seleccionar una empresa de Momentum');
         }
 
         return errors;

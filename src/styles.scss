@@ -105,24 +105,25 @@ nav[class*='bg-black'] .p-panelmenu {
   color: #ffffff !important;
 }
 
-nav.bg-black .p-panelmenu .p-panelmenu-header-link,
-.bg-black .p-panelmenu .p-panelmenu-header-link,
-nav.bg-black .p-panelmenu .p-menuitem-link,
-.bg-black .p-panelmenu .p-menuitem-link,
+// Color blanco por defecto (solo cuando NO hay hover)
+nav.bg-black .p-panelmenu .p-panelmenu-header-link:not(:hover),
+.bg-black .p-panelmenu .p-panelmenu-header-link:not(:hover),
+nav.bg-black .p-panelmenu .p-menuitem-link:not(:hover),
+.bg-black .p-panelmenu .p-menuitem-link:not(:hover),
 nav.bg-black .p-panelmenu .p-panelmenu-header-text,
 .bg-black .p-panelmenu .p-panelmenu-header-text,
-nav.bg-black .p-panelmenu .p-menuitem-text,
-.bg-black .p-panelmenu .p-menuitem-text,
+nav.bg-black .p-panelmenu .p-menuitem-text:not(:hover),
+.bg-black .p-panelmenu .p-menuitem-text:not(:hover),
 nav.bg-black .p-panelmenu .p-panelmenu-header-icon,
 .bg-black .p-panelmenu .p-panelmenu-header-icon,
-nav.bg-black .p-panelmenu .p-menuitem-icon,
-.bg-black .p-panelmenu .p-menuitem-icon,
-nav.bg-black .p-panelmenu i,
-.bg-black .p-panelmenu i,
-nav.bg-black .p-panelmenu span,
-.bg-black .p-panelmenu span,
-nav.bg-black .p-panelmenu a,
-.bg-black .p-panelmenu a {
+nav.bg-black .p-panelmenu .p-menuitem-icon:not(:hover),
+.bg-black .p-panelmenu .p-menuitem-icon:not(:hover),
+nav.bg-black .p-panelmenu i:not(:hover),
+.bg-black .p-panelmenu i:not(:hover),
+nav.bg-black .p-panelmenu span:not(:hover),
+.bg-black .p-panelmenu span:not(:hover),
+nav.bg-black .p-panelmenu a:not(:hover),
+.bg-black .p-panelmenu a:not(:hover) {
   color: #ffffff !important;
 }
 
@@ -133,10 +134,109 @@ nav.bg-black .p-panelmenu .p-menuitem-link,
   background-color: transparent !important;
 }
 
+// HOVER - Máxima especificidad para PanelMenu
+nav.bg-black .custom-panelmenu .p-panelmenu-header-link:hover,
+nav[class*='bg-black'] .custom-panelmenu .p-panelmenu-header-link:hover,
+.bg-black .custom-panelmenu .p-panelmenu-header-link:hover,
 nav.bg-black .p-panelmenu .p-panelmenu-header-link:hover,
-.bg-black .p-panelmenu .p-panelmenu-header-link:hover,
-nav.bg-black .p-panelmenu .p-menuitem-link:hover,
-.bg-black .p-panelmenu .p-menuitem-link:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+.bg-black .p-panelmenu .p-panelmenu-header-link:hover {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  .p-panelmenu-header-text,
+  .p-panelmenu-header-icon,
+  span,
+  i,
+  * {
+    color: #000000 !important;
+  }
+}
+
+// CRÍTICO: Desactivar pointer-events en TODOS los hijos de p-menuitem-link
+// Esto asegura que el hover SIEMPRE se dispare en el contenedor padre
+nav.bg-black .custom-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link *,
+nav.bg-black .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link *,
+.bg-black .custom-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link *,
+.bg-black .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link * {
+  pointer-events: none !important;
+}
+
+// HOVER en SUBITEMS - Máxima especificidad posible
+nav.bg-black .custom-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link:hover,
+nav[class*='bg-black'] .custom-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link:hover,
+.bg-black .custom-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link:hover,
+nav.bg-black .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link:hover,
+nav[class*='bg-black'] .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link:hover,
+.bg-black .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link:hover {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+
+  // ÍCONOS - Selectores ultra específicos
+  .p-menuitem-icon,
+  .p-menuitem-icon.p-icon,
+  > .p-menuitem-icon,
+  i,
+  i.pi,
+  i[class*='pi-'],
+  i[class*='pi-briefcase'],
+  i[class*='pi-folder'],
+  i[class*='pi-shopping-cart'],
+  i[class*='pi-inbox'],
+  i[class*='pi-file'],
+  i[class*='pi-dollar'],
+  i[class*='pi-building'],
+  i[class*='pi-user-plus'],
+  i[class*='pi-address-book'],
+  i[class*='pi-calendar-plus'],
+  i[class*='pi-check-square'],
+  i[class*='pi-calendar'],
+  i[class*='pi-users'],
+  i[class*='pi-shield'],
+  > i {
+    color: #000000 !important;
+  }
+
+  // TEXTO
+  .p-menuitem-text,
+  .p-menuitem-text.p-menuitem-text,
+  span,
+  span.p-menuitem-text,
+  > .p-menuitem-text,
+  > span {
+    color: #000000 !important;
+  }
+
+  // TODOS los demás elementos
+  a,
+  div,
+  * {
+    color: #000000 !important;
+  }
+}
+
+// Item activo en submenús (solo cuando NO hay hover)
+nav.bg-black
+  .p-panelmenu
+  .p-panelmenu-content
+  .p-menuitem
+  .p-menuitem-link.p-menuitem-link-active:not(:hover),
+.bg-black
+  .p-panelmenu
+  .p-panelmenu-content
+  .p-menuitem
+  .p-menuitem-link[class*='active']:not(:hover),
+nav.bg-black
+  .p-panelmenu
+  .p-panelmenu-content
+  .p-menuitem
+  .p-menuitem-link[class*='router-link-active']:not(:hover) {
+  background-color: rgba(255, 255, 255, 0.2) !important;
   color: #ffffff !important;
+  border-left: 4px solid #ffffff !important;
+  padding-left: calc(1rem - 4px) !important;
+  .p-menuitem-icon,
+  .p-menuitem-text,
+  i,
+  span {
+    color: #ffffff !important;
+  }
 }

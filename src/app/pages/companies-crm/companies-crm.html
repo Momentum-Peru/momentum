@@ -1,0 +1,592 @@
+<div class="p-4 space-y-4">
+  <p-toast></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">
+      Gestión de Empresas Momentum
+    </h1>
+    <button
+      pButton
+      type="button"
+      label="Nueva Empresa"
+      icon="pi pi-plus"
+      (click)="newItem()"
+    ></button>
+  </div>
+
+  <!-- Filtros -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Buscar</label
+          >
+          <input
+            pInputText
+            placeholder="Nombre, código, RUC..."
+            [ngModel]="query()"
+            (ngModelChange)="setQuery($event)"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Estado</label
+          >
+          <p-select
+            [options]="getIsActiveFilterOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="isActiveFilter()"
+            (ngModelChange)="setIsActiveFilter($event)"
+            placeholder="Filtrar por estado"
+            [showClear]="true"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div class="flex items-end">
+          <button
+            pButton
+            type="button"
+            label="Limpiar"
+            icon="pi pi-filter-slash"
+            class="p-button-outlined w-full"
+            (click)="clearFilters()"
+          ></button>
+        </div>
+      </div>
+    </ng-template>
+  </p-card>
+
+  <!-- Vista Desktop: Tabla -->
+  <div class="hidden md:block">
+    <p-table [value]="items()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Nombre</th>
+          <th>Código</th>
+          <th>RUC/DNI</th>
+          <th>Email</th>
+          <th>Teléfono</th>
+          <th>Estado</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <div class="space-y-1">
+              <div class="font-semibold text-gray-900 dark:text-gray-100 break-words">
+                {{ row.name }}
+              </div>
+              @if (row.description) {
+              <div class="text-sm text-gray-500 dark:text-gray-400 break-words line-clamp-1">
+                {{ row.description }}
+              </div>
+              }
+            </div>
+          </td>
+          <td>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ row.code || '-' }}
+            </span>
+          </td>
+          <td>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ row.taxId || '-' }}
+            </span>
+          </td>
+          <td>
+            <span class="text-sm break-words text-gray-900 dark:text-gray-100">
+              {{ row.email || '-' }}
+            </span>
+          </td>
+          <td>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ row.phone || '-' }}
+            </span>
+          </td>
+          <td>
+            @if (row.isActive) {
+            <p-tag value="Activa" severity="success"></p-tag>
+            } @else {
+            <p-tag value="Inactiva" severity="danger"></p-tag>
+            }
+          </td>
+          <td class="text-right">
+            <div class="flex items-center justify-end gap-1">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm"
+                pTooltip="Ver detalles"
+                (click)="viewDetails(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text p-button-sm"
+                pTooltip="Editar"
+                (click)="editItem(row)"
+              ></button>
+              @if (row.isActive) {
+              <button
+                pButton
+                icon="pi pi-ban"
+                class="p-button-text p-button-sm p-button-warning"
+                pTooltip="Desactivar"
+                (click)="deactivate(row)"
+              ></button>
+              } @else {
+              <button
+                pButton
+                icon="pi pi-check"
+                class="p-button-text p-button-sm p-button-success"
+                pTooltip="Activar"
+                (click)="activate(row)"
+              ></button>
+              }
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-sm p-button-danger"
+                pTooltip="Eliminar"
+                (click)="remove(row)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil -->
+  <div class="md:hidden space-y-3">
+    @for (row of items(); track row._id || $index) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden"
+    >
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        (click)="toggleRow(row._id)"
+      >
+        <div class="flex-1 text-left min-w-0 pr-4">
+          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+            {{ row.name }}
+          </div>
+          @if (row.code) {
+          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+            Código: {{ row.code }}
+          </div>
+          }
+          <div class="flex items-center gap-2 mt-1">
+            @if (row.isActive) {
+            <p-tag value="Activa" severity="success" styleClass="text-xs"></p-tag>
+            } @else {
+            <p-tag value="Inactiva" severity="danger" styleClass="text-xs"></p-tag>
+            }
+          </div>
+        </div>
+        <div class="flex-shrink-0">
+          <i
+            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+            [class.pi-chevron-down]="!isRowExpanded(row._id)"
+            [class.pi-chevron-up]="isRowExpanded(row._id)"
+          ></i>
+        </div>
+      </button>
+
+      @if (isRowExpanded(row._id)) {
+      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+        <div class="px-4 py-4 space-y-4">
+          <!-- Información básica -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Información
+            </div>
+            @if (row.description) {
+            <div class="text-sm text-gray-900 dark:text-gray-100 break-words mb-2">
+              {{ row.description }}
+            </div>
+            } @if (row.taxId) {
+            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+              RUC/DNI: {{ row.taxId }}
+            </div>
+            } @if (row.email) {
+            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+              Email: {{ row.email }}
+            </div>
+            } @if (row.phone) {
+            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+              Teléfono: {{ row.phone }}
+            </div>
+            } @if (row.website) {
+            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+              Web:
+              <a
+                [href]="row.website"
+                target="_blank"
+                class="text-blue-600 hover:text-blue-800 dark:text-blue-400"
+              >
+                {{ row.website }}
+              </a>
+            </div>
+            } @if (row.address) {
+            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+              Dirección: {{ row.address }}
+            </div>
+            }
+          </div>
+
+          <!-- Acciones -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+              Acciones
+            </div>
+            <div class="flex flex-col gap-2">
+              <button
+                pButton
+                icon="pi pi-eye"
+                label="Ver detalles"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="viewDetails(row)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                label="Editar"
+                class="p-button-text p-button-sm w-full justify-start"
+                (click)="editItem(row)"
+              ></button>
+              @if (row.isActive) {
+              <button
+                pButton
+                icon="pi pi-ban"
+                label="Desactivar"
+                class="p-button-text p-button-sm p-button-warning w-full justify-start"
+                (click)="deactivate(row)"
+              ></button>
+              } @else {
+              <button
+                pButton
+                icon="pi pi-check"
+                label="Activar"
+                class="p-button-text p-button-sm p-button-success w-full justify-start"
+                (click)="activate(row)"
+              ></button>
+              }
+              <button
+                pButton
+                icon="pi pi-trash"
+                label="Eliminar"
+                class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                (click)="remove(row)"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    } @if (items().length === 0) {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <i class="pi pi-inbox text-4xl mb-2"></i>
+      <p>No hay empresas disponibles</p>
+    </div>
+    }
+  </div>
+
+  <!-- Modal de creación/edición -->
+  <p-dialog
+    [(visible)]="showDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '50rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      {{ editing()?._id ? 'Editar Empresa' : 'Nueva Empresa' }}
+    </ng-template>
+    <div class="space-y-4 max-h-[70vh] overflow-y-auto">
+      <!-- Información Básica -->
+      <div>
+        <h4 class="text-lg font-semibold mb-3">Información Básica</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nombre de la Empresa *
+            </label>
+            <input
+              pInputText
+              placeholder="Nombre de la empresa"
+              [ngModel]="editing()?.name"
+              (ngModelChange)="onEditChange('name', $event)"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Código
+            </label>
+            <input
+              pInputText
+              placeholder="Código único"
+              [ngModel]="editing()?.code"
+              (ngModelChange)="onEditChange('code', $event)"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              RUC/DNI
+            </label>
+            <input
+              pInputText
+              placeholder="20123456789"
+              [ngModel]="editing()?.taxId"
+              (ngModelChange)="onEditChange('taxId', $event)"
+              class="w-full"
+            />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Descripción
+            </label>
+            <textarea
+              pTextarea
+              placeholder="Descripción de la empresa"
+              [ngModel]="editing()?.description"
+              (ngModelChange)="onEditChange('description', $event)"
+              [rows]="3"
+              class="w-full"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Información de Contacto -->
+      <div class="border-t pt-4">
+        <h4 class="text-lg font-semibold mb-3">Información de Contacto</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Email
+            </label>
+            <input
+              pInputText
+              type="email"
+              placeholder="contacto@ejemplo.com"
+              [ngModel]="editing()?.email"
+              (ngModelChange)="onEditChange('email', $event)"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Teléfono
+            </label>
+            <input
+              pInputText
+              placeholder="+51 987654321"
+              [ngModel]="editing()?.phone"
+              (ngModelChange)="onEditChange('phone', $event)"
+              class="w-full"
+            />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Sitio Web
+            </label>
+            <input
+              pInputText
+              placeholder="https://www.ejemplo.com"
+              [ngModel]="editing()?.website"
+              (ngModelChange)="onEditChange('website', $event)"
+              class="w-full"
+            />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Dirección
+            </label>
+            <input
+              pInputText
+              placeholder="Av. Principal 123, Lima"
+              [ngModel]="editing()?.address"
+              (ngModelChange)="onEditChange('address', $event)"
+              class="w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado -->
+      <div class="border-t pt-4">
+        <div class="flex items-center gap-2">
+          <p-checkbox
+            [binary]="true"
+            [ngModel]="editing()?.isActive"
+            (ngModelChange)="onEditChange('isActive', $event)"
+            inputId="isActive"
+          ></p-checkbox>
+          <label for="isActive" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Empresa activa
+          </label>
+        </div>
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2">
+        <button
+          pButton
+          type="button"
+          label="Cancelar"
+          icon="pi pi-times"
+          class="p-button-text"
+          (click)="closeDialog()"
+        ></button>
+        <button pButton type="button" label="Guardar" icon="pi pi-check" (click)="save()"></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de detalles -->
+  <p-dialog
+    [(visible)]="showDetailsDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '40rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    header="Detalles de la Empresa"
+  >
+    @if (viewingCompany()) {
+    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg space-y-6">
+      <!-- Información básica -->
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-info-circle text-blue-500"></i>
+          Información Básica
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Nombre</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-medium">
+              {{ viewingCompany()?.name }}
+            </div>
+          </div>
+          @if (viewingCompany()?.code) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Código</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.code }}</div>
+          </div>
+          } @if (viewingCompany()?.taxId) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >RUC/DNI</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.taxId }}</div>
+          </div>
+          }
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado</label
+            >
+            @if (viewingCompany()?.isActive) {
+            <p-tag value="Activa" severity="success"></p-tag>
+            } @else {
+            <p-tag value="Inactiva" severity="danger"></p-tag>
+            }
+          </div>
+          @if (viewingCompany()?.description) {
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Descripción</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 break-words">
+              {{ viewingCompany()?.description }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Información de contacto -->
+      @if (viewingCompany()?.email || viewingCompany()?.phone || viewingCompany()?.website) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-envelope text-purple-500"></i>
+          Información de Contacto
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          @if (viewingCompany()?.email) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Email</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 break-words">
+              {{ viewingCompany()?.email }}
+            </div>
+          </div>
+          } @if (viewingCompany()?.phone) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Teléfono</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.phone }}</div>
+          </div>
+          } @if (viewingCompany()?.website) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Sitio Web</label
+            >
+            <a
+              [href]="viewingCompany()?.website"
+              target="_blank"
+              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 break-words"
+            >
+              {{ viewingCompany()?.website }}
+            </a>
+          </div>
+          } @if (viewingCompany()?.address) {
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Dirección</label
+            >
+            <div class="text-gray-900 dark:text-gray-100 break-words">
+              {{ viewingCompany()?.address }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end">
+        <button
+          pButton
+          type="button"
+          label="Cerrar"
+          icon="pi pi-times"
+          (click)="closeDetails()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</div>

@@ -55,11 +55,15 @@
     } @else if (hasAnyPermission()) {
     <!-- Items directos (sin submenús) -->
     @for (item of directMenuItems(); track getRouterLink(item) || item.label) {
-    <a [routerLink]="getRouterLink(item)" [class]="getMenuItemClasses(item)" (click)="closeMenu()">
-      <i
-        [class]="item.icon + ' text-lg group-hover:scale-110 transition-transform duration-200'"
-      ></i>
-      <span class="font-medium">{{ item.label }}</span>
+    <a
+      [routerLink]="getRouterLink(item)"
+      routerLinkActive="menu-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="menu-item-link flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-white"
+      (click)="closeMenu()"
+    >
+      <i [class]="item.icon + ' text-lg transition-transform duration-200 menu-item-icon'"></i>
+      <span class="font-medium menu-item-text">{{ item.label }}</span>
       @if (getRouterLink(item) && isActiveRoute(getRouterLink(item))) {
       <i class="pi pi-check ml-auto text-sm"></i>
       }
@@ -86,25 +90,20 @@
   </div>
 
   <!-- Footer del menú -->
-  <div class="mt-auto w-full flex flex-col justify-center items-center pb-4 md:pb-0">
+  <div class="md:hidden w-full flex flex-col justify-center items-center pb-4 md:pb-0">
     <!-- Información del usuario y botón de cerrar sesión solo en móvil -->
-    <div class="mb-4 md:hidden w-full px-4">
-      <!-- Nombre de usuario -->
-      <div class="text-center mb-3">
-        <div class="text-sm text-gray-300 mb-1">Conectado como:</div>
-        <div class="text-white font-semibold text-lg">{{ userName() }}</div>
-      </div>
-
-      <!-- Botón de cerrar sesión -->
-      <p-button
-        label="Cerrar Sesión"
-        class="text-black w-full"
-        severity="secondary"
-        icon="pi pi-sign-out"
-        (onClick)="onLogout()"
-      />
+    <div class="text-center mb-3">
+      <div class="text-sm text-gray-300 mb-1">Conectado como:</div>
+      <div class="text-white font-semibold text-lg">{{ userName() }}</div>
     </div>
 
-    <div class="text-xs text-gray-400 text-center">© Momentum 2025</div>
+    <!-- Botón de cerrar sesión -->
+    <p-button
+      label="Cerrar Sesión"
+      class="text-black"
+      severity="secondary"
+      icon="pi pi-sign-out"
+      (onClick)="onLogout()"
+    />
   </div>
 </nav>

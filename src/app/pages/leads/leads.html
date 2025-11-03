@@ -41,7 +41,7 @@
   <!-- Filtros -->
   <p-card>
     <ng-template pTemplate="content">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Buscar</label
@@ -86,6 +86,21 @@
             class="w-full"
           ></p-select>
         </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Empresa Momentum</label
+          >
+          <p-select
+            [options]="getCompanyFilterOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="companyIdFilter()"
+            (ngModelChange)="setCompanyIdFilter($event)"
+            placeholder="Filtrar por empresa"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+        </div>
         <div class="flex items-end">
           <button
             pButton
@@ -109,6 +124,7 @@
           <th>Contacto</th>
           <th>Estado</th>
           <th>Origen</th>
+          <th>Empresa Momentum</th>
           <th>Valor Estimado</th>
           <th>Asignado a</th>
           <th class="text-right">Acciones</th>
@@ -152,6 +168,12 @@
           <td>
             <span class="text-sm text-gray-600 dark:text-gray-400">
               {{ getSourceLabel(row.source) }}
+            </span>
+          </td>
+          <td>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              <i class="pi pi-building mr-1"></i>
+              {{ getCompanyName(row.companyId) }}
             </span>
           </td>
           <td>
@@ -272,7 +294,7 @@
             }
           </div>
 
-          <!-- Empresa -->
+          <!-- Empresa del Lead -->
           @if (row.company?.name) {
           <div>
             <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
@@ -280,6 +302,21 @@
             </div>
             <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
               {{ row.company?.name }}
+            </div>
+          </div>
+          }
+
+          <!-- Empresa Momentum -->
+          @if (row.companyId) {
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Empresa Momentum
+            </div>
+            <div
+              class="text-sm text-gray-900 dark:text-gray-100 break-words flex items-center gap-1"
+            >
+              <i class="pi pi-building"></i>
+              {{ getCompanyName(row.companyId) }}
             </div>
           </div>
           }
@@ -395,6 +432,23 @@
               class="w-full"
             />
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Empresa Momentum *
+            </label>
+            <p-select
+              [options]="getCompanyFilterOptions()"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="editing()?.companyId"
+              (ngModelChange)="onEditChange('companyId', $event)"
+              placeholder="Seleccionar empresa Momentum"
+              [appendTo]="'body'"
+              class="w-full"
+            ></p-select>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Asignado a *
@@ -730,6 +784,15 @@
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ getSourceLabel(viewingLead()?.source || 'OTHER') }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Empresa Momentum</label
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              <i class="pi pi-building mr-1"></i>
+              {{ getCompanyName(viewingLead()?.companyId) }}
             </div>
           </div>
           <div>

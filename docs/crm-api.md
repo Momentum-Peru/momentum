@@ -66,7 +66,8 @@ Crea un nuevo lead (posible cliente).
   "source": "WEBSITE",
   "estimatedValue": 50000,
   "notes": "Interesado en solución ERP",
-  "assignedTo": "507f1f77bcf86cd799439011"
+  "assignedTo": "507f1f77bcf86cd799439011",
+  "companyId": "507f1f77bcf86cd799439012"
 }
 ```
 
@@ -96,7 +97,8 @@ Crea un nuevo lead (posible cliente).
 | `source`                   | enum              | No        | Origen del lead (WEBSITE, REFERRAL, SOCIAL_MEDIA, EMAIL, PHONE, EVENT, OTHER). Default: OTHER     |
 | `estimatedValue`           | number            | No        | Valor estimado del lead (≥ 0)                                                                     |
 | `notes`                    | string            | No        | Notas adicionales (máx. 1000 caracteres)                                                          |
-| `assignedTo`               | string (ObjectId) | Sí        | ID del usuario asignado al lead                                                                   |
+| `assignedTo`               | string (ObjectId) | No        | ID del usuario asignado al lead                                                                   |
+| `companyId`                | string (ObjectId) | No        | ID de la empresa de Momentum a la que pertenece el lead                                           |
 
 **Estados de Lead:**
 
@@ -149,6 +151,7 @@ Crea un nuevo lead (posible cliente).
   "estimatedValue": 50000,
   "notes": "Interesado en solución ERP",
   "assignedTo": "507f1f77bcf86cd799439011",
+  "companyId": "507f1f77bcf86cd799439012",
   "documents": [],
   "createdAt": "2024-01-15T10:00:00.000Z",
   "updatedAt": "2024-01-15T10:00:00.000Z"
@@ -175,12 +178,13 @@ Obtiene una lista de leads con filtros opcionales.
 | `status`     | enum              | No        | Filtrar por estado (NEW, CONTACTED, QUALIFIED, PROPOSAL, NEGOTIATION, CONVERTED, LOST) |
 | `source`     | string            | No        | Filtrar por origen                                                                     |
 | `assignedTo` | string (ObjectId) | No        | Filtrar por usuario asignado                                                           |
+| `companyId`  | string (ObjectId) | No        | Filtrar por empresa de Momentum                                                        |
 | `search`     | string            | No        | Búsqueda por texto en nombre, email, empresa, notas                                    |
 
 **Ejemplo:**
 
 ```
-GET /crm/leads?status=NEW&search=TechCorp
+GET /crm/leads?status=NEW&companyId=507f1f77bcf86cd799439012&search=TechCorp
 ```
 
 **Respuesta Exitosa (200):**
@@ -217,14 +221,15 @@ Obtiene estadísticas agregadas de leads.
 
 **Query Parameters:**
 
-| Parámetro    | Tipo              | Requerido | Descripción                  |
-| ------------ | ----------------- | --------- | ---------------------------- |
-| `assignedTo` | string (ObjectId) | No        | Filtrar por usuario asignado |
+| Parámetro    | Tipo              | Requerido | Descripción                     |
+| ------------ | ----------------- | --------- | ------------------------------- |
+| `assignedTo` | string (ObjectId) | No        | Filtrar por usuario asignado    |
+| `companyId`  | string (ObjectId) | No        | Filtrar por empresa de Momentum |
 
 **Ejemplo:**
 
 ```
-GET /crm/leads/statistics?assignedTo=507f1f77bcf86cd799439011
+GET /crm/leads/statistics?assignedTo=507f1f77bcf86cd799439011&companyId=507f1f77bcf86cd799439012
 ```
 
 **Respuesta Exitosa (200):**
@@ -280,6 +285,7 @@ GET /crm/leads/507f1f77bcf86cd799439011
   "estimatedValue": 50000,
   "notes": "Interesado en solución ERP",
   "assignedTo": "507f1f77bcf86cd799439011",
+  "companyId": "507f1f77bcf86cd799439012",
   "documents": [],
   "createdAt": "2024-01-15T10:00:00.000Z",
   "updatedAt": "2024-01-15T10:00:00.000Z"
@@ -399,6 +405,219 @@ curl -X POST \
 ```
 
 **Respuesta Exitosa (200):** Retorna el lead con el documento agregado.
+
+---
+
+## Módulo: Empresas (Companies)
+
+### Base URL
+
+```
+/crm/companies
+```
+
+### 1. Crear Empresa
+
+Crea una nueva empresa de Momentum.
+
+**Endpoint:** `POST /crm/companies`
+
+**Headers:**
+
+- `Authorization: Bearer <token>`
+- `Content-Type: application/json`
+
+**Payload:**
+
+```json
+{
+  "name": "Momentum Tech S.A.",
+  "code": "MOMTECH-001",
+  "taxId": "20123456789",
+  "description": "Empresa líder en soluciones tecnológicas",
+  "email": "contacto@momentumtech.com",
+  "phone": "+51 987654321",
+  "website": "https://www.momentumtech.com",
+  "address": "Av. Principal 123, Lima",
+  "isActive": true
+}
+```
+
+**Campos:**
+
+| Campo         | Tipo    | Requerido | Descripción                                      |
+| ------------- | ------- | --------- | ------------------------------------------------ |
+| `name`        | string  | Sí        | Nombre de la empresa (2-120 caracteres)          |
+| `code`        | string  | No        | Código único de la empresa (2-50 caracteres)     |
+| `taxId`       | string  | No        | Identificación fiscal RUC/DNI (5-20 caracteres)  |
+| `description` | string  | No        | Descripción de la empresa (máx. 500 caracteres)  |
+| `email`       | string  | No        | Email principal (formato válido)                 |
+| `phone`       | string  | No        | Teléfono principal (5-20 caracteres)             |
+| `website`     | string  | No        | Sitio web (5-200 caracteres)                     |
+| `address`     | string  | No        | Dirección de la empresa (5-200 caracteres)       |
+| `isActive`    | boolean | No        | Indica si la empresa está activa (default: true) |
+
+**Respuesta Exitosa (201):**
+
+```json
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "name": "Momentum Tech S.A.",
+  "code": "MOMTECH-001",
+  "taxId": "20123456789",
+  "description": "Empresa líder en soluciones tecnológicas",
+  "email": "contacto@momentumtech.com",
+  "phone": "+51 987654321",
+  "website": "https://www.momentumtech.com",
+  "address": "Av. Principal 123, Lima",
+  "isActive": true,
+  "createdAt": "2024-01-15T10:00:00.000Z",
+  "updatedAt": "2024-01-15T10:00:00.000Z"
+}
+```
+
+**Errores:**
+
+- `400 Bad Request`: Datos de entrada inválidos
+- `409 Conflict`: Nombre o código ya existe
+- `401 Unauthorized`: Token inválido o expirado
+
+---
+
+### 2. Listar Empresas
+
+Obtiene una lista de empresas con filtros opcionales.
+
+**Endpoint:** `GET /crm/companies`
+
+**Query Parameters:**
+
+| Parámetro  | Tipo    | Requerido | Descripción                                             |
+| ---------- | ------- | --------- | ------------------------------------------------------- |
+| `search`   | string  | No        | Búsqueda por texto en nombre, código, RUC o descripción |
+| `isActive` | boolean | No        | Filtrar por estado activo/inactivo                      |
+
+**Ejemplo:**
+
+```
+GET /crm/companies?search=Momentum&isActive=true
+```
+
+**Respuesta Exitosa (200):** Array de empresas ordenadas por nombre.
+
+---
+
+### 3. Obtener Empresa por Código
+
+Obtiene una empresa por su código único.
+
+**Endpoint:** `GET /crm/companies/code/:code`
+
+**Ejemplo:**
+
+```
+GET /crm/companies/code/MOMTECH-001
+```
+
+**Respuesta Exitosa (200):** Objeto de empresa.
+
+**Errores:**
+
+- `404 Not Found`: Empresa no encontrada
+
+---
+
+### 4. Obtener Empresa por ID
+
+Obtiene una empresa específica por su ID.
+
+**Endpoint:** `GET /crm/companies/:id`
+
+**Ejemplo:**
+
+```
+GET /crm/companies/507f1f77bcf86cd799439011
+```
+
+**Respuesta Exitosa (200):** Objeto de empresa.
+
+**Errores:**
+
+- `404 Not Found`: Empresa no encontrada
+- `400 Bad Request`: ID inválido
+
+---
+
+### 5. Actualizar Empresa
+
+Actualiza una empresa existente.
+
+**Endpoint:** `PATCH /crm/companies/:id`
+
+**Payload:** Todos los campos son opcionales, solo se actualizan los campos enviados.
+
+```json
+{
+  "description": "Empresa líder actualizada",
+  "phone": "+51 987654322"
+}
+```
+
+**Respuesta Exitosa (200):** Retorna la empresa actualizada.
+
+**Errores:**
+
+- `404 Not Found`: Empresa no encontrada
+- `400 Bad Request`: Datos de entrada inválidos
+- `409 Conflict`: Nombre o código duplicado
+
+---
+
+### 6. Activar Empresa
+
+Activa una empresa.
+
+**Endpoint:** `POST /crm/companies/:id/activate`
+
+**Respuesta Exitosa (200):** Retorna la empresa activada.
+
+**Errores:**
+
+- `404 Not Found`: Empresa no encontrada
+
+---
+
+### 7. Desactivar Empresa
+
+Desactiva una empresa.
+
+**Endpoint:** `POST /crm/companies/:id/deactivate`
+
+**Respuesta Exitosa (200):** Retorna la empresa desactivada.
+
+**Errores:**
+
+- `404 Not Found`: Empresa no encontrada
+
+---
+
+### 8. Eliminar Empresa
+
+Elimina una empresa.
+
+**Endpoint:** `DELETE /crm/companies/:id`
+
+**Respuesta Exitosa (200):**
+
+```json
+{
+  "deleted": true
+}
+```
+
+**Errores:**
+
+- `404 Not Found`: Empresa no encontrada
 
 ---
 
@@ -758,3 +977,7 @@ GET /crm/follow-ups/lead/507f1f77bcf86cd799439011
 5. **Índices:** Los esquemas incluyen índices optimizados para búsquedas frecuentes por estado, fechas, usuarios asignados y relaciones.
 
 6. **Validaciones:** Todos los ObjectIds son validados antes de realizar operaciones para prevenir errores de base de datos.
+
+7. **Empresas de Momentum:** Los leads pueden estar asociados a una empresa de Momentum mediante el campo `companyId`. Esto permite identificar a qué empresa pertenece cada lead y filtrar leads por empresa.
+
+8. **Unicidad en Empresas:** El nombre de la empresa debe ser único. El código también puede ser único si se proporciona. Si se intenta crear o actualizar una empresa con un nombre o código duplicado, se retornará un error 409 Conflict.

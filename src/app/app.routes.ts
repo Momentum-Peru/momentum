@@ -128,6 +128,13 @@ export const routes: Routes = [
         data: { menuPermission: '/follow-ups' },
       },
       {
+        path: 'companies-crm',
+        loadComponent: () =>
+          import('./pages/companies-crm/companies-crm').then((m) => m.CompaniesCrmPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/companies-crm' },
+      },
+      {
         path: '**',
         redirectTo: 'dashboard',
         pathMatch: 'full',

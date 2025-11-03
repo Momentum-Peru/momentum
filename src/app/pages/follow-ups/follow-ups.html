@@ -212,11 +212,13 @@
 
   <!-- Modal de creación/edición -->
   <p-dialog
-    [(visible)]="showDialog"
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '50rem' }"
     [draggable]="false"
     [resizable]="false"
+    (onHide)="closeDialog()"
   >
     <ng-template pTemplate="header">
       {{ editing()?._id ? 'Editar Seguimiento' : 'Nuevo Seguimiento' }}
@@ -383,11 +385,13 @@
 
   <!-- Modal de detalles -->
   <p-dialog
-    [(visible)]="showDetailsDialog"
+    [visible]="showDetailsDialog()"
+    (visibleChange)="showDetailsDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '40rem' }"
     [draggable]="false"
     [resizable]="false"
+    (onHide)="closeDetails()"
   >
     <ng-template pTemplate="header"> Detalles del Seguimiento </ng-template>
     @if (viewingFollowUp()) {
@@ -402,7 +406,7 @@
         <strong>Fecha Programada:</strong>
         {{ viewingFollowUp()?.scheduledDate | date : 'dd/MM/yyyy HH:mm' }}
       </div>
-      <div><strong>Usuario:</strong> {{ getUserName(viewingFollowUp()?.userId || '') }}</div>
+      <div><strong>Usuario:</strong> {{ getUserName(viewingFollowUp()?.userId) }}</div>
       @if (viewingFollowUp()?.outcome) {
       <div><strong>Resultado:</strong> {{ viewingFollowUp()?.outcome }}</div>
       } @if (viewingFollowUp()?.nextFollowUpDate) {

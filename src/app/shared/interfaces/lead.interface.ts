@@ -54,6 +54,7 @@ export interface Lead {
     estimatedValue?: number;
     notes?: string;
     assignedTo?: string;
+    companyId?: string; // ID de la empresa de Momentum a la que pertenece el lead
     documents?: string[];
     convertedToClientId?: string;
     convertedAt?: string;
@@ -71,6 +72,7 @@ export interface CreateLeadRequest {
     estimatedValue?: number;
     notes?: string;
     assignedTo?: string;
+    companyId?: string; // ID de la empresa de Momentum a la que pertenece el lead
 }
 
 export interface UpdateLeadRequest {
@@ -83,12 +85,14 @@ export interface UpdateLeadRequest {
     estimatedValue?: number;
     notes?: string;
     assignedTo?: string;
+    companyId?: string; // ID de la empresa de Momentum a la que pertenece el lead
 }
 
 export interface LeadQueryParams {
     status?: LeadStatus;
     source?: LeadSource;
     assignedTo?: string;
+    companyId?: string; // Filtrar por empresa de Momentum
     search?: string;
 }
 
