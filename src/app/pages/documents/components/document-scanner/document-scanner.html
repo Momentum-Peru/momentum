@@ -65,11 +65,16 @@
             } @else {
             <i class="pi pi-image text-3xl text-gray-400"></i>
             }
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
-                {{ selectedFile()?.name }}
+            <div class="flex-1 min-w-0 overflow-hidden">
+              <p
+                class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate overflow-hidden text-ellipsis whitespace-nowrap max-w-full"
+                [title]="selectedFile()?.name || ''"
+              >
+                {{ truncateFileName(selectedFile()?.name) }}
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
+              <p
+                class="text-xs text-gray-500 dark:text-gray-400 truncate overflow-hidden text-ellipsis whitespace-nowrap"
+              >
                 {{ formatFileSize(selectedFile()?.size || 0) }}
               </p>
             </div>
