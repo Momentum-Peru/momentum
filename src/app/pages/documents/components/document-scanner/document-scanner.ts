@@ -170,22 +170,67 @@ export class DocumentScannerComponent implements AfterViewInit {
     const file = event.files?.[0] as File | undefined;
 
     if (!file) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo obtener el archivo. Por favor, intente nuevamente.',
+      });
       return;
     }
 
     // Validar tipo de archivo (imágenes y PDFs)
+    // Nota: En móviles, el tipo MIME puede estar vacío, así que validamos también por extensión
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
-    if (!allowedTypes.includes(file.type)) {
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+    
+    // Obtener extensión del archivo
+    const fileName = file.name.toLowerCase();
+    const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+    
+    // Validar por tipo MIME o por extensión (para casos donde el tipo MIME está vacío)
+    const isValidType = file.type && allowedTypes.includes(file.type);
+    const isValidExtension = allowedExtensions.includes(fileExtension);
+    
+    // Si el tipo MIME está vacío (común en fotos tomadas desde móvil), validar por extensión
+    if (!file.type || file.type === '') {
+      if (!isValidExtension) {
+        console.error('Formato de archivo no soportado:', {
+          fileName: file.name,
+          fileType: file.type,
+          fileExtension: fileExtension,
+          fileSize: file.size,
+        });
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: `Formato de archivo no soportado (${fileExtension}). Use JPEG, PNG, WebP o PDF`,
+        });
+        return;
+      }
+      // Si la extensión es válida pero el tipo MIME está vacío, intentar corregirlo
+      // Esto es común en fotos tomadas directamente desde el celular
+      console.warn('Archivo con tipo MIME vacío detectado:', {
+        fileName: file.name,
+        fileExtension: fileExtension,
+        fileSize: file.size,
+      });
+    } else if (!isValidType && !isValidExtension) {
+      console.error('Formato de archivo no soportado:', {
+        fileName: file.name,
+        fileType: file.type,
+        fileExtension: fileExtension,
+        fileSize: file.size,
+      });
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'Formato de archivo no soportado. Use JPEG, PNG, WebP o PDF',
+        detail: `Formato de archivo no soportado (${file.type || fileExtension}). Use JPEG, PNG, WebP o PDF`,
       });
       return;
     }
 
     // Si es PDF, mostrar advertencia
-    if (file.type === 'application/pdf') {
+    if (file.type === 'application/pdf' || fileExtension === '.pdf') {
       this.messageService.add({
         severity: 'warn',
         summary: 'Advertencia',
@@ -204,14 +249,80 @@ export class DocumentScannerComponent implements AfterViewInit {
       return;
     }
 
-    this.selectedFile.set(file);
+    // Validar que el archivo no esté vacío
+    if (file.size === 0) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'El archivo está vacío. Por favor, seleccione otro archivo.',
+      });
+      return;
+    }
 
-    // Crear preview
+    // Normalizar el archivo si el tipo MIME está vacío (común en fotos desde móvil)
+    const normalizedFile = this.normalizeFileType(file, fileExtension);
+    this.selectedFile.set(normalizedFile);
+
+    // Crear preview con manejo de errores usando el archivo normalizado
     const reader = new FileReader();
-    reader.onload = (e: any) => {
-      this.previewUrl.set(e.target.result);
+    reader.onerror = (error) => {
+      console.error('Error al leer el archivo:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo leer el archivo. Por favor, intente con otro archivo.',
+      });
+      this.removeFile();
     };
-    reader.readAsDataURL(file);
+    reader.onload = (e: any) => {
+      try {
+        this.previewUrl.set(e.target.result);
+      } catch (error) {
+        console.error('Error al crear preview:', error);
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Advertencia',
+          detail: 'No se pudo generar la vista previa, pero el archivo se procesará.',
+        });
+      }
+    };
+    // Usar el archivo normalizado para el preview
+    reader.readAsDataURL(normalizedFile);
+  }
+
+  /**
+   * Normaliza el tipo MIME del archivo cuando está vacío
+   * Esto es necesario para fotos tomadas directamente desde el celular
+   */
+  private normalizeFileType(file: File, extension: string): File {
+    // Si el archivo ya tiene un tipo MIME válido, retornarlo sin cambios
+    if (file.type && file.type !== '') {
+      return file;
+    }
+
+    // Mapeo de extensiones a tipos MIME
+    const extensionToMime: Record<string, string> = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.webp': 'image/webp',
+      '.pdf': 'application/pdf',
+    };
+
+    const mimeType = extensionToMime[extension.toLowerCase()];
+    
+    if (mimeType) {
+      // Crear un nuevo File con el tipo MIME correcto
+      // Nota: No podemos cambiar el tipo MIME de un File existente, así que creamos uno nuevo
+      return new File([file], file.name, {
+        type: mimeType,
+        lastModified: file.lastModified,
+      });
+    }
+
+    // Si no encontramos el tipo MIME, retornar el archivo original
+    // El backend debería poder manejar esto
+    return file;
   }
 
   /**
@@ -237,6 +348,25 @@ export class DocumentScannerComponent implements AfterViewInit {
       return;
     }
 
+    // Validar archivo antes de enviar
+    if (file.size === 0) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'El archivo está vacío. Por favor, seleccione otro archivo.',
+      });
+      return;
+    }
+
+    // Log información del archivo para debugging
+    console.log('Iniciando escaneo de archivo:', {
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      lastModified: new Date(file.lastModified),
+      proyectoId: this.proyectoId(),
+    });
+
     this.scanning.set(true);
     this.progress.set(0);
 
@@ -253,6 +383,8 @@ export class DocumentScannerComponent implements AfterViewInit {
       next: (response: ScanInvoiceResponse) => {
         clearInterval(progressInterval);
         this.progress.set(100);
+
+        console.log('Escaneo completado exitosamente:', response);
 
         setTimeout(() => {
           this.scanning.set(false);
@@ -274,11 +406,24 @@ export class DocumentScannerComponent implements AfterViewInit {
         this.scanning.set(false);
         this.progress.set(0);
 
+        // Log detallado del error para debugging
+        console.error('Error al escanear documento:', {
+          error: error,
+          errorMessage: error?.message,
+          errorStatus: error?.status,
+          errorStatusText: error?.statusText,
+          errorResponse: error?.error,
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+        });
+
         const errorMessage = this.getErrorMessage(error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error al escanear',
           detail: errorMessage,
+          life: 5000, // Mostrar el mensaje por 5 segundos
         });
       },
     });
@@ -311,15 +456,49 @@ export class DocumentScannerComponent implements AfterViewInit {
    * Obtiene el mensaje de error
    */
   private getErrorMessage(error: any): string {
+    // Errores de red o conexión
+    if (error.status === 0) {
+      return 'Error de conexión. Verifique su conexión a internet e intente nuevamente.';
+    }
+
+    // Errores HTTP 4xx
+    if (error.status >= 400 && error.status < 500) {
+      if (error.status === 413) {
+        return 'El archivo es demasiado grande. Por favor, use un archivo más pequeño (máximo 10MB).';
+      }
+      if (error.status === 415) {
+        return 'Formato de archivo no soportado. Use JPEG, PNG, WebP o PDF.';
+      }
+      if (error.error?.message) {
+        return error.error.message;
+      }
+      if (error.error?.error) {
+        return typeof error.error.error === 'string' 
+          ? error.error.error 
+          : JSON.stringify(error.error.error);
+      }
+      return `Error al procesar el archivo (${error.status}). Por favor, verifique el formato y vuelva a intentar.`;
+    }
+
+    // Errores HTTP 5xx
+    if (error.status >= 500) {
+      return 'Error en el servidor. Por favor, intente nuevamente más tarde.';
+    }
+
+    // Mensajes de error específicos
     if (error.error?.message) {
       return error.error.message;
     }
     if (error.error?.error) {
-      return error.error.error;
+      return typeof error.error.error === 'string' 
+        ? error.error.error 
+        : JSON.stringify(error.error.error);
     }
     if (error.message) {
       return error.message;
     }
+
+    // Mensaje por defecto
     return 'Ha ocurrido un error al escanear el documento. Por favor, intente nuevamente.';
   }
 }
