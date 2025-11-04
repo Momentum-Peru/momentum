@@ -79,7 +79,8 @@ export class EmployeesPage implements OnInit {
       const dniMatch = item.dni?.toLowerCase().includes(searchQuery) ?? false;
       const correoMatch = item.correo?.toLowerCase().includes(searchQuery) ?? false;
       const seguroMatch = item.numeroSeguroSocial?.toLowerCase().includes(searchQuery) ?? false;
-      return nombreMatch || apellidoMatch || dniMatch || correoMatch || seguroMatch;
+      const cargoMatch = item.cargo?.toLowerCase().includes(searchQuery) ?? false;
+      return nombreMatch || apellidoMatch || dniMatch || correoMatch || seguroMatch || cargoMatch;
     });
   });
 
@@ -154,6 +155,7 @@ export class EmployeesPage implements OnInit {
       correo: '',
       telefono: '',
       direccion: '',
+      cargo: '',
       numeroSeguroSocial: '',
       userId: '',
       areaId: undefined,
@@ -273,6 +275,7 @@ export class EmployeesPage implements OnInit {
         correo: item.correo,
         telefono: item.telefono || undefined,
         direccion: item.direccion || undefined,
+        cargo: item.cargo || undefined,
         numeroSeguroSocial: item.numeroSeguroSocial,
         userId: typeof item.userId === 'string' ? item.userId : undefined,
       };
@@ -320,6 +323,7 @@ export class EmployeesPage implements OnInit {
         correo: item.correo,
         telefono: item.telefono || undefined,
         direccion: item.direccion || undefined,
+        cargo: item.cargo || undefined,
         numeroSeguroSocial: item.numeroSeguroSocial,
         userId: item.userId,
         areaId: typeof item.areaId === 'string' && item.areaId ? item.areaId : undefined,
