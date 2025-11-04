@@ -337,15 +337,17 @@
         <div class="grid gap-3">
           @for (file of filesViewingDocument()?.documentos; track $index) {
           <div
-            class="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors"
+            class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors gap-3"
           >
-            <div class="flex items-center gap-4">
+            <div class="flex items-start sm:items-center gap-4 min-w-0 flex-1 w-full sm:w-auto">
               <div class="flex-shrink-0">
                 <i [class]="getFileIcon(file) + ' text-2xl ' + getFileTypeColor(file)"></i>
               </div>
-              <div class="min-w-0 flex-1">
-                <p class="font-medium text-gray-900 truncate">{{ file.split('/').pop() }}</p>
-                <p class="text-sm text-gray-500 truncate">{{ file }}</p>
+              <div class="min-w-0 flex-1 w-full sm:w-auto">
+                <p class="font-medium text-gray-900 break-all whitespace-normal">
+                  {{ file.split('/').pop() }}
+                </p>
+                <p class="text-sm text-gray-500 break-all whitespace-normal">{{ file }}</p>
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -389,7 +391,7 @@
 
     <ng-template pTemplate="footer">
       <div class="flex justify-between items-center">
-        <div class="text-sm text-gray-500">
+        <div class="text-sm text-gray-500 text-nowrap">
           @if (filesViewingDocument()?.documentos?.length) {
           {{ filesViewingDocument()?.documentos?.length }} archivo(s) adjunto(s) }
         </div>

@@ -4,7 +4,7 @@
 
   <!-- Header -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Gestión de Seguimientos</h1>
+    <h1 class="text-2xl font-bold text-gray-800">Gestión de Seguimientos</h1>
     <button
       pButton
       type="button"
@@ -310,7 +310,7 @@
         >
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Lead</label>
+            <label class="block text-xs text-gray-600 dark:text-white mb-1">Lead</label>
             <p-select
               [options]="leads()"
               optionLabel="name"
@@ -323,7 +323,7 @@
             ></p-select>
           </div>
           <div>
-            <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Contacto</label>
+            <label class="block text-xs text-gray-600 dark:text-white mb-1">Contacto</label>
             <p-select
               [options]="contacts()"
               optionLabel="name"
@@ -336,7 +336,7 @@
             ></p-select>
           </div>
           <div>
-            <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Cliente</label>
+            <label class="block text-xs text-gray-600 dark:text-white mb-1">Cliente</label>
             <p-select
               [options]="clients()"
               optionLabel="name"

@@ -17,7 +17,7 @@
 .p-inputnumber .p-inputnumber-input,
 .p-dropdown .p-dropdown-label,
 .p-calendar .p-inputtext {
-  @apply w-full border border-gray-300 rounded-md px-3 py-2 text-sm;
+  @apply w-full border border-gray-300 rounded-md px-3 py-2 text-sm dark:text-white;
 }
 
 .p-inputnumber .p-inputnumber-input:focus,
@@ -63,11 +63,6 @@
 
 .p-card:hover {
   @apply shadow-md;
-}
-
-/* Estilos para labels */
-label {
-  @apply text-gray-700 font-medium;
 }
 
 /* Estilos para placeholders */
