@@ -74,6 +74,13 @@ export class DocumentScannerComponent implements AfterViewInit {
         }, 150);
       }
     });
+
+    // Effect para limpiar campos cuando el modal se cierra
+    effect(() => {
+      if (!this.visible()) {
+        this.clearFields();
+      }
+    });
   }
 
   ngAfterViewInit(): void {
@@ -182,15 +189,15 @@ export class DocumentScannerComponent implements AfterViewInit {
     // Nota: En móviles, el tipo MIME puede estar vacío, así que validamos también por extensión
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
     const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
-    
+
     // Obtener extensión del archivo
     const fileName = file.name.toLowerCase();
     const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
-    
+
     // Validar por tipo MIME o por extensión (para casos donde el tipo MIME está vacío)
     const isValidType = file.type && allowedTypes.includes(file.type);
     const isValidExtension = allowedExtensions.includes(fileExtension);
-    
+
     // Si el tipo MIME está vacío (común en fotos tomadas desde móvil), validar por extensión
     if (!file.type || file.type === '') {
       if (!isValidExtension) {
@@ -224,7 +231,9 @@ export class DocumentScannerComponent implements AfterViewInit {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: `Formato de archivo no soportado (${file.type || fileExtension}). Use JPEG, PNG, WebP o PDF`,
+        detail: `Formato de archivo no soportado (${
+          file.type || fileExtension
+        }). Use JPEG, PNG, WebP o PDF`,
       });
       return;
     }
@@ -310,7 +319,7 @@ export class DocumentScannerComponent implements AfterViewInit {
     };
 
     const mimeType = extensionToMime[extension.toLowerCase()];
-    
+
     if (mimeType) {
       // Crear un nuevo File con el tipo MIME correcto
       // Nota: No podemos cambiar el tipo MIME de un File existente, así que creamos uno nuevo
@@ -331,6 +340,26 @@ export class DocumentScannerComponent implements AfterViewInit {
   removeFile(): void {
     this.selectedFile.set(null);
     this.previewUrl.set(null);
+  }
+
+  /**
+   * Limpia todos los campos del componente
+   */
+  private clearFields(): void {
+    this.selectedFile.set(null);
+    this.previewUrl.set(null);
+    this.scanning.set(false);
+    this.progress.set(0);
+
+    // Limpiar el componente FileUpload si está disponible
+    if (this.fileUpload) {
+      try {
+        this.fileUpload.clear();
+      } catch (error) {
+        // Si el método clear no está disponible, intentar limpiar manualmente
+        console.warn('No se pudo limpiar el FileUpload:', error);
+      }
+    }
   }
 
   /**
@@ -387,10 +416,6 @@ export class DocumentScannerComponent implements AfterViewInit {
         console.log('Escaneo completado exitosamente:', response);
 
         setTimeout(() => {
-          this.scanning.set(false);
-          this.progress.set(0);
-          this.selectedFile.set(null);
-          this.previewUrl.set(null);
           this.scanComplete.emit(response);
           this.closeDialog();
 
@@ -433,10 +458,7 @@ export class DocumentScannerComponent implements AfterViewInit {
    * Cierra el diálogo
    */
   closeDialog(): void {
-    this.selectedFile.set(null);
-    this.previewUrl.set(null);
-    this.scanning.set(false);
-    this.progress.set(0);
+    this.clearFields();
     this.visibleChange.emit(false);
     this.scanCancel.emit();
   }
@@ -450,6 +472,26 @@ export class DocumentScannerComponent implements AfterViewInit {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Trunca el nombre del archivo si es muy largo
+   */
+  truncateFileName(fileName: string | undefined | null, maxLength: number = 25): string {
+    if (!fileName) return '';
+    if (fileName.length <= maxLength) return fileName;
+
+    // Si el archivo tiene extensión, preservarla
+    const lastDot = fileName.lastIndexOf('.');
+    if (lastDot > 0) {
+      const extension = fileName.substring(lastDot);
+      const nameWithoutExt = fileName.substring(0, lastDot);
+      const truncatedName = nameWithoutExt.substring(0, maxLength - extension.length - 3) + '...';
+      return truncatedName + extension;
+    }
+
+    // Si no tiene extensión, truncar directamente
+    return fileName.substring(0, maxLength - 3) + '...';
   }
 
   /**
@@ -473,8 +515,8 @@ export class DocumentScannerComponent implements AfterViewInit {
         return error.error.message;
       }
       if (error.error?.error) {
-        return typeof error.error.error === 'string' 
-          ? error.error.error 
+        return typeof error.error.error === 'string'
+          ? error.error.error
           : JSON.stringify(error.error.error);
       }
       return `Error al procesar el archivo (${error.status}). Por favor, verifique el formato y vuelva a intentar.`;
@@ -490,8 +532,8 @@ export class DocumentScannerComponent implements AfterViewInit {
       return error.error.message;
     }
     if (error.error?.error) {
-      return typeof error.error.error === 'string' 
-        ? error.error.error 
+      return typeof error.error.error === 'string'
+        ? error.error.error
         : JSON.stringify(error.error.error);
     }
     if (error.message) {
