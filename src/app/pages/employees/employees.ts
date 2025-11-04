@@ -12,12 +12,15 @@ import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { EmployeesApiService } from '../../shared/services/employees-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
+import { AreasApiService } from '../../shared/services/areas-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import {
   Employee,
   CreateEmployeeRequest,
   UpdateEmployeeRequest,
+  AreaInfo,
 } from '../../shared/interfaces/employee.interface';
+import { Area } from '../../shared/interfaces/area.interface';
 
 @Component({
   selector: 'app-employees',
@@ -41,11 +44,13 @@ import {
 export class EmployeesPage implements OnInit {
   private readonly employeesApi = inject(EmployeesApiService);
   private readonly usersApi = inject(UsersApiService);
+  private readonly areasApi = inject(AreasApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
 
   items = signal<Employee[]>([]);
   users = signal<UserOption[]>([]);
+  areas = signal<Area[]>([]);
   query = signal('');
   showDialog = signal(false);
   showViewDialog = signal(false);
@@ -81,6 +86,7 @@ export class EmployeesPage implements OnInit {
   ngOnInit() {
     this.load();
     this.loadUsers();
+    this.loadAreas();
   }
 
   load() {
@@ -104,6 +110,17 @@ export class EmployeesPage implements OnInit {
       },
       error: () => {
         this.toastError('Error al cargar usuarios');
+      },
+    });
+  }
+
+  loadAreas() {
+    this.areasApi.list({ isActive: true }).subscribe({
+      next: (data) => {
+        this.areas.set(data);
+      },
+      error: () => {
+        this.toastError('Error al cargar áreas');
       },
     });
   }
@@ -139,6 +156,7 @@ export class EmployeesPage implements OnInit {
       direccion: '',
       numeroSeguroSocial: '',
       userId: '',
+      areaId: undefined,
     });
     this.showDialog.set(true);
   }
@@ -154,6 +172,16 @@ export class EmployeesPage implements OnInit {
       editedItem.userId._id
     ) {
       editedItem.userId = editedItem.userId._id;
+    }
+
+    // Si areaId es un objeto (populado), extraer el _id
+    if (
+      editedItem.areaId &&
+      typeof editedItem.areaId === 'object' &&
+      '_id' in editedItem.areaId &&
+      editedItem.areaId._id
+    ) {
+      editedItem.areaId = editedItem.areaId._id;
     }
 
     this.editing.set(editedItem);
@@ -207,6 +235,23 @@ export class EmployeesPage implements OnInit {
     return employee.userId._id || '';
   }
 
+  getAreaIdForSelect(employee: Employee): string {
+    if (!employee.areaId) return '';
+    if (typeof employee.areaId === 'string') {
+      return employee.areaId;
+    }
+    return employee.areaId._id || '';
+  }
+
+  getAreaName(areaId: string | AreaInfo | undefined): string {
+    if (!areaId) return 'Sin área';
+    if (typeof areaId === 'object' && 'nombre' in areaId) {
+      return areaId.nombre;
+    }
+    const area = this.areas().find((a) => a._id === areaId);
+    return area?.nombre || 'Área no encontrada';
+  }
+
   save() {
     const item = this.editing();
     if (!item) return;
@@ -231,6 +276,22 @@ export class EmployeesPage implements OnInit {
         numeroSeguroSocial: item.numeroSeguroSocial,
         userId: typeof item.userId === 'string' ? item.userId : undefined,
       };
+
+      // Manejar areaId: solo incluir si tiene un valor válido
+      const areaIdValue =
+        typeof item.areaId === 'string' && item.areaId.trim() !== ''
+          ? item.areaId
+          : typeof item.areaId === 'object' && item.areaId && '_id' in item.areaId
+          ? item.areaId._id
+          : '';
+
+      // Si hay un valor válido, incluirlo; si es cadena vacía, enviar cadena vacía para limpiar
+      if (areaIdValue) {
+        updateData.areaId = areaIdValue;
+      } else {
+        // Enviar cadena vacía para indicar que se debe limpiar el área
+        updateData.areaId = '';
+      }
 
       this.employeesApi.update(item._id, updateData).subscribe({
         next: () => {
@@ -261,6 +322,7 @@ export class EmployeesPage implements OnInit {
         direccion: item.direccion || undefined,
         numeroSeguroSocial: item.numeroSeguroSocial,
         userId: item.userId,
+        areaId: typeof item.areaId === 'string' && item.areaId ? item.areaId : undefined,
       };
 
       this.employeesApi.create(createData).subscribe({

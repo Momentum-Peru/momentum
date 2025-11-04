@@ -5,6 +5,12 @@ export interface UserInfo {
   role: string;
 }
 
+export interface AreaInfo {
+  _id: string;
+  nombre: string;
+  codigo?: string;
+}
+
 export interface Employee {
   _id?: string;
   nombre: string;
@@ -15,6 +21,7 @@ export interface Employee {
   direccion?: string;
   numeroSeguroSocial: string;
   userId: string | UserInfo;
+  areaId?: string | AreaInfo;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -28,6 +35,7 @@ export interface CreateEmployeeRequest {
   direccion?: string;
   numeroSeguroSocial: string;
   userId: string;
+  areaId?: string;
 }
 
 export interface UpdateEmployeeRequest {
@@ -39,6 +47,7 @@ export interface UpdateEmployeeRequest {
   direccion?: string;
   numeroSeguroSocial?: string;
   userId?: string;
+  areaId?: string | null;
 }
 
 export interface EmployeeQueryParams {
