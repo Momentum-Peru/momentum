@@ -1,0 +1,424 @@
+<div class="p-4 space-y-4 mt-5 overflow-x-hidden">
+  <p-toast></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Título -->
+  <div class="mb-4">
+    <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">Empleados</h1>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <input
+      pInputText
+      placeholder="Buscar por nombre, apellido, DNI, correo o número de seguro social..."
+      [ngModel]="query()"
+      (ngModelChange)="setQuery($event)"
+      name="searchQuery"
+      class="flex-1 min-w-[200px]"
+    />
+    <button
+      pButton
+      type="button"
+      (click)="newItem()"
+      label="Nuevo"
+      icon="pi pi-plus"
+      class="w-full xl:w-auto"
+    ></button>
+  </div>
+
+  <!-- Vista Desktop: Tabla -->
+  <div class="hidden md:block">
+    <p-table
+      [value]="filteredItems()"
+      [scrollable]="true"
+      scrollHeight="60vh"
+      styleClass="p-datatable-sm"
+      [loading]="loading()"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Nombre</th>
+          <th>Apellido</th>
+          <th>DNI</th>
+          <th>Correo</th>
+          <th>Teléfono</th>
+          <th>Usuario</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ row.nombre }}</td>
+          <td>{{ row.apellido }}</td>
+          <td>{{ row.dni }}</td>
+          <td>{{ row.correo }}</td>
+          <td>{{ row.telefono || '-' }}</td>
+          <td>
+            <span
+              class="text-sm text-gray-700 dark:text-white font-medium break-words whitespace-normal"
+            >
+              {{ getUserName(row.userId) }}
+            </span>
+          </td>
+          <td class="text-right">
+            <button
+              pButton
+              icon="pi pi-eye"
+              class="p-button-text"
+              (click)="viewItem(row)"
+              pTooltip="Ver detalles"
+              tooltipPosition="top"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text"
+              (click)="editItem(row)"
+              pTooltip="Editar"
+              tooltipPosition="top"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-text p-button-danger"
+              (click)="remove(row)"
+              pTooltip="Eliminar"
+              tooltipPosition="top"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="text-center py-8 text-gray-500">No se encontraron empleados</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil: Lista tipo tarjetas -->
+  <div class="md:hidden space-y-3">
+    @for (row of filteredItems(); track row._id || $index; let i = $index) { @let key =
+    buildRowKey(row, i);
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"
+    >
+      <div
+        class="p-4 flex items-center justify-between cursor-pointer"
+        (click)="toggleRowByKey(key)"
+      >
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-gray-900 dark:text-white">
+            {{ row.nombre }} {{ row.apellido }}
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">DNI: {{ row.dni }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            {{ row.correo }}
+          </div>
+        </div>
+        <div class="flex items-center gap-2 ml-2">
+          <i
+            [class]="
+              isRowExpandedByKey(key)
+                ? 'pi pi-chevron-up text-gray-500'
+                : 'pi pi-chevron-down text-gray-500'
+            "
+          ></i>
+        </div>
+      </div>
+
+      @if (isRowExpandedByKey(key)) {
+      <div class="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-700">
+        <div class="grid grid-cols-2 gap-2 pt-3">
+          <div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">Teléfono</div>
+            <div class="text-sm font-medium text-gray-900 dark:text-white">
+              {{ row.telefono || '-' }}
+            </div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">Usuario</div>
+            <div class="text-sm font-medium text-gray-900 dark:text-white">
+              {{ getUserName(row.userId) }}
+            </div>
+          </div>
+          @if (row.direccion) {
+          <div class="col-span-2">
+            <div class="text-xs text-gray-500 dark:text-gray-400">Dirección</div>
+            <div class="text-sm font-medium text-gray-900 dark:text-white break-words">
+              {{ row.direccion }}
+            </div>
+          </div>
+          }
+          <div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">N° Seguro Social</div>
+            <div class="text-sm font-medium text-gray-900 dark:text-white">
+              {{ row.numeroSeguroSocial }}
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+          <button
+            pButton
+            icon="pi pi-eye"
+            label="Ver"
+            class="p-button-text flex-1"
+            (click)="viewItem(row)"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-pencil"
+            label="Editar"
+            class="p-button-text flex-1"
+            (click)="editItem(row)"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-trash"
+            label="Eliminar"
+            class="p-button-text p-button-danger flex-1"
+            (click)="remove(row)"
+          ></button>
+        </div>
+      </div>
+      }
+    </div>
+    } @empty {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">No se encontraron empleados</div>
+    }
+  </div>
+
+  <!-- Diálogo de creación/edición -->
+  <p-dialog
+    [(visible)]="showDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '42rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    appendTo="body"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold">
+        {{ editing()?._id ? 'Editar empleado' : 'Nuevo empleado' }}
+      </span>
+    </ng-template>
+
+    <div class="space-y-4" *ngIf="editing() as e">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+            Nombre *
+          </label>
+          <input
+            pInputText
+            [ngModel]="e.nombre"
+            (ngModelChange)="onEditChange('nombre', $event)"
+            name="nombre"
+            placeholder="Nombre"
+            class="w-full"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+            Apellido *
+          </label>
+          <input
+            pInputText
+            [ngModel]="e.apellido"
+            (ngModelChange)="onEditChange('apellido', $event)"
+            name="apellido"
+            placeholder="Apellido"
+            class="w-full"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+            DNI *
+          </label>
+          <input
+            pInputText
+            [ngModel]="e.dni"
+            (ngModelChange)="onEditChange('dni', $event)"
+            name="dni"
+            placeholder="12345678"
+            class="w-full"
+            maxlength="8"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+            Correo *
+          </label>
+          <input
+            pInputText
+            type="email"
+            [ngModel]="e.correo"
+            (ngModelChange)="onEditChange('correo', $event)"
+            name="correo"
+            placeholder="correo@example.com"
+            class="w-full"
+            required
+          />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          Teléfono
+        </label>
+        <input
+          pInputText
+          [ngModel]="e.telefono"
+          (ngModelChange)="onEditChange('telefono', $event)"
+          name="telefono"
+          placeholder="+51987654321"
+          class="w-full"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          Dirección
+        </label>
+        <input
+          pInputText
+          [ngModel]="e.direccion"
+          (ngModelChange)="onEditChange('direccion', $event)"
+          name="direccion"
+          placeholder="Av. Principal 123, Lima"
+          class="w-full"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          Número de Seguro Social *
+        </label>
+        <input
+          pInputText
+          [ngModel]="e.numeroSeguroSocial"
+          (ngModelChange)="onEditChange('numeroSeguroSocial', $event)"
+          name="numeroSeguroSocial"
+          placeholder="12345678901"
+          class="w-full"
+          required
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          Usuario *
+        </label>
+        <p-select
+          [options]="users()"
+          optionLabel="name"
+          optionValue="_id"
+          [ngModel]="getUserIdForSelect(e)"
+          (ngModelChange)="onEditChange('userId', $event)"
+          name="userId"
+          placeholder="Seleccionar usuario"
+          class="w-full"
+          [disabled]="!!e._id"
+          [appendTo]="'body'"
+        >
+          <ng-template let-user pTemplate="item">
+            <div class="flex items-center gap-2">
+              <span>{{ user.name }}</span>
+              <span class="text-xs text-gray-500">({{ user.email }})</span>
+            </div>
+          </ng-template>
+        </p-select>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
+      <button pButton label="Guardar" (click)="save()" [disabled]="loading()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo de visualización (solo lectura) -->
+  <p-dialog
+    [(visible)]="showViewDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '42rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    appendTo="body"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold">Ver detalles del empleado</span>
+    </ng-template>
+
+    <div class="space-y-4" *ngIf="viewing() as v">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Nombre</label>
+          <div class="font-medium text-gray-700 dark:text-white">{{ v.nombre }}</div>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Apellido</label>
+          <div class="font-medium text-gray-700 dark:text-white">{{ v.apellido }}</div>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">DNI</label>
+          <div class="font-medium text-gray-700 dark:text-white">{{ v.dni }}</div>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Correo</label>
+          <div class="font-medium text-gray-700 dark:text-white break-words">
+            {{ v.correo }}
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Teléfono</label>
+          <div class="font-medium text-gray-700 dark:text-white">{{ v.telefono || '-' }}</div>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Usuario</label>
+          <div class="font-medium text-gray-700 dark:text-white break-words">
+            {{ getUserName(v.userId) }}
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {{ getUserEmail(v.userId) }}
+          </div>
+        </div>
+        @if (v.direccion) {
+        <div class="col-span-1 md:col-span-2">
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Dirección</label>
+          <div class="font-medium text-gray-700 dark:text-white break-words">
+            {{ v.direccion }}
+          </div>
+        </div>
+        }
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1"
+            >Número de Seguro Social</label
+          >
+          <div class="font-medium text-gray-700 dark:text-white">{{ v.numeroSeguroSocial }}</div>
+        </div>
+        @if (v.createdAt) {
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Fecha de creación</label>
+          <div class="font-medium text-gray-700 dark:text-white">
+            {{ v.createdAt | date : 'dd/MM/yyyy HH:mm' }}
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" (click)="closeViewDialog()"></button>
+    </ng-template>
+  </p-dialog>
+</div>

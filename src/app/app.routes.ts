@@ -72,6 +72,12 @@ export const routes: Routes = [
         data: { menuPermission: '/daily-reports' },
       },
       {
+        path: 'employees',
+        loadComponent: () => import('./pages/employees/employees').then((m) => m.EmployeesPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/employees' },
+      },
+      {
         path: 'users',
         loadComponent: () => import('./pages/users/users').then((m) => m.UsersPage),
         canActivate: [MenuPermissionGuard],
