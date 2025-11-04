@@ -104,7 +104,6 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.DashboardPage),
-        canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/dashboard' },
       },
       {

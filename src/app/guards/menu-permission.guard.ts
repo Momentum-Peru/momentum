@@ -21,6 +21,11 @@ export class MenuPermissionGuard implements CanActivate {
       return of(true);
     }
 
+    // El dashboard siempre está disponible sin restricciones
+    if (requiredRoute === '/dashboard') {
+      return of(true);
+    }
+
     // Verificar si el usuario está autenticado
     if (!this.authService.isAuthenticated()) {
       this.router.navigate(['/ingreso']);
