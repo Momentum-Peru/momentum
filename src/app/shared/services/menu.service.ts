@@ -48,8 +48,14 @@ export class MenuService {
 
   /**
    * Verifica si el usuario tiene permiso para acceder a una ruta específica
+   * El dashboard siempre está disponible sin restricciones
    */
   hasPermission(route: string): boolean {
+    // El dashboard siempre está disponible sin restricciones
+    if (route === '/dashboard') {
+      return true;
+    }
+    
     return this.allowedRoutes().includes(route);
   }
 
@@ -70,8 +76,14 @@ export class MenuService {
   /**
    * Verifica si el usuario puede acceder a una ruta específica
    * Útil para mostrar/ocultar elementos del menú
+   * El dashboard siempre está disponible sin restricciones
    */
   canAccess(route: string): boolean {
+    // El dashboard siempre está disponible sin restricciones
+    if (route === '/dashboard') {
+      return true;
+    }
+    
     const allowedRoutes = this.allowedRoutes();
     const hasAccess = allowedRoutes.includes(route);
     return hasAccess;
