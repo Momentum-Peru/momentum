@@ -6,7 +6,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Proyecto -->
         <div class="flex flex-col">
-          <label class="text-sm font-medium text-gray-700 mb-2">Proyecto</label>
+          <label class="text-sm font-medium text-gray-700 dark:text-white mb-2">Proyecto</label>
           <p-select
             formControlName="proyectoId"
             [options]="projectOptions()"
@@ -18,7 +18,7 @@
 
         <!-- Categoría -->
         <div class="flex flex-col">
-          <label class="text-sm font-medium text-gray-700 mb-2">Categoría</label>
+          <label class="text-sm font-medium text-gray-700 dark:text-white mb-2">Categoría</label>
           <p-select
             formControlName="categoria"
             [options]="categoryOptions"
@@ -30,7 +30,9 @@
 
         <!-- Número de Documento -->
         <div class="flex flex-col">
-          <label class="text-sm font-medium text-gray-700 mb-2">Número de Documento</label>
+          <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+            >Número de Documento</label
+          >
           <p-inputNumber
             formControlName="numeroDocumento"
             [useGrouping]="false"
@@ -43,7 +45,7 @@
 
         <!-- Estado -->
         <div class="flex flex-col">
-          <label class="text-sm font-medium text-gray-700 mb-2">Estado</label>
+          <label class="text-sm font-medium text-gray-700 dark:text-white mb-2">Estado</label>
           <p-select
             formControlName="isActive"
             [options]="statusOptions"
@@ -79,7 +81,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <!-- Serie -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 mb-2">Serie</label>
+            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2">Serie</label>
             <input
               pInputText
               formControlName="serie"
@@ -91,7 +93,9 @@
 
           <!-- Fecha Emisión Desde -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 mb-2">Fecha Emisión Desde</label>
+            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+              >Fecha Emisión Desde</label
+            >
             <p-datepicker
               formControlName="fechaEmisionDesde"
               placeholder="Seleccionar fecha"
@@ -105,7 +109,9 @@
 
           <!-- Fecha Emisión Hasta -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 mb-2">Fecha Emisión Hasta</label>
+            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+              >Fecha Emisión Hasta</label
+            >
             <p-datepicker
               formControlName="fechaEmisionHasta"
               placeholder="Seleccionar fecha"
@@ -119,7 +125,9 @@
 
           <!-- Fecha Vencimiento Desde -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 mb-2">Fecha Vencimiento Desde</label>
+            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+              >Fecha Vencimiento Desde</label
+            >
             <p-datepicker
               formControlName="fechaVencimientoDesde"
               placeholder="Seleccionar fecha"
@@ -133,7 +141,9 @@
 
           <!-- Fecha Vencimiento Hasta -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 mb-2">Fecha Vencimiento Hasta</label>
+            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+              >Fecha Vencimiento Hasta</label
+            >
             <p-datepicker
               formControlName="fechaVencimientoHasta"
               placeholder="Seleccionar fecha"
@@ -146,7 +156,9 @@
 
           <!-- Total Mínimo -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 mb-2">Total Mínimo</label>
+            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+              >Total Mínimo</label
+            >
             <p-inputNumber
               formControlName="totalMinimo"
               [min]="0"
@@ -162,7 +174,9 @@
 
           <!-- Total Máximo -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 mb-2">Total Máximo</label>
+            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+              >Total Máximo</label
+            >
             <p-inputNumber
               formControlName="totalMaximo"
               [min]="0"

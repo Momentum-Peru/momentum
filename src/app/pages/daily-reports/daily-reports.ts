@@ -10,7 +10,8 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { DailyExpensesApiService } from '../../shared/services/daily-reports-api.service';
 import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { AuthService } from '../login/services/auth.service';
@@ -32,15 +33,18 @@ import { ProjectOption, Project } from '../../shared/interfaces/project.interfac
     TextareaModule,
     TooltipModule,
     ToastModule,
+    ConfirmDialogModule,
   ],
   templateUrl: './daily-reports.html',
   styleUrl: './daily-reports.scss',
+  providers: [MessageService, ConfirmationService],
 })
 export class DailyExpensesPage implements OnInit {
   private readonly dailyExpensesApi = inject(DailyExpensesApiService);
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
 
   items = signal<DailyReport[]>([]);
   projects = signal<ProjectOption[]>([]);
@@ -92,7 +96,9 @@ export class DailyExpensesPage implements OnInit {
     this.load();
     this.loadProjects();
     // Detectar si es móvil
-    this.isMobile.set(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    this.isMobile.set(
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    );
   }
 
   constructor() {
@@ -116,7 +122,7 @@ export class DailyExpensesPage implements OnInit {
           this.recordingTime.set(0);
           this.mediaRecorder = null;
         }
-        
+
         this.editing.set(null);
         this.pendingAudio.set(null);
         this.pendingVideo.set(null);
@@ -153,20 +159,18 @@ export class DailyExpensesPage implements OnInit {
       return;
     }
 
-    this.dailyExpensesApi
-      .listWithFilters({ userId: currentUser.id })
-      .subscribe({
-        next: (data) => {
-          this.items.set(data);
-        },
-        error: () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Error al cargar los reportes diarios',
-          });
-        },
-      });
+    this.dailyExpensesApi.listWithFilters({ userId: currentUser.id }).subscribe({
+      next: (data) => {
+        this.items.set(data);
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los reportes diarios',
+        });
+      },
+    });
   }
 
   onFilterDateChange(value: Date | null) {
@@ -344,7 +348,7 @@ export class DailyExpensesPage implements OnInit {
       this.mediaRecorder.onstop = () => {
         const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
         const audioFile = new File([audioBlob], `audio-${Date.now()}.webm`, { type: 'audio/webm' });
-        
+
         if (this.editing()?._id) {
           this.dailyExpensesApi.uploadAudio(this.editing()!._id!, audioFile).subscribe({
             next: (updated) => this.editing.set(updated),
@@ -356,7 +360,7 @@ export class DailyExpensesPage implements OnInit {
 
         // Detener todos los tracks del stream
         if (this.audioStream) {
-          this.audioStream.getTracks().forEach(track => track.stop());
+          this.audioStream.getTracks().forEach((track) => track.stop());
           this.audioStream = null;
         }
         this.mediaRecorder = null;
@@ -370,10 +374,11 @@ export class DailyExpensesPage implements OnInit {
       this.recordingInterval = setInterval(() => {
         this.recordingTime.set(this.recordingTime() + 1);
       }, 1000);
-
     } catch (error) {
       console.error('Error al iniciar la grabación:', error);
-      this.toastError('No se pudo acceder al micrófono. Por favor, permite el acceso al micrófono.');
+      this.toastError(
+        'No se pudo acceder al micrófono. Por favor, permite el acceso al micrófono.'
+      );
     }
   }
 
@@ -449,6 +454,39 @@ export class DailyExpensesPage implements OnInit {
     input.value = '';
   }
 
+  removeDocumentFromEditing(index: number) {
+    const current = this.editing();
+    if (!current || !current.documents) return;
+
+    const documentToRemove = current.documents[index];
+    const documentName = documentToRemove?.split('/').pop() || 'este documento';
+
+    this.confirmationService.confirm({
+      message: `¿Está seguro de que desea eliminar el documento "${documentName}"?`,
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        const updatedDocuments = current.documents ? [...current.documents] : [];
+        updatedDocuments.splice(index, 1);
+        this.editing.set({ ...current, documents: updatedDocuments });
+
+        // Si el reporte ya existe en el servidor, eliminar el documento también
+        if (current._id && documentToRemove) {
+          this.dailyExpensesApi.deleteDocument(current._id, documentToRemove).subscribe({
+            next: (updated) => this.editing.set(updated),
+            error: () => {
+              this.toastError('No se pudo eliminar el documento');
+              // Revertir el cambio local si falla
+              this.editing.set({ ...current, documents: current.documents });
+            },
+          });
+        }
+      },
+    });
+  }
+
   save() {
     const item = this.editing();
     if (!item) return;
@@ -472,12 +510,13 @@ export class DailyExpensesPage implements OnInit {
     const upsert$ = item._id
       ? this.dailyExpensesApi.update(item._id, payload)
       : this.dailyExpensesApi.create({
-        ...payload,
-        userId: typeof item.userId === 'object' && item.userId && '_id' in item.userId
-          ? (item.userId as any)._id
-          : (item.userId as string),
-        documents: [],
-      } as DailyReport);
+          ...payload,
+          userId:
+            typeof item.userId === 'object' && item.userId && '_id' in item.userId
+              ? (item.userId as any)._id
+              : (item.userId as string),
+          documents: [],
+        } as DailyReport);
 
     upsert$.subscribe({
       next: (saved) => {
@@ -492,12 +531,20 @@ export class DailyExpensesPage implements OnInit {
 
         if (tasks.length) {
           Promise.allSettled(tasks).finally(() => {
-            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte guardado' });
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Reporte guardado',
+            });
             this.load();
             this.closeDialog();
           });
         } else {
-          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte guardado' });
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Reporte guardado',
+          });
           this.load();
           this.closeDialog();
         }
@@ -648,9 +695,7 @@ export class DailyExpensesPage implements OnInit {
     return userId === currentUser.id;
   }
 
-
   // eliminado: lógica de observaciones; no aplica en DailyReport simplificado
-
 
   // Métodos auxiliares para documentos
   getFileIcon(url: string): string {

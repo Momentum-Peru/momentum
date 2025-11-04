@@ -2,7 +2,7 @@
   <p-toast></p-toast>
 
   <!-- Header con estadísticas -->
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between flex-wrap gap-4">
     <div class="flex flex-col md:flex-row md:items-center gap-4">
       <h1 class="text-2xl font-bold text-gray-800">Gestión de Proveedores</h1>
       @if (stats()) {
@@ -46,7 +46,7 @@
     <ng-template pTemplate="content">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Buscar</label>
           <input
             pInputText
             placeholder="Nombre, RUC, email..."
@@ -56,7 +56,9 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Servicio</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Servicio</label
+          >
           <p-select
             [options]="availableServices()"
             [ngModel]="selectedService()"
@@ -69,7 +71,7 @@
           ></p-select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
           <p-select
             [options]="[
               { label: 'Todos', value: null },
@@ -119,7 +121,9 @@
             <div class="space-y-1 min-w-[200px]">
               <div class="font-semibold text-gray-900 break-words">{{ row.name }}</div>
               @if (row.taxId) {
-              <div class="text-sm text-gray-500 break-words">RUC: {{ row.taxId }}</div>
+              <div class="text-sm text-gray-500 dark:text-white break-words">
+                RUC: {{ row.taxId }}
+              </div>
               } @if (row.website) {
               <div class="text-sm">
                 <a
@@ -172,7 +176,7 @@
               type="button"
               label="Ver contactos"
               icon="pi pi-users"
-              class="p-button-text p-button-sm"
+              class="p-button-text p-button-sm text-nowrap"
               (click)="openContacts(row)"
             ></button>
           </td>
@@ -804,7 +808,9 @@
         <ng-template pTemplate="content">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+                >Nombre *</label
+              >
               <input
                 pInputText
                 placeholder="Nombre del proveedor"
@@ -814,7 +820,9 @@
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">RUC/DNI</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+                >RUC/DNI</label
+              >
               <input
                 pInputText
                 placeholder="RUC o DNI"
@@ -824,7 +832,7 @@
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
+              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Sitio Web (opcional)</label
               >
               <input
@@ -839,14 +847,18 @@
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Calificación</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+                >Calificación</label
+              >
               <p-rating
                 [ngModel]="editing()?.rating"
                 (ngModelChange)="onEditChange('rating', $event)"
               ></p-rating>
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+                >Descripción</label
+              >
               <textarea
                 pInputText
                 placeholder="Descripción del proveedor y servicios que ofrece"
@@ -863,7 +875,9 @@
                   (ngModelChange)="onEditChange('isActive', $event)"
                   [binary]="true"
                 ></p-checkbox>
-                <label class="text-sm font-medium text-gray-700">Proveedor activo</label>
+                <label class="text-sm font-medium text-gray-700 dark:text-white"
+                  >Proveedor activo</label
+                >
               </div>
             </div>
           </div>
@@ -881,7 +895,7 @@
         <ng-template pTemplate="content">
           <div class="space-y-3">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
+              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Servicios (separados por comas)</label
               >
               <input
@@ -917,7 +931,9 @@
         <ng-template pTemplate="content">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">País *</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+                >País *</label
+              >
               <p-select
                 [options]="countries()"
                 optionLabel="nombre"
@@ -937,7 +953,9 @@
               </p-select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Provincia/Estado</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+                >Provincia/Estado</label
+              >
               <p-select
                 [options]="provinces()"
                 optionLabel="nombre"
@@ -958,7 +976,9 @@
               </p-select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Distrito/Municipio</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+                >Distrito/Municipio</label
+              >
               <p-select
                 [options]="districts()"
                 optionLabel="nombre"
@@ -979,7 +999,7 @@
               </p-select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
+              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Dirección específica</label
               >
               <input

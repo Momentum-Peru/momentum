@@ -7,7 +7,9 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Serie -->
         <div class="flex flex-col">
-          <label for="serie" class="text-sm font-medium text-gray-700 mb-2"> Serie </label>
+          <label for="serie" class="text-sm font-medium text-gray-700 dark:text-white mb-2">
+            Serie
+          </label>
           <input
             pInputText
             id="serie"
@@ -19,7 +21,10 @@
 
         <!-- Número de Documento -->
         <div class="flex flex-col">
-          <label for="numeroDocumento" class="text-sm font-medium text-gray-700 mb-2">
+          <label
+            for="numeroDocumento"
+            class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+          >
             Número de Documento <span class="text-red-500">*</span>
           </label>
           <p-inputNumber
@@ -39,7 +44,9 @@
 
         <!-- Proyecto -->
         <div class="flex flex-col">
-          <label for="proyectoId" class="text-sm font-medium text-gray-700 mb-2"> Proyecto </label>
+          <label for="proyectoId" class="text-sm font-medium text-gray-700 dark:text-white mb-2">
+            Proyecto
+          </label>
           <p-select
             id="proyectoId"
             formControlName="proyectoId"
@@ -52,7 +59,9 @@
 
         <!-- Categoría -->
         <div class="flex flex-col">
-          <label for="categoria" class="text-sm font-medium text-gray-700 mb-2"> Categoría </label>
+          <label for="categoria" class="text-sm font-medium text-gray-700 dark:text-white mb-2">
+            Categoría
+          </label>
           <p-select
             id="categoria"
             formControlName="categoria"
@@ -66,7 +75,10 @@
         <!-- Campo adicional para categoría "Otros" -->
         @if (showCategoriaOtros()) {
         <div class="flex flex-col md:col-span-2">
-          <label for="categoriaOtros" class="text-sm font-medium text-gray-700 mb-2">
+          <label
+            for="categoriaOtros"
+            class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+          >
             Especifique la categoría <span class="text-red-500">*</span>
           </label>
           <input
@@ -90,7 +102,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Fecha de Emisión -->
         <div class="flex flex-col">
-          <label for="fechaEmision" class="text-sm font-medium text-gray-700 mb-2">
+          <label for="fechaEmision" class="text-sm font-medium text-gray-700 dark:text-white mb-2">
             Fecha de Emisión
           </label>
           <p-datepicker
@@ -106,7 +118,10 @@
 
         <!-- Fecha de Vencimiento -->
         <div class="flex flex-col">
-          <label for="fechaVencimiento" class="text-sm font-medium text-gray-700 mb-2">
+          <label
+            for="fechaVencimiento"
+            class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+          >
             Fecha de Vencimiento
           </label>
           <p-datepicker
@@ -127,7 +142,10 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Documento de Referencia -->
         <div class="flex flex-col">
-          <label for="documentoReferencia" class="text-sm font-medium text-gray-700 mb-2">
+          <label
+            for="documentoReferencia"
+            class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+          >
             Documento de Referencia
           </label>
           <p-inputNumber
@@ -143,7 +161,7 @@
 
         <!-- Total -->
         <div class="flex flex-col">
-          <label for="total" class="text-sm font-medium text-gray-700 mb-2">
+          <label for="total" class="text-sm font-medium text-gray-700 dark:text-white mb-2">
             Total <span class="text-red-500">*</span>
           </label>
           <p-inputNumber
@@ -170,7 +188,7 @@
     <p-card header="Documentos Adjuntos" class="shadow-sm">
       <!-- Archivos Existentes -->
       <div *ngIf="existingFiles().length > 0" class="mb-4">
-        <h4 class="text-sm font-medium text-gray-700 mb-3">Archivos Actuales:</h4>
+        <h4 class="text-sm font-medium text-gray-700 dark:text-white mb-3">Archivos Actuales:</h4>
         <div class="space-y-2">
           <div
             *ngFor="let fileUrl of existingFiles()"
@@ -195,7 +213,9 @@
 
       <!-- Subir Nuevos Archivos -->
       <div>
-        <h4 class="text-sm font-medium text-gray-700 mb-3">Subir Nuevos Archivos:</h4>
+        <h4 class="text-sm font-medium text-gray-700 dark:text-white mb-3">
+          Subir Nuevos Archivos:
+        </h4>
         <p-fileUpload
           #fileUpload
           mode="basic"
@@ -212,7 +232,9 @@
 
         <!-- Lista de archivos seleccionados -->
         <div *ngIf="uploadedFiles().length > 0" class="mt-4">
-          <h5 class="text-sm font-medium text-gray-600 mb-2">Archivos Seleccionados:</h5>
+          <h5 class="text-sm font-medium text-gray-600 dark:text-white mb-2">
+            Archivos Seleccionados:
+          </h5>
           <div class="space-y-2">
             <div
               *ngFor="let file of uploadedFiles()"

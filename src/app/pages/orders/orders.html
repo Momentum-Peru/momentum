@@ -21,7 +21,7 @@
           <th>Tipo</th>
           <th>Documentos</th>
           <th>Fecha Creación</th>
-          <th></th>
+          <th class="text-right">Acciones</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
@@ -48,7 +48,9 @@
           </td>
           <td>
             <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-600">{{ row.documents?.length || 0 }} docs</span>
+              <span class="text-sm text-gray-600 text-nowrap"
+                >{{ row.documents?.length || 0 }} docs</span
+              >
               <button
                 pButton
                 type="button"
@@ -62,7 +64,7 @@
             </div>
           </td>
           <td>{{ row.createdAt | date : 'dd/MM/yyyy' }}</td>
-          <td class="text-right">
+          <td class="text-right flex gap-3">
             <button
               pButton
               icon="pi pi-eye"
@@ -374,15 +376,17 @@
         <div class="grid gap-3">
           @for (doc of documentsViewing()?.documents; track $index) {
           <div
-            class="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors"
+            class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors gap-3"
           >
-            <div class="flex items-center gap-4">
+            <div class="flex items-start sm:items-center gap-4 min-w-0 flex-1 w-full sm:w-auto">
               <div class="flex-shrink-0">
                 <i [class]="getFileIcon(doc) + ' text-2xl ' + getFileTypeColor(doc)"></i>
               </div>
-              <div class="min-w-0 flex-1">
-                <p class="font-medium text-gray-900 truncate">{{ doc.split('/').pop() }}</p>
-                <p class="text-sm text-gray-500 truncate">{{ doc }}</p>
+              <div class="min-w-0 flex-1 w-full sm:w-auto">
+                <p class="font-medium text-gray-900 break-all whitespace-normal">
+                  {{ doc.split('/').pop() }}
+                </p>
+                <p class="text-sm text-gray-500 break-all whitespace-normal">{{ doc }}</p>
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -426,7 +430,7 @@
 
     <ng-template pTemplate="footer">
       <div class="flex justify-between items-center">
-        <div class="text-sm text-gray-500">
+        <div class="text-sm text-gray-500 text-nowrap">
           @if (documentsViewing()?.documents?.length) {
           {{ documentsViewing()?.documents?.length }} documento(s) adjunto(s) }
         </div>
@@ -572,7 +576,9 @@
     <div class="grid gap-4">
       <!-- Cliente -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Cliente *</label
+        >
         <p-select
           [options]="clients()"
           optionLabel="name"
@@ -587,7 +593,9 @@
 
       <!-- Nombre del cliente -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente *</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Nombre del Cliente *</label
+        >
         <input
           pInputText
           placeholder="Nombre del cliente"
@@ -600,7 +608,9 @@
       <!-- Número y Tipo -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Número *</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Número *</label
+          >
           <input
             pInputText
             placeholder="ORD-2024-001"
@@ -610,7 +620,7 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Tipo *</label>
           <p-select
             [options]="tipos"
             optionLabel="label"

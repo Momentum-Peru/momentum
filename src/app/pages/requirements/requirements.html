@@ -429,15 +429,17 @@
         <div class="grid gap-3">
           @for (doc of documentsViewing()?.documentos; track $index) {
           <div
-            class="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors"
+            class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors gap-3"
           >
-            <div class="flex items-center gap-4">
+            <div class="flex items-start sm:items-center gap-4 min-w-0 flex-1 w-full sm:w-auto">
               <div class="flex-shrink-0">
                 <i [class]="getFileIcon(doc) + ' text-2xl ' + getFileTypeColor(doc)"></i>
               </div>
-              <div class="min-w-0 flex-1">
-                <p class="font-medium text-gray-900 truncate">{{ doc.split('/').pop() }}</p>
-                <p class="text-sm text-gray-500 truncate">{{ doc }}</p>
+              <div class="min-w-0 flex-1 w-full sm:w-auto">
+                <p class="font-medium text-gray-900 break-all whitespace-normal">
+                  {{ doc.split('/').pop() }}
+                </p>
+                <p class="text-sm text-gray-500 break-all whitespace-normal">{{ doc }}</p>
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -481,7 +483,7 @@
 
     <ng-template pTemplate="footer">
       <div class="flex justify-between items-center">
-        <div class="text-sm text-gray-500">
+        <div class="text-sm text-gray-500 text-nowrap">
           @if (documentsViewing()?.documentos?.length) {
           {{ documentsViewing()?.documentos?.length }} documento(s) adjunto(s) }
         </div>
@@ -749,7 +751,7 @@
     <div class="grid gap-4">
       <!-- Cliente -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Cliente</label>
         <p-select
           [options]="clients()"
           optionLabel="name"
@@ -765,7 +767,9 @@
       <!-- Primera fila -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Código *</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Código *</label
+          >
           <input
             pInputText
             name="requirementCode"
@@ -776,7 +780,7 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
           <p-select
             [options]="estados"
             optionLabel="label"
@@ -792,7 +796,7 @@
 
       <!-- Título -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Título *</label>
         <input
           pInputText
           name="requirementTitle"
@@ -805,7 +809,9 @@
 
       <!-- Descripción -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Descripción *</label
+        >
         <textarea
           pTextarea
           placeholder="Descripción detallada del requerimiento"
@@ -818,7 +824,9 @@
 
       <!-- Centro de Costo -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Centro de Costo *</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Centro de Costo *</label
+        >
         <input
           pInputText
           name="requirementCostCenter"
@@ -832,7 +840,9 @@
       <!-- Tercera fila - Fechas -->
       <div class="grid grid-cols-3 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Emisión *</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Fecha Emisión *</label
+          >
           <p-datepicker
             [ngModel]="editing()?.fechaEmision"
             (ngModelChange)="onEditChange('fechaEmision', $event)"
@@ -844,7 +854,9 @@
           ></p-datepicker>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Requerimiento *</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Fecha Requerimiento *</label
+          >
           <p-datepicker
             [ngModel]="editing()?.fechaRequerimiento"
             (ngModelChange)="onEditChange('fechaRequerimiento', $event)"
@@ -856,7 +868,9 @@
           ></p-datepicker>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Aprobación</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Fecha Aprobación</label
+          >
           <p-datepicker
             [ngModel]="editing()?.fechaAprobacion"
             (ngModelChange)="onEditChange('fechaAprobacion', $event)"
@@ -871,10 +885,12 @@
 
       <!-- Solicitante -->
       <div class="border-t pt-4">
-        <h4 class="text-lg font-semibold text-gray-800 mb-3">Solicitante</h4>
+        <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Solicitante</h4>
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >Nombre *</label
+            >
             <input
               pInputText
               placeholder="Nombre completo"
@@ -884,7 +900,9 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Código *</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >Código *</label
+            >
             <input
               pInputText
               placeholder="EMP-001"
@@ -894,7 +912,9 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Cargo *</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >Cargo *</label
+            >
             <input
               pInputText
               placeholder="Desarrollador Senior"
@@ -908,10 +928,12 @@
 
       <!-- Aprobador -->
       <div class="border-t pt-4">
-        <h4 class="text-lg font-semibold text-gray-800 mb-3">Aprobador</h4>
+        <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Aprobador</h4>
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >Nombre</label
+            >
             <input
               pInputText
               placeholder="Nombre completo"
@@ -921,7 +943,9 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Código</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >Código</label
+            >
             <input
               pInputText
               placeholder="EMP-002"
@@ -931,7 +955,9 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Cargo</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >Cargo</label
+            >
             <input
               pInputText
               placeholder="Gerente de TI"

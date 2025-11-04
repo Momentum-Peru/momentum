@@ -1,5 +1,6 @@
 <div class="p-4 space-y-4 mt-5 overflow-x-hidden">
   <p-toast></p-toast>
+  <p-confirmDialog></p-confirmDialog>
   <div class="flex flex-wrap items-center gap-2">
     <input
       pInputText
@@ -51,13 +52,16 @@
           <td>{{ row.date | date : 'dd/MM/yyyy' }}</td>
           <td>{{ row.time }}</td>
           <td>
-            <span class="text-sm break-words whitespace-normal">{{
-              getProjectName(row.projectId)
-            }}</span>
+            <span
+              class="text-sm text-gray-700 dark:text-white font-medium break-words whitespace-normal"
+              >{{ getProjectName(row.projectId) }}</span
+            >
           </td>
           <td>
             <div class="max-w-xs">
-              <p class="truncate break-words break-all">{{ row.description }}</p>
+              <p class="text-gray-700 dark:text-white break-words whitespace-normal line-clamp-2">
+                {{ row.description }}
+              </p>
               <div class="flex gap-2 mt-1 text-xs text-gray-500">
                 <i *ngIf="row.audioDescription" class="pi pi-volume-up"></i>
                 <i *ngIf="row.videoDescription" class="pi pi-video"></i>
@@ -187,7 +191,9 @@
       <!-- Fecha y Hora -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Fecha *</label
+          >
           <p-datepicker
             [ngModel]="getEditDate()"
             (ngModelChange)="onDateChange($event)"
@@ -201,7 +207,7 @@
           ></p-datepicker>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Hora *</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Hora *</label>
           <input
             pInputText
             type="time"
@@ -215,7 +221,9 @@
 
       <!-- Proyecto (opcional) -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Proyecto (opcional)</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Proyecto (opcional)</label
+        >
         <p-select
           [options]="projects()"
           optionLabel="label"
@@ -344,7 +352,9 @@
 
       <!-- Descripción -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Descripción *</label
+        >
         <textarea
           pTextarea
           placeholder="Describe lo realizado..."
@@ -358,38 +368,63 @@
 
       <!-- Adjuntar documentos (múltiples) -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Documentos</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Documentos</label
+        >
         <input
           type="file"
           multiple
           (change)="onDocumentsSelected($event)"
           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
         />
-        <div
-          class="mt-2 space-y-1"
-          *ngIf="pendingDocuments().length || editing()?.documents?.length"
-        >
+        @if (pendingDocuments().length || editing()?.documents?.length) {
+        <div class="mt-2 space-y-1">
           <!-- Pendientes -->
+          @for (pdoc of pendingDocuments(); track pdoc.name) {
           <div
             class="flex items-center justify-between bg-blue-50 p-2 rounded border border-blue-200"
-            *ngFor="let pdoc of pendingDocuments()"
           >
-            <div class="flex items-center gap-2">
-              <i class="pi pi-file"></i>
-              <span class="text-sm">{{ pdoc.name }}</span>
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+              <i class="pi pi-file text-gray-500"></i>
+              <span class="text-sm text-gray-700 font-medium break-all whitespace-normal">{{
+                pdoc.name
+              }}</span>
             </div>
           </div>
+          }
           <!-- Existentes -->
+          @for (doc of editing()?.documents || []; track doc; let i = $index) {
           <div
-            class="flex items-center justify-between bg-white p-2 rounded border"
-            *ngFor="let doc of editing()?.documents"
+            class="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-2 rounded border gap-2"
           >
-            <div class="flex items-center gap-2">
-              <i class="pi pi-file"></i>
-              <span class="text-sm">{{ doc.split('/').pop() }}</span>
+            <div class="flex items-center gap-2 min-w-0 flex-1 w-full sm:w-auto">
+              <i class="pi pi-file text-gray-500"></i>
+              <span class="text-sm text-gray-700 font-medium break-all whitespace-normal">{{
+                doc.split('/').pop()
+              }}</span>
+            </div>
+            <div class="flex gap-1 flex-shrink-0">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm"
+                (click)="viewDocument(doc)"
+                pTooltip="Ver documento"
+                tooltipPosition="top"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-danger p-button-sm"
+                (click)="removeDocumentFromEditing(i)"
+                pTooltip="Eliminar documento"
+                tooltipPosition="top"
+              ></button>
             </div>
           </div>
+          }
         </div>
+        }
       </div>
     </div>
 
@@ -416,51 +451,58 @@
     <div class="space-y-4" *ngIf="viewing() as v">
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-xs text-gray-500 mb-1">Fecha</label>
-          <div class="font-medium">{{ v.date | date : 'dd/MM/yyyy' }}</div>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Fecha</label>
+          <div class="font-medium text-gray-700 dark:text-white">
+            {{ v.date | date : 'dd/MM/yyyy' }}
+          </div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 mb-1">Hora</label>
-          <div class="font-medium">{{ v.time }}</div>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Hora</label>
+          <div class="font-medium text-gray-700 dark:text-white">{{ v.time }}</div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 mb-1">Proyecto</label>
-          <div class="font-medium">{{ getProjectName(v.projectId) }}</div>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Proyecto</label>
+          <div class="font-medium text-gray-700 dark:text-white break-words whitespace-normal">
+            {{ getProjectName(v.projectId) }}
+          </div>
         </div>
       </div>
 
       <div>
-        <label class="block text-xs text-gray-500 mb-1">Descripción</label>
-        <p class="whitespace-pre-wrap">{{ v.description }}</p>
+        <label class="block text-xs text-gray-500 dark:text-100 mb-1">Descripción</label>
+        <p class="whitespace-pre-wrap text-gray-700 dark:text-white">{{ v.description }}</p>
       </div>
 
       <div class="grid grid-cols-3 gap-3">
         <div *ngIf="v.audioDescription">
-          <label class="block text-xs text-gray-500 mb-1">Audio</label>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Audio</label>
           <audio [src]="v.audioDescription!" controls class="w-full"></audio>
         </div>
         <div *ngIf="v.photoDescription">
-          <label class="block text-xs text-gray-500 mb-1">Foto</label>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Foto</label>
           <img [src]="v.photoDescription!" class="w-full rounded" />
         </div>
         <div *ngIf="v.videoDescription">
-          <label class="block text-xs text-gray-500 mb-1">Video</label>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Video</label>
           <video [src]="v.videoDescription!" controls class="w-full rounded"></video>
         </div>
       </div>
 
-      <div *ngIf="v.documents?.length">
-        <label class="block text-xs text-gray-500 mb-2">Documentos</label>
+      @if (v.documents?.length) {
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-white mb-2">Documentos</label>
         <div class="space-y-1">
+          @for (doc of v.documents; track doc) {
           <div
-            class="flex items-center justify-between bg-white p-2 rounded border"
-            *ngFor="let doc of v.documents"
+            class="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-2 rounded border gap-2"
           >
-            <div class="flex items-center gap-2">
-              <i class="pi pi-file"></i>
-              <span class="text-sm">{{ doc.split('/').pop() }}</span>
+            <div class="flex items-center gap-2 min-w-0 flex-1 w-full sm:w-auto">
+              <i class="pi pi-file text-gray-500"></i>
+              <span class="text-sm text-gray-700 font-medium break-all whitespace-normal">{{
+                doc.split('/').pop()
+              }}</span>
             </div>
-            <div class="flex gap-1">
+            <div class="flex gap-1 flex-shrink-0">
               <button
                 pButton
                 icon="pi pi-eye"
@@ -475,8 +517,10 @@
               ></button>
             </div>
           </div>
+          }
         </div>
       </div>
+      }
     </div>
 
     <ng-template pTemplate="footer">
