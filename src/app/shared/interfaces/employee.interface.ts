@@ -19,6 +19,7 @@ export interface Employee {
   correo: string;
   telefono?: string;
   direccion?: string;
+  cargo?: string;
   numeroSeguroSocial: string;
   userId: string | UserInfo;
   areaId?: string | AreaInfo;
@@ -33,6 +34,7 @@ export interface CreateEmployeeRequest {
   correo: string;
   telefono?: string;
   direccion?: string;
+  cargo?: string;
   numeroSeguroSocial: string;
   userId: string;
   areaId?: string;
@@ -45,6 +47,7 @@ export interface UpdateEmployeeRequest {
   correo?: string;
   telefono?: string;
   direccion?: string;
+  cargo?: string;
   numeroSeguroSocial?: string;
   userId?: string;
   areaId?: string | null;

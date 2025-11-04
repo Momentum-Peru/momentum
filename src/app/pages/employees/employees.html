@@ -42,6 +42,7 @@
           <th>DNI</th>
           <th>Correo</th>
           <th>Teléfono</th>
+          <th>Cargo</th>
           <th>Usuario</th>
           <th>Área</th>
           <th class="text-right">Acciones</th>
@@ -54,6 +55,7 @@
           <td>{{ row.dni }}</td>
           <td>{{ row.correo }}</td>
           <td>{{ row.telefono || '-' }}</td>
+          <td>{{ row.cargo || '-' }}</td>
           <td>
             <span
               class="text-sm text-gray-700 dark:text-white font-medium break-words whitespace-normal"
@@ -68,7 +70,7 @@
               {{ getAreaName(row.areaId) }}
             </span>
           </td>
-          <td class="text-right">
+          <td class="text-right flex gap-2">
             <button
               pButton
               icon="pi pi-eye"
@@ -98,7 +100,7 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="8" class="text-center py-8 text-gray-500">No se encontraron empleados</td>
+          <td colspan="9" class="text-center py-8 text-gray-500">No se encontraron empleados</td>
         </tr>
       </ng-template>
     </p-table>
@@ -154,6 +156,12 @@
             <div class="text-xs text-gray-500 dark:text-gray-400">Área</div>
             <div class="text-sm font-medium text-gray-900 dark:text-white">
               {{ getAreaName(row.areaId) }}
+            </div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">Cargo</div>
+            <div class="text-sm font-medium text-gray-900 dark:text-white">
+              {{ row.cargo || '-' }}
             </div>
           </div>
           @if (row.direccion) {
@@ -313,6 +321,18 @@
       </div>
 
       <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"> Cargo </label>
+        <input
+          pInputText
+          [ngModel]="e.cargo"
+          (ngModelChange)="onEditChange('cargo', $event)"
+          name="cargo"
+          placeholder="Desarrollador"
+          class="w-full"
+        />
+      </div>
+
+      <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
           Número de Seguro Social *
         </label>
@@ -432,6 +452,12 @@
           <label class="block text-xs text-gray-500 dark:text-white mb-1">Área</label>
           <div class="font-medium text-gray-700 dark:text-white break-words">
             {{ getAreaName(v.areaId) }}
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-white mb-1">Cargo</label>
+          <div class="font-medium text-gray-700 dark:text-white">
+            {{ v.cargo || '-' }}
           </div>
         </div>
         @if (v.direccion) {
