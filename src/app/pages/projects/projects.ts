@@ -50,11 +50,12 @@ export class ProjectsPage implements OnInit {
   nextCode = signal<number | null>(null);
 
   statusOptions = [
-    { label: 'Planificación', value: 'PLANNING' },
-    { label: 'Activo', value: 'ACTIVE' },
-    { label: 'En Pausa', value: 'ON_HOLD' },
-    { label: 'Completado', value: 'COMPLETED' },
-    { label: 'Cancelado', value: 'CANCELLED' },
+    { label: 'Pendiente', value: 'PENDIENTE' },
+    { label: 'En Cotización', value: 'EN_COTIZACION' },
+    { label: 'En Ejecución', value: 'EN_EJECUCION' },
+    { label: 'En Observación', value: 'EN_OBSERVACION' },
+    { label: 'Terminado', value: 'TERMINADO' },
+    { label: 'Cancelado', value: 'CANCELADO' },
   ];
 
   ngOnInit() {
@@ -137,7 +138,7 @@ export class ProjectsPage implements OnInit {
       description: '',
       code: '',
       clientId: '',
-      status: 'PLANNING',
+      status: 'PENDIENTE',
       startDate: '',
       endDate: '',
       location: '',
@@ -326,15 +327,17 @@ export class ProjectsPage implements OnInit {
 
   getStatusSeverity(status: string): string {
     switch (status) {
-      case 'PLANNING':
+      case 'PENDIENTE':
         return 'info';
-      case 'ACTIVE':
-        return 'success';
-      case 'ON_HOLD':
+      case 'EN_COTIZACION':
         return 'warning';
-      case 'COMPLETED':
+      case 'EN_EJECUCION':
         return 'success';
-      case 'CANCELLED':
+      case 'EN_OBSERVACION':
+        return 'warning';
+      case 'TERMINADO':
+        return 'success';
+      case 'CANCELADO':
         return 'danger';
       default:
         return 'secondary';

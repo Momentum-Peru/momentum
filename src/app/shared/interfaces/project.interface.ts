@@ -4,7 +4,7 @@ export interface Project {
   description?: string;
   code: string;
   clientId: string | { _id: string; name: string; taxId?: string }; // Relacionado con el _id del cliente
-  status: 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDIENTE' | 'EN_COTIZACION' | 'EN_EJECUCION' | 'EN_OBSERVACION' | 'TERMINADO' | 'CANCELADO';
   startDate?: string | Date;
   endDate?: string | Date;
   location?: string;
