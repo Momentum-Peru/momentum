@@ -31,6 +31,8 @@ export class MenuConfigService {
     { path: '/documents', label: 'Documentos', icon: 'pi pi-file' },
     { path: '/tasks', label: 'Tareas', icon: 'pi pi-check-square' },
     { path: '/daily-reports', label: 'Reportes Diarios', icon: 'pi pi-calendar' },
+    { path: '/employees', label: 'Empleados', icon: 'pi pi-user' },
+    { path: '/areas', label: 'Áreas', icon: 'pi pi-sitemap' },
     { path: '/users', label: 'Usuarios', icon: 'pi pi-users' },
     { path: '/menu-permissions', label: 'Permisos', icon: 'pi pi-shield' },
     { path: '/leads', label: 'Leads', icon: 'pi pi-user-plus' },
@@ -128,6 +130,11 @@ export class MenuConfigService {
             icon: 'pi pi-calendar',
             routerLink: '/daily-reports',
           },
+          {
+            label: 'Empleados',
+            icon: 'pi pi-user',
+            routerLink: '/employees',
+          },
         ],
       },
       {
@@ -143,6 +150,11 @@ export class MenuConfigService {
             label: 'Permisos',
             icon: 'pi pi-shield',
             routerLink: '/menu-permissions',
+          },
+          {
+            label: 'Áreas',
+            icon: 'pi pi-sitemap',
+            routerLink: '/areas',
           },
         ],
       },
