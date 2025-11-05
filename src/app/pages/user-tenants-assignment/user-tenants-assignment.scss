@@ -1,3 +1,27 @@
 // Estilos específicos del componente
 // UI con Tailwind CSS desde el template
 
+/* Estilos para accordion desplegable en móvil */
+:host {
+  /* Animación fade-in para el contenido expandible */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Mejorar la apariencia de los botones en el accordion móvil */
+  .p-button.p-button-text {
+    @apply w-full justify-start;
+  }
+}
+
