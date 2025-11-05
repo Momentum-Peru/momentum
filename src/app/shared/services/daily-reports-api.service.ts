@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, timeout, catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { DailyReport } from '../interfaces/daily-report.interface';
 
@@ -98,7 +98,23 @@ export class DailyExpensesApiService {
   uploadDocument(reportId: string, file: File): Observable<DailyReport> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/documents`, formData);
+    
+    // Calcular timeout basado en el tamaño del archivo
+    const fileSizeMB = file.size / (1024 * 1024);
+    const timeoutMs = Math.max(30000, 30000 + (fileSizeMB * 5000)); // Mínimo 30s, +5s por MB
+    const maxTimeout = 300000; // Máximo 5 minutos
+    const finalTimeout = Math.min(timeoutMs, maxTimeout);
+
+    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/documents`, formData, {
+      headers: new HttpHeaders({}),
+      reportProgress: false,
+    }).pipe(
+      timeout(finalTimeout),
+      catchError((error) => {
+        console.error('Error en uploadDocument:', { fileName: file.name, error });
+        return throwError(() => error);
+      })
+    );
   }
 
   deleteDocument(reportId: string, documentUrl: string): Observable<DailyReport> {
@@ -110,19 +126,67 @@ export class DailyExpensesApiService {
   uploadAudio(reportId: string, file: File): Observable<DailyReport> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/audio`, formData);
+    
+    // Calcular timeout basado en el tamaño del archivo
+    const fileSizeMB = file.size / (1024 * 1024);
+    const timeoutMs = Math.max(30000, 30000 + (fileSizeMB * 5000)); // Mínimo 30s, +5s por MB
+    const maxTimeout = 300000; // Máximo 5 minutos
+    const finalTimeout = Math.min(timeoutMs, maxTimeout);
+
+    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/audio`, formData, {
+      headers: new HttpHeaders({}),
+      reportProgress: false,
+    }).pipe(
+      timeout(finalTimeout),
+      catchError((error) => {
+        console.error('Error en uploadAudio:', { fileName: file.name, error });
+        return throwError(() => error);
+      })
+    );
   }
 
   uploadVideo(reportId: string, file: File): Observable<DailyReport> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/video`, formData);
+    
+    // Calcular timeout basado en el tamaño del archivo
+    const fileSizeMB = file.size / (1024 * 1024);
+    const timeoutMs = Math.max(60000, 60000 + (fileSizeMB * 10000)); // Mínimo 60s, +10s por MB (videos son más grandes)
+    const maxTimeout = 600000; // Máximo 10 minutos para videos
+    const finalTimeout = Math.min(timeoutMs, maxTimeout);
+
+    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/video`, formData, {
+      headers: new HttpHeaders({}),
+      reportProgress: false,
+    }).pipe(
+      timeout(finalTimeout),
+      catchError((error) => {
+        console.error('Error en uploadVideo:', { fileName: file.name, error });
+        return throwError(() => error);
+      })
+    );
   }
 
   uploadPhoto(reportId: string, file: File): Observable<DailyReport> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/photo`, formData);
+    
+    // Calcular timeout basado en el tamaño del archivo
+    const fileSizeMB = file.size / (1024 * 1024);
+    const timeoutMs = Math.max(30000, 30000 + (fileSizeMB * 5000)); // Mínimo 30s, +5s por MB
+    const maxTimeout = 300000; // Máximo 5 minutos
+    const finalTimeout = Math.min(timeoutMs, maxTimeout);
+
+    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/photo`, formData, {
+      headers: new HttpHeaders({}),
+      reportProgress: false,
+    }).pipe(
+      timeout(finalTimeout),
+      catchError((error) => {
+        console.error('Error en uploadPhoto:', { fileName: file.name, error });
+        return throwError(() => error);
+      })
+    );
   }
 
   deleteAudio(reportId: string, audioUrl: string): Observable<DailyReport> {

@@ -1044,7 +1044,8 @@ export class DailyExpensesPage implements OnInit {
           tasks.push(this.uploadDocumentsPromise(id, this.pendingDocuments()));
 
         if (tasks.length) {
-          Promise.allSettled(tasks).finally(() => {
+          // Subir archivos con límite de concurrencia para evitar saturar el servidor
+          this.uploadFilesWithConcurrencyLimit(tasks, id).finally(() => {
             this.messageService.add({
               severity: 'success',
               summary: 'Éxito',
@@ -1069,35 +1070,137 @@ export class DailyExpensesPage implements OnInit {
 
   private uploadAudioPromise(id: string, file: File) {
     return new Promise((resolve, reject) => {
-      this.dailyExpensesApi.uploadAudio(id, file).subscribe({ next: resolve, error: reject });
+      console.log('Subiendo audio:', { fileName: file.name, fileSize: file.size, reportId: id });
+      this.dailyExpensesApi.uploadAudio(id, file).subscribe({
+        next: (response) => {
+          console.log('Audio subido exitosamente:', { fileName: file.name, reportId: id });
+          resolve(response);
+        },
+        error: (error) => {
+          console.error('Error al subir audio:', { fileName: file.name, error, reportId: id });
+          reject({ type: 'audio', fileName: file.name, error });
+        },
+      });
     });
   }
   private uploadVideoPromise(id: string, file: File) {
     return new Promise((resolve, reject) => {
-      this.dailyExpensesApi.uploadVideo(id, file).subscribe({ next: resolve, error: reject });
+      console.log('Subiendo video:', { fileName: file.name, fileSize: file.size, reportId: id });
+      this.dailyExpensesApi.uploadVideo(id, file).subscribe({
+        next: (response) => {
+          console.log('Video subido exitosamente:', { fileName: file.name, reportId: id });
+          resolve(response);
+        },
+        error: (error) => {
+          console.error('Error al subir video:', { fileName: file.name, error, reportId: id });
+          reject({ type: 'video', fileName: file.name, error });
+        },
+      });
     });
   }
   private uploadPhotoPromise(id: string, file: File) {
     return new Promise((resolve, reject) => {
-      this.dailyExpensesApi.uploadPhoto(id, file).subscribe({ next: resolve, error: reject });
+      console.log('Subiendo foto:', { fileName: file.name, fileSize: file.size, reportId: id });
+      this.dailyExpensesApi.uploadPhoto(id, file).subscribe({
+        next: (response) => {
+          console.log('Foto subida exitosamente:', { fileName: file.name, reportId: id });
+          resolve(response);
+        },
+        error: (error) => {
+          console.error('Error al subir foto:', { fileName: file.name, error, reportId: id });
+          reject({ type: 'photo', fileName: file.name, error });
+        },
+      });
     });
   }
   private uploadDocumentsPromise(id: string, files: File[]) {
     return new Promise((resolve) => {
       let remaining = files.length;
+      if (remaining === 0) {
+        resolve(true);
+        return;
+      }
       files.forEach((f) => {
+        console.log('Subiendo documento:', { fileName: f.name, fileSize: f.size, reportId: id });
         this.dailyExpensesApi.uploadDocument(id, f).subscribe({
           next: () => {
+            console.log('Documento subido exitosamente:', { fileName: f.name, reportId: id });
             remaining -= 1;
             if (remaining === 0) resolve(true);
           },
-          error: () => {
+          error: (error) => {
+            console.error('Error al subir documento:', { fileName: f.name, error, reportId: id });
             remaining -= 1;
             if (remaining === 0) resolve(true);
           },
         });
       });
     });
+  }
+
+  /**
+   * Sube archivos con límite de concurrencia para evitar saturar el servidor
+   * @param tasks Array de promesas de subida
+   * @param reportId ID del reporte para logging
+   * @returns Promise que se resuelve cuando todas las subidas terminan
+   */
+  private async uploadFilesWithConcurrencyLimit(
+    tasks: Array<Promise<any>>,
+    reportId: string
+  ): Promise<void> {
+    const CONCURRENT_LIMIT = 3; // Máximo 3 subidas simultáneas
+    const results: Array<{ status: string; fileName?: string; type?: string; error?: any }> = [];
+
+    // Procesar en lotes con límite de concurrencia
+    for (let i = 0; i < tasks.length; i += CONCURRENT_LIMIT) {
+      const batch = tasks.slice(i, i + CONCURRENT_LIMIT);
+      const batchResults = await Promise.allSettled(batch);
+
+      batchResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          results.push({ status: 'fulfilled' });
+          console.log(`Archivo ${i + index + 1}/${tasks.length} subido exitosamente`);
+        } else {
+          const errorInfo = result.reason as any;
+          results.push({
+            status: 'rejected',
+            fileName: errorInfo?.fileName || 'desconocido',
+            type: errorInfo?.type || 'archivo',
+            error: errorInfo?.error || result.reason,
+          });
+          console.error(`Error al subir archivo ${i + index + 1}/${tasks.length}:`, errorInfo);
+          
+          // Mostrar error específico al usuario
+          const errorMsg = this.getErrorMessage(errorInfo?.error || result.reason);
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Advertencia',
+            detail: `No se pudo subir ${errorInfo?.type || 'archivo'}: ${errorInfo?.fileName || 'desconocido'}. ${errorMsg}`,
+            life: 5000,
+          });
+        }
+      });
+
+      // Pequeña pausa entre lotes para no saturar el servidor
+      if (i + CONCURRENT_LIMIT < tasks.length) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+
+    // Resumen final
+    const successful = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    
+    console.log(`Subida completada: ${successful} exitosos, ${failed} fallidos de ${tasks.length} totales`);
+
+    if (failed > 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: `Se subieron ${successful} de ${tasks.length} archivos. ${failed} archivo(s) no se pudieron subir.`,
+        life: 7000,
+      });
+    }
   }
 
   // Eliminado: lógica de observaciones y compras
