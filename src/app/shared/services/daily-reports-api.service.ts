@@ -124,4 +124,22 @@ export class DailyExpensesApiService {
     formData.append('file', file);
     return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/photo`, formData);
   }
+
+  deleteAudio(reportId: string, audioUrl: string): Observable<DailyReport> {
+    return this.http.delete<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/audio`, {
+      body: { audioUrl },
+    });
+  }
+
+  deleteVideo(reportId: string, videoUrl: string): Observable<DailyReport> {
+    return this.http.delete<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/video`, {
+      body: { videoUrl },
+    });
+  }
+
+  deletePhoto(reportId: string, photoUrl: string): Observable<DailyReport> {
+    return this.http.delete<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/photo`, {
+      body: { photoUrl },
+    });
+  }
 }

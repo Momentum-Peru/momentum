@@ -4,3 +4,25 @@
     width: 100% !important;
   }
 }
+
+/* Estilos para miniaturas de medios */
+.media-thumbnail {
+  aspect-ratio: 1;
+  min-width: 80px;
+  min-height: 80px;
+}
+
+/* Estilos para el modal de medios */
+::ng-deep .media-modal {
+  .p-dialog-content {
+    padding: 1rem;
+  }
+  
+  .p-dialog-header {
+    border-bottom: 1px solid var(--surface-border);
+  }
+  
+  .p-dialog-footer {
+    border-top: 1px solid var(--surface-border);
+  }
+}

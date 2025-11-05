@@ -58,10 +58,107 @@ export class DailyExpensesPage implements OnInit {
   private expandedRowKeys = signal<Set<string>>(new Set());
 
   // Archivos seleccionados (pendientes) cuando aún no existe el reporte
-  pendingAudio = signal<File | null>(null);
-  pendingVideo = signal<File | null>(null);
-  pendingPhoto = signal<File | null>(null);
+  pendingAudio = signal<File[]>([]);
+  pendingVideo = signal<File[]>([]);
+  pendingPhoto = signal<File[]>([]);
   pendingDocuments = signal<File[]>([]);
+
+  // Cache de URLs de blob para archivos pendientes (evita recrear URLs)
+  private pendingAudioUrlCache = new Map<File, string>();
+  private pendingVideoUrlCache = new Map<File, string>();
+  private pendingPhotoUrlCache = new Map<File, string>();
+
+  // Signals computed para URLs de archivos pendientes (estable y reactivo)
+  pendingAudioUrls = computed(() => {
+    const files = this.pendingAudio();
+    const urls: string[] = [];
+    const newCache = new Map<File, string>();
+
+    files.forEach((file) => {
+      // Si ya existe en el cache, reutilizarlo
+      if (this.pendingAudioUrlCache.has(file)) {
+        const cachedUrl = this.pendingAudioUrlCache.get(file)!;
+        newCache.set(file, cachedUrl);
+        urls.push(cachedUrl);
+      } else {
+        // Crear nueva URL solo si no existe
+        const url = URL.createObjectURL(file);
+        newCache.set(file, url);
+        urls.push(url);
+      }
+    });
+
+    // Limpiar URLs de archivos que ya no están
+    this.pendingAudioUrlCache.forEach((url, file) => {
+      if (!files.includes(file)) {
+        URL.revokeObjectURL(url);
+      }
+    });
+
+    this.pendingAudioUrlCache = newCache;
+    return urls;
+  });
+
+  pendingVideoUrls = computed(() => {
+    const files = this.pendingVideo();
+    const urls: string[] = [];
+    const newCache = new Map<File, string>();
+
+    files.forEach((file) => {
+      if (this.pendingVideoUrlCache.has(file)) {
+        const cachedUrl = this.pendingVideoUrlCache.get(file)!;
+        newCache.set(file, cachedUrl);
+        urls.push(cachedUrl);
+      } else {
+        const url = URL.createObjectURL(file);
+        newCache.set(file, url);
+        urls.push(url);
+      }
+    });
+
+    this.pendingVideoUrlCache.forEach((url, file) => {
+      if (!files.includes(file)) {
+        URL.revokeObjectURL(url);
+      }
+    });
+
+    this.pendingVideoUrlCache = newCache;
+    return urls;
+  });
+
+  pendingPhotoUrls = computed(() => {
+    const files = this.pendingPhoto();
+    const urls: string[] = [];
+    const newCache = new Map<File, string>();
+
+    files.forEach((file) => {
+      if (this.pendingPhotoUrlCache.has(file)) {
+        const cachedUrl = this.pendingPhotoUrlCache.get(file)!;
+        newCache.set(file, cachedUrl);
+        urls.push(cachedUrl);
+      } else {
+        const url = URL.createObjectURL(file);
+        newCache.set(file, url);
+        urls.push(url);
+      }
+    });
+
+    this.pendingPhotoUrlCache.forEach((url, file) => {
+      if (!files.includes(file)) {
+        URL.revokeObjectURL(url);
+      }
+    });
+
+    this.pendingPhotoUrlCache = newCache;
+    return urls;
+  });
+
+  // Modal de visualización de medios
+  showMediaModal = signal(false);
+  mediaModalType = signal<'audio' | 'video' | 'photo' | null>(null);
+  mediaModalUrl = signal<string>('');
+  mediaModalUrls = signal<string[]>([]);
+  mediaModalCurrentIndex = signal(0);
 
   // Estado de grabación de audio
   isRecordingAudio = signal(false);
@@ -124,9 +221,13 @@ export class DailyExpensesPage implements OnInit {
         }
 
         this.editing.set(null);
-        this.pendingAudio.set(null);
-        this.pendingVideo.set(null);
-        this.pendingPhoto.set(null);
+
+        // Limpiar URLs de blob antes de limpiar los arrays
+        this.cleanupPendingUrls();
+
+        this.pendingAudio.set([]);
+        this.pendingVideo.set([]);
+        this.pendingPhoto.set([]);
         this.pendingDocuments.set([]);
       }
       if (!this.showViewDialog()) this.viewing.set(null);
@@ -233,9 +334,13 @@ export class DailyExpensesPage implements OnInit {
       userId: currentUser?.id || '',
       projectId: '',
     });
-    this.pendingAudio.set(null);
-    this.pendingVideo.set(null);
-    this.pendingPhoto.set(null);
+
+    // Limpiar URLs de blob si hay archivos pendientes
+    this.cleanupPendingUrls();
+
+    this.pendingAudio.set([]);
+    this.pendingVideo.set([]);
+    this.pendingPhoto.set([]);
     this.pendingDocuments.set([]);
     this.showDialog.set(true);
   }
@@ -269,11 +374,231 @@ export class DailyExpensesPage implements OnInit {
   }
 
   closeDialog() {
-    this.pendingAudio.set(null);
-    this.pendingVideo.set(null);
-    this.pendingPhoto.set(null);
+    // Limpiar URLs de blob antes de limpiar los arrays
+    this.cleanupPendingUrls();
+
+    this.pendingAudio.set([]);
+    this.pendingVideo.set([]);
+    this.pendingPhoto.set([]);
     this.pendingDocuments.set([]);
     this.showDialog.set(false);
+  }
+
+  // Limpiar todas las URLs de blob pendientes
+  private cleanupPendingUrls() {
+    this.pendingAudioUrlCache.forEach((url) => URL.revokeObjectURL(url));
+    this.pendingVideoUrlCache.forEach((url) => URL.revokeObjectURL(url));
+    this.pendingPhotoUrlCache.forEach((url) => URL.revokeObjectURL(url));
+
+    this.pendingAudioUrlCache.clear();
+    this.pendingVideoUrlCache.clear();
+    this.pendingPhotoUrlCache.clear();
+  }
+
+  // Helper para convertir string a array (compatibilidad hacia atrás)
+  normalizeToArray(value: string | string[] | null | undefined): string[] {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    return [value];
+  }
+
+  // Eliminar archivos pendientes
+  removePendingAudio(index: number) {
+    const current = this.pendingAudio();
+    const fileToRemove = current[index];
+
+    // Limpiar URL del archivo removido
+    if (fileToRemove && this.pendingAudioUrlCache.has(fileToRemove)) {
+      const url = this.pendingAudioUrlCache.get(fileToRemove)!;
+      URL.revokeObjectURL(url);
+      this.pendingAudioUrlCache.delete(fileToRemove);
+    }
+
+    const updated = current.filter((_, i) => i !== index);
+    this.pendingAudio.set(updated);
+  }
+
+  removePendingVideo(index: number) {
+    const current = this.pendingVideo();
+    const fileToRemove = current[index];
+
+    if (fileToRemove && this.pendingVideoUrlCache.has(fileToRemove)) {
+      const url = this.pendingVideoUrlCache.get(fileToRemove)!;
+      URL.revokeObjectURL(url);
+      this.pendingVideoUrlCache.delete(fileToRemove);
+    }
+
+    const updated = current.filter((_, i) => i !== index);
+    this.pendingVideo.set(updated);
+  }
+
+  removePendingPhoto(index: number) {
+    const current = this.pendingPhoto();
+    const fileToRemove = current[index];
+
+    if (fileToRemove && this.pendingPhotoUrlCache.has(fileToRemove)) {
+      const url = this.pendingPhotoUrlCache.get(fileToRemove)!;
+      URL.revokeObjectURL(url);
+      this.pendingPhotoUrlCache.delete(fileToRemove);
+    }
+
+    const updated = current.filter((_, i) => i !== index);
+    this.pendingPhoto.set(updated);
+  }
+
+  // Abrir modal de visualización de medios
+  openMediaModal(type: 'audio' | 'video' | 'photo', urls: string[], currentIndex: number = 0) {
+    this.mediaModalType.set(type);
+    this.mediaModalUrls.set(urls);
+    this.mediaModalCurrentIndex.set(currentIndex);
+    this.mediaModalUrl.set(urls[currentIndex] || '');
+    this.showMediaModal.set(true);
+  }
+
+  // Verificar si la URL actual es de un archivo pendiente
+  isCurrentMediaPending(): boolean {
+    const currentUrl = this.mediaModalUrl();
+    if (!currentUrl) return false;
+
+    // Verificar si está en los URLs de pendientes
+    const type = this.mediaModalType();
+    if (type === 'audio') {
+      return this.pendingAudioUrls().includes(currentUrl);
+    } else if (type === 'video') {
+      return this.pendingVideoUrls().includes(currentUrl);
+    } else if (type === 'photo') {
+      return this.pendingPhotoUrls().includes(currentUrl);
+    }
+    return false;
+  }
+
+  // Eliminar el archivo actual desde el modal
+  removeCurrentMediaFromModal() {
+    const currentUrl = this.mediaModalUrl();
+    const type = this.mediaModalType();
+    const currentIndex = this.mediaModalCurrentIndex();
+
+    if (!currentUrl || !type) return;
+
+    const isPending = this.isCurrentMediaPending();
+
+    if (isPending) {
+      // Confirmar eliminación de archivo pendiente
+      this.confirmationService.confirm({
+        message: `¿Está seguro de que desea eliminar este ${
+          type === 'audio' ? 'audio' : type === 'video' ? 'video' : 'foto'
+        }?`,
+        header: 'Confirmar Eliminación',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí, eliminar',
+        rejectLabel: 'Cancelar',
+        accept: () => {
+          // Encontrar el índice correcto en el array de archivos usando la URL actual
+          let fileIndex = -1;
+          if (type === 'audio') {
+            const files = this.pendingAudio();
+            const urls = this.pendingAudioUrls();
+            // Buscar el índice en las URLs que coincida con la URL actual
+            fileIndex = urls.findIndex((url) => url === currentUrl);
+            if (fileIndex >= 0 && fileIndex < files.length) {
+              this.removePendingAudio(fileIndex);
+              // Actualizar modal con nuevas URLs de pendientes (después de que se actualice el signal)
+              setTimeout(() => {
+                const newUrls = this.pendingAudioUrls();
+                this.updateModalUrls(newUrls, type);
+              }, 0);
+            }
+          } else if (type === 'video') {
+            const files = this.pendingVideo();
+            const urls = this.pendingVideoUrls();
+            fileIndex = urls.findIndex((url) => url === currentUrl);
+            if (fileIndex >= 0 && fileIndex < files.length) {
+              this.removePendingVideo(fileIndex);
+              setTimeout(() => {
+                const newUrls = this.pendingVideoUrls();
+                this.updateModalUrls(newUrls, type);
+              }, 0);
+            }
+          } else if (type === 'photo') {
+            const files = this.pendingPhoto();
+            const urls = this.pendingPhotoUrls();
+            fileIndex = urls.findIndex((url) => url === currentUrl);
+            if (fileIndex >= 0 && fileIndex < files.length) {
+              this.removePendingPhoto(fileIndex);
+              setTimeout(() => {
+                const newUrls = this.pendingPhotoUrls();
+                this.updateModalUrls(newUrls, type);
+              }, 0);
+            }
+          }
+
+          if (fileIndex === -1) {
+            this.toastError('No se pudo encontrar el archivo para eliminar');
+          }
+        },
+      });
+    } else {
+      // Eliminar archivo guardado (ya tiene confirmación interna)
+      if (type === 'audio') {
+        this.removeAudioFromEditing(currentUrl);
+      } else if (type === 'video') {
+        this.removeVideoFromEditing(currentUrl);
+      } else if (type === 'photo') {
+        this.removePhotoFromEditing(currentUrl);
+      }
+    }
+  }
+
+  // Actualizar URLs del modal después de eliminar
+  private updateModalUrls(newUrls: string[], type: 'audio' | 'video' | 'photo') {
+    if (!this.showMediaModal() || this.mediaModalType() !== type) return;
+
+    if (newUrls.length === 0) {
+      this.closeMediaModal();
+    } else {
+      const currentIndex = this.mediaModalCurrentIndex();
+      const newIndex = currentIndex >= newUrls.length ? newUrls.length - 1 : currentIndex;
+      this.mediaModalUrls.set(newUrls);
+      this.mediaModalCurrentIndex.set(newIndex);
+      this.mediaModalUrl.set(newUrls[newIndex] || '');
+    }
+  }
+
+  closeMediaModal() {
+    this.showMediaModal.set(false);
+    this.mediaModalType.set(null);
+    this.mediaModalUrl.set('');
+    this.mediaModalUrls.set([]);
+    this.mediaModalCurrentIndex.set(0);
+  }
+
+  nextMedia() {
+    const urls = this.mediaModalUrls();
+    const currentIndex = this.mediaModalCurrentIndex();
+    if (currentIndex < urls.length - 1) {
+      this.mediaModalCurrentIndex.set(currentIndex + 1);
+      this.mediaModalUrl.set(urls[currentIndex + 1]);
+    }
+  }
+
+  previousMedia() {
+    const currentIndex = this.mediaModalCurrentIndex();
+    if (currentIndex > 0) {
+      this.mediaModalCurrentIndex.set(currentIndex - 1);
+      const urls = this.mediaModalUrls();
+      this.mediaModalUrl.set(urls[currentIndex - 1]);
+    }
+  }
+
+  hasNextMedia(): boolean {
+    const urls = this.mediaModalUrls();
+    const currentIndex = this.mediaModalCurrentIndex();
+    return currentIndex < urls.length - 1;
+  }
+
+  hasPreviousMedia(): boolean {
+    const currentIndex = this.mediaModalCurrentIndex();
+    return currentIndex > 0;
   }
 
   viewItem(item: DailyReport) {
@@ -308,18 +633,22 @@ export class DailyExpensesPage implements OnInit {
     }
   }
 
-  // Captura de archivos (mobile friendly)
+  // Captura de archivos (mobile friendly) - múltiples archivos
   onAudioSelected(event: Event) {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] || null;
-    if (!file) return;
+    const files = Array.from(input.files || []);
+    if (files.length === 0) return;
     if (this.editing()?._id) {
-      this.dailyExpensesApi.uploadAudio(this.editing()!._id!, file).subscribe({
-        next: (updated) => this.editing.set(updated),
-        error: () => this.toastError('No se pudo subir el audio'),
+      // Subir múltiples archivos
+      files.forEach((file) => {
+        this.dailyExpensesApi.uploadAudio(this.editing()!._id!, file).subscribe({
+          next: (updated) => this.editing.set(updated),
+          error: () => this.toastError(`No se pudo subir el audio: ${file.name}`),
+        });
       });
     } else {
-      this.pendingAudio.set(file);
+      // Agregar a pendientes
+      this.pendingAudio.set([...this.pendingAudio(), ...files]);
     }
     input.value = '';
   }
@@ -355,7 +684,7 @@ export class DailyExpensesPage implements OnInit {
             error: () => this.toastError('No se pudo subir el audio'),
           });
         } else {
-          this.pendingAudio.set(audioFile);
+          this.pendingAudio.set([...this.pendingAudio(), audioFile]);
         }
 
         // Detener todos los tracks del stream
@@ -408,30 +737,38 @@ export class DailyExpensesPage implements OnInit {
 
   onVideoSelected(event: Event) {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] || null;
-    if (!file) return;
+    const files = Array.from(input.files || []);
+    if (files.length === 0) return;
     if (this.editing()?._id) {
-      this.dailyExpensesApi.uploadVideo(this.editing()!._id!, file).subscribe({
-        next: (updated) => this.editing.set(updated),
-        error: () => this.toastError('No se pudo subir el video'),
+      // Subir múltiples archivos
+      files.forEach((file) => {
+        this.dailyExpensesApi.uploadVideo(this.editing()!._id!, file).subscribe({
+          next: (updated) => this.editing.set(updated),
+          error: () => this.toastError(`No se pudo subir el video: ${file.name}`),
+        });
       });
     } else {
-      this.pendingVideo.set(file);
+      // Agregar a pendientes
+      this.pendingVideo.set([...this.pendingVideo(), ...files]);
     }
     input.value = '';
   }
 
   onPhotoSelected(event: Event) {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] || null;
-    if (!file) return;
+    const files = Array.from(input.files || []);
+    if (files.length === 0) return;
     if (this.editing()?._id) {
-      this.dailyExpensesApi.uploadPhoto(this.editing()!._id!, file).subscribe({
-        next: (updated) => this.editing.set(updated),
-        error: () => this.toastError('No se pudo subir la foto'),
+      // Subir múltiples archivos
+      files.forEach((file) => {
+        this.dailyExpensesApi.uploadPhoto(this.editing()!._id!, file).subscribe({
+          next: (updated) => this.editing.set(updated),
+          error: () => this.toastError(`No se pudo subir la foto: ${file.name}`),
+        });
       });
     } else {
-      this.pendingPhoto.set(file);
+      // Agregar a pendientes
+      this.pendingPhoto.set([...this.pendingPhoto(), ...files]);
     }
     input.value = '';
   }
@@ -487,6 +824,169 @@ export class DailyExpensesPage implements OnInit {
     });
   }
 
+  removeAudioFromEditing(url: string, skipConfirm: boolean = false) {
+    const current = this.editing();
+    if (!current) return;
+
+    const doRemove = () => {
+      const audioUrls = this.normalizeToArray(current.audioDescription);
+      const updatedUrls = audioUrls.filter((u) => u !== url);
+
+      // Actualizar localmente
+      this.editing.set({
+        ...current,
+        audioDescription: updatedUrls.length > 0 ? updatedUrls : null,
+      });
+
+      // Actualizar modal inmediatamente con las URLs actualizadas
+      this.updateModalAfterDelete('audio', updatedUrls);
+
+      // Si el reporte existe en el servidor, eliminar también
+      if (current._id) {
+        this.dailyExpensesApi.deleteAudio(current._id, url).subscribe({
+          next: (updated) => {
+            // Actualizar con la respuesta del servidor
+            const serverUrls = this.normalizeToArray(updated.audioDescription);
+            this.editing.set(updated);
+            // Actualizar modal con las URLs del servidor
+            this.updateModalAfterDelete('audio', serverUrls);
+          },
+          error: () => {
+            this.toastError('No se pudo eliminar el audio');
+            // Revertir el cambio local
+            this.editing.set({ ...current, audioDescription: current.audioDescription });
+            // Revertir el modal también
+            const originalUrls = this.normalizeToArray(current.audioDescription);
+            this.updateModalAfterDelete('audio', originalUrls);
+          },
+        });
+      }
+    };
+
+    if (skipConfirm) {
+      doRemove();
+    } else {
+      this.confirmationService.confirm({
+        message: '¿Está seguro de que desea eliminar este audio?',
+        header: 'Confirmar Eliminación',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí, eliminar',
+        rejectLabel: 'Cancelar',
+        accept: doRemove,
+      });
+    }
+  }
+
+  removeVideoFromEditing(url: string, skipConfirm: boolean = false) {
+    const current = this.editing();
+    if (!current) return;
+
+    const doRemove = () => {
+      const videoUrls = this.normalizeToArray(current.videoDescription);
+      const updatedUrls = videoUrls.filter((u) => u !== url);
+
+      this.editing.set({
+        ...current,
+        videoDescription: updatedUrls.length > 0 ? updatedUrls : null,
+      });
+
+      // Actualizar modal inmediatamente con las URLs actualizadas
+      this.updateModalAfterDelete('video', updatedUrls);
+
+      if (current._id) {
+        this.dailyExpensesApi.deleteVideo(current._id, url).subscribe({
+          next: (updated) => {
+            // Actualizar con la respuesta del servidor
+            const serverUrls = this.normalizeToArray(updated.videoDescription);
+            this.editing.set(updated);
+            // Actualizar modal con las URLs del servidor
+            this.updateModalAfterDelete('video', serverUrls);
+          },
+          error: () => {
+            this.toastError('No se pudo eliminar el video');
+            // Revertir el cambio local
+            this.editing.set({ ...current, videoDescription: current.videoDescription });
+            // Revertir el modal también
+            const originalUrls = this.normalizeToArray(current.videoDescription);
+            this.updateModalAfterDelete('video', originalUrls);
+          },
+        });
+      }
+    };
+
+    if (skipConfirm) {
+      doRemove();
+    } else {
+      this.confirmationService.confirm({
+        message: '¿Está seguro de que desea eliminar este video?',
+        header: 'Confirmar Eliminación',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí, eliminar',
+        rejectLabel: 'Cancelar',
+        accept: doRemove,
+      });
+    }
+  }
+
+  removePhotoFromEditing(url: string, skipConfirm: boolean = false) {
+    const current = this.editing();
+    if (!current) return;
+
+    const doRemove = () => {
+      const photoUrls = this.normalizeToArray(current.photoDescription);
+      const updatedUrls = photoUrls.filter((u) => u !== url);
+
+      this.editing.set({
+        ...current,
+        photoDescription: updatedUrls.length > 0 ? updatedUrls : null,
+      });
+
+      // Actualizar modal inmediatamente con las URLs actualizadas
+      this.updateModalAfterDelete('photo', updatedUrls);
+
+      if (current._id) {
+        this.dailyExpensesApi.deletePhoto(current._id, url).subscribe({
+          next: (updated) => {
+            // Actualizar con la respuesta del servidor
+            const serverUrls = this.normalizeToArray(updated.photoDescription);
+            this.editing.set(updated);
+            // Actualizar modal con las URLs del servidor
+            this.updateModalAfterDelete('photo', serverUrls);
+          },
+          error: () => {
+            this.toastError('No se pudo eliminar la foto');
+            // Revertir el cambio local
+            this.editing.set({ ...current, photoDescription: current.photoDescription });
+            // Revertir el modal también
+            const originalUrls = this.normalizeToArray(current.photoDescription);
+            this.updateModalAfterDelete('photo', originalUrls);
+          },
+        });
+      }
+    };
+
+    if (skipConfirm) {
+      doRemove();
+    } else {
+      this.confirmationService.confirm({
+        message: '¿Está seguro de que desea eliminar esta foto?',
+        header: 'Confirmar Eliminación',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí, eliminar',
+        rejectLabel: 'Cancelar',
+        accept: doRemove,
+      });
+    }
+  }
+
+  // Actualizar el modal después de eliminar un archivo guardado
+  private updateModalAfterDelete(type: 'audio' | 'video' | 'photo', newUrls: string[]) {
+    if (!this.showMediaModal() || this.mediaModalType() !== type) return;
+
+    // Usar el método compartido para actualizar
+    this.updateModalUrls(newUrls, type);
+  }
+
   save() {
     const item = this.editing();
     if (!item) return;
@@ -523,9 +1023,23 @@ export class DailyExpensesPage implements OnInit {
         const id = saved._id!;
         // Si había archivos pendientes (nuevo), súbelos
         const tasks: Array<Promise<any>> = [];
-        if (this.pendingAudio()) tasks.push(this.uploadAudioPromise(id, this.pendingAudio()!));
-        if (this.pendingVideo()) tasks.push(this.uploadVideoPromise(id, this.pendingVideo()!));
-        if (this.pendingPhoto()) tasks.push(this.uploadPhotoPromise(id, this.pendingPhoto()!));
+
+        // Subir múltiples audios
+        this.pendingAudio().forEach((file) => {
+          tasks.push(this.uploadAudioPromise(id, file));
+        });
+
+        // Subir múltiples videos
+        this.pendingVideo().forEach((file) => {
+          tasks.push(this.uploadVideoPromise(id, file));
+        });
+
+        // Subir múltiples fotos
+        this.pendingPhoto().forEach((file) => {
+          tasks.push(this.uploadPhotoPromise(id, file));
+        });
+
+        // Subir documentos
         if (this.pendingDocuments().length)
           tasks.push(this.uploadDocumentsPromise(id, this.pendingDocuments()));
 
