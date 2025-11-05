@@ -75,17 +75,14 @@ export class UserTenantsAssignmentPage implements OnInit {
   showDialog = signal<boolean>(false);
   editingUser = signal<UserWithTenants | null>(null);
   selectedTenantIds = signal<string[]>([]);
+  expandedRows = signal<Set<string>>(new Set());
 
   // Computed
   filteredUsers = computed(() => {
     const q = this.query().toLowerCase().trim();
     const all = this.users();
     if (!q) return all;
-    return all.filter(
-      (u) =>
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q)
-    );
+    return all.filter((u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
   });
 
   ngOnInit(): void {
@@ -137,7 +134,7 @@ export class UserTenantsAssignmentPage implements OnInit {
 
   editUserTenants(user: UserWithTenants): void {
     console.log('editUserTenants llamado con:', user);
-    
+
     // Verificar si el usuario tiene _id o id
     const userId = user?._id || (user as any)?.id;
     if (!user || !userId) {
@@ -149,18 +146,18 @@ export class UserTenantsAssignmentPage implements OnInit {
       });
       return;
     }
-    
+
     // Crear una copia del usuario para evitar problemas de referencia
     const userCopy: UserWithTenants = {
       ...user,
       _id: userId,
       tenantIds: user.tenantIds ? [...user.tenantIds] : [],
     };
-    
+
     console.log('Editando usuario (copia):', userCopy);
     this.editingUser.set(userCopy);
     this.selectedTenantIds.set(userCopy.tenantIds || []);
-    
+
     // Asegurar que el diálogo se abra después de establecer el usuario
     setTimeout(() => {
       this.showDialog.set(true);
@@ -210,23 +207,23 @@ export class UserTenantsAssignmentPage implements OnInit {
       event.preventDefault();
       event.stopPropagation();
     }
-    
+
     // Capturar el usuario inmediatamente para evitar problemas de timing
     const user = this.editingUser();
     const tenantIds = this.selectedTenantIds();
-    
-    console.log('saveTenants llamado', { 
-      user, 
-      userId: user?._id, 
+
+    console.log('saveTenants llamado', {
+      user,
+      userId: user?._id,
       tenantIds,
-      editingUserSignal: this.editingUser() 
+      editingUserSignal: this.editingUser(),
     });
 
     if (!user || !user._id) {
-      console.warn('No hay usuario seleccionado para guardar', { 
-        user, 
+      console.warn('No hay usuario seleccionado para guardar', {
+        user,
         editingUser: this.editingUser(),
-        showDialog: this.showDialog() 
+        showDialog: this.showDialog(),
       });
       this.messageService.add({
         severity: 'warn',
@@ -306,5 +303,33 @@ export class UserTenantsAssignmentPage implements OnInit {
     }
     return 'Ha ocurrido un error inesperado';
   }
-}
 
+  /**
+   * Obtiene el ID del usuario de forma segura
+   */
+  getUserId(user: UserWithTenants): string | undefined {
+    return user?._id || (user as any)?.id;
+  }
+
+  /**
+   * Alterna la expansión de una fila del accordion
+   */
+  toggleRow(userId: string | undefined): void {
+    if (!userId) return;
+    const expanded = new Set(this.expandedRows());
+    if (expanded.has(userId)) {
+      expanded.delete(userId);
+    } else {
+      expanded.add(userId);
+    }
+    this.expandedRows.set(expanded);
+  }
+
+  /**
+   * Verifica si una fila está expandida
+   */
+  isRowExpanded(userId: string | undefined): boolean {
+    if (!userId) return false;
+    return this.expandedRows().has(userId);
+  }
+}
