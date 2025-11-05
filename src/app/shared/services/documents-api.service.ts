@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
+import { Observable, timeout, retry, catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
     Document,
@@ -135,7 +135,46 @@ export class DocumentsApiService {
         
         formData.append('autoCreate', autoCreate.toString());
 
-        return this.http.post<ScanInvoiceResponse>(`${this.baseUrl}/documents/scan`, formData);
+        // Calcular timeout basado en el tamaño del archivo
+        // Para archivos grandes (6MB+), usar timeout más largo
+        // Base: 30 segundos, + 5 segundos por cada MB
+        const fileSizeMB = file.size / (1024 * 1024);
+        const timeoutMs = Math.max(30000, 30000 + (fileSizeMB * 5000)); // Mínimo 30s, +5s por MB
+        const maxTimeout = 300000; // Máximo 5 minutos
+        const finalTimeout = Math.min(timeoutMs, maxTimeout);
+
+        console.log('Configurando timeout para escaneo:', {
+            fileName: file.name,
+            fileSizeMB: fileSizeMB.toFixed(2),
+            timeoutMs: finalTimeout,
+        });
+
+        return this.http.post<ScanInvoiceResponse>(`${this.baseUrl}/documents/scan`, formData, {
+            headers: new HttpHeaders({
+                // No establecer Content-Type, dejar que el navegador lo establezca con boundary para FormData
+            }),
+            reportProgress: false, // Desactivar para evitar problemas en móviles
+        }).pipe(
+            timeout(finalTimeout),
+            retry({
+                count: 1, // Reintentar solo una vez
+                delay: 2000, // Esperar 2 segundos antes de reintentar
+            }),
+            catchError((error) => {
+                // Mejorar el mensaje de error para status 0
+                if (error.status === 0 || error.name === 'TimeoutError') {
+                    const timeoutError = new Error(
+                        `El archivo es demasiado grande o la conexión es lenta. ` +
+                        `Tamaño: ${fileSizeMB.toFixed(2)}MB. ` +
+                        `Por favor, intente con una imagen más pequeña o verifique su conexión a internet.`
+                    );
+                    (timeoutError as any).originalError = error;
+                    (timeoutError as any).isTimeout = true;
+                    return throwError(() => timeoutError);
+                }
+                return throwError(() => error);
+            })
+        );
     }
 }
 

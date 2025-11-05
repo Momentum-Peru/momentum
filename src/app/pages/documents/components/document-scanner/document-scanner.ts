@@ -601,9 +601,13 @@ export class DocumentScannerComponent implements AfterViewInit {
    * Obtiene el mensaje de error
    */
   private getErrorMessage(error: any): string {
-    // Errores de red o conexión
-    if (error.status === 0) {
-      return 'Error de conexión. Verifique su conexión a internet e intente nuevamente.';
+    // Errores de timeout o conexión
+    if (error.status === 0 || error.isTimeout || error.name === 'TimeoutError') {
+      // Si el error tiene un mensaje personalizado de timeout, usarlo
+      if (error.message && error.message.includes('demasiado grande')) {
+        return error.message;
+      }
+      return 'El archivo es demasiado grande o la conexión es lenta. Por favor, intente con una imagen más pequeña (máximo 5MB recomendado) o verifique su conexión a internet.';
     }
 
     // Errores HTTP 4xx
