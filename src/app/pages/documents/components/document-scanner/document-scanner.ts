@@ -11,13 +11,15 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { DialogModule } from 'primeng/dialog';
 import { CardModule } from 'primeng/card';
 import { TooltipModule } from 'primeng/tooltip';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ToastModule } from 'primeng/toast';
 import {
   DocumentsApiService,
   ScanInvoiceResponse,
@@ -38,14 +40,18 @@ import {
     DialogModule,
     CardModule,
     TooltipModule,
+    ConfirmDialogModule,
+    ToastModule,
   ],
   templateUrl: './document-scanner.html',
   styleUrl: './document-scanner.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [ConfirmationService],
 })
 export class DocumentScannerComponent implements AfterViewInit {
   private readonly documentsApi = inject(DocumentsApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
 
   @ViewChild('fileUpload') fileUpload!: any;
 
@@ -174,16 +180,30 @@ export class DocumentScannerComponent implements AfterViewInit {
    * Maneja la selección de archivo
    */
   onFileSelect(event: any): void {
-    const file = event.files?.[0] as File | undefined;
+    try {
+      const file = event.files?.[0] as File | undefined;
 
-    if (!file) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'No se pudo obtener el archivo. Por favor, intente nuevamente.',
+      if (!file) {
+        const errorMsg = 'No se pudo obtener el archivo. Por favor, intente nuevamente.';
+        this.showErrorAlert('Error al seleccionar archivo', errorMsg, {
+          event: event,
+          files: event.files,
+        });
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: errorMsg,
+        });
+        return;
+      }
+
+      console.log('Archivo seleccionado (móvil):', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        lastModified: new Date(file.lastModified),
+        isMobile: this.isMobileDevice(),
       });
-      return;
-    }
 
     // Validar tipo de archivo (imágenes y PDFs)
     // Nota: En móviles, el tipo MIME puede estar vacío, así que validamos también por extensión
@@ -272,31 +292,66 @@ export class DocumentScannerComponent implements AfterViewInit {
     const normalizedFile = this.normalizeFileType(file, fileExtension);
     this.selectedFile.set(normalizedFile);
 
-    // Crear preview con manejo de errores usando el archivo normalizado
-    const reader = new FileReader();
-    reader.onerror = (error) => {
-      console.error('Error al leer el archivo:', error);
+      // Crear preview con manejo de errores usando el archivo normalizado
+      const reader = new FileReader();
+      reader.onerror = (error) => {
+        const errorMsg = 'No se pudo leer el archivo. Por favor, intente con otro archivo.';
+        console.error('Error al leer el archivo:', {
+          error: error,
+          fileName: normalizedFile.name,
+          fileType: normalizedFile.type,
+          fileSize: normalizedFile.size,
+          isMobile: this.isMobileDevice(),
+        });
+        this.showErrorAlert('Error al leer archivo', errorMsg, {
+          error: error,
+          fileName: normalizedFile.name,
+          fileType: normalizedFile.type,
+          fileSize: normalizedFile.size,
+        });
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: errorMsg,
+        });
+        this.removeFile();
+      };
+      reader.onload = (e: any) => {
+        try {
+          this.previewUrl.set(e.target.result);
+          console.log('Preview creado exitosamente para:', normalizedFile.name);
+        } catch (error) {
+          console.error('Error al crear preview:', error);
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Advertencia',
+            detail: 'No se pudo generar la vista previa, pero el archivo se procesará.',
+          });
+        }
+      };
+      // Usar el archivo normalizado para el preview
+      reader.readAsDataURL(normalizedFile);
+    } catch (error: any) {
+      // Capturar cualquier error no manejado en el proceso
+      const errorMsg = `Error inesperado al procesar el archivo: ${error?.message || 'Error desconocido'}`;
+      console.error('Error general en onFileSelect:', {
+        error: error,
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+        isMobile: this.isMobileDevice(),
+      });
+      this.showErrorAlert('Error al procesar archivo', errorMsg, {
+        error: error,
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+      });
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'No se pudo leer el archivo. Por favor, intente con otro archivo.',
+        detail: errorMsg,
       });
       this.removeFile();
-    };
-    reader.onload = (e: any) => {
-      try {
-        this.previewUrl.set(e.target.result);
-      } catch (error) {
-        console.error('Error al crear preview:', error);
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Advertencia',
-          detail: 'No se pudo generar la vista previa, pero el archivo se procesará.',
-        });
-      }
-    };
-    // Usar el archivo normalizado para el preview
-    reader.readAsDataURL(normalizedFile);
+    }
   }
 
   /**
@@ -304,34 +359,74 @@ export class DocumentScannerComponent implements AfterViewInit {
    * Esto es necesario para fotos tomadas directamente desde el celular
    */
   private normalizeFileType(file: File, extension: string): File {
-    // Si el archivo ya tiene un tipo MIME válido, retornarlo sin cambios
-    if (file.type && file.type !== '') {
+    try {
+      // Si el archivo ya tiene un tipo MIME válido, retornarlo sin cambios
+      if (file.type && file.type !== '' && file.type !== 'application/octet-stream') {
+        return file;
+      }
+
+      // Mapeo de extensiones a tipos MIME
+      const extensionToMime: Record<string, string> = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.webp': 'image/webp',
+        '.pdf': 'application/pdf',
+      };
+
+      const normalizedExtension = extension.toLowerCase();
+      const mimeType = extensionToMime[normalizedExtension];
+
+      if (mimeType) {
+        // Crear un nuevo File con el tipo MIME correcto
+        // Nota: No podemos cambiar el tipo MIME de un File existente, así que creamos uno nuevo
+        const normalizedFile = new File([file], file.name, {
+          type: mimeType,
+          lastModified: file.lastModified,
+        });
+        
+        console.log('Archivo normalizado:', {
+          originalName: file.name,
+          originalType: file.type,
+          normalizedType: normalizedFile.type,
+          extension: normalizedExtension,
+          size: normalizedFile.size,
+        });
+        
+        return normalizedFile;
+      }
+
+      // Si no encontramos el tipo MIME, intentar inferirlo del contenido
+      // Para imágenes desde móvil, asumir JPEG si no hay extensión clara
+      if (this.isMobileDevice() && !mimeType) {
+        console.warn('No se pudo determinar el tipo MIME, usando image/jpeg por defecto para móvil:', {
+          fileName: file.name,
+          extension: normalizedExtension,
+        });
+        return new File([file], file.name, {
+          type: 'image/jpeg',
+          lastModified: file.lastModified,
+        });
+      }
+
+      // Si no encontramos el tipo MIME, retornar el archivo original
+      // El backend debería poder manejar esto
+      console.warn('No se pudo normalizar el tipo MIME del archivo:', {
+        fileName: file.name,
+        extension: normalizedExtension,
+        originalType: file.type,
+      });
+      return file;
+    } catch (error: any) {
+      console.error('Error al normalizar el tipo de archivo:', {
+        error: error,
+        fileName: file.name,
+        extension: extension,
+        originalType: file.type,
+      });
+      // En caso de error, retornar el archivo original
       return file;
     }
-
-    // Mapeo de extensiones a tipos MIME
-    const extensionToMime: Record<string, string> = {
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.webp': 'image/webp',
-      '.pdf': 'application/pdf',
-    };
-
-    const mimeType = extensionToMime[extension.toLowerCase()];
-
-    if (mimeType) {
-      // Crear un nuevo File con el tipo MIME correcto
-      // Nota: No podemos cambiar el tipo MIME de un File existente, así que creamos uno nuevo
-      return new File([file], file.name, {
-        type: mimeType,
-        lastModified: file.lastModified,
-      });
-    }
-
-    // Si no encontramos el tipo MIME, retornar el archivo original
-    // El backend debería poder manejar esto
-    return file;
   }
 
   /**
@@ -432,7 +527,7 @@ export class DocumentScannerComponent implements AfterViewInit {
         this.progress.set(0);
 
         // Log detallado del error para debugging
-        console.error('Error al escanear documento:', {
+        const errorDetails = {
           error: error,
           errorMessage: error?.message,
           errorStatus: error?.status,
@@ -441,14 +536,22 @@ export class DocumentScannerComponent implements AfterViewInit {
           fileName: file.name,
           fileType: file.type,
           fileSize: file.size,
-        });
+          isMobile: this.isMobileDevice(),
+          userAgent: navigator.userAgent,
+        };
+
+        console.error('Error al escanear documento:', errorDetails);
 
         const errorMessage = this.getErrorMessage(error);
+        
+        // Mostrar alerta con detalles del error
+        this.showErrorAlert('Error al escanear documento', errorMessage, errorDetails);
+
         this.messageService.add({
           severity: 'error',
           summary: 'Error al escanear',
           detail: errorMessage,
-          life: 5000, // Mostrar el mensaje por 5 segundos
+          life: 7000, // Mostrar el mensaje por 7 segundos
         });
       },
     });
@@ -542,5 +645,32 @@ export class DocumentScannerComponent implements AfterViewInit {
 
     // Mensaje por defecto
     return 'Ha ocurrido un error al escanear el documento. Por favor, intente nuevamente.';
+  }
+
+  /**
+   * Muestra un diálogo de confirmación con detalles del error
+   * Esto ayuda a diagnosticar problemas, especialmente en móviles
+   */
+  private showErrorAlert(title: string, message: string, details?: any): void {
+    // Construir mensaje detallado
+    let detailedMessage = message;
+    
+    if (details) {
+      const detailsStr = JSON.stringify(details, null, 2);
+      detailedMessage += `\n\nDetalles técnicos:\n${detailsStr}`;
+    }
+
+    // Usar confirmación de PrimeNG para mostrar el error
+    this.confirmationService.confirm({
+      message: detailedMessage,
+      header: title,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Entendido',
+      rejectVisible: false,
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        console.log('Usuario confirmó el error');
+      },
+    });
   }
 }
