@@ -276,6 +276,7 @@
             #audioInput
             accept="audio/*"
             capture
+            multiple
             (change)="onAudioSelected($event)"
             class="hidden"
           />
@@ -287,17 +288,19 @@
 
           <!-- Audio pendiente o guardado -->
           <small
-            *ngIf="!isRecordingAudio() && pendingAudio(); else audioSaved"
+            *ngIf="!isRecordingAudio() && pendingAudio().length > 0; else audioSaved"
             class="text-xs text-gray-500 mt-1"
           >
-            {{ pendingAudio()?.name }} seleccionado
+            {{ pendingAudio().length }} audio(s) seleccionado(s)
           </small>
           <ng-template #audioSaved>
             <small
-              *ngIf="!isRecordingAudio() && editing()?.audioDescription"
+              *ngIf="
+                !isRecordingAudio() && normalizeToArray(editing()?.audioDescription).length > 0
+              "
               class="text-xs text-gray-500 mt-1"
             >
-              Audio listo
+              {{ normalizeToArray(editing()?.audioDescription).length }} audio(s) listo(s)
             </small>
           </ng-template>
         </div>
@@ -315,15 +318,22 @@
             #photoInput
             accept="image/*"
             capture="environment"
+            multiple
             (change)="onPhotoSelected($event)"
             class="hidden"
           />
-          <small class="text-xs text-gray-500 mt-1" *ngIf="pendingPhoto(); else photoSaved">
-            {{ pendingPhoto()?.name }} seleccionada
+          <small
+            class="text-xs text-gray-500 mt-1"
+            *ngIf="pendingPhoto().length > 0; else photoSaved"
+          >
+            {{ pendingPhoto().length }} foto(s) seleccionada(s)
           </small>
           <ng-template #photoSaved>
-            <small class="text-xs text-gray-500 mt-1" *ngIf="editing()?.photoDescription">
-              Foto lista
+            <small
+              class="text-xs text-gray-500 mt-1"
+              *ngIf="normalizeToArray(editing()?.photoDescription).length > 0"
+            >
+              {{ normalizeToArray(editing()?.photoDescription).length }} foto(s) lista(s)
             </small>
           </ng-template>
         </div>
@@ -341,19 +351,263 @@
             #videoInput
             accept="video/*"
             capture
+            multiple
             (change)="onVideoSelected($event)"
             class="hidden"
           />
-          <small class="text-xs text-gray-500 mt-1" *ngIf="pendingVideo(); else videoSaved">
-            {{ pendingVideo()?.name }} seleccionado
+          <small
+            class="text-xs text-gray-500 mt-1"
+            *ngIf="pendingVideo().length > 0; else videoSaved"
+          >
+            {{ pendingVideo().length }} video(s) seleccionado(s)
           </small>
           <ng-template #videoSaved>
-            <small class="text-xs text-gray-500 mt-1" *ngIf="editing()?.videoDescription">
-              Video listo
+            <small
+              class="text-xs text-gray-500 mt-1"
+              *ngIf="normalizeToArray(editing()?.videoDescription).length > 0"
+            >
+              {{ normalizeToArray(editing()?.videoDescription).length }} video(s) listo(s)
             </small>
           </ng-template>
         </div>
       </div>
+
+      <!-- Miniaturas de medios en edición -->
+      @if (normalizeToArray(editing()?.audioDescription).length > 0 ||
+      normalizeToArray(editing()?.photoDescription).length > 0 ||
+      normalizeToArray(editing()?.videoDescription).length > 0 || pendingAudio().length > 0 ||
+      pendingPhoto().length > 0 || pendingVideo().length > 0) {
+      <!-- Archivos guardados -->
+      @if (normalizeToArray(editing()?.audioDescription).length > 0 ||
+      normalizeToArray(editing()?.photoDescription).length > 0 ||
+      normalizeToArray(editing()?.videoDescription).length > 0) {
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+          >Archivos multimedia guardados</label
+        >
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          <!-- Audios guardados - Agrupados con portada -->
+          @if (normalizeToArray(editing()?.audioDescription).length > 0) {
+          <div
+            class="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden group"
+          >
+            <div
+              class="w-full h-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+              (click)="openMediaModal('audio', normalizeToArray(editing()?.audioDescription), 0)"
+            >
+              <i class="pi pi-volume-up text-2xl text-gray-600 dark:text-gray-300"></i>
+            </div>
+            <!-- Indicador de cantidad de audios -->
+            @if (normalizeToArray(editing()?.audioDescription).length > 1) {
+            <div
+              class="absolute top-1 left-1 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
+            >
+              {{ normalizeToArray(editing()?.audioDescription).length }} audios
+            </div>
+            }
+            <!-- Botón eliminar solo visible en hover -->
+            <button
+              pButton
+              icon="pi pi-times"
+              class="p-button-rounded p-button-danger p-button-sm absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              (click)="removeAudioFromEditing(normalizeToArray(editing()?.audioDescription)[0])"
+              pTooltip="Eliminar audio"
+            ></button>
+            <div
+              class="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded"
+            >
+              Audio
+            </div>
+          </div>
+          }
+
+          <!-- Fotos guardadas - Agrupadas con portada -->
+          @if (normalizeToArray(editing()?.photoDescription).length > 0) {
+          <div class="relative aspect-square rounded-lg overflow-hidden group">
+            @if (normalizeToArray(editing()?.photoDescription)[0]) {
+            <img
+              [src]="normalizeToArray(editing()?.photoDescription)[0]"
+              class="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+              alt="Foto portada"
+              (click)="openMediaModal('photo', normalizeToArray(editing()?.photoDescription), 0)"
+            />
+            }
+            <!-- Indicador de cantidad de fotos -->
+            @if (normalizeToArray(editing()?.photoDescription).length > 1) {
+            <div
+              class="absolute top-1 left-1 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
+            >
+              {{ normalizeToArray(editing()?.photoDescription).length }} fotos
+            </div>
+            }
+            <!-- Botón eliminar solo visible en hover -->
+            <button
+              pButton
+              icon="pi pi-times"
+              class="p-button-rounded p-button-danger p-button-sm absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              (click)="removePhotoFromEditing(normalizeToArray(editing()?.photoDescription)[0])"
+              pTooltip="Eliminar foto"
+            ></button>
+            <div
+              class="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded"
+            >
+              Foto
+            </div>
+          </div>
+          }
+
+          <!-- Videos guardados - Agrupados con portada -->
+          @if (normalizeToArray(editing()?.videoDescription).length > 0) {
+          <div
+            class="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden group"
+          >
+            <div
+              class="w-full h-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+              (click)="openMediaModal('video', normalizeToArray(editing()?.videoDescription), 0)"
+            >
+              <i class="pi pi-play-circle text-2xl text-gray-600 dark:text-gray-300"></i>
+            </div>
+            <!-- Indicador de cantidad de videos -->
+            @if (normalizeToArray(editing()?.videoDescription).length > 1) {
+            <div
+              class="absolute top-1 left-1 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
+            >
+              {{ normalizeToArray(editing()?.videoDescription).length }} videos
+            </div>
+            }
+            <!-- Botón eliminar solo visible en hover -->
+            <button
+              pButton
+              icon="pi pi-times"
+              class="p-button-rounded p-button-danger p-button-sm absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              (click)="removeVideoFromEditing(normalizeToArray(editing()?.videoDescription)[0])"
+              pTooltip="Eliminar video"
+            ></button>
+            <div
+              class="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded"
+            >
+              Video
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Archivos pendientes (no guardados aún) -->
+      @if (pendingAudio().length > 0 || pendingPhoto().length > 0 || pendingVideo().length > 0) {
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+          >Archivos pendientes de guardar</label
+        >
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          <!-- Audios pendientes - Agrupados con portada -->
+          @if (pendingAudio().length > 0) {
+          <div
+            class="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden group"
+          >
+            <div
+              class="w-full h-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+              (click)="openMediaModal('audio', pendingAudioUrls(), 0)"
+            >
+              <i class="pi pi-volume-up text-2xl text-gray-600 dark:text-gray-300"></i>
+            </div>
+            <!-- Indicador de cantidad de audios -->
+            @if (pendingAudio().length > 1) {
+            <div
+              class="absolute top-1 left-1 bg-orange-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
+            >
+              {{ pendingAudio().length }} audios
+            </div>
+            }
+            <!-- Botón eliminar -->
+            <button
+              pButton
+              icon="pi pi-times"
+              class="p-button-rounded p-button-danger p-button-sm absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              (click)="removePendingAudio(0)"
+              pTooltip="Eliminar audio"
+            ></button>
+            <div
+              class="absolute bottom-1 right-1 bg-orange-600 bg-opacity-80 text-white text-xs px-1 rounded"
+            >
+              Pendiente
+            </div>
+          </div>
+          }
+
+          <!-- Fotos pendientes - Agrupadas con portada -->
+          @if (pendingPhoto().length > 0) {
+          <div class="relative aspect-square rounded-lg overflow-hidden group">
+            @if (pendingPhotoUrls().length > 0 && pendingPhotoUrls()[0]) {
+            <img
+              [src]="pendingPhotoUrls()[0]"
+              class="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+              alt="Foto pendiente"
+              (click)="openMediaModal('photo', pendingPhotoUrls(), 0)"
+            />
+            }
+            <!-- Indicador de cantidad de fotos -->
+            @if (pendingPhoto().length > 1) {
+            <div
+              class="absolute top-1 left-1 bg-orange-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
+            >
+              {{ pendingPhoto().length }} fotos
+            </div>
+            }
+            <!-- Botón eliminar -->
+            <button
+              pButton
+              icon="pi pi-times"
+              class="p-button-rounded p-button-danger p-button-sm absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              (click)="removePendingPhoto(0)"
+              pTooltip="Eliminar foto"
+            ></button>
+            <div
+              class="absolute bottom-1 right-1 bg-orange-600 bg-opacity-80 text-white text-xs px-1 rounded"
+            >
+              Pendiente
+            </div>
+          </div>
+          }
+
+          <!-- Videos pendientes - Agrupados con portada -->
+          @if (pendingVideo().length > 0) {
+          <div
+            class="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden group"
+          >
+            <div
+              class="w-full h-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+              (click)="openMediaModal('video', pendingVideoUrls(), 0)"
+            >
+              <i class="pi pi-play-circle text-2xl text-gray-600 dark:text-gray-300"></i>
+            </div>
+            <!-- Indicador de cantidad de videos -->
+            @if (pendingVideo().length > 1) {
+            <div
+              class="absolute top-1 left-1 bg-orange-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
+            >
+              {{ pendingVideo().length }} videos
+            </div>
+            }
+            <!-- Botón eliminar -->
+            <button
+              pButton
+              icon="pi pi-times"
+              class="p-button-rounded p-button-danger p-button-sm absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              (click)="removePendingVideo(0)"
+              pTooltip="Eliminar video"
+            ></button>
+            <div
+              class="absolute bottom-1 right-1 bg-orange-600 bg-opacity-80 text-white text-xs px-1 rounded"
+            >
+              Pendiente
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      } }
 
       <!-- Descripción -->
       <div>
@@ -478,22 +732,90 @@
         <p class="whitespace-pre-wrap text-gray-700 dark:text-white">{{ v.description }}</p>
       </div>
 
-      <div class="grid grid-cols-3 gap-3">
-        <div *ngIf="v.audioDescription">
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Audio</label>
-          <audio [src]="v.audioDescription!" controls class="w-full"></audio>
-        </div>
-        <div *ngIf="v.photoDescription">
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Foto</label>
-          <img [src]="v.photoDescription!" class="w-full rounded" />
-        </div>
-        <div *ngIf="v.videoDescription">
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Video</label>
-          <video [src]="v.videoDescription!" controls class="w-full rounded"></video>
+      <!-- Miniaturas de medios -->
+      @if (normalizeToArray(v.audioDescription).length > 0 ||
+      normalizeToArray(v.photoDescription).length > 0 || normalizeToArray(v.videoDescription).length
+      > 0) {
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-white mb-2">Medios</label>
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          <!-- Miniaturas de audio - Agrupadas con portada -->
+          @if (normalizeToArray(v.audioDescription).length > 0) {
+          <div
+            class="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center"
+            (click)="openMediaModal('audio', normalizeToArray(v.audioDescription), 0)"
+          >
+            <i class="pi pi-volume-up text-3xl text-gray-600 dark:text-gray-300"></i>
+            <!-- Indicador de cantidad de audios -->
+            @if (normalizeToArray(v.audioDescription).length > 1) {
+            <div
+              class="absolute top-1 left-1 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
+            >
+              {{ normalizeToArray(v.audioDescription).length }} audios
+            </div>
+            }
+            <div
+              class="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded"
+            >
+              Audio
+            </div>
+          </div>
+          }
+
+          <!-- Miniaturas de fotos - Agrupadas con portada -->
+          @if (normalizeToArray(v.photoDescription).length > 0) {
+          <div
+            class="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+            (click)="openMediaModal('photo', normalizeToArray(v.photoDescription), 0)"
+          >
+            @if (normalizeToArray(v.photoDescription)[0]) {
+            <img
+              [src]="normalizeToArray(v.photoDescription)[0]"
+              class="w-full h-full object-cover"
+              alt="Foto portada"
+            />
+            }
+            <!-- Indicador de cantidad de fotos -->
+            @if (normalizeToArray(v.photoDescription).length > 1) {
+            <div
+              class="absolute top-1 left-1 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
+            >
+              {{ normalizeToArray(v.photoDescription).length }} fotos
+            </div>
+            }
+            <div
+              class="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded"
+            >
+              Foto
+            </div>
+          </div>
+          }
+
+          <!-- Miniaturas de videos - Agrupadas con portada -->
+          @if (normalizeToArray(v.videoDescription).length > 0) {
+          <div
+            class="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center"
+            (click)="openMediaModal('video', normalizeToArray(v.videoDescription), 0)"
+          >
+            <i class="pi pi-play-circle text-3xl text-gray-600 dark:text-gray-300"></i>
+            <!-- Indicador de cantidad de videos -->
+            @if (normalizeToArray(v.videoDescription).length > 1) {
+            <div
+              class="absolute top-1 left-1 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
+            >
+              {{ normalizeToArray(v.videoDescription).length }} videos
+            </div>
+            }
+            <div
+              class="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded"
+            >
+              Video
+            </div>
+          </div>
+          }
         </div>
       </div>
-
-      @if (v.documents?.length) {
+      } @if (v.documents?.length) {
       <div>
         <label class="block text-xs text-gray-500 dark:text-white mb-2">Documentos</label>
         <div class="space-y-1">
@@ -532,4 +854,102 @@
       <button pButton label="Cerrar" (click)="closeViewDialog()"></button>
     </ng-template>
   </p-dialog>
+
+  <!-- Modal de visualización de medios -->
+  <p-dialog
+    [(visible)]="showMediaModal"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '90vw', maxHeight: '90vh' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    [focusOnShow]="false"
+    appendTo="body"
+    class="media-modal"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center justify-between w-full">
+        <span class="font-semibold">
+          {{
+            mediaModalType() === 'audio' ? 'Audio' : mediaModalType() === 'video' ? 'Video' : 'Foto'
+          }}
+          ({{ mediaModalCurrentIndex() + 1 }} / {{ mediaModalUrls().length }})
+        </span>
+        <button
+          pButton
+          icon="pi pi-times"
+          class="p-button-text p-button-rounded"
+          (click)="closeMediaModal()"
+        ></button>
+      </div>
+    </ng-template>
+
+    <div class="relative flex items-center justify-center min-h-[400px] max-h-[70vh]">
+      <!-- Botón anterior -->
+      @if (hasPreviousMedia()) {
+      <button
+        pButton
+        icon="pi pi-chevron-left"
+        class="p-button-rounded p-button-text absolute left-2 z-10 bg-white bg-opacity-80 hover:bg-opacity-100"
+        (click)="previousMedia()"
+        pTooltip="Anterior"
+      ></button>
+      }
+
+      <!-- Contenido del medio -->
+      <div class="w-full h-full flex items-center justify-center">
+        @if (mediaModalType() === 'audio') {
+        <audio [src]="mediaModalUrl()" controls class="w-full max-w-2xl"></audio>
+        } @else if (mediaModalType() === 'video') {
+        <video
+          [src]="mediaModalUrl()"
+          controls
+          class="w-full max-w-4xl max-h-[70vh] rounded"
+        ></video>
+        } @else if (mediaModalType() === 'photo') {
+        <img
+          [src]="mediaModalUrl()"
+          class="max-w-full max-h-[70vh] object-contain rounded"
+          alt="Foto"
+        />
+        }
+      </div>
+
+      <!-- Botón siguiente -->
+      @if (hasNextMedia()) {
+      <button
+        pButton
+        icon="pi pi-chevron-right"
+        class="p-button-rounded p-button-text absolute right-2 z-10 bg-white bg-opacity-80 hover:bg-opacity-100"
+        (click)="nextMedia()"
+        pTooltip="Siguiente"
+      ></button>
+      }
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex items-center justify-between w-full">
+        <div class="text-sm text-gray-500">
+          @if (mediaModalUrls().length > 1) { Usa las flechas para navegar entre los archivos }
+        </div>
+        <div class="flex gap-2">
+          <!-- Botón eliminar solo si estamos en modo edición -->
+          @if (showDialog()) {
+          <button
+            pButton
+            label="Eliminar"
+            icon="pi pi-trash"
+            class="p-button-danger"
+            (click)="removeCurrentMediaFromModal()"
+            pTooltip="Eliminar este archivo"
+          ></button>
+          }
+          <button pButton label="Cerrar" (click)="closeMediaModal()"></button>
+        </div>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Confirm Dialog para confirmaciones de eliminación -->
+  <p-confirmDialog></p-confirmDialog>
 </div>
