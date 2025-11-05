@@ -60,7 +60,7 @@
   <!-- Gráficos principales -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
     <!-- Gráfico de Reportes Diarios -->
-    @if (dashboardService.charts()?.dailyReports) {
+    @if (dashboardService.charts()?.dailyReports && canViewChart('dailyReports')) {
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-4">
         <i class="pi pi-chart-line text-blue-600 mr-2"></i>
@@ -76,7 +76,7 @@
     }
 
     <!-- Gráfico de Reportes por Proyecto -->
-    @if (dashboardService.charts()?.projectReports) {
+    @if (dashboardService.charts()?.projectReports && canViewChart('projectReports')) {
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-4">
         <i class="pi pi-chart-bar text-green-600 mr-2"></i>
@@ -95,7 +95,7 @@
   <!-- Gráficos secundarios -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
     <!-- Gráfico de Cotizaciones por Estado -->
-    @if (dashboardService.charts()?.quotesByStatus) {
+    @if (dashboardService.charts()?.quotesByStatus && canViewChart('quotesByStatus')) {
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-4">
         <i class="pi pi-chart-pie text-yellow-600 mr-2"></i>
@@ -111,7 +111,7 @@
     }
 
     <!-- Gráfico de Clientes por Proyecto -->
-    @if (dashboardService.charts()?.clientsByProject) {
+    @if (dashboardService.charts()?.clientsByProject && canViewChart('clientsByProject')) {
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-4">
         <i class="pi pi-users text-purple-600 mr-2"></i>
@@ -131,7 +131,7 @@
   @if (dashboardService.tables()) {
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Tabla de Reportes Diarios -->
-    @if (dashboardService.tables()?.dailyReports) {
+    @if (dashboardService.tables()?.dailyReports && canViewTable('dailyReports')) {
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-4">
         <i class="pi pi-table text-indigo-600 mr-2"></i>
@@ -146,7 +146,7 @@
     }
 
     <!-- Tabla de Reportes por Proyecto -->
-    @if (dashboardService.tables()?.projectReports) {
+    @if (dashboardService.tables()?.projectReports && canViewTable('projectReports')) {
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-4">
         <i class="pi pi-table text-teal-600 mr-2"></i>

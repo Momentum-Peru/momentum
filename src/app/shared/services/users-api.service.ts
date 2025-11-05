@@ -12,6 +12,7 @@ export interface User {
   email: string;
   role: 'user' | 'moderator' | 'admin'; // Tipos específicos para compatibilidad
   isActive: boolean;
+  tenantIds?: string[]; // Empresas asignadas al usuario
   createdAt: string;
   updatedAt: string;
   lastLogin?: string; // Último acceso del usuario
@@ -31,6 +32,7 @@ export interface UserUpdateRequest {
   email?: string;
   role?: 'user' | 'moderator' | 'admin';
   isActive?: boolean;
+  tenantIds?: string[]; // Actualizar empresas asignadas
 }
 
 export interface UserFilters {

@@ -1,0 +1,240 @@
+<div class="p-4 space-y-4">
+  <p-toast></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Título -->
+  <div class="mb-4">
+    <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+      Asignación de Empresas a Usuarios
+    </h1>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+      Gestiona las empresas (tenants) asignadas a cada usuario
+    </p>
+  </div>
+
+  <!-- Filtros -->
+  <p-card>
+    <div class="flex flex-wrap items-center gap-2">
+      <input
+        pInputText
+        placeholder="Buscar por nombre o email..."
+        [ngModel]="query()"
+        (ngModelChange)="setQuery($event)"
+        class="flex-1 min-w-[200px]"
+      />
+      <button
+        pButton
+        icon="pi pi-refresh"
+        label="Actualizar"
+        (onClick)="load()"
+        [loading]="loading()"
+      ></button>
+    </div>
+  </p-card>
+
+  <!-- Tabla de usuarios -->
+  <p-card>
+    <p-table
+      [value]="filteredUsers()"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="10"
+      styleClass="p-datatable-sm"
+      [tableStyle]="{ 'min-width': '50rem' }"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Empresas Asignadas</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-user>
+        <tr>
+          <td>
+            <div class="font-semibold text-gray-900 dark:text-gray-100">
+              {{ user.name }}
+            </div>
+          </td>
+          <td>
+            <span class="text-gray-700 dark:text-gray-300">{{ user.email }}</span>
+          </td>
+          <td>
+            <p-tag
+              [value]="user.role"
+              [severity]="
+                user.role === 'admin'
+                  ? 'danger'
+                  : user.role === 'moderator'
+                  ? 'warn'
+                  : 'info'
+              "
+            ></p-tag>
+          </td>
+          <td>
+            <div class="flex flex-wrap gap-1">
+              @if (user.tenantIds && user.tenantIds.length > 0) {
+                @for (tenantId of user.tenantIds; track tenantId) {
+                  <p-tag
+                    [value]="getCompanyName(tenantId)"
+                    severity="success"
+                    [pTooltip]="getCompanyCode(tenantId) || ''"
+                    tooltipPosition="top"
+                  ></p-tag>
+                }
+              } @else {
+                <span class="text-sm text-gray-400 italic">Sin empresas asignadas</span>
+              }
+            </div>
+          </td>
+          <td class="text-right">
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text p-button-sm"
+              (click)="editUserTenants(user)"
+              pTooltip="Editar empresas asignadas"
+              tooltipPosition="top"
+            ></button>
+            @if (user.tenantIds && user.tenantIds.length > 0) {
+              <button
+                pButton
+                icon="pi pi-times"
+                class="p-button-text p-button-danger p-button-sm"
+                (click)="removeAllTenants(user)"
+                pTooltip="Quitar todas las empresas"
+                tooltipPosition="top"
+              ></button>
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center py-8 text-gray-500">
+            <i class="pi pi-inbox text-4xl mb-2 block"></i>
+            <p>No se encontraron usuarios</p>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <!-- Dialog de asignación -->
+  <p-dialog
+    [visible]="showDialog()"
+    (visibleChange)="onDialogVisibilityChange($event)"
+    [modal]="true"
+    [style]="{ width: '90vw', maxWidth: '600px' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    appendTo="body"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-building text-blue-500"></i>
+        <span class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+          Asignar Empresas
+        </span>
+      </div>
+    </ng-template>
+
+    @if (editingUser()) {
+      <div class="space-y-4">
+        <!-- Información del usuario -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+          <div class="flex items-center gap-3">
+            <i class="pi pi-user text-blue-500 text-xl"></i>
+            <div>
+              <div class="font-semibold text-gray-900 dark:text-gray-100">
+                {{ editingUser()!.name }}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">
+                {{ editingUser()!.email }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selector de empresas -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Empresas asignadas
+          </label>
+          <p-multiSelect
+            [options]="companies()"
+            optionLabel="name"
+            optionValue="_id"
+            [ngModel]="selectedTenantIds()"
+            (ngModelChange)="selectedTenantIds.set($event)"
+            placeholder="Seleccione empresas"
+            [display]="'chip'"
+            [filter]="true"
+            filterPlaceholder="Buscar empresa..."
+            class="w-full"
+            appendTo="body"
+          >
+            <ng-template let-company pTemplate="item">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-building text-blue-500"></i>
+                <span>{{ company.name }}</span>
+                @if (company.code) {
+                  <span class="text-xs text-gray-500">({{ company.code }})</span>
+                }
+              </div>
+            </ng-template>
+          </p-multiSelect>
+          <small class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">
+            Seleccione las empresas a las que este usuario tendrá acceso
+          </small>
+        </div>
+
+        <!-- Empresas actualmente asignadas -->
+        @if (editingUser(); as user) {
+          @if (user.tenantIds && user.tenantIds.length > 0) {
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Empresas actuales
+              </label>
+              <div class="flex flex-wrap gap-2">
+                @for (tenantId of user.tenantIds; track tenantId) {
+                  <p-tag
+                    [value]="getCompanyName(tenantId)"
+                    severity="success"
+                    [pTooltip]="getCompanyCode(tenantId) || ''"
+                  ></p-tag>
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2">
+        <button
+          pButton
+          type="button"
+          label="Cancelar"
+          icon="pi pi-times"
+          severity="secondary"
+          [text]="true"
+          (click)="closeDialog()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Guardar"
+          icon="pi pi-check"
+          severity="primary"
+          (click)="saveTenants(); $event.stopPropagation()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</div>
+

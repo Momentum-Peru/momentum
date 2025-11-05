@@ -1,3 +1,4 @@
+<p-toast></p-toast>
 <div
   class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-4"
 >
@@ -49,15 +50,21 @@
           <i class="pi pi-folder mr-1"></i>
           Proyecto
         </label>
-        <select
+        <p-select
+          [options]="projectOptions()"
           [(ngModel)]="selectedProject"
-          (change)="onProjectChange()"
-          class="w-full sm:w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-        >
-          @for (option of projectOptions; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
-          }
-        </select>
+          (ngModelChange)="onProjectChange()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccionar proyecto"
+          [showClear]="true"
+          [loading]="loadingProjects()"
+          [disabled]="loadingProjects()"
+          class="w-full sm:w-48"
+          [appendTo]="'body'"
+          [filter]="true"
+          filterPlaceholder="Buscar proyecto..."
+        ></p-select>
       </div>
 
       <!-- Cliente -->
@@ -66,15 +73,21 @@
           <i class="pi pi-users mr-1"></i>
           Cliente
         </label>
-        <select
+        <p-select
+          [options]="clientOptions()"
           [(ngModel)]="selectedClient"
-          (change)="onClientChange()"
-          class="w-full sm:w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-        >
-          @for (option of clientOptions; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
-          }
-        </select>
+          (ngModelChange)="onClientChange()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccionar cliente"
+          [showClear]="true"
+          [loading]="loadingClients()"
+          [disabled]="loadingClients()"
+          class="w-full sm:w-48"
+          [appendTo]="'body'"
+          [filter]="true"
+          filterPlaceholder="Buscar cliente..."
+        ></p-select>
       </div>
     </div>
 

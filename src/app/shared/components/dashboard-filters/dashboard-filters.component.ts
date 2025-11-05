@@ -6,10 +6,16 @@ import {
   ChangeDetectionStrategy,
   OnInit,
   signal,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { SelectModule } from 'primeng/select';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { DashboardFiltersParams } from '../../interfaces/dashboard.interface';
+import { ProjectsApiService } from '../../services/projects-api.service';
+import { ClientsApiService } from '../../services/clients-api.service';
 
 /**
  * Componente de filtros del dashboard
@@ -19,13 +25,18 @@ import { DashboardFiltersParams } from '../../interfaces/dashboard.interface';
 @Component({
   selector: 'app-dashboard-filters',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SelectModule, ToastModule],
   templateUrl: './dashboard-filters.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [MessageService],
 })
 export class DashboardFiltersComponent implements OnInit {
   @Input() loading: boolean = false;
   @Output() filtersChanged = new EventEmitter<DashboardFiltersParams>();
+
+  private readonly projectsApi = inject(ProjectsApiService);
+  private readonly clientsApi = inject(ClientsApiService);
+  private readonly messageService = inject(MessageService);
 
   // Signals para el estado reactivo
   protected readonly selectedPeriod = signal<string>('30d');
@@ -34,7 +45,13 @@ export class DashboardFiltersComponent implements OnInit {
   protected readonly startDate = signal<string>('');
   protected readonly endDate = signal<string>('');
 
-  // Opciones para los dropdowns
+  // Signals para opciones de los dropdowns
+  protected readonly projectOptions = signal<Array<{ label: string; value: any }>>([]);
+  protected readonly clientOptions = signal<Array<{ label: string; value: any }>>([]);
+  protected readonly loadingProjects = signal<boolean>(false);
+  protected readonly loadingClients = signal<boolean>(false);
+
+  // Opciones para el período
   protected readonly periodOptions = [
     { label: 'Últimos 7 días', value: '7d' },
     { label: 'Últimos 30 días', value: '30d' },
@@ -43,23 +60,80 @@ export class DashboardFiltersComponent implements OnInit {
     { label: 'Período personalizado', value: 'custom' },
   ];
 
-  protected readonly projectOptions = [
-    { label: 'Todos los proyectos', value: null },
-    { label: 'Proyecto A', value: { id: '1', name: 'Proyecto A' } },
-    { label: 'Proyecto B', value: { id: '2', name: 'Proyecto B' } },
-    { label: 'Proyecto C', value: { id: '3', name: 'Proyecto C' } },
-  ];
-
-  protected readonly clientOptions = [
-    { label: 'Todos los clientes', value: null },
-    { label: 'Cliente A', value: { id: '1', name: 'Cliente A' } },
-    { label: 'Cliente B', value: { id: '2', name: 'Cliente B' } },
-    { label: 'Cliente C', value: { id: '3', name: 'Cliente C' } },
-  ];
-
   ngOnInit(): void {
+    // Cargar proyectos y clientes desde los servicios
+    this.loadProjects();
+    this.loadClients();
     // Configuración inicial
     this.loadInitialFilters();
+  }
+
+  /**
+   * Carga los proyectos desde el backend
+   */
+  private loadProjects(): void {
+    this.loadingProjects.set(true);
+    this.projectsApi.listActive().subscribe({
+      next: (projects) => {
+        const options: Array<{ label: string; value: { id: string; name: string } | null }> = [
+          { label: 'Todos los proyectos', value: null },
+        ];
+        projects.forEach((project) => {
+          if (project._id) {
+            options.push({
+              label: `${project.name}${project.code ? ` (${project.code})` : ''}`,
+              value: { id: project._id, name: project.name },
+            });
+          }
+        });
+        this.projectOptions.set(options);
+        this.loadingProjects.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading projects:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los proyectos',
+        });
+        this.loadingProjects.set(false);
+        // Mantener opción por defecto en caso de error
+        this.projectOptions.set([{ label: 'Todos los proyectos', value: null }]);
+      },
+    });
+  }
+
+  /**
+   * Carga los clientes desde el backend
+   */
+  private loadClients(): void {
+    this.loadingClients.set(true);
+    this.clientsApi.list().subscribe({
+      next: (clients) => {
+        const options: Array<{ label: string; value: { id: string; name: string } | null }> = [
+          { label: 'Todos los clientes', value: null },
+        ];
+        clients.forEach((client) => {
+          options.push({
+            label: client.name,
+            value: { id: client._id, name: client.name },
+          });
+        });
+        this.clientOptions.set(options);
+        this.loadingClients.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading clients:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los clientes',
+        });
+        this.loadingClients.set(false);
+        // Mantener opción por defecto en caso de error
+        this.clientOptions.set([{ label: 'Todos los clientes', value: null }]);
+      },
+    });
   }
 
   /**
@@ -114,12 +188,20 @@ export class DashboardFiltersComponent implements OnInit {
       filters.endDate = this.endDate();
     }
 
-    if (this.selectedProject()) {
-      filters.projectId = this.selectedProject().id;
+    const project = this.selectedProject();
+    if (project && project !== null) {
+      // PrimeNG Select devuelve el objeto completo del value
+      if (typeof project === 'object' && 'id' in project) {
+        filters.projectId = project.id;
+      }
     }
 
-    if (this.selectedClient()) {
-      filters.clientId = this.selectedClient().id;
+    const client = this.selectedClient();
+    if (client && client !== null) {
+      // PrimeNG Select devuelve el objeto completo del value
+      if (typeof client === 'object' && 'id' in client) {
+        filters.clientId = client.id;
+      }
     }
 
     this.filtersChanged.emit(filters);

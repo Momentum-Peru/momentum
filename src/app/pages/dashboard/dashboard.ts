@@ -7,6 +7,7 @@ import { DashboardKpiCardComponent } from '../../shared/components/dashboard-kpi
 import { DashboardChartComponent } from '../../shared/components/dashboard-chart/dashboard-chart.component';
 import { DashboardTableComponent } from '../../shared/components/dashboard-table/dashboard-table.component';
 import { DashboardFiltersComponent } from '../../shared/components/dashboard-filters/dashboard-filters.component';
+import { MenuService } from '../../shared/services/menu.service';
 
 /**
  * Página principal del Dashboard
@@ -28,6 +29,39 @@ import { DashboardFiltersComponent } from '../../shared/components/dashboard-fil
 })
 export class DashboardPage implements OnInit {
   protected readonly dashboardService = inject(DashboardDataService);
+  private readonly menuService = inject(MenuService);
+
+  // Mapeo de KPIs a rutas del sistema para verificar permisos
+  private readonly kpiRouteMap: Record<string, string> = {
+    totalClients: '/companies-crm',
+    totalProjects: '/projects',
+    totalQuotes: '/quotes',
+    totalOrders: '/orders',
+    totalUsers: '/users',
+    totalRequirements: '/requirements',
+    totalDailyReports: '/daily-reports',
+    averageDailyReports: '/daily-reports',
+    totalDailyReportsValue: '/daily-reports',
+  };
+
+  // Mapeo de gráficos a rutas del sistema para verificar permisos
+  private readonly chartRouteMap: Record<string, string> = {
+    dailyReports: '/daily-reports',
+    projectReports: '/projects',
+    quotesByStatus: '/quotes',
+    clientsByProject: '/companies-crm',
+    quotesByProject: '/quotes',
+    requirementsByProject: '/requirements',
+    projectsByStatus: '/projects',
+    requirementsByStatus: '/requirements',
+  };
+
+  // Mapeo de tablas a rutas del sistema para verificar permisos
+  private readonly tableRouteMap: Record<string, string> = {
+    dailyReports: '/daily-reports',
+    projectReports: '/projects',
+    clientsByProject: '/companies-crm',
+  };
 
   // Configuración de columnas para las tablas
   protected readonly dailyReportsColumns = [
@@ -43,6 +77,8 @@ export class DashboardPage implements OnInit {
   ];
 
   ngOnInit(): void {
+    // Cargar permisos del usuario antes de cargar el dashboard
+    this.menuService.loadUserPermissions();
     this.loadDashboard();
   }
 
@@ -71,12 +107,61 @@ export class DashboardPage implements OnInit {
 
   /**
    * Obtiene las entradas de KPIs para el template
-   * @returns Array de entradas KPI
+   * Filtra los KPIs según los permisos del usuario
+   * @returns Array de entradas KPI filtradas
    */
   protected getKpiEntries(): Array<{ key: string; value: any }> {
     const kpis = this.dashboardService.kpis();
     if (!kpis) return [];
 
-    return Object.entries(kpis).map(([key, value]) => ({ key, value }));
+    // Filtrar KPIs según permisos del usuario
+    return Object.entries(kpis)
+      .filter(([key]) => {
+        // Obtener la ruta asociada al KPI
+        const requiredRoute = this.kpiRouteMap[key];
+        
+        // Si no hay ruta mapeada, mostrar el KPI (KPIs sin restricción)
+        if (!requiredRoute) {
+          return true;
+        }
+        
+        // Verificar si el usuario tiene permiso para acceder a la ruta
+        return this.menuService.hasPermission(requiredRoute);
+      })
+      .map(([key, value]) => ({ key, value }));
+  }
+
+  /**
+   * Verifica si el usuario tiene permiso para ver un gráfico específico
+   * @param chartKey Clave del gráfico (ej: 'dailyReports', 'quotesByStatus')
+   * @returns true si el usuario tiene permiso, false en caso contrario
+   */
+  protected canViewChart(chartKey: string): boolean {
+    const requiredRoute = this.chartRouteMap[chartKey];
+    
+    // Si no hay ruta mapeada, mostrar el gráfico (gráficos sin restricción)
+    if (!requiredRoute) {
+      return true;
+    }
+    
+    // Verificar si el usuario tiene permiso para acceder a la ruta
+    return this.menuService.hasPermission(requiredRoute);
+  }
+
+  /**
+   * Verifica si el usuario tiene permiso para ver una tabla específica
+   * @param tableKey Clave de la tabla (ej: 'dailyReports', 'projectReports')
+   * @returns true si el usuario tiene permiso, false en caso contrario
+   */
+  protected canViewTable(tableKey: string): boolean {
+    const requiredRoute = this.tableRouteMap[tableKey];
+    
+    // Si no hay ruta mapeada, mostrar la tabla (tablas sin restricción)
+    if (!requiredRoute) {
+      return true;
+    }
+    
+    // Verificar si el usuario tiene permiso para acceder a la ruta
+    return this.menuService.hasPermission(requiredRoute);
   }
 }

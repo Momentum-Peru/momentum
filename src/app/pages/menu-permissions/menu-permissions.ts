@@ -17,6 +17,7 @@ import { MenuPermissionsApiService } from '../../shared/services/menu-permission
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { MenuService } from '../../shared/services/menu.service';
 import { MenuConfigService } from '../../shared/services/menu-config.service';
+import { TenantService } from '../../core/services/tenant.service';
 import {
   MenuPermission,
   MenuPermissionWithUser,
@@ -62,6 +63,7 @@ export class MenuPermissionsPage implements OnInit {
   private readonly menuConfig = inject(MenuConfigService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly tenantService = inject(TenantService);
 
   // Signals para el estado del componente
   items = signal<MenuPermissionWithUser[]>([]);
@@ -193,13 +195,49 @@ export class MenuPermissionsPage implements OnInit {
   }
 
   loadUsers() {
-    console.log('Loading users...');
-    this.usersApi.list().subscribe({
-      next: (data) => {
-        console.log('Users API response:', data);
-        const usersArray = Array.isArray(data) ? data : [];
-        console.log('Setting users to:', usersArray);
-        this.users.set(usersArray);
+    const currentTenantId = this.tenantService.tenantId();
+    console.log('Loading users for tenant:', currentTenantId);
+    
+    // Obtener usuarios completos con tenantIds para filtrar
+    this.usersApi.listWithFilters({}).subscribe({
+      next: (response) => {
+        const allUsers = response.data || response.users || [];
+        console.log('Users API response:', allUsers);
+        
+        // Filtrar usuarios por tenant seleccionado
+        if (currentTenantId) {
+          // Filtrar solo usuarios que tienen el tenant actual en su tenantIds
+          const filteredUsers = allUsers.filter((user: any) => {
+            const tenantIds = user.tenantIds || [];
+            // Si tenantIds está vacío, el usuario tiene acceso a todos los tenants (comportamiento por defecto)
+            if (tenantIds.length === 0) {
+              return true; // Usuario sin restricciones, mostrar
+            }
+            // Verificar si el tenant actual está en la lista
+            return tenantIds.includes(currentTenantId);
+          });
+          
+          // Mapear a formato UserOption
+          const userOptions = filteredUsers.map((u: any) => ({
+            _id: u._id || u.id,
+            name: u.name,
+            email: u.email,
+            role: u.role,
+          }));
+          
+          console.log('Filtered users for tenant:', userOptions);
+          this.users.set(userOptions);
+        } else {
+          // Sin tenant seleccionado, mostrar todos (aunque no debería pasar por el guard)
+          console.log('No tenant selected, showing all users');
+          const userOptions = allUsers.map((u: any) => ({
+            _id: u._id || u.id,
+            name: u.name,
+            email: u.email,
+            role: u.role,
+          }));
+          this.users.set(userOptions);
+        }
       },
       error: (error) => {
         console.error('Error loading users:', error);

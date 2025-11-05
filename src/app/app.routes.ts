@@ -152,6 +152,15 @@ export const routes: Routes = [
         data: { menuPermission: '/companies-crm' },
       },
       {
+        path: 'user-tenants-assignment',
+        loadComponent: () =>
+          import('./pages/user-tenants-assignment/user-tenants-assignment').then(
+            (m) => m.UserTenantsAssignmentPage
+          ),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/user-tenants-assignment' },
+      },
+      {
         path: '**',
         redirectTo: 'dashboard',
         pathMatch: 'full',

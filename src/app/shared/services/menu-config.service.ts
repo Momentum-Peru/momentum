@@ -35,6 +35,7 @@ export class MenuConfigService {
     { path: '/areas', label: 'Áreas', icon: 'pi pi-sitemap' },
     { path: '/users', label: 'Usuarios', icon: 'pi pi-users' },
     { path: '/menu-permissions', label: 'Permisos', icon: 'pi pi-shield' },
+    { path: '/user-tenants-assignment', label: 'Asignación de Empresas', icon: 'pi pi-building' },
     { path: '/leads', label: 'Leads', icon: 'pi pi-user-plus' },
     { path: '/contacts-crm', label: 'Contactos CRM', icon: 'pi pi-address-book' },
     { path: '/follow-ups', label: 'Seguimientos', icon: 'pi pi-calendar-plus' },
@@ -150,6 +151,11 @@ export class MenuConfigService {
             label: 'Permisos',
             icon: 'pi pi-shield',
             routerLink: '/menu-permissions',
+          },
+          {
+            label: 'Asignación de Empresas',
+            icon: 'pi pi-building',
+            routerLink: '/user-tenants-assignment',
           },
           {
             label: 'Áreas',

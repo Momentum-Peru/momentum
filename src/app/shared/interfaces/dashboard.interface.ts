@@ -19,6 +19,9 @@ export interface DashboardKpis {
     totalOrders: DashboardKpi;
     totalUsers: DashboardKpi;
     totalRequirements: DashboardKpi;
+    totalDailyReports: DashboardKpi;
+    averageDailyReports: DashboardKpi;
+    totalDailyReportsValue: DashboardKpi;
 }
 
 export interface ChartDataset {
