@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { requireAuthGuard, publicGuard } from './guards/auth.guard';
 import { MenuPermissionGuard } from './guards/menu-permission.guard';
+import { requireTenantGuard } from './guards/tenant.guard';
 
 export const routes: Routes = [
   {
@@ -23,9 +24,14 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/lead-form/lead-form').then((m) => m.LeadFormComponent),
   },
   {
+    path: 'select-company',
+    loadComponent: () => import('./pages/select-company/select-company').then((m) => m.SelectCompanyPage),
+    canActivate: [requireAuthGuard],
+  },
+  {
     path: '',
     loadComponent: () => import('./layouts/main/main').then((m) => m.Main),
-    canActivate: [requireAuthGuard],
+    canActivate: [requireAuthGuard, requireTenantGuard],
     children: [
       {
         path: 'clients',
@@ -111,7 +117,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/menu-permissions/menu-permissions').then((m) => m.MenuPermissionsPage),
         canActivate: [MenuPermissionGuard],
-        data: { menuPermission: '/menu-permissions' },
+        // data: { menuPermission: '/menu-permissions' },
       },
       {
         path: 'providers',

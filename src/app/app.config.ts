@@ -9,7 +9,9 @@ import { MessageService } from 'primeng/api';
 import MayaPreset from './themes/maya-preset';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { tokenInterceptor } from './interceptors/token.interceptor';
+import { tenantInterceptor } from './interceptors/tenant.interceptor';
 import { AuthService } from './pages/login/services/auth.service';
+import { TenantService } from './core/services/tenant.service';
 
 
 export function initializeApp(authService: AuthService) {
@@ -22,7 +24,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideAnimationsAsync(),
     provideHttpClient(
-      withInterceptors([tokenInterceptor, authInterceptor])
+      withInterceptors([tokenInterceptor, tenantInterceptor, authInterceptor])
     ),
     MessageService,
     providePrimeNG({
@@ -38,6 +40,12 @@ export const appConfig: ApplicationConfig = {
       useFactory: initializeApp,
       deps: [AuthService],
       multi: true
+    },
+    {
+      provide: APP_INITIALIZER,
+      multi: true,
+      useFactory: (tenant: TenantService) => () => tenant.loadFromStorage(),
+      deps: [TenantService],
     }
   ]
 };

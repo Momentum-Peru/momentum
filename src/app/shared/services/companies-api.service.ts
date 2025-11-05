@@ -18,7 +18,8 @@ import {
 @Injectable({ providedIn: 'root' })
 export class CompaniesApiService {
     private readonly http = inject(HttpClient);
-    private readonly baseUrl = `${environment.apiUrl}/crm/companies`;
+    // Según docs/tenancy-and-api.md el recurso raíz es /companies
+    private readonly baseUrl = `${environment.apiUrl}/companies`;
 
     /**
      * Crea una nueva empresa

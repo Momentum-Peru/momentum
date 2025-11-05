@@ -18,8 +18,21 @@
 
   <!-- Contenido principal -->
   <div class="flex-1 bg-white m-3 rounded-3xl p-5 flex flex-col relative min-w-0 overflow-hidden">
+    <!-- Barra superior: selector de empresa -->
+    <div class="flex items-center justify-end gap-2 mb-4">
+      <span class="text-sm text-gray-600">Empresa:</span>
+      <span class="px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">
+        {{ tenantName() || 'No seleccionada' }}
+      </span>
+      <p-button
+        icon="pi pi-building"
+        label="Cambiar"
+        [text]="true"
+        (onClick)="changeCompany()"
+      />
+    </div>
     <!-- Contenido de la página -->
-    <div class="pt-6 lg:pt-0 flex-1 overflow-y-auto overflow-x-hidden">
+    <div class="pt-0 flex-1 overflow-y-auto overflow-x-hidden">
       <router-outlet />
     </div>
   </div>

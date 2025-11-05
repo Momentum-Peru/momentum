@@ -23,6 +23,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { TextareaModule } from 'primeng/textarea';
 import { TagModule } from 'primeng/tag';
 import { CompaniesApiService } from '../../shared/services/companies-api.service';
+import { AuthService } from '../../pages/login/services/auth.service';
 import {
     Company,
     CreateCompanyRequest,
@@ -62,6 +63,7 @@ export class CompaniesCrmPage implements OnInit {
     private readonly companiesApi = inject(CompaniesApiService);
     private readonly messageService = inject(MessageService);
     private readonly confirmationService = inject(ConfirmationService);
+    private readonly auth = inject(AuthService);
 
     // Signals
     items = signal<Company[]>([]);
@@ -97,7 +99,14 @@ export class CompaniesCrmPage implements OnInit {
         if (this.isActiveFilter() !== null) params.isActive = this.isActiveFilter()!;
 
         this.companiesApi.list(params).subscribe({
-            next: (companies) => this.items.set(companies),
+            next: (companies) => {
+                const user: any = this.auth.getCurrentUser();
+                const tenantIds: string[] | undefined = user?.tenantIds;
+                const filtered = !tenantIds || tenantIds.length === 0
+                    ? companies
+                    : (companies || []).filter((c: any) => tenantIds.includes(c._id));
+                this.items.set(filtered);
+            },
             error: (error) => {
                 console.error('Error loading companies:', error);
                 this.messageService.add({
