@@ -17,6 +17,7 @@ import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { AuthService } from '../login/services/auth.service';
 import { DailyReport } from '../../shared/interfaces/daily-report.interface';
 import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
+import { compressImage } from '../../shared/utils/image-compression.util';
 
 @Component({
   selector: 'app-daily-expenses',
@@ -754,22 +755,52 @@ export class DailyExpensesPage implements OnInit {
     input.value = '';
   }
 
-  onPhotoSelected(event: Event) {
+  async onPhotoSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
-    if (this.editing()?._id) {
-      // Subir múltiples archivos
-      files.forEach((file) => {
-        this.dailyExpensesApi.uploadPhoto(this.editing()!._id!, file).subscribe({
-          next: (updated) => this.editing.set(updated),
-          error: () => this.toastError(`No se pudo subir la foto: ${file.name}`),
-        });
+
+    // Mostrar mensaje de compresión si hay archivos grandes
+    const hasLargeFiles = files.some(f => f.size > 2 * 1024 * 1024); // > 2MB
+    if (hasLargeFiles) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Comprimiendo imágenes',
+        detail: 'Las imágenes grandes se están comprimiendo para una mejor experiencia...',
+        life: 3000,
       });
-    } else {
-      // Agregar a pendientes
-      this.pendingPhoto.set([...this.pendingPhoto(), ...files]);
     }
+
+    try {
+      // Comprimir todas las imágenes en paralelo, usando el original si falla la compresión
+      const compressedFiles = await Promise.all(
+        files.map(async (file) => {
+          try {
+            return await compressImage(file);
+          } catch (error) {
+            console.warn('Error al comprimir imagen, usando original:', { fileName: file.name, error });
+            return file; // Fallback al archivo original
+          }
+        })
+      );
+
+      if (this.editing()?._id) {
+        // Subir múltiples archivos comprimidos
+        compressedFiles.forEach((file) => {
+          this.dailyExpensesApi.uploadPhoto(this.editing()!._id!, file).subscribe({
+            next: (updated) => this.editing.set(updated),
+            error: () => this.toastError(`No se pudo subir la foto: ${file.name}`),
+          });
+        });
+      } else {
+        // Agregar a pendientes (ya comprimidas)
+        this.pendingPhoto.set([...this.pendingPhoto(), ...compressedFiles]);
+      }
+    } catch (error) {
+      console.error('Error al procesar imágenes:', error);
+      this.toastError('Error al procesar las imágenes. Intente nuevamente.');
+    }
+
     input.value = '';
   }
 
@@ -1099,18 +1130,38 @@ export class DailyExpensesPage implements OnInit {
     });
   }
   private uploadPhotoPromise(id: string, file: File) {
-    return new Promise((resolve, reject) => {
-      console.log('Subiendo foto:', { fileName: file.name, fileSize: file.size, reportId: id });
-      this.dailyExpensesApi.uploadPhoto(id, file).subscribe({
-        next: (response) => {
-          console.log('Foto subida exitosamente:', { fileName: file.name, reportId: id });
-          resolve(response);
-        },
-        error: (error) => {
-          console.error('Error al subir foto:', { fileName: file.name, error, reportId: id });
-          reject({ type: 'photo', fileName: file.name, error });
-        },
-      });
+    return new Promise(async (resolve, reject) => {
+      try {
+        // Comprimir la imagen antes de subir, usando el original si falla
+        let fileToUpload: File;
+        try {
+          fileToUpload = await compressImage(file);
+          console.log('Subiendo foto:', { 
+            fileName: fileToUpload.name, 
+            originalSize: file.size, 
+            compressedSize: fileToUpload.size,
+            compressionRatio: ((1 - fileToUpload.size / file.size) * 100).toFixed(1) + '%',
+            reportId: id 
+          });
+        } catch (compressionError) {
+          console.warn('Error al comprimir foto, usando original:', { fileName: file.name, error: compressionError });
+          fileToUpload = file; // Fallback al archivo original
+        }
+        
+        this.dailyExpensesApi.uploadPhoto(id, fileToUpload).subscribe({
+          next: (response) => {
+            console.log('Foto subida exitosamente:', { fileName: fileToUpload.name, reportId: id });
+            resolve(response);
+          },
+          error: (error) => {
+            console.error('Error al subir foto:', { fileName: fileToUpload.name, error, reportId: id });
+            reject({ type: 'photo', fileName: fileToUpload.name, error });
+          },
+        });
+      } catch (error) {
+        console.error('Error inesperado al procesar foto:', { fileName: file.name, error, reportId: id });
+        reject({ type: 'photo', fileName: file.name, error });
+      }
     });
   }
   private uploadDocumentsPromise(id: string, files: File[]) {
