@@ -1,0 +1,780 @@
+import { Component, OnInit, signal, inject, effect, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { InputTextModule } from 'primeng/inputtext';
+import { ButtonModule } from 'primeng/button';
+import { TableModule } from 'primeng/table';
+import { DialogModule } from 'primeng/dialog';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { TextareaModule } from 'primeng/textarea';
+import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { TimeTrackingApiService } from '../../shared/services/time-tracking-api.service';
+import { ProjectsApiService } from '../../shared/services/projects-api.service';
+import { FaceRecognitionApiService } from '../../shared/services/face-recognition-api.service';
+import { AuthService } from '../login/services/auth.service';
+import { TenantService } from '../../core/services/tenant.service';
+import { TimeTracking, TimeTrackingStatus } from '../../shared/interfaces/time-tracking.interface';
+import { AttendanceRecord } from '../../shared/interfaces/face-recognition.interface';
+import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
+
+/**
+ * Componente de Marcación de Hora
+ * Principio de Responsabilidad Única: Gestiona la UI y estado de los registros de tiempo
+ */
+@Component({
+  selector: 'app-time-tracking',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    InputTextModule,
+    ButtonModule,
+    TableModule,
+    DialogModule,
+    SelectModule,
+    DatePickerModule,
+    TextareaModule,
+    TooltipModule,
+    ToastModule,
+    ConfirmDialogModule,
+  ],
+  templateUrl: './time-tracking.html',
+  styleUrl: './time-tracking.scss',
+  providers: [MessageService, ConfirmationService],
+})
+export class TimeTrackingPage implements OnInit {
+  private readonly timeTrackingApi = inject(TimeTrackingApiService);
+  private readonly projectsApi = inject(ProjectsApiService);
+  private readonly faceRecognitionApi = inject(FaceRecognitionApiService);
+  private readonly authService = inject(AuthService);
+  private readonly tenantService = inject(TenantService);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+
+  items = signal<TimeTracking[]>([]);
+  projects = signal<ProjectOption[]>([]);
+  query = signal('');
+  filterDate = signal<string | null>(null);
+  filterStatus = signal<TimeTrackingStatus | null>(null);
+  showDialog = signal(false);
+  showViewDialog = signal(false);
+  showFaceDialog = signal(false);
+  editing = signal<TimeTracking | null>(null);
+  viewing = signal<TimeTracking | null>(null);
+  private expandedRowKeys = signal<Set<string>>(new Set());
+
+  // Estado para marcación con reconocimiento facial
+  faceImage = signal<File | null>(null);
+  faceImagePreview = signal<string | null>(null);
+  faceLocation = signal<string>('');
+  faceNotes = signal<string>('');
+  isMarkingAttendance = signal(false);
+
+  // Opciones de estado
+  statusOptions = signal<Array<{ label: string; value: TimeTrackingStatus }>>([
+    { label: 'Pendiente', value: 'PENDIENTE' },
+    { label: 'En Progreso', value: 'EN_PROGRESO' },
+    { label: 'Completado', value: 'COMPLETADO' },
+    { label: 'Pausado', value: 'PAUSADO' },
+  ]);
+
+  // Filtrado simple por texto
+  filteredItems = computed(() => {
+    const searchQuery = this.query().toLowerCase().trim();
+    const statusFilter = this.filterStatus();
+    let list = this.items()
+      .slice()
+      .sort((a, b) => {
+        const aDt = new Date(`${a.date}T${a.startTime || '00:00'}`).getTime();
+        const bDt = new Date(`${b.date}T${b.startTime || '00:00'}`).getTime();
+        return bDt - aDt; // DESC
+      });
+
+    // Filtrar por estado
+    if (statusFilter) {
+      list = list.filter((item) => item.status === statusFilter);
+    }
+
+    if (!searchQuery) return list;
+    return list.filter((item) => {
+      const descriptionMatch = item.description?.toLowerCase().includes(searchQuery) ?? false;
+      const dateMatch = item.date?.toLowerCase().includes(searchQuery) ?? false;
+      const notesMatch = item.notes?.toLowerCase().includes(searchQuery) ?? false;
+      return descriptionMatch || dateMatch || notesMatch;
+    });
+  });
+
+  ngOnInit() {
+    this.load();
+    this.loadProjects();
+  }
+
+  constructor() {
+    // Efecto para manejar el cierre del diálogo
+    effect(() => {
+      if (!this.showDialog()) {
+        this.editing.set(null);
+      }
+      if (!this.showViewDialog()) this.viewing.set(null);
+      if (!this.showFaceDialog()) {
+        this.faceImage.set(null);
+        this.faceImagePreview.set(null);
+        this.faceLocation.set('');
+        this.faceNotes.set('');
+      }
+    });
+  }
+
+  load() {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser?.id) {
+      this.items.set([]);
+      return;
+    }
+
+    const filters: any = { userId: currentUser.id };
+    const fd = this.filterDate();
+    if (fd) {
+      filters.startDate = fd;
+      filters.endDate = fd;
+    }
+
+    this.timeTrackingApi.list(filters).subscribe({
+      next: (data) => {
+        this.items.set(data);
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los registros de tiempo',
+        });
+      },
+    });
+  }
+
+  onFilterDateChange(value: Date | null) {
+    if (!value) {
+      this.filterDate.set(null);
+      this.load();
+      return;
+    }
+    const y = value.getFullYear();
+    const m = (value.getMonth() + 1).toString().padStart(2, '0');
+    const d = value.getDate().toString().padStart(2, '0');
+    this.filterDate.set(`${y}-${m}-${d}`);
+    this.load();
+  }
+
+  // Obtener la fecha del filtro como Date para el datepicker
+  getFilterDate = computed(() => {
+    const fd = this.filterDate();
+    if (!fd) return null;
+    try {
+      const [year, month, day] = fd.split('-').map((x) => parseInt(x, 10));
+      if (!year || !month || !day) return null;
+      return new Date(year, month - 1, day);
+    } catch {
+      return null;
+    }
+  });
+
+  onFilterStatusChange(value: TimeTrackingStatus | null) {
+    this.filterStatus.set(value);
+  }
+
+  loadProjects() {
+    this.projectsApi.getOptions().subscribe({
+      next: (data) => this.projects.set(data),
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los proyectos',
+        });
+      },
+    });
+  }
+
+  // Helpers de accordion móvil
+  private buildRowKey(item: TimeTracking, index: number): string {
+    const base = `${item.date}T${item.startTime || '00:00'}`;
+    return item._id ? String(item._id) : `${base}#${index}`;
+  }
+
+  isRowExpandedByKey(key: string): boolean {
+    return this.expandedRowKeys().has(key);
+  }
+
+  toggleRowByKey(key: string): void {
+    const set = new Set(this.expandedRowKeys());
+    if (set.has(key)) set.delete(key);
+    else set.add(key);
+    this.expandedRowKeys.set(set);
+  }
+
+  setQuery(value: string) {
+    this.query.set(value);
+  }
+
+  // Método eliminado: Los nuevos registros solo se crean mediante reconocimiento facial
+
+  editItem(item: TimeTracking) {
+    const editedItem = { ...item };
+
+    // Si projectId es un objeto (populado), extraer el _id
+    if (
+      editedItem.projectId &&
+      typeof editedItem.projectId === 'object' &&
+      '_id' in editedItem.projectId &&
+      editedItem.projectId._id
+    ) {
+      editedItem.projectId = editedItem.projectId._id;
+    }
+
+    // Si el proyecto ha sido eliminado, limpiar el projectId
+    if (editedItem.projectId && typeof editedItem.projectId === 'string') {
+      const projectExists = this.projects().some((p) => p.value === editedItem.projectId);
+      if (!projectExists) {
+        editedItem.projectId = '';
+      }
+    }
+
+    this.editing.set(editedItem);
+    this.showDialog.set(true);
+  }
+
+  closeDialog() {
+    this.showDialog.set(false);
+  }
+
+  viewItem(item: TimeTracking) {
+    this.viewing.set(item);
+    this.showViewDialog.set(true);
+  }
+
+  closeViewDialog() {
+    this.showViewDialog.set(false);
+  }
+
+  onEditChange(field: keyof TimeTracking, value: any) {
+    const current = this.editing();
+    if (current) {
+      const updated = { ...current, [field]: value };
+
+      // Calcular duración automáticamente si cambian las horas
+      if (field === 'startTime' || field === 'endTime') {
+        if (updated.startTime && updated.endTime) {
+          updated.duration = this.calculateDuration(updated.startTime, updated.endTime);
+          // Si hay duración, actualizar estado a COMPLETADO
+          if (updated.duration > 0 && !updated.status) {
+            updated.status = 'COMPLETADO';
+          }
+        }
+      }
+
+      this.editing.set(updated);
+    }
+  }
+
+  /**
+   * Calcula la duración en minutos entre dos horas
+   */
+  private calculateDuration(startTime: string, endTime: string): number {
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+    const startTotalMinutes = startHours * 60 + startMinutes;
+    const endTotalMinutes = endHours * 60 + endMinutes;
+
+    let duration = endTotalMinutes - startTotalMinutes;
+    if (duration < 0) {
+      duration += 24 * 60; // Agregar 24 horas si es del día siguiente
+    }
+
+    return duration;
+  }
+
+  /**
+   * Formatea la duración en horas y minutos
+   */
+  formatDuration(minutes?: number): string {
+    if (!minutes) return '-';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+      return `${hours}h ${mins}m`;
+    }
+    return `${mins}m`;
+  }
+
+  /**
+   * Obtiene el color del badge según el estado
+   */
+  getStatusBadgeClass(status: TimeTrackingStatus): string {
+    switch (status) {
+      case 'PENDIENTE':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      case 'EN_PROGRESO':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'COMPLETADO':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'PAUSADO':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+  }
+
+  onDateChange(value: Date | Date[] | null) {
+    if (Array.isArray(value)) {
+      return;
+    }
+
+    if (value instanceof Date) {
+      const y = value.getFullYear();
+      const m = (value.getMonth() + 1).toString().padStart(2, '0');
+      const d = value.getDate().toString().padStart(2, '0');
+      this.onEditChange('date', `${y}-${m}-${d}`);
+    } else if (value === null) {
+      this.onEditChange('date', '');
+    }
+  }
+
+  // Métodos de documentos eliminados: No se permiten subir archivos manualmente
+
+  removeDocumentFromEditing(index: number) {
+    const current = this.editing();
+    if (!current || !current.documents) return;
+
+    const documentToRemove = current.documents[index];
+    const documentName = documentToRemove?.split('/').pop() || 'este documento';
+
+    this.confirmationService.confirm({
+      message: `¿Está seguro de que desea eliminar el documento "${documentName}"?`,
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        const updatedDocuments = current.documents ? [...current.documents] : [];
+        updatedDocuments.splice(index, 1);
+        this.editing.set({ ...current, documents: updatedDocuments });
+
+        if (current._id && documentToRemove) {
+          this.timeTrackingApi.deleteDocument(current._id, documentToRemove).subscribe({
+            next: (updated) => this.editing.set(updated),
+            error: () => {
+              this.toastError('No se pudo eliminar el documento');
+              this.editing.set({ ...current, documents: current.documents });
+            },
+          });
+        }
+      },
+    });
+  }
+
+  save() {
+    const item = this.editing();
+    if (!item || !item._id) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail:
+          'Solo se pueden editar registros existentes. Use el reconocimiento facial para crear nuevos registros.',
+      });
+      return;
+    }
+
+    const errors = this.validateForm(item);
+    if (errors.length) {
+      errors.forEach((e) => this.toastError(e));
+      return;
+    }
+
+    const payload: any = {
+      date: item.date,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      duration: item.duration,
+      status: item.status,
+      description: item.description.trim(),
+      notes: item.notes?.trim() || undefined,
+      projectId:
+        item.projectId && typeof item.projectId === 'string' && item.projectId.trim() !== ''
+          ? item.projectId.trim()
+          : undefined,
+    };
+
+    this.timeTrackingApi.update(item._id, payload).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Registro de tiempo actualizado',
+        });
+        this.load();
+        this.closeDialog();
+      },
+      error: (error) => this.toastError(this.getErrorMessage(error)),
+    });
+  }
+
+  remove(item: TimeTracking) {
+    if (!item._id) return;
+    this.confirmationService.confirm({
+      message: '¿Estás seguro de eliminar este registro de tiempo?',
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.timeTrackingApi.delete(item._id!).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Registro de tiempo eliminado correctamente',
+            });
+            this.load();
+          },
+          error: (error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: this.getErrorMessage(error),
+            });
+          },
+        });
+      },
+    });
+  }
+
+  // Obtener la fecha como Date para el datepicker
+  getEditDate = computed(() => {
+    const editing = this.editing();
+    if (!editing || !editing.date) return null;
+    try {
+      const [year, month, day] = editing.date.split('-').map((x) => parseInt(x, 10));
+      if (!year || !month || !day) return null;
+      return new Date(year, month - 1, day);
+    } catch {
+      return null;
+    }
+  });
+
+  getProjectName(projectId: string | Project | null | undefined): string {
+    if (!projectId) {
+      return 'Sin proyecto';
+    }
+
+    if (typeof projectId === 'object' && 'name' in projectId) {
+      return projectId.name || 'Sin proyecto';
+    }
+
+    if (typeof projectId === 'string') {
+      const project = this.projects().find((p) => p.value === projectId);
+      return project?.label || 'Sin proyecto';
+    }
+
+    return 'Sin proyecto';
+  }
+
+  // Métodos auxiliares para documentos
+  getFileIcon(url: string): string {
+    if (!url || typeof url !== 'string') {
+      return 'pi pi-file';
+    }
+
+    const extension = url.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return 'pi pi-file-pdf';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return 'pi pi-image';
+      case 'doc':
+      case 'docx':
+        return 'pi pi-file-word';
+      case 'xls':
+      case 'xlsx':
+        return 'pi pi-file-excel';
+      default:
+        return 'pi pi-file';
+    }
+  }
+
+  viewDocument(url: string): void {
+    if (!url || typeof url !== 'string') {
+      return;
+    }
+    window.open(url, '_blank');
+  }
+
+  downloadDocument(url: string): void {
+    if (!url || typeof url !== 'string') {
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = url.split('/').pop() || 'documento';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Validación
+  private validateForm(item: TimeTracking): string[] {
+    const errors: string[] = [];
+
+    if (!item.date) {
+      errors.push('La fecha es requerida');
+    }
+
+    if (!item.startTime || item.startTime.trim() === '') {
+      errors.push('La hora de inicio es requerida');
+    }
+
+    if (item.endTime && item.startTime) {
+      const duration = this.calculateDuration(item.startTime, item.endTime);
+      if (duration <= 0) {
+        errors.push('La hora de fin debe ser mayor que la hora de inicio');
+      }
+    }
+
+    if (!item.description || item.description.trim() === '') {
+      errors.push('La descripción es requerida');
+    }
+
+    if (item.description && item.description.trim().length < 5) {
+      errors.push('La descripción debe tener al menos 5 caracteres');
+    }
+
+    if (item.description && item.description.trim().length > 500) {
+      errors.push('La descripción no puede exceder 500 caracteres');
+    }
+
+    if (item.projectId && typeof item.projectId === 'string' && item.projectId.trim() !== '') {
+      const projectExists = this.projects().some((p) => p.value === item.projectId);
+      if (!projectExists) {
+        errors.push('El proyecto seleccionado ya no está disponible. Selecciona otro.');
+      }
+    }
+
+    return errors;
+  }
+
+  // Método para obtener mensaje de error de la API
+  private getErrorMessage(error: any): string {
+    if (error.status === 403) {
+      if (error.error?.message?.includes('No puedes crear registros')) {
+        return 'No puedes crear registros para otros usuarios';
+      }
+      if (error.error?.message?.includes('No puedes editar')) {
+        return 'No puedes editar registros de otros usuarios';
+      }
+      return 'No tienes permisos para realizar esta acción';
+    }
+
+    if (error.error?.message) {
+      const message = error.error.message;
+      if (message.includes('date should not be empty')) {
+        return 'La fecha es requerida';
+      }
+      if (message.includes('startTime should not be empty')) {
+        return 'La hora de inicio es requerida';
+      }
+      if (message.includes('description should not be empty')) {
+        return 'La descripción es requerida';
+      }
+      return message;
+    }
+
+    if (error.error?.error) {
+      return error.error.error;
+    }
+
+    if (error.message) {
+      return error.message;
+    }
+
+    return 'Ha ocurrido un error inesperado';
+  }
+
+  private toastError(detail: string) {
+    this.messageService.add({ severity: 'error', summary: 'Error', detail });
+  }
+
+  // ========== Métodos para Marcación con Reconocimiento Facial ==========
+
+  /**
+   * Abre el diálogo para marcar asistencia con reconocimiento facial
+   */
+  openFaceMarkDialog() {
+    this.showFaceDialog.set(true);
+  }
+
+  /**
+   * Cierra el diálogo de marcación facial
+   */
+  closeFaceDialog() {
+    this.showFaceDialog.set(false);
+  }
+
+  /**
+   * Captura imagen desde la cámara
+   * Nota: Solo se permite captura desde cámara, no se permiten subidas de archivos
+   */
+  async captureFromCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+
+      // Crear un canvas para capturar el frame
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      // Esperar a que el video esté listo
+      video.addEventListener('loadedmetadata', () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context?.drawImage(video, 0, 0);
+        stream.getTracks().forEach((track) => track.stop());
+
+        // Convertir canvas a blob
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const file = new File([blob], `capture-${Date.now()}.jpg`, {
+                type: 'image/jpeg',
+              });
+              this.faceImage.set(file);
+              this.faceImagePreview.set(canvas.toDataURL('image/jpeg'));
+            }
+          },
+          'image/jpeg',
+          0.9
+        );
+      });
+    } catch (error) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail:
+          'No se pudo acceder a la cámara. Verifica los permisos de la cámara en tu navegador.',
+      });
+    }
+  }
+
+  /**
+   * Marca la asistencia usando reconocimiento facial y crea el registro de tiempo
+   */
+  markAttendanceWithFace() {
+    const image = this.faceImage();
+    if (!image) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Debes capturar una imagen desde la cámara',
+      });
+      return;
+    }
+
+    const tenantId = this.tenantService.tenantId();
+    if (!tenantId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo obtener el tenantId',
+      });
+      return;
+    }
+
+    this.isMarkingAttendance.set(true);
+
+    const request = {
+      location: this.faceLocation().trim() || undefined,
+      notes: this.faceNotes().trim() || undefined,
+    };
+
+    this.faceRecognitionApi.markAttendance(image, tenantId, request).subscribe({
+      next: (attendanceRecord: AttendanceRecord) => {
+        // Obtener el userId del registro de asistencia
+        const userId =
+          typeof attendanceRecord.userId === 'object' &&
+          attendanceRecord.userId &&
+          '_id' in attendanceRecord.userId
+            ? (attendanceRecord.userId as any)._id
+            : attendanceRecord.userId;
+
+        // Crear automáticamente el registro de tiempo
+        const timestamp = new Date(attendanceRecord.timestamp);
+        const date = timestamp.toISOString().split('T')[0];
+        const startTime = `${timestamp.getHours().toString().padStart(2, '0')}:${timestamp
+          .getMinutes()
+          .toString()
+          .padStart(2, '0')}`;
+
+        const timeTrackingPayload = {
+          userId: userId,
+          date: date,
+          startTime: startTime,
+          status: 'EN_PROGRESO' as TimeTrackingStatus,
+          description: `Marcación ${attendanceRecord.type} - Validada con reconocimiento facial`,
+          notes: attendanceRecord.notes || undefined,
+          attendanceRecordId: attendanceRecord._id,
+        };
+
+        this.timeTrackingApi.create(timeTrackingPayload).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: `Asistencia marcada correctamente. Confianza: ${(
+                (attendanceRecord.confidence || 0) * 100
+              ).toFixed(1)}%`,
+            });
+            this.load();
+            this.closeFaceDialog();
+          },
+          error: (error) => {
+            this.messageService.add({
+              severity: 'warning',
+              summary: 'Advertencia',
+              detail:
+                'La asistencia fue validada pero no se pudo crear el registro de tiempo. ' +
+                this.getErrorMessage(error),
+            });
+            this.closeFaceDialog();
+          },
+        });
+      },
+      error: (error) => {
+        let errorMessage = 'Error al validar la asistencia';
+        if (error.error?.message) {
+          errorMessage = error.error.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error de Validación',
+          detail: errorMessage,
+        });
+      },
+      complete: () => {
+        this.isMarkingAttendance.set(false);
+      },
+    });
+  }
+}
