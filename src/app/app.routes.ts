@@ -90,6 +90,22 @@ export const routes: Routes = [
         data: { menuPermission: '/areas' },
       },
       {
+        path: 'face-recognition-register',
+        loadComponent: () =>
+          import('./pages/face-recognition-register/face-recognition-register').then(
+            (m) => m.FaceRecognitionRegisterPage
+          ),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/face-recognition-register' },
+      },
+      {
+        path: 'time-tracking',
+        loadComponent: () =>
+          import('./pages/time-tracking/time-tracking').then((m) => m.TimeTrackingPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/time-tracking' },
+      },
+      {
         path: 'users',
         loadComponent: () => import('./pages/users/users').then((m) => m.UsersPage),
         canActivate: [MenuPermissionGuard],
