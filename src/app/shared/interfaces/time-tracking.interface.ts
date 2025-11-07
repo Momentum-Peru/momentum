@@ -1,5 +1,17 @@
 import { Project } from './project.interface';
 
+interface PopulatedUser {
+  _id: string;
+  name: string;
+  email: string;
+}
+
+interface PopulatedAttendanceRecord {
+  _id: string;
+  type: 'ENTRADA' | 'SALIDA';
+  timestamp: string;
+}
+
 export type TimeTrackingStatus = 'PENDIENTE' | 'EN_PROGRESO' | 'COMPLETADO' | 'PAUSADO';
 
 export interface TimeTracking {
@@ -12,9 +24,9 @@ export interface TimeTracking {
   description: string;
   notes?: string;
   documents?: string[]; // URLs
-  userId: string | any; // puede venir populado
+  userId: string | PopulatedUser; // puede venir populado
   projectId?: string | Project | null; // opcional
-  attendanceRecordId?: string | any; // opcional, referencia a registro de asistencia
+  attendanceRecordId?: string | PopulatedAttendanceRecord; // opcional, referencia a registro de asistencia
   createdAt?: string;
   updatedAt?: string;
 }

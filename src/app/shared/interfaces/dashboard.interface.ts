@@ -119,31 +119,31 @@ export interface DashboardFiltersParams {
  * Tipos específicos para cada tipo de gráfico según Chart.js
  */
 export interface LineChartData extends ChartData {
-    datasets: Array<ChartDataset & {
+    datasets: (ChartDataset & {
         fill?: boolean;
         tension?: number;
         pointBackgroundColor?: string[];
         pointBorderColor?: string[];
         pointRadius?: number;
-    }>;
+    })[];
 }
 
 export interface BarChartData extends ChartData {
-    datasets: Array<ChartDataset & {
+    datasets: (ChartDataset & {
         barThickness?: number;
         maxBarThickness?: number;
-    }>;
+    })[];
 }
 
 export interface PieChartData extends ChartData {
-    datasets: Array<ChartDataset & {
+    datasets: (ChartDataset & {
         hoverOffset?: number;
-    }>;
+    })[];
 }
 
 export interface DoughnutChartData extends ChartData {
-    datasets: Array<ChartDataset & {
+    datasets: (ChartDataset & {
         hoverOffset?: number;
         cutout?: string;
-    }>;
+    })[];
 }

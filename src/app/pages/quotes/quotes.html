@@ -26,6 +26,7 @@
       label="Nueva Cotización"
       icon="pi pi-plus"
       class="p-button-primary w-full sm:w-auto"
+      aria-label="Crear nueva cotización"
     ></button>
   </div>
 
@@ -99,6 +100,7 @@
                 (click)="openPdf(quote)"
                 pTooltip="Ver documento"
                 tooltipPosition="top"
+                aria-label="Ver documento PDF"
               ></button>
 
               <p-menu
@@ -119,6 +121,7 @@
                 (click)="viewDetails(quote)"
                 pTooltip="Ver detalles"
                 tooltipPosition="top"
+                aria-label="Ver detalles de la cotización"
               ></button>
 
               <button
@@ -128,6 +131,7 @@
                 (click)="stateMenu.toggle($event)"
                 pTooltip="Cambiar estado"
                 tooltipPosition="top"
+                aria-label="Cambiar estado de la cotización"
               ></button>
 
               <button
@@ -137,6 +141,7 @@
                 (click)="editQuote(quote)"
                 pTooltip="Editar cotización"
                 tooltipPosition="top"
+                aria-label="Editar cotización"
               ></button>
 
               <button
@@ -146,6 +151,7 @@
                 (click)="deleteQuote(quote)"
                 pTooltip="Eliminar cotización"
                 tooltipPosition="top"
+                aria-label="Eliminar cotización"
               ></button>
             </div>
           </td>
@@ -314,6 +320,7 @@
                 label="Ver documento"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="openPdf(quote)"
+                aria-label="Ver documento PDF"
               ></button>
               <button
                 pButton
@@ -321,6 +328,7 @@
                 label="Ver detalles"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="viewDetails(quote)"
+                aria-label="Ver detalles de la cotización"
               ></button>
               <button
                 pButton
@@ -328,6 +336,7 @@
                 label="Cambiar estado"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="stateMenu.toggle($event)"
+                aria-label="Cambiar estado de la cotización"
               ></button>
               <button
                 pButton
@@ -335,6 +344,7 @@
                 label="Editar"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="editQuote(quote)"
+                aria-label="Editar cotización"
               ></button>
               <button
                 pButton
@@ -342,6 +352,7 @@
                 label="Eliminar"
                 class="p-button-text p-button-sm p-button-danger w-full justify-start"
                 (click)="deleteQuote(quote)"
+                aria-label="Eliminar cotización"
               ></button>
             </div>
           </div>
@@ -406,10 +417,11 @@
       <!-- Información básica -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+          <label for="clientSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
             >Cliente *</label
           >
           <p-select
+            id="clientSelect"
             [options]="clients()"
             optionLabel="name"
             optionValue="_id"
@@ -421,10 +433,11 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+          <label for="projectSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
             >Proyecto *</label
           >
           <p-select
+            id="projectSelect"
             [options]="projects()"
             optionLabel="name"
             optionValue="_id"
@@ -439,8 +452,9 @@
       <!-- Estado y fechas -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2">Estado</label>
+          <label for="stateSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-2">Estado</label>
           <p-select
+            id="stateSelect"
             [options]="stateOptions"
             optionLabel="label"
             optionValue="value"
@@ -451,10 +465,11 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+          <label for="createDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
             >Fecha Creación *</label
           >
           <p-datepicker
+            id="createDate"
             formControlName="createDate"
             dateFormat="dd/mm/yy"
             placeholder="Seleccionar fecha"
@@ -467,10 +482,11 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+          <label for="sendDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
             >Fecha Envío</label
           >
           <p-datepicker
+            id="sendDate"
             formControlName="sendDate"
             dateFormat="dd/mm/yy"
             placeholder="Seleccionar fecha"
@@ -485,8 +501,9 @@
 
       <!-- Notas -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2">Notas</label>
+        <label for="notesTextarea" class="block text-sm font-medium text-gray-700 dark:text-white mb-2">Notas</label>
         <textarea
+          id="notesTextarea"
           pTextarea
           formControlName="notes"
           placeholder="Notas adicionales sobre la cotización"
@@ -497,10 +514,11 @@
 
       <!-- Subida de documentos -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+        <label for="documentsUpload" class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
           >Documentos</label
         >
         <p-fileUpload
+          id="documentsUpload"
           mode="basic"
           name="files[]"
           accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
@@ -543,6 +561,7 @@
                   (click)="openDocument(doc)"
                   pTooltip="Ver documento"
                   tooltipPosition="top"
+                  aria-label="Ver documento"
                 ></button>
                 <button
                   type="button"
@@ -552,6 +571,7 @@
                   (click)="removeExistingDocument($index)"
                   pTooltip="Eliminar documento"
                   tooltipPosition="top"
+                  aria-label="Eliminar documento"
                 ></button>
               </div>
             </div>
@@ -584,6 +604,7 @@
                 (click)="removeSelectedFile($index)"
                 pTooltip="Eliminar archivo"
                 tooltipPosition="top"
+                aria-label="Eliminar archivo"
               ></button>
             </div>
             }
@@ -595,13 +616,14 @@
 
     <ng-template pTemplate="footer">
       <div class="flex gap-2 justify-end">
-        <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
+        <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
         <button
           pButton
           label="Guardar"
           class="p-button-primary"
           (click)="saveQuote()"
           [disabled]="quoteForm.invalid"
+          aria-label="Guardar cotización"
         ></button>
       </div>
     </ng-template>
@@ -634,8 +656,8 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Número</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Número</span
             >
             <div
               class="text-gray-900 dark:text-gray-100 font-mono font-medium bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
@@ -644,8 +666,8 @@
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               <p-tag
@@ -655,24 +677,24 @@
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cliente</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Cliente</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-medium">
               {{ getClientName(viewingQuote()?.clientId ?? '') }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Proyecto</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Proyecto</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ getProjectName(viewingQuote()?.projectId ?? '') }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Creación</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Creación</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingQuote()?.createDate | date : 'dd/MM/yyyy' }}
@@ -680,8 +702,8 @@
           </div>
           @if (viewingQuote()?.expirationDate) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Vencimiento</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Vencimiento</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingQuote()?.expirationDate | date : 'dd/MM/yyyy' }}
@@ -689,8 +711,8 @@
           </div>
           } @if (viewingQuote()?.total) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Total</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Total</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-semibold text-lg">
               ${{ viewingQuote()?.total | number : '1.2-2' }}
@@ -756,7 +778,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 </div>

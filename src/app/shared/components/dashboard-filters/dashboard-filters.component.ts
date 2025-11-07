@@ -17,6 +17,16 @@ import { DashboardFiltersParams } from '../../interfaces/dashboard.interface';
 import { ProjectsApiService } from '../../services/projects-api.service';
 import { ClientsApiService } from '../../services/clients-api.service';
 
+interface ProjectOption {
+  id: string;
+  name: string;
+}
+
+interface ClientOption {
+  id: string;
+  name: string;
+}
+
 /**
  * Componente de filtros del dashboard
  * Componente Smart que maneja la lógica de filtros
@@ -31,7 +41,7 @@ import { ClientsApiService } from '../../services/clients-api.service';
   providers: [MessageService],
 })
 export class DashboardFiltersComponent implements OnInit {
-  @Input() loading: boolean = false;
+  @Input() loading = false;
   @Output() filtersChanged = new EventEmitter<DashboardFiltersParams>();
 
   private readonly projectsApi = inject(ProjectsApiService);
@@ -40,14 +50,14 @@ export class DashboardFiltersComponent implements OnInit {
 
   // Signals para el estado reactivo
   protected readonly selectedPeriod = signal<string>('30d');
-  protected readonly selectedProject = signal<any>(null);
-  protected readonly selectedClient = signal<any>(null);
+  protected readonly selectedProject = signal<ProjectOption | null>(null);
+  protected readonly selectedClient = signal<ClientOption | null>(null);
   protected readonly startDate = signal<string>('');
   protected readonly endDate = signal<string>('');
 
   // Signals para opciones de los dropdowns
-  protected readonly projectOptions = signal<Array<{ label: string; value: any }>>([]);
-  protected readonly clientOptions = signal<Array<{ label: string; value: any }>>([]);
+  protected readonly projectOptions = signal<{ label: string; value: ProjectOption | null }[]>([]);
+  protected readonly clientOptions = signal<{ label: string; value: ClientOption | null }[]>([]);
   protected readonly loadingProjects = signal<boolean>(false);
   protected readonly loadingClients = signal<boolean>(false);
 
@@ -75,7 +85,7 @@ export class DashboardFiltersComponent implements OnInit {
     this.loadingProjects.set(true);
     this.projectsApi.listActive().subscribe({
       next: (projects) => {
-        const options: Array<{ label: string; value: { id: string; name: string } | null }> = [
+        const options: { label: string; value: { id: string; name: string } | null }[] = [
           { label: 'Todos los proyectos', value: null },
         ];
         projects.forEach((project) => {
@@ -110,7 +120,7 @@ export class DashboardFiltersComponent implements OnInit {
     this.loadingClients.set(true);
     this.clientsApi.list().subscribe({
       next: (clients) => {
-        const options: Array<{ label: string; value: { id: string; name: string } | null }> = [
+        const options: { label: string; value: { id: string; name: string } | null }[] = [
           { label: 'Todos los clientes', value: null },
         ];
         clients.forEach((client) => {
@@ -180,7 +190,7 @@ export class DashboardFiltersComponent implements OnInit {
    */
   applyFilters(): void {
     const filters: DashboardFiltersParams = {
-      period: this.selectedPeriod() as any,
+      period: this.selectedPeriod() as '7d' | '30d' | '90d' | '1y' | 'custom',
     };
 
     if (this.selectedPeriod() === 'custom' && this.startDate() && this.endDate()) {

@@ -21,6 +21,7 @@
       label="Registrar Rostro"
       icon="pi pi-user-plus"
       class="w-full sm:w-auto"
+      aria-label="Registrar nuevo rostro"
     ></button>
   </div>
 
@@ -37,10 +38,11 @@
         <div class="space-y-4">
           <!-- Búsqueda -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label for="userSearch" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Buscar usuario</label
             >
             <input
+              id="userSearch"
               pInputText
               placeholder="Buscar por nombre o email..."
               [ngModel]="query()"
@@ -63,6 +65,7 @@
                 [class.dark:bg-gray-800]="selectedUserId() !== user._id"
                 [class.dark:border-gray-700]="selectedUserId() !== user._id"
                 (click)="onUserSelect(user._id)"
+                [attr.aria-label]="'Seleccionar usuario: ' + user.name"
               >
                 <div class="flex items-center justify-between">
                   <div>
@@ -169,6 +172,7 @@
                 (click)="deleteDescriptor(descriptor)"
                 pTooltip="Eliminar descriptor"
                 tooltipPosition="left"
+                aria-label="Eliminar descriptor facial"
               ></button>
             </div>
           </div>
@@ -197,10 +201,11 @@
     <div class="space-y-4">
       <!-- Selección de usuario -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label for="registerUsuario" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Usuario *</label
         >
         <p-select
+          id="registerUsuario"
           [options]="filteredUsers()"
           optionLabel="name"
           optionValue="_id"
@@ -223,7 +228,7 @@
 
       <!-- Selección de imagen -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label for="imageInput" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Imagen del rostro *</label
         >
         <input
@@ -242,8 +247,8 @@
       <!-- Preview de imagen -->
       @if (imagePreview()) {
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-          >Vista previa</label
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Vista previa</span
         >
         <div class="relative inline-block">
           <img
@@ -257,6 +262,7 @@
             class="p-button-rounded p-button-danger p-button-sm absolute top-2 right-2"
             (click)="removeImage()"
             pTooltip="Eliminar imagen"
+            aria-label="Eliminar imagen"
           ></button>
         </div>
       </div>
@@ -264,13 +270,14 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
       <button
         pButton
         label="Registrar"
         [disabled]="!selectedUserId() || !selectedImage() || loading()"
         [loading]="loading()"
         (click)="registerFace()"
+        aria-label="Registrar rostro"
       ></button>
     </ng-template>
   </p-dialog>

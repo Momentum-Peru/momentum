@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -17,7 +17,6 @@ import { Chip } from 'primeng/chip';
 import { Rating } from 'primeng/rating';
 import { Tag } from 'primeng/tag';
 import { Card } from 'primeng/card';
-import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import {
   ProvidersService,
@@ -83,7 +82,7 @@ interface District {
   styleUrls: ['./providers.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProvidersPage {
+export class ProvidersPage implements OnInit {
   private readonly providersService = inject(ProvidersService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
@@ -653,49 +652,58 @@ export class ProvidersPage {
     return emailRegex.test(email);
   }
 
-  private getErrorMessage(error: any): string {
-    if (error.error?.message) {
-      const message = error.error.message;
+  private getErrorMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'error' in error) {
+      const errorObj = error as { error?: { message?: string | string[] }; message?: string };
+      if (errorObj.error?.message) {
+        const message = errorObj.error.message;
 
-      if (message.includes('ubicacion.direccion must be longer than or equal to 5 characters')) {
-        return 'La dirección debe tener al menos 5 caracteres';
-      }
-      if (message.includes('name should not be empty')) {
-        return 'El nombre del proveedor es requerido';
-      }
-      if (message.includes('contacts should not be empty')) {
-        return 'Debe agregar al menos un contacto';
-      }
-      if (message.includes('email must be an email')) {
-        return 'El formato del email no es válido';
-      }
-      if (message.includes('paisCodigo should not be empty')) {
-        return 'El país es requerido';
-      }
-      if (message.includes('services should not be empty')) {
-        return 'Debe seleccionar al menos un tipo de servicio';
-      }
-      if (message.includes('website must be a URL')) {
-        return 'El sitio web debe tener un formato válido';
-      }
-      if (message.includes('rating must not be less than 1')) {
-        return 'La calificación debe ser mayor o igual a 1';
-      }
-      if (message.includes('rating must not be greater than 5')) {
-        return 'La calificación debe ser menor o igual a 5';
-      }
-      if (message.includes('description must be longer than or equal to 10 characters')) {
-        return 'La descripción debe tener al menos 10 caracteres';
-      }
+        // Si es un array de mensajes, unirlos
+        if (Array.isArray(message)) {
+          return message.join(', ');
+        }
 
-      return message;
+        // Traducir mensajes comunes de validación
+        if (typeof message === 'string') {
+          if (message.includes('ubicacion.direccion must be longer than or equal to 5 characters')) {
+            return 'La dirección debe tener al menos 5 caracteres';
+          }
+          if (message.includes('name should not be empty')) {
+            return 'El nombre del proveedor es requerido';
+          }
+          if (message.includes('contacts should not be empty')) {
+            return 'Debe agregar al menos un contacto';
+          }
+          if (message.includes('email must be an email')) {
+            return 'El formato del email no es válido';
+          }
+          if (message.includes('paisCodigo should not be empty')) {
+            return 'El país es requerido';
+          }
+          if (message.includes('services should not be empty')) {
+            return 'Debe seleccionar al menos un tipo de servicio';
+          }
+          if (message.includes('website must be a URL')) {
+            return 'El sitio web debe tener un formato válido';
+          }
+          if (message.includes('rating must not be less than 1')) {
+            return 'La calificación debe ser mayor o igual a 1';
+          }
+          if (message.includes('rating must not be greater than 5')) {
+            return 'La calificación debe ser menor o igual a 5';
+          }
+          if (message.includes('description must be longer than or equal to 10 characters')) {
+            return 'La descripción debe tener al menos 10 caracteres';
+          }
+          return message;
+        }
+      }
+      if (errorObj.error?.error && typeof errorObj.error.error === 'string') {
+        return errorObj.error.error;
+      }
     }
 
-    if (error.error?.error) {
-      return error.error.error;
-    }
-
-    if (error.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
       return error.message;
     }
 

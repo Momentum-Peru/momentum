@@ -81,7 +81,7 @@
   <app-native-task-form
     [task]="selectedTask() || undefined"
     (save)="onTaskSave($event)"
-    (cancel)="closeTaskForm()"
+    (formCancel)="closeTaskForm()"
   >
   </app-native-task-form>
 </p-dialog>
@@ -93,5 +93,5 @@
 <p-toast></p-toast>
 
 <!-- Task Details Dialog -->
-<app-task-details [task]="selectedTask()" [visible]="showTaskDetails" (close)="closeTaskDetails()">
+<app-task-details [task]="selectedTask()" [visible]="showTaskDetails" (closeDialog)="closeTaskDetails()">
 </app-task-details>

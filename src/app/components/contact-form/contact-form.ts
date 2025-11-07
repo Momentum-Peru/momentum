@@ -1,4 +1,4 @@
-import { Component, signal, inject, input, output, OnInit } from '@angular/core';
+import { Component, inject, input, output, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
@@ -22,8 +22,8 @@ export class ContactFormComponent implements OnInit {
     isLoading = input<boolean>(false);
 
     // Outputs
-    onSubmit = output<CreateContactRequest | UpdateContactRequest>();
-    onCancel = output<void>();
+    formSubmit = output<CreateContactRequest | UpdateContactRequest>();
+    formCancel = output<void>();
 
     // Formulario reactivo
     contactForm!: FormGroup;
@@ -80,7 +80,7 @@ export class ContactFormComponent implements OnInit {
                 }
             });
 
-            this.onSubmit.emit(formData);
+            this.formSubmit.emit(formData);
         } else {
             // Marcar todos los campos como tocados para mostrar errores
             Object.keys(this.contactForm.controls).forEach(key => {
@@ -123,6 +123,6 @@ export class ContactFormComponent implements OnInit {
      * Cancela la operación
      */
     onCancelForm(): void {
-        this.onCancel.emit();
+        this.formCancel.emit();
     }
 }

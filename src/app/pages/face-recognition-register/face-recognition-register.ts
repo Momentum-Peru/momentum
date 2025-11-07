@@ -13,7 +13,7 @@ import { CardModule } from 'primeng/card';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { FaceRecognitionApiService } from '../../shared/services/face-recognition-api.service';
-import { UsersApiService, User } from '../../shared/services/users-api.service';
+import { UsersApiService } from '../../shared/services/users-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import { FaceDescriptor } from '../../shared/interfaces/face-recognition.interface';
 import { TenantService } from '../../core/services/tenant.service';
@@ -78,7 +78,7 @@ export class FaceRecognitionRegisterPage implements OnInit {
     if (!userId) return [];
     return this.descriptors().filter((d) => {
       const id = typeof d.userId === 'object' && d.userId && '_id' in d.userId
-        ? (d.userId as any)._id
+        ? (d.userId as { _id: string })._id
         : d.userId;
       return id === userId;
     });
@@ -310,20 +310,26 @@ export class FaceRecognitionRegisterPage implements OnInit {
     });
   }
 
-  getUserName(userId: string | any): string {
+  getUserName(userId: string | { _id?: string } | null | undefined): string {
     if (!userId) return 'Usuario desconocido';
     const id = typeof userId === 'object' && userId && '_id' in userId
-      ? (userId as any)._id
+      ? (userId as { _id?: string })._id
       : userId;
+    if (!id) {
+      return 'Usuario desconocido';
+    }
     const user = this.users().find((u) => u._id === id);
     return user?.name || 'Usuario desconocido';
   }
 
-  getUserEmail(userId: string | any): string {
+  getUserEmail(userId: string | { _id?: string } | null | undefined): string {
     if (!userId) return '';
     const id = typeof userId === 'object' && userId && '_id' in userId
-      ? (userId as any)._id
+      ? (userId as { _id?: string })._id
       : userId;
+    if (!id) {
+      return '';
+    }
     const user = this.users().find((u) => u._id === id);
     return user?.email || '';
   }
@@ -338,9 +344,19 @@ export class FaceRecognitionRegisterPage implements OnInit {
     });
   }
 
-  private getErrorMessage(error: any): string {
-    if (error.error?.message) {
-      const message = error.error.message;
+  private extractErrorMessage(error: unknown): string | undefined {
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    if (!error || typeof error !== 'object') {
+      return undefined;
+    }
+
+    const errorObject = error as { message?: unknown; error?: unknown };
+
+    if (typeof errorObject.message === 'string') {
+      const message = errorObject.message;
       if (message.includes('No se detectó ninguna cara')) {
         return 'No se detectó ninguna cara en la imagen. Asegúrate de que la imagen contenga un rostro visible.';
       }
@@ -350,12 +366,34 @@ export class FaceRecognitionRegisterPage implements OnInit {
       return message;
     }
 
-    if (error.error?.error) {
-      return error.error.error;
+    if (typeof errorObject.error === 'string') {
+      return errorObject.error;
     }
 
-    if (error.message) {
-      return error.message;
+    if (errorObject.error !== undefined) {
+      return this.extractErrorMessage(errorObject.error);
+    }
+
+    return undefined;
+  }
+
+  private getErrorMessage(error: unknown): string {
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    if (!error || typeof error !== 'object') {
+      return 'Ha ocurrido un error inesperado';
+    }
+
+    const errorObject = error as { message?: unknown; error?: unknown };
+    const serverMessage = this.extractErrorMessage(errorObject.error);
+    if (serverMessage) {
+      return serverMessage;
+    }
+
+    if (typeof errorObject.message === 'string') {
+      return errorObject.message;
     }
 
     return 'Ha ocurrido un error inesperado';

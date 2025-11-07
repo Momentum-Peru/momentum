@@ -93,7 +93,10 @@ export class AreasPage implements OnInit {
 
   load() {
     this.loading.set(true);
-    const params: any = {};
+    const params: {
+      q?: string;
+      isActive?: boolean;
+    } = {};
     if (this.query()) params.q = this.query();
     if (this.filterActive() !== null) params.isActive = this.filterActive();
 
@@ -164,7 +167,7 @@ export class AreasPage implements OnInit {
     this.showViewDialog.set(false);
   }
 
-  onEditChange(field: keyof Area, value: any) {
+  onEditChange(field: keyof Area, value: Area[keyof Area]) {
     const current = this.editing();
     if (current) {
       this.editing.set({ ...current, [field]: value });

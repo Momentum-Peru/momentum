@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { LeadsApiService } from '../../../shared/services/leads-api.service';
-import { CreateLeadRequest } from '../../../shared/interfaces/lead.interface';
+import { CreateLeadRequest, Lead } from '../../../shared/interfaces/lead.interface';
 
 /**
  * Interfaz para los datos del formulario
@@ -28,7 +28,7 @@ export class LeadFormService {
    * Transforma los datos del formulario en el formato requerido por la API
    * y envía el lead al servidor
    */
-  submitLead(formData: LeadFormData): Observable<any> {
+  submitLead(formData: LeadFormData): Observable<Lead> {
     const leadRequest: CreateLeadRequest = {
       name: formData.name,
       contact: {

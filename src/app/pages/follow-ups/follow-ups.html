@@ -11,6 +11,7 @@
       label="Nuevo Seguimiento"
       icon="pi pi-plus"
       (click)="newItem()"
+      aria-label="Crear nuevo seguimiento"
     ></button>
   </div>
 
@@ -19,10 +20,11 @@
     <ng-template pTemplate="content">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label for="followUpStatusFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Estado</label
           >
           <p-select
+            id="followUpStatusFilter"
             [options]="statusOptions"
             optionLabel="label"
             optionValue="value"
@@ -35,10 +37,11 @@
           ></p-select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label for="followUpTypeFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Tipo</label
           >
           <p-select
+            id="followUpTypeFilter"
             [options]="typeOptions"
             optionLabel="label"
             optionValue="value"
@@ -58,6 +61,7 @@
             icon="pi pi-filter-slash"
             class="p-button-outlined w-full"
             (click)="clearFilters()"
+            aria-label="Limpiar filtros"
           ></button>
         </div>
       </div>
@@ -127,6 +131,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Ver detalles"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles del seguimiento"
               ></button>
               <button
                 pButton
@@ -134,6 +139,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Editar"
                 (click)="editItem(row)"
+                aria-label="Editar seguimiento"
               ></button>
               <button
                 pButton
@@ -141,6 +147,7 @@
                 class="p-button-text p-button-sm p-button-danger"
                 pTooltip="Eliminar"
                 (click)="remove(row)"
+                aria-label="Eliminar seguimiento"
               ></button>
             </div>
           </td>
@@ -159,6 +166,7 @@
         type="button"
         class="w-full px-4 py-4 flex items-center justify-between"
         (click)="toggleRow(row._id)"
+        [attr.aria-label]="'Expandir o contraer detalles del seguimiento: ' + row.title"
       >
         <div class="flex-1 text-left">
           <div class="font-semibold text-gray-900 dark:text-gray-100">{{ row.title }}</div>
@@ -188,6 +196,7 @@
             label="Ver"
             class="p-button-text p-button-sm"
             (click)="viewDetails(row)"
+            aria-label="Ver detalles del seguimiento"
           ></button>
           <button
             pButton
@@ -195,6 +204,7 @@
             label="Editar"
             class="p-button-text p-button-sm"
             (click)="editItem(row)"
+            aria-label="Editar seguimiento"
           ></button>
           <button
             pButton
@@ -202,6 +212,7 @@
             label="Eliminar"
             class="p-button-text p-button-sm p-button-danger"
             (click)="remove(row)"
+            aria-label="Eliminar seguimiento"
           ></button>
         </div>
       </div>
@@ -225,10 +236,11 @@
     </ng-template>
     <div class="space-y-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        <label for="followUpTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >Título *</label
         >
         <input
+          id="followUpTitle"
           pInputText
           [ngModel]="editing()?.title"
           (ngModelChange)="onEditChange('title', $event)"
@@ -236,10 +248,11 @@
         />
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        <label for="followUpDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >Descripción *</label
         >
         <textarea
+          id="followUpDescription"
           pTextarea
           rows="4"
           [ngModel]="editing()?.description"
@@ -249,10 +262,11 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label for="followUpType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Tipo *</label
           >
           <p-select
+            id="followUpType"
             [options]="typeOptions"
             optionLabel="label"
             optionValue="value"
@@ -263,10 +277,11 @@
           ></p-select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label for="followUpStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Estado</label
           >
           <p-select
+            id="followUpStatus"
             [options]="statusOptions"
             optionLabel="label"
             optionValue="value"
@@ -278,10 +293,11 @@
         </div>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        <label for="followUpScheduledDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >Fecha Programada *</label
         >
         <p-datepicker
+          id="followUpScheduledDate"
           [ngModel]="getScheduledDate()"
           (ngModelChange)="onScheduledDateChange($event)"
           [showTime]="true"
@@ -291,10 +307,11 @@
         ></p-datepicker>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        <label for="followUpUser" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >Usuario *</label
         >
         <p-select
+          id="followUpUser"
           [options]="users()"
           optionLabel="name"
           optionValue="_id"
@@ -305,13 +322,14 @@
         ></p-select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Asociar a (seleccionar uno)</label
+        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Asociar a (seleccionar uno)</span
         >
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs text-gray-600 dark:text-white mb-1">Lead</label>
+            <label for="followUpLead" class="block text-xs text-gray-600 dark:text-white mb-1">Lead</label>
             <p-select
+              id="followUpLead"
               [options]="leads()"
               optionLabel="name"
               optionValue="_id"
@@ -323,8 +341,9 @@
             ></p-select>
           </div>
           <div>
-            <label class="block text-xs text-gray-600 dark:text-white mb-1">Contacto</label>
+            <label for="followUpContact" class="block text-xs text-gray-600 dark:text-white mb-1">Contacto</label>
             <p-select
+              id="followUpContact"
               [options]="contacts()"
               optionLabel="name"
               optionValue="_id"
@@ -336,8 +355,9 @@
             ></p-select>
           </div>
           <div>
-            <label class="block text-xs text-gray-600 dark:text-white mb-1">Cliente</label>
+            <label for="followUpClient" class="block text-xs text-gray-600 dark:text-white mb-1">Cliente</label>
             <p-select
+              id="followUpClient"
               [options]="clients()"
               optionLabel="name"
               optionValue="_id"
@@ -351,10 +371,11 @@
         </div>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        <label for="followUpOutcome" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >Resultado</label
         >
         <textarea
+          id="followUpOutcome"
           pTextarea
           rows="3"
           [ngModel]="editing()?.outcome"
@@ -364,10 +385,11 @@
         ></textarea>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        <label for="followUpNextDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >Próximo Seguimiento</label
         >
         <p-datepicker
+          id="followUpNextDate"
           [ngModel]="getNextFollowUpDate()"
           (ngModelChange)="onNextFollowUpDateChange($event)"
           [showTime]="true"
@@ -378,8 +400,8 @@
       </div>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
-      <button pButton label="Guardar" (click)="save()"></button>
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button pButton label="Guardar" (click)="save()" aria-label="Guardar seguimiento"></button>
     </ng-template>
   </p-dialog>
 
@@ -418,7 +440,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 </div>

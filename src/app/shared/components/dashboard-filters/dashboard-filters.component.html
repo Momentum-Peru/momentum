@@ -7,11 +7,12 @@
     <div class="flex flex-wrap gap-4 flex-1">
       <!-- Período -->
       <div class="flex flex-col w-full sm:w-auto">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label for="periodSelect" class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <i class="pi pi-calendar mr-1"></i>
           Período
         </label>
         <select
+          id="periodSelect"
           [(ngModel)]="selectedPeriod"
           (change)="onPeriodChange()"
           class="w-full sm:w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -25,18 +26,20 @@
       <!-- Fechas personalizadas -->
       @if (selectedPeriod() === 'custom') {
       <div class="flex flex-col w-full sm:w-auto">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label for="dateRange" class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <i class="pi pi-calendar-times mr-1"></i>
           Rango de fechas
         </label>
-        <div class="flex flex-col sm:flex-row gap-2">
+        <div id="dateRange" class="flex flex-col sm:flex-row gap-2">
           <input
             type="date"
+            id="startDate"
             [(ngModel)]="startDate"
             class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
           <input
             type="date"
+            id="endDate"
             [(ngModel)]="endDate"
             class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
@@ -46,11 +49,12 @@
 
       <!-- Proyecto -->
       <div class="flex flex-col w-full sm:w-auto">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label for="projectSelect" class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <i class="pi pi-folder mr-1"></i>
           Proyecto
         </label>
         <p-select
+          id="projectSelect"
           [options]="projectOptions()"
           [(ngModel)]="selectedProject"
           (ngModelChange)="onProjectChange()"
@@ -69,11 +73,12 @@
 
       <!-- Cliente -->
       <div class="flex flex-col w-full sm:w-auto">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label for="clientSelect" class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <i class="pi pi-users mr-1"></i>
           Cliente
         </label>
         <p-select
+          id="clientSelect"
           [options]="clientOptions()"
           [(ngModel)]="selectedClient"
           (ngModelChange)="onClientChange()"

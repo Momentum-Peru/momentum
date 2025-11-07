@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -46,7 +46,7 @@ interface OrderItem {
   styleUrls: ['./orders.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OrdersPage {
+export class OrdersPage implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly upload = inject(UploadService);
   private readonly clientsApi = inject(ClientsApiService);
@@ -503,38 +503,41 @@ export class OrdersPage {
   }
 
   // Método para obtener mensaje de error de la API
-  private getErrorMessage(error: any): string {
+  private getErrorMessage(error: unknown): string {
     // Manejar errores de validación específicos
-    if (error.error?.message) {
-      const message = error.error.message;
+    if (error && typeof error === 'object' && 'error' in error) {
+      const errorObj = error as { error?: { message?: string | string[] }; message?: string };
+      if (errorObj.error?.message) {
+        const message = errorObj.error.message;
 
-      // Si es un array de mensajes, unirlos
-      if (Array.isArray(message)) {
-        return message.join(', ');
-      }
+        // Si es un array de mensajes, unirlos
+        if (Array.isArray(message)) {
+          return message.join(', ');
+        }
 
-      // Traducir mensajes comunes de validación
-      if (message.includes('clientId should not be empty')) {
-        return 'El cliente es requerido';
+        // Traducir mensajes comunes de validación
+        if (typeof message === 'string') {
+          if (message.includes('clientId should not be empty')) {
+            return 'El cliente es requerido';
+          }
+          if (message.includes('clientName should not be empty')) {
+            return 'El nombre del cliente es requerido';
+          }
+          if (message.includes('number should not be empty')) {
+            return 'El número de orden es requerido';
+          }
+          if (message.includes('type must be one of the following values')) {
+            return 'El tipo debe ser "purchase" o "service"';
+          }
+          return message;
+        }
       }
-      if (message.includes('clientName should not be empty')) {
-        return 'El nombre del cliente es requerido';
+      if (errorObj.error?.error && typeof errorObj.error.error === 'string') {
+        return errorObj.error.error;
       }
-      if (message.includes('number should not be empty')) {
-        return 'El número de orden es requerido';
-      }
-      if (message.includes('type must be one of the following values')) {
-        return 'El tipo debe ser "purchase" o "service"';
-      }
-
-      return message;
     }
 
-    if (error.error?.error) {
-      return error.error.error;
-    }
-
-    if (error.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
       return error.message;
     }
 

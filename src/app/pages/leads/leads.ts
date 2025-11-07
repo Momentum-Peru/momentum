@@ -192,7 +192,13 @@ export class LeadsPage implements OnInit {
     }
 
     load() {
-        const params: any = {};
+        const params: {
+            search?: string;
+            status?: string;
+            source?: string;
+            assignedTo?: string;
+            companyId?: string;
+        } = {};
         if (this.query()) params.search = this.query();
         if (this.statusFilter()) params.status = this.statusFilter();
         if (this.sourceFilter()) params.source = this.sourceFilter();
@@ -699,6 +705,11 @@ export class LeadsPage implements OnInit {
         return this.stats()?.bySource[source] || 0;
     }
 
+    getEstimatedCloseDate(): Date | null {
+        const date = this.editing()?.estimatedCloseDate;
+        return date ? new Date(date) : null;
+    }
+
     getSourceLabel(source: LeadSource): string {
         const option = this.sourceOptions.find((o) => o.value === source);
         return option ? option.label : source;
@@ -753,14 +764,17 @@ export class LeadsPage implements OnInit {
         return emailRegex.test(email);
     }
 
-    private getErrorMessage(error: any): string {
-        if (error.error?.message) {
-            return error.error.message;
+    private getErrorMessage(error: unknown): string {
+        if (error && typeof error === 'object' && 'error' in error) {
+            const httpError = error as { error?: { message?: string; error?: string }; message?: string };
+            if (httpError.error?.message) {
+                return String(httpError.error.message);
+            }
+            if (httpError.error?.error) {
+                return String(httpError.error.error);
+            }
         }
-        if (error.error?.error) {
-            return error.error.error;
-        }
-        if (error.message) {
+        if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
             return error.message;
         }
         return 'Ha ocurrido un error inesperado';

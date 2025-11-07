@@ -8,7 +8,7 @@
       (ngModelChange)="setQuery($event)"
       class="w-full"
     />
-    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
+    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus" aria-label="Crear nuevo requerimiento"></button>
   </div>
 
   <!-- Vista Desktop: Tabla normal -->
@@ -72,6 +72,7 @@
                 (click)="openDocuments(row)"
                 pTooltip="Gestionar documentos"
                 tooltipPosition="top"
+                aria-label="Gestionar documentos"
               ></button>
             </div>
           </td>
@@ -83,6 +84,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Ver detalles"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles del requerimiento"
               ></button>
               <button
                 pButton
@@ -90,6 +92,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Editar"
                 (click)="editItem(row)"
+                aria-label="Editar requerimiento"
               ></button>
               <button
                 pButton
@@ -97,6 +100,7 @@
                 class="p-button-text p-button-sm p-button-danger"
                 pTooltip="Eliminar"
                 (click)="remove(row)"
+                aria-label="Eliminar requerimiento"
               ></button>
             </div>
           </td>
@@ -278,6 +282,7 @@
                 label="Gestionar"
                 class="p-button-text p-button-sm"
                 (click)="openDocuments(row)"
+                aria-label="Gestionar documentos"
               ></button>
             </div>
           </div>
@@ -294,6 +299,7 @@
                 label="Ver detalles"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles del requerimiento"
               ></button>
               <button
                 pButton
@@ -301,6 +307,7 @@
                 label="Editar"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="editItem(row)"
+                aria-label="Editar requerimiento"
               ></button>
               <button
                 pButton
@@ -308,6 +315,7 @@
                 label="Eliminar"
                 class="p-button-text p-button-sm p-button-danger w-full justify-start"
                 (click)="remove(row)"
+                aria-label="Eliminar requerimiento"
               ></button>
             </div>
           </div>
@@ -362,6 +370,7 @@
                 icon="pi pi-upload"
                 (click)="fileInput.click()"
                 class="mb-4"
+                aria-label="Seleccionar archivos para subir"
               ></button>
 
               <div class="text-xs text-gray-400 space-y-1">
@@ -390,6 +399,7 @@
                 icon="pi pi-times"
                 class="p-button-text p-button-danger p-button-sm"
                 (click)="removeSelectedFile(file)"
+                aria-label="Eliminar archivo seleccionado"
               ></button>
             </div>
             }
@@ -404,6 +414,7 @@
                 (click)="uploadSelectedFiles()"
                 [disabled]="selectedFiles().length === 0"
                 class="flex-1"
+                aria-label="Subir archivos seleccionados"
               ></button>
               <button
                 pButton
@@ -413,6 +424,7 @@
                 class="p-button-text"
                 (click)="clearSelectedFiles()"
                 [disabled]="selectedFiles().length === 0"
+                aria-label="Limpiar archivos seleccionados"
               ></button>
             </div>
           </div>
@@ -450,6 +462,7 @@
                 (click)="viewDocument(doc)"
                 pTooltip="Ver documento"
                 tooltipPosition="top"
+                aria-label="Ver documento"
               ></button>
               <button
                 pButton
@@ -458,6 +471,7 @@
                 (click)="downloadDocument(doc)"
                 pTooltip="Descargar documento"
                 tooltipPosition="top"
+                aria-label="Descargar documento"
               ></button>
               <button
                 pButton
@@ -466,6 +480,7 @@
                 (click)="removeDocument(doc)"
                 pTooltip="Eliminar documento"
                 tooltipPosition="top"
+                aria-label="Eliminar documento"
               ></button>
             </div>
           </div>
@@ -487,7 +502,7 @@
           @if (documentsViewing()?.documentos?.length) {
           {{ documentsViewing()?.documentos?.length }} documento(s) adjunto(s) }
         </div>
-        <button pButton label="Cerrar" class="p-button-text" (click)="closeDocuments()"></button>
+        <button pButton label="Cerrar" class="p-button-text" (click)="closeDocuments()" aria-label="Cerrar"></button>
       </div>
     </ng-template>
   </p-dialog>
@@ -519,16 +534,16 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Código</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Código</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-mono font-medium">
               {{ viewingRequirement()?.codigo }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado</span
             >
             <span
               class="px-2 py-1 rounded-full text-xs font-medium"
@@ -545,32 +560,32 @@
             </span>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Centro de Costo</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Centro de Costo</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingRequirement()?.centroCosto }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cliente</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Cliente</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingRequirement()?.clientId?.name || 'No especificado' }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Emisión</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Emisión</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingRequirement()?.fechaEmision | date : 'dd/MM/yyyy' }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Requerimiento</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Requerimiento</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingRequirement()?.fechaRequerimiento | date : 'dd/MM/yyyy' }}
@@ -578,8 +593,8 @@
           </div>
           @if (viewingRequirement()?.fechaAprobacion) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Aprobación</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Aprobación</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingRequirement()?.fechaAprobacion | date : 'dd/MM/yyyy' }}
@@ -587,8 +602,8 @@
           </div>
           } @if (viewingRequirement()?.createdAt) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Creación</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Creación</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingRequirement()?.createdAt | date : 'dd/MM/yyyy HH:mm' }}
@@ -608,16 +623,16 @@
         </h3>
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Título</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Título</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-semibold">
               {{ viewingRequirement()?.title }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Descripción</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Descripción</span
             >
             <div class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
               {{ viewingRequirement()?.descripcion }}
@@ -637,24 +652,24 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Nombre</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingRequirement()?.solicitante?.nombre }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Código</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Código</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-mono">
               {{ viewingRequirement()?.solicitante?.codigo }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cargo</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Cargo</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingRequirement()?.solicitante?.cargo }}
@@ -675,24 +690,24 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Nombre</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingRequirement()?.aprobador?.nombre }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Código</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Código</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-mono">
               {{ viewingRequirement()?.aprobador?.codigo }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cargo</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Cargo</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingRequirement()?.aprobador?.cargo }}
@@ -731,7 +746,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 
@@ -751,8 +766,9 @@
     <div class="grid gap-4">
       <!-- Cliente -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Cliente</label>
+        <label for="requirementClient" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Cliente</label>
         <p-select
+          id="requirementClient"
           [options]="clients()"
           optionLabel="name"
           optionValue="_id"
@@ -767,10 +783,11 @@
       <!-- Primera fila -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="requirementCode" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Código *</label
           >
           <input
+            id="requirementCode"
             pInputText
             name="requirementCode"
             placeholder="REQ-2024-001"
@@ -780,8 +797,9 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
+          <label for="requirementStatus" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
           <p-select
+            id="requirementStatus"
             [options]="estados"
             optionLabel="label"
             optionValue="value"
@@ -796,8 +814,9 @@
 
       <!-- Título -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Título *</label>
+        <label for="requirementTitle" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Título *</label>
         <input
+          id="requirementTitle"
           pInputText
           name="requirementTitle"
           placeholder="Título del requerimiento"
@@ -809,10 +828,11 @@
 
       <!-- Descripción -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label for="requirementDescription" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Descripción *</label
         >
         <textarea
+          id="requirementDescription"
           pTextarea
           placeholder="Descripción detallada del requerimiento"
           [ngModel]="editing()?.descripcion"
@@ -824,10 +844,11 @@
 
       <!-- Centro de Costo -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label for="requirementCostCenter" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Centro de Costo *</label
         >
         <input
+          id="requirementCostCenter"
           pInputText
           name="requirementCostCenter"
           placeholder="Desarrollo de Software"
@@ -840,10 +861,11 @@
       <!-- Tercera fila - Fechas -->
       <div class="grid grid-cols-3 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="requirementEmissionDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Fecha Emisión *</label
           >
           <p-datepicker
+            id="requirementEmissionDate"
             [ngModel]="editing()?.fechaEmision"
             (ngModelChange)="onEditChange('fechaEmision', $event)"
             dateFormat="dd/mm/yy"
@@ -854,10 +876,11 @@
           ></p-datepicker>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="requirementRequestDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Fecha Requerimiento *</label
           >
           <p-datepicker
+            id="requirementRequestDate"
             [ngModel]="editing()?.fechaRequerimiento"
             (ngModelChange)="onEditChange('fechaRequerimiento', $event)"
             dateFormat="dd/mm/yy"
@@ -868,10 +891,11 @@
           ></p-datepicker>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="requirementApprovalDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Fecha Aprobación</label
           >
           <p-datepicker
+            id="requirementApprovalDate"
             [ngModel]="editing()?.fechaAprobacion"
             (ngModelChange)="onEditChange('fechaAprobacion', $event)"
             dateFormat="dd/mm/yy"
@@ -888,10 +912,11 @@
         <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Solicitante</h4>
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label for="solicitanteNombre" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Nombre *</label
             >
             <input
+              id="solicitanteNombre"
               pInputText
               placeholder="Nombre completo"
               [ngModel]="editing()?.solicitante?.nombre"
@@ -900,10 +925,11 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label for="solicitanteCodigo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Código *</label
             >
             <input
+              id="solicitanteCodigo"
               pInputText
               placeholder="EMP-001"
               [ngModel]="editing()?.solicitante?.codigo"
@@ -912,10 +938,11 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label for="solicitanteCargo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Cargo *</label
             >
             <input
+              id="solicitanteCargo"
               pInputText
               placeholder="Desarrollador Senior"
               [ngModel]="editing()?.solicitante?.cargo"
@@ -931,10 +958,11 @@
         <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Aprobador</h4>
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label for="aprobadorNombre" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Nombre</label
             >
             <input
+              id="aprobadorNombre"
               pInputText
               placeholder="Nombre completo"
               [ngModel]="editing()?.aprobador?.nombre"
@@ -943,10 +971,11 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label for="aprobadorCodigo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Código</label
             >
             <input
+              id="aprobadorCodigo"
               pInputText
               placeholder="EMP-002"
               [ngModel]="editing()?.aprobador?.codigo"
@@ -955,10 +984,11 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label for="aprobadorCargo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Cargo</label
             >
             <input
+              id="aprobadorCargo"
               pInputText
               placeholder="Gerente de TI"
               [ngModel]="editing()?.aprobador?.cargo"
@@ -971,8 +1001,8 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
-      <button pButton label="Guardar" (click)="save()"></button>
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button pButton label="Guardar" (click)="save()" aria-label="Guardar requerimiento"></button>
     </ng-template>
   </p-dialog>
 </div>

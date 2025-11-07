@@ -153,8 +153,15 @@ export class TaskCommentsApiService {
     this.error.set(error);
   }
 
-  private handleError(error: any): void {
-    const errorMessage = error?.error?.message || error?.message || 'Error desconocido';
+  private handleError(error: unknown): void {
+    let errorMessage = 'Error desconocido';
+    if (error && typeof error === 'object') {
+      if ('error' in error && error.error && typeof error.error === 'object' && 'message' in error.error) {
+        errorMessage = String(error.error.message);
+      } else if ('message' in error && typeof error.message === 'string') {
+        errorMessage = error.message;
+      }
+    }
     this.setError(errorMessage);
     this.setLoading(false);
   }

@@ -5,7 +5,6 @@ import { environment } from '../../../environments/environment';
 import {
     DashboardResponse,
     DashboardFiltersParams,
-    DashboardData,
     DashboardKpis,
     DashboardCharts,
     DashboardTables
@@ -26,8 +25,16 @@ export class DashboardApiService {
      * @returns Observable con todos los datos del dashboard
      */
     getDashboardData(filters?: DashboardFiltersParams): Observable<DashboardResponse> {
+        const params: Record<string, string> = {};
+        if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    params[key] = String(value);
+                }
+            });
+        }
         return this.http.get<DashboardResponse>(`${this.baseUrl}/dashboard`, {
-            params: filters as any
+            params
         });
     }
 
@@ -37,8 +44,16 @@ export class DashboardApiService {
      * @returns Observable con los KPIs
      */
     getKpis(filters?: DashboardFiltersParams): Observable<DashboardKpis> {
+        const params: Record<string, string> = {};
+        if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    params[key] = String(value);
+                }
+            });
+        }
         return this.http.get<DashboardKpis>(`${this.baseUrl}/dashboard/kpis`, {
-            params: filters as any
+            params
         });
     }
 
@@ -48,8 +63,16 @@ export class DashboardApiService {
      * @returns Observable con los datos de gráficos
      */
     getCharts(filters?: DashboardFiltersParams): Observable<DashboardCharts> {
+        const params: Record<string, string> = {};
+        if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    params[key] = String(value);
+                }
+            });
+        }
         return this.http.get<DashboardCharts>(`${this.baseUrl}/dashboard/charts`, {
-            params: filters as any
+            params
         });
     }
 
@@ -59,8 +82,16 @@ export class DashboardApiService {
      * @returns Observable con los datos de tablas
      */
     getTables(filters?: DashboardFiltersParams): Observable<DashboardTables> {
+        const params: Record<string, string> = {};
+        if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    params[key] = String(value);
+                }
+            });
+        }
         return this.http.get<DashboardTables>(`${this.baseUrl}/dashboard/tables`, {
-            params: filters as any
+            params
         });
     }
 
@@ -93,10 +124,10 @@ export class DashboardApiService {
      * @param period Período opcional
      * @returns Observable con datos del dashboard
      */
-    getDashboardByProject(projectId: string, period?: string): Observable<DashboardResponse> {
+    getDashboardByProject(projectId: string, period?: '7d' | '30d' | '90d' | '1y' | 'custom'): Observable<DashboardResponse> {
         return this.getDashboardData({
             projectId,
-            period: period as any
+            period
         });
     }
 
@@ -106,10 +137,10 @@ export class DashboardApiService {
      * @param period Período opcional
      * @returns Observable con datos del dashboard
      */
-    getDashboardByClient(clientId: string, period?: string): Observable<DashboardResponse> {
+    getDashboardByClient(clientId: string, period?: '7d' | '30d' | '90d' | '1y' | 'custom'): Observable<DashboardResponse> {
         return this.getDashboardData({
             clientId,
-            period: period as any
+            period
         });
     }
 }

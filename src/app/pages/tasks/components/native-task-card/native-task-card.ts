@@ -1,8 +1,8 @@
-import { Component, Input, Output, EventEmitter, signal, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 // Interfaces
-import { Task, TaskStatus } from '../../../../shared/interfaces/task.interface';
+import { Task } from '../../../../shared/interfaces/task.interface';
 
 @Component({
   selector: 'app-native-task-card',
@@ -12,6 +12,11 @@ import { Task, TaskStatus } from '../../../../shared/interfaces/task.interface';
     <div
       class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer"
       (click)="onCardClick()"
+      (keyup.enter)="onCardClick()"
+      (keyup.space)="onCardClick()"
+      tabindex="0"
+      role="button"
+      [attr.aria-label]="'Ver detalles de la tarea: ' + task.title"
       [class.border-red-300]="isOverdue()"
       [class.dark:border-red-500]="isOverdue()"
       [class.bg-red-50]="isOverdue()"

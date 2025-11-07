@@ -53,7 +53,7 @@ export class DocumentScannerComponent implements AfterViewInit {
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
 
-  @ViewChild('fileUpload') fileUpload!: any;
+  @ViewChild('fileUpload') fileUpload!: { fileInput?: { nativeElement?: HTMLInputElement }; input?: { nativeElement?: HTMLInputElement }; el?: { nativeElement?: HTMLElement } } | undefined;
 
   // Inputs
   visible = input.required<boolean>();
@@ -110,7 +110,7 @@ export class DocumentScannerComponent implements AfterViewInit {
     // Método 1: Acceder a través de ViewChild si está disponible
     if (this.fileUpload) {
       // Intentar diferentes propiedades internas del componente FileUpload
-      const component = this.fileUpload as any;
+      const component = this.fileUpload;
 
       if (component.fileInput?.nativeElement) {
         fileInput = component.fileInput.nativeElement;
@@ -179,7 +179,7 @@ export class DocumentScannerComponent implements AfterViewInit {
   /**
    * Maneja la selección de archivo
    */
-  onFileSelect(event: any): void {
+  onFileSelect(event: { files?: File[] }): void {
     try {
       const file = event.files?.[0] as File | undefined;
 
@@ -316,10 +316,12 @@ export class DocumentScannerComponent implements AfterViewInit {
         });
         this.removeFile();
       };
-      reader.onload = (e: any) => {
+      reader.onload = (e: ProgressEvent<FileReader>) => {
         try {
-          this.previewUrl.set(e.target.result);
-          console.log('Preview creado exitosamente para:', normalizedFile.name);
+          if (e.target?.result) {
+            this.previewUrl.set(e.target.result as string);
+            console.log('Preview creado exitosamente para:', normalizedFile.name);
+          }
         } catch (error) {
           console.error('Error al crear preview:', error);
           this.messageService.add({
@@ -331,20 +333,31 @@ export class DocumentScannerComponent implements AfterViewInit {
       };
       // Usar el archivo normalizado para el preview
       reader.readAsDataURL(normalizedFile);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Capturar cualquier error no manejado en el proceso
-      const errorMsg = `Error inesperado al procesar el archivo: ${error?.message || 'Error desconocido'}`;
-      console.error('Error general en onFileSelect:', {
-        error: error,
-        errorMessage: error?.message,
-        errorStack: error?.stack,
+      const errorInfo = this.extractErrorInfo(error);
+      const errorMsg = `Error inesperado al procesar el archivo: ${errorInfo.message || 'Error desconocido'}`;
+      const details: Record<string, unknown> = {
         isMobile: this.isMobileDevice(),
+      };
+      if (errorInfo.message) {
+        details.errorMessage = errorInfo.message;
+      }
+      if (errorInfo.stack) {
+        details.errorStack = errorInfo.stack;
+      }
+      if (errorInfo.status !== undefined) {
+        details.status = errorInfo.status;
+      }
+      if (errorInfo.statusText) {
+        details.statusText = errorInfo.statusText;
+      }
+
+      console.error('Error general en onFileSelect:', {
+        ...details,
+        rawError: this.safeStringify(error),
       });
-      this.showErrorAlert('Error al procesar archivo', errorMsg, {
-        error: error,
-        errorMessage: error?.message,
-        errorStack: error?.stack,
-      });
+      this.showErrorAlert('Error al procesar archivo', errorMsg, details);
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -417,11 +430,13 @@ export class DocumentScannerComponent implements AfterViewInit {
         originalType: file.type,
       });
       return file;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInfo = this.extractErrorInfo(error);
       console.error('Error al normalizar el tipo de archivo:', {
-        error: error,
+        errorMessage: errorInfo.message,
+        errorStack: errorInfo.stack,
         fileName: file.name,
-        extension: extension,
+        extension,
         originalType: file.type,
       });
       // En caso de error, retornar el archivo original
@@ -521,26 +536,44 @@ export class DocumentScannerComponent implements AfterViewInit {
           });
         }, 500);
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         clearInterval(progressInterval);
         this.scanning.set(false);
         this.progress.set(0);
 
         // Log detallado del error para debugging
-        const errorDetails = {
-          error: error,
-          errorMessage: error?.message,
-          errorStatus: error?.status,
-          errorStatusText: error?.statusText,
-          errorResponse: error?.error,
+        const errorInfo = this.extractErrorInfo(error);
+        const errorDetails: Record<string, unknown> = {
           fileName: file.name,
           fileType: file.type,
           fileSize: file.size,
           isMobile: this.isMobileDevice(),
           userAgent: navigator.userAgent,
         };
+        if (errorInfo.message) {
+          errorDetails.errorMessage = errorInfo.message;
+        }
+        if (errorInfo.status !== undefined) {
+          errorDetails.errorStatus = errorInfo.status;
+        }
+        if (errorInfo.statusText) {
+          errorDetails.errorStatusText = errorInfo.statusText;
+        }
+        if (errorInfo.stack) {
+          errorDetails.errorStack = errorInfo.stack;
+        }
+        const errorPayload = (error && typeof error === 'object' && 'error' in (error as Record<string, unknown>))
+          ? (error as { error?: unknown }).error
+          : undefined;
+        const serializedPayload = this.safeStringify(errorPayload);
+        if (serializedPayload) {
+          errorDetails.errorResponse = serializedPayload;
+        }
 
-        console.error('Error al escanear documento:', errorDetails);
+        console.error('Error al escanear documento:', {
+          ...errorDetails,
+          rawError: this.safeStringify(error),
+        });
 
         const errorMessage = this.getErrorMessage(error);
         
@@ -580,7 +613,7 @@ export class DocumentScannerComponent implements AfterViewInit {
   /**
    * Trunca el nombre del archivo si es muy largo
    */
-  truncateFileName(fileName: string | undefined | null, maxLength: number = 25): string {
+  truncateFileName(fileName: string | undefined | null, maxLength = 25): string {
     if (!fileName) return '';
     if (fileName.length <= maxLength) return fileName;
 
@@ -600,54 +633,89 @@ export class DocumentScannerComponent implements AfterViewInit {
   /**
    * Obtiene el mensaje de error
    */
-  private getErrorMessage(error: any): string {
+  private getErrorMessage(error: unknown): string {
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    if (!error || typeof error !== 'object') {
+      return 'Ha ocurrido un error al escanear el documento. Por favor, intente nuevamente.';
+    }
+
+    const errorObject = error as {
+      status?: unknown;
+      isTimeout?: unknown;
+      name?: unknown;
+      message?: unknown;
+      error?: unknown;
+    };
+
+    const status = typeof errorObject.status === 'number' ? errorObject.status : undefined;
+    const isTimeout = errorObject.isTimeout === true;
+    const name = typeof errorObject.name === 'string' ? errorObject.name : undefined;
+    const directMessage = typeof errorObject.message === 'string' ? errorObject.message : undefined;
+
     // Errores de timeout o conexión
-    if (error.status === 0 || error.isTimeout || error.name === 'TimeoutError') {
-      // Si el error tiene un mensaje personalizado de timeout, usarlo
-      if (error.message && error.message.includes('demasiado grande')) {
-        return error.message;
+    if (status === 0 || isTimeout || name === 'TimeoutError') {
+      if (directMessage && directMessage.includes('demasiado grande')) {
+        return directMessage;
       }
       return 'El archivo es demasiado grande o la conexión es lenta. Por favor, intente con una imagen más pequeña (máximo 5MB recomendado) o verifique su conexión a internet.';
     }
 
-    // Errores HTTP 4xx
-    if (error.status >= 400 && error.status < 500) {
-      if (error.status === 413) {
+    const serverError = errorObject.error;
+    const serverMessage = this.extractErrorInfo(serverError).message;
+    const serverNestedError =
+      serverError && typeof serverError === 'object' && 'error' in (serverError as Record<string, unknown>)
+        ? (serverError as { error?: unknown }).error
+        : undefined;
+
+    if (status !== undefined && status >= 400 && status < 500) {
+      if (status === 413) {
         return 'El archivo es demasiado grande. Por favor, use un archivo más pequeño (máximo 10MB).';
       }
-      if (error.status === 415) {
+      if (status === 415) {
         return 'Formato de archivo no soportado. Use JPEG, PNG, WebP o PDF.';
       }
-      if (error.error?.message) {
-        return error.error.message;
+      if (serverMessage) {
+        return serverMessage;
       }
-      if (error.error?.error) {
-        return typeof error.error.error === 'string'
-          ? error.error.error
-          : JSON.stringify(error.error.error);
+      if (serverNestedError) {
+        const nestedMessage = this.extractErrorInfo(serverNestedError).message;
+        if (nestedMessage) {
+          return nestedMessage;
+        }
+        const serializedNested = this.safeStringify(serverNestedError);
+        if (serializedNested) {
+          return serializedNested;
+        }
       }
-      return `Error al procesar el archivo (${error.status}). Por favor, verifique el formato y vuelva a intentar.`;
+      return `Error al procesar el archivo (${status}). Por favor, verifique el formato y vuelva a intentar.`;
     }
 
-    // Errores HTTP 5xx
-    if (error.status >= 500) {
+    if (status !== undefined && status >= 500) {
       return 'Error en el servidor. Por favor, intente nuevamente más tarde.';
     }
 
-    // Mensajes de error específicos
-    if (error.error?.message) {
-      return error.error.message;
-    }
-    if (error.error?.error) {
-      return typeof error.error.error === 'string'
-        ? error.error.error
-        : JSON.stringify(error.error.error);
-    }
-    if (error.message) {
-      return error.message;
+    if (serverMessage) {
+      return serverMessage;
     }
 
-    // Mensaje por defecto
+    if (serverNestedError) {
+      const nestedMessage = this.extractErrorInfo(serverNestedError).message;
+      if (nestedMessage) {
+        return nestedMessage;
+      }
+      const serializedNested = this.safeStringify(serverNestedError);
+      if (serializedNested) {
+        return serializedNested;
+      }
+    }
+
+    if (directMessage) {
+      return directMessage;
+    }
+
     return 'Ha ocurrido un error al escanear el documento. Por favor, intente nuevamente.';
   }
 
@@ -655,13 +723,18 @@ export class DocumentScannerComponent implements AfterViewInit {
    * Muestra un diálogo de confirmación con detalles del error
    * Esto ayuda a diagnosticar problemas, especialmente en móviles
    */
-  private showErrorAlert(title: string, message: string, details?: any): void {
+  private showErrorAlert(title: string, message: string, details?: Record<string, unknown>): void {
     // Construir mensaje detallado
     let detailedMessage = message;
-    
+
     if (details) {
-      const detailsStr = JSON.stringify(details, null, 2);
-      detailedMessage += `\n\nDetalles técnicos:\n${detailsStr}`;
+      try {
+        const detailsStr = JSON.stringify(details, null, 2);
+        detailedMessage += `\n\nDetalles técnicos:\n${detailsStr}`;
+      } catch (stringifyError) {
+        console.error('No se pudieron serializar los detalles del error:', stringifyError);
+        detailedMessage += '\n\nDetalles técnicos no disponibles.';
+      }
     }
 
     // Usar confirmación de PrimeNG para mostrar el error
@@ -676,5 +749,53 @@ export class DocumentScannerComponent implements AfterViewInit {
         console.log('Usuario confirmó el error');
       },
     });
+  }
+
+  private safeStringify(value: unknown): string | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return '[No se pudo serializar el valor]';
+    }
+  }
+
+  private extractErrorInfo(error: unknown): {
+    message?: string;
+    stack?: string;
+    status?: number;
+    statusText?: string;
+    name?: string;
+  } {
+    if (typeof error === 'string') {
+      return { message: error };
+    }
+
+    if (!error || typeof error !== 'object') {
+      return {};
+    }
+
+    const errorObject = error as {
+      message?: unknown;
+      stack?: unknown;
+      status?: unknown;
+      statusText?: unknown;
+      name?: unknown;
+    };
+
+    return {
+      message: typeof errorObject.message === 'string' ? errorObject.message : undefined,
+      stack: typeof errorObject.stack === 'string' ? errorObject.stack : undefined,
+      status: typeof errorObject.status === 'number' ? errorObject.status : undefined,
+      statusText: typeof errorObject.statusText === 'string' ? errorObject.statusText : undefined,
+      name: typeof errorObject.name === 'string' ? errorObject.name : undefined,
+    };
   }
 }

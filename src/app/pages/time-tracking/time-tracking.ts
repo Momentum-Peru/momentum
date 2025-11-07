@@ -75,7 +75,7 @@ export class TimeTrackingPage implements OnInit {
   isMarkingAttendance = signal(false);
 
   // Opciones de estado
-  statusOptions = signal<Array<{ label: string; value: TimeTrackingStatus }>>([
+  statusOptions = signal<{ label: string; value: TimeTrackingStatus }[]>([
     { label: 'Pendiente', value: 'PENDIENTE' },
     { label: 'En Progreso', value: 'EN_PROGRESO' },
     { label: 'Completado', value: 'COMPLETADO' },
@@ -136,7 +136,11 @@ export class TimeTrackingPage implements OnInit {
       return;
     }
 
-    const filters: any = { userId: currentUser.id };
+    const filters: {
+      userId: string;
+      startDate?: string;
+      endDate?: string;
+    } = { userId: currentUser.id };
     const fd = this.filterDate();
     if (fd) {
       filters.startDate = fd;
@@ -190,7 +194,7 @@ export class TimeTrackingPage implements OnInit {
   loadProjects() {
     this.projectsApi.getOptions().subscribe({
       next: (data) => this.projects.set(data),
-      error: (error) => {
+      error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -261,7 +265,7 @@ export class TimeTrackingPage implements OnInit {
     this.showViewDialog.set(false);
   }
 
-  onEditChange(field: keyof TimeTracking, value: any) {
+  onEditChange(field: keyof TimeTracking, value: TimeTracking[keyof TimeTracking]) {
     const current = this.editing();
     if (current) {
       const updated = { ...current, [field]: value };
@@ -396,7 +400,16 @@ export class TimeTrackingPage implements OnInit {
       return;
     }
 
-    const payload: any = {
+    const payload: {
+      date: string;
+      startTime: string;
+      endTime?: string;
+      duration?: number;
+      status: TimeTrackingStatus;
+      description: string;
+      notes?: string;
+      projectId?: string;
+    } = {
       date: item.date,
       startTime: item.startTime,
       endTime: item.endTime,
@@ -572,36 +585,44 @@ export class TimeTrackingPage implements OnInit {
   }
 
   // Método para obtener mensaje de error de la API
-  private getErrorMessage(error: any): string {
-    if (error.status === 403) {
-      if (error.error?.message?.includes('No puedes crear registros')) {
-        return 'No puedes crear registros para otros usuarios';
+  private getErrorMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'status' in error) {
+      const httpError = error as { status: number; error?: { message?: string | string[] }; message?: string };
+      if (httpError.status === 403) {
+        if (httpError.error?.message && typeof httpError.error.message === 'string' && httpError.error.message.includes('No puedes crear registros')) {
+          return 'No puedes crear registros para otros usuarios';
+        }
+        if (httpError.error?.message && typeof httpError.error.message === 'string' && httpError.error.message.includes('No puedes editar')) {
+          return 'No puedes editar registros de otros usuarios';
+        }
+        return 'No tienes permisos para realizar esta acción';
       }
-      if (error.error?.message?.includes('No puedes editar')) {
-        return 'No puedes editar registros de otros usuarios';
+
+      if (httpError.error?.message) {
+        const message = httpError.error.message;
+        if (typeof message === 'string') {
+          if (message.includes('date should not be empty')) {
+            return 'La fecha es requerida';
+          }
+          if (message.includes('startTime should not be empty')) {
+            return 'La hora de inicio es requerida';
+          }
+          if (message.includes('description should not be empty')) {
+            return 'La descripción es requerida';
+          }
+          return message;
+        }
+        if (Array.isArray(message)) {
+          return message.join(', ');
+        }
       }
-      return 'No tienes permisos para realizar esta acción';
+
+      if (httpError.error && typeof httpError.error === 'object' && 'error' in httpError.error && typeof httpError.error.error === 'string') {
+        return httpError.error.error;
+      }
     }
 
-    if (error.error?.message) {
-      const message = error.error.message;
-      if (message.includes('date should not be empty')) {
-        return 'La fecha es requerida';
-      }
-      if (message.includes('startTime should not be empty')) {
-        return 'La hora de inicio es requerida';
-      }
-      if (message.includes('description should not be empty')) {
-        return 'La descripción es requerida';
-      }
-      return message;
-    }
-
-    if (error.error?.error) {
-      return error.error.error;
-    }
-
-    if (error.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
       return error.message;
     }
 
@@ -665,7 +686,7 @@ export class TimeTrackingPage implements OnInit {
           0.9
         );
       });
-    } catch (error) {
+    } catch {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -711,10 +732,10 @@ export class TimeTrackingPage implements OnInit {
         // Obtener el userId del registro de asistencia
         const userId =
           typeof attendanceRecord.userId === 'object' &&
-          attendanceRecord.userId &&
+          attendanceRecord.userId !== null &&
           '_id' in attendanceRecord.userId
-            ? (attendanceRecord.userId as any)._id
-            : attendanceRecord.userId;
+            ? (attendanceRecord.userId as { _id: string })._id
+            : String(attendanceRecord.userId);
 
         // Crear automáticamente el registro de tiempo
         const timestamp = new Date(attendanceRecord.timestamp);

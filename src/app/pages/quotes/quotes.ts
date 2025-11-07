@@ -4,7 +4,7 @@ import {
   inject,
   signal,
   effect,
-  computed,
+  OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -12,7 +12,6 @@ import {
   ReactiveFormsModule,
   FormBuilder,
   FormGroup,
-  FormArray,
   Validators,
 } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -37,7 +36,6 @@ import { ClientsApiService, ClientOption } from '../../shared/services/clients-a
 import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import {
   Quote,
-  QuoteItem,
   QuoteState,
   QuoteQueryParams,
   QuoteListResponse,
@@ -71,7 +69,7 @@ import { Project } from '../../shared/interfaces/project.interface';
   styleUrls: ['./quotes.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class QuotesPage {
+export class QuotesPage implements OnInit {
   private readonly quotesApi = inject(QuotesApiService);
   private readonly clientsApi = inject(ClientsApiService);
   private readonly projectsApi = inject(ProjectsApiService);
@@ -108,9 +106,9 @@ export class QuotesPage {
     sendDate: [null as Date | null],
     items: this.fb.array<
       FormGroup<{
-        description: any;
-        qty: any;
-        price: any;
+        description: string;
+        qty: number;
+        price: number;
       }>
     >([]),
     notes: [''],
@@ -454,7 +452,7 @@ export class QuotesPage {
     });
   }
 
-  onFileUpload(event: any, quote: Quote) {
+  onFileUpload(event: { files?: File[] }, quote: Quote) {
     const files = event.files;
     if (files && files.length > 0) {
       this.quotesApi.uploadDocuments(quote._id!, files).subscribe({
@@ -490,7 +488,7 @@ export class QuotesPage {
     }
   }
 
-  onFileSelect(event: any) {
+  onFileSelect(event: { files?: File[]; currentFiles?: File[]; target?: { files?: FileList } }) {
     // El p-fileUpload puede enviar los archivos en diferentes estructuras
     let files: File[] = [];
 
@@ -544,7 +542,7 @@ export class QuotesPage {
     }
   }
 
-  onFileError(event: any) {
+  onFileError(event: unknown) {
     console.error('Error en selección de archivos:', event);
     this.messageService.add({
       severity: 'error',
@@ -684,7 +682,7 @@ export class QuotesPage {
     }
   }
 
-  onPageChange(event: any) {
+  onPageChange(event: { page: number; rows: number }) {
     this.pagination.update((p) => ({
       ...p,
       page: event.page + 1,
@@ -751,47 +749,50 @@ export class QuotesPage {
   }
 
   // Método para obtener mensaje de error de la API
-  private getErrorMessage(error: any): string {
+  private getErrorMessage(error: unknown): string {
     // Manejar errores de validación específicos
-    if (error.error?.message) {
-      const message = error.error.message;
+    if (error && typeof error === 'object' && 'error' in error) {
+      const errorObj = error as { error?: { message?: string | string[] }; message?: string };
+      if (errorObj.error?.message) {
+        const message = errorObj.error.message;
 
-      // Si es un array de mensajes, unirlos
-      if (Array.isArray(message)) {
-        return message.join(', ');
-      }
+        // Si es un array de mensajes, unirlos
+        if (Array.isArray(message)) {
+          return message.join(', ');
+        }
 
-      // Traducir mensajes comunes de validación
-      if (message.includes('clientId should not be empty')) {
-        return 'El cliente es requerido';
+        // Traducir mensajes comunes de validación
+        if (typeof message === 'string') {
+          if (message.includes('clientId should not be empty')) {
+            return 'El cliente es requerido';
+          }
+          if (message.includes('projectId should not be empty')) {
+            return 'El proyecto es requerido';
+          }
+          if (message.includes('state should not be empty')) {
+            return 'El estado es requerido';
+          }
+          if (message.includes('createDate should not be empty')) {
+            return 'La fecha de creación es requerida';
+          }
+          if (message.includes('clientId must be a valid ObjectId')) {
+            return 'El cliente seleccionado no es válido';
+          }
+          if (message.includes('projectId must be a valid ObjectId')) {
+            return 'El proyecto seleccionado no es válido';
+          }
+          if (message.includes('state must be one of the following values')) {
+            return 'El estado seleccionado no es válido';
+          }
+          return message;
+        }
       }
-      if (message.includes('projectId should not be empty')) {
-        return 'El proyecto es requerido';
+      if (errorObj.error?.error && typeof errorObj.error.error === 'string') {
+        return errorObj.error.error;
       }
-      if (message.includes('state should not be empty')) {
-        return 'El estado es requerido';
-      }
-      if (message.includes('createDate should not be empty')) {
-        return 'La fecha de creación es requerida';
-      }
-      if (message.includes('clientId must be a valid ObjectId')) {
-        return 'El cliente seleccionado no es válido';
-      }
-      if (message.includes('projectId must be a valid ObjectId')) {
-        return 'El proyecto seleccionado no es válido';
-      }
-      if (message.includes('state must be one of the following values')) {
-        return 'El estado seleccionado no es válido';
-      }
-
-      return message;
     }
 
-    if (error.error?.error) {
-      return error.error.error;
-    }
-
-    if (error.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
       return error.message;
     }
 

@@ -182,21 +182,21 @@ export class UsersPage implements OnInit, OnDestroy {
         // Aplicar filtro de estado si la API no lo procesó correctamente
         // Solo filtrar si isActive está definido (no undefined)
         if (filters.isActive !== undefined) {
-          filteredUsers = filteredUsers.filter((user: any) => user.isActive === filters.isActive);
+          filteredUsers = filteredUsers.filter((user: { isActive?: boolean }) => user.isActive === filters.isActive);
         }
         // Si isActive es undefined, mostrar todos (activos e inactivos)
 
         // Aplicar filtro de rol si la API no lo procesó correctamente
         if (filters.role) {
-          filteredUsers = filteredUsers.filter((user: any) => user.role === filters.role);
+          filteredUsers = filteredUsers.filter((user: { role?: string }) => user.role === filters.role);
         }
 
         // Aplicar filtro de búsqueda si la API no lo procesó correctamente
         if (filters.search) {
           const query = filters.search.toLowerCase();
           filteredUsers = filteredUsers.filter(
-            (user: any) =>
-              user.name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query)
+            (user: { name?: string; email?: string }) =>
+              user.name?.toLowerCase().includes(query) || user.email?.toLowerCase().includes(query)
           );
         }
 
@@ -540,56 +540,55 @@ export class UsersPage implements OnInit, OnDestroy {
   /**
    * Obtiene el mensaje de error de la API
    */
-  private getErrorMessage(error: any): string {
-    // Manejar errores de validación específicos
-    if (error.error?.message) {
-      const message = error.error.message;
-
-      // Si es un array de mensajes, unirlos
-      if (Array.isArray(message)) {
-        return message.join(', ');
+  private getErrorMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'error' in error) {
+      const httpError = error as { error?: { message?: string | string[] }; message?: string };
+      if (httpError.error?.message) {
+        const message = httpError.error.message;
+        if (Array.isArray(message)) {
+          return message.join(', ');
+        }
+        if (typeof message === 'string') {
+          if (message.includes('name should not be empty')) {
+            return 'El nombre es requerido';
+          }
+          if (message.includes('email should not be empty')) {
+            return 'El email es requerido';
+          }
+          if (message.includes('email must be an email')) {
+            return 'El formato del email no es válido';
+          }
+          if (message.includes('role should not be empty')) {
+            return 'El rol es requerido';
+          }
+          if (message.includes('password should not be empty')) {
+            return 'La contraseña es requerida';
+          }
+          if (message.includes('password must be longer than or equal to 6 characters')) {
+            return 'La contraseña debe tener al menos 6 caracteres';
+          }
+          if (message.includes('email already exists')) {
+            return 'Ya existe un usuario con este email';
+          }
+          if (message.includes('user not found')) {
+            return 'Usuario no encontrado';
+          }
+          if (message.includes('insufficient permissions')) {
+            return 'No tienes permisos para realizar esta acción';
+          }
+          if (message.includes('cannot delete own account')) {
+            return 'No puedes eliminar tu propia cuenta';
+          }
+          return message;
+        }
       }
 
-      // Traducir mensajes comunes de validación
-      if (message.includes('name should not be empty')) {
-        return 'El nombre es requerido';
+      if (httpError.error && typeof httpError.error === 'object' && 'error' in httpError.error && typeof httpError.error.error === 'string') {
+        return httpError.error.error;
       }
-      if (message.includes('email should not be empty')) {
-        return 'El email es requerido';
-      }
-      if (message.includes('email must be an email')) {
-        return 'El formato del email no es válido';
-      }
-      if (message.includes('role should not be empty')) {
-        return 'El rol es requerido';
-      }
-      if (message.includes('password should not be empty')) {
-        return 'La contraseña es requerida';
-      }
-      if (message.includes('password must be longer than or equal to 6 characters')) {
-        return 'La contraseña debe tener al menos 6 caracteres';
-      }
-      if (message.includes('email already exists')) {
-        return 'Ya existe un usuario con este email';
-      }
-      if (message.includes('user not found')) {
-        return 'Usuario no encontrado';
-      }
-      if (message.includes('insufficient permissions')) {
-        return 'No tienes permisos para realizar esta acción';
-      }
-      if (message.includes('cannot delete own account')) {
-        return 'No puedes eliminar tu propia cuenta';
-      }
-
-      return message;
     }
 
-    if (error.error?.error) {
-      return error.error.error;
-    }
-
-    if (error.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
       return error.message;
     }
 
@@ -634,9 +633,9 @@ export class UsersPage implements OnInit, OnDestroy {
         const users = response?.users || [];
         const stats: UserStats = {
           total: users.length,
-          active: users.filter((user: any) => user.isActive).length,
-          inactive: users.filter((user: any) => !user.isActive).length,
-          admins: users.filter((user: any) => user.role === 'admin').length,
+          active: users.filter((user: { isActive?: boolean }) => user.isActive).length,
+          inactive: users.filter((user: { isActive?: boolean }) => !user.isActive).length,
+          admins: users.filter((user: { role?: string }) => user.role === 'admin').length,
         };
         this.stats.set(stats);
       },

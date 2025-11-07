@@ -4,6 +4,13 @@ import { Observable, timeout, catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { DailyReport } from '../interfaces/daily-report.interface';
 
+interface DailyReportStats {
+    total: number;
+    byProject: { projectId: string; projectName: string; count: number }[];
+    byUser: { userId: string; userName: string; count: number }[];
+    byDate: { date: string; count: number }[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -20,7 +27,7 @@ export class DailyExpensesApiService {
     projectId?: string;
     startDate?: string;
     endDate?: string;
-  }): Observable<any> {
+  }): Observable<DailyReportStats> {
     let url = `${this.baseUrl}/daily-reports/stats`;
     const params = new URLSearchParams();
     if (filters?.userId) params.append('userId', filters.userId);
@@ -28,7 +35,7 @@ export class DailyExpensesApiService {
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
     if (params.toString()) url += `?${params.toString()}`;
-    return this.http.get<any>(url);
+    return this.http.get<DailyReportStats>(url);
   }
 
   listWithFilters(filters?: {

@@ -19,9 +19,10 @@
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
         <!-- Campo Email/Phone -->
         <div class="space-y-2">
-          <label class="text-sm font-medium text-gray-700">Correo</label>
+          <label for="email" class="text-sm font-medium text-gray-700">Correo</label>
           <div class="relative">
             <input
+              id="email"
               pInputText
               formControlName="email"
               placeholder="Enter your email or phone number"
@@ -41,9 +42,10 @@
 
         <!-- Campo Password -->
         <div class="space-y-2">
-          <label class="text-sm font-medium text-gray-700">Contraseña</label>
+          <label for="password" class="text-sm font-medium text-gray-700">Contraseña</label>
           <div class="relative">
             <input
+              id="password"
               pInputText
               formControlName="password"
               [type]="showPassword() ? 'text' : 'password'"
@@ -55,6 +57,7 @@
               type="button"
               class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
               (click)="togglePassword()"
+              [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
             >
               {{ showPassword() ? 'Ocultar' : 'Ver' }}
             </button>

@@ -89,5 +89,5 @@ import { DashboardKpi } from '../../interfaces/dashboard.interface';
 })
 export class DashboardKpiCardComponent {
     @Input({ required: true }) kpi!: DashboardKpi | null;
-    @Input() loading: boolean = false;
+    @Input() loading = false;
 }

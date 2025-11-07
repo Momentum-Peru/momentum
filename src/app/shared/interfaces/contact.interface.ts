@@ -10,7 +10,7 @@ export interface Contact {
     notes?: string;
     source: 'local' | 'google_contacts';
     googleContactId?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     isActive: boolean;
     createdAt: Date | string;
     updatedAt: Date | string;
@@ -26,7 +26,7 @@ export interface CreateContactRequest {
     notes?: string;
     source?: 'local' | 'google_contacts';
     googleContactId?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     userId: string;
 }
 
@@ -40,7 +40,7 @@ export interface UpdateContactRequest {
     notes?: string;
     source?: 'local' | 'google_contacts';
     googleContactId?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     isActive?: boolean;
 }
 

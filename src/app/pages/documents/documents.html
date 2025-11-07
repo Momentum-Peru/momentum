@@ -75,7 +75,7 @@
     <app-document-form
       [document]="editingDocument()"
       (documentSaved)="onDocumentSaved()"
-      (cancel)="closeFormDialog()"
+      (formCancel)="closeFormDialog()"
     >
     </app-document-form>
   </p-dialog>
@@ -108,64 +108,64 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Número de Documento</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Número de Documento</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-mono font-medium">
               {{ viewingDocument()?.numeroDocumento }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Serie</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Serie</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingDocument()?.serie || 'No especificada' }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Proyecto</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Proyecto</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ getProjectNameForDetails(viewingDocument()) }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Categoría</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Categoría</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingDocument()?.categoria || 'No especificada' }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Emisión</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Emisión</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingDocument()?.fechaEmision | date : 'dd/MM/yyyy' }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Vencimiento</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Vencimiento</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingDocument()?.fechaVencimiento | date : 'dd/MM/yyyy' }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Total</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Total</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-semibold">
               {{ viewingDocument()?.total | currency : 'PEN' }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado</span
             >
             <span
               class="px-2 py-1 rounded-full text-xs font-medium"
@@ -181,8 +181,8 @@
           </div>
           @if (viewingDocument()?.createdAt) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Creación</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Creación</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingDocument()?.createdAt | date : 'dd/MM/yyyy HH:mm' }}
@@ -221,7 +221,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetailsDialog()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetailsDialog()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 
@@ -270,6 +270,7 @@
                 icon="pi pi-upload"
                 (click)="fileInput.click()"
                 class="mb-4"
+                aria-label="Seleccionar archivos para subir"
               ></button>
 
               <div class="text-xs text-gray-400 space-y-1">
@@ -298,6 +299,7 @@
                 icon="pi pi-times"
                 class="p-button-text p-button-danger p-button-sm"
                 (click)="removeSelectedFile(file)"
+                aria-label="Eliminar archivo seleccionado"
               ></button>
             </div>
             }
@@ -312,6 +314,7 @@
                 (click)="uploadSelectedFiles()"
                 [disabled]="selectedFiles().length === 0"
                 class="flex-1"
+                aria-label="Subir archivos seleccionados"
               ></button>
               <button
                 pButton
@@ -321,6 +324,7 @@
                 class="p-button-text"
                 (click)="clearSelectedFiles()"
                 [disabled]="selectedFiles().length === 0"
+                aria-label="Limpiar archivos seleccionados"
               ></button>
             </div>
           </div>
@@ -358,6 +362,7 @@
                 (click)="viewFile(file)"
                 pTooltip="Ver archivo"
                 tooltipPosition="top"
+                aria-label="Ver archivo"
               ></button>
               <button
                 pButton
@@ -366,6 +371,7 @@
                 (click)="downloadFile(file)"
                 pTooltip="Descargar archivo"
                 tooltipPosition="top"
+                aria-label="Descargar archivo"
               ></button>
               <button
                 pButton
@@ -374,6 +380,7 @@
                 (click)="removeFile(file)"
                 pTooltip="Eliminar archivo"
                 tooltipPosition="top"
+                aria-label="Eliminar archivo"
               ></button>
             </div>
           </div>
@@ -395,7 +402,7 @@
           @if (filesViewingDocument()?.documentos?.length) {
           {{ filesViewingDocument()?.documentos?.length }} archivo(s) adjunto(s) }
         </div>
-        <button pButton label="Cerrar" class="p-button-text" (click)="closeFilesDialog()"></button>
+        <button pButton label="Cerrar" class="p-button-text" (click)="closeFilesDialog()" aria-label="Cerrar"></button>
       </div>
     </ng-template>
   </p-dialog>

@@ -1,9 +1,8 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
+import { ChartOptions } from 'chart.js';
 import {
-    DashboardResponse,
     DashboardData,
-    DashboardKpis,
-    DashboardCharts,
+    DashboardFiltersParams,
     ChartData,
     LineChartData,
     BarChartData,
@@ -37,7 +36,7 @@ export class DashboardDataService {
      * Carga los datos del dashboard
      * @param filters Filtros opcionales
      */
-    async loadDashboardData(filters?: any): Promise<void> {
+    async loadDashboardData(filters?: DashboardFiltersParams): Promise<void> {
         try {
             this.isLoading.set(true);
             this.error.set(null);
@@ -130,7 +129,7 @@ export class DashboardDataService {
      * Obtiene configuración de opciones para gráficos de línea
      * @returns Opciones para Line Chart
      */
-    getLineChartOptions(): any {
+    getLineChartOptions(): ChartOptions {
         return {
             responsive: true,
             maintainAspectRatio: false,
@@ -178,7 +177,7 @@ export class DashboardDataService {
      * Obtiene configuración de opciones para gráficos de barras
      * @returns Opciones para Bar Chart
      */
-    getBarChartOptions(): any {
+    getBarChartOptions(): ChartOptions {
         return {
             responsive: true,
             maintainAspectRatio: false,
@@ -219,7 +218,7 @@ export class DashboardDataService {
      * Obtiene configuración de opciones para gráficos de pastel
      * @returns Opciones para Pie Chart
      */
-    getPieChartOptions(): any {
+    getPieChartOptions(): ChartOptions {
         return {
             responsive: true,
             maintainAspectRatio: false,
@@ -246,7 +245,7 @@ export class DashboardDataService {
      * Obtiene configuración de opciones para gráficos de dona
      * @returns Opciones para Doughnut Chart
      */
-    getDoughnutChartOptions(): any {
+    getDoughnutChartOptions(): ChartOptions {
         return {
             responsive: true,
             maintainAspectRatio: false,

@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   FaceDescriptor,
-  RegisterFaceRequest,
   MarkAttendanceRequest,
   AttendanceRecord,
 } from '../interfaces/face-recognition.interface';

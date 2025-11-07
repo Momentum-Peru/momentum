@@ -136,7 +136,7 @@ export class UserTenantsAssignmentPage implements OnInit {
     console.log('editUserTenants llamado con:', user);
 
     // Verificar si el usuario tiene _id o id
-    const userId = user?._id || (user as any)?.id;
+    const userId = user?._id || (user && typeof user === 'object' && 'id' in user ? String(user.id) : undefined);
     if (!user || !userId) {
       console.error('Intento de editar usuario inválido:', user);
       this.messageService.add({
@@ -289,16 +289,19 @@ export class UserTenantsAssignmentPage implements OnInit {
     });
   }
 
-  private getErrorMessage(error: any): string {
-    if (error.error?.message) {
-      return Array.isArray(error.error.message)
-        ? error.error.message.join(', ')
-        : error.error.message;
+  private getErrorMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'error' in error) {
+      const httpError = error as { error?: { message?: string | string[] }; message?: string };
+      if (httpError.error?.message) {
+        return Array.isArray(httpError.error.message)
+          ? httpError.error.message.join(', ')
+          : String(httpError.error.message);
+      }
+      if (httpError.error && typeof httpError.error === 'object' && 'error' in httpError.error && typeof httpError.error.error === 'string') {
+        return httpError.error.error;
+      }
     }
-    if (error.error?.error) {
-      return error.error.error;
-    }
-    if (error.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
       return error.message;
     }
     return 'Ha ocurrido un error inesperado';
@@ -308,7 +311,7 @@ export class UserTenantsAssignmentPage implements OnInit {
    * Obtiene el ID del usuario de forma segura
    */
   getUserId(user: UserWithTenants): string | undefined {
-    return user?._id || (user as any)?.id;
+    return user?._id || (user && typeof user === 'object' && 'id' in user ? String(user.id) : undefined);
   }
 
   /**

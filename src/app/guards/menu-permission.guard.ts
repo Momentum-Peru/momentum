@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { CanActivate, ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
+import { CanActivate, ActivatedRouteSnapshot, Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { MenuPermissionsApiService } from '../shared/services/menu-permissions-api.service';
@@ -13,7 +13,7 @@ export class MenuPermissionGuard implements CanActivate {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
+  canActivate(route: ActivatedRouteSnapshot): Observable<boolean> {
     const requiredRoute = route.data['menuPermission'] as string;
 
     // Si no se especifica un permiso requerido, permitir el acceso

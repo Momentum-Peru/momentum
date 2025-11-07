@@ -35,6 +35,7 @@
         icon="pi pi-chart-bar"
         class="p-button-outlined"
         (click)="openStats()"
+        aria-label="Ver estadísticas de usuarios"
       ></button>
       <button
         pButton
@@ -42,6 +43,7 @@
         label="Nuevo Usuario"
         icon="pi pi-user-plus"
         (click)="newUser()"
+        aria-label="Crear nuevo usuario"
       ></button>
     </div>
   </div>
@@ -51,8 +53,9 @@
     <ng-template pTemplate="content">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Buscar</label>
+          <label for="userSearch" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Buscar</label>
           <input
+            id="userSearch"
             pInputText
             placeholder="Nombre, email..."
             [ngModel]="query()"
@@ -61,8 +64,9 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Rol</label>
+          <label for="userRoleFilter" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Rol</label>
           <p-select
+            id="userRoleFilter"
             [options]="roleOptions"
             optionLabel="label"
             optionValue="value"
@@ -75,8 +79,9 @@
           ></p-select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
+          <label for="userStatusFilter" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
           <p-select
+            id="userStatusFilter"
             [options]="statusOptions"
             optionLabel="label"
             optionValue="value"
@@ -95,6 +100,7 @@
             icon="pi pi-filter-slash"
             class="p-button-outlined w-full"
             (click)="clearFilters()"
+            aria-label="Limpiar filtros"
           ></button>
         </div>
       </div>
@@ -176,6 +182,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Ver detalles"
                 (click)="viewDetails(user)"
+                aria-label="Ver detalles del usuario"
               ></button>
               <button
                 pButton
@@ -183,6 +190,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Editar"
                 (click)="editUser(user)"
+                aria-label="Editar usuario"
               ></button>
               <button
                 pButton
@@ -190,6 +198,7 @@
                 class="p-button-text p-button-sm"
                 [pTooltip]="user.isActive ? 'Desactivar usuario' : 'Activar usuario'"
                 (click)="toggleUserStatus(user)"
+                [attr.aria-label]="user.isActive ? 'Desactivar usuario' : 'Activar usuario'"
               ></button>
               <button
                 pButton
@@ -197,6 +206,7 @@
                 class="p-button-text p-button-sm p-button-danger"
                 pTooltip="Eliminar"
                 (click)="confirmDelete(user)"
+                aria-label="Eliminar usuario"
               ></button>
             </div>
           </td>
@@ -331,6 +341,7 @@
                 label="Ver detalles"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="viewDetails(user)"
+                aria-label="Ver detalles del usuario"
               ></button>
               <button
                 pButton
@@ -338,6 +349,7 @@
                 label="Editar"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="editUser(user)"
+                aria-label="Editar usuario"
               ></button>
               <button
                 pButton
@@ -345,6 +357,7 @@
                 [label]="user.isActive ? 'Desactivar' : 'Activar'"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="toggleUserStatus(user)"
+                [attr.aria-label]="user.isActive ? 'Desactivar usuario' : 'Activar usuario'"
               ></button>
               <button
                 pButton
@@ -352,6 +365,7 @@
                 label="Eliminar"
                 class="p-button-text p-button-sm p-button-danger w-full justify-start"
                 (click)="confirmDelete(user)"
+                aria-label="Eliminar usuario"
               ></button>
             </div>
           </div>
@@ -386,10 +400,10 @@
     <div class="space-y-4">
       <!-- Nombre -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-          >Nombre completo</label
-        >
+        <label for="userName" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Nombre completo</label>
         <input
+          id="userName"
           pInputText
           placeholder="Ingresa el nombre completo"
           [ngModel]="editing()?.name"
@@ -400,10 +414,10 @@
 
       <!-- Email -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-          >Correo electrónico</label
-        >
+        <label for="userEmail" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Correo electrónico</label>
         <input
+          id="userEmail"
           pInputText
           placeholder="usuario@ejemplo.com"
           [ngModel]="editing()?.email"
@@ -414,8 +428,9 @@
 
       <!-- Rol -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Rol</label>
+        <label for="userRole" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Rol</label>
         <p-select
+          inputId="userRole"
           [options]="roleOptions"
           optionLabel="label"
           optionValue="value"
@@ -430,10 +445,10 @@
       <!-- Contraseña (solo para nuevos usuarios) -->
       @if (!editing()?._id) {
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-          >Contraseña</label
-        >
+        <label for="userPassword" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Contraseña</label>
         <input
+          id="userPassword"
           pInputText
           type="password"
           placeholder="Ingresa una contraseña segura"
@@ -470,6 +485,7 @@
           class="p-button-text"
           (click)="closeDialog()"
           [disabled]="loading()"
+          aria-label="Cancelar"
         ></button>
         <button
           pButton
@@ -477,6 +493,7 @@
           [icon]="editing()?._id ? 'pi pi-save' : 'pi pi-user-plus'"
           (click)="save()"
           [loading]="loading()"
+          [attr.aria-label]="editing()?._id ? 'Actualizar usuario' : 'Crear usuario'"
         ></button>
       </div>
     </ng-template>
@@ -534,7 +551,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()" aria-label="Cerrar estadísticas"></button>
     </ng-template>
   </p-dialog>
 
@@ -565,32 +582,32 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Nombre</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-medium">
               {{ viewingUser()?.name }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Email</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Email</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingUser()?.email }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >ID de Usuario</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >ID de Usuario</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingUser()?.id }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Rol</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Rol</span
             >
             <span
               class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
@@ -601,8 +618,8 @@
             </span>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado</span
             >
             @if (viewingUser()?.isActive) {
             <p-tag value="Activo" severity="success"></p-tag>
@@ -611,8 +628,8 @@
             }
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Último Acceso</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Último Acceso</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               @if (viewingUser()?.lastLogin) {
@@ -624,8 +641,8 @@
           </div>
           @if (viewingUser()?.googleId) {
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Autenticación</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Autenticación</span
             >
             <div class="flex items-center gap-2 text-blue-600">
               <i class="pi pi-google"></i>
@@ -647,8 +664,8 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Creación</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Creación</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingUser()?.createdAt | date : 'dd/MM/yyyy HH:mm' }}
@@ -656,8 +673,8 @@
           </div>
           @if (viewingUser()?.updatedAt) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Última Actualización</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Última Actualización</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingUser()?.updatedAt | date : 'dd/MM/yyyy HH:mm' }}
@@ -670,7 +687,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 </div>

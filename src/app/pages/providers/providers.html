@@ -30,6 +30,7 @@
         icon="pi pi-chart-bar"
         class="p-button-outlined"
         (click)="openStats()"
+        aria-label="Ver estadísticas de proveedores"
       ></button>
       <button
         pButton
@@ -37,6 +38,7 @@
         label="Nuevo Proveedor"
         icon="pi pi-plus"
         (click)="newItem()"
+        aria-label="Crear nuevo proveedor"
       ></button>
     </div>
   </div>
@@ -46,8 +48,9 @@
     <ng-template pTemplate="content">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Buscar</label>
+          <label for="providerSearch" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Buscar</label>
           <input
+            id="providerSearch"
             pInputText
             placeholder="Nombre, RUC, email..."
             [ngModel]="query()"
@@ -56,10 +59,11 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="providerService" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Servicio</label
           >
           <p-select
+            id="providerService"
             [options]="availableServices()"
             [ngModel]="selectedService()"
             (ngModelChange)="setService($event)"
@@ -67,12 +71,12 @@
             [showClear]="true"
             [appendTo]="'body'"
             class="w-full"
-            [appendTo]="'body'"
           ></p-select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
+          <label for="providerStatus" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
           <p-select
+            id="providerStatus"
             [options]="[
               { label: 'Todos', value: null },
               { label: 'Activos', value: true },
@@ -95,6 +99,7 @@
             icon="pi pi-filter-slash"
             class="p-button-outlined w-full"
             (click)="clearFilters()"
+            aria-label="Limpiar filtros"
           ></button>
         </div>
       </div>
@@ -178,6 +183,7 @@
               icon="pi pi-users"
               class="p-button-text p-button-sm text-nowrap"
               (click)="openContacts(row)"
+              aria-label="Ver contactos del proveedor"
             ></button>
           </td>
           <td>
@@ -204,6 +210,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Ver detalles"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles del proveedor"
               ></button>
               <button
                 pButton
@@ -211,12 +218,14 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Editar"
                 (click)="editItem(row)"
+                aria-label="Editar proveedor"
               ></button>
               <button
                 pButton
                 class="p-button-text p-button-sm"
                 [pTooltip]="row.isActive ? 'Desactivar' : 'Activar'"
                 (click)="toggleActive(row)"
+                [attr.aria-label]="row.isActive ? 'Desactivar proveedor' : 'Activar proveedor'"
               >
                 <i [class]="row.isActive ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
               </button>
@@ -226,6 +235,7 @@
                 class="p-button-text p-button-sm p-button-danger"
                 pTooltip="Eliminar"
                 (click)="remove(row)"
+                aria-label="Eliminar proveedor"
               ></button>
             </div>
           </td>
@@ -389,6 +399,7 @@
               icon="pi pi-users"
               class="p-button-text p-button-sm w-full justify-start"
               (click)="openContacts(row)"
+              aria-label="Ver contactos del proveedor"
             ></button>
           </div>
 
@@ -404,6 +415,7 @@
                 label="Ver detalles"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles del proveedor"
               ></button>
               <button
                 pButton
@@ -411,6 +423,7 @@
                 label="Editar"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="editItem(row)"
+                aria-label="Editar proveedor"
               ></button>
               <button
                 pButton
@@ -418,6 +431,7 @@
                 [icon]="row.isActive ? 'pi pi-eye-slash' : 'pi pi-eye'"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="toggleActive(row)"
+                [attr.aria-label]="row.isActive ? 'Desactivar proveedor' : 'Activar proveedor'"
               ></button>
               <button
                 pButton
@@ -425,6 +439,7 @@
                 label="Eliminar"
                 class="p-button-text p-button-sm p-button-danger w-full justify-start"
                 (click)="remove(row)"
+                aria-label="Eliminar proveedor"
               ></button>
             </div>
           </div>
@@ -476,7 +491,7 @@
       </p-table>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeContacts()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeContacts()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 
@@ -534,7 +549,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()" aria-label="Cerrar estadísticas"></button>
     </ng-template>
   </p-dialog>
 
@@ -565,24 +580,24 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Nombre</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-medium">
               {{ viewingProvider()?.name }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >RUC/DNI</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >RUC/DNI</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingProvider()?.taxId || 'No especificado' }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Sitio Web</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Sitio Web</span
             >
             @if (viewingProvider()?.website) {
             <a
@@ -598,8 +613,8 @@
             }
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Calificación</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Calificación</span
             >
             <div class="flex items-center gap-2">
               <p-rating [ngModel]="viewingProvider()?.rating || 0" [readonly]="true"></p-rating>
@@ -609,8 +624,8 @@
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado</span
             >
             @if (viewingProvider()?.isActive) {
             <p-tag value="Activo" severity="success"></p-tag>
@@ -619,8 +634,8 @@
             }
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Creación</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Creación</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingProvider()?.createdAt | date : 'dd/MM/yyyy HH:mm' }}
@@ -628,8 +643,8 @@
           </div>
           @if (viewingProvider()?.description) {
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Descripción</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Descripción</span
             >
             <div class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
               {{ viewingProvider()?.description }}
@@ -670,36 +685,32 @@
         <div class="space-y-2">
           @if (viewingProvider()?.ubicacion?.paisCodigo) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >País</label
-            >
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >País</span>
             <div class="text-gray-900 dark:text-gray-100">
               {{ getCountryName(viewingProvider()?.ubicacion?.paisCodigo ?? '') }}
             </div>
           </div>
           } @if (viewingProvider()?.ubicacion?.provinciaCodigo) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Provincia/Estado</label
-            >
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Provincia/Estado</span>
             <div class="text-gray-900 dark:text-gray-100">
               {{ getProvinceName(viewingProvider()?.ubicacion?.provinciaCodigo ?? '') }}
             </div>
           </div>
           } @if (viewingProvider()?.ubicacion?.distritoCodigo) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Distrito/Municipio</label
-            >
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Distrito/Municipio</span>
             <div class="text-gray-900 dark:text-gray-100">
               {{ getDistrictName(viewingProvider()?.ubicacion?.distritoCodigo ?? '') }}
             </div>
           </div>
           } @if (viewingProvider()?.ubicacion?.direccion) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Dirección</label
-            >
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Dirección</span>
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingProvider()?.ubicacion?.direccion }}
             </div>
@@ -777,7 +788,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar detalles del proveedor"></button>
     </ng-template>
   </p-dialog>
 
@@ -808,10 +819,11 @@
         <ng-template pTemplate="content">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label for="providerName" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Nombre *</label
               >
               <input
+                id="providerName"
                 pInputText
                 placeholder="Nombre del proveedor"
                 [ngModel]="editing()?.name"
@@ -820,10 +832,11 @@
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label for="providerTaxId" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >RUC/DNI</label
               >
               <input
+                id="providerTaxId"
                 pInputText
                 placeholder="RUC o DNI"
                 [ngModel]="editing()?.taxId"
@@ -832,10 +845,11 @@
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label for="providerWebsite" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Sitio Web (opcional)</label
               >
               <input
+                id="providerWebsite"
                 pInputText
                 placeholder="https://ejemplo.com"
                 [ngModel]="editing()?.website"
@@ -847,19 +861,21 @@
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label for="providerRating" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Calificación</label
               >
               <p-rating
+                id="providerRating"
                 [ngModel]="editing()?.rating"
                 (ngModelChange)="onEditChange('rating', $event)"
               ></p-rating>
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label for="providerDescription" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Descripción</label
               >
               <textarea
+                id="providerDescription"
                 pInputText
                 placeholder="Descripción del proveedor y servicios que ofrece"
                 [ngModel]="editing()?.description"
@@ -871,11 +887,12 @@
             <div class="md:col-span-2">
               <div class="flex items-center gap-2">
                 <p-checkbox
+                  id="providerIsActive"
                   [ngModel]="editing()?.isActive"
                   (ngModelChange)="onEditChange('isActive', $event)"
                   [binary]="true"
                 ></p-checkbox>
-                <label class="text-sm font-medium text-gray-700 dark:text-white"
+                <label for="providerIsActive" class="text-sm font-medium text-gray-700 dark:text-white"
                   >Proveedor activo</label
                 >
               </div>
@@ -895,10 +912,11 @@
         <ng-template pTemplate="content">
           <div class="space-y-3">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label for="providerServices" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Servicios (separados por comas)</label
               >
               <input
+                id="providerServices"
                 pInputText
                 placeholder="Ej: construcción, pintura, electricidad, plomería"
                 [ngModel]="editing()?.services?.join(', ')"
@@ -931,10 +949,11 @@
         <ng-template pTemplate="content">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label for="providerCountry" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >País *</label
               >
               <p-select
+                id="providerCountry"
                 [options]="countries()"
                 optionLabel="nombre"
                 optionValue="codigo"
@@ -953,10 +972,11 @@
               </p-select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label for="providerProvince" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Provincia/Estado</label
               >
               <p-select
+                id="providerProvince"
                 [options]="provinces()"
                 optionLabel="nombre"
                 optionValue="codigo"
@@ -976,10 +996,11 @@
               </p-select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label for="providerDistrict" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Distrito/Municipio</label
               >
               <p-select
+                id="providerDistrict"
                 [options]="districts()"
                 optionLabel="nombre"
                 optionValue="codigo"
@@ -999,10 +1020,11 @@
               </p-select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label for="providerAddress" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Dirección específica</label
               >
               <input
+                id="providerAddress"
                 pInputText
                 placeholder="Av. Principal 123, Oficina 456"
                 [ngModel]="editing()?.ubicacion?.direccion"
@@ -1029,6 +1051,7 @@
               icon="pi pi-plus"
               (click)="addContact()"
               class="p-button-sm"
+              aria-label="Agregar nuevo contacto"
             ></button>
           </div>
         </ng-template>
@@ -1069,6 +1092,7 @@
                 icon="pi pi-trash"
                 class="p-button-text p-button-danger p-button-sm"
                 (click)="removeContact($index)"
+                aria-label="Eliminar contacto"
               ></button>
             </div>
             }
@@ -1077,8 +1101,8 @@
       </p-card>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
-      <button pButton label="Guardar" (click)="save()"></button>
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button pButton label="Guardar" (click)="save()" aria-label="Guardar proveedor"></button>
     </ng-template>
   </p-dialog>
 </div>

@@ -9,9 +9,7 @@ export interface TableColumn {
   sortable?: boolean;
 }
 
-export interface TableData {
-  [key: string]: any;
-}
+export type TableData = Record<string, string | number | Date | null | undefined>;
 
 /**
  * Componente de tabla del dashboard
@@ -172,11 +170,11 @@ export interface TableData {
 export class DashboardTableComponent {
   @Input({ required: true }) data: TableData[] = [];
   @Input({ required: true }) columns: TableColumn[] = [];
-  @Input() loading: boolean = false;
+  @Input() loading = false;
   @Input() error: string | null = null;
-  @Input() paginator: boolean = true;
-  @Input() rows: number = 10;
-  @Input() scrollable: boolean = false;
+  @Input() paginator = true;
+  @Input() rows = 10;
+  @Input() scrollable = false;
 
   expandedRows = signal<Set<number>>(new Set());
 

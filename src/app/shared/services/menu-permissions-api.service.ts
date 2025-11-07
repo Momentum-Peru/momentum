@@ -3,13 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  MenuPermission,
   MenuPermissionWithUser,
   AssignPermissionsRequest,
-  MenuPermissionQuery,
   MenuPermissionResponse,
   MenuPermissionStats,
-  UserOption,
 } from '../interfaces/menu-permission.interface';
 
 @Injectable({
@@ -22,7 +19,15 @@ export class MenuPermissionsApiService {
   /**
    * Obtiene todos los permisos con filtros y paginación
    */
-  list(query: MenuPermissionQuery = {}): Observable<MenuPermissionResponse> {
+  list(query: {
+    userId?: string;
+    route?: string;
+    isActive?: boolean;
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  } = {}): Observable<MenuPermissionResponse> {
     const params = new URLSearchParams();
 
     if (query.userId) params.append('userId', query.userId);
@@ -47,15 +52,22 @@ export class MenuPermissionsApiService {
    * Crea un nuevo permiso
    */
   create(
-    permission: Omit<MenuPermission, '_id' | 'createdAt' | 'updatedAt'>
-  ): Observable<MenuPermission> {
-    return this.http.post<MenuPermission>(this.baseUrl, permission);
+    permission: {
+      userId: string;
+      route: string;
+      isActive?: boolean;
+    }
+  ): Observable<MenuPermissionWithUser> {
+    return this.http.post<MenuPermissionWithUser>(this.baseUrl, permission);
   }
 
   /**
    * Actualiza un permiso existente
    */
-  update(id: string, permission: Partial<MenuPermission>): Observable<MenuPermissionWithUser> {
+  update(id: string, permission: {
+    route?: string;
+    isActive?: boolean;
+  }): Observable<MenuPermissionWithUser> {
     return this.http.patch<MenuPermissionWithUser>(`${this.baseUrl}/${id}`, permission);
   }
 
@@ -69,8 +81,8 @@ export class MenuPermissionsApiService {
   /**
    * Obtiene todos los permisos de un usuario específico
    */
-  getByUserId(userId: string): Observable<MenuPermission[]> {
-    return this.http.get<MenuPermission[]>(`${this.baseUrl}/user/${userId}`);
+  getByUserId(userId: string): Observable<MenuPermissionWithUser[]> {
+    return this.http.get<MenuPermissionWithUser[]>(`${this.baseUrl}/user/${userId}`);
   }
 
   /**

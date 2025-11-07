@@ -4,6 +4,14 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Project, ProjectOption } from '../interfaces/project.interface';
 
+interface ProjectStats {
+  total: number;
+  active: number;
+  inactive: number;
+  byStatus: { status: string; count: number }[];
+  byClient: { clientId: string; clientName: string; count: number }[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -19,8 +27,8 @@ export class ProjectsApiService {
     return this.http.get<Project[]>(`${this.baseUrl}/projects/active`);
   }
 
-  getStats(): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/projects/stats`);
+  getStats(): Observable<ProjectStats> {
+    return this.http.get<ProjectStats>(`${this.baseUrl}/projects/stats`);
   }
 
   listWithFilters(filters?: {

@@ -40,7 +40,7 @@ export class MenuService {
       next: (permissions) => {
         this.userPermissions.set(permissions);
       },
-      error: (error) => {
+      error: () => {
         this.userPermissions.set([]);
       },
     });

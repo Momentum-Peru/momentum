@@ -32,6 +32,11 @@
   [class.opacity-100]="isMenuOpen()"
   [class.pointer-events-auto]="isMenuOpen()"
   (click)="closeMenu()"
+  (keyup.enter)="closeMenu()"
+  (keyup.escape)="closeMenu()"
+  tabindex="0"
+  role="button"
+  [attr.aria-label]="'Cerrar menú'"
 ></div>
 
 <!-- Menú lateral -->

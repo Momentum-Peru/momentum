@@ -1,7 +1,13 @@
+interface PopulatedUser {
+  _id: string;
+  name: string;
+  email: string;
+}
+
 export interface FaceDescriptor {
   _id: string;
   tenantId: string;
-  userId: string | any; // puede venir populado
+  userId: string | PopulatedUser; // puede venir populado
   descriptor: number[]; // Array de 128 números
   imageUrl?: string;
   isActive: boolean;
@@ -12,7 +18,7 @@ export interface FaceDescriptor {
 export interface AttendanceRecord {
   _id: string;
   tenantId: string;
-  userId: string | any; // puede venir populado
+  userId: string | PopulatedUser; // puede venir populado
   type: 'ENTRADA' | 'SALIDA';
   timestamp: string;
   imageUrl?: string;
@@ -36,7 +42,7 @@ export interface MarkAttendanceRequest {
 export interface FaceDescriptorResponse {
   _id: string;
   tenantId: string;
-  userId: string | any;
+  userId: string | PopulatedUser;
   descriptor: number[];
   imageUrl?: string;
   isActive: boolean;

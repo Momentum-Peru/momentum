@@ -125,10 +125,11 @@ import {
 
             <!-- File Upload -->
             <div class="field mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <span id="fileUploadLabel" class="block text-sm font-medium text-gray-700 mb-2">
                 Archivos adjuntos (opcional)
-              </label>
+              </span>
               <p-fileUpload
+                aria-labelledby="fileUploadLabel"
                 mode="basic"
                 name="files[]"
                 [multiple]="true"
@@ -287,7 +288,7 @@ export class TaskCommentsComponent {
             this.loading.set(false);
           }
         },
-        error: (error) => {
+        error: () => {
           this.errorMessage.set('Error al crear el comentario');
           this.loading.set(false);
         },
@@ -312,7 +313,7 @@ export class TaskCommentsComponent {
             this.resetForm();
           }
         },
-        error: (error) => {
+        error: () => {
           this.errorMessage.set('Error al subir archivos');
           this.loading.set(false);
         },
@@ -323,8 +324,10 @@ export class TaskCommentsComponent {
   /**
    * Maneja la selección de archivos
    */
-  public onFileSelect(event: any): void {
-    const files = Array.from(event.files) as File[];
+  public onFileSelect(event: { files?: FileList | File[] }): void {
+    const fileList = event.files;
+    if (!fileList) return;
+    const files = Array.from(fileList) as File[];
     this.selectedFiles.set([...this.selectedFiles(), ...files]);
   }
 
@@ -339,7 +342,7 @@ export class TaskCommentsComponent {
   /**
    * Descarga un archivo
    */
-  public downloadFile(file: any): void {
+  public downloadFile(file: { _id: string; originalName: string }): void {
     this.commentsService.downloadFile(this.taskId, file._id).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
@@ -349,7 +352,7 @@ export class TaskCommentsComponent {
         link.click();
         window.URL.revokeObjectURL(url);
       },
-      error: (error) => {
+      error: () => {
         // Error al descargar archivo
       },
     });
@@ -368,7 +371,7 @@ export class TaskCommentsComponent {
   /**
    * Obtiene el nombre del autor del comentario
    */
-  public getAuthorName(createdBy: any): string {
+  public getAuthorName(createdBy: string | { name?: string; email?: string } | null | undefined): string {
     // Si createdBy es un objeto (poblado), usar directamente
     if (typeof createdBy === 'object' && createdBy !== null) {
       return createdBy.name || createdBy.email || 'Usuario';

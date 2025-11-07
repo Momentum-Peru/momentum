@@ -62,9 +62,9 @@ export class DashboardChartComponent implements OnInit, OnDestroy {
     @Input({ required: true }) type!: 'line' | 'bar' | 'pie' | 'doughnut';
     @Input() data: ChartData | null = null;
     @Input() options: ChartOptions | null = null;
-    @Input() loading: boolean = false;
+    @Input() loading = false;
     @Input() error: string | null = null;
-    @Input() height: string = '300px';
+    @Input() height = '300px';
 
     @ViewChild('chartRef') chartRef!: ElementRef;
 
@@ -73,8 +73,11 @@ export class DashboardChartComponent implements OnInit, OnDestroy {
         this.setupChartDefaults();
     }
 
+    // eslint-disable-next-line @angular-eslint/no-empty-lifecycle-method
     ngOnDestroy(): void {
-        // Limpieza si es necesaria
+        // Chart.js se limpia automáticamente cuando el componente se destruye
+        // No se requiere limpieza manual de recursos
+        // Este método está presente para cumplir con la interfaz OnDestroy
     }
 
     /**

@@ -31,6 +31,7 @@
         icon="pi pi-chart-bar"
         class="p-button-outlined"
         (click)="openStats()"
+        aria-label="Ver estadísticas"
       ></button>
       <button
         pButton
@@ -38,6 +39,7 @@
         label="Nuevo Cliente"
         icon="pi pi-plus"
         (click)="newItem()"
+        aria-label="Crear nuevo cliente"
       ></button>
     </div>
   </div>
@@ -47,8 +49,9 @@
     <ng-template pTemplate="content">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Buscar</label>
+          <label for="searchInput" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Buscar</label>
           <input
+            id="searchInput"
             pInputText
             placeholder="Nombre, RUC/DNI..."
             [ngModel]="query()"
@@ -57,10 +60,11 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="locationFilter" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Ubicación</label
           >
           <p-select
+            id="locationFilter"
             [options]="[
               { label: 'Todos', value: 'all' },
               { label: 'Con ubicación', value: 'with' },
@@ -84,6 +88,7 @@
             icon="pi pi-filter-slash"
             class="p-button-outlined w-full"
             (click)="clearFilters()"
+            aria-label="Limpiar filtros"
           ></button>
         </div>
       </div>
@@ -152,6 +157,7 @@
               type="button"
               label="Ver contactos"
               icon="pi pi-users"
+              aria-label="Ver contactos del cliente"
               class="p-button-text p-button-sm"
               (click)="openContacts(row)"
             ></button>
@@ -164,6 +170,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Ver detalles"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles del cliente"
               ></button>
               <button
                 pButton
@@ -171,6 +178,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Editar"
                 (click)="editItem(row)"
+                aria-label="Editar cliente"
               ></button>
               <button
                 pButton
@@ -178,6 +186,7 @@
                 class="p-button-text p-button-sm p-button-danger"
                 pTooltip="Eliminar"
                 (click)="confirmDelete(row)"
+                aria-label="Eliminar cliente"
               ></button>
             </div>
           </td>
@@ -285,6 +294,7 @@
               icon="pi pi-users"
               class="p-button-text p-button-sm w-full justify-start"
               (click)="openContacts(row)"
+              aria-label="Ver contactos del cliente"
             ></button>
           </div>
 
@@ -300,6 +310,7 @@
                 label="Ver detalles"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles del cliente"
               ></button>
               <button
                 pButton
@@ -307,6 +318,7 @@
                 label="Editar"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="editItem(row)"
+                aria-label="Editar cliente"
               ></button>
               <button
                 pButton
@@ -314,6 +326,7 @@
                 label="Eliminar"
                 class="p-button-text p-button-sm p-button-danger w-full justify-start"
                 (click)="confirmDelete(row)"
+                aria-label="Eliminar cliente"
               ></button>
             </div>
           </div>
@@ -368,7 +381,7 @@
       </p-table>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeContacts()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeContacts()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 
@@ -406,10 +419,11 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <!-- País -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label for="countrySelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >País *</label
             >
             <p-select
+              id="countrySelect"
               [options]="countries()"
               optionLabel="nombre"
               optionValue="codigo"
@@ -431,10 +445,11 @@
 
           <!-- Provincia -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label for="provinceSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Provincia/Estado</label
             >
             <p-select
+              id="provinceSelect"
               [options]="provinces()"
               optionLabel="nombre"
               optionValue="codigo"
@@ -459,10 +474,11 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <!-- Distrito -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label for="districtSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Distrito/Municipio</label
             >
             <p-select
+              id="districtSelect"
               [options]="districts()"
               optionLabel="nombre"
               optionValue="codigo"
@@ -485,10 +501,11 @@
 
           <!-- Dirección específica -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label for="addressInput" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Dirección específica</label
             >
             <input
+              id="addressInput"
               pInputText
               placeholder="Av. Principal 123, Oficina 456"
               [ngModel]="editing()?.ubicacion?.direccion"
@@ -539,6 +556,7 @@
             icon="pi pi-plus"
             (click)="addContact()"
             class="p-button-sm"
+            aria-label="Agregar contacto"
           ></button>
         </div>
 
@@ -577,14 +595,15 @@
             icon="pi pi-trash"
             class="p-button-text p-button-danger p-button-sm"
             (click)="removeContact($index)"
+            aria-label="Eliminar contacto"
           ></button>
         </div>
         }
       </div>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
-      <button pButton label="Guardar" (click)="save()"></button>
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button pButton label="Guardar" (click)="save()" aria-label="Guardar cliente"></button>
     </ng-template>
   </p-dialog>
 
@@ -640,7 +659,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 
@@ -671,16 +690,16 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Nombre</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-medium">
               {{ viewingClient()?.name }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >RUC/DNI</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >RUC/DNI</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingClient()?.taxId || 'No especificado' }}
@@ -688,8 +707,8 @@
           </div>
           @if (viewingClient()?._id) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >ID del Cliente</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >ID del Cliente</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingClient()?._id }}
@@ -711,8 +730,8 @@
         <div class="space-y-2">
           @if (viewingClient()?.ubicacion?.paisCodigo) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >País</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >País</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ getCountryName(viewingClient()?.ubicacion?.paisCodigo ?? '') }}
@@ -720,8 +739,8 @@
           </div>
           } @if (viewingClient()?.ubicacion?.provinciaCodigo) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Provincia/Estado</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Provincia/Estado</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ getProvinceName(viewingClient()?.ubicacion?.provinciaCodigo ?? '') }}
@@ -729,8 +748,8 @@
           </div>
           } @if (viewingClient()?.ubicacion?.distritoCodigo) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Distrito/Municipio</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Distrito/Municipio</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ getDistrictName(viewingClient()?.ubicacion?.distritoCodigo ?? '') }}
@@ -738,8 +757,8 @@
           </div>
           } @if (viewingClient()?.ubicacion?.direccion) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Dirección</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Dirección</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingClient()?.ubicacion?.direccion }}
@@ -818,7 +837,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 </div>

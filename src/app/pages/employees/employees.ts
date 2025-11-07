@@ -204,14 +204,14 @@ export class EmployeesPage implements OnInit {
     this.showViewDialog.set(false);
   }
 
-  onEditChange(field: keyof Employee, value: any) {
+  onEditChange(field: keyof Employee, value: Employee[keyof Employee]) {
     const current = this.editing();
     if (current) {
       this.editing.set({ ...current, [field]: value });
     }
   }
 
-  getUserName(userId: string | any): string {
+  getUserName(userId: string | { name?: string; email?: string } | null | undefined): string {
     if (!userId) return 'Sin usuario';
     if (typeof userId === 'object' && 'name' in userId) {
       return userId.name;
@@ -220,10 +220,10 @@ export class EmployeesPage implements OnInit {
     return user?.name || 'Usuario no encontrado';
   }
 
-  getUserEmail(userId: string | any): string {
+  getUserEmail(userId: string | { email?: string } | null | undefined): string {
     if (!userId) return '';
     if (typeof userId === 'object' && 'email' in userId) {
-      return userId.email;
+      return userId.email ?? '';
     }
     const user = this.users().find((u) => u._id === userId);
     return user?.email || '';

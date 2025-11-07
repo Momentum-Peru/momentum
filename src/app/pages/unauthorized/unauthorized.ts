@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { Router } from '@angular/router';
@@ -23,6 +23,7 @@ import { Router } from '@angular/router';
             label="Ir al Dashboard"
             icon="pi pi-home"
             class="w-full"
+            aria-label="Ir al Dashboard"
           ></button>
           <button
             pButton
@@ -31,6 +32,7 @@ import { Router } from '@angular/router';
             label="Volver Atrás"
             icon="pi pi-arrow-left"
             class="p-button-outlined w-full"
+            aria-label="Volver Atrás"
           ></button>
         </div>
 
@@ -42,7 +44,7 @@ import { Router } from '@angular/router';
   `,
 })
 export class UnauthorizedPage {
-  constructor(private router: Router) {}
+  private readonly router = inject(Router);
 
   goToDashboard(): void {
     this.router.navigate(['/dashboard']);

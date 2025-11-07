@@ -53,7 +53,7 @@ export class SelectCompanyPage implements OnInit {
   load(): void {
     this.loading.set(true);
     this.companiesApi.list({ isActive: true }).subscribe({
-      next: (res: any[]) => {
+      next: (res: CompanyOption[]) => {
         const opts = (res || []).map((c) => ({ _id: c._id, name: c.name, code: c.code }));
         this.companies.set(opts);
         this.applyFilter();
@@ -74,8 +74,19 @@ export class SelectCompanyPage implements OnInit {
   applyFilter(): void {
     const q = this.query().toLowerCase().trim();
     // Filtrar por acceso del usuario si tiene tenantIds definidos
-    const user: any = this.auth.getCurrentUser();
-    const tenantIds: string[] | undefined = user?.tenantIds;
+    const user = this.auth.getCurrentUser();
+    if (!user || typeof user !== 'object' || !('tenantIds' in user)) {
+      const all = this.companies();
+      if (!q) {
+        this.filtered.set(all);
+        return;
+      }
+      this.filtered.set(
+        all.filter((c) => c.name.toLowerCase().includes(q) || (c.code || '').toLowerCase().includes(q))
+      );
+      return;
+    }
+    const tenantIds = (user as { tenantIds?: string[] }).tenantIds;
     const all = !tenantIds || tenantIds.length === 0
       ? this.companies()
       : this.companies().filter((c) => tenantIds.includes(c._id));

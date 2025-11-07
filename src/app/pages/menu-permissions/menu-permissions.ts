@@ -14,15 +14,13 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { MenuPermissionsApiService } from '../../shared/services/menu-permissions-api.service';
-import { UsersApiService } from '../../shared/services/users-api.service';
+import { UsersApiService, User } from '../../shared/services/users-api.service';
 import { MenuService } from '../../shared/services/menu.service';
 import { MenuConfigService } from '../../shared/services/menu-config.service';
 import { TenantService } from '../../core/services/tenant.service';
 import {
-  MenuPermission,
   MenuPermissionWithUser,
   AssignPermissionsRequest,
-  MenuPermissionQuery,
   UserOption,
 } from '../../shared/interfaces/menu-permission.interface';
 
@@ -201,45 +199,37 @@ export class MenuPermissionsPage implements OnInit {
     // Obtener usuarios completos con tenantIds para filtrar
     this.usersApi.listWithFilters({}).subscribe({
       next: (response) => {
-        const allUsers = response.data || response.users || [];
+        const allUsers = response.data ?? response.users ?? [];
         console.log('Users API response:', allUsers);
+        
+        const toUserOption = (user: User): UserOption => ({
+          _id: user._id || user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        });
         
         // Filtrar usuarios por tenant seleccionado
         if (currentTenantId) {
-          // Filtrar solo usuarios que tienen el tenant actual en su tenantIds
-          const filteredUsers = allUsers.filter((user: any) => {
-            const tenantIds = user.tenantIds || [];
-            // Si tenantIds está vacío, el usuario tiene acceso a todos los tenants (comportamiento por defecto)
+          const filteredUsers = allUsers.filter((user) => {
+            const tenantIds = user.tenantIds ?? [];
             if (tenantIds.length === 0) {
-              return true; // Usuario sin restricciones, mostrar
+              return true;
             }
-            // Verificar si el tenant actual está en la lista
             return tenantIds.includes(currentTenantId);
           });
           
-          // Mapear a formato UserOption
-          const userOptions = filteredUsers.map((u: any) => ({
-            _id: u._id || u.id,
-            name: u.name,
-            email: u.email,
-            role: u.role,
-          }));
+          const userOptions = filteredUsers.map(toUserOption);
           
           console.log('Filtered users for tenant:', userOptions);
           this.users.set(userOptions);
         } else {
-          // Sin tenant seleccionado, mostrar todos (aunque no debería pasar por el guard)
           console.log('No tenant selected, showing all users');
-          const userOptions = allUsers.map((u: any) => ({
-            _id: u._id || u.id,
-            name: u.name,
-            email: u.email,
-            role: u.role,
-          }));
+          const userOptions = allUsers.map(toUserOption);
           this.users.set(userOptions);
         }
       },
-      error: (error) => {
+      error: (error: unknown) => {
         console.error('Error loading users:', error);
         this.users.set([]);
         this.messageService.add({
@@ -316,7 +306,7 @@ export class MenuPermissionsPage implements OnInit {
     this.showDialog.set(false);
   }
 
-  onEditChange(field: string, value: any) {
+  onEditChange(field: string, value: string | boolean) {
     const current = this.editing();
     if (current) {
       this.editing.set({ ...current, [field]: value });
@@ -502,38 +492,37 @@ export class MenuPermissionsPage implements OnInit {
     return isActive ? 'Activo' : 'Inactivo';
   }
 
-  private getErrorMessage(error: any): string {
-    if (error.error?.message) {
-      const message = error.error.message;
-
-      if (Array.isArray(message)) {
-        return message.join(', ');
+  private getErrorMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'error' in error) {
+      const httpError = error as { error?: { message?: string | string[] }; message?: string };
+      if (httpError.error?.message) {
+        const message = httpError.error.message;
+        if (Array.isArray(message)) {
+          return message.join(', ');
+        }
+        if (typeof message === 'string') {
+          if (message.includes('userId should not be empty')) {
+            return 'El usuario es requerido';
+          }
+          if (message.includes('route should not be empty')) {
+            return 'La ruta es requerida';
+          }
+          if (message.includes('userId must be a valid ObjectId')) {
+            return 'El usuario seleccionado no es válido';
+          }
+          if (message.includes('Ya existe un permiso para este usuario y ruta')) {
+            return 'Ya existe un permiso para este usuario y ruta';
+          }
+          return message;
+        }
       }
-
-      if (message.includes('userId should not be empty')) {
-        return 'El usuario es requerido';
+      if (httpError.error && typeof httpError.error === 'object' && 'error' in httpError.error && typeof httpError.error.error === 'string') {
+        return httpError.error.error;
       }
-      if (message.includes('route should not be empty')) {
-        return 'La ruta es requerida';
-      }
-      if (message.includes('userId must be a valid ObjectId')) {
-        return 'El usuario seleccionado no es válido';
-      }
-      if (message.includes('Ya existe un permiso para este usuario y ruta')) {
-        return 'Ya existe un permiso para este usuario y ruta';
-      }
-
-      return message;
     }
-
-    if (error.error?.error) {
-      return error.error.error;
-    }
-
-    if (error.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
       return error.message;
     }
-
     return 'Ha ocurrido un error inesperado';
   }
 }

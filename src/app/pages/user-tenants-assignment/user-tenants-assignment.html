@@ -26,6 +26,7 @@
         label="Actualizar"
         (onClick)="load()"
         [loading]="loading()"
+        aria-label="Actualizar lista de usuarios"
       ></button>
     </div>
   </p-card>
@@ -91,6 +92,7 @@
                 (click)="editUserTenants(user)"
                 pTooltip="Editar empresas asignadas"
                 tooltipPosition="top"
+                aria-label="Editar empresas asignadas al usuario"
               ></button>
               @if (user.tenantIds && user.tenantIds.length > 0) {
               <button
@@ -98,6 +100,7 @@
                 icon="pi pi-times"
                 class="p-button-text p-button-danger p-button-sm"
                 (click)="removeAllTenants(user)"
+                aria-label="Quitar todas las empresas asignadas"
                 pTooltip="Quitar todas las empresas"
                 tooltipPosition="top"
               ></button>
@@ -225,6 +228,7 @@
                 label="Editar empresas asignadas"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="editUserTenants(user)"
+                aria-label="Editar empresas asignadas del usuario"
               ></button>
               @if (user.tenantIds && user.tenantIds.length > 0) {
               <button
@@ -233,6 +237,7 @@
                 label="Quitar todas las empresas"
                 class="p-button-text p-button-sm p-button-danger w-full justify-start"
                 (click)="removeAllTenants(user)"
+                aria-label="Quitar todas las empresas del usuario"
               ></button>
               }
             </div>
@@ -283,10 +288,11 @@
 
       <!-- Selector de empresas -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label for="tenantMultiSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Empresas asignadas
         </label>
         <p-multiSelect
+          id="tenantMultiSelect"
           [options]="companies()"
           optionLabel="name"
           optionValue="_id"
@@ -317,9 +323,9 @@
       <!-- Empresas actualmente asignadas -->
       @if (editingUser(); as user) { @if (user.tenantIds && user.tenantIds.length > 0) {
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Empresas actuales
-        </label>
+        </span>
         <div class="flex flex-wrap gap-2">
           @for (tenantId of user.tenantIds; track tenantId) {
           <p-tag
@@ -344,6 +350,7 @@
           severity="secondary"
           [text]="true"
           (click)="closeDialog()"
+          aria-label="Cancelar"
         ></button>
         <button
           pButton
@@ -352,6 +359,7 @@
           icon="pi pi-check"
           severity="primary"
           (click)="saveTenants(); $event.stopPropagation()"
+          aria-label="Guardar asignación de empresas"
         ></button>
       </div>
     </ng-template>

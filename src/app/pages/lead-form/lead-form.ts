@@ -79,7 +79,7 @@ export class LeadFormComponent {
    * Obtiene la etiqueta del campo para mensajes de error
    */
   private getFieldLabel(fieldName: string): string {
-    const labels: { [key: string]: string } = {
+    const labels: Record<string, string> = {
       name: 'Nombre',
       email: 'Correo',
       phone: 'Teléfono',
@@ -121,14 +121,17 @@ export class LeadFormComponent {
           this.isSubmitted.set(false);
         }, 1500);
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error al enviar el formulario:', error);
 
         let errorMessage = 'Error al enviar la información. Por favor intenta nuevamente.';
+        const status = typeof (error as { status?: unknown })?.status === 'number'
+          ? (error as { status: number }).status
+          : undefined;
 
-        if (error.status === 400) {
+        if (status === 400) {
           errorMessage = 'Datos de entrada inválidos. Por favor verifica la información.';
-        } else if (error.status === 0) {
+        } else if (status === 0) {
           errorMessage = 'No se pudo conectar con el servidor. Por favor intenta más tarde.';
         }
 

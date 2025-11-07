@@ -167,7 +167,7 @@ export class DailyExpensesPage implements OnInit {
   private mediaRecorder: MediaRecorder | null = null;
   private audioStream: MediaStream | null = null;
   private audioChunks: Blob[] = [];
-  private recordingInterval: any = null;
+  private recordingInterval: ReturnType<typeof setInterval> | null = null;
 
   // Filtrado simple por texto
   filteredItems = computed(() => {
@@ -290,7 +290,7 @@ export class DailyExpensesPage implements OnInit {
   loadProjects() {
     this.projectsApi.getOptions().subscribe({
       next: (data) => this.projects.set(data),
-      error: (error) => {
+      error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -447,7 +447,7 @@ export class DailyExpensesPage implements OnInit {
   }
 
   // Abrir modal de visualización de medios
-  openMediaModal(type: 'audio' | 'video' | 'photo', urls: string[], currentIndex: number = 0) {
+  openMediaModal(type: 'audio' | 'video' | 'photo', urls: string[], currentIndex = 0) {
     this.mediaModalType.set(type);
     this.mediaModalUrls.set(urls);
     this.mediaModalCurrentIndex.set(currentIndex);
@@ -476,7 +476,6 @@ export class DailyExpensesPage implements OnInit {
   removeCurrentMediaFromModal() {
     const currentUrl = this.mediaModalUrl();
     const type = this.mediaModalType();
-    const currentIndex = this.mediaModalCurrentIndex();
 
     if (!currentUrl || !type) return;
 
@@ -610,7 +609,7 @@ export class DailyExpensesPage implements OnInit {
     this.showViewDialog.set(false);
   }
 
-  onEditChange(field: keyof DailyReport, value: any) {
+  onEditChange(field: keyof DailyReport, value: DailyReport[keyof DailyReport]) {
     const current = this.editing();
     if (current) {
       this.editing.set({ ...current, [field]: value });
@@ -824,7 +823,7 @@ export class DailyExpensesPage implements OnInit {
     });
   }
 
-  removeAudioFromEditing(url: string, skipConfirm: boolean = false) {
+  removeAudioFromEditing(url: string, skipConfirm = false) {
     const current = this.editing();
     if (!current) return;
 
@@ -877,7 +876,7 @@ export class DailyExpensesPage implements OnInit {
     }
   }
 
-  removeVideoFromEditing(url: string, skipConfirm: boolean = false) {
+  removeVideoFromEditing(url: string, skipConfirm = false) {
     const current = this.editing();
     if (!current) return;
 
@@ -928,7 +927,7 @@ export class DailyExpensesPage implements OnInit {
     }
   }
 
-  removePhotoFromEditing(url: string, skipConfirm: boolean = false) {
+  removePhotoFromEditing(url: string, skipConfirm = false) {
     const current = this.editing();
     if (!current) return;
 
@@ -1013,7 +1012,7 @@ export class DailyExpensesPage implements OnInit {
           ...payload,
           userId:
             typeof item.userId === 'object' && item.userId && '_id' in item.userId
-              ? (item.userId as any)._id
+              ? (item.userId as { _id: string })._id
               : (item.userId as string),
           documents: [],
         } as DailyReport);
@@ -1022,7 +1021,7 @@ export class DailyExpensesPage implements OnInit {
       next: (saved) => {
         const id = saved._id!;
         // Si había archivos pendientes (nuevo), súbelos
-        const tasks: Array<Promise<any>> = [];
+        const tasks: Promise<unknown>[] = [];
 
         // Subir múltiples audios
         this.pendingAudio().forEach((file) => {
@@ -1145,11 +1144,16 @@ export class DailyExpensesPage implements OnInit {
    * @returns Promise que se resuelve cuando todas las subidas terminan
    */
   private async uploadFilesWithConcurrencyLimit(
-    tasks: Array<Promise<any>>,
+    tasks: Promise<unknown>[],
     reportId: string
   ): Promise<void> {
+    console.log('Iniciando carga de archivos con límite de concurrencia', {
+      reportId,
+      totalTasks: tasks.length,
+    });
+
     const CONCURRENT_LIMIT = 3; // Máximo 3 subidas simultáneas
-    const results: Array<{ status: string; fileName?: string; type?: string; error?: any }> = [];
+    const results: { status: string; fileName?: string; type?: string; error?: unknown }[] = [];
 
     // Procesar en lotes con límite de concurrencia
     for (let i = 0; i < tasks.length; i += CONCURRENT_LIMIT) {
@@ -1159,16 +1163,21 @@ export class DailyExpensesPage implements OnInit {
       batchResults.forEach((result, index) => {
         if (result.status === 'fulfilled') {
           results.push({ status: 'fulfilled' });
-          console.log(`Archivo ${i + index + 1}/${tasks.length} subido exitosamente`);
+          console.log(`Archivo ${i + index + 1}/${tasks.length} subido exitosamente`, {
+            reportId,
+          });
         } else {
-          const errorInfo = result.reason as any;
+          const errorInfo = result.reason as { fileName?: string; type?: string; error?: unknown } | undefined;
           results.push({
             status: 'rejected',
             fileName: errorInfo?.fileName || 'desconocido',
             type: errorInfo?.type || 'archivo',
             error: errorInfo?.error || result.reason,
           });
-          console.error(`Error al subir archivo ${i + index + 1}/${tasks.length}:`, errorInfo);
+          console.error(`Error al subir archivo ${i + index + 1}/${tasks.length}:`, {
+            reportId,
+            ...errorInfo,
+          });
           
           // Mostrar error específico al usuario
           const errorMsg = this.getErrorMessage(errorInfo?.error || result.reason);
@@ -1191,7 +1200,10 @@ export class DailyExpensesPage implements OnInit {
     const successful = results.filter((r) => r.status === 'fulfilled').length;
     const failed = results.filter((r) => r.status === 'rejected').length;
     
-    console.log(`Subida completada: ${successful} exitosos, ${failed} fallidos de ${tasks.length} totales`);
+    console.log(`Subida completada: ${successful} exitosos, ${failed} fallidos de ${tasks.length} totales`, {
+      reportId,
+      totalResults: results.length,
+    });
 
     if (failed > 0) {
       this.messageService.add({
@@ -1298,7 +1310,7 @@ export class DailyExpensesPage implements OnInit {
     if (item.userId) {
       if (typeof item.userId === 'object' && '_id' in item.userId) {
         // El userId es un objeto, extraer el _id
-        userId = (item.userId as any)._id;
+        userId = (item.userId as { _id: string })._id;
       } else if (typeof item.userId === 'string') {
         // El userId es un string
         userId = item.userId;
@@ -1418,38 +1430,44 @@ export class DailyExpensesPage implements OnInit {
   }
 
   // Método para obtener mensaje de error de la API
-  private getErrorMessage(error: any): string {
-    // Manejar errores de permisos primero
-    if (error.status === 403) {
-      if (error.error?.message?.includes('No puedes enviar gastos de otros usuarios')) {
-        return 'No puedes enviar reportes de otros usuarios';
+  private getErrorMessage(error: unknown): string {
+    // Verificar si es un objeto con propiedades de error HTTP
+    if (error && typeof error === 'object' && 'status' in error) {
+      const httpError = error as { status?: number; error?: { message?: string; error?: string } };
+      
+      // Manejar errores de permisos primero
+      if (httpError.status === 403) {
+        if (httpError.error?.message?.includes('No puedes enviar gastos de otros usuarios')) {
+          return 'No puedes enviar reportes de otros usuarios';
+        }
+        if (httpError.error?.message?.includes('No puedes aprobar')) {
+          return 'No tienes permisos para aprobar este reporte';
+        }
+        return 'No tienes permisos para realizar esta acción';
       }
-      if (error.error?.message?.includes('No puedes aprobar')) {
-        return 'No tienes permisos para aprobar este reporte';
+
+      // Manejar errores de validación específicos
+      if (httpError.error?.message) {
+        const message = httpError.error.message;
+
+        // Traducir mensajes comunes de validación
+        if (message.includes('date should not be empty')) {
+          return 'La fecha es requerida';
+        }
+        if (message.includes('time should not be empty')) return 'La hora es requerida';
+        if (message.includes('description should not be empty')) return 'La descripción es requerida';
+
+        return message;
       }
-      return 'No tienes permisos para realizar esta acción';
+
+      if (httpError.error?.error) {
+        return httpError.error.error;
+      }
     }
 
-    // Manejar errores de validación específicos
-    if (error.error?.message) {
-      const message = error.error.message;
-
-      // Traducir mensajes comunes de validación
-      if (message.includes('date should not be empty')) {
-        return 'La fecha es requerida';
-      }
-      if (message.includes('time should not be empty')) return 'La hora es requerida';
-      if (message.includes('description should not be empty')) return 'La descripción es requerida';
-
-      return message;
-    }
-
-    if (error.error?.error) {
-      return error.error.error;
-    }
-
-    if (error.message) {
-      return error.message;
+    // Verificar si es un objeto Error
+    if (error && typeof error === 'object' && 'message' in error && typeof (error as { message: unknown }).message === 'string') {
+      return (error as { message: string }).message;
     }
 
     return 'Ha ocurrido un error inesperado';

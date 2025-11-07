@@ -159,7 +159,7 @@ export class ProjectsPage implements OnInit {
     // Extraer el clientId si viene como objeto
     let clientId = item.clientId;
     if (typeof clientId === 'object' && clientId !== null && '_id' in clientId) {
-      clientId = (clientId as any)._id;
+      clientId = (clientId as { _id: string })._id;
     }
 
     const editedItem = {
@@ -206,7 +206,7 @@ export class ProjectsPage implements OnInit {
     return this.expandedRowIds().has(id);
   }
 
-  onEditChange(field: keyof Project, value: any) {
+  onEditChange(field: keyof Project, value: Project[keyof Project]) {
     const current = this.editing();
     if (current) {
       console.log(`Cambiando ${field}:`, value);
@@ -410,62 +410,65 @@ export class ProjectsPage implements OnInit {
   }
 
   // Método para obtener mensaje de error de la API
-  private getErrorMessage(error: any): string {
+  private getErrorMessage(error: unknown): string {
     // Manejar errores de validación específicos
-    if (error.error?.message) {
-      const message = error.error.message;
+    if (error && typeof error === 'object' && 'error' in error) {
+      const errorObj = error as { error?: { message?: string | string[] }; message?: string };
+      if (errorObj.error?.message) {
+        const message = errorObj.error.message;
 
-      // Si es un array de mensajes, unirlos
-      if (Array.isArray(message)) {
-        const filtered = message.filter((m: string) => !/c[oó]digo/i.test(m))
-        return filtered.join(', ');
-      }
+        // Si es un array de mensajes, unirlos
+        if (Array.isArray(message)) {
+          const filtered = message.filter((m: string) => !/c[oó]digo/i.test(m));
+          return filtered.join(', ');
+        }
 
-      // Traducir mensajes comunes de validación (actualizado: código ahora se genera automáticamente)
-      if (message.includes('name should not be empty')) {
-        return 'El nombre del proyecto es requerido';
+        // Traducir mensajes comunes de validación (actualizado: código ahora se genera automáticamente)
+        if (typeof message === 'string') {
+          if (message.includes('name should not be empty')) {
+            return 'El nombre del proyecto es requerido';
+          }
+          if (message.includes('clientId should not be empty')) {
+            return 'El cliente es requerido';
+          }
+          if (message.includes('status should not be empty')) {
+            return 'El estado es requerido';
+          }
+          if (message.includes('clientId must be a valid ObjectId')) {
+            return 'El cliente seleccionado no es válido';
+          }
+          if (message.includes('status must be one of the following values')) {
+            return 'El estado seleccionado no es válido';
+          }
+          if (message.includes('budget must be a positive number')) {
+            return 'El presupuesto debe ser un número positivo';
+          }
+          // Variantes para fecha de inicio
+          if (
+            message.includes('startDate should not be empty') ||
+            message.includes('startDate should not be null or undefined')
+          ) {
+            return 'La fecha de inicio es obligatoria';
+          }
+          if (
+            message.includes('startDate must be a valid date') ||
+            message.includes('startDate must be a valid ISO 8601 date string') ||
+            message.includes('startDate must be a valid ISO 8601 date')
+          ) {
+            return 'La fecha de inicio no es válida';
+          }
+          if (message.includes('endDate must be a valid date')) {
+            return 'La fecha de fin no es válida';
+          }
+          return message;
+        }
       }
-      if (message.includes('clientId should not be empty')) {
-        return 'El cliente es requerido';
+      if (errorObj.error?.error && typeof errorObj.error.error === 'string') {
+        return errorObj.error.error;
       }
-      if (message.includes('status should not be empty')) {
-        return 'El estado es requerido';
-      }
-      if (message.includes('clientId must be a valid ObjectId')) {
-        return 'El cliente seleccionado no es válido';
-      }
-      if (message.includes('status must be one of the following values')) {
-        return 'El estado seleccionado no es válido';
-      }
-      if (message.includes('budget must be a positive number')) {
-        return 'El presupuesto debe ser un número positivo';
-      }
-      // Variantes para fecha de inicio
-      if (
-        message.includes('startDate should not be empty') ||
-        message.includes('startDate should not be null or undefined')
-      ) {
-        return 'La fecha de inicio es obligatoria';
-      }
-      if (
-        message.includes('startDate must be a valid date') ||
-        message.includes('startDate must be a valid ISO 8601 date string') ||
-        message.includes('startDate must be a valid ISO 8601 date')
-      ) {
-        return 'La fecha de inicio no es válida';
-      }
-      if (message.includes('endDate must be a valid date')) {
-        return 'La fecha de fin no es válida';
-      }
-
-      return message;
     }
 
-    if (error.error?.error) {
-      return error.error.error;
-    }
-
-    if (error.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
       return error.message;
     }
 

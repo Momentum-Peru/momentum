@@ -43,6 +43,7 @@
       icon="pi pi-camera"
       severity="success"
       class="w-full xl:w-auto"
+      aria-label="Crear nueva marcación con reconocimiento facial"
     ></button>
   </div>
 
@@ -99,18 +100,20 @@
             </div>
           </td>
           <td class="text-right">
-            <button pButton icon="pi pi-eye" class="p-button-text" (click)="viewItem(row)"></button>
+            <button pButton icon="pi pi-eye" class="p-button-text" (click)="viewItem(row)" aria-label="Ver detalles de la marcación"></button>
             <button
               pButton
               icon="pi pi-pencil"
               class="p-button-text"
               (click)="editItem(row)"
+              aria-label="Editar marcación"
             ></button>
             <button
               pButton
               icon="pi pi-trash"
               class="p-button-text p-button-danger"
               (click)="remove(row)"
+              aria-label="Eliminar marcación"
             ></button>
           </td>
         </tr>
@@ -190,6 +193,7 @@
               label="Ver"
               class="p-button-text p-button-sm"
               (click)="viewItem(row)"
+              aria-label="Ver detalles de la marcación"
             ></button>
             <button
               pButton
@@ -197,6 +201,7 @@
               label="Editar"
               class="p-button-text p-button-sm"
               (click)="editItem(row)"
+              aria-label="Editar marcación"
             ></button>
             <button
               pButton
@@ -204,6 +209,7 @@
               label="Eliminar"
               class="p-button-text p-button-danger p-button-sm"
               (click)="remove(row)"
+              aria-label="Eliminar marcación"
             ></button>
           </div>
         </div>
@@ -229,8 +235,9 @@
     <div class="grid gap-4">
       <!-- Fecha -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Fecha *</label>
+        <label for="trackingDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Fecha *</label>
         <p-datepicker
+          inputId="trackingDate"
           [ngModel]="getEditDate()"
           (ngModelChange)="onDateChange($event)"
           name="trackingDate"
@@ -246,10 +253,10 @@
       <!-- Hora Inicio y Hora Fin -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-            >Hora Inicio *</label
-          >
+          <label for="startTime" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Hora Inicio *</label>
           <input
+            id="startTime"
             pInputText
             type="time"
             [ngModel]="editing()?.startTime"
@@ -259,10 +266,10 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-            >Hora Fin</label
-          >
+          <label for="endTime" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Hora Fin</label>
           <input
+            id="endTime"
             pInputText
             type="time"
             [ngModel]="editing()?.endTime"
@@ -275,7 +282,7 @@
 
       <!-- Duración (calculada automáticamente) -->
       <div *ngIf="editing()?.duration">
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Duración</label>
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Duración</span>
         <div class="text-sm text-gray-600 dark:text-gray-400">
           {{ formatDuration(editing()?.duration) }}
         </div>
@@ -283,8 +290,9 @@
 
       <!-- Estado -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
+        <label for="statusSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
         <p-select
+          inputId="statusSelect"
           [options]="statusOptions()"
           optionLabel="label"
           optionValue="value"
@@ -298,10 +306,10 @@
 
       <!-- Proyecto (opcional) -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-          >Proyecto (opcional)</label
-        >
+        <label for="trackingProject" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Proyecto (opcional)</label>
         <p-select
+          inputId="trackingProject"
           [options]="projects()"
           optionLabel="label"
           optionValue="value"
@@ -315,10 +323,10 @@
 
       <!-- Descripción -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-          >Descripción *</label
-        >
+        <label for="trackingDescription" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Descripción *</label>
         <textarea
+          id="trackingDescription"
           pTextarea
           placeholder="Describe la actividad realizada..."
           [ngModel]="editing()?.description"
@@ -331,10 +339,10 @@
 
       <!-- Notas -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-          >Notas (opcional)</label
-        >
+        <label for="trackingNotes" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Notas (opcional)</label>
         <textarea
+          id="trackingNotes"
           pTextarea
           placeholder="Notas adicionales..."
           [ngModel]="editing()?.notes"
@@ -347,8 +355,8 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
-      <button pButton label="Guardar" (click)="save()"></button>
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button pButton label="Guardar" (click)="save()" aria-label="Guardar marcación"></button>
     </ng-template>
   </p-dialog>
 
@@ -369,27 +377,27 @@
     <div class="space-y-4" *ngIf="viewing() as v">
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Fecha</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Fecha</span>
           <div class="font-medium text-gray-700 dark:text-white">
             {{ v.date | date : 'dd/MM/yyyy' }}
           </div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Hora Inicio</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Hora Inicio</span>
           <div class="font-medium text-gray-700 dark:text-white">{{ v.startTime }}</div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Hora Fin</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Hora Fin</span>
           <div class="font-medium text-gray-700 dark:text-white">{{ v.endTime || '-' }}</div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Duración</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Duración</span>
           <div class="font-medium text-gray-700 dark:text-white">
             {{ formatDuration(v.duration) }}
           </div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Estado</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Estado</span>
           <div>
             <span
               class="px-2 py-1 text-xs font-semibold rounded-full"
@@ -400,7 +408,7 @@
           </div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Proyecto</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Proyecto</span>
           <div class="font-medium text-gray-700 dark:text-white break-words whitespace-normal">
             {{ getProjectName(v.projectId) }}
           </div>
@@ -408,18 +416,18 @@
       </div>
 
       <div>
-        <label class="block text-xs text-gray-500 dark:text-100 mb-1">Descripción</label>
+        <span class="block text-xs text-gray-500 dark:text-100 mb-1">Descripción</span>
         <p class="whitespace-pre-wrap text-gray-700 dark:text-white">{{ v.description }}</p>
       </div>
 
       <div *ngIf="v.notes">
-        <label class="block text-xs text-gray-500 dark:text-white mb-1">Notas</label>
+        <span class="block text-xs text-gray-500 dark:text-white mb-1">Notas</span>
         <p class="whitespace-pre-wrap text-gray-700 dark:text-white">{{ v.notes }}</p>
       </div>
 
       @if (v.documents?.length) {
       <div>
-        <label class="block text-xs text-gray-500 dark:text-white mb-2">Documentos</label>
+        <span class="block text-xs text-gray-500 dark:text-white mb-2">Documentos</span>
         <div class="space-y-1">
           @for (doc of v.documents; track doc) {
           <div
@@ -437,12 +445,14 @@
                 icon="pi pi-eye"
                 class="p-button-text p-button-sm"
                 (click)="viewDocument(doc)"
+                aria-label="Ver documento"
               ></button>
               <button
                 pButton
                 icon="pi pi-download"
                 class="p-button-text p-button-sm"
                 (click)="downloadDocument(doc)"
+                aria-label="Descargar documento"
               ></button>
             </div>
           </div>
@@ -453,7 +463,7 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" (click)="closeViewDialog()"></button>
+      <button pButton label="Cerrar" (click)="closeViewDialog()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 
@@ -485,11 +495,11 @@
         </div>
       </div>
 
-      <!-- Selección de imagen -->
+        <!-- Selección de imagen -->
       <div class="space-y-3">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Imagen del Rostro
-        </label>
+        </span>
 
         <!-- Preview de imagen -->
         @if (faceImagePreview()) {
@@ -508,6 +518,7 @@
             class="p-button-rounded p-button-danger p-button-text absolute top-2 right-2"
             (click)="faceImage.set(null); faceImagePreview.set(null)"
             [pTooltip]="'Eliminar imagen'"
+            aria-label="Eliminar imagen"
           ></button>
         </div>
         }
@@ -521,6 +532,7 @@
             icon="pi pi-camera"
             (click)="captureFromCamera()"
             class="w-full"
+            aria-label="Capturar imagen desde cámara"
           ></button>
         </div>
         <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -575,6 +587,7 @@
           (click)="closeFaceDialog()"
           [disabled]="isMarkingAttendance()"
           severity="secondary"
+          aria-label="Cancelar"
         ></button>
         <button
           pButton
@@ -584,6 +597,7 @@
           [loading]="isMarkingAttendance()"
           [disabled]="!faceImage() || isMarkingAttendance()"
           severity="success"
+          aria-label="Marcar asistencia con reconocimiento facial"
         ></button>
       </div>
     </ng-template>

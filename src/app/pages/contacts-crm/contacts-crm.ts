@@ -96,7 +96,10 @@ export class ContactsCrmPage implements OnInit {
     }
 
     load() {
-        const params: any = {};
+        const params: {
+            search?: string;
+            clientId?: string;
+        } = {};
         if (this.query()) params.search = this.query();
         if (this.clientFilter()) params.clientId = this.clientFilter();
 
@@ -318,14 +321,17 @@ export class ContactsCrmPage implements OnInit {
         return emailRegex.test(email);
     }
 
-    private getErrorMessage(error: any): string {
-        if (error.error?.message) {
-            return error.error.message;
+    private getErrorMessage(error: unknown): string {
+        if (error && typeof error === 'object' && 'error' in error) {
+            const httpError = error as { error?: { message?: string; error?: string }; message?: string };
+            if (httpError.error?.message) {
+                return String(httpError.error.message);
+            }
+            if (httpError.error?.error) {
+                return String(httpError.error.error);
+            }
         }
-        if (error.error?.error) {
-            return error.error.error;
-        }
-        if (error.message) {
+        if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
             return error.message;
         }
         return 'Ha ocurrido un error inesperado';

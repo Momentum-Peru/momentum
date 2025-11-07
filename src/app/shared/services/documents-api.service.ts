@@ -125,7 +125,7 @@ export class DocumentsApiService {
      * @param proyectoId ID del proyecto (opcional)
      * @param autoCreate Si se debe crear el documento automáticamente después del escaneo
      */
-    scanInvoice(file: File, proyectoId?: string, autoCreate: boolean = true): Observable<ScanInvoiceResponse> {
+    scanInvoice(file: File, proyectoId?: string, autoCreate = true): Observable<ScanInvoiceResponse> {
         const formData = new FormData();
         formData.append('file', file);
         
@@ -168,8 +168,9 @@ export class DocumentsApiService {
                         `Tamaño: ${fileSizeMB.toFixed(2)}MB. ` +
                         `Por favor, intente con una imagen más pequeña o verifique su conexión a internet.`
                     );
-                    (timeoutError as any).originalError = error;
-                    (timeoutError as any).isTimeout = true;
+                    const errorWithMetadata = timeoutError as Error & { originalError?: unknown; isTimeout?: boolean };
+                    errorWithMetadata.originalError = error;
+                    errorWithMetadata.isTimeout = true;
                     return throwError(() => timeoutError);
                 }
                 return throwError(() => error);
