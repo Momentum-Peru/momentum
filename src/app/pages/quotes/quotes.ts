@@ -674,12 +674,11 @@ export class QuotesPage implements OnInit {
     }
   }
 
-  onPageChange(event: { page: number; rows: number }) {
-    this.pagination.update((p) => ({
-      ...p,
-      page: event.page + 1,
-      limit: event.rows,
-    }));
+  onPageChange(event: any) {
+    const first: number = typeof event.first === 'number' ? event.first : 0;
+    const rows: number = typeof event.rows === 'number' ? event.rows : this.pagination().limit;
+    const pageCalculated = rows > 0 ? Math.floor(first / rows) : 0;
+    this.pagination.update((p) => ({ ...p, page: pageCalculated + 1, limit: rows }));
     this.loadQuotes();
   }
 

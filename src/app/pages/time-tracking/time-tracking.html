@@ -495,48 +495,68 @@
         </div>
       </div>
 
-        <!-- Selección de imagen -->
+        <!-- Video de la cámara con detección en tiempo real -->
       <div class="space-y-3">
         <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Imagen del Rostro
+          Reconocimiento Facial
         </span>
 
-        <!-- Preview de imagen -->
-        @if (faceImagePreview()) {
-        <div
-          class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4"
-        >
-          <img
-            [src]="faceImagePreview()"
-            alt="Preview"
-            class="max-w-full h-auto max-h-64 rounded-lg"
-          />
-          <button
-            pButton
-            type="button"
-            icon="pi pi-times"
-            class="p-button-rounded p-button-danger p-button-text absolute top-2 right-2"
-            (click)="faceImage.set(null); faceImagePreview.set(null)"
-            [pTooltip]="'Eliminar imagen'"
-            aria-label="Eliminar imagen"
-          ></button>
+        <!-- Video de la cámara -->
+        @if (isCameraActive() && !faceImagePreview()) {
+        <div class="space-y-3">
+          <div
+            class="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-black"
+          >
+            <video #cameraVideo autoplay playsinline class="w-full max-h-64 object-contain"></video>
+            <canvas
+              #detectionCanvas
+              class="absolute inset-0 pointer-events-none"
+              style="width: 100%; height: 100%"
+            ></canvas>
+            @if (!isVideoReady()) {
+            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+              <div class="text-center text-white">
+                <i class="pi pi-spin pi-spinner text-3xl mb-2"></i>
+                <p class="text-sm">Iniciando cámara...</p>
+              </div>
+            </div>
+            } @if (isVideoReady() && faceDetectionResult()) {
+            <div
+              class="absolute bottom-2 left-2 right-2 bg-black bg-opacity-75 rounded-lg p-2 text-white text-xs"
+            >
+              <div class="flex items-center gap-2">
+                @if (faceDetectionResult()?.isValid) {
+                <i class="pi pi-check-circle text-green-400"></i>
+                <span class="font-semibold">Rostro detectado correctamente. Marcando asistencia...</span>
+                } @else {
+                <i class="pi pi-exclamation-circle text-red-400"></i>
+                <span>{{ faceDetectionResult()?.message || 'Detectando...' }}</span>
+                }
+              </div>
+            </div>
+            }
+          </div>
         </div>
         }
 
-        <!-- Botón de captura desde cámara -->
-        <div>
-          <button
-            pButton
-            type="button"
-            label="Capturar desde Cámara"
-            icon="pi pi-camera"
-            (click)="captureFromCamera()"
-            class="w-full"
-            aria-label="Capturar imagen desde cámara"
-          ></button>
+        <!-- Preview de imagen capturada (durante procesamiento) -->
+        @if (faceImagePreview()) {
+        <div class="space-y-3">
+          <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Procesando marcación...
+          </span>
+          <div class="relative inline-block w-full">
+            <img
+              [src]="faceImagePreview()"
+              alt="Vista previa"
+              class="max-w-full h-auto max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 w-full object-contain"
+            />
+          </div>
         </div>
+        }
+
         <p class="text-xs text-gray-500 dark:text-gray-400">
-          Solo se permite captura desde cámara para garantizar la autenticidad de la marcación
+          El sistema detectará automáticamente tu rostro y marcará la asistencia cuando esté listo
         </p>
       </div>
 
@@ -589,16 +609,12 @@
           severity="secondary"
           aria-label="Cancelar"
         ></button>
-        <button
-          pButton
-          label="Marcar Asistencia"
-          icon="pi pi-check"
-          (click)="markAttendanceWithFace()"
-          [loading]="isMarkingAttendance()"
-          [disabled]="!faceImage() || isMarkingAttendance()"
-          severity="success"
-          aria-label="Marcar asistencia con reconocimiento facial"
-        ></button>
+        @if (isMarkingAttendance()) {
+        <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Procesando marcación...</span>
+        </div>
+        }
       </div>
     </ng-template>
   </p-dialog>

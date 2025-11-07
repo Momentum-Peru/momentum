@@ -7,6 +7,7 @@ import {
   OnInit,
   signal,
   inject,
+  computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,6 +17,8 @@ import { ToastModule } from 'primeng/toast';
 import { DashboardFiltersParams } from '../../interfaces/dashboard.interface';
 import { ProjectsApiService } from '../../services/projects-api.service';
 import { ClientsApiService } from '../../services/clients-api.service';
+import { CompaniesApiService } from '../../services/companies-api.service';
+import { AuthService } from '../../../pages/login/services/auth.service';
 
 interface ProjectOption {
   id: string;
@@ -25,6 +28,12 @@ interface ProjectOption {
 interface ClientOption {
   id: string;
   name: string;
+}
+
+interface CompanyOption {
+  id: string;
+  name: string;
+  code?: string;
 }
 
 /**
@@ -46,20 +55,28 @@ export class DashboardFiltersComponent implements OnInit {
 
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly clientsApi = inject(ClientsApiService);
+  private readonly companiesApi = inject(CompaniesApiService);
+  private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
 
   // Signals para el estado reactivo
   protected readonly selectedPeriod = signal<string>('30d');
   protected readonly selectedProject = signal<ProjectOption | null>(null);
   protected readonly selectedClient = signal<ClientOption | null>(null);
+  protected readonly selectedCompany = signal<CompanyOption | null>(null);
   protected readonly startDate = signal<string>('');
   protected readonly endDate = signal<string>('');
 
   // Signals para opciones de los dropdowns
   protected readonly projectOptions = signal<{ label: string; value: ProjectOption | null }[]>([]);
   protected readonly clientOptions = signal<{ label: string; value: ClientOption | null }[]>([]);
+  protected readonly companyOptions = signal<{ label: string; value: CompanyOption | null }[]>([]);
   protected readonly loadingProjects = signal<boolean>(false);
   protected readonly loadingClients = signal<boolean>(false);
+  protected readonly loadingCompanies = signal<boolean>(false);
+
+  // Computed para verificar si el usuario es gerencia
+  protected readonly isGerencia = computed(() => this.authService.isGerencia());
 
   // Opciones para el período
   protected readonly periodOptions = [
@@ -74,6 +91,10 @@ export class DashboardFiltersComponent implements OnInit {
     // Cargar proyectos y clientes desde los servicios
     this.loadProjects();
     this.loadClients();
+    // Cargar empresas si el usuario es gerencia
+    if (this.isGerencia()) {
+      this.loadCompanies();
+    }
     // Configuración inicial
     this.loadInitialFilters();
   }
@@ -147,10 +168,46 @@ export class DashboardFiltersComponent implements OnInit {
   }
 
   /**
+   * Carga las empresas desde el backend (solo para rol gerencia)
+   */
+  private loadCompanies(): void {
+    this.loadingCompanies.set(true);
+    this.companiesApi.list({ isActive: true }).subscribe({
+      next: (companies) => {
+        const options: { label: string; value: CompanyOption | null }[] = [
+          { label: 'Todas las empresas', value: null },
+        ];
+        companies.forEach((company) => {
+          if (company._id) {
+            options.push({
+              label: `${company.name}${company.code ? ` (${company.code})` : ''}`,
+              value: { id: company._id, name: company.name, code: company.code },
+            });
+          }
+        });
+        this.companyOptions.set(options);
+        this.loadingCompanies.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading companies:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar las empresas',
+        });
+        this.loadingCompanies.set(false);
+        // Mantener opción por defecto en caso de error
+        this.companyOptions.set([{ label: 'Todas las empresas', value: null }]);
+      },
+    });
+  }
+
+  /**
    * Carga los filtros iniciales
    */
   private loadInitialFilters(): void {
-    // Aquí se podrían cargar filtros desde un servicio o localStorage
+    // Para gerencia, aplicar filtros sin empresa seleccionada para obtener datos agregados
+    // Para otros roles, aplicar filtros normales
     this.applyFilters();
   }
 
@@ -175,14 +232,24 @@ export class DashboardFiltersComponent implements OnInit {
    * Maneja el cambio de proyecto
    */
   onProjectChange(): void {
-    // El cambio se maneja automáticamente por el binding
+    // Aplicar filtros automáticamente cuando cambia el proyecto
+    this.applyFilters();
   }
 
   /**
    * Maneja el cambio de cliente
    */
   onClientChange(): void {
-    // El cambio se maneja automáticamente por el binding
+    // Aplicar filtros automáticamente cuando cambia el cliente
+    this.applyFilters();
+  }
+
+  /**
+   * Maneja el cambio de empresa
+   */
+  onCompanyChange(): void {
+    // Aplicar filtros automáticamente cuando cambia la empresa
+    this.applyFilters();
   }
 
   /**
@@ -214,6 +281,17 @@ export class DashboardFiltersComponent implements OnInit {
       }
     }
 
+    // Agregar filtro por empresa si el usuario es gerencia
+    if (this.isGerencia()) {
+      const company = this.selectedCompany();
+      if (company && company !== null) {
+        if (typeof company === 'object' && 'id' in company) {
+          filters.tenantId = company.id;
+          filters.companyId = company.id; // Alias para compatibilidad
+        }
+      }
+    }
+
     this.filtersChanged.emit(filters);
   }
 
@@ -224,6 +302,7 @@ export class DashboardFiltersComponent implements OnInit {
     this.selectedPeriod.set('30d');
     this.selectedProject.set(null);
     this.selectedClient.set(null);
+    this.selectedCompany.set(null);
     this.startDate.set('');
     this.endDate.set('');
     this.applyFilters();
@@ -243,7 +322,8 @@ export class DashboardFiltersComponent implements OnInit {
     return (
       this.selectedPeriod() !== '30d' ||
       this.selectedProject() !== null ||
-      this.selectedClient() !== null
+      this.selectedClient() !== null ||
+      (this.isGerencia() && this.selectedCompany() !== null)
     );
   }
 
@@ -278,6 +358,14 @@ export class DashboardFiltersComponent implements OnInit {
    */
   removeClientFilter(): void {
     this.selectedClient.set(null);
+    this.applyFilters();
+  }
+
+  /**
+   * Remueve el filtro de empresa
+   */
+  removeCompanyFilter(): void {
+    this.selectedCompany.set(null);
     this.applyFilters();
   }
 }

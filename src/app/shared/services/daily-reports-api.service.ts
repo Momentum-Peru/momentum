@@ -44,6 +44,7 @@ export class DailyExpensesApiService {
     startDate?: string;
     endDate?: string;
     q?: string;
+    tenantId?: string; // Para filtrar por empresa (rol gerencia)
   }): Observable<DailyReport[]> {
     let url = `${this.baseUrl}/daily-reports`;
     const params = new URLSearchParams();
@@ -52,6 +53,7 @@ export class DailyExpensesApiService {
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
     if (filters?.q) params.append('q', filters.q);
+    if (filters?.tenantId) params.append('tenantId', filters.tenantId);
     if (params.toString()) url += `?${params.toString()}`;
     return this.http.get<DailyReport[]>(url);
   }

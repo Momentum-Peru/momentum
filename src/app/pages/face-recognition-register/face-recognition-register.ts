@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject, effect, computed } from '@angular/core';
+import { Component, OnInit, signal, inject, effect, computed, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -17,6 +17,7 @@ import { UsersApiService } from '../../shared/services/users-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import { FaceDescriptor } from '../../shared/interfaces/face-recognition.interface';
 import { TenantService } from '../../core/services/tenant.service';
+import { FaceDetectionService, FaceDetectionResult } from '../../shared/services/face-detection.service';
 
 /**
  * Componente de Registro de Reconocimiento Facial
@@ -43,12 +44,16 @@ import { TenantService } from '../../core/services/tenant.service';
   styleUrl: './face-recognition-register.scss',
   providers: [MessageService, ConfirmationService],
 })
-export class FaceRecognitionRegisterPage implements OnInit {
+export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
   private readonly faceRecognitionApi = inject(FaceRecognitionApiService);
   private readonly usersApi = inject(UsersApiService);
   private readonly tenantService = inject(TenantService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly faceDetection = inject(FaceDetectionService);
+
+  @ViewChild('cameraVideo', { static: false }) cameraVideoRef?: ElementRef<HTMLVideoElement>;
+  @ViewChild('detectionCanvas', { static: false }) detectionCanvasRef?: ElementRef<HTMLCanvasElement>;
 
   users = signal<UserOption[]>([]);
   descriptors = signal<FaceDescriptor[]>([]);
@@ -58,6 +63,12 @@ export class FaceRecognitionRegisterPage implements OnInit {
   showDialog = signal(false);
   loading = signal(false);
   query = signal('');
+  cameraStream = signal<MediaStream | null>(null);
+  isCameraActive = signal(false);
+  isVideoReady = signal(false);
+  faceDetectionResult = signal<FaceDetectionResult | null>(null);
+  isDetecting = signal(false);
+  private detectionInterval?: ReturnType<typeof setInterval>;
 
   // Filtrado de usuarios
   filteredUsers = computed(() => {
@@ -88,18 +99,74 @@ export class FaceRecognitionRegisterPage implements OnInit {
     this.loadUsers();
   }
 
+  ngAfterViewInit() {
+    // Los listeners se configurarán cuando el video esté disponible
+  }
+
+  private setupVideoListeners() {
+    const video = this.cameraVideoRef?.nativeElement;
+    if (!video) {
+      // Reintentar si el video no está disponible
+      setTimeout(() => this.setupVideoListeners(), 100);
+      return;
+    }
+
+    // Remover listeners anteriores si existen
+    const onLoadedMetadata = () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        this.isVideoReady.set(true);
+      }
+    };
+
+    const onPlaying = () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        this.isVideoReady.set(true);
+      }
+    };
+
+    video.addEventListener('loadedmetadata', onLoadedMetadata);
+    video.addEventListener('playing', onPlaying);
+  }
+
   constructor() {
     effect(() => {
       if (!this.showDialog()) {
         this.selectedImage.set(null);
         this.imagePreview.set(null);
         this.selectedUserId.set('');
+        this.stopCamera();
+        this.isVideoReady.set(false);
+        this.stopDetection();
       }
     });
   }
 
   loadUsers() {
-    this.usersApi.list().subscribe({
+    const tenantId = this.tenantService.tenantId();
+    if (!tenantId) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No hay una empresa seleccionada. Se mostrarán todos los usuarios.',
+      });
+      // Si no hay tenantId, cargar todos los usuarios
+      this.usersApi.list().subscribe({
+        next: (users) => {
+          this.users.set(users);
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Error al cargar los usuarios',
+          });
+        },
+      });
+      return;
+    }
+
+    // Filtrar usuarios por tenantId
+    this.usersApi.list(tenantId).subscribe({
       next: (users) => {
         this.users.set(users);
       },
@@ -154,48 +221,280 @@ export class FaceRecognitionRegisterPage implements OnInit {
     }
   }
 
-  onImageSelect(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    // Validar tipo de archivo
-    if (!file.type.startsWith('image/')) {
+  async startCamera() {
+    try {
+      // Detener cualquier stream anterior
+      this.stopCamera();
+      
+      // Cargar modelos de face-api.js
+      this.loading.set(true);
+      try {
+        await this.faceDetection.loadModels();
+      } catch (error) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar los modelos de reconocimiento facial',
+        });
+        this.loading.set(false);
+        return;
+      }
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' },
+      });
+      
+      this.cameraStream.set(stream);
+      this.isCameraActive.set(true);
+      this.isVideoReady.set(false);
+      this.loading.set(false);
+      
+      // Configurar listeners primero
+      this.setupVideoListeners();
+      
+      // Asignar el stream al video y esperar a que esté listo
+      const assignStream = () => {
+        const video = this.cameraVideoRef?.nativeElement;
+        if (video && stream) {
+          video.srcObject = stream;
+          video.play()
+            .then(() => {
+              // El video está reproduciéndose, verificar dimensiones periódicamente
+              const checkReady = () => {
+                if (video.videoWidth > 0 && video.videoHeight > 0) {
+                  this.isVideoReady.set(true);
+                  this.startDetection();
+                } else {
+                  // Continuar verificando hasta que tenga dimensiones
+                  setTimeout(checkReady, 50);
+                }
+              };
+              // Dar un pequeño delay antes de verificar
+              setTimeout(checkReady, 100);
+            })
+            .catch((err) => {
+              console.error('Error al reproducir video:', err);
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No se pudo iniciar la reproducción del video',
+              });
+              this.isCameraActive.set(false);
+            });
+        } else {
+          // Si el video no está disponible, reintentar
+          setTimeout(assignStream, 100);
+        }
+      };
+      
+      // Esperar a que el diálogo esté completamente renderizado
+      setTimeout(assignStream, 200);
+    } catch (error) {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'El archivo debe ser una imagen',
+        detail:
+          'No se pudo acceder a la cámara. Verifica los permisos de la cámara en tu navegador.',
       });
-      input.value = '';
+      this.isCameraActive.set(false);
+      this.isVideoReady.set(false);
+      this.loading.set(false);
+    }
+  }
+
+  stopCamera() {
+    this.stopDetection();
+    
+    const stream = this.cameraStream();
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+      this.cameraStream.set(null);
+      this.isCameraActive.set(false);
+      this.isVideoReady.set(false);
+    }
+    
+    // Limpiar el video element
+    const video = this.cameraVideoRef?.nativeElement;
+    if (video) {
+      video.srcObject = null;
+    }
+  }
+
+  private startDetection() {
+    this.stopDetection();
+    this.isDetecting.set(true);
+    
+    this.detectionInterval = setInterval(async () => {
+      const video = this.cameraVideoRef?.nativeElement;
+      if (!video || !this.isVideoReady()) return;
+
+      try {
+        const result = await this.faceDetection.detectFace(video);
+        this.faceDetectionResult.set(result);
+        this.drawOverlay(video, result);
+      } catch (error) {
+        console.error('Error en detección facial:', error);
+      }
+    }, 200); // Detectar cada 200ms
+  }
+
+  private stopDetection() {
+    if (this.detectionInterval) {
+      clearInterval(this.detectionInterval);
+      this.detectionInterval = undefined;
+    }
+    this.isDetecting.set(false);
+    this.faceDetectionResult.set(null);
+    
+    const canvas = this.detectionCanvasRef?.nativeElement;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+  }
+
+  private drawOverlay(video: HTMLVideoElement, result: FaceDetectionResult) {
+    const canvas = this.detectionCanvasRef?.nativeElement;
+    if (!canvas || !video) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Ajustar tamaño del canvas al tamaño visual del video
+    const rect = video.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+
+    ctx.clearRect(0, 0, rect.width, rect.height);
+
+    // Si no hay rostro detectado, no dibujar nada
+    if (!result.detected || !result.box) {
       return;
     }
 
-    // Validar tamaño (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Calcular escala entre el video real y el video mostrado
+    const scaleX = rect.width / video.videoWidth;
+    const scaleY = rect.height / video.videoHeight;
+
+    // Convertir coordenadas del video real al canvas
+    const box = result.box;
+    const x = box.x * scaleX;
+    const y = box.y * scaleY;
+    const width = box.width * scaleX;
+    const height = box.height * scaleY;
+
+    // Color según estado
+    const isReady = result.isValid ?? false;
+    const color = isReady ? '#10b981' : '#ef4444';
+
+    // Dibujar elipse que se ajuste al rostro
+    const cx = x + width / 2;
+    const cy = y + height / 2;
+    const rx = width / 2;
+    const ry = height / 2;
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Elipse interna sutil
+    ctx.strokeStyle = isReady ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, Math.max(rx - 4, 0), Math.max(ry - 4, 0), 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  captureFromCamera() {
+    const result = this.faceDetectionResult();
+    if (!result || !result.isValid) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: result?.message || 'Asegúrate de que tu rostro esté centrado y nítido antes de capturar.',
+      });
+      return;
+    }
+
+    const stream = this.cameraStream();
+    if (!stream) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'La cámara no está activa. Por favor, inicia la cámara primero.',
+      });
+      return;
+    }
+
+    const video = this.cameraVideoRef?.nativeElement;
+    if (!video) {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'La imagen no debe exceder 5MB',
+        detail: 'El elemento de video no está disponible.',
       });
-      input.value = '';
       return;
     }
 
-    this.selectedImage.set(file);
+    // Verificar que el video tenga dimensiones válidas
+    if (!this.isVideoReady() || !video.videoWidth || !video.videoHeight) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Esperando...',
+        detail: 'El video aún no está listo. Por favor, espera un momento e intenta de nuevo.',
+      });
+      return;
+    }
 
-    // Crear preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      this.imagePreview.set(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo crear el contexto del canvas',
+      });
+      return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          const file = new File([blob], `face-capture-${Date.now()}.jpg`, {
+            type: 'image/jpeg',
+          });
+          this.selectedImage.set(file);
+          this.imagePreview.set(canvas.toDataURL('image/jpeg'));
+          this.stopCamera();
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo capturar la imagen',
+          });
+        }
+      },
+      'image/jpeg',
+      0.9
+    );
   }
 
   removeImage() {
     this.selectedImage.set(null);
     this.imagePreview.set(null);
-    const input = document.getElementById('imageInput') as HTMLInputElement;
-    if (input) input.value = '';
   }
 
   openRegisterDialog() {
@@ -203,13 +502,17 @@ export class FaceRecognitionRegisterPage implements OnInit {
     this.selectedImage.set(null);
     this.imagePreview.set(null);
     this.showDialog.set(true);
+    // Iniciar cámara automáticamente al abrir el diálogo
+    setTimeout(() => {
+      this.startCamera();
+    }, 100);
   }
 
   closeDialog() {
     this.showDialog.set(false);
   }
 
-  registerFace() {
+  async registerFace() {
     const userId = this.selectedUserId();
     const image = this.selectedImage();
 
@@ -242,27 +545,51 @@ export class FaceRecognitionRegisterPage implements OnInit {
     }
 
     this.loading.set(true);
-    this.faceRecognitionApi.registerFace(userId, image, tenantId).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Rostro registrado correctamente',
-        });
-        this.closeDialog();
-        if (userId) {
-          this.loadDescriptors(userId);
-        }
-      },
-      error: (error) => {
+
+    try {
+      const descriptor = await this.faceDetection.getDescriptorFromFile(image);
+      if (!descriptor || descriptor.length !== 128) {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: this.getErrorMessage(error),
+          detail: 'No se pudo extraer el descriptor facial (128 valores). Verifica la imagen.',
         });
         this.loading.set(false);
-      },
-    });
+        return;
+      }
+
+      const descriptorArr = Array.from(descriptor);
+      this.faceRecognitionApi
+        .registerFaceWithDescriptor(userId, image, descriptorArr, tenantId)
+        .subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Rostro registrado correctamente',
+            });
+            this.closeDialog();
+            if (userId) {
+              this.loadDescriptors(userId);
+            }
+          },
+          error: (error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: this.getErrorMessage(error),
+            });
+            this.loading.set(false);
+          },
+        });
+    } catch (e) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Error al procesar el descriptor facial',
+      });
+      this.loading.set(false);
+    }
   }
 
   deleteDescriptor(descriptor: FaceDescriptor) {

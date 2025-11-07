@@ -3,7 +3,15 @@
 
   <!-- Título -->
   <div class="mb-4">
-    <h1 class="text-2xl font-semibold text-gray-800">Reportes diarios</h1>
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <h1 class="text-2xl font-semibold text-gray-800">Reportes diarios</h1>
+      @if (isGerencia()) {
+      <div class="flex items-center gap-2 px-4 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+        <i class="pi pi-building text-orange-600 dark:text-orange-400"></i>
+        <span class="text-sm font-medium text-orange-800 dark:text-orange-200">Vista Gerencia - Todos los usuarios y empresas</span>
+      </div>
+      }
+    </div>
   </div>
 
   <div class="flex flex-wrap items-center gap-2">
@@ -25,6 +33,50 @@
       [selectionMode]="'single'"
       class="w-full xl:w-auto"
     ></p-datepicker>
+    <!-- Filtro por empresa (solo para rol gerencia) -->
+    @if (isGerencia()) {
+    <p-select
+      [options]="companyOptions()"
+      [(ngModel)]="selectedCompany"
+      (ngModelChange)="onCompanyChange()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Seleccionar empresa"
+      [showClear]="true"
+      [loading]="loadingCompanies()"
+      [disabled]="loadingCompanies()"
+      class="w-full xl:w-auto min-w-[200px]"
+      [appendTo]="'body'"
+      [filter]="true"
+      filterPlaceholder="Buscar empresa..."
+    >
+      <ng-template pTemplate="header">
+        <i class="pi pi-building mr-2"></i>
+        <span>Empresa</span>
+      </ng-template>
+    </p-select>
+    <!-- Filtro por usuario (solo para rol gerencia) -->
+    <p-select
+      [options]="userOptions()"
+      [(ngModel)]="selectedUser"
+      (ngModelChange)="onUserChange()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Seleccionar usuario"
+      [showClear]="true"
+      [loading]="loadingUsers()"
+      [disabled]="loadingUsers()"
+      class="w-full xl:w-auto min-w-[200px]"
+      [appendTo]="'body'"
+      [filter]="true"
+      filterPlaceholder="Buscar usuario..."
+    >
+      <ng-template pTemplate="header">
+        <i class="pi pi-user mr-2"></i>
+        <span>Usuario</span>
+      </ng-template>
+    </p-select>
+    }
     <button
       pButton
       type="button"
@@ -48,6 +100,9 @@
         <tr>
           <th>Fecha</th>
           <th>Hora</th>
+          @if (isGerencia()) {
+          <th>Usuario</th>
+          }
           <th>Proyecto</th>
           <th>Descripción</th>
           <th class="text-right">Acciones</th>
@@ -57,6 +112,13 @@
         <tr>
           <td>{{ row.date | date : 'dd/MM/yyyy' }}</td>
           <td>{{ row.time }}</td>
+          @if (isGerencia()) {
+          <td>
+            <span class="text-sm text-gray-700 dark:text-white font-medium break-words whitespace-normal">
+              {{ getUserName(row.userId) }}
+            </span>
+          </td>
+          }
           <td>
             <span
               class="text-sm text-gray-700 dark:text-white font-medium break-words whitespace-normal"
@@ -114,6 +176,11 @@
           <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
             {{ row.date | date : 'dd/MM/yyyy' }} · {{ row.time }}
           </div>
+          @if (isGerencia()) {
+          <div class="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
+            <i class="pi pi-user mr-1"></i>{{ getUserName(row.userId) }}
+          </div>
+          }
           <div class="font-semibold text-gray-900 dark:text-gray-100 break-words whitespace-normal">
             {{ getProjectName(row.projectId) }}
           </div>

@@ -10,7 +10,7 @@ export interface User {
   id: string; // Para compatibilidad con código existente
   name: string;
   email: string;
-  role: 'user' | 'moderator' | 'admin'; // Tipos específicos para compatibilidad
+  role: 'user' | 'moderator' | 'admin' | 'gerencia'; // Tipos específicos para compatibilidad
   isActive: boolean;
   tenantIds?: string[]; // Empresas asignadas al usuario
   createdAt: string;
@@ -23,14 +23,14 @@ export interface UserCreateRequest {
   name: string;
   email: string;
   password: string;
-  role: 'user' | 'moderator' | 'admin';
+  role: 'user' | 'moderator' | 'admin' | 'gerencia';
   isActive?: boolean;
 }
 
 export interface UserUpdateRequest {
   name?: string;
   email?: string;
-  role?: 'user' | 'moderator' | 'admin';
+  role?: 'user' | 'moderator' | 'admin' | 'gerencia';
   isActive?: boolean;
   tenantIds?: string[]; // Actualizar empresas asignadas
 }
@@ -41,6 +41,7 @@ export interface UserFilters {
   isActive?: boolean | undefined;
   page?: number;
   limit?: number;
+  tenantId?: string;
 }
 
 export interface UserResponse {
@@ -63,9 +64,14 @@ export class UsersApiService {
 
   /**
    * Obtiene la lista de usuarios para el selector
+   * @param tenantId Opcional: Filtrar usuarios por tenantId
    */
-  list(): Observable<UserOption[]> {
-    return this.http.get<{ users: User[] }>(this.baseUrl).pipe(
+  list(tenantId?: string): Observable<UserOption[]> {
+    let url = this.baseUrl;
+    if (tenantId) {
+      url = `${this.baseUrl}?tenantId=${tenantId}`;
+    }
+    return this.http.get<{ users: User[] }>(url).pipe(
       map((response) =>
         response.users.map((user) => ({
           _id: user._id || user.id,
@@ -86,6 +92,7 @@ export class UsersApiService {
     if (filters.search) params.append('search', filters.search);
     if (filters.role) params.append('role', filters.role);
     if (filters.isActive !== undefined) params.append('isActive', filters.isActive.toString());
+    if (filters.tenantId) params.append('tenantId', filters.tenantId);
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
 

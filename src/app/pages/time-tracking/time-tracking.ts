@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject, effect, computed } from '@angular/core';
+import { Component, OnInit, signal, inject, effect, computed, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -19,6 +19,7 @@ import { AuthService } from '../login/services/auth.service';
 import { TenantService } from '../../core/services/tenant.service';
 import { TimeTracking, TimeTrackingStatus } from '../../shared/interfaces/time-tracking.interface';
 import { AttendanceRecord } from '../../shared/interfaces/face-recognition.interface';
+import { FaceDetectionService, FaceDetectionResult } from '../../shared/services/face-detection.service';
 import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
 
 /**
@@ -50,6 +51,7 @@ export class TimeTrackingPage implements OnInit {
   private readonly timeTrackingApi = inject(TimeTrackingApiService);
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly faceRecognitionApi = inject(FaceRecognitionApiService);
+  private readonly faceDetection = inject(FaceDetectionService);
   private readonly authService = inject(AuthService);
   private readonly tenantService = inject(TenantService);
   private readonly messageService = inject(MessageService);
@@ -73,6 +75,17 @@ export class TimeTrackingPage implements OnInit {
   faceLocation = signal<string>('');
   faceNotes = signal<string>('');
   isMarkingAttendance = signal(false);
+
+  // Cámara y detección en tiempo real
+  @ViewChild('cameraVideo', { static: false }) cameraVideoRef?: ElementRef<HTMLVideoElement>;
+  @ViewChild('detectionCanvas', { static: false }) detectionCanvasRef?: ElementRef<HTMLCanvasElement>;
+  cameraStream = signal<MediaStream | null>(null);
+  isCameraActive = signal(false);
+  isVideoReady = signal(false);
+  faceDetectionResult = signal<FaceDetectionResult | null>(null);
+  isDetecting = signal(false);
+  private detectionInterval?: ReturnType<typeof setInterval>;
+  private autoCaptureTriggered = signal(false);
 
   // Opciones de estado
   statusOptions = signal<{ label: string; value: TimeTrackingStatus }[]>([
@@ -125,6 +138,31 @@ export class TimeTrackingPage implements OnInit {
         this.faceImagePreview.set(null);
         this.faceLocation.set('');
         this.faceNotes.set('');
+        this.stopCamera();
+        this.isVideoReady.set(false);
+        this.stopDetection();
+        this.autoCaptureTriggered.set(false);
+      }
+    });
+
+    // Efecto para auto-capturar y enviar cuando el rostro sea válido
+    effect(() => {
+      const result = this.faceDetectionResult();
+      const isValid = result?.isValid ?? false;
+      const alreadyTriggered = this.autoCaptureTriggered();
+      const isMarking = this.isMarkingAttendance();
+
+      // Solo auto-capturar si:
+      // - El rostro es válido
+      // - No se ha disparado ya
+      // - No se está marcando actualmente
+      // - El video está listo
+      if (isValid && !alreadyTriggered && !isMarking && this.isVideoReady()) {
+        this.autoCaptureTriggered.set(true);
+        // Pequeño delay para asegurar estabilidad
+        setTimeout(() => {
+          this.autoCaptureAndMark();
+        }, 500);
       }
     });
   }
@@ -640,6 +678,11 @@ export class TimeTrackingPage implements OnInit {
    */
   openFaceMarkDialog() {
     this.showFaceDialog.set(true);
+    this.autoCaptureTriggered.set(false);
+    // Iniciar cámara automáticamente al abrir el diálogo
+    setTimeout(() => {
+      this.startCamera();
+    }, 100);
   }
 
   /**
@@ -650,56 +693,267 @@ export class TimeTrackingPage implements OnInit {
   }
 
   /**
-   * Captura imagen desde la cámara
-   * Nota: Solo se permite captura desde cámara, no se permiten subidas de archivos
+   * Inicia la cámara para detección en tiempo real
    */
-  async captureFromCamera() {
+  async startCamera() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      video.play();
+      this.stopCamera();
 
-      // Crear un canvas para capturar el frame
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
+      // Cargar modelos de face-api.js
+      this.isMarkingAttendance.set(true);
+      try {
+        await this.faceDetection.loadModels();
+      } catch (error) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar los modelos de reconocimiento facial',
+        });
+        this.isMarkingAttendance.set(false);
+        return;
+      }
 
-      // Esperar a que el video esté listo
-      video.addEventListener('loadedmetadata', () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context?.drawImage(video, 0, 0);
-        stream.getTracks().forEach((track) => track.stop());
-
-        // Convertir canvas a blob
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              const file = new File([blob], `capture-${Date.now()}.jpg`, {
-                type: 'image/jpeg',
-              });
-              this.faceImage.set(file);
-              this.faceImagePreview.set(canvas.toDataURL('image/jpeg'));
-            }
-          },
-          'image/jpeg',
-          0.9
-        );
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' },
       });
-    } catch {
+
+      this.cameraStream.set(stream);
+      this.isCameraActive.set(true);
+      this.isVideoReady.set(false);
+      this.isMarkingAttendance.set(false);
+
+      this.setupVideoListeners();
+
+      const assignStream = () => {
+        const video = this.cameraVideoRef?.nativeElement;
+        if (video && stream) {
+          video.srcObject = stream;
+          video.play()
+            .then(() => {
+              const checkReady = () => {
+                if (video.videoWidth > 0 && video.videoHeight > 0) {
+                  this.isVideoReady.set(true);
+                  this.startDetection();
+                } else {
+                  setTimeout(checkReady, 50);
+                }
+              };
+              setTimeout(checkReady, 100);
+            })
+            .catch((err) => {
+              console.error('Error al reproducir video:', err);
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No se pudo iniciar la reproducción del video',
+              });
+              this.isCameraActive.set(false);
+            });
+        } else {
+          setTimeout(assignStream, 100);
+        }
+      };
+
+      setTimeout(assignStream, 200);
+    } catch (error) {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
         detail:
           'No se pudo acceder a la cámara. Verifica los permisos de la cámara en tu navegador.',
       });
+      this.isCameraActive.set(false);
+      this.isVideoReady.set(false);
+      this.isMarkingAttendance.set(false);
     }
   }
 
   /**
+   * Detiene la cámara
+   */
+  stopCamera() {
+    this.stopDetection();
+
+    const stream = this.cameraStream();
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+      this.cameraStream.set(null);
+      this.isCameraActive.set(false);
+      this.isVideoReady.set(false);
+    }
+
+    const video = this.cameraVideoRef?.nativeElement;
+    if (video) {
+      video.srcObject = null;
+    }
+  }
+
+  /**
+   * Configura listeners del video
+   */
+  private setupVideoListeners() {
+    const video = this.cameraVideoRef?.nativeElement;
+    if (!video) {
+      setTimeout(() => this.setupVideoListeners(), 100);
+      return;
+    }
+
+    const onLoadedMetadata = () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        this.isVideoReady.set(true);
+      }
+    };
+
+    const onPlaying = () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        this.isVideoReady.set(true);
+      }
+    };
+
+    video.addEventListener('loadedmetadata', onLoadedMetadata);
+    video.addEventListener('playing', onPlaying);
+  }
+
+  /**
+   * Inicia la detección facial en tiempo real
+   */
+  private startDetection() {
+    this.stopDetection();
+    this.isDetecting.set(true);
+
+    this.detectionInterval = setInterval(async () => {
+      const video = this.cameraVideoRef?.nativeElement;
+      if (!video || !this.isVideoReady()) return;
+
+      try {
+        const result = await this.faceDetection.detectFace(video);
+        this.faceDetectionResult.set(result);
+        this.drawOverlay(video, result);
+      } catch (error) {
+        console.error('Error en detección facial:', error);
+      }
+    }, 200);
+  }
+
+  /**
+   * Detiene la detección facial
+   */
+  private stopDetection() {
+    if (this.detectionInterval) {
+      clearInterval(this.detectionInterval);
+      this.detectionInterval = undefined;
+    }
+    this.isDetecting.set(false);
+    this.faceDetectionResult.set(null);
+
+    const canvas = this.detectionCanvasRef?.nativeElement;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+  }
+
+  /**
+   * Dibuja el overlay en el canvas
+   */
+  private drawOverlay(video: HTMLVideoElement, result: FaceDetectionResult) {
+    const canvas = this.detectionCanvasRef?.nativeElement;
+    if (!canvas || !video) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rect = video.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+
+    ctx.clearRect(0, 0, rect.width, rect.height);
+
+    if (!result.detected || !result.box) {
+      return;
+    }
+
+    const scaleX = rect.width / video.videoWidth;
+    const scaleY = rect.height / video.videoHeight;
+
+    const box = result.box;
+    const x = box.x * scaleX;
+    const y = box.y * scaleY;
+    const width = box.width * scaleX;
+    const height = box.height * scaleY;
+
+    const isReady = result.isValid ?? false;
+    const color = isReady ? '#10b981' : '#ef4444';
+
+    const cx = x + width / 2;
+    const cy = y + height / 2;
+    const rx = width / 2;
+    const ry = height / 2;
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = isReady ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, Math.max(rx - 4, 0), Math.max(ry - 4, 0), 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  /**
+   * Captura automáticamente y marca asistencia cuando el rostro es válido
+   */
+  private async autoCaptureAndMark() {
+    const video = this.cameraVideoRef?.nativeElement;
+    if (!video || !this.isVideoReady() || !video.videoWidth || !video.videoHeight) {
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+
+    canvas.toBlob(
+      async (blob) => {
+        if (!blob) return;
+
+        const file = new File([blob], `attendance-${Date.now()}.jpg`, {
+          type: 'image/jpeg',
+        });
+
+        this.faceImage.set(file);
+        this.faceImagePreview.set(canvas.toDataURL('image/jpeg'));
+
+        // Detener cámara antes de procesar
+        this.stopCamera();
+
+        // Marcar asistencia automáticamente
+        await this.markAttendanceWithFace();
+      },
+      'image/jpeg',
+      0.9
+    );
+  }
+
+
+  /**
    * Marca la asistencia usando reconocimiento facial y crea el registro de tiempo
    */
-  markAttendanceWithFace() {
+  async markAttendanceWithFace() {
     const image = this.faceImage();
     if (!image) {
       this.messageService.add({
@@ -727,7 +981,20 @@ export class TimeTrackingPage implements OnInit {
       notes: this.faceNotes().trim() || undefined,
     };
 
-    this.faceRecognitionApi.markAttendance(image, tenantId, request).subscribe({
+    try {
+      const descriptor = await this.faceDetection.getDescriptorFromFile(image);
+      if (!descriptor || descriptor.length !== 128) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo extraer el descriptor facial (128 valores). Verifica la imagen.',
+        });
+        this.isMarkingAttendance.set(false);
+        return;
+      }
+
+      const descriptorArr = Array.from(descriptor);
+      this.faceRecognitionApi.markAttendanceWithDescriptor(image, descriptorArr, tenantId, request).subscribe({
       next: (attendanceRecord: AttendanceRecord) => {
         // Obtener el userId del registro de asistencia
         const userId =
@@ -797,5 +1064,13 @@ export class TimeTrackingPage implements OnInit {
         this.isMarkingAttendance.set(false);
       },
     });
+    } catch {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Error al procesar el descriptor facial',
+      });
+      this.isMarkingAttendance.set(false);
+    }
   }
 }

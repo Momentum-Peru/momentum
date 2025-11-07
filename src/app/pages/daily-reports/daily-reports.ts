@@ -14,9 +14,12 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DailyExpensesApiService } from '../../shared/services/daily-reports-api.service';
 import { ProjectsApiService } from '../../shared/services/projects-api.service';
+import { CompaniesApiService } from '../../shared/services/companies-api.service';
+import { UsersApiService } from '../../shared/services/users-api.service';
 import { AuthService } from '../login/services/auth.service';
 import { DailyReport } from '../../shared/interfaces/daily-report.interface';
 import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
+import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 
 @Component({
   selector: 'app-daily-expenses',
@@ -42,20 +45,32 @@ import { ProjectOption, Project } from '../../shared/interfaces/project.interfac
 export class DailyExpensesPage implements OnInit {
   private readonly dailyExpensesApi = inject(DailyExpensesApiService);
   private readonly projectsApi = inject(ProjectsApiService);
+  private readonly companiesApi = inject(CompaniesApiService);
+  private readonly usersApi = inject(UsersApiService);
   private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
 
   items = signal<DailyReport[]>([]);
   projects = signal<ProjectOption[]>([]);
+  users = signal<UserOption[]>([]);
   query = signal('');
   filterDate = signal<string | null>(null);
+  selectedCompany = signal<{ id: string; name: string; code?: string } | null>(null);
+  selectedUser = signal<{ id: string; name: string; email: string } | null>(null);
+  companyOptions = signal<{ label: string; value: { id: string; name: string; code?: string } | null }[]>([]);
+  userOptions = signal<{ label: string; value: { id: string; name: string; email: string } | null }[]>([]);
+  loadingCompanies = signal(false);
+  loadingUsers = signal(false);
   showDialog = signal(false);
   showViewDialog = signal(false);
   editing = signal<DailyReport | null>(null);
   viewing = signal<DailyReport | null>(null);
   // Estado de expansión para vista móvil (accordion)
   private expandedRowKeys = signal<Set<string>>(new Set());
+
+  // Computed para verificar si el usuario es gerencia
+  readonly isGerencia = computed(() => this.authService.isGerencia());
 
   // Archivos seleccionados (pendientes) cuando aún no existe el reporte
   pendingAudio = signal<File[]>([]);
@@ -192,6 +207,11 @@ export class DailyExpensesPage implements OnInit {
   ngOnInit() {
     this.load();
     this.loadProjects();
+    // Cargar empresas y usuarios si el usuario es gerencia
+    if (this.isGerencia()) {
+      this.loadCompanies();
+      this.loadUsers();
+    }
     // Detectar si es móvil
     this.isMobile.set(
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
@@ -242,25 +262,42 @@ export class DailyExpensesPage implements OnInit {
     }
 
     const fd = this.filterDate();
-    if (fd) {
-      this.dailyExpensesApi
-        .listWithFilters({ userId: currentUser.id, startDate: fd, endDate: fd })
-        .subscribe({
-          next: (data) => {
-            this.items.set(data);
-          },
-          error: () => {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'Error al cargar los reportes diarios',
-            });
-          },
-        });
-      return;
+    const filters: {
+      userId?: string;
+      startDate?: string;
+      endDate?: string;
+      tenantId?: string;
+    } = {};
+
+    // Para gerencia: no filtrar por userId para ver todos los reportes de todos los usuarios
+    // Para otros roles: filtrar por userId del usuario actual
+    if (!this.isGerencia()) {
+      filters.userId = currentUser.id;
     }
 
-    this.dailyExpensesApi.listWithFilters({ userId: currentUser.id }).subscribe({
+    // Agregar filtro de fecha si existe
+    if (fd) {
+      filters.startDate = fd;
+      filters.endDate = fd;
+    }
+
+    // Agregar filtro por empresa si es gerencia y hay empresa seleccionada
+    if (this.isGerencia()) {
+      const company = this.selectedCompany();
+      if (company && company.id) {
+        filters.tenantId = company.id;
+      }
+      // Si no hay empresa seleccionada, no agregar tenantId para ver todas las empresas
+
+      // Agregar filtro por usuario si hay usuario seleccionado
+      const user = this.selectedUser();
+      if (user && user.id) {
+        filters.userId = user.id;
+      }
+      // Si no hay usuario seleccionado, no agregar userId para ver todos los usuarios
+    }
+
+    this.dailyExpensesApi.listWithFilters(filters).subscribe({
       next: (data) => {
         this.items.set(data);
       },
@@ -298,6 +335,130 @@ export class DailyExpensesPage implements OnInit {
         });
       },
     });
+  }
+
+  /**
+   * Carga las empresas desde el backend (solo para rol gerencia)
+   */
+  loadCompanies(): void {
+    this.loadingCompanies.set(true);
+    this.companiesApi.list({ isActive: true }).subscribe({
+      next: (companies) => {
+        const options: { label: string; value: { id: string; name: string; code?: string } | null }[] = [
+          { label: 'Todas las empresas', value: null },
+        ];
+        companies.forEach((company) => {
+          if (company._id) {
+            options.push({
+              label: `${company.name}${company.code ? ` (${company.code})` : ''}`,
+              value: { id: company._id, name: company.name, code: company.code },
+            });
+          }
+        });
+        this.companyOptions.set(options);
+        this.loadingCompanies.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading companies:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar las empresas',
+        });
+        this.loadingCompanies.set(false);
+        // Mantener opción por defecto en caso de error
+        this.companyOptions.set([{ label: 'Todas las empresas', value: null }]);
+      },
+    });
+  }
+
+  /**
+   * Maneja el cambio de empresa
+   */
+  onCompanyChange(): void {
+    // Recargar reportes cuando cambia la empresa
+    // Si hay empresa seleccionada, recargar usuarios de esa empresa
+    if (this.isGerencia()) {
+      const company = this.selectedCompany();
+      if (company && company.id) {
+        this.loadUsers(company.id);
+      } else {
+        // Si no hay empresa, cargar todos los usuarios
+        this.loadUsers();
+      }
+    }
+    this.load();
+  }
+
+  /**
+   * Carga los usuarios desde el backend (solo para rol gerencia)
+   * @param tenantId Opcional: Filtrar usuarios por empresa
+   */
+  loadUsers(tenantId?: string): void {
+    if (!this.isGerencia()) {
+      return;
+    }
+
+    this.loadingUsers.set(true);
+    this.usersApi.list(tenantId).subscribe({
+      next: (userOptions) => {
+        const options: { label: string; value: { id: string; name: string; email: string } | null }[] = [
+          { label: 'Todos los usuarios', value: null },
+        ];
+        userOptions.forEach((user) => {
+          if (user._id) {
+            options.push({
+              label: `${user.name}${user.email ? ` (${user.email})` : ''}`,
+              value: { id: user._id, name: user.name, email: user.email || '' },
+            });
+          }
+        });
+        this.userOptions.set(options);
+        this.users.set(userOptions);
+        this.loadingUsers.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading users:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los usuarios',
+        });
+        this.loadingUsers.set(false);
+        // Mantener opción por defecto en caso de error
+        this.userOptions.set([{ label: 'Todos los usuarios', value: null }]);
+      },
+    });
+  }
+
+  /**
+   * Maneja el cambio de usuario
+   */
+  onUserChange(): void {
+    // Recargar reportes cuando cambia el usuario
+    this.load();
+  }
+
+  /**
+   * Obtiene el nombre del usuario del reporte
+   * @param userId ID del usuario o objeto populado
+   * @returns Nombre del usuario o 'Usuario desconocido'
+   */
+  getUserName(userId: string | { _id?: string; name?: string; email?: string } | undefined): string {
+    if (!userId) return 'Usuario desconocido';
+    
+    // Si es un objeto populado
+    if (typeof userId === 'object' && 'name' in userId) {
+      return userId.name || userId.email || 'Usuario desconocido';
+    }
+    
+    // Si es un string (ID), buscar en la lista de usuarios
+    if (typeof userId === 'string') {
+      const user = this.users().find((u) => u._id === userId);
+      return user?.name || user?.email || 'Usuario desconocido';
+    }
+    
+    return 'Usuario desconocido';
   }
 
   // Helpers de accordion móvil

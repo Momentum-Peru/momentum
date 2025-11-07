@@ -34,7 +34,7 @@ interface UserFormData {
   _id?: string;
   email: string;
   name: string;
-  role: 'user' | 'moderator' | 'admin';
+  role: 'user' | 'moderator' | 'admin' | 'gerencia';
   password?: string;
 }
 
@@ -104,6 +104,7 @@ export class UsersPage implements OnInit, OnDestroy {
     { label: 'Usuario', value: 'user' },
     { label: 'Moderador', value: 'moderator' },
     { label: 'Administrador', value: 'admin' },
+    { label: 'Gerencia', value: 'gerencia' },
   ];
 
   statusOptions = [

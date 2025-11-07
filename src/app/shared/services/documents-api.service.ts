@@ -136,11 +136,12 @@ export class DocumentsApiService {
         formData.append('autoCreate', autoCreate.toString());
 
         // Calcular timeout basado en el tamaño del archivo
-        // Para archivos grandes (6MB+), usar timeout más largo
-        // Base: 30 segundos, + 5 segundos por cada MB
+        // Para archivos grandes y conexiones móviles, usar timeout más generoso
+        // Base: 60 segundos, + 10 segundos por cada MB
+        // Esto da más tiempo para conexiones lentas y procesamiento en el backend
         const fileSizeMB = file.size / (1024 * 1024);
-        const timeoutMs = Math.max(30000, 30000 + (fileSizeMB * 5000)); // Mínimo 30s, +5s por MB
-        const maxTimeout = 300000; // Máximo 5 minutos
+        const timeoutMs = Math.max(60000, 60000 + (fileSizeMB * 10000)); // Mínimo 60s, +10s por MB
+        const maxTimeout = 600000; // Máximo 10 minutos para archivos muy grandes
         const finalTimeout = Math.min(timeoutMs, maxTimeout);
 
         console.log('Configurando timeout para escaneo:', {
@@ -158,20 +159,49 @@ export class DocumentsApiService {
             timeout(finalTimeout),
             retry({
                 count: 1, // Reintentar solo una vez
-                delay: 2000, // Esperar 2 segundos antes de reintentar
+                delay: 3000, // Esperar 3 segundos antes de reintentar (aumentado de 2s)
             }),
             catchError((error) => {
-                // Mejorar el mensaje de error para status 0
-                if (error.status === 0 || error.name === 'TimeoutError') {
+                // Mejorar el mensaje de error para status 0 o timeout
+                const isTimeout = error.status === 0 || error.name === 'TimeoutError' || error.message?.includes('timeout');
+                
+                if (isTimeout || error.isTimeout) {
+                    // Si ya es un error de timeout con metadata, solo re-lanzarlo
+                    if (error.isTimeout && error.originalError) {
+                        return throwError(() => error);
+                    }
+                    
                     const timeoutError = new Error(
                         `El archivo es demasiado grande o la conexión es lenta. ` +
                         `Tamaño: ${fileSizeMB.toFixed(2)}MB. ` +
                         `Por favor, intente con una imagen más pequeña o verifique su conexión a internet.`
                     );
-                    const errorWithMetadata = timeoutError as Error & { originalError?: unknown; isTimeout?: boolean };
+                    const errorWithMetadata = timeoutError as Error & { 
+                        originalError?: unknown; 
+                        isTimeout?: boolean; 
+                        fileName?: string; 
+                        fileType?: string; 
+                        fileSize?: number; 
+                        isMobile?: boolean;
+                        error?: unknown;
+                    };
                     errorWithMetadata.originalError = error;
                     errorWithMetadata.isTimeout = true;
-                    return throwError(() => timeoutError);
+                    errorWithMetadata.fileName = file.name;
+                    errorWithMetadata.fileType = file.type;
+                    errorWithMetadata.fileSize = file.size;
+                    errorWithMetadata.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    errorWithMetadata.error = {
+                        originalError: error,
+                        isTimeout: true,
+                        errorMessage: timeoutError.message,
+                        fileName: file.name,
+                        fileType: file.type,
+                        fileSize: file.size,
+                        isMobile: errorWithMetadata.isMobile,
+                        userAgent: navigator.userAgent
+                    };
+                    return throwError(() => errorWithMetadata);
                 }
                 return throwError(() => error);
             })
