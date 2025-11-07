@@ -341,16 +341,16 @@ export class DocumentScannerComponent implements AfterViewInit {
         isMobile: this.isMobileDevice(),
       };
       if (errorInfo.message) {
-        details.errorMessage = errorInfo.message;
+        details['errorMessage'] = errorInfo.message;
       }
       if (errorInfo.stack) {
-        details.errorStack = errorInfo.stack;
+        details['errorStack'] = errorInfo.stack;
       }
       if (errorInfo.status !== undefined) {
-        details.status = errorInfo.status;
+        details['status'] = errorInfo.status;
       }
       if (errorInfo.statusText) {
-        details.statusText = errorInfo.statusText;
+        details['statusText'] = errorInfo.statusText;
       }
 
       console.error('Error general en onFileSelect:', {
@@ -464,7 +464,7 @@ export class DocumentScannerComponent implements AfterViewInit {
     // Limpiar el componente FileUpload si está disponible
     if (this.fileUpload) {
       try {
-        this.fileUpload.clear();
+        (this.fileUpload as { clear?: () => void }).clear?.();
       } catch (error) {
         // Si el método clear no está disponible, intentar limpiar manualmente
         console.warn('No se pudo limpiar el FileUpload:', error);
@@ -551,23 +551,23 @@ export class DocumentScannerComponent implements AfterViewInit {
           userAgent: navigator.userAgent,
         };
         if (errorInfo.message) {
-          errorDetails.errorMessage = errorInfo.message;
+          errorDetails['errorMessage'] = errorInfo.message;
         }
         if (errorInfo.status !== undefined) {
-          errorDetails.errorStatus = errorInfo.status;
+          errorDetails['errorStatus'] = errorInfo.status;
         }
         if (errorInfo.statusText) {
-          errorDetails.errorStatusText = errorInfo.statusText;
+          errorDetails['errorStatusText'] = errorInfo.statusText;
         }
         if (errorInfo.stack) {
-          errorDetails.errorStack = errorInfo.stack;
+          errorDetails['errorStack'] = errorInfo.stack;
         }
         const errorPayload = (error && typeof error === 'object' && 'error' in (error as Record<string, unknown>))
           ? (error as { error?: unknown }).error
           : undefined;
         const serializedPayload = this.safeStringify(errorPayload);
         if (serializedPayload) {
-          errorDetails.errorResponse = serializedPayload;
+          errorDetails['errorResponse'] = serializedPayload;
         }
 
         console.error('Error al escanear documento:', {

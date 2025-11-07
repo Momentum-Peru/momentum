@@ -2,6 +2,7 @@ import { Component, Input, ChangeDetectionStrategy, signal } from '@angular/core
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
+import { TableData } from '../../interfaces/dashboard.interface';
 
 export interface TableColumn {
   field: string;
@@ -9,7 +10,7 @@ export interface TableColumn {
   sortable?: boolean;
 }
 
-export type TableData = Record<string, string | number | Date | null | undefined>;
+// Usamos TableData del módulo de interfaces para evitar duplicidad de tipos
 
 /**
  * Componente de tabla del dashboard
@@ -183,7 +184,7 @@ export class DashboardTableComponent {
    * @param date Fecha a formatear
    * @returns Fecha formateada
    */
-  formatDate(date: string | Date): string {
+  formatDate(date: string | Date | null | undefined): string {
     if (!date) return '-';
 
     const dateObj = typeof date === 'string' ? new Date(date) : date;
@@ -199,7 +200,7 @@ export class DashboardTableComponent {
    * @param value Valor a formatear
    * @returns Valor formateado como moneda
    */
-  formatCurrency(value: number): string {
+  formatCurrency(value: number | null | undefined): string {
     if (value === null || value === undefined) return '-';
 
     return new Intl.NumberFormat('es-ES', {
@@ -243,12 +244,14 @@ export class DashboardTableComponent {
    * Obtiene el valor formateado de una celda
    */
   getCellValue(rowData: TableData, field: string): string {
+    const raw = (rowData as Record<string, string | number | Date | null | undefined>)[field];
     if (field === 'date') {
-      return this.formatDate(rowData[field]);
-    } else if (field === 'value') {
-      return this.formatCurrency(rowData[field]);
-    } else {
-      return rowData[field] || '-';
+      return this.formatDate(raw as string | Date | null | undefined);
     }
+    if (field === 'value') {
+      return this.formatCurrency(raw as number | null | undefined);
+    }
+    if (raw === null || raw === undefined) return '-';
+    return String(raw);
   }
 }

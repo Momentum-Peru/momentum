@@ -52,6 +52,8 @@ export interface Lead {
     status: LeadStatus;
     source: LeadSource;
     estimatedValue?: number;
+    description?: string;
+    estimatedCloseDate?: string;
     notes?: string;
     assignedTo?: string;
     companyId?: string; // ID de la empresa de Momentum a la que pertenece el lead

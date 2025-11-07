@@ -19,7 +19,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
-import { FileUploadModule, FileUpload, FileUploadSelectEvent } from 'primeng/fileupload';
+import { FileUploadModule, FileUpload, FileSelectEvent } from 'primeng/fileupload';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { ToastModule } from 'primeng/toast';
@@ -241,7 +241,7 @@ export class DocumentFormComponent implements OnInit, OnChanges {
   /**
    * Manejar selección de archivos
    */
-  onFileSelect(event: FileUploadSelectEvent): void {
+  onFileSelect(event: FileSelectEvent): void {
     const newFiles: File[] = Array.from(event.files ?? []);
     const currentFiles = this.uploadedFiles();
 

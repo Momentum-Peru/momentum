@@ -104,13 +104,6 @@ export class QuotesPage implements OnInit {
     state: ['Pendiente' as QuoteState],
     createDate: [new Date(), Validators.required],
     sendDate: [null as Date | null],
-    items: this.fb.array<
-      FormGroup<{
-        description: string;
-        qty: number;
-        price: number;
-      }>
-    >([]),
     notes: [''],
     documents: [[] as string[]],
   });
@@ -488,13 +481,13 @@ export class QuotesPage implements OnInit {
     }
   }
 
-  onFileSelect(event: { files?: File[]; currentFiles?: File[]; target?: { files?: FileList } }) {
+  onFileSelect(event: { files?: File[] | FileList; currentFiles?: File[]; target?: { files?: FileList } }) {
     // El p-fileUpload puede enviar los archivos en diferentes estructuras
     let files: File[] = [];
 
     if (event.files && Array.isArray(event.files)) {
       files = event.files;
-    } else if (event.files && event.files.length !== undefined) {
+    } else if (event.files instanceof FileList) {
       // Convertir FileList a Array
       files = Array.from(event.files);
     } else if (event.currentFiles && Array.isArray(event.currentFiles)) {
@@ -787,8 +780,13 @@ export class QuotesPage implements OnInit {
           return message;
         }
       }
-      if (errorObj.error?.error && typeof errorObj.error.error === 'string') {
-        return errorObj.error.error;
+      const inner = (errorObj as { error?: unknown }).error as unknown;
+      if (inner && typeof inner === 'object') {
+        const innerRecord = inner as Record<string, unknown>;
+        const innerError = innerRecord['error'];
+        if (typeof innerError === 'string') {
+          return innerError;
+        }
       }
     }
 

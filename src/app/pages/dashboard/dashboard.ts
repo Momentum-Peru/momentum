@@ -93,7 +93,7 @@ export class DashboardPage implements OnInit {
    * Maneja los cambios en los filtros del dashboard
    * @param filters Nuevos filtros aplicados
    */
-  async onFiltersChanged(filters: Record<string, unknown>): Promise<void> {
+  async onFiltersChanged(filters: import('../../shared/interfaces/dashboard.interface').DashboardFiltersParams): Promise<void> {
     await this.dashboardService.loadDashboardData(filters);
   }
 
@@ -110,7 +110,7 @@ export class DashboardPage implements OnInit {
    * Filtra los KPIs según los permisos del usuario
    * @returns Array de entradas KPI filtradas
    */
-  protected getKpiEntries(): { key: string; value: string | number | null | undefined }[] {
+  protected getKpiEntries(): { key: string; value: import('../../shared/interfaces/dashboard.interface').DashboardKpi }[] {
     const kpis = this.dashboardService.kpis();
     if (!kpis) return [];
 

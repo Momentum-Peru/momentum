@@ -532,8 +532,13 @@ export class OrdersPage implements OnInit {
           return message;
         }
       }
-      if (errorObj.error?.error && typeof errorObj.error.error === 'string') {
-        return errorObj.error.error;
+      const inner = (errorObj as { error?: unknown }).error as unknown;
+      if (inner && typeof inner === 'object') {
+        const innerRecord = inner as Record<string, unknown>;
+        const innerError = innerRecord['error'];
+        if (typeof innerError === 'string') {
+          return innerError;
+        }
       }
     }
 

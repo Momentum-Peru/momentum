@@ -56,6 +56,7 @@ export interface TableData {
     clientName?: string;
     count: number;
     value: number;
+    [key: string]: string | number | Date | null | undefined;
 }
 
 export interface DashboardTables {

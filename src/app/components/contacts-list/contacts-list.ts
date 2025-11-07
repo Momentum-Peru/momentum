@@ -139,7 +139,7 @@ export class ContactsListComponent implements OnInit {
             acceptLabel: 'Eliminar',
             rejectLabel: 'Cancelar',
             accept: () => {
-                this.deleteContact(contact._id);
+                this.performDeleteContact(contact._id);
             }
         });
     }
@@ -147,7 +147,7 @@ export class ContactsListComponent implements OnInit {
     /**
      * Elimina un contacto
      */
-    private async deleteContact(contactId: string): Promise<void> {
+    private async performDeleteContact(contactId: string): Promise<void> {
         this.deletingContactId.set(contactId);
 
         try {

@@ -98,7 +98,8 @@ export class AreasPage implements OnInit {
       isActive?: boolean;
     } = {};
     if (this.query()) params.q = this.query();
-    if (this.filterActive() !== null) params.isActive = this.filterActive();
+    const active = this.filterActive();
+    if (active !== null) params.isActive = active;
 
     this.areasApi.list(params).subscribe({
       next: (data) => {
