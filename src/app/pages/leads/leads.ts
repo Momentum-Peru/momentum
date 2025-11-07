@@ -192,16 +192,12 @@ export class LeadsPage implements OnInit {
     }
 
     load() {
-        const params: {
-            search?: string;
-            status?: string;
-            source?: string;
-            assignedTo?: string;
-            companyId?: string;
-        } = {};
+        const params: import('../../shared/interfaces/lead.interface').LeadQueryParams & { search?: string } = {};
         if (this.query()) params.search = this.query();
-        if (this.statusFilter()) params.status = this.statusFilter();
-        if (this.sourceFilter()) params.source = this.sourceFilter();
+        const status = this.statusFilter();
+        if (status !== '') params.status = status;
+        const source = this.sourceFilter();
+        if (source !== '') params.source = source;
         if (this.assignedToFilter()) params.assignedTo = this.assignedToFilter();
         if (this.companyIdFilter()) params.companyId = this.companyIdFilter();
 
@@ -706,7 +702,7 @@ export class LeadsPage implements OnInit {
     }
 
     getEstimatedCloseDate(): Date | null {
-        const date = this.editing()?.estimatedCloseDate;
+        const date = (this.editing() as Partial<Lead> | null)?.estimatedCloseDate;
         return date ? new Date(date) : null;
     }
 

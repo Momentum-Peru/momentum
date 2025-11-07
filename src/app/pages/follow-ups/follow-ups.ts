@@ -199,8 +199,10 @@ export class FollowUpsPage implements OnInit {
 
     load() {
         const params: FollowUpQueryParams = {};
-        if (this.statusFilter()) params.status = this.statusFilter();
-        if (this.typeFilter()) params.type = this.typeFilter();
+        const status = this.statusFilter();
+        if (status !== '') params.status = status;
+        const type = this.typeFilter();
+        if (type !== '') params.type = type;
 
         this.followUpsApi.list(params).subscribe({
             next: (followUps) => this.items.set(followUps),
@@ -313,7 +315,7 @@ export class FollowUpsPage implements OnInit {
         this.viewingFollowUp.set(null);
     }
 
-    onEditChange<K extends keyof FollowUp>(key: K, value: FollowUp[K]) {
+    onEditChange<K extends keyof FollowUp>(key: K, value: FollowUp[K] | undefined) {
         const cur = this.editing();
         if (!cur) return;
 
@@ -322,7 +324,7 @@ export class FollowUpsPage implements OnInit {
             return;
         }
 
-        this.editing.set({ ...cur, [key]: value });
+        this.editing.set({ ...cur, [key]: value as FollowUp[K] });
     }
 
     save() {

@@ -1,6 +1,6 @@
 <!-- Botón hamburguesa para móvil -->
 <button
-  class="m-3 md:hidden fixed top-2 right-2 z-50 p-2 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors duration-200"
+  class="m-3 md:hidden fixed top-2 right-2 z-50 p-2 m-6 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors duration-200"
   (click)="toggleMenu()"
   [attr.aria-label]="isMenuOpen() ? 'Cerrar menú' : 'Abrir menú'"
 >
@@ -82,7 +82,7 @@
         [model]="submenuItems()"
         [styleClass]="'custom-panelmenu'"
         [multiple]="false"
-        (onPanelToggle)="onPanelToggle($event)"
+        (onPanelToggle)="onPanelToggle()"
       ></p-panelMenu>
     </div>
     } } @else {

@@ -56,6 +56,7 @@ export interface TableData {
     clientName?: string;
     count: number;
     value: number;
+    [key: string]: string | number | Date | null | undefined;
 }
 
 export interface DashboardTables {
@@ -111,6 +112,8 @@ export interface DashboardFiltersParams {
     endDate?: string;
     projectId?: string;
     clientId?: string;
+    tenantId?: string; // ID de empresa/tenant para filtrar por empresa (rol gerencia)
+    companyId?: string; // Alias de tenantId para compatibilidad
     chartType?: 'bar' | 'line' | 'pie' | 'doughnut';
     timezone?: string;
 }

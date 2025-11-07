@@ -27,9 +27,29 @@ export class FaceRecognitionApiService {
     image: File,
     tenantId: string
   ): Observable<FaceDescriptor> {
+    // Método legacy (solo imagen). Mantener por compatibilidad
     const formData = new FormData();
     formData.append('image', image);
     formData.append('userId', userId);
+    return this.http.post<FaceDescriptor>(
+      `${this.baseUrl}/register?tenantId=${tenantId}`,
+      formData
+    );
+  }
+
+  /**
+   * Nuevo: registra enviando descriptor (recomendado)
+   */
+  registerFaceWithDescriptor(
+    userId: string,
+    image: File,
+    descriptor: number[],
+    tenantId: string
+  ): Observable<FaceDescriptor> {
+    const formData = new FormData();
+    formData.append('image', image);
+    formData.append('userId', userId);
+    formData.append('descriptor', JSON.stringify(descriptor));
 
     return this.http.post<FaceDescriptor>(
       `${this.baseUrl}/register?tenantId=${tenantId}`,
@@ -45,8 +65,31 @@ export class FaceRecognitionApiService {
     tenantId: string,
     request?: MarkAttendanceRequest
   ): Observable<AttendanceRecord> {
+    // Método legacy (solo imagen)
     const formData = new FormData();
     formData.append('image', image);
+    if (request?.type) formData.append('type', request.type);
+    if (request?.location) formData.append('location', request.location);
+    if (request?.notes) formData.append('notes', request.notes);
+
+    return this.http.post<AttendanceRecord>(
+      `${this.baseUrl}/attendance?tenantId=${tenantId}`,
+      formData
+    );
+  }
+
+  /**
+   * Nuevo: marcar asistencia enviando descriptor (recomendado)
+   */
+  markAttendanceWithDescriptor(
+    image: File,
+    descriptor: number[],
+    tenantId: string,
+    request?: MarkAttendanceRequest
+  ): Observable<AttendanceRecord> {
+    const formData = new FormData();
+    formData.append('image', image);
+    formData.append('descriptor', JSON.stringify(descriptor));
     if (request?.type) formData.append('type', request.type);
     if (request?.location) formData.append('location', request.location);
     if (request?.notes) formData.append('notes', request.notes);

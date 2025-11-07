@@ -80,7 +80,7 @@
 <p-dialog [modal]="true" [(visible)]="showTaskForm" [style]="{ width: '700px' }" [closable]="true">
   <app-native-task-form
     [task]="selectedTask() || undefined"
-    (save)="onTaskSave($event)"
+    (save)="onTaskSave()"
     (formCancel)="closeTaskForm()"
   >
   </app-native-task-form>

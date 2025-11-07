@@ -535,7 +535,7 @@
           <label for="leadDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Descripción
           </label>
-          <textarea
+        <textarea
             id="leadDescription"
             pTextarea
             rows="3"
@@ -790,8 +790,6 @@
           [ngModel]="getEstimatedCloseDate()"
           (ngModelChange)="onEditChange('estimatedCloseDate', $event)"
           dateFormat="dd/mm/yy"
-          [showIcon]="true"
-          [appendTo]="'body'"
           class="w-full"
         ></p-calendar>
       </div>

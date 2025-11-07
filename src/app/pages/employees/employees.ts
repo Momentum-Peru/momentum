@@ -214,7 +214,7 @@ export class EmployeesPage implements OnInit {
   getUserName(userId: string | { name?: string; email?: string } | null | undefined): string {
     if (!userId) return 'Sin usuario';
     if (typeof userId === 'object' && 'name' in userId) {
-      return userId.name;
+      return userId.name || '';
     }
     const user = this.users().find((u) => u._id === userId);
     return user?.name || 'Usuario no encontrado';
