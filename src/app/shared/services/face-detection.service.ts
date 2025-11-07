@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as faceapi from 'face-api.js';
+import type { FaceDetectionResult as FaceApiResult } from 'face-api.js';
 
 export interface FaceDetectionResult {
   detected: boolean;
@@ -76,7 +77,7 @@ export class FaceDetectionService {
         scoreThreshold: 0.2, // más sensible
       });
 
-      let detectionResult = await faceapi
+      let detectionResult: FaceApiResult | null = await faceapi
         .detectSingleFace(video, options)
         .withFaceLandmarks()
         .withFaceDescriptor();
@@ -103,11 +104,24 @@ export class FaceDetectionService {
 
           detectionResult = ssdResult;
         } else {
-          detectionResult = multiDetections.reduce((best, current) => {
-            if (!best) return current;
-            return current.detection.score > best.detection.score ? current : best;
-          });
+          detectionResult = multiDetections.reduce(
+            (
+              best: FaceApiResult | null,
+              current: FaceApiResult
+            ): FaceApiResult => {
+              if (!best) return current;
+              return current.detection.score > best.detection.score ? current : best;
+            },
+            null
+          );
         }
+      }
+
+      if (!detectionResult) {
+        return {
+          detected: false,
+          message: 'No se pudo detectar el rostro correctamente',
+        };
       }
 
       const { detection, landmarks } = detectionResult;
@@ -209,7 +223,7 @@ export class FaceDetectionService {
    * Calcula la nitidez estimada basándose en la consistencia de los landmarks
    * Usa la distancia promedio entre landmarks adyacentes como indicador de nitidez
    */
-  private calculateSharpness(landmarks: faceapi.FaceLandmarks68, faceBox: faceapi.Box): number {
+  private calculateSharpness(landmarks: FaceApiResult['landmarks'], faceBox: FaceApiResult['detection']['box']): number {
     const positions = landmarks.positions;
     if (positions.length < 2) return 0.5;
 
