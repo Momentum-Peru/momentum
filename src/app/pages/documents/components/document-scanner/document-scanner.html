@@ -42,11 +42,12 @@
 
     <!-- Selector de archivo -->
     <div class="w-full">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <label for="documentFileUpload" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         Seleccionar imagen del documento
       </label>
       @if (!selectedFile()) {
       <p-fileUpload
+        id="documentFileUpload"
         #fileUpload
         mode="basic"
         accept="image/*,application/pdf"

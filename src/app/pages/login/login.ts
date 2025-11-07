@@ -19,12 +19,13 @@ export class Login {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
+  private readonly fb = inject(FormBuilder);
 
   loginForm: FormGroup;
   showPassword = signal(false);
   isLoading = signal(false);
 
-  constructor(private fb: FormBuilder) {
+  constructor() {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]]
@@ -98,17 +99,20 @@ export class Login {
           this.router.navigateByUrl('/calendario', { replaceUrl: true });
         }, 500); // Delay más corto para mejor UX
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Login error:', error);
 
         let errorMessage = 'Error al iniciar sesión';
 
-        if (error.status === 401) {
-          errorMessage = 'Credenciales inválidas';
-        } else if (error.status === 400) {
-          errorMessage = 'Datos de entrada inválidos';
-        } else if (error.status === 0) {
-          errorMessage = 'No se pudo conectar con el servidor';
+        if (error && typeof error === 'object' && 'status' in error) {
+          const httpError = error as { status: number };
+          if (httpError.status === 401) {
+            errorMessage = 'Credenciales inválidas';
+          } else if (httpError.status === 400) {
+            errorMessage = 'Datos de entrada inválidos';
+          } else if (httpError.status === 0) {
+            errorMessage = 'No se pudo conectar con el servidor';
+          }
         }
 
         this.messageService.add({

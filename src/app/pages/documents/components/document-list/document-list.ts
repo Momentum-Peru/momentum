@@ -6,6 +6,8 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { SkeletonModule } from 'primeng/skeleton';
 import { PaginatorModule } from 'primeng/paginator';
+import { TableLazyLoadEvent } from 'primeng/table';
+import { PaginatorState } from 'primeng/paginator';
 import { CardModule } from 'primeng/card';
 import { BadgeModule } from 'primeng/badge';
 
@@ -31,11 +33,11 @@ import { Document } from '../../../../shared/interfaces/document.interface';
 })
 export class DocumentListComponent {
   @Input({ required: true }) documents: Document[] = [];
-  @Input({ required: true }) loading: boolean = false;
-  @Input({ required: true }) totalRecords: number = 0;
-  @Input({ required: true }) currentPage: number = 1;
-  @Input({ required: true }) pageSize: number = 10;
-  @Input({ required: true }) first: number = 0;
+  @Input({ required: true }) loading = false;
+  @Input({ required: true }) totalRecords = 0;
+  @Input({ required: true }) currentPage = 1;
+  @Input({ required: true }) pageSize = 10;
+  @Input({ required: true }) first = 0;
   @Input({ required: true }) trackByFn!: (index: number, item: Document) => string;
 
   @Output() pageChange = new EventEmitter<{ page: number; first: number; rows: number }>();
@@ -44,7 +46,7 @@ export class DocumentListComponent {
   @Output() viewDetails = new EventEmitter<Document>();
   @Output() manageFiles = new EventEmitter<Document>();
 
-  expandedRowIds: Set<string> = new Set();
+  expandedRowIds = new Set<string>();
 
   /**
    * Formatear fecha para mostrar
@@ -149,19 +151,21 @@ export class DocumentListComponent {
   /**
    * Manejar cambio de página
    */
-  onPageChange(event: any): void {
+  onPageChange(event: TableLazyLoadEvent | PaginatorState | { first?: number; rows?: number; page?: number }): void {
     // Prevenir loop: si el evento coincide con el estado actual, no hacer nada
-    if (event.first === this.first && event.rows === this.pageSize) {
+    const first = event.first ?? this.first;
+    const rows = event.rows ?? this.pageSize;
+    if (first === this.first && rows === this.pageSize) {
       return;
     }
 
     // Calcular el número de página basándose en first y rows
-    const page = event.first >= 0 && event.rows > 0 ? Math.floor(event.first / event.rows) : 0;
+    const page = first >= 0 && rows > 0 ? Math.floor(first / rows) : (event as PaginatorState).page ?? 0;
 
     this.pageChange.emit({
       page: page,
-      first: event.first,
-      rows: event.rows,
+      first: first,
+      rows: rows,
     });
   }
 

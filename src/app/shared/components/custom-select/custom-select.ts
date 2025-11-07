@@ -1,10 +1,10 @@
-import { Component, Input, Output, EventEmitter, forwardRef, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, forwardRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
-export interface SelectOption {
+export interface SelectOption<T = unknown> {
     label: string;
-    value: any;
+    value: T;
 }
 
 @Component({
@@ -46,19 +46,19 @@ export interface SelectOption {
     }
   `]
 })
-export class CustomSelectComponent implements ControlValueAccessor, OnInit {
+export class CustomSelectComponent implements ControlValueAccessor {
     @Input() options: SelectOption[] = [];
-    @Input() placeholder: string = 'Selecciona una opción';
-    @Input() disabled: boolean = false;
-    @Output() selectionChange = new EventEmitter<any>();
+    @Input() placeholder = 'Selecciona una opción';
+    @Input() disabled = false;
+    @Output() selectionChange = new EventEmitter<unknown>();
 
-    selectedValue: any = '';
-    private onChangeCallback = (value: any) => { };
-    private onTouchedCallback = () => { };
-
-    ngOnInit(): void {
-        // Inicialización si es necesaria
-    }
+    selectedValue: unknown = '';
+    private onChangeCallback: (value: unknown) => void = () => {
+        // Callback para ControlValueAccessor - se reemplaza con registerOnChange
+    };
+    private onTouchedCallback = (): void => {
+        // Callback para ControlValueAccessor
+    };
 
     onChange(event: Event): void {
         const target = event.target as HTMLSelectElement;
@@ -72,11 +72,11 @@ export class CustomSelectComponent implements ControlValueAccessor, OnInit {
     }
 
     // ControlValueAccessor implementation
-    writeValue(value: any): void {
+    writeValue(value: unknown): void {
         this.selectedValue = value || '';
     }
 
-    registerOnChange(fn: (value: any) => void): void {
+    registerOnChange(fn: (value: unknown) => void): void {
         this.onChangeCallback = fn;
     }
 

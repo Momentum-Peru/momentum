@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, map, tap } from 'rxjs';
+import { Observable, BehaviorSubject, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Task,
@@ -9,7 +9,6 @@ import {
   TasksListResponse,
   TasksSearchParams,
   TaskStats,
-  TaskStatus,
   DragDropEvent,
 } from '../interfaces/task.interface';
 
@@ -60,8 +59,16 @@ export class TasksApiService {
     this.setLoading(true);
     this.setError(null);
 
+    const httpParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          httpParams[key] = String(value);
+        }
+      });
+    }
     return this.http
-      .get<TasksListResponse>(`${this.baseUrl}/tasks`, { params: params as any })
+      .get<TasksListResponse>(`${this.baseUrl}/tasks`, { params: httpParams })
       .pipe(
         tap((response) => {
           this.tasks.set(response.data || []);
@@ -185,9 +192,17 @@ export class TasksApiService {
     this.setLoading(true);
     this.setError(null);
 
+    const httpParams: Record<string, string> = {};
+    if (searchParams) {
+      Object.entries(searchParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          httpParams[key] = String(value);
+        }
+      });
+    }
     return this.http
       .get<TasksListResponse>(`${this.baseUrl}/tasks/search`, {
-        params: searchParams as any,
+        params: httpParams,
       })
       .pipe(
         tap((response) => {
@@ -227,8 +242,15 @@ export class TasksApiService {
     this.errorSubject.next(error);
   }
 
-  private handleError(error: any): void {
-    const errorMessage = error?.error?.message || error?.message || 'Error desconocido';
+  private handleError(error: unknown): void {
+    let errorMessage = 'Error desconocido';
+    if (error && typeof error === 'object') {
+      if ('error' in error && error.error && typeof error.error === 'object' && 'message' in error.error) {
+        errorMessage = String(error.error.message);
+      } else if ('message' in error && typeof error.message === 'string') {
+        errorMessage = error.message;
+      }
+    }
     this.setError(errorMessage);
     this.setLoading(false);
   }

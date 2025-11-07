@@ -1,0 +1,368 @@
+<div class="p-4 space-y-4 mt-5 overflow-x-hidden">
+  <p-toast></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Título -->
+  <div class="mb-4">
+    <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">
+      Registro de Reconocimiento Facial
+    </h1>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+      Registra y gestiona los descriptores faciales de los usuarios para el sistema de marcación
+    </p>
+  </div>
+
+  <!-- Botón de registro -->
+  <div class="flex justify-end">
+    <button
+      pButton
+      type="button"
+      (click)="openRegisterDialog()"
+      label="Registrar Rostro"
+      icon="pi pi-user-plus"
+      class="w-full sm:w-auto"
+      aria-label="Registrar nuevo rostro"
+    ></button>
+  </div>
+
+  <!-- Selección de usuario y lista de descriptores -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- Panel de selección de usuario -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="p-4">
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Seleccionar Usuario</h2>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <div class="space-y-4">
+          <!-- Búsqueda -->
+          <div>
+            <label
+              for="userSearch"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >Buscar usuario</label
+            >
+            <input
+              id="userSearch"
+              pInputText
+              placeholder="Buscar por nombre o email..."
+              [ngModel]="query()"
+              (ngModelChange)="setQuery($event)"
+              class="w-full"
+            />
+          </div>
+
+          <!-- Lista de usuarios -->
+          <div class="max-h-96 overflow-y-auto">
+            <div class="space-y-2">
+              @for (user of filteredUsers(); track user._id) {
+              <button
+                type="button"
+                class="w-full text-left p-3 rounded-lg border transition-colors"
+                [class.bg-blue-50]="selectedUserId() === user._id"
+                [class.border-blue-500]="selectedUserId() === user._id"
+                [class.bg-white]="selectedUserId() !== user._id"
+                [class.border-gray-200]="selectedUserId() !== user._id"
+                [class.dark:bg-gray-800]="selectedUserId() !== user._id"
+                [class.dark:border-gray-700]="selectedUserId() !== user._id"
+                (click)="onUserSelect(user._id)"
+                [attr.aria-label]="'Seleccionar usuario: ' + user.name"
+              >
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="font-medium text-gray-900 dark:text-white">{{ user.name }}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</div>
+                  </div>
+                  @if (selectedUserId() === user._id) {
+                  <i class="pi pi-check-circle text-blue-500"></i>
+                  }
+                </div>
+              </button>
+              } @empty {
+              <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <i class="pi pi-users text-4xl mb-2"></i>
+                <p>No se encontraron usuarios</p>
+              </div>
+              }
+            </div>
+          </div>
+        </div>
+      </ng-template>
+    </p-card>
+
+    <!-- Panel de descriptores -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="p-4">
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-white">
+            Descriptores Registrados
+          </h2>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        @if (!selectedUserId()) {
+        <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+          <i class="pi pi-info-circle text-4xl mb-2"></i>
+          <p>Selecciona un usuario para ver sus descriptores faciales</p>
+        </div>
+        } @else if (loading()) {
+        <div class="text-center py-12">
+          <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
+          <p class="mt-2 text-gray-500 dark:text-gray-400">Cargando...</p>
+        </div>
+        } @else if (filteredDescriptors().length === 0) {
+        <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+          <i class="pi pi-image text-4xl mb-2"></i>
+          <p>Este usuario no tiene descriptores faciales registrados</p>
+        </div>
+        } @else {
+        <div class="space-y-3">
+          @for (descriptor of filteredDescriptors(); track descriptor._id) {
+          <div
+            class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800"
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  @if (descriptor.imageUrl) {
+                  <img
+                    [src]="descriptor.imageUrl"
+                    alt="Rostro registrado"
+                    class="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                  />
+                  } @else {
+                  <div
+                    class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
+                  >
+                    <i class="pi pi-image text-2xl text-gray-400"></i>
+                  </div>
+                  }
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-900 dark:text-white">
+                      {{ getUserName(descriptor.userId) }}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                      {{ getUserEmail(descriptor.userId) }}
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                  <span>
+                    <i class="pi pi-calendar mr-1"></i>
+                    {{ formatDate(descriptor.createdAt) }}
+                  </span>
+                  <span
+                    class="px-2 py-1 rounded-full"
+                    [class.bg-green-100]="descriptor.isActive"
+                    [class.text-green-800]="descriptor.isActive"
+                    [class.bg-gray-100]="!descriptor.isActive"
+                    [class.text-gray-800]="!descriptor.isActive"
+                    [class.dark:bg-green-900]="descriptor.isActive"
+                    [class.dark:text-green-200]="descriptor.isActive"
+                    [class.dark:bg-gray-700]="!descriptor.isActive"
+                    [class.dark:text-gray-200]="!descriptor.isActive"
+                  >
+                    {{ descriptor.isActive ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </div>
+              </div>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-danger"
+                (click)="deleteDescriptor(descriptor)"
+                pTooltip="Eliminar descriptor"
+                tooltipPosition="left"
+                aria-label="Eliminar descriptor facial"
+              ></button>
+            </div>
+          </div>
+          }
+        </div>
+        }
+      </ng-template>
+    </p-card>
+  </div>
+
+  <!-- Modal de registro -->
+  <p-dialog
+    [(visible)]="showDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '32rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    [focusOnShow]="false"
+    appendTo="body"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold">Registrar Nuevo Rostro</span>
+    </ng-template>
+
+    <div class="space-y-4">
+      <!-- Selección de usuario -->
+      <div>
+        <label
+          for="registerUsuario"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Usuario *</label
+        >
+        <p-select
+          id="registerUsuario"
+          [options]="filteredUsers()"
+          optionLabel="name"
+          optionValue="_id"
+          [ngModel]="selectedUserId()"
+          (ngModelChange)="selectedUserId.set($event)"
+          placeholder="Seleccionar usuario"
+          class="w-full"
+          [filter]="true"
+          filterPlaceholder="Buscar usuario..."
+          appendTo="body"
+        >
+          <ng-template let-user pTemplate="item">
+            <div>
+              <div class="font-medium">{{ user.name }}</div>
+              <div class="text-sm text-gray-500">{{ user.email }}</div>
+            </div>
+          </ng-template>
+        </p-select>
+      </div>
+
+      <!-- Captura desde cámara -->
+      <div>
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Imagen del rostro *</span
+        >
+
+        <!-- Video de la cámara -->
+        @if (isCameraActive() && !imagePreview()) {
+        <div class="space-y-3">
+          <div
+            class="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-black"
+          >
+            <video #cameraVideo autoplay playsinline class="w-full max-h-64 object-contain"></video>
+            <canvas
+              #detectionCanvas
+              class="absolute inset-0 pointer-events-none"
+              style="width: 100%; height: 100%"
+            ></canvas>
+            @if (!isVideoReady()) {
+            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+              <div class="text-center text-white">
+                <i class="pi pi-spin pi-spinner text-3xl mb-2"></i>
+                <p class="text-sm">Iniciando cámara...</p>
+              </div>
+            </div>
+            } @if (isVideoReady() && faceDetectionResult()) {
+            <div
+              class="absolute bottom-2 left-2 right-2 bg-black bg-opacity-75 rounded-lg p-2 text-white text-xs"
+            >
+              <div class="flex items-center gap-2">
+                @if (faceDetectionResult()?.isValid) {
+                <i class="pi pi-check-circle text-green-400"></i>
+                } @else {
+                <i class="pi pi-exclamation-circle text-red-400"></i>
+                }
+                <span>{{ faceDetectionResult()?.message || 'Detectando...' }}</span>
+              </div>
+            </div>
+            }
+          </div>
+          <div class="flex gap-2">
+            <button
+              pButton
+              type="button"
+              label="Capturar Foto"
+              icon="pi pi-camera"
+              (click)="captureFromCamera()"
+              [disabled]="!isVideoReady() || !faceDetectionResult()?.isValid"
+              [class.p-button-success]="faceDetectionResult()?.isValid"
+              class="flex-1"
+              aria-label="Capturar foto desde cámara"
+            ></button>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-times"
+              label="Cancelar"
+              class="p-button-text"
+              (click)="stopCamera()"
+              aria-label="Cerrar cámara"
+            ></button>
+          </div>
+        </div>
+        }
+
+        <!-- Botón para iniciar cámara si no está activa -->
+        @if (!isCameraActive() && !imagePreview()) {
+        <button
+          pButton
+          type="button"
+          label="Iniciar Cámara"
+          icon="pi pi-video"
+          (click)="startCamera()"
+          class="w-full"
+          aria-label="Iniciar cámara"
+        ></button>
+        }
+
+        <!-- Preview de imagen capturada -->
+        @if (imagePreview()) {
+        <div class="space-y-3">
+          <span class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Imagen capturada</span
+          >
+          <div class="relative inline-block w-full">
+            <img
+              [src]="imagePreview()"
+              alt="Vista previa"
+              class="max-w-full h-auto max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 w-full object-contain"
+            />
+            <button
+              pButton
+              icon="pi pi-times"
+              class="p-button-rounded p-button-danger p-button-sm absolute top-2 right-2"
+              (click)="removeImage()"
+              pTooltip="Eliminar imagen y volver a capturar"
+              aria-label="Eliminar imagen"
+            ></button>
+          </div>
+          <button
+            pButton
+            type="button"
+            label="Capturar Otra Foto"
+            icon="pi pi-camera"
+            (click)="startCamera()"
+            class="w-full p-button-outlined"
+            aria-label="Capturar otra foto"
+          ></button>
+        </div>
+        }
+
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          La captura debe realizarse desde la cámara para garantizar la autenticidad del registro
+        </p>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
+      <button
+        pButton
+        label="Registrar"
+        [disabled]="!selectedUserId() || !selectedImage() || loading()"
+        [loading]="loading()"
+        (click)="registerFace()"
+        aria-label="Registrar rostro"
+      ></button>
+    </ng-template>
+  </p-dialog>
+</div>

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -68,7 +68,7 @@ interface RequirementItem {
   styleUrls: ['./requirements.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RequirementsPage {
+export class RequirementsPage implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly upload = inject(UploadService);
   private readonly baseUrl = environment.apiUrl;
@@ -641,59 +641,56 @@ export class RequirementsPage {
   }
 
   // Método para obtener mensaje de error de la API
-  private getErrorMessage(error: any): string {
-    // Manejar errores de validación específicos
-    if (error.error?.message) {
-      const message = error.error.message;
-
-      // Si es un array de mensajes, unirlos
-      if (Array.isArray(message)) {
-        return message.join(', ');
+  private getErrorMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'error' in error) {
+      const httpError = error as { error?: { message?: string | string[] }; message?: string };
+      if (httpError.error?.message) {
+        const message = httpError.error.message;
+        if (Array.isArray(message)) {
+          return message.join(', ');
+        }
+        if (typeof message === 'string') {
+          // Traducir mensajes comunes de validación
+          if (message.includes('codigo should not be empty')) {
+            return 'El código del requerimiento es requerido';
+          }
+          if (message.includes('title should not be empty')) {
+            return 'El título del requerimiento es requerido';
+          }
+          if (message.includes('descripcion should not be empty')) {
+            return 'La descripción del requerimiento es requerida';
+          }
+          if (message.includes('centroCosto should not be empty')) {
+            return 'El centro de costo es requerido';
+          }
+          if (message.includes('fechaEmision should not be empty')) {
+            return 'La fecha de emisión es requerida';
+          }
+          if (message.includes('fechaRequerimiento should not be empty')) {
+            return 'La fecha de requerimiento es requerida';
+          }
+          if (message.includes('solicitante should not be empty')) {
+            return 'La información del solicitante es requerida';
+          }
+          if (message.includes('solicitante.nombre should not be empty')) {
+            return 'El nombre del solicitante es requerido';
+          }
+          if (message.includes('solicitante.codigo should not be empty')) {
+            return 'El código del solicitante es requerido';
+          }
+          if (message.includes('solicitante.cargo should not be empty')) {
+            return 'El cargo del solicitante es requerido';
+          }
+          return message;
+        }
       }
-
-      // Traducir mensajes comunes de validación
-      if (message.includes('codigo should not be empty')) {
-        return 'El código del requerimiento es requerido';
+      if (httpError.error && typeof httpError.error === 'object' && 'error' in httpError.error && typeof httpError.error.error === 'string') {
+        return httpError.error.error;
       }
-      if (message.includes('title should not be empty')) {
-        return 'El título del requerimiento es requerido';
-      }
-      if (message.includes('descripcion should not be empty')) {
-        return 'La descripción del requerimiento es requerida';
-      }
-      if (message.includes('centroCosto should not be empty')) {
-        return 'El centro de costo es requerido';
-      }
-      if (message.includes('fechaEmision should not be empty')) {
-        return 'La fecha de emisión es requerida';
-      }
-      if (message.includes('fechaRequerimiento should not be empty')) {
-        return 'La fecha de requerimiento es requerida';
-      }
-      if (message.includes('solicitante should not be empty')) {
-        return 'La información del solicitante es requerida';
-      }
-      if (message.includes('solicitante.nombre should not be empty')) {
-        return 'El nombre del solicitante es requerido';
-      }
-      if (message.includes('solicitante.codigo should not be empty')) {
-        return 'El código del solicitante es requerido';
-      }
-      if (message.includes('solicitante.cargo should not be empty')) {
-        return 'El cargo del solicitante es requerido';
-      }
-
-      return message;
     }
-
-    if (error.error?.error) {
-      return error.error.error;
-    }
-
-    if (error.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
       return error.message;
     }
-
     return 'Ha ocurrido un error inesperado';
   }
 

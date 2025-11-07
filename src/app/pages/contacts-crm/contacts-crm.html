@@ -11,6 +11,7 @@
       label="Nuevo Contacto"
       icon="pi pi-plus"
       (click)="newItem()"
+      aria-label="Crear nuevo contacto"
     ></button>
   </div>
 
@@ -19,10 +20,11 @@
     <ng-template pTemplate="content">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label for="contactSearch" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Buscar</label
           >
           <input
+            id="contactSearch"
             pInputText
             placeholder="Nombre, email..."
             [ngModel]="query()"
@@ -31,10 +33,11 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label for="contactClientFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Cliente</label
           >
           <p-select
+            id="contactClientFilter"
             [options]="getClientFilterOptions()"
             optionLabel="label"
             optionValue="value"
@@ -54,6 +57,7 @@
             icon="pi pi-filter-slash"
             class="p-button-outlined w-full"
             (click)="clearFilters()"
+            aria-label="Limpiar filtros"
           ></button>
         </div>
       </div>
@@ -117,6 +121,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Ver detalles"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles del contacto"
               ></button>
               <button
                 pButton
@@ -124,6 +129,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Editar"
                 (click)="editItem(row)"
+                aria-label="Editar contacto"
               ></button>
               <button
                 pButton
@@ -131,6 +137,7 @@
                 class="p-button-text p-button-sm p-button-danger"
                 pTooltip="Eliminar"
                 (click)="remove(row)"
+                aria-label="Eliminar contacto"
               ></button>
             </div>
           </td>
@@ -173,6 +180,7 @@
             label="Ver"
             class="p-button-text p-button-sm"
             (click)="viewDetails(row)"
+            aria-label="Ver detalles del contacto"
           ></button>
           <button
             pButton
@@ -180,6 +188,7 @@
             label="Editar"
             class="p-button-text p-button-sm"
             (click)="editItem(row)"
+            aria-label="Editar contacto"
           ></button>
           <button
             pButton
@@ -187,6 +196,7 @@
             label="Eliminar"
             class="p-button-text p-button-sm p-button-danger"
             (click)="remove(row)"
+            aria-label="Eliminar contacto"
           ></button>
         </div>
       </div>
@@ -208,10 +218,11 @@
     </ng-template>
     <div class="space-y-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        <label for="contactName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >Nombre *</label
         >
         <input
+          id="contactName"
           pInputText
           [ngModel]="editing()?.name"
           (ngModelChange)="onEditChange('name', $event)"
@@ -219,10 +230,11 @@
         />
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        <label for="contactEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >Email *</label
         >
         <input
+          id="contactEmail"
           pInputText
           type="email"
           [ngModel]="editing()?.email"
@@ -232,10 +244,11 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label for="contactPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Teléfono</label
           >
           <input
+            id="contactPhone"
             pInputText
             [ngModel]="editing()?.phone"
             (ngModelChange)="onEditChange('phone', $event)"
@@ -243,10 +256,11 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label for="contactMobile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Móvil</label
           >
           <input
+            id="contactMobile"
             pInputText
             [ngModel]="editing()?.mobile"
             (ngModelChange)="onEditChange('mobile', $event)"
@@ -256,10 +270,11 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label for="contactPosition" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Cargo</label
           >
           <input
+            id="contactPosition"
             pInputText
             [ngModel]="editing()?.position"
             (ngModelChange)="onEditChange('position', $event)"
@@ -267,10 +282,11 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label for="contactDepartment" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Departamento</label
           >
           <input
+            id="contactDepartment"
             pInputText
             [ngModel]="editing()?.department"
             (ngModelChange)="onEditChange('department', $event)"
@@ -279,10 +295,11 @@
         </div>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        <label for="contactClient" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >Cliente *</label
         >
         <p-select
+          id="contactClient"
           [options]="clients()"
           optionLabel="name"
           optionValue="_id"
@@ -304,8 +321,9 @@
         >
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
+        <label for="contactNotes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
         <textarea
+          id="contactNotes"
           pTextarea
           rows="3"
           [ngModel]="editing()?.notes"
@@ -315,8 +333,8 @@
       </div>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
-      <button pButton label="Guardar" (click)="save()"></button>
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button pButton label="Guardar" (click)="save()" aria-label="Guardar contacto"></button>
     </ng-template>
   </p-dialog>
 
@@ -350,7 +368,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 </div>

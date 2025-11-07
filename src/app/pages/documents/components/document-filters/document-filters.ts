@@ -44,7 +44,7 @@ import { ProjectsApiService } from '../../../../shared/services/projects-api.ser
   providers: [MessageService],
 })
 export class DocumentFiltersComponent implements OnInit {
-  @Input({ required: true }) loading: boolean = false;
+  @Input({ required: true }) loading = false;
   @Output() filtersApplied = new EventEmitter<DocumentFilters>();
 
   private readonly fb = inject(FormBuilder);
@@ -112,7 +112,7 @@ export class DocumentFiltersComponent implements OnInit {
         });
         this.projectOptions.set(options);
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         console.error('Error al cargar proyectos:', error);
         this.messageService.add({
           severity: 'error',
@@ -131,6 +131,17 @@ export class DocumentFiltersComponent implements OnInit {
     const filters: DocumentFilters = {};
 
     // Procesar cada campo del formulario
+    const numericKeys: (keyof Pick<DocumentFilters, 'numeroDocumento' | 'totalMinimo' | 'totalMaximo'>)[] = [
+      'numeroDocumento',
+      'totalMinimo',
+      'totalMaximo',
+    ];
+    const stringKeys: (keyof Pick<DocumentFilters, 'proyectoId' | 'categoria' | 'serie'>)[] = [
+      'proyectoId',
+      'categoria',
+      'serie',
+    ];
+
     Object.entries(formValue).forEach(([key, value]) => {
       // Manejar estado activo - siempre incluir si tiene un valor válido
       if (key === 'isActive') {
@@ -151,24 +162,26 @@ export class DocumentFiltersComponent implements OnInit {
       // Convertir fechas a formato ISO string (YYYY-MM-DD)
       if (key.includes('fecha') && value instanceof Date) {
         const dateString = value.toISOString().split('T')[0];
-        filters[key as keyof DocumentFilters] = dateString as any;
+        (filters as Record<string, string | number | boolean>)[key] = dateString;
         return;
       }
 
       // Convertir números (numeroDocumento, totalMinimo, totalMaximo)
-      if (key === 'numeroDocumento' || key === 'totalMinimo' || key === 'totalMaximo') {
+      if (numericKeys.includes(key as typeof numericKeys[number])) {
+        const typedKey = key as typeof numericKeys[number];
         const numValue = typeof value === 'number' ? value : Number(value);
-        if (!isNaN(numValue) && numValue >= 0) {
-          (filters as any)[key] = numValue;
+        if (!Number.isNaN(numValue) && numValue >= 0) {
+          filters[typedKey] = numValue;
         }
         return;
       }
 
       // Para proyectoId, categoria y serie, solo incluir si tiene valor
-      if (key === 'proyectoId' || key === 'categoria' || key === 'serie') {
-        const stringValue = String(value).trim();
+      if (stringKeys.includes(key as typeof stringKeys[number])) {
+        const typedKey = key as typeof stringKeys[number];
+        const stringValue = String(value ?? '').trim();
         if (stringValue) {
-          (filters as any)[key] = stringValue;
+          filters[typedKey] = stringValue;
         }
         return;
       }

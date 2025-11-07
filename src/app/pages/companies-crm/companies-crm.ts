@@ -100,11 +100,15 @@ export class CompaniesCrmPage implements OnInit {
 
         this.companiesApi.list(params).subscribe({
             next: (companies) => {
-                const user: any = this.auth.getCurrentUser();
-                const tenantIds: string[] | undefined = user?.tenantIds;
+                const user = this.auth.getCurrentUser();
+                if (!user || typeof user !== 'object' || !('tenantIds' in user)) {
+                    this.items.set(companies);
+                    return;
+                }
+                const tenantIds = (user as { tenantIds?: string[] }).tenantIds;
                 const filtered = !tenantIds || tenantIds.length === 0
                     ? companies
-                    : (companies || []).filter((c: any) => tenantIds.includes(c._id));
+                    : (companies || []).filter((c: { _id?: string }) => c._id && tenantIds.includes(c._id));
                 this.items.set(filtered);
             },
             error: (error) => {
@@ -377,14 +381,17 @@ export class CompaniesCrmPage implements OnInit {
         return emailRegex.test(email);
     }
 
-    private getErrorMessage(error: any): string {
-        if (error.error?.message) {
-            return error.error.message;
+    private getErrorMessage(error: unknown): string {
+        if (error && typeof error === 'object' && 'error' in error) {
+            const httpError = error as { error?: { message?: string; error?: string }; message?: string };
+            if (httpError.error?.message) {
+                return String(httpError.error.message);
+            }
+            if (httpError.error?.error) {
+                return String(httpError.error.error);
+            }
         }
-        if (error.error?.error) {
-            return error.error.error;
-        }
-        if (error.message) {
+        if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
             return error.message;
         }
         return 'Ha ocurrido un error inesperado';

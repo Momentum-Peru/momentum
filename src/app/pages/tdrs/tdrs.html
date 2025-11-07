@@ -8,7 +8,7 @@
       (ngModelChange)="setQuery($event)"
       class="w-full"
     />
-    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
+    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus" aria-label="Crear nuevo TDR"></button>
   </div>
 
   <!-- Vista Desktop: Tabla normal -->
@@ -48,6 +48,7 @@
                 (click)="openDocuments(row)"
                 pTooltip="Gestionar documentos"
                 tooltipPosition="top"
+                aria-label="Gestionar documentos"
               ></button>
             </div>
           </td>
@@ -59,6 +60,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Ver detalles"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles del TDR"
               ></button>
               <button
                 pButton
@@ -67,6 +69,7 @@
                 pTooltip="Aprobar"
                 (click)="approve(row)"
                 [disabled]="row.approved"
+                aria-label="Aprobar TDR"
               ></button>
               <button
                 pButton
@@ -74,6 +77,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Editar"
                 (click)="editItem(row)"
+                aria-label="Editar TDR"
               ></button>
               <button
                 pButton
@@ -82,6 +86,7 @@
                 pTooltip="Eliminar"
                 [tooltipOptions]="{ appendTo: 'body', tooltipPosition: 'left' }"
                 (click)="remove(row)"
+                aria-label="Eliminar TDR"
               ></button>
             </div>
           </td>
@@ -214,6 +219,7 @@
                 label="Gestionar"
                 class="p-button-text p-button-sm"
                 (click)="openDocuments(row)"
+                aria-label="Gestionar documentos"
               ></button>
             </div>
           </div>
@@ -230,6 +236,7 @@
                 label="Ver detalles"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles del TDR"
               ></button>
               <button
                 pButton
@@ -238,6 +245,7 @@
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="approve(row)"
                 [disabled]="row.approved"
+                aria-label="Aprobar TDR"
               ></button>
               <button
                 pButton
@@ -245,6 +253,7 @@
                 label="Editar"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="editItem(row)"
+                aria-label="Editar TDR"
               ></button>
               <button
                 pButton
@@ -252,6 +261,7 @@
                 label="Eliminar"
                 class="p-button-text p-button-sm p-button-danger w-full justify-start"
                 (click)="remove(row)"
+                aria-label="Eliminar TDR"
               ></button>
             </div>
           </div>
@@ -292,6 +302,11 @@
             (dragleave)="onDragLeave($event)"
             (drop)="onDrop($event)"
             (click)="fileInput.click()"
+            (keyup.enter)="fileInput.click()"
+            (keyup.space)="fileInput.click()"
+            tabindex="0"
+            role="button"
+            aria-label="Seleccionar archivos para subir"
           >
             <input
               type="file"
@@ -320,6 +335,7 @@
                 icon="pi pi-upload"
                 (click)="$event.stopPropagation(); fileInput.click()"
                 class="mb-4 pointer-events-auto"
+                aria-label="Seleccionar archivos para subir"
               ></button>
 
               <div class="text-xs text-gray-400 space-y-1">
@@ -349,6 +365,7 @@
                 icon="pi pi-times"
                 class="p-button-text p-button-danger p-button-sm"
                 (click)="removeSelectedFile(file)"
+                aria-label="Eliminar archivo seleccionado"
               ></button>
             </div>
             }
@@ -363,6 +380,7 @@
                 (click)="uploadSelectedFiles()"
                 [disabled]="selectedFiles().length === 0"
                 class="flex-1 w-full"
+                aria-label="Subir archivos seleccionados"
               ></button>
               <button
                 pButton
@@ -372,6 +390,7 @@
                 class="p-button-text"
                 (click)="clearSelectedFiles(fileInput)"
                 [disabled]="selectedFiles().length === 0"
+                aria-label="Limpiar archivos seleccionados"
               ></button>
             </div>
           </div>
@@ -407,6 +426,7 @@
                 (click)="viewDocument(doc)"
                 pTooltip="Ver documento"
                 tooltipPosition="top"
+                aria-label="Ver documento"
               ></button>
               <button
                 pButton
@@ -415,6 +435,7 @@
                 (click)="downloadDocument(doc)"
                 pTooltip="Descargar documento"
                 tooltipPosition="top"
+                aria-label="Descargar documento"
               ></button>
               <button
                 pButton
@@ -423,6 +444,7 @@
                 (click)="removeDocument(doc)"
                 pTooltip="Eliminar documento"
                 tooltipPosition="top"
+                aria-label="Eliminar documento"
               ></button>
             </div>
           </div>
@@ -444,7 +466,7 @@
           @if (documentsViewing()?.documents?.length) {
           {{ documentsViewing()?.documents?.length }} documento(s) adjunto(s) }
         </div>
-        <button pButton label="Cerrar" class="p-button-text" (click)="closeDocuments()"></button>
+        <button pButton label="Cerrar" class="p-button-text" (click)="closeDocuments()" aria-label="Cerrar"></button>
       </div>
     </ng-template>
   </p-dialog>
@@ -476,16 +498,16 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cliente</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Cliente</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-medium">
               {{ viewingTdr()?.clientId?.name || 'No especificado' }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Tipo</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Tipo</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               <span
@@ -502,8 +524,8 @@
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado de Aprobación</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado de Aprobación</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               <span
@@ -516,8 +538,8 @@
           </div>
           @if (viewingTdr()?.createdAt) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Creación</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Creación</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingTdr()?.createdAt | date : 'dd/MM/yyyy HH:mm' }}
@@ -525,8 +547,8 @@
           </div>
           } @if (viewingTdr()?.updatedAt) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Última Actualización</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Última Actualización</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingTdr()?.updatedAt | date : 'dd/MM/yyyy HH:mm' }}
@@ -590,7 +612,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 
@@ -608,10 +630,11 @@
     </ng-template>
     <div class="grid gap-3">
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label for="tdrClient" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Cliente *</label
         >
         <p-select
+          id="tdrClient"
           [options]="clients()"
           optionLabel="name"
           optionValue="_id"
@@ -623,8 +646,9 @@
         ></p-select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Tipo *</label>
+        <label for="tdrType" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Tipo *</label>
         <p-selectButton
+          id="tdrType"
           [options]="tdrTypeOptions"
           [ngModel]="editing()?.type"
           (ngModelChange)="onEditChange('type', $event)"
@@ -632,8 +656,9 @@
         ></p-selectButton>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Resumen</label>
+        <label for="tdrSummary" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Resumen</label>
         <input
+          id="tdrSummary"
           pInputText
           placeholder="Resumen opcional"
           [ngModel]="editing()?.summary"
@@ -643,8 +668,8 @@
       </div>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
-      <button pButton label="Guardar" (click)="save()"></button>
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button pButton label="Guardar" (click)="save()" aria-label="Guardar TDR"></button>
     </ng-template>
   </p-dialog>
 </div>

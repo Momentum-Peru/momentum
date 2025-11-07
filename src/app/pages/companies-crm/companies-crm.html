@@ -11,6 +11,7 @@
       label="Nueva Empresa"
       icon="pi pi-plus"
       (click)="newItem()"
+      aria-label="Crear nueva empresa"
     ></button>
   </div>
 
@@ -19,10 +20,11 @@
     <ng-template pTemplate="content">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label for="companySearch" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Buscar</label
           >
           <input
+            id="companySearch"
             pInputText
             placeholder="Nombre, código, RUC..."
             [ngModel]="query()"
@@ -31,10 +33,11 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label for="companyStatusFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Estado</label
           >
           <p-select
+            id="companyStatusFilter"
             [options]="getIsActiveFilterOptions()"
             optionLabel="label"
             optionValue="value"
@@ -54,6 +57,7 @@
             icon="pi pi-filter-slash"
             class="p-button-outlined w-full"
             (click)="clearFilters()"
+            aria-label="Limpiar filtros"
           ></button>
         </div>
       </div>
@@ -123,6 +127,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Ver detalles"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles de la empresa"
               ></button>
               <button
                 pButton
@@ -130,6 +135,7 @@
                 class="p-button-text p-button-sm"
                 pTooltip="Editar"
                 (click)="editItem(row)"
+                aria-label="Editar empresa"
               ></button>
               @if (row.isActive) {
               <button
@@ -138,6 +144,7 @@
                 class="p-button-text p-button-sm p-button-warning"
                 pTooltip="Desactivar"
                 (click)="deactivate(row)"
+                aria-label="Desactivar empresa"
               ></button>
               } @else {
               <button
@@ -146,6 +153,7 @@
                 class="p-button-text p-button-sm p-button-success"
                 pTooltip="Activar"
                 (click)="activate(row)"
+                aria-label="Activar empresa"
               ></button>
               }
               <button
@@ -154,6 +162,7 @@
                 class="p-button-text p-button-sm p-button-danger"
                 pTooltip="Eliminar"
                 (click)="remove(row)"
+                aria-label="Eliminar empresa"
               ></button>
             </div>
           </td>
@@ -253,6 +262,7 @@
                 label="Ver detalles"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles de la empresa"
               ></button>
               <button
                 pButton
@@ -260,6 +270,7 @@
                 label="Editar"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="editItem(row)"
+                aria-label="Editar empresa"
               ></button>
               @if (row.isActive) {
               <button
@@ -268,6 +279,7 @@
                 label="Desactivar"
                 class="p-button-text p-button-sm p-button-warning w-full justify-start"
                 (click)="deactivate(row)"
+                aria-label="Desactivar empresa"
               ></button>
               } @else {
               <button
@@ -276,6 +288,7 @@
                 label="Activar"
                 class="p-button-text p-button-sm p-button-success w-full justify-start"
                 (click)="activate(row)"
+                aria-label="Activar empresa"
               ></button>
               }
               <button
@@ -284,6 +297,7 @@
                 label="Eliminar"
                 class="p-button-text p-button-sm p-button-danger w-full justify-start"
                 (click)="remove(row)"
+                aria-label="Eliminar empresa"
               ></button>
             </div>
           </div>
@@ -317,10 +331,11 @@
         <h4 class="text-lg font-semibold mb-3">Información Básica</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="companyName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Nombre de la Empresa *
             </label>
             <input
+              id="companyName"
               pInputText
               placeholder="Nombre de la empresa"
               [ngModel]="editing()?.name"
@@ -329,10 +344,11 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="companyCode" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Código
             </label>
             <input
+              id="companyCode"
               pInputText
               placeholder="Código único"
               [ngModel]="editing()?.code"
@@ -341,10 +357,11 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="companyTaxId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               RUC/DNI
             </label>
             <input
+              id="companyTaxId"
               pInputText
               placeholder="20123456789"
               [ngModel]="editing()?.taxId"
@@ -353,10 +370,11 @@
             />
           </div>
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="companyDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Descripción
             </label>
             <textarea
+              id="companyDescription"
               pTextarea
               placeholder="Descripción de la empresa"
               [ngModel]="editing()?.description"
@@ -373,10 +391,11 @@
         <h4 class="text-lg font-semibold mb-3">Información de Contacto</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="companyEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Email
             </label>
             <input
+              id="companyEmail"
               pInputText
               type="email"
               placeholder="contacto@ejemplo.com"
@@ -386,10 +405,11 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="companyPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Teléfono
             </label>
             <input
+              id="companyPhone"
               pInputText
               placeholder="+51 987654321"
               [ngModel]="editing()?.phone"
@@ -398,10 +418,11 @@
             />
           </div>
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="companyWebsite" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Sitio Web
             </label>
             <input
+              id="companyWebsite"
               pInputText
               placeholder="https://www.ejemplo.com"
               [ngModel]="editing()?.website"
@@ -410,10 +431,11 @@
             />
           </div>
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="companyAddress" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Dirección
             </label>
             <input
+              id="companyAddress"
               pInputText
               placeholder="Av. Principal 123, Lima"
               [ngModel]="editing()?.address"
@@ -448,8 +470,9 @@
           icon="pi pi-times"
           class="p-button-text"
           (click)="closeDialog()"
+          aria-label="Cancelar"
         ></button>
-        <button pButton type="button" label="Guardar" icon="pi pi-check" (click)="save()"></button>
+        <button pButton type="button" label="Guardar" icon="pi pi-check" (click)="save()" aria-label="Guardar empresa"></button>
       </div>
     </ng-template>
   </p-dialog>
@@ -476,8 +499,8 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Nombre</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-medium">
               {{ viewingCompany()?.name }}
@@ -485,22 +508,22 @@
           </div>
           @if (viewingCompany()?.code) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Código</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Código</span
             >
             <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.code }}</div>
           </div>
           } @if (viewingCompany()?.taxId) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >RUC/DNI</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >RUC/DNI</span
             >
             <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.taxId }}</div>
           </div>
           }
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado</span
             >
             @if (viewingCompany()?.isActive) {
             <p-tag value="Activa" severity="success"></p-tag>
@@ -510,8 +533,8 @@
           </div>
           @if (viewingCompany()?.description) {
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Descripción</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Descripción</span
             >
             <div class="text-gray-900 dark:text-gray-100 break-words">
               {{ viewingCompany()?.description }}
@@ -533,8 +556,8 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           @if (viewingCompany()?.email) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Email</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Email</span
             >
             <div class="text-gray-900 dark:text-gray-100 break-words">
               {{ viewingCompany()?.email }}
@@ -542,15 +565,15 @@
           </div>
           } @if (viewingCompany()?.phone) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Teléfono</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Teléfono</span
             >
             <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.phone }}</div>
           </div>
           } @if (viewingCompany()?.website) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Sitio Web</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Sitio Web</span
             >
             <a
               [href]="viewingCompany()?.website"
@@ -562,8 +585,8 @@
           </div>
           } @if (viewingCompany()?.address) {
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Dirección</label
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Dirección</span
             >
             <div class="text-gray-900 dark:text-gray-100 break-words">
               {{ viewingCompany()?.address }}
@@ -583,6 +606,7 @@
           label="Cerrar"
           icon="pi pi-times"
           (click)="closeDetails()"
+          aria-label="Cerrar"
         ></button>
       </div>
     </ng-template>

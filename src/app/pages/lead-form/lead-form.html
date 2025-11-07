@@ -21,12 +21,13 @@
       <form [formGroup]="leadForm" (ngSubmit)="onSubmit()" class="space-y-4">
         <!-- Campo Nombre -->
         <div class="space-y-2">
-          <label class="text-sm font-medium text-gray-700 flex items-center gap-2">
+          <label for="leadName" class="text-sm font-medium text-gray-700 flex items-center gap-2">
             <i class="pi pi-user text-gray-500"></i>
             Nombre completo
           </label>
           <div class="relative">
             <input
+              id="leadName"
               pInputText
               formControlName="name"
               placeholder="Ingresa tu nombre completo"
@@ -43,12 +44,13 @@
 
         <!-- Campo Correo -->
         <div class="space-y-2">
-          <label class="text-sm font-medium text-gray-700 flex items-center gap-2">
+          <label for="leadEmail" class="text-sm font-medium text-gray-700 flex items-center gap-2">
             <i class="pi pi-envelope text-gray-500"></i>
             Correo electrónico
           </label>
           <div class="relative">
             <input
+              id="leadEmail"
               pInputText
               formControlName="email"
               type="email"
@@ -66,12 +68,13 @@
 
         <!-- Campo Teléfono -->
         <div class="space-y-2">
-          <label class="text-sm font-medium text-gray-700 flex items-center gap-2">
+          <label for="leadPhone" class="text-sm font-medium text-gray-700 flex items-center gap-2">
             <i class="pi pi-phone text-gray-500"></i>
             Teléfono
           </label>
           <div class="relative">
             <input
+              id="leadPhone"
               pInputText
               formControlName="phone"
               type="tel"
@@ -89,12 +92,13 @@
 
         <!-- Campo Empresa -->
         <div class="space-y-2">
-          <label class="text-sm font-medium text-gray-700 flex items-center gap-2">
+          <label for="leadCompany" class="text-sm font-medium text-gray-700 flex items-center gap-2">
             <i class="pi pi-building text-gray-500"></i>
             Empresa
           </label>
           <div class="relative">
             <input
+              id="leadCompany"
               pInputText
               formControlName="company"
               placeholder="Nombre de tu empresa"
@@ -111,12 +115,13 @@
 
         <!-- Campo DNI/RUC -->
         <div class="space-y-2">
-          <label class="text-sm font-medium text-gray-700 flex items-center gap-2">
+          <label for="leadTaxId" class="text-sm font-medium text-gray-700 flex items-center gap-2">
             <i class="pi pi-id-card text-gray-500"></i>
             DNI o RUC
           </label>
           <div class="relative">
             <input
+              id="leadTaxId"
               pInputText
               formControlName="taxId"
               placeholder="20123456789"

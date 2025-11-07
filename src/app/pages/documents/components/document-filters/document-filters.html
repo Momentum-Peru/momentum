@@ -6,8 +6,9 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Proyecto -->
         <div class="flex flex-col">
-          <label class="text-sm font-medium text-gray-700 dark:text-white mb-2">Proyecto</label>
+          <label for="filterProyecto" class="text-sm font-medium text-gray-700 dark:text-white mb-2">Proyecto</label>
           <p-select
+            id="filterProyecto"
             formControlName="proyectoId"
             [options]="projectOptions()"
             placeholder="Seleccionar proyecto"
@@ -18,8 +19,9 @@
 
         <!-- Categoría -->
         <div class="flex flex-col">
-          <label class="text-sm font-medium text-gray-700 dark:text-white mb-2">Categoría</label>
+          <label for="filterCategoria" class="text-sm font-medium text-gray-700 dark:text-white mb-2">Categoría</label>
           <p-select
+            id="filterCategoria"
             formControlName="categoria"
             [options]="categoryOptions"
             placeholder="Seleccionar categoría"
@@ -30,10 +32,11 @@
 
         <!-- Número de Documento -->
         <div class="flex flex-col">
-          <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+          <label for="filterNumeroDocumento" class="text-sm font-medium text-gray-700 dark:text-white mb-2"
             >Número de Documento</label
           >
           <p-inputNumber
+            inputId="filterNumeroDocumento"
             formControlName="numeroDocumento"
             [useGrouping]="false"
             [min]="1"
@@ -45,8 +48,9 @@
 
         <!-- Estado -->
         <div class="flex flex-col">
-          <label class="text-sm font-medium text-gray-700 dark:text-white mb-2">Estado</label>
+          <label for="filterEstado" class="text-sm font-medium text-gray-700 dark:text-white mb-2">Estado</label>
           <p-select
+            inputId="filterEstado"
             formControlName="isActive"
             [options]="statusOptions"
             placeholder="Seleccionar estado"
@@ -81,8 +85,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <!-- Serie -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2">Serie</label>
+            <label for="filterSerie" class="text-sm font-medium text-gray-700 dark:text-white mb-2">Serie</label>
             <input
+              id="filterSerie"
               pInputText
               formControlName="serie"
               placeholder="Serie del documento"
@@ -93,10 +98,11 @@
 
           <!-- Fecha Emisión Desde -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+            <label for="filterFechaEmisionDesde" class="text-sm font-medium text-gray-700 dark:text-white mb-2"
               >Fecha Emisión Desde</label
             >
             <p-datepicker
+              inputId="filterFechaEmisionDesde"
               formControlName="fechaEmisionDesde"
               placeholder="Seleccionar fecha"
               [showIcon]="true"
@@ -109,10 +115,11 @@
 
           <!-- Fecha Emisión Hasta -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+            <label for="filterFechaEmisionHasta" class="text-sm font-medium text-gray-700 dark:text-white mb-2"
               >Fecha Emisión Hasta</label
             >
             <p-datepicker
+              inputId="filterFechaEmisionHasta"
               formControlName="fechaEmisionHasta"
               placeholder="Seleccionar fecha"
               [showIcon]="true"
@@ -125,10 +132,11 @@
 
           <!-- Fecha Vencimiento Desde -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+            <label for="filterFechaVencimientoDesde" class="text-sm font-medium text-gray-700 dark:text-white mb-2"
               >Fecha Vencimiento Desde</label
             >
             <p-datepicker
+              inputId="filterFechaVencimientoDesde"
               formControlName="fechaVencimientoDesde"
               placeholder="Seleccionar fecha"
               [showIcon]="true"
@@ -141,10 +149,11 @@
 
           <!-- Fecha Vencimiento Hasta -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+            <label for="filterFechaVencimientoHasta" class="text-sm font-medium text-gray-700 dark:text-white mb-2"
               >Fecha Vencimiento Hasta</label
             >
             <p-datepicker
+              inputId="filterFechaVencimientoHasta"
               formControlName="fechaVencimientoHasta"
               placeholder="Seleccionar fecha"
               [showIcon]="true"
@@ -156,10 +165,11 @@
 
           <!-- Total Mínimo -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+            <label for="filterTotalMinimo" class="text-sm font-medium text-gray-700 dark:text-white mb-2"
               >Total Mínimo</label
             >
             <p-inputNumber
+              inputId="filterTotalMinimo"
               formControlName="totalMinimo"
               [min]="0"
               [maxFractionDigits]="2"
@@ -174,10 +184,11 @@
 
           <!-- Total Máximo -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 dark:text-white mb-2"
+            <label for="filterTotalMaximo" class="text-sm font-medium text-gray-700 dark:text-white mb-2"
               >Total Máximo</label
             >
             <p-inputNumber
+              inputId="filterTotalMaximo"
               formControlName="totalMaximo"
               [min]="0"
               [maxFractionDigits]="2"

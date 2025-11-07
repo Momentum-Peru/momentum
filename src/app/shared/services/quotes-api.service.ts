@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Quote,
-  QuoteOption,
   QuoteQueryParams,
   QuoteListResponse,
   QuoteStatistics,

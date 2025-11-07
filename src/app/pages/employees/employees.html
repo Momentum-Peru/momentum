@@ -23,6 +23,7 @@
       label="Nuevo"
       icon="pi pi-plus"
       class="w-full xl:w-auto"
+      aria-label="Crear nuevo empleado"
     ></button>
   </div>
 
@@ -78,6 +79,7 @@
               (click)="viewItem(row)"
               pTooltip="Ver detalles"
               tooltipPosition="top"
+              aria-label="Ver detalles del empleado"
             ></button>
             <button
               pButton
@@ -86,6 +88,7 @@
               (click)="editItem(row)"
               pTooltip="Editar"
               tooltipPosition="top"
+              aria-label="Editar empleado"
             ></button>
             <button
               pButton
@@ -94,6 +97,7 @@
               (click)="remove(row)"
               pTooltip="Eliminar"
               tooltipPosition="top"
+              aria-label="Eliminar empleado"
             ></button>
           </td>
         </tr>
@@ -116,6 +120,11 @@
       <div
         class="p-4 flex items-center justify-between cursor-pointer"
         (click)="toggleRowByKey(key)"
+        (keyup.enter)="toggleRowByKey(key)"
+        (keyup.space)="toggleRowByKey(key)"
+        tabindex="0"
+        role="button"
+        [attr.aria-label]="'Expandir o contraer detalles del empleado: ' + row.nombre + ' ' + row.apellido"
       >
         <div class="flex-1 min-w-0">
           <div class="font-semibold text-gray-900 dark:text-white">
@@ -187,6 +196,7 @@
             label="Ver"
             class="p-button-text flex-1"
             (click)="viewItem(row)"
+            aria-label="Ver detalles del empleado"
           ></button>
           <button
             pButton
@@ -194,6 +204,7 @@
             label="Editar"
             class="p-button-text flex-1"
             (click)="editItem(row)"
+            aria-label="Editar empleado"
           ></button>
           <button
             pButton
@@ -201,6 +212,7 @@
             label="Eliminar"
             class="p-button-text p-button-danger flex-1"
             (click)="remove(row)"
+            aria-label="Eliminar empleado"
           ></button>
         </div>
       </div>
@@ -230,10 +242,11 @@
     <div class="space-y-4" *ngIf="editing() as e">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          <label for="employeeNombre" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
             Nombre *
           </label>
           <input
+            id="employeeNombre"
             pInputText
             [ngModel]="e.nombre"
             (ngModelChange)="onEditChange('nombre', $event)"
@@ -244,10 +257,11 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          <label for="employeeApellido" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
             Apellido *
           </label>
           <input
+            id="employeeApellido"
             pInputText
             [ngModel]="e.apellido"
             (ngModelChange)="onEditChange('apellido', $event)"
@@ -261,10 +275,11 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          <label for="employeeDni" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
             DNI *
           </label>
           <input
+            id="employeeDni"
             pInputText
             [ngModel]="e.dni"
             (ngModelChange)="onEditChange('dni', $event)"
@@ -276,10 +291,11 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          <label for="employeeCorreo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
             Correo *
           </label>
           <input
+            id="employeeCorreo"
             pInputText
             type="email"
             [ngModel]="e.correo"
@@ -293,10 +309,11 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+        <label for="employeeTelefono" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
           Teléfono
         </label>
         <input
+          id="employeeTelefono"
           pInputText
           [ngModel]="e.telefono"
           (ngModelChange)="onEditChange('telefono', $event)"
@@ -307,10 +324,11 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+        <label for="employeeDireccion" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
           Dirección
         </label>
         <input
+          id="employeeDireccion"
           pInputText
           [ngModel]="e.direccion"
           (ngModelChange)="onEditChange('direccion', $event)"
@@ -321,8 +339,9 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"> Cargo </label>
+        <label for="employeeCargo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"> Cargo </label>
         <input
+          id="employeeCargo"
           pInputText
           [ngModel]="e.cargo"
           (ngModelChange)="onEditChange('cargo', $event)"
@@ -333,10 +352,11 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+        <label for="employeeNumeroSeguroSocial" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
           Número de Seguro Social *
         </label>
         <input
+          id="employeeNumeroSeguroSocial"
           pInputText
           [ngModel]="e.numeroSeguroSocial"
           (ngModelChange)="onEditChange('numeroSeguroSocial', $event)"
@@ -348,10 +368,11 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+        <label for="employeeUsuario" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
           Usuario *
         </label>
         <p-select
+          id="employeeUsuario"
           [options]="users()"
           optionLabel="name"
           optionValue="_id"
@@ -373,8 +394,9 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"> Área </label>
+        <label for="employeeArea" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"> Área </label>
         <p-select
+          id="employeeArea"
           [options]="areas()"
           optionLabel="nombre"
           optionValue="_id"
@@ -396,8 +418,8 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
-      <button pButton label="Guardar" (click)="save()" [disabled]="loading()"></button>
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button pButton label="Guardar" (click)="save()" [disabled]="loading()" aria-label="Guardar empleado"></button>
     </ng-template>
   </p-dialog>
 
@@ -418,29 +440,29 @@
     <div class="space-y-4" *ngIf="viewing() as v">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Nombre</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Nombre</span>
           <div class="font-medium text-gray-700 dark:text-white">{{ v.nombre }}</div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Apellido</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Apellido</span>
           <div class="font-medium text-gray-700 dark:text-white">{{ v.apellido }}</div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">DNI</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">DNI</span>
           <div class="font-medium text-gray-700 dark:text-white">{{ v.dni }}</div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Correo</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Correo</span>
           <div class="font-medium text-gray-700 dark:text-white break-words">
             {{ v.correo }}
           </div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Teléfono</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Teléfono</span>
           <div class="font-medium text-gray-700 dark:text-white">{{ v.telefono || '-' }}</div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Usuario</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Usuario</span>
           <div class="font-medium text-gray-700 dark:text-white break-words">
             {{ getUserName(v.userId) }}
           </div>
@@ -449,34 +471,34 @@
           </div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Área</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Área</span>
           <div class="font-medium text-gray-700 dark:text-white break-words">
             {{ getAreaName(v.areaId) }}
           </div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Cargo</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Cargo</span>
           <div class="font-medium text-gray-700 dark:text-white">
             {{ v.cargo || '-' }}
           </div>
         </div>
         @if (v.direccion) {
         <div class="col-span-1 md:col-span-2">
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Dirección</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Dirección</span>
           <div class="font-medium text-gray-700 dark:text-white break-words">
             {{ v.direccion }}
           </div>
         </div>
         }
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1"
-            >Número de Seguro Social</label
+          <span class="block text-xs text-gray-500 dark:text-white mb-1"
+            >Número de Seguro Social</span
           >
           <div class="font-medium text-gray-700 dark:text-white">{{ v.numeroSeguroSocial }}</div>
         </div>
         @if (v.createdAt) {
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Fecha de creación</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Fecha de creación</span>
           <div class="font-medium text-gray-700 dark:text-white">
             {{ v.createdAt | date : 'dd/MM/yyyy HH:mm' }}
           </div>
@@ -486,7 +508,7 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" (click)="closeViewDialog()"></button>
+      <button pButton label="Cerrar" (click)="closeViewDialog()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 </div>

@@ -51,8 +51,9 @@ export class TenantService {
   /** Verifica acceso del usuario al tenant según tenantIds del perfil */
   userHasAccess(tenantId: string | null | undefined): boolean {
     if (!tenantId || !this.isValidObjectId(tenantId)) return false;
-    const user = this.auth.getCurrentUser() as any;
-    const ids: string[] | undefined = user?.tenantIds;
+    const user = this.auth.getCurrentUser();
+    if (!user || typeof user !== 'object' || !('tenantIds' in user)) return false;
+    const ids = (user as { tenantIds?: string[] }).tenantIds;
     if (!ids || ids.length === 0) return true; // sin restricción
     return ids.includes(tenantId);
   }

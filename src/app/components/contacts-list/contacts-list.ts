@@ -27,11 +27,11 @@ export class ContactsListComponent implements OnInit {
     isLoading = input<boolean>(false);
 
     // Outputs para eventos
-    onEdit = output<Contact>();
-    onDelete = output<string>();
-    onRefresh = output<void>();
-    onSearch = output<string>();
-    onFilterChange = output<{ source?: 'local' | 'google_contacts'; isActive?: boolean }>();
+    edit = output<Contact>();
+    deleteContact = output<string>();
+    refresh = output<void>();
+    searchChange = output<string>();
+    filterChange = output<{ source?: 'local' | 'google_contacts'; isActive?: boolean }>();
 
     // Estados locales
     deletingContactId = signal<string | null>(null);
@@ -125,7 +125,7 @@ export class ContactsListComponent implements OnInit {
      * Maneja la edición de un contacto
      */
     editContact(contact: Contact): void {
-        this.onEdit.emit(contact);
+        this.edit.emit(contact);
     }
 
     /**
@@ -139,7 +139,7 @@ export class ContactsListComponent implements OnInit {
             acceptLabel: 'Eliminar',
             rejectLabel: 'Cancelar',
             accept: () => {
-                this.deleteContact(contact._id);
+                this.performDeleteContact(contact._id);
             }
         });
     }
@@ -147,11 +147,11 @@ export class ContactsListComponent implements OnInit {
     /**
      * Elimina un contacto
      */
-    private async deleteContact(contactId: string): Promise<void> {
+    private async performDeleteContact(contactId: string): Promise<void> {
         this.deletingContactId.set(contactId);
 
         try {
-            await firstValueFrom(this.contactService.deleteContact(contactId) as any);
+            await firstValueFrom(this.contactService.deleteContact(contactId));
 
             this.messageService.add({
                 severity: 'success',
@@ -162,15 +162,18 @@ export class ContactsListComponent implements OnInit {
             // Cerrar el modal de confirmación
             this.confirmationService.close();
 
-            this.onDelete.emit(contactId);
-        } catch (error: any) {
+            this.deleteContact.emit(contactId);
+        } catch (error: unknown) {
             console.error('Error eliminando contacto:', error);
 
             let errorMessage = 'Error al eliminar el contacto';
-            if (error.status === 401) {
-                errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente';
-            } else if (error.status === 404) {
-                errorMessage = 'El contacto no fue encontrado';
+            if (error && typeof error === 'object' && 'status' in error) {
+                const httpError = error as { status: number };
+                if (httpError.status === 401) {
+                    errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente';
+                } else if (httpError.status === 404) {
+                    errorMessage = 'El contacto no fue encontrado';
+                }
             }
 
             this.messageService.add({
@@ -187,21 +190,21 @@ export class ContactsListComponent implements OnInit {
      * Refresca la lista de contactos
      */
     refreshContacts(): void {
-        this.onRefresh.emit();
+        this.refresh.emit();
     }
 
     /**
      * Maneja la búsqueda
      */
     onSearchChange(): void {
-        this.onSearch.emit(this.searchTerm());
+        this.searchChange.emit(this.searchTerm());
     }
 
     /**
      * Maneja el cambio de filtros
      */
     onFilterSourceChange(): void {
-        this.onFilterChange.emit({
+        this.filterChange.emit({
             source: this.selectedSource() === 'all' ? undefined : (this.selectedSource() as 'local' | 'google_contacts'),
             isActive: this.selectedStatus() === 'all' ? undefined : this.selectedStatus() === 'true'
         });
@@ -211,7 +214,7 @@ export class ContactsListComponent implements OnInit {
      * Maneja el cambio de estado
      */
     onFilterStatusChange(): void {
-        this.onFilterChange.emit({
+        this.filterChange.emit({
             source: this.selectedSource() === 'all' ? undefined : (this.selectedSource() as 'local' | 'google_contacts'),
             isActive: this.selectedStatus() === 'all' ? undefined : this.selectedStatus() === 'true'
         });
@@ -224,8 +227,8 @@ export class ContactsListComponent implements OnInit {
         this.searchTerm.set('');
         this.selectedSource.set('all');
         this.selectedStatus.set('all');
-        this.onSearch.emit('');
-        this.onFilterChange.emit({});
+        this.searchChange.emit('');
+        this.filterChange.emit({});
     }
 
     /**

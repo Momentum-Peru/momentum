@@ -69,7 +69,7 @@ export class Menu implements OnInit, OnDestroy {
     // Effect para recargar el menú cuando cambien los permisos
     effect(() => {
       // Acceder a allowedRoutes para que el effect se ejecute cuando cambie
-      const routes = this.menuService.allowedRoutes();
+      this.menuService.allowedRoutes();
       const currentUser = this.authService.getCurrentUser();
 
       // Cuando los permisos cambien, recargar items del menú
@@ -301,7 +301,7 @@ export class Menu implements OnInit, OnDestroy {
   /**
    * Maneja la expansión/colapso de paneles del menú
    */
-  onPanelToggle(event: any): void {
+  onPanelToggle(): void {
     // Event handler para cuando se expande/colapsa un panel
     // Puede ser usado para tracking o animaciones adicionales
   }
@@ -324,9 +324,10 @@ export class Menu implements OnInit, OnDestroy {
    * Escucha cambios de tamaño de pantalla para cerrar el menú en desktop
    */
   @HostListener('window:resize', ['$event'])
-  onResize(event: any): void {
+  onResize(event: Event): void {
     // Si la pantalla es mayor a md (768px), cerrar el menú
-    if (event.target.innerWidth >= 768) {
+    const target = event.target as Window;
+    if (target.innerWidth >= 768) {
       this.closeMenu();
     }
   }
@@ -334,8 +335,8 @@ export class Menu implements OnInit, OnDestroy {
   /**
    * Escucha la tecla Escape para cerrar el menú
    */
-  @HostListener('document:keydown.escape', ['$event'])
-  onEscapeKey(event: Event): void {
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
     if (this.isMenuOpen()) {
       this.closeMenu();
     }

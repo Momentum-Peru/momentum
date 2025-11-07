@@ -59,11 +59,11 @@ export interface QuoteListResponse {
 }
 
 export interface QuoteStatistics {
-  byState: Array<{
+  byState: {
     _id: QuoteState;
     count: number;
     totalValue: number;
-  }>;
+  }[];
   totalQuotes: number;
   totalValue: number;
 }

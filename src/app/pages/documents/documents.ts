@@ -94,7 +94,7 @@ export class DocumentsPage implements OnInit {
         this.totalRecords.set(response.total);
         this.loading.set(false);
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         console.error('Error al cargar documentos:', error);
         this.messageService.add({
           severity: 'error',
@@ -192,7 +192,7 @@ export class DocumentsPage implements OnInit {
         this.showFormDialog.set(true);
         this.loading.set(false);
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         console.error('Error al cargar documento:', error);
         this.messageService.add({
           severity: 'error',
@@ -254,7 +254,7 @@ export class DocumentsPage implements OnInit {
           detail: 'Documento eliminado correctamente',
         });
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         console.error('Error al eliminar documento:', error);
         this.messageService.add({
           severity: 'error',
@@ -503,9 +503,6 @@ export class DocumentsPage implements OnInit {
       return;
     }
 
-    // Filtrar el archivo del array
-    const updatedFiles = document.documentos?.filter((file) => file !== url) || [];
-
     // Eliminar archivo usando el endpoint específico
     const payload = {
       fileUrl: url,
@@ -527,7 +524,7 @@ export class DocumentsPage implements OnInit {
             this.filesViewingDocument.set(updatedDocument);
           }
         },
-        error: (error) => {
+        error: (error: unknown) => {
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
@@ -549,18 +546,58 @@ export class DocumentsPage implements OnInit {
   }
 
   /**
+   * Serializa valores para mostrar en mensajes de error
+   */
+  private safeStringify(value: unknown): string | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '[No se pudo serializar el valor del error]';
+    }
+  }
+
+  /**
    * Obtener mensaje de error
    */
-  private getErrorMessage(error: any): string {
-    if (error.error?.message) {
-      return error.error.message;
+  private getErrorMessage(error: unknown): string {
+    if (typeof error === 'string') {
+      return error;
     }
-    if (error.error?.error) {
-      return error.error.error;
+
+    if (!error || typeof error !== 'object') {
+      return 'Ha ocurrido un error inesperado';
     }
-    if (error.message) {
-      return error.message;
+
+    const errorObject = error as { message?: unknown; error?: unknown };
+    const message = typeof errorObject.message === 'string' ? errorObject.message : undefined;
+
+    if (errorObject.error && typeof errorObject.error === 'object') {
+      const nested = errorObject.error as { message?: unknown; error?: unknown };
+      if (typeof nested.message === 'string') {
+        return nested.message;
+      }
+      if (nested.error !== undefined) {
+        const serialized = this.safeStringify(nested.error);
+        if (serialized) {
+          return serialized;
+        }
+      }
+    } else if (typeof errorObject.error === 'string') {
+      return errorObject.error;
     }
+
+    if (message) {
+      return message;
+    }
+
     return 'Ha ocurrido un error inesperado';
   }
 }

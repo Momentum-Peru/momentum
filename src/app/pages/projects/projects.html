@@ -8,7 +8,7 @@
       (ngModelChange)="setQuery($event)"
       class="w-full"
     />
-    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus"></button>
+    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus" aria-label="Crear nuevo proyecto"></button>
   </div>
 
   <!-- Vista Desktop: Tabla -->
@@ -73,6 +73,7 @@
               class="p-button-text p-button-sm"
               (click)="viewDetails(row)"
               pTooltip="Ver detalles"
+              aria-label="Ver detalles del proyecto"
             ></button>
             <button
               pButton
@@ -80,6 +81,7 @@
               class="p-button-text p-button-sm"
               (click)="editItem(row)"
               pTooltip="Editar proyecto"
+              aria-label="Editar proyecto"
             ></button>
             <button
               pButton
@@ -87,6 +89,7 @@
               class="p-button-text p-button-sm p-button-danger"
               (click)="remove(row)"
               pTooltip="Eliminar proyecto"
+              aria-label="Eliminar proyecto"
             ></button>
           </td>
         </tr>
@@ -199,6 +202,7 @@
                 label="Ver detalles"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="viewDetails(row)"
+                aria-label="Ver detalles del proyecto"
               ></button>
               <button
                 pButton
@@ -206,6 +210,7 @@
                 label="Editar"
                 class="p-button-text p-button-sm w-full justify-start"
                 (click)="editItem(row)"
+                aria-label="Editar proyecto"
               ></button>
               <button
                 pButton
@@ -213,6 +218,7 @@
                 label="Eliminar"
                 class="p-button-text p-button-sm p-button-danger w-full justify-start"
                 (click)="remove(row)"
+                aria-label="Eliminar proyecto"
               ></button>
             </div>
           </div>
@@ -245,7 +251,7 @@
       <!-- Código (solo lectura) y Nombre -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Código</label>
+          <span class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Código</span>
           <div class="w-full">
             @if (editing()?._id) {
             <span
@@ -261,10 +267,11 @@
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="projectName" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Nombre *</label
           >
           <input
+            id="projectName"
             pInputText
             name="projectName"
             placeholder="Nombre del proyecto"
@@ -278,10 +285,11 @@
       <!-- Cliente y Estado -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="projectClient" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Cliente *</label
           >
           <p-select
+            id="projectClient"
             [options]="clients()"
             optionLabel="name"
             optionValue="_id"
@@ -294,10 +302,11 @@
           ></p-select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="projectStatus" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Estado *</label
           >
           <p-select
+            id="projectStatus"
             [options]="statusOptions"
             optionLabel="label"
             optionValue="value"
@@ -313,10 +322,11 @@
       <!-- Ubicación y Presupuesto -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="projectLocation" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Ubicación</label
           >
           <input
+            id="projectLocation"
             pInputText
             name="projectLocation"
             placeholder="Av. Principal 123, Lima"
@@ -326,10 +336,11 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="projectBudget" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Presupuesto</label
           >
           <input
+            id="projectBudget"
             pInputText
             name="projectBudget"
             type="number"
@@ -344,10 +355,11 @@
       <!-- Fechas -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="projectStartDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Fecha Inicio</label
           >
           <p-datepicker
+            id="projectStartDate"
             [ngModel]="editing()?.startDate"
             (ngModelChange)="onEditChange('startDate', $event)"
             dateFormat="dd/mm/yy"
@@ -360,10 +372,11 @@
           ></p-datepicker>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="projectEndDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Fecha Fin</label
           >
           <p-datepicker
+            id="projectEndDate"
             [ngModel]="editing()?.endDate"
             (ngModelChange)="onEditChange('endDate', $event)"
             dateFormat="dd/mm/yy"
@@ -379,10 +392,11 @@
 
       <!-- Descripción -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label for="projectDescription" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Descripción</label
         >
         <textarea
+          id="projectDescription"
           pTextarea
           placeholder="Descripción del proyecto"
           [ngModel]="editing()?.description"
@@ -394,8 +408,9 @@
 
       <!-- Notas -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Notas</label>
+        <label for="projectNotes" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Notas</label>
         <textarea
+          id="projectNotes"
           pTextarea
           placeholder="Notas adicionales"
           [ngModel]="editing()?.notes"
@@ -407,8 +422,8 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
-      <button pButton label="Guardar" (click)="save()"></button>
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button pButton label="Guardar" (click)="save()" aria-label="Guardar proyecto"></button>
     </ng-template>
   </p-dialog>
 
@@ -439,9 +454,8 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Código</label
-            >
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Código</span>
             <div
               class="text-gray-900 dark:text-gray-100 font-mono font-medium bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
             >
@@ -449,9 +463,8 @@
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</label
-            >
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado</span>
             <div class="text-gray-900 dark:text-gray-100">
               <span
                 class="px-2 py-1 rounded-full text-xs font-medium"
@@ -462,33 +475,29 @@
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cliente</label
-            >
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Cliente</span>
             <div class="text-gray-900 dark:text-gray-100 font-medium">
               {{ getClientName(viewingProject()?.clientId ?? '') }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Ubicación</label
-            >
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Ubicación</span>
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingProject()?.location || 'Sin ubicación' }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Presupuesto</label
-            >
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Presupuesto</span>
             <div class="text-gray-900 dark:text-gray-100 font-semibold text-lg">
               {{ viewingProject()?.budget | currency : 'USD' : 'symbol' : '1.0-0' }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado Activo</label
-            >
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Estado Activo</span>
             <div class="text-gray-900 dark:text-gray-100">
               <span
                 class="px-2 py-1 rounded-full text-xs font-medium"
@@ -504,18 +513,16 @@
           </div>
           @if (viewingProject()?.startDate) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Inicio</label
-            >
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Inicio</span>
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingProject()?.startDate | date : 'dd/MM/yyyy' }}
             </div>
           </div>
           } @if (viewingProject()?.endDate) {
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Fin</label
-            >
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Fin</span>
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingProject()?.endDate | date : 'dd/MM/yyyy' }}
             </div>
@@ -560,7 +567,7 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar detalles del proyecto"></button>
     </ng-template>
   </p-dialog>
 </div>

@@ -3,7 +3,15 @@
 
   <!-- Título -->
   <div class="mb-4">
-    <h1 class="text-2xl font-semibold text-gray-800">Reportes diarios</h1>
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <h1 class="text-2xl font-semibold text-gray-800">Reportes diarios</h1>
+      @if (isGerencia()) {
+      <div class="flex items-center gap-2 px-4 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+        <i class="pi pi-building text-orange-600 dark:text-orange-400"></i>
+        <span class="text-sm font-medium text-orange-800 dark:text-orange-200">Vista Gerencia - Todos los usuarios y empresas</span>
+      </div>
+      }
+    </div>
   </div>
 
   <div class="flex flex-wrap items-center gap-2">
@@ -25,6 +33,50 @@
       [selectionMode]="'single'"
       class="w-full xl:w-auto"
     ></p-datepicker>
+    <!-- Filtro por empresa (solo para rol gerencia) -->
+    @if (isGerencia()) {
+    <p-select
+      [options]="companyOptions()"
+      [(ngModel)]="selectedCompany"
+      (ngModelChange)="onCompanyChange()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Seleccionar empresa"
+      [showClear]="true"
+      [loading]="loadingCompanies()"
+      [disabled]="loadingCompanies()"
+      class="w-full xl:w-auto min-w-[200px]"
+      [appendTo]="'body'"
+      [filter]="true"
+      filterPlaceholder="Buscar empresa..."
+    >
+      <ng-template pTemplate="header">
+        <i class="pi pi-building mr-2"></i>
+        <span>Empresa</span>
+      </ng-template>
+    </p-select>
+    <!-- Filtro por usuario (solo para rol gerencia) -->
+    <p-select
+      [options]="userOptions()"
+      [(ngModel)]="selectedUser"
+      (ngModelChange)="onUserChange()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Seleccionar usuario"
+      [showClear]="true"
+      [loading]="loadingUsers()"
+      [disabled]="loadingUsers()"
+      class="w-full xl:w-auto min-w-[200px]"
+      [appendTo]="'body'"
+      [filter]="true"
+      filterPlaceholder="Buscar usuario..."
+    >
+      <ng-template pTemplate="header">
+        <i class="pi pi-user mr-2"></i>
+        <span>Usuario</span>
+      </ng-template>
+    </p-select>
+    }
     <button
       pButton
       type="button"
@@ -32,6 +84,7 @@
       label="Nuevo"
       icon="pi pi-plus"
       class="w-full xl:w-auto"
+      aria-label="Crear nuevo reporte diario"
     ></button>
   </div>
 
@@ -47,6 +100,9 @@
         <tr>
           <th>Fecha</th>
           <th>Hora</th>
+          @if (isGerencia()) {
+          <th>Usuario</th>
+          }
           <th>Proyecto</th>
           <th>Descripción</th>
           <th class="text-right">Acciones</th>
@@ -56,6 +112,13 @@
         <tr>
           <td>{{ row.date | date : 'dd/MM/yyyy' }}</td>
           <td>{{ row.time }}</td>
+          @if (isGerencia()) {
+          <td>
+            <span class="text-sm text-gray-700 dark:text-white font-medium break-words whitespace-normal">
+              {{ getUserName(row.userId) }}
+            </span>
+          </td>
+          }
           <td>
             <span
               class="text-sm text-gray-700 dark:text-white font-medium break-words whitespace-normal"
@@ -76,18 +139,20 @@
             </div>
           </td>
           <td class="text-right">
-            <button pButton icon="pi pi-eye" class="p-button-text" (click)="viewItem(row)"></button>
+            <button pButton icon="pi pi-eye" class="p-button-text" (click)="viewItem(row)" aria-label="Ver detalles del reporte"></button>
             <button
               pButton
               icon="pi pi-pencil"
               class="p-button-text"
               (click)="editItem(row)"
+              aria-label="Editar reporte"
             ></button>
             <button
               pButton
               icon="pi pi-trash"
               class="p-button-text p-button-danger"
               (click)="remove(row)"
+              aria-label="Eliminar reporte"
             ></button>
           </td>
         </tr>
@@ -111,6 +176,11 @@
           <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
             {{ row.date | date : 'dd/MM/yyyy' }} · {{ row.time }}
           </div>
+          @if (isGerencia()) {
+          <div class="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
+            <i class="pi pi-user mr-1"></i>{{ getUserName(row.userId) }}
+          </div>
+          }
           <div class="font-semibold text-gray-900 dark:text-gray-100 break-words whitespace-normal">
             {{ getProjectName(row.projectId) }}
           </div>
@@ -154,6 +224,7 @@
               label="Ver"
               class="p-button-text p-button-sm"
               (click)="viewItem(row)"
+              aria-label="Ver detalles del reporte"
             ></button>
             <button
               pButton
@@ -161,6 +232,7 @@
               label="Editar"
               class="p-button-text p-button-sm"
               (click)="editItem(row)"
+              aria-label="Editar reporte"
             ></button>
             <button
               pButton
@@ -168,6 +240,7 @@
               label="Eliminar"
               class="p-button-text p-button-danger p-button-sm"
               (click)="remove(row)"
+              aria-label="Eliminar reporte"
             ></button>
           </div>
         </div>
@@ -196,10 +269,11 @@
       <!-- Fecha y Hora -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label for="reportDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Fecha *</label
           >
           <p-datepicker
+            id="reportDate"
             [ngModel]="getEditDate()"
             (ngModelChange)="onDateChange($event)"
             name="reportDate"
@@ -212,8 +286,9 @@
           ></p-datepicker>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Hora *</label>
+          <label for="reportTime" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Hora *</label>
           <input
+            id="reportTime"
             pInputText
             type="time"
             [ngModel]="editing()?.time"
@@ -226,10 +301,11 @@
 
       <!-- Proyecto (opcional) -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label for="reportProject" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Proyecto (opcional)</label
         >
         <p-select
+          id="reportProject"
           [options]="projects()"
           optionLabel="label"
           optionValue="value"
@@ -251,6 +327,7 @@
             type="button"
             [icon]="isRecordingAudio() ? 'pi pi-stop-circle' : 'pi pi-volume-up'"
             [label]="isRecordingAudio() ? 'Soltar para finalizar' : 'Mantén presionado para grabar'"
+            [attr.aria-label]="isRecordingAudio() ? 'Soltar para finalizar' : 'Mantén presionado para grabar'"
             (touchstart)="startRecordingAudio($event)"
             (touchend)="stopRecordingAudio($event)"
             (touchcancel)="stopRecordingAudio($event)"
@@ -269,6 +346,7 @@
             label="Audio"
             (click)="audioInput.click()"
             class="w-full"
+            aria-label="Seleccionar audio"
           ></button>
 
           <input
@@ -312,6 +390,7 @@
             label="Foto"
             (click)="photoInput.click()"
             class="w-full"
+            aria-label="Seleccionar foto"
           ></button>
           <input
             type="file"
@@ -345,6 +424,7 @@
             label="Video"
             (click)="videoInput.click()"
             class="w-full"
+            aria-label="Seleccionar video"
           ></button>
           <input
             type="file"
@@ -382,8 +462,8 @@
       normalizeToArray(editing()?.photoDescription).length > 0 ||
       normalizeToArray(editing()?.videoDescription).length > 0) {
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-          >Archivos multimedia guardados</label
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+          >Archivos multimedia guardados</span
         >
         <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
           <!-- Audios guardados - Agrupados con portada -->
@@ -394,6 +474,11 @@
             <div
               class="w-full h-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
               (click)="openMediaModal('audio', normalizeToArray(editing()?.audioDescription), 0)"
+              (keyup.enter)="openMediaModal('audio', normalizeToArray(editing()?.audioDescription), 0)"
+              (keyup.space)="openMediaModal('audio', normalizeToArray(editing()?.audioDescription), 0)"
+              tabindex="0"
+              role="button"
+              aria-label="Abrir audios guardados"
             >
               <i class="pi pi-volume-up text-2xl text-gray-600 dark:text-gray-300"></i>
             </div>
@@ -412,6 +497,7 @@
               class="p-button-rounded p-button-danger p-button-sm absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
               (click)="removeAudioFromEditing(normalizeToArray(editing()?.audioDescription)[0])"
               pTooltip="Eliminar audio"
+              aria-label="Eliminar audio"
             ></button>
             <div
               class="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded"
@@ -430,6 +516,11 @@
               class="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
               alt="Foto portada"
               (click)="openMediaModal('photo', normalizeToArray(editing()?.photoDescription), 0)"
+              (keyup.enter)="openMediaModal('photo', normalizeToArray(editing()?.photoDescription), 0)"
+              (keyup.space)="openMediaModal('photo', normalizeToArray(editing()?.photoDescription), 0)"
+              tabindex="0"
+              role="button"
+              aria-label="Abrir fotos guardadas"
             />
             }
             <!-- Indicador de cantidad de fotos -->
@@ -447,6 +538,7 @@
               class="p-button-rounded p-button-danger p-button-sm absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
               (click)="removePhotoFromEditing(normalizeToArray(editing()?.photoDescription)[0])"
               pTooltip="Eliminar foto"
+              aria-label="Eliminar foto"
             ></button>
             <div
               class="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded"
@@ -464,6 +556,11 @@
             <div
               class="w-full h-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
               (click)="openMediaModal('video', normalizeToArray(editing()?.videoDescription), 0)"
+              (keyup.enter)="openMediaModal('video', normalizeToArray(editing()?.videoDescription), 0)"
+              (keyup.space)="openMediaModal('video', normalizeToArray(editing()?.videoDescription), 0)"
+              tabindex="0"
+              role="button"
+              aria-label="Abrir videos guardados"
             >
               <i class="pi pi-play-circle text-2xl text-gray-600 dark:text-gray-300"></i>
             </div>
@@ -482,6 +579,7 @@
               class="p-button-rounded p-button-danger p-button-sm absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
               (click)="removeVideoFromEditing(normalizeToArray(editing()?.videoDescription)[0])"
               pTooltip="Eliminar video"
+              aria-label="Eliminar video"
             ></button>
             <div
               class="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded"
@@ -497,8 +595,8 @@
       <!-- Archivos pendientes (no guardados aún) -->
       @if (pendingAudio().length > 0 || pendingPhoto().length > 0 || pendingVideo().length > 0) {
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-          >Archivos pendientes de guardar</label
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+          >Archivos pendientes de guardar</span
         >
         <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
           <!-- Audios pendientes - Agrupados con portada -->
@@ -509,6 +607,11 @@
             <div
               class="w-full h-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
               (click)="openMediaModal('audio', pendingAudioUrls(), 0)"
+              (keyup.enter)="openMediaModal('audio', pendingAudioUrls(), 0)"
+              (keyup.space)="openMediaModal('audio', pendingAudioUrls(), 0)"
+              tabindex="0"
+              role="button"
+              aria-label="Abrir audios pendientes"
             >
               <i class="pi pi-volume-up text-2xl text-gray-600 dark:text-gray-300"></i>
             </div>
@@ -527,6 +630,7 @@
               class="p-button-rounded p-button-danger p-button-sm absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
               (click)="removePendingAudio(0)"
               pTooltip="Eliminar audio"
+              aria-label="Eliminar audio pendiente"
             ></button>
             <div
               class="absolute bottom-1 right-1 bg-orange-600 bg-opacity-80 text-white text-xs px-1 rounded"
@@ -545,6 +649,11 @@
               class="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
               alt="Foto pendiente"
               (click)="openMediaModal('photo', pendingPhotoUrls(), 0)"
+              (keyup.enter)="openMediaModal('photo', pendingPhotoUrls(), 0)"
+              (keyup.space)="openMediaModal('photo', pendingPhotoUrls(), 0)"
+              tabindex="0"
+              role="button"
+              aria-label="Abrir fotos pendientes"
             />
             }
             <!-- Indicador de cantidad de fotos -->
@@ -562,6 +671,7 @@
               class="p-button-rounded p-button-danger p-button-sm absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
               (click)="removePendingPhoto(0)"
               pTooltip="Eliminar foto"
+              aria-label="Eliminar foto pendiente"
             ></button>
             <div
               class="absolute bottom-1 right-1 bg-orange-600 bg-opacity-80 text-white text-xs px-1 rounded"
@@ -579,6 +689,11 @@
             <div
               class="w-full h-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
               (click)="openMediaModal('video', pendingVideoUrls(), 0)"
+              (keyup.enter)="openMediaModal('video', pendingVideoUrls(), 0)"
+              (keyup.space)="openMediaModal('video', pendingVideoUrls(), 0)"
+              tabindex="0"
+              role="button"
+              aria-label="Abrir videos pendientes"
             >
               <i class="pi pi-play-circle text-2xl text-gray-600 dark:text-gray-300"></i>
             </div>
@@ -597,6 +712,7 @@
               class="p-button-rounded p-button-danger p-button-sm absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
               (click)="removePendingVideo(0)"
               pTooltip="Eliminar video"
+              aria-label="Eliminar video pendiente"
             ></button>
             <div
               class="absolute bottom-1 right-1 bg-orange-600 bg-opacity-80 text-white text-xs px-1 rounded"
@@ -611,10 +727,11 @@
 
       <!-- Descripción -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label for="reportDescription" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Descripción *</label
         >
         <textarea
+          id="reportDescription"
           pTextarea
           placeholder="Describe lo realizado..."
           [ngModel]="editing()?.description"
@@ -627,10 +744,11 @@
 
       <!-- Adjuntar documentos (múltiples) -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label for="reportDocuments" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Documentos</label
         >
         <input
+          id="reportDocuments"
           type="file"
           multiple
           (change)="onDocumentsSelected($event)"
@@ -670,6 +788,7 @@
                 (click)="viewDocument(doc)"
                 pTooltip="Ver documento"
                 tooltipPosition="top"
+                aria-label="Ver documento"
               ></button>
               <button
                 pButton
@@ -678,6 +797,7 @@
                 (click)="removeDocumentFromEditing(i)"
                 pTooltip="Eliminar documento"
                 tooltipPosition="top"
+                aria-label="Eliminar documento"
               ></button>
             </div>
           </div>
@@ -688,8 +808,8 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
-      <button pButton label="Guardar" (click)="save()"></button>
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button pButton label="Guardar" (click)="save()" aria-label="Guardar reporte"></button>
     </ng-template>
   </p-dialog>
 
@@ -710,17 +830,17 @@
     <div class="space-y-4" *ngIf="viewing() as v">
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Fecha</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Fecha</span>
           <div class="font-medium text-gray-700 dark:text-white">
             {{ v.date | date : 'dd/MM/yyyy' }}
           </div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Hora</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Hora</span>
           <div class="font-medium text-gray-700 dark:text-white">{{ v.time }}</div>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 dark:text-white mb-1">Proyecto</label>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Proyecto</span>
           <div class="font-medium text-gray-700 dark:text-white break-words whitespace-normal">
             {{ getProjectName(v.projectId) }}
           </div>
@@ -728,7 +848,7 @@
       </div>
 
       <div>
-        <label class="block text-xs text-gray-500 dark:text-100 mb-1">Descripción</label>
+        <span class="block text-xs text-gray-500 dark:text-white mb-1">Descripción</span>
         <p class="whitespace-pre-wrap text-gray-700 dark:text-white">{{ v.description }}</p>
       </div>
 
@@ -737,13 +857,18 @@
       normalizeToArray(v.photoDescription).length > 0 || normalizeToArray(v.videoDescription).length
       > 0) {
       <div>
-        <label class="block text-xs text-gray-500 dark:text-white mb-2">Medios</label>
+        <span class="block text-xs text-gray-500 dark:text-white mb-2">Medios</span>
         <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
           <!-- Miniaturas de audio - Agrupadas con portada -->
           @if (normalizeToArray(v.audioDescription).length > 0) {
           <div
             class="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center"
             (click)="openMediaModal('audio', normalizeToArray(v.audioDescription), 0)"
+            (keyup.enter)="openMediaModal('audio', normalizeToArray(v.audioDescription), 0)"
+            (keyup.space)="openMediaModal('audio', normalizeToArray(v.audioDescription), 0)"
+            tabindex="0"
+            role="button"
+            aria-label="Ver audios del reporte"
           >
             <i class="pi pi-volume-up text-3xl text-gray-600 dark:text-gray-300"></i>
             <!-- Indicador de cantidad de audios -->
@@ -767,6 +892,11 @@
           <div
             class="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
             (click)="openMediaModal('photo', normalizeToArray(v.photoDescription), 0)"
+            (keyup.enter)="openMediaModal('photo', normalizeToArray(v.photoDescription), 0)"
+            (keyup.space)="openMediaModal('photo', normalizeToArray(v.photoDescription), 0)"
+            tabindex="0"
+            role="button"
+            aria-label="Ver fotos del reporte"
           >
             @if (normalizeToArray(v.photoDescription)[0]) {
             <img
@@ -796,6 +926,11 @@
           <div
             class="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center"
             (click)="openMediaModal('video', normalizeToArray(v.videoDescription), 0)"
+            (keyup.enter)="openMediaModal('video', normalizeToArray(v.videoDescription), 0)"
+            (keyup.space)="openMediaModal('video', normalizeToArray(v.videoDescription), 0)"
+            tabindex="0"
+            role="button"
+            aria-label="Ver videos del reporte"
           >
             <i class="pi pi-play-circle text-3xl text-gray-600 dark:text-gray-300"></i>
             <!-- Indicador de cantidad de videos -->
@@ -817,7 +952,7 @@
       </div>
       } @if (v.documents?.length) {
       <div>
-        <label class="block text-xs text-gray-500 dark:text-white mb-2">Documentos</label>
+        <span class="block text-xs text-gray-500 dark:text-white mb-2">Documentos</span>
         <div class="space-y-1">
           @for (doc of v.documents; track doc) {
           <div
@@ -835,12 +970,14 @@
                 icon="pi pi-eye"
                 class="p-button-text p-button-sm"
                 (click)="viewDocument(doc)"
+                aria-label="Ver documento"
               ></button>
               <button
                 pButton
                 icon="pi pi-download"
                 class="p-button-text p-button-sm"
                 (click)="downloadDocument(doc)"
+                aria-label="Descargar documento"
               ></button>
             </div>
           </div>
@@ -851,7 +988,7 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" (click)="closeViewDialog()"></button>
+      <button pButton label="Cerrar" (click)="closeViewDialog()" aria-label="Cerrar"></button>
     </ng-template>
   </p-dialog>
 
@@ -880,6 +1017,7 @@
           icon="pi pi-times"
           class="p-button-text p-button-rounded"
           (click)="closeMediaModal()"
+          aria-label="Cerrar modal de medios"
         ></button>
       </div>
     </ng-template>
@@ -893,6 +1031,7 @@
         class="p-button-rounded p-button-text absolute left-2 z-10 bg-white bg-opacity-80 hover:bg-opacity-100"
         (click)="previousMedia()"
         pTooltip="Anterior"
+        aria-label="Medio anterior"
       ></button>
       }
 
@@ -923,6 +1062,7 @@
         class="p-button-rounded p-button-text absolute right-2 z-10 bg-white bg-opacity-80 hover:bg-opacity-100"
         (click)="nextMedia()"
         pTooltip="Siguiente"
+        aria-label="Medio siguiente"
       ></button>
       }
     </div>
@@ -942,9 +1082,10 @@
             class="p-button-danger"
             (click)="removeCurrentMediaFromModal()"
             pTooltip="Eliminar este archivo"
+            aria-label="Eliminar archivo actual"
           ></button>
           }
-          <button pButton label="Cerrar" (click)="closeMediaModal()"></button>
+          <button pButton label="Cerrar" (click)="closeMediaModal()" aria-label="Cerrar modal"></button>
         </div>
       </div>
     </ng-template>

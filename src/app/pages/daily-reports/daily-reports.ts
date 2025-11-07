@@ -14,10 +14,13 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DailyExpensesApiService } from '../../shared/services/daily-reports-api.service';
 import { ProjectsApiService } from '../../shared/services/projects-api.service';
+import { CompaniesApiService } from '../../shared/services/companies-api.service';
+import { UsersApiService } from '../../shared/services/users-api.service';
 import { AuthService } from '../login/services/auth.service';
 import { DailyReport } from '../../shared/interfaces/daily-report.interface';
 import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
 import { compressImage } from '../../shared/utils/image-compression.util';
+import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 
 @Component({
   selector: 'app-daily-expenses',
@@ -43,20 +46,32 @@ import { compressImage } from '../../shared/utils/image-compression.util';
 export class DailyExpensesPage implements OnInit {
   private readonly dailyExpensesApi = inject(DailyExpensesApiService);
   private readonly projectsApi = inject(ProjectsApiService);
+  private readonly companiesApi = inject(CompaniesApiService);
+  private readonly usersApi = inject(UsersApiService);
   private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
 
   items = signal<DailyReport[]>([]);
   projects = signal<ProjectOption[]>([]);
+  users = signal<UserOption[]>([]);
   query = signal('');
   filterDate = signal<string | null>(null);
+  selectedCompany = signal<{ id: string; name: string; code?: string } | null>(null);
+  selectedUser = signal<{ id: string; name: string; email: string } | null>(null);
+  companyOptions = signal<{ label: string; value: { id: string; name: string; code?: string } | null }[]>([]);
+  userOptions = signal<{ label: string; value: { id: string; name: string; email: string } | null }[]>([]);
+  loadingCompanies = signal(false);
+  loadingUsers = signal(false);
   showDialog = signal(false);
   showViewDialog = signal(false);
   editing = signal<DailyReport | null>(null);
   viewing = signal<DailyReport | null>(null);
   // Estado de expansión para vista móvil (accordion)
   private expandedRowKeys = signal<Set<string>>(new Set());
+
+  // Computed para verificar si el usuario es gerencia
+  readonly isGerencia = computed(() => this.authService.isGerencia());
 
   // Archivos seleccionados (pendientes) cuando aún no existe el reporte
   pendingAudio = signal<File[]>([]);
@@ -168,7 +183,7 @@ export class DailyExpensesPage implements OnInit {
   private mediaRecorder: MediaRecorder | null = null;
   private audioStream: MediaStream | null = null;
   private audioChunks: Blob[] = [];
-  private recordingInterval: any = null;
+  private recordingInterval: ReturnType<typeof setInterval> | null = null;
 
   // Filtrado simple por texto
   filteredItems = computed(() => {
@@ -193,6 +208,11 @@ export class DailyExpensesPage implements OnInit {
   ngOnInit() {
     this.load();
     this.loadProjects();
+    // Cargar empresas y usuarios si el usuario es gerencia
+    if (this.isGerencia()) {
+      this.loadCompanies();
+      this.loadUsers();
+    }
     // Detectar si es móvil
     this.isMobile.set(
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
@@ -243,25 +263,42 @@ export class DailyExpensesPage implements OnInit {
     }
 
     const fd = this.filterDate();
-    if (fd) {
-      this.dailyExpensesApi
-        .listWithFilters({ userId: currentUser.id, startDate: fd, endDate: fd })
-        .subscribe({
-          next: (data) => {
-            this.items.set(data);
-          },
-          error: () => {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'Error al cargar los reportes diarios',
-            });
-          },
-        });
-      return;
+    const filters: {
+      userId?: string;
+      startDate?: string;
+      endDate?: string;
+      tenantId?: string;
+    } = {};
+
+    // Para gerencia: no filtrar por userId para ver todos los reportes de todos los usuarios
+    // Para otros roles: filtrar por userId del usuario actual
+    if (!this.isGerencia()) {
+      filters.userId = currentUser.id;
     }
 
-    this.dailyExpensesApi.listWithFilters({ userId: currentUser.id }).subscribe({
+    // Agregar filtro de fecha si existe
+    if (fd) {
+      filters.startDate = fd;
+      filters.endDate = fd;
+    }
+
+    // Agregar filtro por empresa si es gerencia y hay empresa seleccionada
+    if (this.isGerencia()) {
+      const company = this.selectedCompany();
+      if (company && company.id) {
+        filters.tenantId = company.id;
+      }
+      // Si no hay empresa seleccionada, no agregar tenantId para ver todas las empresas
+
+      // Agregar filtro por usuario si hay usuario seleccionado
+      const user = this.selectedUser();
+      if (user && user.id) {
+        filters.userId = user.id;
+      }
+      // Si no hay usuario seleccionado, no agregar userId para ver todos los usuarios
+    }
+
+    this.dailyExpensesApi.listWithFilters(filters).subscribe({
       next: (data) => {
         this.items.set(data);
       },
@@ -291,7 +328,7 @@ export class DailyExpensesPage implements OnInit {
   loadProjects() {
     this.projectsApi.getOptions().subscribe({
       next: (data) => this.projects.set(data),
-      error: (error) => {
+      error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -299,6 +336,130 @@ export class DailyExpensesPage implements OnInit {
         });
       },
     });
+  }
+
+  /**
+   * Carga las empresas desde el backend (solo para rol gerencia)
+   */
+  loadCompanies(): void {
+    this.loadingCompanies.set(true);
+    this.companiesApi.list({ isActive: true }).subscribe({
+      next: (companies) => {
+        const options: { label: string; value: { id: string; name: string; code?: string } | null }[] = [
+          { label: 'Todas las empresas', value: null },
+        ];
+        companies.forEach((company) => {
+          if (company._id) {
+            options.push({
+              label: `${company.name}${company.code ? ` (${company.code})` : ''}`,
+              value: { id: company._id, name: company.name, code: company.code },
+            });
+          }
+        });
+        this.companyOptions.set(options);
+        this.loadingCompanies.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading companies:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar las empresas',
+        });
+        this.loadingCompanies.set(false);
+        // Mantener opción por defecto en caso de error
+        this.companyOptions.set([{ label: 'Todas las empresas', value: null }]);
+      },
+    });
+  }
+
+  /**
+   * Maneja el cambio de empresa
+   */
+  onCompanyChange(): void {
+    // Recargar reportes cuando cambia la empresa
+    // Si hay empresa seleccionada, recargar usuarios de esa empresa
+    if (this.isGerencia()) {
+      const company = this.selectedCompany();
+      if (company && company.id) {
+        this.loadUsers(company.id);
+      } else {
+        // Si no hay empresa, cargar todos los usuarios
+        this.loadUsers();
+      }
+    }
+    this.load();
+  }
+
+  /**
+   * Carga los usuarios desde el backend (solo para rol gerencia)
+   * @param tenantId Opcional: Filtrar usuarios por empresa
+   */
+  loadUsers(tenantId?: string): void {
+    if (!this.isGerencia()) {
+      return;
+    }
+
+    this.loadingUsers.set(true);
+    this.usersApi.list(tenantId).subscribe({
+      next: (userOptions) => {
+        const options: { label: string; value: { id: string; name: string; email: string } | null }[] = [
+          { label: 'Todos los usuarios', value: null },
+        ];
+        userOptions.forEach((user) => {
+          if (user._id) {
+            options.push({
+              label: `${user.name}${user.email ? ` (${user.email})` : ''}`,
+              value: { id: user._id, name: user.name, email: user.email || '' },
+            });
+          }
+        });
+        this.userOptions.set(options);
+        this.users.set(userOptions);
+        this.loadingUsers.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading users:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los usuarios',
+        });
+        this.loadingUsers.set(false);
+        // Mantener opción por defecto en caso de error
+        this.userOptions.set([{ label: 'Todos los usuarios', value: null }]);
+      },
+    });
+  }
+
+  /**
+   * Maneja el cambio de usuario
+   */
+  onUserChange(): void {
+    // Recargar reportes cuando cambia el usuario
+    this.load();
+  }
+
+  /**
+   * Obtiene el nombre del usuario del reporte
+   * @param userId ID del usuario o objeto populado
+   * @returns Nombre del usuario o 'Usuario desconocido'
+   */
+  getUserName(userId: string | { _id?: string; name?: string; email?: string } | undefined): string {
+    if (!userId) return 'Usuario desconocido';
+
+    // Si es un objeto populado
+    if (typeof userId === 'object' && 'name' in userId) {
+      return userId.name || userId.email || 'Usuario desconocido';
+    }
+
+    // Si es un string (ID), buscar en la lista de usuarios
+    if (typeof userId === 'string') {
+      const user = this.users().find((u) => u._id === userId);
+      return user?.name || user?.email || 'Usuario desconocido';
+    }
+
+    return 'Usuario desconocido';
   }
 
   // Helpers de accordion móvil
@@ -448,7 +609,7 @@ export class DailyExpensesPage implements OnInit {
   }
 
   // Abrir modal de visualización de medios
-  openMediaModal(type: 'audio' | 'video' | 'photo', urls: string[], currentIndex: number = 0) {
+  openMediaModal(type: 'audio' | 'video' | 'photo', urls: string[], currentIndex = 0) {
     this.mediaModalType.set(type);
     this.mediaModalUrls.set(urls);
     this.mediaModalCurrentIndex.set(currentIndex);
@@ -477,7 +638,6 @@ export class DailyExpensesPage implements OnInit {
   removeCurrentMediaFromModal() {
     const currentUrl = this.mediaModalUrl();
     const type = this.mediaModalType();
-    const currentIndex = this.mediaModalCurrentIndex();
 
     if (!currentUrl || !type) return;
 
@@ -486,9 +646,8 @@ export class DailyExpensesPage implements OnInit {
     if (isPending) {
       // Confirmar eliminación de archivo pendiente
       this.confirmationService.confirm({
-        message: `¿Está seguro de que desea eliminar este ${
-          type === 'audio' ? 'audio' : type === 'video' ? 'video' : 'foto'
-        }?`,
+        message: `¿Está seguro de que desea eliminar este ${type === 'audio' ? 'audio' : type === 'video' ? 'video' : 'foto'
+          }?`,
         header: 'Confirmar Eliminación',
         icon: 'pi pi-exclamation-triangle',
         acceptLabel: 'Sí, eliminar',
@@ -611,7 +770,7 @@ export class DailyExpensesPage implements OnInit {
     this.showViewDialog.set(false);
   }
 
-  onEditChange(field: keyof DailyReport, value: any) {
+  onEditChange(field: keyof DailyReport, value: DailyReport[keyof DailyReport]) {
     const current = this.editing();
     if (current) {
       this.editing.set({ ...current, [field]: value });
@@ -855,7 +1014,7 @@ export class DailyExpensesPage implements OnInit {
     });
   }
 
-  removeAudioFromEditing(url: string, skipConfirm: boolean = false) {
+  removeAudioFromEditing(url: string, skipConfirm = false) {
     const current = this.editing();
     if (!current) return;
 
@@ -908,7 +1067,7 @@ export class DailyExpensesPage implements OnInit {
     }
   }
 
-  removeVideoFromEditing(url: string, skipConfirm: boolean = false) {
+  removeVideoFromEditing(url: string, skipConfirm = false) {
     const current = this.editing();
     if (!current) return;
 
@@ -959,7 +1118,7 @@ export class DailyExpensesPage implements OnInit {
     }
   }
 
-  removePhotoFromEditing(url: string, skipConfirm: boolean = false) {
+  removePhotoFromEditing(url: string, skipConfirm = false) {
     const current = this.editing();
     if (!current) return;
 
@@ -1041,19 +1200,19 @@ export class DailyExpensesPage implements OnInit {
     const upsert$ = item._id
       ? this.dailyExpensesApi.update(item._id, payload)
       : this.dailyExpensesApi.create({
-          ...payload,
-          userId:
-            typeof item.userId === 'object' && item.userId && '_id' in item.userId
-              ? (item.userId as any)._id
-              : (item.userId as string),
-          documents: [],
-        } as DailyReport);
+        ...payload,
+        userId:
+          typeof item.userId === 'object' && item.userId && '_id' in item.userId
+            ? (item.userId as { _id: string })._id
+            : (item.userId as string),
+        documents: [],
+      } as DailyReport);
 
     upsert$.subscribe({
       next: (saved) => {
         const id = saved._id!;
         // Si había archivos pendientes (nuevo), súbelos
-        const tasks: Array<Promise<any>> = [];
+        const tasks: Promise<unknown>[] = [];
 
         // Subir múltiples audios
         this.pendingAudio().forEach((file) => {
@@ -1130,38 +1289,39 @@ export class DailyExpensesPage implements OnInit {
     });
   }
   private uploadPhotoPromise(id: string, file: File) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // Comprimir la imagen antes de subir, usando el original si falla
-        let fileToUpload: File;
-        try {
-          fileToUpload = await compressImage(file);
-          console.log('Subiendo foto:', { 
-            fileName: fileToUpload.name, 
-            originalSize: file.size, 
-            compressedSize: fileToUpload.size,
-            compressionRatio: ((1 - fileToUpload.size / file.size) * 100).toFixed(1) + '%',
-            reportId: id 
+    return new Promise((resolve, reject) => {
+      // Comprimir la imagen antes de subir, usando el original si falla
+      compressImage(file)
+        .then((compressedFile) => {
+          console.log('Subiendo foto:', {
+            fileName: compressedFile.name,
+            originalSize: file.size,
+            compressedSize: compressedFile.size,
+            compressionRatio: ((1 - compressedFile.size / file.size) * 100).toFixed(1) + '%',
+            reportId: id
           });
-        } catch (compressionError) {
+          return compressedFile;
+        })
+        .catch((compressionError) => {
           console.warn('Error al comprimir foto, usando original:', { fileName: file.name, error: compressionError });
-          fileToUpload = file; // Fallback al archivo original
-        }
-        
-        this.dailyExpensesApi.uploadPhoto(id, fileToUpload).subscribe({
-          next: (response) => {
-            console.log('Foto subida exitosamente:', { fileName: fileToUpload.name, reportId: id });
-            resolve(response);
-          },
-          error: (error) => {
-            console.error('Error al subir foto:', { fileName: fileToUpload.name, error, reportId: id });
-            reject({ type: 'photo', fileName: fileToUpload.name, error });
-          },
+          return file; // Fallback al archivo original
+        })
+        .then((fileToUpload) => {
+          this.dailyExpensesApi.uploadPhoto(id, fileToUpload).subscribe({
+            next: (response) => {
+              console.log('Foto subida exitosamente:', { fileName: fileToUpload.name, reportId: id });
+              resolve(response);
+            },
+            error: (error) => {
+              console.error('Error al subir foto:', { fileName: fileToUpload.name, error, reportId: id });
+              reject({ type: 'photo', fileName: fileToUpload.name, error });
+            },
+          });
+        })
+        .catch((error) => {
+          console.error('Error inesperado al procesar foto:', { fileName: file.name, error, reportId: id });
+          reject({ type: 'photo', fileName: file.name, error });
         });
-      } catch (error) {
-        console.error('Error inesperado al procesar foto:', { fileName: file.name, error, reportId: id });
-        reject({ type: 'photo', fileName: file.name, error });
-      }
     });
   }
   private uploadDocumentsPromise(id: string, files: File[]) {
@@ -1196,11 +1356,16 @@ export class DailyExpensesPage implements OnInit {
    * @returns Promise que se resuelve cuando todas las subidas terminan
    */
   private async uploadFilesWithConcurrencyLimit(
-    tasks: Array<Promise<any>>,
+    tasks: Promise<unknown>[],
     reportId: string
   ): Promise<void> {
+    console.log('Iniciando carga de archivos con límite de concurrencia', {
+      reportId,
+      totalTasks: tasks.length,
+    });
+
     const CONCURRENT_LIMIT = 3; // Máximo 3 subidas simultáneas
-    const results: Array<{ status: string; fileName?: string; type?: string; error?: any }> = [];
+    const results: { status: string; fileName?: string; type?: string; error?: unknown }[] = [];
 
     // Procesar en lotes con límite de concurrencia
     for (let i = 0; i < tasks.length; i += CONCURRENT_LIMIT) {
@@ -1210,17 +1375,22 @@ export class DailyExpensesPage implements OnInit {
       batchResults.forEach((result, index) => {
         if (result.status === 'fulfilled') {
           results.push({ status: 'fulfilled' });
-          console.log(`Archivo ${i + index + 1}/${tasks.length} subido exitosamente`);
+          console.log(`Archivo ${i + index + 1}/${tasks.length} subido exitosamente`, {
+            reportId,
+          });
         } else {
-          const errorInfo = result.reason as any;
+          const errorInfo = result.reason as { fileName?: string; type?: string; error?: unknown } | undefined;
           results.push({
             status: 'rejected',
             fileName: errorInfo?.fileName || 'desconocido',
             type: errorInfo?.type || 'archivo',
             error: errorInfo?.error || result.reason,
           });
-          console.error(`Error al subir archivo ${i + index + 1}/${tasks.length}:`, errorInfo);
-          
+          console.error(`Error al subir archivo ${i + index + 1}/${tasks.length}:`, {
+            reportId,
+            ...errorInfo,
+          });
+
           // Mostrar error específico al usuario
           const errorMsg = this.getErrorMessage(errorInfo?.error || result.reason);
           this.messageService.add({
@@ -1241,8 +1411,11 @@ export class DailyExpensesPage implements OnInit {
     // Resumen final
     const successful = results.filter((r) => r.status === 'fulfilled').length;
     const failed = results.filter((r) => r.status === 'rejected').length;
-    
-    console.log(`Subida completada: ${successful} exitosos, ${failed} fallidos de ${tasks.length} totales`);
+
+    console.log(`Subida completada: ${successful} exitosos, ${failed} fallidos de ${tasks.length} totales`, {
+      reportId,
+      totalResults: results.length,
+    });
 
     if (failed > 0) {
       this.messageService.add({
@@ -1349,7 +1522,7 @@ export class DailyExpensesPage implements OnInit {
     if (item.userId) {
       if (typeof item.userId === 'object' && '_id' in item.userId) {
         // El userId es un objeto, extraer el _id
-        userId = (item.userId as any)._id;
+        userId = (item.userId as { _id: string })._id;
       } else if (typeof item.userId === 'string') {
         // El userId es un string
         userId = item.userId;
@@ -1469,38 +1642,44 @@ export class DailyExpensesPage implements OnInit {
   }
 
   // Método para obtener mensaje de error de la API
-  private getErrorMessage(error: any): string {
-    // Manejar errores de permisos primero
-    if (error.status === 403) {
-      if (error.error?.message?.includes('No puedes enviar gastos de otros usuarios')) {
-        return 'No puedes enviar reportes de otros usuarios';
+  private getErrorMessage(error: unknown): string {
+    // Verificar si es un objeto con propiedades de error HTTP
+    if (error && typeof error === 'object' && 'status' in error) {
+      const httpError = error as { status?: number; error?: { message?: string; error?: string } };
+
+      // Manejar errores de permisos primero
+      if (httpError.status === 403) {
+        if (httpError.error?.message?.includes('No puedes enviar gastos de otros usuarios')) {
+          return 'No puedes enviar reportes de otros usuarios';
+        }
+        if (httpError.error?.message?.includes('No puedes aprobar')) {
+          return 'No tienes permisos para aprobar este reporte';
+        }
+        return 'No tienes permisos para realizar esta acción';
       }
-      if (error.error?.message?.includes('No puedes aprobar')) {
-        return 'No tienes permisos para aprobar este reporte';
+
+      // Manejar errores de validación específicos
+      if (httpError.error?.message) {
+        const message = httpError.error.message;
+
+        // Traducir mensajes comunes de validación
+        if (message.includes('date should not be empty')) {
+          return 'La fecha es requerida';
+        }
+        if (message.includes('time should not be empty')) return 'La hora es requerida';
+        if (message.includes('description should not be empty')) return 'La descripción es requerida';
+
+        return message;
       }
-      return 'No tienes permisos para realizar esta acción';
+
+      if (httpError.error?.error) {
+        return httpError.error.error;
+      }
     }
 
-    // Manejar errores de validación específicos
-    if (error.error?.message) {
-      const message = error.error.message;
-
-      // Traducir mensajes comunes de validación
-      if (message.includes('date should not be empty')) {
-        return 'La fecha es requerida';
-      }
-      if (message.includes('time should not be empty')) return 'La hora es requerida';
-      if (message.includes('description should not be empty')) return 'La descripción es requerida';
-
-      return message;
-    }
-
-    if (error.error?.error) {
-      return error.error.error;
-    }
-
-    if (error.message) {
-      return error.message;
+    // Verificar si es un objeto Error
+    if (error && typeof error === 'object' && 'message' in error && typeof (error as { message: unknown }).message === 'string') {
+      return (error as { message: string }).message;
     }
 
     return 'Ha ocurrido un error inesperado';

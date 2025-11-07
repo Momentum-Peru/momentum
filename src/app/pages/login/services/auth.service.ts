@@ -26,7 +26,7 @@ export interface User {
     id: string;
     email: string;
     name: string;
-    role: 'user' | 'moderator' | 'admin';
+    role: 'user' | 'moderator' | 'admin' | 'gerencia';
     isActive: boolean;
     googleId?: string;
     profilePicture?: string;
@@ -300,7 +300,7 @@ export class AuthService {
     /**
      * Verificar si el usuario tiene rol específico
      */
-    hasRole(role: 'user' | 'moderator' | 'admin'): boolean {
+    hasRole(role: 'user' | 'moderator' | 'admin' | 'gerencia'): boolean {
         const user = this.getCurrentUser();
         return user?.role === role;
     }
@@ -311,6 +311,22 @@ export class AuthService {
     isAdminOrModerator(): boolean {
         const user = this.getCurrentUser();
         return user?.role === 'admin' || user?.role === 'moderator';
+    }
+
+    /**
+     * Verificar si el usuario tiene rol de gerencia
+     */
+    isGerencia(): boolean {
+        const user = this.getCurrentUser();
+        return user?.role === 'gerencia';
+    }
+
+    /**
+     * Verificar si el usuario tiene permisos de administración (admin, moderator o gerencia)
+     */
+    isAdminOrModeratorOrGerencia(): boolean {
+        const user = this.getCurrentUser();
+        return user?.role === 'admin' || user?.role === 'moderator' || user?.role === 'gerencia';
     }
 
     /**

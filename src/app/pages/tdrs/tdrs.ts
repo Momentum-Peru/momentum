@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -52,7 +52,7 @@ interface TdrItem {
   styleUrls: ['./tdrs.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TdrsPage {
+export class TdrsPage implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly clientsApi = inject(ClientsApiService);
   private readonly baseUrl = environment.apiUrl;
@@ -557,23 +557,23 @@ export class TdrsPage {
     return errors;
   }
 
-  private getErrorMessage(error: any): string {
-    if (error.error?.message) {
-      const message = error.error.message;
-      if (Array.isArray(message)) {
-        return message.join(', ');
+  private getErrorMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'error' in error) {
+      const httpError = error as { error?: { message?: string | string[] }; message?: string };
+      if (httpError.error?.message) {
+        const message = httpError.error.message;
+        if (Array.isArray(message)) {
+          return message.join(', ');
+        }
+        return String(message);
       }
-      return message;
+      if (httpError.error && typeof httpError.error === 'object' && 'error' in httpError.error && typeof httpError.error.error === 'string') {
+        return httpError.error.error;
+      }
     }
-
-    if (error.error?.error) {
-      return error.error.error;
-    }
-
-    if (error.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
       return error.message;
     }
-
     return 'Ha ocurrido un error inesperado';
   }
 

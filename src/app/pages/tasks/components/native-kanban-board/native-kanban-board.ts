@@ -4,11 +4,9 @@ import {
   Output,
   EventEmitter,
   signal,
-  computed,
   OnInit,
   OnChanges,
   SimpleChanges,
-  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -262,7 +260,7 @@ export class NativeKanbanBoardComponent implements OnInit, OnChanges {
     inProgress: [],
     completed: [],
   };
-  @Input() loading: boolean = false;
+  @Input() loading = false;
 
   @Output() taskStatusChanged = new EventEmitter<DragDropEvent>();
   @Output() editTask = new EventEmitter<Task>();
@@ -297,11 +295,10 @@ export class NativeKanbanBoardComponent implements OnInit, OnChanges {
    * Maneja el drop de tareas entre columnas
    */
   public onTaskDrop(event: CdkDragDrop<Task[]>): void {
-    const previousContainer = event.previousContainer.id;
     const currentContainer = event.container.id;
 
     // Mapear los IDs de contenedores a los valores de estado en español
-    const statusMap: { [key: string]: TaskStatus } = {
+    const statusMap: Record<string, TaskStatus> = {
       pending: 'Pendiente',
       in_progress: 'En curso',
       completed: 'Terminada',

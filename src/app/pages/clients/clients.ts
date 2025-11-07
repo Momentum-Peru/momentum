@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -97,7 +97,7 @@ interface ClientStats {
   styleUrls: ['./clients.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ClientsPage {
+export class ClientsPage implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
@@ -488,39 +488,41 @@ export class ClientsPage {
   }
 
   // Método para obtener mensaje de error de la API
-  private getErrorMessage(error: any): string {
-    // Manejar errores de validación específicos
-    if (error.error?.message) {
-      const message = error.error.message;
-
-      // Traducir mensajes comunes de validación
-      if (message.includes('ubicacion.direccion must be longer than or equal to 5 characters')) {
-        return 'La dirección debe tener al menos 5 caracteres';
+  private getErrorMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'error' in error) {
+      const httpError = error as { error?: { message?: string | string[] }; message?: string };
+      if (httpError.error?.message) {
+        const message = httpError.error.message;
+        if (typeof message === 'string') {
+          // Traducir mensajes comunes de validación
+          if (message.includes('ubicacion.direccion must be longer than or equal to 5 characters')) {
+            return 'La dirección debe tener al menos 5 caracteres';
+          }
+          if (message.includes('name should not be empty')) {
+            return 'El nombre del cliente es requerido';
+          }
+          if (message.includes('contacts should not be empty')) {
+            return 'Debe agregar al menos un contacto';
+          }
+          if (message.includes('email must be an email')) {
+            return 'El formato del email no es válido';
+          }
+          if (message.includes('paisCodigo should not be empty')) {
+            return 'El país es requerido';
+          }
+          return message;
+        }
+        if (Array.isArray(message)) {
+          return message.join(', ');
+        }
       }
-      if (message.includes('name should not be empty')) {
-        return 'El nombre del cliente es requerido';
+      if (httpError.error && typeof httpError.error === 'object' && 'error' in httpError.error && typeof httpError.error.error === 'string') {
+        return httpError.error.error;
       }
-      if (message.includes('contacts should not be empty')) {
-        return 'Debe agregar al menos un contacto';
-      }
-      if (message.includes('email must be an email')) {
-        return 'El formato del email no es válido';
-      }
-      if (message.includes('paisCodigo should not be empty')) {
-        return 'El país es requerido';
-      }
-
-      return message;
     }
-
-    if (error.error?.error) {
-      return error.error.error;
-    }
-
-    if (error.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
       return error.message;
     }
-
     return 'Ha ocurrido un error inesperado';
   }
 

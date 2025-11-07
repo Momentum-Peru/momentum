@@ -33,6 +33,7 @@ import {
     FollowUpStatus,
     CreateFollowUpRequest,
     UpdateFollowUpRequest,
+    FollowUpQueryParams,
 } from '../../shared/interfaces/follow-up.interface';
 import { Lead } from '../../shared/interfaces/lead.interface';
 import { ContactCrm } from '../../shared/interfaces/contact-crm.interface';
@@ -160,7 +161,7 @@ export class FollowUpsPage implements OnInit {
             }
         } else {
             if (this.editing()?.scheduledDate !== undefined) {
-                this.onEditChange('scheduledDate', undefined as any);
+                this.onEditChange('scheduledDate', undefined);
             }
         }
     }
@@ -174,7 +175,7 @@ export class FollowUpsPage implements OnInit {
             }
         } else {
             if (this.editing()?.nextFollowUpDate !== undefined) {
-                this.onEditChange('nextFollowUpDate', undefined as any);
+                this.onEditChange('nextFollowUpDate', undefined);
             }
         }
     }
@@ -197,9 +198,11 @@ export class FollowUpsPage implements OnInit {
     }
 
     load() {
-        const params: any = {};
-        if (this.statusFilter()) params.status = this.statusFilter();
-        if (this.typeFilter()) params.type = this.typeFilter();
+        const params: FollowUpQueryParams = {};
+        const status = this.statusFilter();
+        if (status !== '') params.status = status;
+        const type = this.typeFilter();
+        if (type !== '') params.type = type;
 
         this.followUpsApi.list(params).subscribe({
             next: (followUps) => this.items.set(followUps),
@@ -312,7 +315,7 @@ export class FollowUpsPage implements OnInit {
         this.viewingFollowUp.set(null);
     }
 
-    onEditChange<K extends keyof FollowUp>(key: K, value: FollowUp[K]) {
+    onEditChange<K extends keyof FollowUp>(key: K, value: FollowUp[K] | undefined) {
         const cur = this.editing();
         if (!cur) return;
 
@@ -321,7 +324,7 @@ export class FollowUpsPage implements OnInit {
             return;
         }
 
-        this.editing.set({ ...cur, [key]: value });
+        this.editing.set({ ...cur, [key]: value as FollowUp[K] });
     }
 
     save() {
@@ -532,16 +535,38 @@ export class FollowUpsPage implements OnInit {
         return errors;
     }
 
-    private getErrorMessage(error: any): string {
-        if (error.error?.message) {
-            return error.error.message;
+    private getErrorMessage(error: unknown): string {
+        if (typeof error === 'string') {
+            return error;
         }
-        if (error.error?.error) {
-            return error.error.error;
+
+        if (!error || typeof error !== 'object') {
+            return 'Ha ocurrido un error inesperado';
         }
-        if (error.message) {
-            return error.message;
+
+        const errorObject = error as { message?: unknown; error?: unknown };
+
+        if (errorObject.error && typeof errorObject.error === 'object') {
+            const nested = errorObject.error as { message?: unknown; error?: unknown };
+            if (typeof nested.message === 'string') {
+                return nested.message;
+            }
+            if (typeof nested.error === 'string') {
+                return nested.error;
+            }
+            try {
+                return JSON.stringify(nested.error ?? nested);
+            } catch {
+                // Ignorar error de serialización y continuar
+            }
+        } else if (typeof errorObject.error === 'string') {
+            return errorObject.error;
         }
+
+        if (typeof errorObject.message === 'string') {
+            return errorObject.message;
+        }
+
         return 'Ha ocurrido un error inesperado';
     }
 }

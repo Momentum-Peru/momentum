@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -33,7 +33,6 @@ import { TaskDetailsComponent } from './components/task-details/task-details';
 // Interfaces
 import {
   Task,
-  TaskStatus,
   TasksSearchParams,
   DragDropEvent,
 } from '../../shared/interfaces/task.interface';
@@ -109,7 +108,7 @@ export class TasksPage implements OnInit {
       next: () => {
         // Tareas cargadas exitosamente
       },
-      error: (error) => {
+      error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -150,7 +149,7 @@ export class TasksPage implements OnInit {
   /**
    * Maneja el guardado de tareas
    */
-  public onTaskSave(taskData: any): void {
+  public onTaskSave(): void {
     // El formulario ya maneja la creación/actualización
     // Solo cerramos el modal y refrescamos la lista
     this.closeTaskForm();
@@ -170,7 +169,7 @@ export class TasksPage implements OnInit {
    */
   public onTaskStatusChanged(event: DragDropEvent): void {
     this.tasksService.updateTaskStatus(event).subscribe({
-      next: (updatedTask) => {
+      next: () => {
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
@@ -178,7 +177,7 @@ export class TasksPage implements OnInit {
         });
         // No necesitamos refrescar porque el servicio ya actualiza la lista local
       },
-      error: (error) => {
+      error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -218,7 +217,7 @@ export class TasksPage implements OnInit {
           detail: 'Tarea eliminada',
         });
       },
-      error: (error) => {
+      error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',

@@ -27,7 +27,6 @@ import {
   Task,
   CreateTaskRequest,
   UpdateTaskRequest,
-  TaskStatus,
 } from '../../../../shared/interfaces/task.interface';
 import { User } from '../../../../shared/services/users-api.service';
 
@@ -259,7 +258,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
 
   @Input() task: Task | undefined;
   @Output() save = new EventEmitter<CreateTaskRequest | UpdateTaskRequest>();
-  @Output() cancel = new EventEmitter<void>();
+  @Output() formCancel = new EventEmitter<void>();
 
   public taskForm: FormGroup = this.createForm();
   public readonly users = signal<User[]>([]);
@@ -325,7 +324,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       // Extraer el ID del assignedTo si es un objeto
       const assignedToId =
         typeof this.task.assignedTo === 'object' && this.task.assignedTo !== null
-          ? (this.task.assignedTo as any)._id
+          ? (this.task.assignedTo as { _id?: string })._id
           : this.task.assignedTo;
 
       // Resetear el formulario primero
@@ -360,7 +359,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
           this.users.set(Array.isArray(response.users) ? response.users : []);
           this.usersLoading.set(false);
         },
-        error: (err) => {
+        error: () => {
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
@@ -418,7 +417,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
           this.save.emit(res);
           this.loading.set(false);
         },
-        error: (err) => {
+        error: () => {
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
@@ -443,7 +442,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
    * Maneja la cancelación del formulario
    */
   public onCancel(): void {
-    this.cancel.emit();
+    this.formCancel.emit();
   }
 
   /**

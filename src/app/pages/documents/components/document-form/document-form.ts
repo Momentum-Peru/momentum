@@ -19,15 +19,14 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
-import { FileUploadModule, FileUpload } from 'primeng/fileupload';
+import { FileUploadModule, FileUpload, FileSelectEvent } from 'primeng/fileupload';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { ToastModule } from 'primeng/toast';
 
 import { DocumentsApiService } from '../../../../shared/services/documents-api.service';
 import { ProjectsApiService } from '../../../../shared/services/projects-api.service';
-import { Document, ProjectReference } from '../../../../shared/interfaces/document.interface';
-import { Project } from '../../../../shared/interfaces/project.interface';
+import { Document } from '../../../../shared/interfaces/document.interface';
 
 @Component({
   selector: 'app-document-form',
@@ -53,7 +52,7 @@ import { Project } from '../../../../shared/interfaces/project.interface';
 export class DocumentFormComponent implements OnInit, OnChanges {
   @Input({ required: true }) document: Document | null = null;
   @Output() documentSaved = new EventEmitter<void>();
-  @Output() cancel = new EventEmitter<void>();
+  @Output() formCancel = new EventEmitter<void>();
 
   private readonly fb = inject(FormBuilder);
   private readonly documentsApi = inject(DocumentsApiService);
@@ -119,7 +118,7 @@ export class DocumentFormComponent implements OnInit, OnChanges {
                 this.populateForm();
               }, 0);
             },
-            error: (error: any) => {
+            error: (error: unknown) => {
               console.error('Error al cargar proyectos:', error);
               this.loadingProjects.set(false);
               // Poblar el formulario de todos modos
@@ -186,7 +185,7 @@ export class DocumentFormComponent implements OnInit, OnChanges {
         this.projectOptions.set(options);
         this.loadingProjects.set(false);
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         console.error('Error al cargar proyectos:', error);
         this.messageService.add({
           severity: 'error',
@@ -242,8 +241,8 @@ export class DocumentFormComponent implements OnInit, OnChanges {
   /**
    * Manejar selección de archivos
    */
-  onFileSelect(event: any): void {
-    const newFiles: File[] = Array.from(event.files);
+  onFileSelect(event: FileSelectEvent): void {
+    const newFiles: File[] = Array.from(event.files ?? []);
     const currentFiles = this.uploadedFiles();
 
     // Filtrar archivos duplicados por nombre
@@ -358,7 +357,7 @@ export class DocumentFormComponent implements OnInit, OnChanges {
       next: (document) => {
         this.handleDocumentSaved(document);
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         this.handleError('Error al crear documento', error);
       },
     });
@@ -372,7 +371,7 @@ export class DocumentFormComponent implements OnInit, OnChanges {
       next: (document) => {
         this.handleDocumentSaved(document);
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         this.handleError('Error al actualizar documento', error);
       },
     });
@@ -399,7 +398,7 @@ export class DocumentFormComponent implements OnInit, OnChanges {
       next: () => {
         this.finishSave();
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         this.handleError('Error al subir archivos', error);
       },
     });
@@ -429,22 +428,28 @@ export class DocumentFormComponent implements OnInit, OnChanges {
   /**
    * Manejar errores
    */
-  private handleError(message: string, error: any): void {
+  private handleError(message: string, error: unknown): void {
     console.error(message, error);
     this.loading.set(false);
 
     // Intentar extraer el mensaje de error del backend
     let errorMessage = message; // Mensaje por defecto
 
-    if (error?.error?.message) {
-      // Si el backend envió un mensaje específico, usarlo
-      errorMessage = error.error.message;
-    } else if (error?.message) {
-      // Si hay un mensaje de error de HTTP, usarlo
-      errorMessage = error.message;
-    } else if (typeof error === 'string') {
-      // Si el error es directamente un string, usarlo
+    if (typeof error === 'string') {
       errorMessage = error;
+    } else if (error && typeof error === 'object') {
+      const errorObject = error as { message?: unknown; error?: unknown };
+
+      if (errorObject.error && typeof errorObject.error === 'object' && errorObject.error !== null) {
+        const nestedError = errorObject.error as { message?: unknown };
+        if (typeof nestedError.message === 'string') {
+          errorMessage = nestedError.message;
+        }
+      }
+
+      if (errorMessage === message && typeof errorObject.message === 'string') {
+        errorMessage = errorObject.message;
+      }
     }
 
     this.messageService.add({
@@ -468,7 +473,7 @@ export class DocumentFormComponent implements OnInit, OnChanges {
    */
   onCancel(): void {
     this.resetForm();
-    this.cancel.emit();
+    this.formCancel.emit();
   }
 
   /**

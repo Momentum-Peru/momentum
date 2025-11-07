@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, computed, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormsModule,
@@ -392,7 +392,7 @@ import {
 export class TaskDetailsComponent {
   @Input() task: Task | null = null;
   @Input() visible = signal<boolean>(false);
-  @Output() close = new EventEmitter<void>();
+  @Output() closeDialog = new EventEmitter<void>();
 
   public readonly commentsService = inject(TaskCommentsApiService);
   private readonly messageService = inject(MessageService);
@@ -468,7 +468,8 @@ export class TaskDetailsComponent {
 
     // Si assignedTo es un objeto (poblado), usar directamente
     if (typeof this.task.assignedTo === 'object' && this.task.assignedTo !== null) {
-      return (this.task.assignedTo as any).name || (this.task.assignedTo as any).email || 'Usuario';
+      const assignedToObj = this.task.assignedTo as { name?: string; email?: string };
+      return assignedToObj.name || assignedToObj.email || 'Usuario';
     }
 
     // Si assignedToName está disponible, usarlo
@@ -493,7 +494,8 @@ export class TaskDetailsComponent {
 
     // Si createdBy es un objeto (poblado), usar directamente
     if (typeof this.task.createdBy === 'object' && this.task.createdBy !== null) {
-      return (this.task.createdBy as any).name || (this.task.createdBy as any).email || 'Usuario';
+      const createdByObj = this.task.createdBy as { name?: string; email?: string };
+      return createdByObj.name || createdByObj.email || 'Usuario';
     }
 
     // Si createdByName está disponible, usarlo
@@ -513,7 +515,7 @@ export class TaskDetailsComponent {
   /**
    * Obtiene el nombre del autor del comentario
    */
-  public getAuthorName(createdBy: any): string {
+  public getAuthorName(createdBy: string | { name?: string; email?: string; _id?: string } | null | undefined): string {
     // Si createdBy es un objeto (poblado), usar directamente
     if (typeof createdBy === 'object' && createdBy !== null) {
       return createdBy.name || createdBy.email || 'Usuario';
@@ -527,7 +529,7 @@ export class TaskDetailsComponent {
 
     // Buscar en la información de la tarea si hay datos del usuario
     if (this.task?.createdBy && typeof this.task.createdBy === 'object') {
-      const createdByObj = this.task.createdBy as any;
+      const createdByObj = this.task.createdBy as { _id?: string; name?: string; email?: string };
       if (createdByObj._id === createdBy) {
         return createdByObj.name || createdByObj.email || 'Usuario';
       }
@@ -591,7 +593,7 @@ export class TaskDetailsComponent {
    */
   public onClose(): void {
     this.visible.set(false);
-    this.close.emit();
+    this.closeDialog.emit();
   }
 
   /**
@@ -643,7 +645,7 @@ export class TaskDetailsComponent {
             this.resetCommentForm();
           }
         },
-        error: (error) => {
+        error: () => {
           this.commentError.set('Error al agregar el comentario');
           this.messageService.add({
             severity: 'error',

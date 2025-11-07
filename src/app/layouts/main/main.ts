@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Menu } from '../../components/menu/menu';
 import { AuthService } from '../../pages/login/services/auth.service';

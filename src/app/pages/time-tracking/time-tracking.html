@@ -1,0 +1,624 @@
+<div class="p-4 space-y-4 mt-5 overflow-x-hidden">
+  <p-toast></p-toast>
+
+  <!-- Título -->
+  <div class="mb-4">
+    <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">Marcación de Hora</h1>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <input
+      pInputText
+      placeholder="Buscar por fecha, descripción o notas..."
+      [ngModel]="query()"
+      (ngModelChange)="setQuery($event)"
+      name="searchQuery"
+      class="flex-1 min-w-[200px]"
+    />
+    <p-datepicker
+      (ngModelChange)="onFilterDateChange($event)"
+      [ngModel]="getFilterDate()"
+      dateFormat="dd/mm/yy"
+      placeholder="Filtrar por fecha"
+      appendTo="body"
+      iconDisplay="input"
+      [selectionMode]="'single'"
+      class="w-full xl:w-auto"
+    ></p-datepicker>
+    <p-select
+      [options]="statusOptions()"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="filterStatus()"
+      (ngModelChange)="onFilterStatusChange($event)"
+      placeholder="Filtrar por estado"
+      [showClear]="true"
+      class="w-full xl:w-auto"
+    ></p-select>
+    <button
+      pButton
+      type="button"
+      (click)="openFaceMarkDialog()"
+      label="Nueva Marcación"
+      icon="pi pi-camera"
+      severity="success"
+      class="w-full xl:w-auto"
+      aria-label="Crear nueva marcación con reconocimiento facial"
+    ></button>
+  </div>
+
+  <!-- Vista Desktop: Tabla -->
+  <div class="hidden md:block">
+    <p-table
+      [value]="filteredItems()"
+      [scrollable]="true"
+      scrollHeight="60vh"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Fecha</th>
+          <th>Hora Inicio</th>
+          <th>Hora Fin</th>
+          <th>Duración</th>
+          <th>Estado</th>
+          <th>Proyecto</th>
+          <th>Descripción</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ row.date | date : 'dd/MM/yyyy' }}</td>
+          <td>{{ row.startTime }}</td>
+          <td>{{ row.endTime || '-' }}</td>
+          <td>{{ formatDuration(row.duration) }}</td>
+          <td>
+            <span
+              class="px-2 py-1 text-xs font-semibold rounded-full"
+              [ngClass]="getStatusBadgeClass(row.status)"
+            >
+              {{ row.status }}
+            </span>
+          </td>
+          <td>
+            <span
+              class="text-sm text-gray-700 dark:text-white font-medium break-words whitespace-normal"
+            >
+              {{ getProjectName(row.projectId) }}
+            </span>
+          </td>
+          <td>
+            <div class="max-w-xs">
+              <p class="text-gray-700 dark:text-white break-words whitespace-normal line-clamp-2">
+                {{ row.description }}
+              </p>
+              <div class="flex gap-2 mt-1 text-xs text-gray-500">
+                <i *ngIf="row.documents?.length" class="pi pi-file"></i>
+                <span *ngIf="row.documents?.length">{{ row.documents?.length }} doc(s)</span>
+              </div>
+            </div>
+          </td>
+          <td class="text-right">
+            <button pButton icon="pi pi-eye" class="p-button-text" (click)="viewItem(row)" aria-label="Ver detalles de la marcación"></button>
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text"
+              (click)="editItem(row)"
+              aria-label="Editar marcación"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-text p-button-danger"
+              (click)="remove(row)"
+              aria-label="Eliminar marcación"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil: Lista tipo tarjetas -->
+  <div class="md:hidden space-y-3">
+    @for (row of filteredItems(); track row._id || $index; let i = $index) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+    >
+      <!-- Header clickable -->
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        (click)="toggleRowByKey(row._id || row.date + 'T' + (row.startTime || '00:00') + '#' + i)"
+      >
+        <div class="flex-1 text-left min-w-0 pr-4">
+          <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
+            {{ row.date | date : 'dd/MM/yyyy' }} · {{ row.startTime }}
+            <span *ngIf="row.endTime"> - {{ row.endTime }}</span>
+          </div>
+          <div class="font-semibold text-gray-900 dark:text-gray-100 break-words whitespace-normal">
+            {{ getProjectName(row.projectId) }}
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate break-words">
+            {{ row.description }}
+          </div>
+          <div class="flex items-center gap-2 mt-2">
+            <span
+              class="px-2 py-1 text-xs font-semibold rounded-full"
+              [ngClass]="getStatusBadgeClass(row.status)"
+            >
+              {{ row.status }}
+            </span>
+            <span class="text-xs text-gray-500">{{ formatDuration(row.duration) }}</span>
+          </div>
+        </div>
+        <div class="flex-shrink-0">
+          <i
+            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+            [class.pi-chevron-down]="
+              !isRowExpandedByKey(row._id || row.date + 'T' + (row.startTime || '00:00') + '#' + i)
+            "
+            [class.pi-chevron-up]="
+              isRowExpandedByKey(row._id || row.date + 'T' + (row.startTime || '00:00') + '#' + i)
+            "
+          ></i>
+        </div>
+      </button>
+
+      <!-- Body collapsible -->
+      @if (isRowExpandedByKey(row._id || (row.date + 'T' + (row.startTime || '00:00') + '#' + i))) {
+      <div class="border-t border-gray-200 dark:border-gray-700">
+        <div class="px-4 py-4 space-y-3">
+          <div class="text-sm text-gray-700 dark:text-gray-300">
+            <div class="font-medium">Descripción</div>
+            <div class="mt-1 break-words line-clamp-2 md:line-clamp-3">{{ row.description }}</div>
+          </div>
+
+          <div *ngIf="row.notes" class="text-sm text-gray-700 dark:text-gray-300">
+            <div class="font-medium">Notas</div>
+            <div class="mt-1 break-words">{{ row.notes }}</div>
+          </div>
+
+          <div class="flex items-center gap-2 text-xs text-gray-500">
+            <i *ngIf="row.documents?.length" class="pi pi-file"></i>
+            <span *ngIf="row.documents?.length">{{ row.documents?.length }} doc(s)</span>
+          </div>
+
+          <div class="flex items-center gap-2 pt-2">
+            <button
+              pButton
+              icon="pi pi-eye"
+              label="Ver"
+              class="p-button-text p-button-sm"
+              (click)="viewItem(row)"
+              aria-label="Ver detalles de la marcación"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-pencil"
+              label="Editar"
+              class="p-button-text p-button-sm"
+              (click)="editItem(row)"
+              aria-label="Editar marcación"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              label="Eliminar"
+              class="p-button-text p-button-danger p-button-sm"
+              (click)="remove(row)"
+              aria-label="Eliminar marcación"
+            ></button>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    }
+  </div>
+
+  <!-- Modal de edición/creación -->
+  <p-dialog
+    [(visible)]="showDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '42rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    [focusOnShow]="false"
+    appendTo="body"
+  >
+    <ng-template pTemplate="header"> Editar registro de tiempo </ng-template>
+
+    <div class="grid gap-4">
+      <!-- Fecha -->
+      <div>
+        <label for="trackingDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Fecha *</label>
+        <p-datepicker
+          inputId="trackingDate"
+          [ngModel]="getEditDate()"
+          (ngModelChange)="onDateChange($event)"
+          name="trackingDate"
+          dateFormat="dd/mm/yy"
+          placeholder="Seleccionar fecha"
+          appendTo="body"
+          iconDisplay="input"
+          [selectionMode]="'single'"
+          class="w-full"
+        ></p-datepicker>
+      </div>
+
+      <!-- Hora Inicio y Hora Fin -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label for="startTime" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Hora Inicio *</label>
+          <input
+            id="startTime"
+            pInputText
+            type="time"
+            [ngModel]="editing()?.startTime"
+            (ngModelChange)="onEditChange('startTime', $event)"
+            name="startTime"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label for="endTime" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Hora Fin</label>
+          <input
+            id="endTime"
+            pInputText
+            type="time"
+            [ngModel]="editing()?.endTime"
+            (ngModelChange)="onEditChange('endTime', $event)"
+            name="endTime"
+            class="w-full"
+          />
+        </div>
+      </div>
+
+      <!-- Duración (calculada automáticamente) -->
+      <div *ngIf="editing()?.duration">
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Duración</span>
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          {{ formatDuration(editing()?.duration) }}
+        </div>
+      </div>
+
+      <!-- Estado -->
+      <div>
+        <label for="statusSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
+        <p-select
+          inputId="statusSelect"
+          [options]="statusOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="editing()?.status"
+          (ngModelChange)="onEditChange('status', $event)"
+          name="status"
+          placeholder="Seleccionar estado"
+          class="w-full"
+        ></p-select>
+      </div>
+
+      <!-- Proyecto (opcional) -->
+      <div>
+        <label for="trackingProject" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Proyecto (opcional)</label>
+        <p-select
+          inputId="trackingProject"
+          [options]="projects()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="editing()?.projectId"
+          (ngModelChange)="onEditChange('projectId', $event)"
+          name="trackingProject"
+          placeholder="Seleccionar proyecto"
+          class="w-full break-words whitespace-normal max-w-full"
+        ></p-select>
+      </div>
+
+      <!-- Descripción -->
+      <div>
+        <label for="trackingDescription" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Descripción *</label>
+        <textarea
+          id="trackingDescription"
+          pTextarea
+          placeholder="Describe la actividad realizada..."
+          [ngModel]="editing()?.description"
+          (ngModelChange)="onEditChange('description', $event)"
+          name="trackingDescription"
+          rows="4"
+          class="w-full"
+        ></textarea>
+      </div>
+
+      <!-- Notas -->
+      <div>
+        <label for="trackingNotes" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Notas (opcional)</label>
+        <textarea
+          id="trackingNotes"
+          pTextarea
+          placeholder="Notas adicionales..."
+          [ngModel]="editing()?.notes"
+          (ngModelChange)="onEditChange('notes', $event)"
+          name="trackingNotes"
+          rows="3"
+          class="w-full"
+        ></textarea>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button pButton label="Guardar" (click)="save()" aria-label="Guardar marcación"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo de visualización (solo lectura) -->
+  <p-dialog
+    [(visible)]="showViewDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '42rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    appendTo="body"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold">Ver detalles del registro</span>
+    </ng-template>
+
+    <div class="space-y-4" *ngIf="viewing() as v">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Fecha</span>
+          <div class="font-medium text-gray-700 dark:text-white">
+            {{ v.date | date : 'dd/MM/yyyy' }}
+          </div>
+        </div>
+        <div>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Hora Inicio</span>
+          <div class="font-medium text-gray-700 dark:text-white">{{ v.startTime }}</div>
+        </div>
+        <div>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Hora Fin</span>
+          <div class="font-medium text-gray-700 dark:text-white">{{ v.endTime || '-' }}</div>
+        </div>
+        <div>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Duración</span>
+          <div class="font-medium text-gray-700 dark:text-white">
+            {{ formatDuration(v.duration) }}
+          </div>
+        </div>
+        <div>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Estado</span>
+          <div>
+            <span
+              class="px-2 py-1 text-xs font-semibold rounded-full"
+              [ngClass]="getStatusBadgeClass(v.status)"
+            >
+              {{ v.status }}
+            </span>
+          </div>
+        </div>
+        <div>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Proyecto</span>
+          <div class="font-medium text-gray-700 dark:text-white break-words whitespace-normal">
+            {{ getProjectName(v.projectId) }}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <span class="block text-xs text-gray-500 dark:text-100 mb-1">Descripción</span>
+        <p class="whitespace-pre-wrap text-gray-700 dark:text-white">{{ v.description }}</p>
+      </div>
+
+      <div *ngIf="v.notes">
+        <span class="block text-xs text-gray-500 dark:text-white mb-1">Notas</span>
+        <p class="whitespace-pre-wrap text-gray-700 dark:text-white">{{ v.notes }}</p>
+      </div>
+
+      @if (v.documents?.length) {
+      <div>
+        <span class="block text-xs text-gray-500 dark:text-white mb-2">Documentos</span>
+        <div class="space-y-1">
+          @for (doc of v.documents; track doc) {
+          <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-2 rounded border gap-2"
+          >
+            <div class="flex items-center gap-2 min-w-0 flex-1 w-full sm:w-auto">
+              <i [class]="getFileIcon(doc)" class="text-gray-500"></i>
+              <span class="text-sm text-gray-700 font-medium break-all whitespace-normal">{{
+                doc.split('/').pop()
+              }}</span>
+            </div>
+            <div class="flex gap-1 flex-shrink-0">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm"
+                (click)="viewDocument(doc)"
+                aria-label="Ver documento"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-download"
+                class="p-button-text p-button-sm"
+                (click)="downloadDocument(doc)"
+                aria-label="Descargar documento"
+              ></button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" (click)="closeViewDialog()" aria-label="Cerrar"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo para Marcación con Reconocimiento Facial -->
+  <p-dialog
+    [(visible)]="showFaceDialog"
+    header="Marcar Asistencia con Reconocimiento Facial"
+    [modal]="true"
+    [style]="{ width: '90vw', maxWidth: '600px' }"
+    [closable]="true"
+    (onHide)="closeFaceDialog()"
+  >
+    <div class="space-y-4">
+      <!-- Información -->
+      <div
+        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
+      >
+        <div class="flex items-start gap-3">
+          <i class="pi pi-info-circle text-blue-600 dark:text-blue-400 text-xl mt-0.5"></i>
+          <div class="flex-1">
+            <p class="text-sm text-blue-800 dark:text-blue-200 font-medium mb-1">
+              Validación de Identidad
+            </p>
+            <p class="text-xs text-blue-700 dark:text-blue-300">
+              Captura una imagen de tu rostro para validar tu identidad. El sistema comparará tu
+              rostro con los descriptores registrados.
+            </p>
+          </div>
+        </div>
+      </div>
+
+        <!-- Video de la cámara con detección en tiempo real -->
+      <div class="space-y-3">
+        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Reconocimiento Facial
+        </span>
+
+        <!-- Video de la cámara -->
+        @if (isCameraActive() && !faceImagePreview()) {
+        <div class="space-y-3">
+          <div
+            class="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-black"
+          >
+            <video #cameraVideo autoplay playsinline class="w-full max-h-64 object-contain"></video>
+            <canvas
+              #detectionCanvas
+              class="absolute inset-0 pointer-events-none"
+              style="width: 100%; height: 100%"
+            ></canvas>
+            @if (!isVideoReady()) {
+            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+              <div class="text-center text-white">
+                <i class="pi pi-spin pi-spinner text-3xl mb-2"></i>
+                <p class="text-sm">Iniciando cámara...</p>
+              </div>
+            </div>
+            } @if (isVideoReady() && faceDetectionResult()) {
+            <div
+              class="absolute bottom-2 left-2 right-2 bg-black bg-opacity-75 rounded-lg p-2 text-white text-xs"
+            >
+              <div class="flex items-center gap-2">
+                @if (faceDetectionResult()?.isValid) {
+                <i class="pi pi-check-circle text-green-400"></i>
+                <span class="font-semibold">Rostro detectado correctamente. Marcando asistencia...</span>
+                } @else {
+                <i class="pi pi-exclamation-circle text-red-400"></i>
+                <span>{{ faceDetectionResult()?.message || 'Detectando...' }}</span>
+                }
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+        <!-- Preview de imagen capturada (durante procesamiento) -->
+        @if (faceImagePreview()) {
+        <div class="space-y-3">
+          <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Procesando marcación...
+          </span>
+          <div class="relative inline-block w-full">
+            <img
+              [src]="faceImagePreview()"
+              alt="Vista previa"
+              class="max-w-full h-auto max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 w-full object-contain"
+            />
+          </div>
+        </div>
+        }
+
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          El sistema detectará automáticamente tu rostro y marcará la asistencia cuando esté listo
+        </p>
+      </div>
+
+      <!-- Ubicación (opcional) -->
+      <div>
+        <label
+          for="face-location"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
+          Ubicación (opcional)
+        </label>
+        <input
+          id="face-location"
+          pInputText
+          [ngModel]="faceLocation()"
+          (ngModelChange)="faceLocation.set($event)"
+          placeholder="Ej: Oficina Principal - Lima"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Notas (opcional) -->
+      <div>
+        <label
+          for="face-notes"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
+          Notas (opcional)
+        </label>
+        <textarea
+          id="face-notes"
+          pTextarea
+          [ngModel]="faceNotes()"
+          (ngModelChange)="faceNotes.set($event)"
+          placeholder="Notas adicionales sobre la marcación..."
+          [rows]="3"
+          class="w-full"
+        ></textarea>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2">
+        <button
+          pButton
+          label="Cancelar"
+          icon="pi pi-times"
+          (click)="closeFaceDialog()"
+          [disabled]="isMarkingAttendance()"
+          severity="secondary"
+          aria-label="Cancelar"
+        ></button>
+        @if (isMarkingAttendance()) {
+        <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Procesando marcación...</span>
+        </div>
+        }
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Confirm Dialog para confirmaciones de eliminación -->
+  <p-confirmDialog></p-confirmDialog>
+</div>
