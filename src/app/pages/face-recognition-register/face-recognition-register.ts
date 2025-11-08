@@ -1,4 +1,13 @@
-import { Component, OnInit, signal, inject, effect, computed, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  signal,
+  inject,
+  effect,
+  computed,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -17,7 +26,10 @@ import { UsersApiService } from '../../shared/services/users-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import { FaceDescriptor } from '../../shared/interfaces/face-recognition.interface';
 import { TenantService } from '../../core/services/tenant.service';
-import { FaceDetectionService, FaceDetectionResult } from '../../shared/services/face-detection.service';
+import {
+  FaceDetectionService,
+  FaceDetectionResult,
+} from '../../shared/services/face-detection.service';
 
 /**
  * Componente de Registro de Reconocimiento Facial
@@ -44,7 +56,7 @@ import { FaceDetectionService, FaceDetectionResult } from '../../shared/services
   styleUrl: './face-recognition-register.scss',
   providers: [MessageService, ConfirmationService],
 })
-export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
+export class FaceRecognitionRegisterPage implements OnInit {
   private readonly faceRecognitionApi = inject(FaceRecognitionApiService);
   private readonly usersApi = inject(UsersApiService);
   private readonly tenantService = inject(TenantService);
@@ -53,7 +65,8 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
   private readonly faceDetection = inject(FaceDetectionService);
 
   @ViewChild('cameraVideo', { static: false }) cameraVideoRef?: ElementRef<HTMLVideoElement>;
-  @ViewChild('detectionCanvas', { static: false }) detectionCanvasRef?: ElementRef<HTMLCanvasElement>;
+  @ViewChild('detectionCanvas', { static: false })
+  detectionCanvasRef?: ElementRef<HTMLCanvasElement>;
 
   users = signal<UserOption[]>([]);
   descriptors = signal<FaceDescriptor[]>([]);
@@ -88,19 +101,16 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
     const userId = this.selectedUserId();
     if (!userId) return [];
     return this.descriptors().filter((d) => {
-      const id = typeof d.userId === 'object' && d.userId && '_id' in d.userId
-        ? (d.userId as { _id: string })._id
-        : d.userId;
+      const id =
+        typeof d.userId === 'object' && d.userId && '_id' in d.userId
+          ? (d.userId as { _id: string })._id
+          : d.userId;
       return id === userId;
     });
   });
 
   ngOnInit() {
     this.loadUsers();
-  }
-
-  ngAfterViewInit() {
-    // Los listeners se configurarán cuando el video esté disponible
   }
 
   private setupVideoListeners() {
@@ -225,12 +235,12 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
     try {
       // Detener cualquier stream anterior
       this.stopCamera();
-      
+
       // Cargar modelos de face-api.js
       this.loading.set(true);
       try {
         await this.faceDetection.loadModels();
-      } catch (error) {
+      } catch {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -239,25 +249,26 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
         this.loading.set(false);
         return;
       }
-      
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user' },
       });
-      
+
       this.cameraStream.set(stream);
       this.isCameraActive.set(true);
       this.isVideoReady.set(false);
       this.loading.set(false);
-      
+
       // Configurar listeners primero
       this.setupVideoListeners();
-      
+
       // Asignar el stream al video y esperar a que esté listo
       const assignStream = () => {
         const video = this.cameraVideoRef?.nativeElement;
         if (video && stream) {
           video.srcObject = stream;
-          video.play()
+          video
+            .play()
             .then(() => {
               // El video está reproduciéndose, verificar dimensiones periódicamente
               const checkReady = () => {
@@ -286,10 +297,10 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
           setTimeout(assignStream, 100);
         }
       };
-      
+
       // Esperar a que el diálogo esté completamente renderizado
       setTimeout(assignStream, 200);
-    } catch (error) {
+    } catch {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -304,7 +315,7 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
 
   stopCamera() {
     this.stopDetection();
-    
+
     const stream = this.cameraStream();
     if (stream) {
       stream.getTracks().forEach((track) => track.stop());
@@ -312,7 +323,7 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
       this.isCameraActive.set(false);
       this.isVideoReady.set(false);
     }
-    
+
     // Limpiar el video element
     const video = this.cameraVideoRef?.nativeElement;
     if (video) {
@@ -323,7 +334,7 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
   private startDetection() {
     this.stopDetection();
     this.isDetecting.set(true);
-    
+
     this.detectionInterval = setInterval(async () => {
       const video = this.cameraVideoRef?.nativeElement;
       if (!video || !this.isVideoReady()) return;
@@ -345,7 +356,7 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
     }
     this.isDetecting.set(false);
     this.faceDetectionResult.set(null);
-    
+
     const canvas = this.detectionCanvasRef?.nativeElement;
     if (canvas) {
       const ctx = canvas.getContext('2d');
@@ -420,7 +431,8 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
       this.messageService.add({
         severity: 'warn',
         summary: 'Advertencia',
-        detail: result?.message || 'Asegúrate de que tu rostro esté centrado y nítido antes de capturar.',
+        detail:
+          result?.message || 'Asegúrate de que tu rostro esté centrado y nítido antes de capturar.',
       });
       return;
     }
@@ -582,7 +594,7 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
             this.loading.set(false);
           },
         });
-    } catch (e) {
+    } catch {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -639,9 +651,10 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
 
   getUserName(userId: string | { _id?: string } | null | undefined): string {
     if (!userId) return 'Usuario desconocido';
-    const id = typeof userId === 'object' && userId && '_id' in userId
-      ? (userId as { _id?: string })._id
-      : userId;
+    const id =
+      typeof userId === 'object' && userId && '_id' in userId
+        ? (userId as { _id?: string })._id
+        : userId;
     if (!id) {
       return 'Usuario desconocido';
     }
@@ -651,9 +664,10 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
 
   getUserEmail(userId: string | { _id?: string } | null | undefined): string {
     if (!userId) return '';
-    const id = typeof userId === 'object' && userId && '_id' in userId
-      ? (userId as { _id?: string })._id
-      : userId;
+    const id =
+      typeof userId === 'object' && userId && '_id' in userId
+        ? (userId as { _id?: string })._id
+        : userId;
     if (!id) {
       return '';
     }
@@ -726,4 +740,3 @@ export class FaceRecognitionRegisterPage implements OnInit, AfterViewInit {
     return 'Ha ocurrido un error inesperado';
   }
 }
-

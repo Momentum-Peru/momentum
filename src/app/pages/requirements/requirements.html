@@ -8,7 +8,14 @@
       (ngModelChange)="setQuery($event)"
       class="w-full"
     />
-    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus" aria-label="Crear nuevo requerimiento"></button>
+    <button
+      pButton
+      type="button"
+      (click)="newItem()"
+      label="Nuevo"
+      icon="pi pi-plus"
+      aria-label="Crear nuevo requerimiento"
+    ></button>
   </div>
 
   <!-- Vista Desktop: Tabla normal -->
@@ -391,7 +398,7 @@
             <div class="flex items-center justify-between p-2 bg-white rounded border">
               <div class="flex items-center gap-2">
                 <i class="pi pi-file text-blue-500"></i>
-                <span class="text-sm">{{ file.name }}</span>
+                <span class="text-sm dark:text-gray-400">{{ file.name }}</span>
                 <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
               </div>
               <button
@@ -502,7 +509,13 @@
           @if (documentsViewing()?.documentos?.length) {
           {{ documentsViewing()?.documentos?.length }} documento(s) adjunto(s) }
         </div>
-        <button pButton label="Cerrar" class="p-button-text" (click)="closeDocuments()" aria-label="Cerrar"></button>
+        <button
+          pButton
+          label="Cerrar"
+          class="p-button-text"
+          (click)="closeDocuments()"
+          aria-label="Cerrar"
+        ></button>
       </div>
     </ng-template>
   </p-dialog>
@@ -746,7 +759,13 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeDetails()"
+        aria-label="Cerrar"
+      ></button>
     </ng-template>
   </p-dialog>
 
@@ -766,7 +785,11 @@
     <div class="grid gap-4">
       <!-- Cliente -->
       <div>
-        <label for="requirementClient" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Cliente</label>
+        <label
+          for="requirementClient"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Cliente</label
+        >
         <p-select
           id="requirementClient"
           [options]="clients()"
@@ -783,7 +806,9 @@
       <!-- Primera fila -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label for="requirementCode" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="requirementCode"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Código *</label
           >
           <input
@@ -797,7 +822,11 @@
           />
         </div>
         <div>
-          <label for="requirementStatus" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
+          <label
+            for="requirementStatus"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Estado</label
+          >
           <p-select
             id="requirementStatus"
             [options]="estados"
@@ -814,7 +843,11 @@
 
       <!-- Título -->
       <div>
-        <label for="requirementTitle" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Título *</label>
+        <label
+          for="requirementTitle"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Título *</label
+        >
         <input
           id="requirementTitle"
           pInputText
@@ -828,7 +861,9 @@
 
       <!-- Descripción -->
       <div>
-        <label for="requirementDescription" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label
+          for="requirementDescription"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Descripción *</label
         >
         <textarea
@@ -844,7 +879,9 @@
 
       <!-- Centro de Costo -->
       <div>
-        <label for="requirementCostCenter" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label
+          for="requirementCostCenter"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Centro de Costo *</label
         >
         <input
@@ -861,7 +898,9 @@
       <!-- Tercera fila - Fechas -->
       <div class="grid grid-cols-3 gap-3">
         <div>
-          <label for="requirementEmissionDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="requirementEmissionDate"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Fecha Emisión *</label
           >
           <p-datepicker
@@ -876,7 +915,9 @@
           ></p-datepicker>
         </div>
         <div>
-          <label for="requirementRequestDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="requirementRequestDate"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Fecha Requerimiento *</label
           >
           <p-datepicker
@@ -891,7 +932,9 @@
           ></p-datepicker>
         </div>
         <div>
-          <label for="requirementApprovalDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="requirementApprovalDate"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Fecha Aprobación</label
           >
           <p-datepicker
@@ -912,7 +955,9 @@
         <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Solicitante</h4>
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label for="solicitanteNombre" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label
+              for="solicitanteNombre"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Nombre *</label
             >
             <input
@@ -925,7 +970,9 @@
             />
           </div>
           <div>
-            <label for="solicitanteCodigo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label
+              for="solicitanteCodigo"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Código *</label
             >
             <input
@@ -938,7 +985,9 @@
             />
           </div>
           <div>
-            <label for="solicitanteCargo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label
+              for="solicitanteCargo"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Cargo *</label
             >
             <input
@@ -958,7 +1007,9 @@
         <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Aprobador</h4>
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label for="aprobadorNombre" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label
+              for="aprobadorNombre"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Nombre</label
             >
             <input
@@ -971,7 +1022,9 @@
             />
           </div>
           <div>
-            <label for="aprobadorCodigo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label
+              for="aprobadorCodigo"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Código</label
             >
             <input
@@ -984,7 +1037,9 @@
             />
           </div>
           <div>
-            <label for="aprobadorCargo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label
+              for="aprobadorCargo"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Cargo</label
             >
             <input
@@ -1001,7 +1056,13 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
       <button pButton label="Guardar" (click)="save()" aria-label="Guardar requerimiento"></button>
     </ng-template>
   </p-dialog>

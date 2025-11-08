@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { InputText } from 'primeng/inputtext';
@@ -80,7 +80,6 @@ interface ClientStats {
   standalone: true,
   imports: [
     CommonModule,
-    HttpClientModule,
     FormsModule,
     ReactiveFormsModule,
     InputText,
@@ -495,7 +494,9 @@ export class ClientsPage implements OnInit {
         const message = httpError.error.message;
         if (typeof message === 'string') {
           // Traducir mensajes comunes de validación
-          if (message.includes('ubicacion.direccion must be longer than or equal to 5 characters')) {
+          if (
+            message.includes('ubicacion.direccion must be longer than or equal to 5 characters')
+          ) {
             return 'La dirección debe tener al menos 5 caracteres';
           }
           if (message.includes('name should not be empty')) {
@@ -516,11 +517,21 @@ export class ClientsPage implements OnInit {
           return message.join(', ');
         }
       }
-      if (httpError.error && typeof httpError.error === 'object' && 'error' in httpError.error && typeof httpError.error.error === 'string') {
+      if (
+        httpError.error &&
+        typeof httpError.error === 'object' &&
+        'error' in httpError.error &&
+        typeof httpError.error.error === 'string'
+      ) {
         return httpError.error.error;
       }
     }
-    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
       return error.message;
     }
     return 'Ha ocurrido un error inesperado';
