@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { InputText } from 'primeng/inputtext';
@@ -62,7 +62,6 @@ interface District {
   standalone: true,
   imports: [
     CommonModule,
-    HttpClientModule,
     FormsModule,
     ReactiveFormsModule,
     InputText,

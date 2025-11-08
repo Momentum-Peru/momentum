@@ -1,4 +1,13 @@
-import { Component, OnInit, signal, inject, effect, computed, ViewChild, ElementRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  signal,
+  inject,
+  effect,
+  computed,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -19,7 +28,10 @@ import { AuthService } from '../login/services/auth.service';
 import { TenantService } from '../../core/services/tenant.service';
 import { TimeTracking, TimeTrackingStatus } from '../../shared/interfaces/time-tracking.interface';
 import { AttendanceRecord } from '../../shared/interfaces/face-recognition.interface';
-import { FaceDetectionService, FaceDetectionResult } from '../../shared/services/face-detection.service';
+import {
+  FaceDetectionService,
+  FaceDetectionResult,
+} from '../../shared/services/face-detection.service';
 import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
 
 /**
@@ -78,7 +90,8 @@ export class TimeTrackingPage implements OnInit {
 
   // Cámara y detección en tiempo real
   @ViewChild('cameraVideo', { static: false }) cameraVideoRef?: ElementRef<HTMLVideoElement>;
-  @ViewChild('detectionCanvas', { static: false }) detectionCanvasRef?: ElementRef<HTMLCanvasElement>;
+  @ViewChild('detectionCanvas', { static: false })
+  detectionCanvasRef?: ElementRef<HTMLCanvasElement>;
   cameraStream = signal<MediaStream | null>(null);
   isCameraActive = signal(false);
   isVideoReady = signal(false);
@@ -625,12 +638,24 @@ export class TimeTrackingPage implements OnInit {
   // Método para obtener mensaje de error de la API
   private getErrorMessage(error: unknown): string {
     if (error && typeof error === 'object' && 'status' in error) {
-      const httpError = error as { status: number; error?: { message?: string | string[] }; message?: string };
+      const httpError = error as {
+        status: number;
+        error?: { message?: string | string[] };
+        message?: string;
+      };
       if (httpError.status === 403) {
-        if (httpError.error?.message && typeof httpError.error.message === 'string' && httpError.error.message.includes('No puedes crear registros')) {
+        if (
+          httpError.error?.message &&
+          typeof httpError.error.message === 'string' &&
+          httpError.error.message.includes('No puedes crear registros')
+        ) {
           return 'No puedes crear registros para otros usuarios';
         }
-        if (httpError.error?.message && typeof httpError.error.message === 'string' && httpError.error.message.includes('No puedes editar')) {
+        if (
+          httpError.error?.message &&
+          typeof httpError.error.message === 'string' &&
+          httpError.error.message.includes('No puedes editar')
+        ) {
           return 'No puedes editar registros de otros usuarios';
         }
         return 'No tienes permisos para realizar esta acción';
@@ -655,12 +680,22 @@ export class TimeTrackingPage implements OnInit {
         }
       }
 
-      if (httpError.error && typeof httpError.error === 'object' && 'error' in httpError.error && typeof httpError.error.error === 'string') {
+      if (
+        httpError.error &&
+        typeof httpError.error === 'object' &&
+        'error' in httpError.error &&
+        typeof httpError.error.error === 'string'
+      ) {
         return httpError.error.error;
       }
     }
 
-    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
       return error.message;
     }
 
@@ -703,7 +738,7 @@ export class TimeTrackingPage implements OnInit {
       this.isMarkingAttendance.set(true);
       try {
         await this.faceDetection.loadModels();
-      } catch (error) {
+      } catch {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -728,7 +763,8 @@ export class TimeTrackingPage implements OnInit {
         const video = this.cameraVideoRef?.nativeElement;
         if (video && stream) {
           video.srcObject = stream;
-          video.play()
+          video
+            .play()
             .then(() => {
               const checkReady = () => {
                 if (video.videoWidth > 0 && video.videoHeight > 0) {
@@ -755,7 +791,7 @@ export class TimeTrackingPage implements OnInit {
       };
 
       setTimeout(assignStream, 200);
-    } catch (error) {
+    } catch {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -949,7 +985,6 @@ export class TimeTrackingPage implements OnInit {
     );
   }
 
-
   /**
    * Marca la asistencia usando reconocimiento facial y crea el registro de tiempo
    */
@@ -994,76 +1029,78 @@ export class TimeTrackingPage implements OnInit {
       }
 
       const descriptorArr = Array.from(descriptor);
-      this.faceRecognitionApi.markAttendanceWithDescriptor(image, descriptorArr, tenantId, request).subscribe({
-      next: (attendanceRecord: AttendanceRecord) => {
-        // Obtener el userId del registro de asistencia
-        const userId =
-          typeof attendanceRecord.userId === 'object' &&
-          attendanceRecord.userId !== null &&
-          '_id' in attendanceRecord.userId
-            ? (attendanceRecord.userId as { _id: string })._id
-            : String(attendanceRecord.userId);
+      this.faceRecognitionApi
+        .markAttendanceWithDescriptor(image, descriptorArr, tenantId, request)
+        .subscribe({
+          next: (attendanceRecord: AttendanceRecord) => {
+            // Obtener el userId del registro de asistencia
+            const userId =
+              typeof attendanceRecord.userId === 'object' &&
+              attendanceRecord.userId !== null &&
+              '_id' in attendanceRecord.userId
+                ? (attendanceRecord.userId as { _id: string })._id
+                : String(attendanceRecord.userId);
 
-        // Crear automáticamente el registro de tiempo
-        const timestamp = new Date(attendanceRecord.timestamp);
-        const date = timestamp.toISOString().split('T')[0];
-        const startTime = `${timestamp.getHours().toString().padStart(2, '0')}:${timestamp
-          .getMinutes()
-          .toString()
-          .padStart(2, '0')}`;
+            // Crear automáticamente el registro de tiempo
+            const timestamp = new Date(attendanceRecord.timestamp);
+            const date = timestamp.toISOString().split('T')[0];
+            const startTime = `${timestamp.getHours().toString().padStart(2, '0')}:${timestamp
+              .getMinutes()
+              .toString()
+              .padStart(2, '0')}`;
 
-        const timeTrackingPayload = {
-          userId: userId,
-          date: date,
-          startTime: startTime,
-          status: 'EN_PROGRESO' as TimeTrackingStatus,
-          description: `Marcación ${attendanceRecord.type} - Validada con reconocimiento facial`,
-          notes: attendanceRecord.notes || undefined,
-          attendanceRecordId: attendanceRecord._id,
-        };
+            const timeTrackingPayload = {
+              userId: userId,
+              date: date,
+              startTime: startTime,
+              status: 'EN_PROGRESO' as TimeTrackingStatus,
+              description: `Marcación ${attendanceRecord.type} - Validada con reconocimiento facial`,
+              notes: attendanceRecord.notes || undefined,
+              attendanceRecordId: attendanceRecord._id,
+            };
 
-        this.timeTrackingApi.create(timeTrackingPayload).subscribe({
-          next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Éxito',
-              detail: `Asistencia marcada correctamente. Confianza: ${(
-                (attendanceRecord.confidence || 0) * 100
-              ).toFixed(1)}%`,
+            this.timeTrackingApi.create(timeTrackingPayload).subscribe({
+              next: () => {
+                this.messageService.add({
+                  severity: 'success',
+                  summary: 'Éxito',
+                  detail: `Asistencia marcada correctamente. Confianza: ${(
+                    (attendanceRecord.confidence || 0) * 100
+                  ).toFixed(1)}%`,
+                });
+                this.load();
+                this.closeFaceDialog();
+              },
+              error: (error) => {
+                this.messageService.add({
+                  severity: 'warning',
+                  summary: 'Advertencia',
+                  detail:
+                    'La asistencia fue validada pero no se pudo crear el registro de tiempo. ' +
+                    this.getErrorMessage(error),
+                });
+                this.closeFaceDialog();
+              },
             });
-            this.load();
-            this.closeFaceDialog();
           },
           error: (error) => {
+            let errorMessage = 'Error al validar la asistencia';
+            if (error.error?.message) {
+              errorMessage = error.error.message;
+            } else if (error.message) {
+              errorMessage = error.message;
+            }
+
             this.messageService.add({
-              severity: 'warning',
-              summary: 'Advertencia',
-              detail:
-                'La asistencia fue validada pero no se pudo crear el registro de tiempo. ' +
-                this.getErrorMessage(error),
+              severity: 'error',
+              summary: 'Error de Validación',
+              detail: errorMessage,
             });
-            this.closeFaceDialog();
+          },
+          complete: () => {
+            this.isMarkingAttendance.set(false);
           },
         });
-      },
-      error: (error) => {
-        let errorMessage = 'Error al validar la asistencia';
-        if (error.error?.message) {
-          errorMessage = error.error.message;
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error de Validación',
-          detail: errorMessage,
-        });
-      },
-      complete: () => {
-        this.isMarkingAttendance.set(false);
-      },
-    });
     } catch {
       this.messageService.add({
         severity: 'error',

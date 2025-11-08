@@ -1,18 +1,6 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  signal,
-  effect,
-  OnInit,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  FormsModule,
-  ReactiveFormsModule,
-  FormBuilder,
-  Validators,
-} from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -480,7 +468,11 @@ export class QuotesPage implements OnInit {
     }
   }
 
-  onFileSelect(event: { files?: File[] | FileList; currentFiles?: File[]; target?: { files?: FileList } }) {
+  onFileSelect(event: {
+    files?: File[] | FileList;
+    currentFiles?: File[];
+    target?: { files?: FileList };
+  }) {
     // El p-fileUpload puede enviar los archivos en diferentes estructuras
     let files: File[] = [];
 
@@ -674,7 +666,7 @@ export class QuotesPage implements OnInit {
     }
   }
 
-  onPageChange(event: any) {
+  onPageChange(event: { first?: number; rows?: number }) {
     const first: number = typeof event.first === 'number' ? event.first : 0;
     const rows: number = typeof event.rows === 'number' ? event.rows : this.pagination().limit;
     const pageCalculated = rows > 0 ? Math.floor(first / rows) : 0;
@@ -788,7 +780,12 @@ export class QuotesPage implements OnInit {
       }
     }
 
-    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
       return error.message;
     }
 

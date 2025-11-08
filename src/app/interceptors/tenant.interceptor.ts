@@ -24,17 +24,11 @@ export const tenantInterceptor: HttpInterceptorFn = (req, next) => {
   // El backend detectará el rol gerencia y devolverá datos agregados si no hay tenantId en query params
   const user = authService.getCurrentUser();
   const isGerencia = user?.role === 'gerencia';
-  
+
   if (isGerencia) {
-    // Para gerencia, verificar si hay tenantId en los query params
+    // Para gerencia, NO enviar header X-Tenant-Id para permitir datos agregados
+    // El backend detectará el rol gerencia y devolverá datos agregados si no hay tenantId en query params
     // Si la URL contiene tenantId o companyId, el backend lo usará desde los query params
-    // Si NO hay tenantId en query params, NO enviar header para obtener datos agregados de todas las empresas
-    const urlString = req.url;
-    const hasTenantIdParam = urlString.includes('tenantId=') || urlString.includes('companyId=');
-    
-    // Si hay tenantId en query params, el backend lo usará desde ahí
-    // Si NO hay tenantId, NO enviar header para que el backend devuelva datos agregados
-    // En ambos casos, no enviamos el header X-Tenant-Id para gerencia
     return next(req);
   }
 
@@ -51,5 +45,3 @@ export const tenantInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(withTenant);
 };
-
-
