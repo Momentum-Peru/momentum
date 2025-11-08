@@ -492,6 +492,22 @@ export class MenuPermissionsPage implements OnInit {
     return isActive ? 'Activo' : 'Inactivo';
   }
 
+  /**
+   * Obtiene el label en español de una ruta usando MenuConfigService
+   */
+  getRouteLabel(route: string): string {
+    const config = this.menuConfig.getRouteConfig(route);
+    return config?.label || route;
+  }
+
+  /**
+   * Obtiene el icono de una ruta usando MenuConfigService
+   */
+  getRouteIcon(route: string): string {
+    const config = this.menuConfig.getRouteConfig(route);
+    return config?.icon || 'pi pi-circle';
+  }
+
   private getErrorMessage(error: unknown): string {
     if (error && typeof error === 'object' && 'error' in error) {
       const httpError = error as { error?: { message?: string | string[] }; message?: string };
