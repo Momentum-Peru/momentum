@@ -11,14 +11,13 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { DialogModule } from 'primeng/dialog';
 import { CardModule } from 'primeng/card';
 import { TooltipModule } from 'primeng/tooltip';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import {
   DocumentsApiService,
@@ -44,18 +43,15 @@ import {
     DialogModule,
     CardModule,
     TooltipModule,
-    ConfirmDialogModule,
     ToastModule,
   ],
   templateUrl: './document-scanner.html',
   styleUrl: './document-scanner.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ConfirmationService],
 })
 export class DocumentScannerComponent implements AfterViewInit {
   private readonly documentsApi = inject(DocumentsApiService);
   private readonly messageService = inject(MessageService);
-  private readonly confirmationService = inject(ConfirmationService);
 
   private readonly compressionOptions: ImageCompressionOptions = {
     maxWidth: 2000,
@@ -198,10 +194,6 @@ export class DocumentScannerComponent implements AfterViewInit {
 
       if (!file) {
         const errorMsg = 'No se pudo obtener el archivo. Por favor, intente nuevamente.';
-        this.showErrorAlert('Error al seleccionar archivo', errorMsg, {
-          event: event,
-          files: event.files,
-        });
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -316,12 +308,6 @@ export class DocumentScannerComponent implements AfterViewInit {
           fileSize: normalizedFile.size,
           isMobile: this.isMobileDevice(),
         });
-        this.showErrorAlert('Error al leer archivo', errorMsg, {
-          error: error,
-          fileName: normalizedFile.name,
-          fileType: normalizedFile.type,
-          fileSize: normalizedFile.size,
-        });
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -374,7 +360,6 @@ export class DocumentScannerComponent implements AfterViewInit {
         ...details,
         rawError: this.safeStringify(error),
       });
-      this.showErrorAlert('Error al procesar archivo', errorMsg, details);
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -674,9 +659,6 @@ export class DocumentScannerComponent implements AfterViewInit {
         });
 
         const errorMessage = this.getErrorMessage(error);
-        
-        // Mostrar alerta con detalles del error
-        this.showErrorAlert('Error al escanear documento', errorMessage, errorDetails);
 
         this.messageService.add({
           severity: 'error',
@@ -815,38 +797,6 @@ export class DocumentScannerComponent implements AfterViewInit {
     }
 
     return 'Ha ocurrido un error al escanear el documento. Por favor, intente nuevamente.';
-  }
-
-  /**
-   * Muestra un diálogo de confirmación con detalles del error
-   * Esto ayuda a diagnosticar problemas, especialmente en móviles
-   */
-  private showErrorAlert(title: string, message: string, details?: Record<string, unknown>): void {
-    // Construir mensaje detallado
-    let detailedMessage = message;
-
-    if (details) {
-      try {
-        const detailsStr = JSON.stringify(details, null, 2);
-        detailedMessage += `\n\nDetalles técnicos:\n${detailsStr}`;
-      } catch (stringifyError) {
-        console.error('No se pudieron serializar los detalles del error:', stringifyError);
-        detailedMessage += '\n\nDetalles técnicos no disponibles.';
-      }
-    }
-
-    // Usar confirmación de PrimeNG para mostrar el error
-    this.confirmationService.confirm({
-      message: detailedMessage,
-      header: title,
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Entendido',
-      rejectVisible: false,
-      acceptButtonStyleClass: 'p-button-danger',
-      accept: () => {
-        console.log('Usuario confirmó el error');
-      },
-    });
   }
 
   private safeStringify(value: unknown): string | undefined {
