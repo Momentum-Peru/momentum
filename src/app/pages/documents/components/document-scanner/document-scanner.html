@@ -82,15 +82,15 @@
               </p>
             </div>
           </div>
-          <p-button
-            icon="pi pi-times"
-            severity="danger"
-            [text]="true"
-            [rounded]="true"
-            (onClick)="removeFile()"
-            [disabled]="scanning()"
-            pTooltip="Remover archivo"
-          ></p-button>
+      <p-button
+        icon="pi pi-times"
+        severity="danger"
+        [text]="true"
+        [rounded]="true"
+        (onClick)="removeFile()"
+        [disabled]="scanning()"
+        pTooltip="Remover archivo"
+      ></p-button>
         </div>
       </div>
       }
@@ -115,23 +115,8 @@
   </div>
 
   <ng-template pTemplate="footer">
-    <div class="flex justify-end gap-2">
-      <p-button
-        label="Cancelar"
-        icon="pi pi-times"
-        severity="secondary"
-        [text]="true"
-        (onClick)="closeDialog()"
-        [disabled]="scanning()"
-      ></p-button>
-      <p-button
-        label="Escanear"
-        icon="pi pi-camera"
-        severity="primary"
-        (onClick)="startScan()"
-        [disabled]="!selectedFile() || scanning()"
-        [loading]="scanning()"
-      ></p-button>
+    <div class="flex justify-center text-sm text-gray-500 dark:text-gray-400">
+      El escaneo inicia automáticamente después de seleccionar el archivo.
     </div>
   </ng-template>
 </p-dialog>

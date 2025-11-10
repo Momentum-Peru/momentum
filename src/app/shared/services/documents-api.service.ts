@@ -137,12 +137,14 @@ export class DocumentsApiService {
 
         // Calcular timeout basado en el tamaño del archivo
         // Para archivos grandes y conexiones móviles, usar timeout más generoso
-        // Base: 60 segundos, + 10 segundos por cada MB
-        // Esto da más tiempo para conexiones lentas y procesamiento en el backend
+        // Base: 120 segundos, + 30 segundos por cada MB (redondeado hacia arriba)
+        // Esto ofrece margen adicional para conexiones móviles inestables
         const fileSizeMB = file.size / (1024 * 1024);
-        const timeoutMs = Math.max(60000, 60000 + (fileSizeMB * 10000)); // Mínimo 60s, +10s por MB
+        const baseTimeout = 120000; // 2 minutos
+        const perMbIncrement = 30000; // 30 segundos adicionales por MB
+        const computedTimeout = baseTimeout + Math.ceil(fileSizeMB) * perMbIncrement;
         const maxTimeout = 600000; // Máximo 10 minutos para archivos muy grandes
-        const finalTimeout = Math.min(timeoutMs, maxTimeout);
+        const finalTimeout = Math.min(Math.max(computedTimeout, baseTimeout), maxTimeout);
 
         console.log('Configurando timeout para escaneo:', {
             fileName: file.name,

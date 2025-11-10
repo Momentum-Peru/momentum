@@ -24,6 +24,10 @@ import {
   DocumentsApiService,
   ScanInvoiceResponse,
 } from '../../../../shared/services/documents-api.service';
+import {
+  compressImage,
+  ImageCompressionOptions,
+} from '../../../../shared/utils/image-compression.util';
 
 /**
  * Componente para escanear documentos usando LangChain
@@ -52,6 +56,15 @@ export class DocumentScannerComponent implements AfterViewInit {
   private readonly documentsApi = inject(DocumentsApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+
+  private readonly compressionOptions: ImageCompressionOptions = {
+    maxWidth: 2000,
+    maxHeight: 2000,
+    quality: 0.82,
+    maxSizeMB: 2.5,
+    outputType: 'image/jpeg',
+  };
+  private readonly compressionThresholdBytes = 2.5 * 1024 * 1024;
 
   @ViewChild('fileUpload') fileUpload!: { fileInput?: { nativeElement?: HTMLInputElement }; input?: { nativeElement?: HTMLInputElement }; el?: { nativeElement?: HTMLElement } } | undefined;
 
@@ -329,6 +342,10 @@ export class DocumentScannerComponent implements AfterViewInit {
             summary: 'Advertencia',
             detail: 'No se pudo generar la vista previa, pero el archivo se procesará.',
           });
+        } finally {
+          if (!this.scanning()) {
+            void this.startScan();
+          }
         }
       };
       // Usar el archivo normalizado para el preview
@@ -452,6 +469,56 @@ export class DocumentScannerComponent implements AfterViewInit {
     this.previewUrl.set(null);
   }
 
+  private shouldCompress(file: File): boolean {
+    const isImage = file.type?.startsWith('image/');
+    if (!isImage) {
+      return false;
+    }
+    return file.size > this.compressionThresholdBytes;
+  }
+
+  private async optimizeFileForScan(file: File): Promise<File> {
+    if (!this.shouldCompress(file)) {
+      return file;
+    }
+
+    const originalSize = file.size;
+
+    try {
+      const compressed = await compressImage(file, this.compressionOptions);
+
+      if (compressed.size < originalSize) {
+        console.log('Imagen optimizada antes del escaneo:', {
+          originalSize: this.formatFileSize(originalSize),
+          compressedSize: this.formatFileSize(compressed.size),
+          originalName: file.name,
+          compressedName: compressed.name,
+        });
+
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Imagen optimizada',
+          detail: `Tamaño reducido de ${this.formatFileSize(originalSize)} a ${this.formatFileSize(
+            compressed.size
+          )}`,
+          life: 4000,
+        });
+
+        return compressed;
+      }
+
+      return file;
+    } catch (error) {
+      const errorInfo = this.extractErrorInfo(error);
+      console.error('Fallo al comprimir la imagen:', {
+        errorMessage: errorInfo.message,
+        errorStack: errorInfo.stack,
+        fileName: file.name,
+      });
+      throw error;
+    }
+  }
+
   /**
    * Limpia todos los campos del componente
    */
@@ -475,7 +542,7 @@ export class DocumentScannerComponent implements AfterViewInit {
   /**
    * Inicia el proceso de escaneo
    */
-  startScan(): void {
+  async startScan(): Promise<void> {
     const file = this.selectedFile();
 
     if (!file) {
@@ -487,7 +554,6 @@ export class DocumentScannerComponent implements AfterViewInit {
       return;
     }
 
-    // Validar archivo antes de enviar
     if (file.size === 0) {
       this.messageService.add({
         severity: 'error',
@@ -497,7 +563,16 @@ export class DocumentScannerComponent implements AfterViewInit {
       return;
     }
 
-    // Log información del archivo para debugging
+    if (this.scanning()) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Escaneo en progreso',
+        detail: 'Ya estamos procesando el documento seleccionado.',
+        life: 4000,
+      });
+      return;
+    }
+
     console.log('Iniciando escaneo de archivo:', {
       fileName: file.name,
       fileType: file.type,
@@ -506,10 +581,34 @@ export class DocumentScannerComponent implements AfterViewInit {
       proyectoId: this.proyectoId(),
     });
 
+    let fileToUpload = file;
+
+    try {
+      fileToUpload = await this.optimizeFileForScan(file);
+      if (fileToUpload !== file) {
+        this.selectedFile.set(fileToUpload);
+      }
+    } catch (error) {
+      const errorInfo = this.extractErrorInfo(error);
+      console.error('Error durante la optimización del archivo:', {
+        errorMessage: errorInfo.message,
+        errorStack: errorInfo.stack,
+        fileName: file.name,
+      });
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Compresión omitida',
+        detail: 'No se pudo optimizar la imagen, se enviará el archivo original.',
+        life: 5000,
+      });
+      fileToUpload = file;
+    }
+
+    const finalFile = fileToUpload;
+
     this.scanning.set(true);
     this.progress.set(0);
 
-    // Simular progreso
     const progressInterval = setInterval(() => {
       const currentProgress = this.progress();
       if (currentProgress < 90) {
@@ -517,8 +616,7 @@ export class DocumentScannerComponent implements AfterViewInit {
       }
     }, 500);
 
-    // Realizar escaneo
-    this.documentsApi.scanInvoice(file, this.proyectoId(), true).subscribe({
+    this.documentsApi.scanInvoice(finalFile, this.proyectoId(), true).subscribe({
       next: (response: ScanInvoiceResponse) => {
         clearInterval(progressInterval);
         this.progress.set(100);
@@ -544,9 +642,9 @@ export class DocumentScannerComponent implements AfterViewInit {
         // Log detallado del error para debugging
         const errorInfo = this.extractErrorInfo(error);
         const errorDetails: Record<string, unknown> = {
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
+          fileName: finalFile.name,
+          fileType: finalFile.type,
+          fileSize: finalFile.size,
           isMobile: this.isMobileDevice(),
           userAgent: navigator.userAgent,
         };
