@@ -26,7 +26,13 @@ import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { FaceRecognitionApiService } from '../../shared/services/face-recognition-api.service';
 import { AuthService } from '../login/services/auth.service';
 import { TenantService } from '../../core/services/tenant.service';
-import { TimeTracking, TimeTrackingType, Location, CreateTimeTrackingRequest, UpdateTimeTrackingRequest } from '../../shared/interfaces/time-tracking.interface';
+import {
+  TimeTracking,
+  TimeTrackingType,
+  Location,
+  CreateTimeTrackingRequest,
+  UpdateTimeTrackingRequest,
+} from '../../shared/interfaces/time-tracking.interface';
 import { AttendanceRecord } from '../../shared/interfaces/face-recognition.interface';
 import {
   FaceDetectionService,
@@ -103,11 +109,10 @@ export class TimeTrackingPage implements OnInit {
   private autoCaptureTriggered = signal(false);
   private isDetectionInProgress = false;
 
-
   // Filtrado simple por texto
   filteredItems = computed(() => {
     const searchQuery = this.query().toLowerCase().trim();
-    let list = this.items()
+    const list = this.items()
       .slice()
       .sort((a, b) => {
         const aDt = new Date(a.date).getTime();
@@ -229,7 +234,6 @@ export class TimeTrackingPage implements OnInit {
       return null;
     }
   });
-
 
   loadProjects() {
     this.projectsApi.getOptions().subscribe({
@@ -680,11 +684,11 @@ export class TimeTrackingPage implements OnInit {
     this.showFaceDialog.set(true);
     this.autoCaptureTriggered.set(false);
     this.markingType.set('INGRESO');
-    
+
     // Iniciar procesos en paralelo para mayor velocidad
     this.preloadModels();
     this.getCurrentLocation();
-    
+
     // Iniciar cámara automáticamente al abrir el diálogo
     setTimeout(() => {
       this.startCamera();
@@ -698,7 +702,7 @@ export class TimeTrackingPage implements OnInit {
     if (this.modelsLoaded() || this.modelsLoading()) {
       return;
     }
-    
+
     this.modelsLoading.set(true);
     try {
       await this.faceDetection.loadModels();
@@ -735,7 +739,8 @@ export class TimeTrackingPage implements OnInit {
         let errorMessage = 'No se pudo obtener la ubicación';
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = 'Permiso de ubicación denegado. La marcación se guardará sin coordenadas.';
+            errorMessage =
+              'Permiso de ubicación denegado. La marcación se guardará sin coordenadas.';
             break;
           case error.POSITION_UNAVAILABLE:
             errorMessage = 'Ubicación no disponible. La marcación se guardará sin coordenadas.';
@@ -779,7 +784,7 @@ export class TimeTrackingPage implements OnInit {
             // Esperar hasta que se carguen (máximo 10 segundos)
             let attempts = 0;
             while (this.modelsLoading() && attempts < 20) {
-              await new Promise(resolve => setTimeout(resolve, 500));
+              await new Promise((resolve) => setTimeout(resolve, 500));
               attempts++;
             }
             if (!this.modelsLoaded()) {
@@ -803,7 +808,7 @@ export class TimeTrackingPage implements OnInit {
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
+        video: {
           facingMode: 'user',
           width: { ideal: 640 }, // Resolución optimizada para velocidad
           height: { ideal: 480 },
@@ -920,7 +925,7 @@ export class TimeTrackingPage implements OnInit {
     this.detectionInterval = setInterval(async () => {
       // Evitar solapamientos de detección
       if (this.isDetectionInProgress) return;
-      
+
       const video = this.cameraVideoRef?.nativeElement;
       if (!video || !this.isVideoReady() || !this.modelsLoaded()) return;
 

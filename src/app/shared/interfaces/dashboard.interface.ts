@@ -150,3 +150,31 @@ export interface DoughnutChartData extends ChartData {
         cutout?: string;
     })[];
 }
+
+/**
+ * Interfaces para reportes de marcaciones de hora (time tracking)
+ */
+export interface TimeTrackingByUser {
+  userName?: string;
+  userEmail?: string;
+  totalMarcaciones?: number;
+  ingresos?: number;
+  salidas?: number;
+}
+
+export interface TimeTrackingDetail {
+  date: string | Date;
+  type?: string;
+  user?: {
+    name?: string;
+    email?: string;
+  };
+  project?: {
+    name?: string;
+    code?: string;
+  };
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+}

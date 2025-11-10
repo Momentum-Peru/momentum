@@ -87,11 +87,12 @@ export async function compressImage(
                 return;
               }
 
-              // Verificar tamaño final y aplicar compresión iterativa si es necesario
-              const finalSizeMB = blob.size / (1024 * 1024);
-              
               // Compresión iterativa: reducir calidad progresivamente hasta alcanzar el tamaño objetivo
-              const compressIteratively = (currentBlob: Blob, currentQuality: number, attempts: number = 0): void => {
+              const compressIteratively = (
+                currentBlob: Blob,
+                currentQuality: number,
+                attempts = 0
+              ): void => {
                 if (attempts >= 3) {
                   // Después de 3 intentos, usar el blob más pequeño que tengamos
                   const compressedFile = new File(
@@ -104,7 +105,7 @@ export async function compressImage(
                 }
 
                 const currentSizeMB = currentBlob.size / (1024 * 1024);
-                
+
                 if (currentSizeMB <= opts.maxSizeMB) {
                   // Tamaño aceptable
                   const compressedFile = new File(
@@ -178,4 +179,3 @@ export async function compressImages(
 ): Promise<File[]> {
   return Promise.all(files.map((file) => compressImage(file, options)));
 }
-

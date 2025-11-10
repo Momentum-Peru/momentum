@@ -74,7 +74,13 @@
             </div>
           </td>
           <td class="text-right">
-            <button pButton icon="pi pi-eye" class="p-button-text" (click)="viewItem(row)" aria-label="Ver detalles de la marcación"></button>
+            <button
+              pButton
+              icon="pi pi-eye"
+              class="p-button-text"
+              (click)="viewItem(row)"
+              aria-label="Ver detalles de la marcación"
+            ></button>
             <button
               pButton
               icon="pi pi-pencil"
@@ -126,12 +132,8 @@
         <div class="flex-shrink-0">
           <i
             class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
-            [class.pi-chevron-down]="
-              !isRowExpandedByKey(row._id || row.date + '#' + i)
-            "
-            [class.pi-chevron-up]="
-              isRowExpandedByKey(row._id || row.date + '#' + i)
-            "
+            [class.pi-chevron-down]="!isRowExpandedByKey(row._id || row.date + '#' + i)"
+            [class.pi-chevron-up]="isRowExpandedByKey(row._id || row.date + '#' + i)"
           ></i>
         </div>
       </button>
@@ -211,7 +213,11 @@
     <div class="grid gap-4">
       <!-- Fecha y Hora (datetime) -->
       <div>
-        <label for="trackingDateTime" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Fecha y Hora *</label>
+        <label
+          for="trackingDateTime"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Fecha y Hora *</label
+        >
         <input
           id="trackingDateTime"
           pInputText
@@ -225,34 +231,48 @@
 
       <!-- Tipo de Marcación -->
       <div>
-        <label for="markingType" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Tipo de Marcación *</label>
+        <label
+          for="markingType"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Tipo de Marcación *</label
+        >
         <div class="flex gap-2">
           <button
             type="button"
             pButton
-            label="INGRESO"
-            icon="pi pi-sign-in"
+            [label]="'INGRESO'"
+            [icon]="'pi pi-sign-in'"
             [severity]="editing()?.type === 'INGRESO' ? 'success' : 'secondary'"
             [outlined]="editing()?.type !== 'INGRESO'"
             (click)="onEditChange('type', 'INGRESO')"
             class="flex-1"
-          ></button>
+          >
+            <span>INGRESO</span>
+          </button>
           <button
             type="button"
             pButton
-            label="SALIDA"
-            icon="pi pi-sign-out"
+            [label]="'SALIDA'"
+            [icon]="'pi pi-sign-out'"
             [severity]="editing()?.type === 'SALIDA' ? 'danger' : 'secondary'"
             [outlined]="editing()?.type !== 'SALIDA'"
             (click)="onEditChange('type', 'SALIDA')"
             class="flex-1"
-          ></button>
+          >
+            <span>SALIDA</span>
+          </button>
         </div>
       </div>
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
       <button pButton label="Guardar" (click)="save()" aria-label="Guardar marcación"></button>
     </ng-template>
   </p-dialog>
@@ -339,7 +359,7 @@
         </div>
       </div>
 
-        <!-- Video de la cámara con detección en tiempo real -->
+      <!-- Video de la cámara con detección en tiempo real -->
       <div class="space-y-3">
         <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Reconocimiento Facial
@@ -362,11 +382,8 @@
               <div class="text-center text-white">
                 <i class="pi pi-spin pi-spinner text-3xl mb-2"></i>
                 <p class="text-sm">
-                  @if (modelsLoading()) {
-                    Cargando modelos de reconocimiento...
-                  } @else {
-                    Iniciando cámara...
-                  }
+                  @if (modelsLoading()) { Cargando modelos de reconocimiento... } @else { Iniciando
+                  cámara... }
                 </p>
               </div>
             </div>
@@ -377,7 +394,9 @@
               <div class="flex items-center gap-2">
                 @if (faceDetectionResult()?.isValid) {
                 <i class="pi pi-check-circle text-green-400"></i>
-                <span class="font-semibold">Rostro detectado correctamente. Marcando asistencia...</span>
+                <span class="font-semibold"
+                  >Rostro detectado correctamente. Marcando asistencia...</span
+                >
                 } @else {
                 <i class="pi pi-exclamation-circle text-red-400"></i>
                 <span>{{ faceDetectionResult()?.message || 'Detectando...' }}</span>
@@ -428,7 +447,9 @@
             [outlined]="markingType() !== 'INGRESO'"
             (click)="markingType.set('INGRESO')"
             class="flex-1"
-          ></button>
+          >
+            <span>INGRESO</span>
+          </button>
           <button
             type="button"
             pButton
@@ -438,43 +459,48 @@
             [outlined]="markingType() !== 'SALIDA'"
             (click)="markingType.set('SALIDA')"
             class="flex-1"
-          ></button>
+          >
+            <span>SALIDA</span>
+          </button>
         </div>
       </div>
 
       <!-- Ubicación GPS (automática) -->
       <div>
-        <label
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-        >
+        <div class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Ubicación GPS
-        </label>
+        </div>
         @if (currentLocation()) {
-        <div class="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+        <div
+          class="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
+        >
           <i class="pi pi-map-marker text-green-600 dark:text-green-400"></i>
           <div class="flex-1 text-sm">
             <div class="font-medium text-green-800 dark:text-green-200">Coordenadas obtenidas</div>
             <div class="text-xs text-green-600 dark:text-green-400">
-              Lat: {{ currentLocation()!.latitude.toFixed(6) }}, 
-              Lng: {{ currentLocation()!.longitude.toFixed(6) }}
+              Lat: {{ currentLocation()!.latitude.toFixed(6) }}, Lng:
+              {{ currentLocation()!.longitude.toFixed(6) }}
             </div>
           </div>
         </div>
         } @else if (locationError()) {
-        <div class="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+        <div
+          class="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+        >
           <i class="pi pi-exclamation-triangle text-yellow-600 dark:text-yellow-400"></i>
           <div class="flex-1 text-sm text-yellow-800 dark:text-yellow-200">
             {{ locationError() }}
           </div>
         </div>
         } @else {
-        <div class="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div
+          class="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+        >
           <i class="pi pi-spin pi-spinner text-gray-500"></i>
           <div class="text-sm text-gray-600 dark:text-gray-400">Obteniendo ubicación...</div>
         </div>
         }
       </div>
-
     </div>
 
     <ng-template pTemplate="footer">
@@ -501,4 +527,3 @@
   <!-- Confirm Dialog para confirmaciones de eliminación -->
   <p-confirmDialog></p-confirmDialog>
 </div>
-

@@ -8,6 +8,7 @@ import {
   SimpleChanges,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  inject,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -44,7 +45,7 @@ export class BoardFormComponent implements OnInit, OnChanges {
     description: '',
   };
 
-  constructor(private readonly cdr: ChangeDetectorRef) {}
+  private readonly cdr = inject(ChangeDetectorRef);
 
   ngOnInit(): void {
     this.updateFormData();
