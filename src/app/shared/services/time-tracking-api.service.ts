@@ -29,7 +29,7 @@ export class TimeTrackingApiService {
     if (params?.projectId) httpParams = httpParams.set('projectId', params.projectId);
     if (params?.startDate) httpParams = httpParams.set('startDate', params.startDate);
     if (params?.endDate) httpParams = httpParams.set('endDate', params.endDate);
-    if (params?.status) httpParams = httpParams.set('status', params.status);
+    if (params?.type) httpParams = httpParams.set('type', params.type);
     if (params?.q) httpParams = httpParams.set('q', params.q);
 
     return this.http.get<TimeTracking[]>(this.baseUrl, { params: httpParams });
@@ -40,13 +40,13 @@ export class TimeTrackingApiService {
    */
   getByUser(
     userId: string,
-    filters?: { startDate?: string; endDate?: string; status?: string }
+    filters?: { startDate?: string; endDate?: string; type?: string }
   ): Observable<TimeTracking[]> {
     let url = `${this.baseUrl}/user/${userId}`;
     const params = new URLSearchParams();
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
-    if (filters?.status) params.append('status', filters.status);
+    if (filters?.type) params.append('type', filters.type);
     if (params.toString()) url += `?${params.toString()}`;
     return this.http.get<TimeTracking[]>(url);
   }
@@ -63,13 +63,13 @@ export class TimeTrackingApiService {
    */
   getByProject(
     projectId: string,
-    filters?: { startDate?: string; endDate?: string; status?: string }
+    filters?: { startDate?: string; endDate?: string; type?: string }
   ): Observable<TimeTracking[]> {
     let url = `${this.baseUrl}/project/${projectId}`;
     const params = new URLSearchParams();
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
-    if (filters?.status) params.append('status', filters.status);
+    if (filters?.type) params.append('type', filters.type);
     if (params.toString()) url += `?${params.toString()}`;
     return this.http.get<TimeTracking[]>(url);
   }
