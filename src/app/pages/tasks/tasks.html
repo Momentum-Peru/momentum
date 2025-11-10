@@ -11,6 +11,25 @@
         </p>
       </div>
       <div class="flex items-center gap-3">
+        <div class="relative">
+          <p-button
+            icon="pi pi-bell"
+            [text]="true"
+            severity="secondary"
+            (onClick)="openBoardInvitations()"
+            [pTooltip]="
+              pendingInvitationsCount() > 0
+                ? 'Tienes ' + pendingInvitationsCount() + ' invitación(es) pendiente(s)'
+                : 'Ver invitaciones pendientes'
+            "
+          ></p-button>
+          @if (pendingInvitationsCount() > 0) {
+          <span
+            class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+            >{{ pendingInvitationsCount() }}</span
+          >
+          }
+        </div>
         <p-button
           icon="pi pi-refresh"
           [text]="true"
@@ -126,3 +145,19 @@
   [visible]="showTaskDetails"
   (closeDialog)="closeTaskDetails()"
 ></app-task-details>
+
+<!-- Dialog: Invitaciones Pendientes -->
+<p-dialog
+  [modal]="true"
+  [(visible)]="showBoardInvitations"
+  [style]="{ width: '90vw', maxWidth: '1200px' }"
+  [closable]="true"
+  [maximizable]="true"
+  header="Invitaciones Pendientes"
+>
+  <app-board-invitations
+    [visible]="showBoardInvitations()"
+    (onInvitationAccepted)="onInvitationAccepted($event)"
+    (onInvitationRejected)="onInvitationRejected($event)"
+  ></app-board-invitations>
+</p-dialog>

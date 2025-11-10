@@ -9,6 +9,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageModule } from 'primeng/message';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 
 // PrimeNG Services
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -25,6 +26,7 @@ import { BoardInviteComponent } from './components/board-invite/board-invite';
 import { BoardViewComponent } from './components/board-view/board-view';
 import { NativeTaskFormComponent } from './components/native-task-form/native-task-form';
 import { TaskDetailsComponent } from './components/task-details/task-details';
+import { BoardInvitationsComponent } from './components/board-invitations/board-invitations';
 
 // Interfaces
 import {
@@ -51,12 +53,14 @@ import { Task, DragDropEvent } from '../../shared/interfaces/task.interface';
     MessageModule,
     ConfirmDialogModule,
     ToastModule,
+    TooltipModule,
     BoardListComponent,
     BoardFormComponent,
     BoardInviteComponent,
     BoardViewComponent,
     NativeTaskFormComponent,
     TaskDetailsComponent,
+    BoardInvitationsComponent,
   ],
   providers: [ConfirmationService, MessageService],
   templateUrl: './tasks.html',
@@ -81,6 +85,7 @@ export class TasksPage implements OnInit {
   public readonly showBoardInvite = signal<boolean>(false);
   public readonly showTaskForm = signal<boolean>(false);
   public readonly showTaskDetails = signal<boolean>(false);
+  public readonly showBoardInvitations = signal<boolean>(false);
   public readonly selectedBoard = signal<Board | null>(null);
   public readonly selectedTask = signal<Task | null>(null);
   public readonly isEditingBoard = signal<boolean>(false);
@@ -169,6 +174,12 @@ export class TasksPage implements OnInit {
     return [board.owner._id, ...board.members.map((m) => m._id)];
   });
 
+  public readonly pendingInvitations = signal<Board[]>([]);
+
+  public readonly pendingInvitationsCount = computed(() => {
+    return this.pendingInvitations().length;
+  });
+
   constructor() {
     // Efecto para manejar el cierre del formulario de tablero
     effect(() => {
@@ -188,6 +199,7 @@ export class TasksPage implements OnInit {
 
   ngOnInit(): void {
     this.loadBoards();
+    this.loadPendingInvitations();
   }
 
   /**
@@ -204,6 +216,21 @@ export class TasksPage implements OnInit {
           summary: 'Error',
           detail: 'No se pudieron cargar los tableros',
         });
+      },
+    });
+  }
+
+  /**
+   * Carga las invitaciones pendientes
+   */
+  private loadPendingInvitations(): void {
+    this.boardsService.getPendingInvitations().subscribe({
+      next: (boards) => {
+        this.pendingInvitations.set(boards || []);
+      },
+      error: () => {
+        // Error silencioso, no es crítico
+        this.pendingInvitations.set([]);
       },
     });
   }
@@ -554,5 +581,47 @@ export class TasksPage implements OnInit {
   public closeTaskDetails(): void {
     this.showTaskDetails.set(false);
     this.selectedTask.set(null);
+  }
+
+  /**
+   * Abre el diálogo de invitaciones pendientes
+   */
+  public openBoardInvitations(): void {
+    this.loadPendingInvitations();
+    this.showBoardInvitations.set(true);
+  }
+
+  /**
+   * Cierra el diálogo de invitaciones pendientes
+   */
+  public closeBoardInvitations(): void {
+    this.showBoardInvitations.set(false);
+  }
+
+  /**
+   * Maneja cuando se acepta una invitación
+   */
+  public onInvitationAccepted(board: Board): void {
+    this.refreshBoards();
+    this.loadPendingInvitations();
+    // Si el tablero aceptado es el seleccionado, recargarlo
+    if (this.selectedBoard()?._id === board._id) {
+      this.boardsService.getById(board._id).subscribe({
+        next: (updatedBoard) => {
+          this.selectedBoard.set(updatedBoard);
+          this.loadBoardTasks(board._id);
+        },
+      });
+    }
+  }
+
+  /**
+   * Maneja cuando se rechaza una invitación
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public onInvitationRejected(_board: Board): void {
+    // Solo refrescar la lista de tableros
+    this.refreshBoards();
+    this.loadPendingInvitations();
   }
 }
