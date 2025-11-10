@@ -1,0 +1,42 @@
+<!-- Loading State -->
+@if (loading()) {
+<div class="flex justify-center items-center py-12">
+  <p-progressSpinner styleClass="w-8 h-8" strokeWidth="4"></p-progressSpinner>
+</div>
+}
+
+<!-- Error State -->
+@if (error() && !loading()) {
+<p-message severity="error" [text]="error()!" class="mb-6"></p-message>
+}
+
+<!-- Boards Grid -->
+@if (!loading() && !error() && boards().length > 0) {
+<div class="grid grid-cols-1 gap-6">
+  @for (board of boards(); track board._id) {
+  <app-board-card
+    [board]="board"
+    [isOwner]="isBoardOwner(board)"
+    (view)="viewBoard.emit($event)"
+    (edit)="editBoard.emit($event)"
+    (invite)="inviteUser.emit($event)"
+    (delete)="deleteBoard.emit($event)"
+  ></app-board-card>
+  }
+</div>
+}
+
+<!-- Empty State -->
+@if (!loading() && !error() && boards().length === 0) {
+<div class="text-center py-12">
+  <i class="pi pi-th-large text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+  <h3 class="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">No hay tableros</h3>
+  <p class="text-gray-500 dark:text-gray-500 mb-6">Comienza creando tu primer tablero</p>
+  <p-button
+    icon="pi pi-plus"
+    label="Crear Primer Tablero"
+    (onClick)="createBoard.emit()"
+    severity="primary"
+  ></p-button>
+</div>
+}

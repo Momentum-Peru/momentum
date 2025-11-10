@@ -26,7 +26,13 @@ import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { FaceRecognitionApiService } from '../../shared/services/face-recognition-api.service';
 import { AuthService } from '../login/services/auth.service';
 import { TenantService } from '../../core/services/tenant.service';
-import { TimeTracking, TimeTrackingStatus } from '../../shared/interfaces/time-tracking.interface';
+import {
+  TimeTracking,
+  TimeTrackingType,
+  Location,
+  CreateTimeTrackingRequest,
+  UpdateTimeTrackingRequest,
+} from '../../shared/interfaces/time-tracking.interface';
 import { AttendanceRecord } from '../../shared/interfaces/face-recognition.interface';
 import {
   FaceDetectionService,
@@ -73,7 +79,6 @@ export class TimeTrackingPage implements OnInit {
   projects = signal<ProjectOption[]>([]);
   query = signal('');
   filterDate = signal<string | null>(null);
-  filterStatus = signal<TimeTrackingStatus | null>(null);
   showDialog = signal(false);
   showViewDialog = signal(false);
   showFaceDialog = signal(false);
@@ -84,9 +89,12 @@ export class TimeTrackingPage implements OnInit {
   // Estado para marcación con reconocimiento facial
   faceImage = signal<File | null>(null);
   faceImagePreview = signal<string | null>(null);
-  faceLocation = signal<string>('');
-  faceNotes = signal<string>('');
   isMarkingAttendance = signal(false);
+  markingType = signal<TimeTrackingType>('INGRESO');
+  currentLocation = signal<Location | null>(null);
+  locationError = signal<string | null>(null);
+  modelsLoading = signal(false);
+  modelsLoaded = signal(false);
 
   // Cámara y detección en tiempo real
   @ViewChild('cameraVideo', { static: false }) cameraVideoRef?: ElementRef<HTMLVideoElement>;
@@ -99,38 +107,24 @@ export class TimeTrackingPage implements OnInit {
   isDetecting = signal(false);
   private detectionInterval?: ReturnType<typeof setInterval>;
   private autoCaptureTriggered = signal(false);
-
-  // Opciones de estado
-  statusOptions = signal<{ label: string; value: TimeTrackingStatus }[]>([
-    { label: 'Pendiente', value: 'PENDIENTE' },
-    { label: 'En Progreso', value: 'EN_PROGRESO' },
-    { label: 'Completado', value: 'COMPLETADO' },
-    { label: 'Pausado', value: 'PAUSADO' },
-  ]);
+  private isDetectionInProgress = false;
 
   // Filtrado simple por texto
   filteredItems = computed(() => {
     const searchQuery = this.query().toLowerCase().trim();
-    const statusFilter = this.filterStatus();
-    let list = this.items()
+    const list = this.items()
       .slice()
       .sort((a, b) => {
-        const aDt = new Date(`${a.date}T${a.startTime || '00:00'}`).getTime();
-        const bDt = new Date(`${b.date}T${b.startTime || '00:00'}`).getTime();
+        const aDt = new Date(a.date).getTime();
+        const bDt = new Date(b.date).getTime();
         return bDt - aDt; // DESC
       });
 
-    // Filtrar por estado
-    if (statusFilter) {
-      list = list.filter((item) => item.status === statusFilter);
-    }
-
     if (!searchQuery) return list;
     return list.filter((item) => {
-      const descriptionMatch = item.description?.toLowerCase().includes(searchQuery) ?? false;
       const dateMatch = item.date?.toLowerCase().includes(searchQuery) ?? false;
-      const notesMatch = item.notes?.toLowerCase().includes(searchQuery) ?? false;
-      return descriptionMatch || dateMatch || notesMatch;
+      const typeMatch = item.type?.toLowerCase().includes(searchQuery) ?? false;
+      return dateMatch || typeMatch;
     });
   });
 
@@ -149,12 +143,15 @@ export class TimeTrackingPage implements OnInit {
       if (!this.showFaceDialog()) {
         this.faceImage.set(null);
         this.faceImagePreview.set(null);
-        this.faceLocation.set('');
-        this.faceNotes.set('');
+        this.markingType.set('INGRESO');
+        this.currentLocation.set(null);
+        this.locationError.set(null);
         this.stopCamera();
         this.isVideoReady.set(false);
         this.stopDetection();
         this.autoCaptureTriggered.set(false);
+        this.modelsLoaded.set(false);
+        this.modelsLoading.set(false);
       }
     });
 
@@ -238,10 +235,6 @@ export class TimeTrackingPage implements OnInit {
     }
   });
 
-  onFilterStatusChange(value: TimeTrackingStatus | null) {
-    this.filterStatus.set(value);
-  }
-
   loadProjects() {
     this.projectsApi.getOptions().subscribe({
       next: (data) => this.projects.set(data),
@@ -257,8 +250,7 @@ export class TimeTrackingPage implements OnInit {
 
   // Helpers de accordion móvil
   private buildRowKey(item: TimeTracking, index: number): string {
-    const base = `${item.date}T${item.startTime || '00:00'}`;
-    return item._id ? String(item._id) : `${base}#${index}`;
+    return item._id ? String(item._id) : `${item.date}#${index}`;
   }
 
   isRowExpandedByKey(key: string): boolean {
@@ -320,38 +312,8 @@ export class TimeTrackingPage implements OnInit {
     const current = this.editing();
     if (current) {
       const updated = { ...current, [field]: value };
-
-      // Calcular duración automáticamente si cambian las horas
-      if (field === 'startTime' || field === 'endTime') {
-        if (updated.startTime && updated.endTime) {
-          updated.duration = this.calculateDuration(updated.startTime, updated.endTime);
-          // Si hay duración, actualizar estado a COMPLETADO
-          if (updated.duration > 0 && !updated.status) {
-            updated.status = 'COMPLETADO';
-          }
-        }
-      }
-
       this.editing.set(updated);
     }
-  }
-
-  /**
-   * Calcula la duración en minutos entre dos horas
-   */
-  private calculateDuration(startTime: string, endTime: string): number {
-    const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const [endHours, endMinutes] = endTime.split(':').map(Number);
-
-    const startTotalMinutes = startHours * 60 + startMinutes;
-    const endTotalMinutes = endHours * 60 + endMinutes;
-
-    let duration = endTotalMinutes - startTotalMinutes;
-    if (duration < 0) {
-      duration += 24 * 60; // Agregar 24 horas si es del día siguiente
-    }
-
-    return duration;
   }
 
   /**
@@ -368,21 +330,44 @@ export class TimeTrackingPage implements OnInit {
   }
 
   /**
-   * Obtiene el color del badge según el estado
+   * Obtiene el color del badge según el tipo de marcación
    */
-  getStatusBadgeClass(status: TimeTrackingStatus): string {
-    switch (status) {
-      case 'PENDIENTE':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-      case 'EN_PROGRESO':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'COMPLETADO':
+  getTypeBadgeClass(type?: TimeTrackingType): string {
+    switch (type) {
+      case 'INGRESO':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'PAUSADO':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'SALIDA':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
+  }
+
+  /**
+   * Formatea la fecha y hora ISO a formato legible
+   */
+  formatDateTime(dateString?: string): string {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('es-PE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateString;
+    }
+  }
+
+  /**
+   * Formatea la ubicación GPS
+   */
+  formatLocation(location?: Location): string {
+    if (!location) return '-';
+    return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
   }
 
   onDateChange(value: Date | Date[] | null) {
@@ -451,27 +436,11 @@ export class TimeTrackingPage implements OnInit {
       return;
     }
 
-    const payload: {
-      date: string;
-      startTime: string;
-      endTime?: string;
-      duration?: number;
-      status: TimeTrackingStatus;
-      description: string;
-      notes?: string;
-      projectId?: string;
-    } = {
+    // Usar UpdateTimeTrackingRequest con los nuevos campos
+    const payload: UpdateTimeTrackingRequest = {
       date: item.date,
-      startTime: item.startTime,
-      endTime: item.endTime,
-      duration: item.duration,
-      status: item.status,
-      description: item.description.trim(),
-      notes: item.notes?.trim() || undefined,
-      projectId:
-        item.projectId && typeof item.projectId === 'string' && item.projectId.trim() !== ''
-          ? item.projectId.trim()
-          : undefined,
+      type: item.type,
+      location: item.location || undefined,
     };
 
     this.timeTrackingApi.update(item._id, payload).subscribe({
@@ -518,18 +487,39 @@ export class TimeTrackingPage implements OnInit {
     });
   }
 
-  // Obtener la fecha como Date para el datepicker
-  getEditDate = computed(() => {
+  // Obtener la fecha y hora como string para datetime-local input
+  getEditDateTime = computed(() => {
     const editing = this.editing();
-    if (!editing || !editing.date) return null;
+    if (!editing || !editing.date) return '';
     try {
-      const [year, month, day] = editing.date.split('-').map((x) => parseInt(x, 10));
-      if (!year || !month || !day) return null;
-      return new Date(year, month - 1, day);
+      const date = new Date(editing.date);
+      if (isNaN(date.getTime())) return '';
+      // Formato: YYYY-MM-DDTHH:mm para datetime-local
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
     } catch {
-      return null;
+      return '';
     }
   });
+
+  onDateTimeChange(value: string) {
+    if (!value) {
+      this.onEditChange('date', '');
+      return;
+    }
+    try {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        this.onEditChange('date', date.toISOString());
+      }
+    } catch {
+      // Ignorar errores de parsing
+    }
+  }
 
   getProjectName(projectId: string | Project | null | undefined): string {
     if (!projectId) {
@@ -602,34 +592,12 @@ export class TimeTrackingPage implements OnInit {
       errors.push('La fecha es requerida');
     }
 
-    if (!item.startTime || item.startTime.trim() === '') {
-      errors.push('La hora de inicio es requerida');
+    if (!item.type) {
+      errors.push('El tipo de marcación es requerido');
     }
 
-    if (item.endTime && item.startTime) {
-      const duration = this.calculateDuration(item.startTime, item.endTime);
-      if (duration <= 0) {
-        errors.push('La hora de fin debe ser mayor que la hora de inicio');
-      }
-    }
-
-    if (!item.description || item.description.trim() === '') {
-      errors.push('La descripción es requerida');
-    }
-
-    if (item.description && item.description.trim().length < 5) {
-      errors.push('La descripción debe tener al menos 5 caracteres');
-    }
-
-    if (item.description && item.description.trim().length > 500) {
-      errors.push('La descripción no puede exceder 500 caracteres');
-    }
-
-    if (item.projectId && typeof item.projectId === 'string' && item.projectId.trim() !== '') {
-      const projectExists = this.projects().some((p) => p.value === item.projectId);
-      if (!projectExists) {
-        errors.push('El proyecto seleccionado ya no está disponible. Selecciona otro.');
-      }
+    if (item.type && item.type !== 'INGRESO' && item.type !== 'SALIDA') {
+      errors.push('El tipo de marcación debe ser INGRESO o SALIDA');
     }
 
     return errors;
@@ -710,14 +678,86 @@ export class TimeTrackingPage implements OnInit {
 
   /**
    * Abre el diálogo para marcar asistencia con reconocimiento facial
+   * Optimizado: carga modelos y geolocalización en paralelo
    */
   openFaceMarkDialog() {
     this.showFaceDialog.set(true);
     this.autoCaptureTriggered.set(false);
+    this.markingType.set('INGRESO');
+
+    // Iniciar procesos en paralelo para mayor velocidad
+    this.preloadModels();
+    this.getCurrentLocation();
+
     // Iniciar cámara automáticamente al abrir el diálogo
     setTimeout(() => {
       this.startCamera();
     }, 100);
+  }
+
+  /**
+   * Pre-carga los modelos de face-api en paralelo (no bloquea)
+   */
+  private async preloadModels(): Promise<void> {
+    if (this.modelsLoaded() || this.modelsLoading()) {
+      return;
+    }
+
+    this.modelsLoading.set(true);
+    try {
+      await this.faceDetection.loadModels();
+      this.modelsLoaded.set(true);
+      this.modelsLoading.set(false);
+    } catch (error) {
+      console.error('Error pre-cargando modelos:', error);
+      this.modelsLoading.set(false);
+      // No mostrar error aquí, se mostrará en startCamera si es necesario
+    }
+  }
+
+  /**
+   * Obtiene la ubicación GPS actual del dispositivo
+   */
+  private getCurrentLocation(): void {
+    this.currentLocation.set(null);
+    this.locationError.set(null);
+
+    if (!navigator.geolocation) {
+      this.locationError.set('La geolocalización no está disponible en este navegador');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.currentLocation.set({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        this.locationError.set(null);
+      },
+      (error) => {
+        let errorMessage = 'No se pudo obtener la ubicación';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage =
+              'Permiso de ubicación denegado. La marcación se guardará sin coordenadas.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Ubicación no disponible. La marcación se guardará sin coordenadas.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Tiempo de espera agotado. La marcación se guardará sin coordenadas.';
+            break;
+        }
+        this.locationError.set(errorMessage);
+        this.currentLocation.set(null);
+      },
+      {
+        enableHighAccuracy: false, // Más rápido, menos preciso (suficiente para marcación)
+        timeout: 5000, // Reducido a 5 segundos para respuesta más rápida
+        maximumAge: 30000, // Aceptar ubicación cacheada de hasta 30 segundos
+      }
+    );
   }
 
   /**
@@ -729,27 +769,50 @@ export class TimeTrackingPage implements OnInit {
 
   /**
    * Inicia la cámara para detección en tiempo real
+   * Optimizado: usa modelos pre-cargados si están disponibles
    */
   async startCamera() {
     try {
       this.stopCamera();
 
-      // Cargar modelos de face-api.js
-      this.isMarkingAttendance.set(true);
-      try {
-        await this.faceDetection.loadModels();
-      } catch {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudieron cargar los modelos de reconocimiento facial',
-        });
+      // Si los modelos no están cargados, esperar a que se carguen (o cargarlos ahora)
+      if (!this.modelsLoaded()) {
+        this.isMarkingAttendance.set(true);
+        try {
+          // Si ya están cargándose, esperar; si no, cargar ahora
+          if (this.modelsLoading()) {
+            // Esperar hasta que se carguen (máximo 10 segundos)
+            let attempts = 0;
+            while (this.modelsLoading() && attempts < 20) {
+              await new Promise((resolve) => setTimeout(resolve, 500));
+              attempts++;
+            }
+            if (!this.modelsLoaded()) {
+              await this.faceDetection.loadModels();
+              this.modelsLoaded.set(true);
+            }
+          } else {
+            await this.faceDetection.loadModels();
+            this.modelsLoaded.set(true);
+          }
+        } catch {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudieron cargar los modelos de reconocimiento facial',
+          });
+          this.isMarkingAttendance.set(false);
+          return;
+        }
         this.isMarkingAttendance.set(false);
-        return;
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+        video: {
+          facingMode: 'user',
+          width: { ideal: 640 }, // Resolución optimizada para velocidad
+          height: { ideal: 480 },
+        },
       });
 
       this.cameraStream.set(stream);
@@ -856,19 +919,27 @@ export class TimeTrackingPage implements OnInit {
   private startDetection() {
     this.stopDetection();
     this.isDetecting.set(true);
+    this.isDetectionInProgress = false;
 
+    // Optimizado: intervalo de 150ms para detección más rápida, pero evitando solapamientos
     this.detectionInterval = setInterval(async () => {
-      const video = this.cameraVideoRef?.nativeElement;
-      if (!video || !this.isVideoReady()) return;
+      // Evitar solapamientos de detección
+      if (this.isDetectionInProgress) return;
 
+      const video = this.cameraVideoRef?.nativeElement;
+      if (!video || !this.isVideoReady() || !this.modelsLoaded()) return;
+
+      this.isDetectionInProgress = true;
       try {
         const result = await this.faceDetection.detectFace(video);
         this.faceDetectionResult.set(result);
         this.drawOverlay(video, result);
       } catch (error) {
         console.error('Error en detección facial:', error);
+      } finally {
+        this.isDetectionInProgress = false;
       }
-    }, 200);
+    }, 150); // Reducido de 200ms a 150ms para mayor velocidad
   }
 
   /**
@@ -881,6 +952,7 @@ export class TimeTrackingPage implements OnInit {
     }
     this.isDetecting.set(false);
     this.faceDetectionResult.set(null);
+    this.isDetectionInProgress = false;
 
     const canvas = this.detectionCanvasRef?.nativeElement;
     if (canvas) {
@@ -1011,10 +1083,7 @@ export class TimeTrackingPage implements OnInit {
 
     this.isMarkingAttendance.set(true);
 
-    const request = {
-      location: this.faceLocation().trim() || undefined,
-      notes: this.faceNotes().trim() || undefined,
-    };
+    const request = {};
 
     try {
       const descriptor = await this.faceDetection.getDescriptorFromFile(image);
@@ -1043,20 +1112,14 @@ export class TimeTrackingPage implements OnInit {
 
             // Crear automáticamente el registro de tiempo
             const timestamp = new Date(attendanceRecord.timestamp);
-            const date = timestamp.toISOString().split('T')[0];
-            const startTime = `${timestamp.getHours().toString().padStart(2, '0')}:${timestamp
-              .getMinutes()
-              .toString()
-              .padStart(2, '0')}`;
+            const date = timestamp.toISOString(); // ISO datetime completo
 
-            const timeTrackingPayload = {
+            const timeTrackingPayload: CreateTimeTrackingRequest = {
               userId: userId,
               date: date,
-              startTime: startTime,
-              status: 'EN_PROGRESO' as TimeTrackingStatus,
-              description: `Marcación ${attendanceRecord.type} - Validada con reconocimiento facial`,
-              notes: attendanceRecord.notes || undefined,
+              type: this.markingType(),
               attendanceRecordId: attendanceRecord._id,
+              location: this.currentLocation() || undefined,
             };
 
             this.timeTrackingApi.create(timeTrackingPayload).subscribe({
