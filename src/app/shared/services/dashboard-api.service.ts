@@ -143,4 +143,42 @@ export class DashboardApiService {
             period
         });
     }
+
+    /**
+     * Obtiene el detalle de todas las marcaciones de hora (solo gerencia)
+     * @param filters Parámetros de filtrado opcionales
+     * @returns Observable con el detalle de marcaciones
+     */
+    getTimeTrackingDetails(filters?: DashboardFiltersParams): Observable<any[]> {
+        const params: Record<string, string> = {};
+        if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    params[key] = String(value);
+                }
+            });
+        }
+        return this.http.get<any[]>(`${this.baseUrl}/dashboard/time-tracking/details`, {
+            params
+        });
+    }
+
+    /**
+     * Obtiene marcaciones agrupadas por usuario (solo gerencia)
+     * @param filters Parámetros de filtrado opcionales
+     * @returns Observable con marcaciones por usuario
+     */
+    getTimeTrackingByUser(filters?: DashboardFiltersParams): Observable<any[]> {
+        const params: Record<string, string> = {};
+        if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    params[key] = String(value);
+                }
+            });
+        }
+        return this.http.get<any[]>(`${this.baseUrl}/dashboard/time-tracking/by-user`, {
+            params
+        });
+    }
 }
