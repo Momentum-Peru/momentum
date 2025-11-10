@@ -11,19 +11,22 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { DialogModule } from 'primeng/dialog';
 import { CardModule } from 'primeng/card';
 import { TooltipModule } from 'primeng/tooltip';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import {
   DocumentsApiService,
   ScanInvoiceResponse,
 } from '../../../../shared/services/documents-api.service';
+import {
+  compressImage,
+  ImageCompressionOptions,
+} from '../../../../shared/utils/image-compression.util';
 
 /**
  * Componente para escanear documentos usando LangChain
@@ -40,18 +43,24 @@ import {
     DialogModule,
     CardModule,
     TooltipModule,
-    ConfirmDialogModule,
     ToastModule,
   ],
   templateUrl: './document-scanner.html',
   styleUrl: './document-scanner.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ConfirmationService],
 })
 export class DocumentScannerComponent implements AfterViewInit {
   private readonly documentsApi = inject(DocumentsApiService);
   private readonly messageService = inject(MessageService);
-  private readonly confirmationService = inject(ConfirmationService);
+
+  private readonly compressionOptions: ImageCompressionOptions = {
+    maxWidth: 1600, // Reducido de 2000 para archivos más pequeños
+    maxHeight: 1600, // Reducido de 2000 para archivos más pequeños
+    quality: 0.75, // Reducido de 0.82 para mejor compresión
+    maxSizeMB: 1.5, // Reducido de 2.5MB a 1.5MB para evitar error 413
+    outputType: 'image/jpeg',
+  };
+  private readonly compressionThresholdBytes = 1 * 1024 * 1024; // Comprimir archivos mayores a 1MB
 
   @ViewChild('fileUpload') fileUpload!: { fileInput?: { nativeElement?: HTMLInputElement }; input?: { nativeElement?: HTMLInputElement }; el?: { nativeElement?: HTMLElement } } | undefined;
 
@@ -185,10 +194,6 @@ export class DocumentScannerComponent implements AfterViewInit {
 
       if (!file) {
         const errorMsg = 'No se pudo obtener el archivo. Por favor, intente nuevamente.';
-        this.showErrorAlert('Error al seleccionar archivo', errorMsg, {
-          event: event,
-          files: event.files,
-        });
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -303,12 +308,6 @@ export class DocumentScannerComponent implements AfterViewInit {
           fileSize: normalizedFile.size,
           isMobile: this.isMobileDevice(),
         });
-        this.showErrorAlert('Error al leer archivo', errorMsg, {
-          error: error,
-          fileName: normalizedFile.name,
-          fileType: normalizedFile.type,
-          fileSize: normalizedFile.size,
-        });
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -329,6 +328,10 @@ export class DocumentScannerComponent implements AfterViewInit {
             summary: 'Advertencia',
             detail: 'No se pudo generar la vista previa, pero el archivo se procesará.',
           });
+        } finally {
+          if (!this.scanning()) {
+            void this.startScan();
+          }
         }
       };
       // Usar el archivo normalizado para el preview
@@ -357,7 +360,6 @@ export class DocumentScannerComponent implements AfterViewInit {
         ...details,
         rawError: this.safeStringify(error),
       });
-      this.showErrorAlert('Error al procesar archivo', errorMsg, details);
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -452,6 +454,59 @@ export class DocumentScannerComponent implements AfterViewInit {
     this.previewUrl.set(null);
   }
 
+  private shouldCompress(file: File): boolean {
+    const isImage = file.type?.startsWith('image/');
+    if (!isImage) {
+      return false;
+    }
+
+    // Comprimir siempre si es mayor a 1MB, o si es PNG/HEIC/HEIF (formatos grandes)
+    const isLargeFormat = ['image/png', 'image/heic', 'image/heif'].includes(file.type);
+    return file.size > this.compressionThresholdBytes || isLargeFormat;
+  }
+
+  private async optimizeFileForScan(file: File): Promise<File> {
+    if (!this.shouldCompress(file)) {
+      return file;
+    }
+
+    const originalSize = file.size;
+
+    try {
+      const compressed = await compressImage(file, this.compressionOptions);
+
+      if (compressed.size < originalSize) {
+        console.log('Imagen optimizada antes del escaneo:', {
+          originalSize: this.formatFileSize(originalSize),
+          compressedSize: this.formatFileSize(compressed.size),
+          originalName: file.name,
+          compressedName: compressed.name,
+        });
+
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Imagen optimizada',
+          detail: `Tamaño reducido de ${this.formatFileSize(originalSize)} a ${this.formatFileSize(
+            compressed.size
+          )}`,
+          life: 4000,
+        });
+
+        return compressed;
+      }
+
+      return file;
+    } catch (error) {
+      const errorInfo = this.extractErrorInfo(error);
+      console.error('Fallo al comprimir la imagen:', {
+        errorMessage: errorInfo.message,
+        errorStack: errorInfo.stack,
+        fileName: file.name,
+      });
+      throw error;
+    }
+  }
+
   /**
    * Limpia todos los campos del componente
    */
@@ -475,7 +530,7 @@ export class DocumentScannerComponent implements AfterViewInit {
   /**
    * Inicia el proceso de escaneo
    */
-  startScan(): void {
+  async startScan(): Promise<void> {
     const file = this.selectedFile();
 
     if (!file) {
@@ -487,7 +542,6 @@ export class DocumentScannerComponent implements AfterViewInit {
       return;
     }
 
-    // Validar archivo antes de enviar
     if (file.size === 0) {
       this.messageService.add({
         severity: 'error',
@@ -497,7 +551,16 @@ export class DocumentScannerComponent implements AfterViewInit {
       return;
     }
 
-    // Log información del archivo para debugging
+    if (this.scanning()) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Escaneo en progreso',
+        detail: 'Ya estamos procesando el documento seleccionado.',
+        life: 4000,
+      });
+      return;
+    }
+
     console.log('Iniciando escaneo de archivo:', {
       fileName: file.name,
       fileType: file.type,
@@ -506,10 +569,34 @@ export class DocumentScannerComponent implements AfterViewInit {
       proyectoId: this.proyectoId(),
     });
 
+    let fileToUpload = file;
+
+    try {
+      fileToUpload = await this.optimizeFileForScan(file);
+      if (fileToUpload !== file) {
+        this.selectedFile.set(fileToUpload);
+      }
+    } catch (error) {
+      const errorInfo = this.extractErrorInfo(error);
+      console.error('Error durante la optimización del archivo:', {
+        errorMessage: errorInfo.message,
+        errorStack: errorInfo.stack,
+        fileName: file.name,
+      });
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Compresión omitida',
+        detail: 'No se pudo optimizar la imagen, se enviará el archivo original.',
+        life: 5000,
+      });
+      fileToUpload = file;
+    }
+
+    const finalFile = fileToUpload;
+
     this.scanning.set(true);
     this.progress.set(0);
 
-    // Simular progreso
     const progressInterval = setInterval(() => {
       const currentProgress = this.progress();
       if (currentProgress < 90) {
@@ -517,8 +604,7 @@ export class DocumentScannerComponent implements AfterViewInit {
       }
     }, 500);
 
-    // Realizar escaneo
-    this.documentsApi.scanInvoice(file, this.proyectoId(), true).subscribe({
+    this.documentsApi.scanInvoice(finalFile, this.proyectoId(), true).subscribe({
       next: (response: ScanInvoiceResponse) => {
         clearInterval(progressInterval);
         this.progress.set(100);
@@ -544,9 +630,9 @@ export class DocumentScannerComponent implements AfterViewInit {
         // Log detallado del error para debugging
         const errorInfo = this.extractErrorInfo(error);
         const errorDetails: Record<string, unknown> = {
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
+          fileName: finalFile.name,
+          fileType: finalFile.type,
+          fileSize: finalFile.size,
           isMobile: this.isMobileDevice(),
           userAgent: navigator.userAgent,
         };
@@ -576,9 +662,6 @@ export class DocumentScannerComponent implements AfterViewInit {
         });
 
         const errorMessage = this.getErrorMessage(error);
-        
-        // Mostrar alerta con detalles del error
-        this.showErrorAlert('Error al escanear documento', errorMessage, errorDetails);
 
         this.messageService.add({
           severity: 'error',
@@ -717,38 +800,6 @@ export class DocumentScannerComponent implements AfterViewInit {
     }
 
     return 'Ha ocurrido un error al escanear el documento. Por favor, intente nuevamente.';
-  }
-
-  /**
-   * Muestra un diálogo de confirmación con detalles del error
-   * Esto ayuda a diagnosticar problemas, especialmente en móviles
-   */
-  private showErrorAlert(title: string, message: string, details?: Record<string, unknown>): void {
-    // Construir mensaje detallado
-    let detailedMessage = message;
-
-    if (details) {
-      try {
-        const detailsStr = JSON.stringify(details, null, 2);
-        detailedMessage += `\n\nDetalles técnicos:\n${detailsStr}`;
-      } catch (stringifyError) {
-        console.error('No se pudieron serializar los detalles del error:', stringifyError);
-        detailedMessage += '\n\nDetalles técnicos no disponibles.';
-      }
-    }
-
-    // Usar confirmación de PrimeNG para mostrar el error
-    this.confirmationService.confirm({
-      message: detailedMessage,
-      header: title,
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Entendido',
-      rejectVisible: false,
-      acceptButtonStyleClass: 'p-button-danger',
-      accept: () => {
-        console.log('Usuario confirmó el error');
-      },
-    });
   }
 
   private safeStringify(value: unknown): string | undefined {

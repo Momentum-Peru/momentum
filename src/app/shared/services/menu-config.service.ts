@@ -113,7 +113,7 @@ export class MenuConfigService {
             routerLink: '/providers',
           },
           {
-            label: 'Documentos',
+            label: 'Documentos Tributarios',
             icon: 'pi pi-file',
             routerLink: '/documents',
           },
