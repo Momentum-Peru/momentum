@@ -1,0 +1,61 @@
+<form (ngSubmit)="onSubmit()" class="space-y-4">
+  <div>
+    <label
+      for="boardTitle"
+      class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+    >
+      Título del Tablero *
+    </label>
+    <input
+      id="boardTitle"
+      pInputText
+      [(ngModel)]="formData.title"
+      name="title"
+      placeholder="Ej: Proyecto Alpha"
+      class="w-full"
+      required
+      maxlength="200"
+    />
+    <small class="text-gray-500 dark:text-gray-400">
+      {{ formData.title.length }}/200 caracteres
+    </small>
+  </div>
+
+  <div>
+    <label
+      for="boardDescription"
+      class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+    >
+      Descripción
+    </label>
+    <textarea
+      id="boardDescription"
+      pTextarea
+      [(ngModel)]="formData.description"
+      name="description"
+      placeholder="Descripción del tablero (opcional)"
+      class="w-full"
+      rows="4"
+      maxlength="1000"
+    ></textarea>
+    <small class="text-gray-500 dark:text-gray-400">
+      {{ (formData.description || '').length }}/1000 caracteres
+    </small>
+  </div>
+
+  <div class="flex gap-2 justify-end pt-4">
+    <p-button
+      label="Cancelar"
+      [text]="true"
+      severity="secondary"
+      (onClick)="cancelled.emit()"
+    ></p-button>
+    <p-button
+      type="submit"
+      [label]="isEditing() ? 'Actualizar' : 'Crear'"
+      [loading]="loading()"
+      severity="primary"
+    ></p-button>
+  </div>
+</form>
+

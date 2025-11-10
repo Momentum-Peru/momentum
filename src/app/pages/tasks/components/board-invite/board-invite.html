@@ -1,0 +1,57 @@
+<div class="space-y-4">
+  <div>
+    <label
+      for="userSelect"
+      class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+    >
+      Seleccionar Usuario *
+    </label>
+    <p-select
+      id="userSelect"
+      [options]="users()"
+      optionLabel="name"
+      optionValue="_id"
+      [(ngModel)]="selectedUserId"
+      placeholder="Seleccionar usuario"
+      class="w-full"
+      [filter]="true"
+      filterPlaceholder="Buscar usuario..."
+      [loading]="loadingUsers()"
+      [disabled]="loadingUsers()"
+      appendTo="body"
+    >
+      <ng-template let-user pTemplate="item">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-user text-gray-500"></i>
+          <div>
+            <div class="font-medium">{{ user.name }}</div>
+            <div class="text-sm text-gray-500">{{ user.email }}</div>
+          </div>
+        </div>
+      </ng-template>
+    </p-select>
+  </div>
+
+  @if (loadingUsers()) {
+    <div class="flex justify-center py-4">
+      <p-progressSpinner styleClass="w-6 h-6" strokeWidth="4"></p-progressSpinner>
+    </div>
+  }
+
+  <div class="flex gap-2 justify-end pt-4">
+    <p-button
+      label="Cancelar"
+      [text]="true"
+      severity="secondary"
+      (onClick)="cancelled.emit()"
+    ></p-button>
+    <p-button
+      label="Invitar"
+      [loading]="loading()"
+      [disabled]="!selectedUserId || loadingUsers()"
+      severity="primary"
+      (onClick)="onInvite()"
+    ></p-button>
+  </div>
+</div>
+

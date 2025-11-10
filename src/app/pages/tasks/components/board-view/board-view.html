@@ -1,0 +1,145 @@
+<div class="space-y-4 sm:space-y-6">
+  <!-- Board Header -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+    <!-- Botón Volver - Visible primero en móviles -->
+    <div class="mb-4 sm:hidden">
+      <p-button
+        icon="pi pi-arrow-left"
+        label="Volver"
+        [text]="true"
+        severity="secondary"
+        (onClick)="onBack($event)"
+        pTooltip="Volver a la lista de tableros"
+        styleClass="w-full sm:w-auto"
+      ></p-button>
+    </div>
+
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+          <i class="pi pi-th-large text-xl sm:text-2xl text-blue-600 dark:text-blue-400"></i>
+          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white break-words">
+            {{ board.title }}
+          </h1>
+          @if (isOwner) {
+          <p-tag
+            value="Propietario"
+            severity="success"
+            [rounded]="true"
+            styleClass="text-xs sm:text-sm"
+          ></p-tag>
+          }
+        </div>
+        @if (board.description) {
+        <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-2 break-words">
+          {{ board.description }}
+        </p>
+        }
+      </div>
+      <!-- Botones de acción - Ocultos en móviles, visibles en desktop -->
+      <div class="hidden sm:flex gap-2 flex-shrink-0">
+        <p-button
+          icon="pi pi-arrow-left"
+          label="Volver"
+          [text]="true"
+          severity="secondary"
+          (onClick)="onBack($event)"
+          pTooltip="Volver a la lista de tableros"
+        ></p-button>
+        @if (isOwner) {
+        <p-button
+          icon="pi pi-pencil"
+          label="Editar"
+          [text]="true"
+          severity="info"
+          (onClick)="onEdit($event)"
+          pTooltip="Editar tablero"
+        ></p-button>
+        <p-button
+          icon="pi pi-user-plus"
+          label="Invitar"
+          [text]="true"
+          severity="success"
+          (onClick)="onInvite($event)"
+          pTooltip="Invitar usuario"
+        ></p-button>
+        }
+      </div>
+    </div>
+
+    <!-- Botones de acción para móviles - Debajo del título -->
+    @if (isOwner) {
+    <div class="flex flex-wrap gap-2 mt-4 sm:hidden">
+      <p-button
+        icon="pi pi-pencil"
+        label="Editar"
+        [text]="true"
+        severity="info"
+        (onClick)="onEdit($event)"
+        pTooltip="Editar tablero"
+        styleClass="flex-1 sm:flex-none"
+      ></p-button>
+      <p-button
+        icon="pi pi-user-plus"
+        label="Invitar"
+        [text]="true"
+        severity="success"
+        (onClick)="onInvite($event)"
+        pTooltip="Invitar usuario"
+        styleClass="flex-1 sm:flex-none"
+      ></p-button>
+    </div>
+    }
+
+    <!-- Board Info -->
+    <div
+      class="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 mt-4 sm:mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+    >
+      <div class="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+        <i class="pi pi-user"></i>
+        <span class="font-medium">Propietario:</span>
+        <span class="truncate">{{ board.owner.name }}</span>
+      </div>
+      @if (board.members.length > 0) {
+      <div class="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+        <i class="pi pi-users"></i>
+        <span class="font-medium">Miembros:</span>
+        <span>{{ board.members.length }}</span>
+      </div>
+      } @if (pendingInvitations > 0) {
+      <div class="flex items-center gap-2 text-xs sm:text-sm text-amber-600 dark:text-amber-400">
+        <i class="pi pi-envelope"></i>
+        <span class="font-medium">Invitaciones pendientes:</span>
+        <span>{{ pendingInvitations }}</span>
+      </div>
+      }
+    </div>
+  </div>
+
+  <!-- Task Stats and Create Button -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
+    <div class="flex-1 min-w-0">
+      <app-native-task-stats [stats]="taskStats"></app-native-task-stats>
+    </div>
+    <div class="flex-shrink-0">
+      <p-button
+        icon="pi pi-plus"
+        label="Nueva Tarea"
+        (onClick)="onCreateTask($event)"
+        severity="primary"
+        pTooltip="Crear nueva tarea en este tablero"
+        styleClass="w-full sm:w-auto"
+      ></p-button>
+    </div>
+  </div>
+
+  <!-- Kanban Board -->
+  <app-native-kanban-board
+    [tasksByStatus]="tasksByStatus"
+    [loading]="loading"
+    (taskStatusChanged)="taskStatusChanged.emit($event)"
+    (editTask)="editTask.emit($event)"
+    (deleteTask)="deleteTask.emit($event)"
+    (viewTask)="viewTask.emit($event)"
+  ></app-native-kanban-board>
+</div>

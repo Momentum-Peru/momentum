@@ -257,6 +257,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   private readonly messageService = inject(MessageService);
 
   @Input() task: Task | undefined;
+  @Input() boardId?: string;
   @Output() save = new EventEmitter<CreateTaskRequest | UpdateTaskRequest>();
   @Output() formCancel = new EventEmitter<void>();
 
@@ -393,6 +394,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         ...formValue,
         // Solo agregar createdBy si es una nueva tarea
         ...(this.isEditing() ? {} : { createdBy: currentUser.id }),
+        // Agregar boardId si está disponible
+        ...(this.boardId ? { boardId: this.boardId } : {}),
         dueDate: formValue.dueDate ? formValue.dueDate.toISOString() : undefined,
         tags: formValue.tags
           ? formValue.tags
