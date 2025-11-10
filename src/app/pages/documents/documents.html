@@ -24,7 +24,7 @@
           >
           </p-button>
           <p-button
-            label="Nuevo Documento"
+            label="Ingresar manualmente"
             icon="pi pi-plus"
             (onClick)="openCreateForm()"
             severity="primary"
@@ -221,7 +221,13 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetailsDialog()" aria-label="Cerrar"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeDetailsDialog()"
+        aria-label="Cerrar"
+      ></button>
     </ng-template>
   </p-dialog>
 
@@ -402,7 +408,13 @@
           @if (filesViewingDocument()?.documentos?.length) {
           {{ filesViewingDocument()?.documentos?.length }} archivo(s) adjunto(s) }
         </div>
-        <button pButton label="Cerrar" class="p-button-text" (click)="closeFilesDialog()" aria-label="Cerrar"></button>
+        <button
+          pButton
+          label="Cerrar"
+          class="p-button-text"
+          (click)="closeFilesDialog()"
+          aria-label="Cerrar"
+        ></button>
       </div>
     </ng-template>
   </p-dialog>
