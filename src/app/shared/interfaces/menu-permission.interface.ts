@@ -1,6 +1,7 @@
 export interface MenuPermission {
   _id?: string;
   userId: string;
+  tenantId?: string;
   route: string;
   isActive: boolean;
   createdAt?: string;

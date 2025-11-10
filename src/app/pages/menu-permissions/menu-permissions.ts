@@ -360,6 +360,16 @@ export class MenuPermissionsPage implements OnInit {
     const item = this.editing();
     if (!item) return;
 
+    const tenantId = this.tenantService.tenantId();
+    if (!tenantId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Tenant no seleccionado',
+        detail: 'Debes seleccionar una empresa antes de asignar permisos',
+      });
+      return;
+    }
+
     if (!item.userId || item.userId.trim() === '') {
       this.messageService.add({
         severity: 'error',
