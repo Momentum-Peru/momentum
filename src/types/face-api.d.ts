@@ -24,22 +24,28 @@ declare module 'face-api.js' {
     positions: Point[];
   }
 
-  export interface WithFaceDetection<T> {
+  export interface WithFaceDetection {
     detection: FaceDetection;
   }
 
-  export interface WithFaceLandmarks<T> {
+  export interface WithFaceLandmarks {
     landmarks: FaceLandmarks;
   }
 
-  export interface WithFaceDescriptor<T> {
+  export interface WithFaceDescriptor {
     descriptor: Float32Array;
   }
 
-  export type FaceDetectionResult = WithFaceDetection<{}> &
-    WithFaceLandmarks<WithFaceDetection<{}>> &
-    WithFaceDescriptor<WithFaceLandmarks<WithFaceDetection<{}>>>;
+  export type FaceDetectionResult = WithFaceDetection & WithFaceLandmarks & WithFaceDescriptor;
 
+  /**
+   * Declaration merging intencional para compatibilidad con face-api.js
+   * La librería usa el mismo nombre para la interfaz (tipo) y la clase (constructor)
+   * Esto permite usar TinyFaceDetectorOptions tanto como tipo como constructor:
+   * - const opts: TinyFaceDetectorOptions = { inputSize: 320 }
+   * - const instance = new TinyFaceDetectorOptions(opts)
+   */
+  /* eslint-disable @typescript-eslint/no-unsafe-declaration-merging -- Necesario para compatibilidad con face-api.js */
   export interface TinyFaceDetectorOptions {
     inputSize?: number;
     scoreThreshold?: number;
@@ -56,14 +62,15 @@ declare module 'face-api.js' {
   export class SsdMobilenetv1Options {
     constructor(options?: SsdMobilenetv1Options);
   }
+  /* eslint-enable @typescript-eslint/no-unsafe-declaration-merging */
 
   export interface FaceDetectionChain {
-    withFaceLandmarks(): any;
+    withFaceLandmarks(): FaceDetectionChain;
     withFaceDescriptor(): Promise<FaceDetectionResult>;
   }
 
   export interface FaceDetectionAllChain {
-    withFaceLandmarks(): any;
+    withFaceLandmarks(): FaceDetectionAllChain;
     withFaceDescriptors(): Promise<FaceDetectionResult[]>;
   }
 
@@ -97,4 +104,3 @@ declare module 'face-api.js' {
     options?: TinyFaceDetectorOptions | SsdMobilenetv1Options
   ): FaceDetectionAllChain;
 }
-

@@ -452,7 +452,7 @@
             tabindex="0"
             role="checkbox"
             [attr.aria-checked]="isRouteSelected(route)"
-            [attr.aria-label]="'Seleccionar ruta: ' + route"
+            [attr.aria-label]="'Seleccionar ruta: ' + getRouteLabel(route)"
           >
             <i
               class="pi text-base"
@@ -463,7 +463,8 @@
               [class.text-gray-400]="!isRouteSelected(route)"
               [class.dark:text-gray-500]="!isRouteSelected(route)"
             ></i>
-            <span class="font-mono text-sm text-gray-700 dark:text-gray-300">{{ route }}</span>
+            <i [class]="getRouteIcon(route)" class="text-sm text-gray-600 dark:text-gray-400"></i>
+            <span class="text-sm text-gray-700 dark:text-gray-300 font-medium">{{ getRouteLabel(route) }}</span>
           </div>
           }
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">

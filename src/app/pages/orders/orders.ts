@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -31,7 +31,6 @@ interface OrderItem {
   standalone: true,
   imports: [
     CommonModule,
-    HttpClientModule,
     FormsModule,
     InputTextModule,
     ButtonModule,
