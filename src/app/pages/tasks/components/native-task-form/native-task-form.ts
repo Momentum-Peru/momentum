@@ -21,6 +21,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { TasksApiService } from '../../../../shared/services/tasks-api.service';
 import { UsersApiService } from '../../../../shared/services/users-api.service';
 import { AuthService } from '../../../login/services/auth.service';
+import { BoardsApiService } from '../../../../shared/services/boards-api.service';
 
 // Interfaces
 import {
@@ -29,6 +30,7 @@ import {
   UpdateTaskRequest,
 } from '../../../../shared/interfaces/task.interface';
 import { User } from '../../../../shared/services/users-api.service';
+import { Board } from '../../../../shared/interfaces/board.interface';
 
 // PrimeNG Services
 import { MessageService } from 'primeng/api';
@@ -253,6 +255,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   private readonly fb = inject(FormBuilder);
   private readonly tasksApiService = inject(TasksApiService);
   private readonly usersApiService = inject(UsersApiService);
+  private readonly boardsApiService = inject(BoardsApiService);
   private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
 
@@ -262,7 +265,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   @Output() formCancel = new EventEmitter<void>();
 
   public taskForm: FormGroup = this.createForm();
-  public readonly users = signal<User[]>([]);
+  public readonly allUsers = signal<User[]>([]);
+  public readonly board = signal<Board | null>(null);
   public readonly usersLoading = signal<boolean>(false);
   public readonly loading = signal<boolean>(false);
 
@@ -282,6 +286,48 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     { label: 'Crítica', value: 'Crítica' },
   ];
 
+  /**
+   * Filtra los usuarios basándose en el board (owner, members, invitaciones aceptadas)
+   */
+  public readonly users = computed(() => {
+    const allUsersList = this.allUsers();
+    const currentBoard = this.board();
+
+    // Si no hay boardId, mostrar todos los usuarios
+    if (!this.boardId || !currentBoard) {
+      return allUsersList;
+    }
+
+    // Obtener IDs de usuarios permitidos del board
+    const allowedUserIds = new Set<string>();
+
+    // Agregar el owner
+    if (currentBoard.owner?._id) {
+      allowedUserIds.add(currentBoard.owner._id);
+    }
+
+    // Agregar los members
+    if (currentBoard.members && Array.isArray(currentBoard.members)) {
+      currentBoard.members.forEach((member) => {
+        if (member._id) {
+          allowedUserIds.add(member._id);
+        }
+      });
+    }
+
+    // Agregar usuarios con invitaciones aceptadas
+    if (currentBoard.invitations && Array.isArray(currentBoard.invitations)) {
+      currentBoard.invitations.forEach((invitation) => {
+        if (invitation.status === 'accepted' && invitation.userId?._id) {
+          allowedUserIds.add(invitation.userId._id);
+        }
+      });
+    }
+
+    // Filtrar usuarios que están en la lista permitida
+    return allUsersList.filter((user) => allowedUserIds.has(user.id));
+  });
+
   public readonly userOptions = computed(() => {
     return this.users().map((user) => ({
       label: user.name,
@@ -291,12 +337,18 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.loadUsers();
+    if (this.boardId) {
+      this.loadBoard();
+    }
     this.initializeForm();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['task']) {
       this.initializeForm();
+    }
+    if (changes['boardId'] && this.boardId) {
+      this.loadBoard();
     }
   }
 
@@ -349,15 +401,25 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
 
   /**
    * Carga la lista de usuarios
+   * Si hay un boardId, extrae los usuarios del board (más eficiente y muestra solo usuarios relevantes)
+   * Si no hay boardId, carga todos los usuarios desde el endpoint /users
    */
   private loadUsers(): void {
+    // Si hay un boardId, no cargar usuarios aquí
+    // Se extraerán del board cuando se cargue (más eficiente)
+    if (this.boardId) {
+      this.usersLoading.set(false);
+      return;
+    }
+
+    // Cargar todos los usuarios si NO hay boardId
     this.usersLoading.set(true);
     this.usersApiService
       .listWithFilters()
       .pipe(take(1))
       .subscribe({
         next: (response) => {
-          this.users.set(Array.isArray(response.users) ? response.users : []);
+          this.allUsers.set(Array.isArray(response.users) ? response.users : []);
           this.usersLoading.set(false);
         },
         error: () => {
@@ -369,6 +431,98 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
           this.usersLoading.set(false);
         },
       });
+  }
+
+  /**
+   * Carga el board para obtener los miembros e invitaciones
+   * También extrae los usuarios del board para evitar llamar al endpoint /users
+   */
+  private loadBoard(): void {
+    if (!this.boardId) return;
+
+    this.boardsApiService
+      .getById(this.boardId)
+      .pipe(take(1))
+      .subscribe({
+        next: (board) => {
+          this.board.set(board);
+          // Extraer usuarios del board para evitar llamar al endpoint /users
+          this.extractUsersFromBoard(board);
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Advertencia',
+            detail:
+              'No se pudo cargar la información del tablero. Se mostrarán todos los usuarios.',
+          });
+        },
+      });
+  }
+
+  /**
+   * Extrae los usuarios del board (owner, members, invitaciones aceptadas)
+   * y los convierte al formato User para usar en el formulario
+   */
+  private extractUsersFromBoard(board: Board): void {
+    const users: User[] = [];
+
+    // Agregar el owner
+    if (board.owner?._id) {
+      users.push({
+        _id: board.owner._id,
+        id: board.owner._id,
+        name: board.owner.name,
+        email: board.owner.email,
+        role: 'user', // Valor por defecto, el board no incluye el rol
+        isActive: true,
+        createdAt: '',
+        updatedAt: '',
+      });
+    }
+
+    // Agregar los members
+    if (board.members && Array.isArray(board.members)) {
+      board.members.forEach((member) => {
+        if (member._id) {
+          users.push({
+            _id: member._id,
+            id: member._id,
+            name: member.name,
+            email: member.email,
+            role: 'user', // Valor por defecto
+            isActive: true,
+            createdAt: '',
+            updatedAt: '',
+          });
+        }
+      });
+    }
+
+    // Agregar usuarios con invitaciones aceptadas
+    if (board.invitations && Array.isArray(board.invitations)) {
+      board.invitations.forEach((invitation) => {
+        if (invitation.status === 'accepted' && invitation.userId?._id) {
+          // Verificar que no esté ya en la lista
+          const exists = users.some((u) => u._id === invitation.userId._id);
+          if (!exists) {
+            users.push({
+              _id: invitation.userId._id,
+              id: invitation.userId._id,
+              name: invitation.userId.name,
+              email: invitation.userId.email,
+              role: 'user', // Valor por defecto
+              isActive: true,
+              createdAt: '',
+              updatedAt: '',
+            });
+          }
+        }
+      });
+    }
+
+    this.allUsers.set(users);
+    this.usersLoading.set(false);
   }
 
   /**
