@@ -1,12 +1,4 @@
-import {
-  Component,
-  OnInit,
-  inject,
-  signal,
-  computed,
-  input,
-  output,
-} from '@angular/core';
+import { Component, OnInit, inject, signal, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -47,9 +39,7 @@ import { Board, UpdateInvitationRequest } from '../../../../shared/interfaces/bo
       <!-- Header -->
       <div class="flex items-center justify-between mb-4">
         <div>
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-            Invitaciones Pendientes
-          </h2>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Invitaciones Pendientes</h2>
           <p class="text-gray-600 dark:text-gray-400 mt-1">
             Tienes {{ pendingInvitations().length }} invitación(es) pendiente(s)
           </p>
@@ -77,9 +67,7 @@ import { Board, UpdateInvitationRequest } from '../../../../shared/interfaces/bo
       @if (!loading() && pendingInvitations().length === 0) {
       <div class="text-center py-12">
         <i class="pi pi-inbox text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>
-        <p class="text-gray-600 dark:text-gray-400 text-lg">
-          No tienes invitaciones pendientes
-        </p>
+        <p class="text-gray-600 dark:text-gray-400 text-lg">No tienes invitaciones pendientes</p>
       </div>
       }
 
@@ -119,7 +107,7 @@ import { Board, UpdateInvitationRequest } from '../../../../shared/interfaces/bo
               <div class="flex items-center justify-between mb-2">
                 <p-badge
                   value="Pendiente"
-                  severity="warning"
+                  severity="warn"
                   [style]="{ 'font-size': '0.75rem' }"
                 ></p-badge>
                 <span class="text-xs text-gray-500 dark:text-gray-400">
@@ -176,8 +164,8 @@ export class BoardInvitationsComponent implements OnInit {
 
   // Inputs/Outputs
   public readonly visible = input<boolean>(false);
-  public readonly onInvitationAccepted = output<Board>();
-  public readonly onInvitationRejected = output<Board>();
+  public readonly invitationAccepted = output<Board>();
+  public readonly invitationRejected = output<Board>();
 
   // Signals
   public readonly pendingInvitations = signal<Board[]>([]);
@@ -255,7 +243,7 @@ export class BoardInvitationsComponent implements OnInit {
             detail: `Invitación aceptada. Ahora eres miembro del tablero "${board.title}"`,
           });
           this.processingInvitation.set(null);
-          this.onInvitationAccepted.emit(updatedBoard);
+          this.invitationAccepted.emit(updatedBoard);
           // Recargar invitaciones
           this.loadInvitations();
         },
@@ -298,7 +286,7 @@ export class BoardInvitationsComponent implements OnInit {
             detail: `Has rechazado la invitación al tablero "${board.title}"`,
           });
           this.processingInvitation.set(null);
-          this.onInvitationRejected.emit(board);
+          this.invitationRejected.emit(board);
           // Recargar invitaciones
           this.loadInvitations();
         },
@@ -328,4 +316,3 @@ export class BoardInvitationsComponent implements OnInit {
     }).format(d);
   }
 }
-
