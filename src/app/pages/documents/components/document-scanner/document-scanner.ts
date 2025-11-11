@@ -54,13 +54,13 @@ export class DocumentScannerComponent implements AfterViewInit {
   private readonly messageService = inject(MessageService);
 
   private readonly compressionOptions: ImageCompressionOptions = {
-    maxWidth: 2000,
-    maxHeight: 2000,
-    quality: 0.82,
-    maxSizeMB: 2.5,
+    maxWidth: 1600, // Reducido de 2000 para archivos más pequeños
+    maxHeight: 1600, // Reducido de 2000 para archivos más pequeños
+    quality: 0.75, // Reducido de 0.82 para mejor compresión
+    maxSizeMB: 1.5, // Reducido de 2.5MB a 1.5MB para evitar error 413
     outputType: 'image/jpeg',
   };
-  private readonly compressionThresholdBytes = 2.5 * 1024 * 1024;
+  private readonly compressionThresholdBytes = 1 * 1024 * 1024; // Comprimir archivos mayores a 1MB
 
   @ViewChild('fileUpload') fileUpload!: { fileInput?: { nativeElement?: HTMLInputElement }; input?: { nativeElement?: HTMLInputElement }; el?: { nativeElement?: HTMLElement } } | undefined;
 
@@ -459,7 +459,10 @@ export class DocumentScannerComponent implements AfterViewInit {
     if (!isImage) {
       return false;
     }
-    return file.size > this.compressionThresholdBytes;
+
+    // Comprimir siempre si es mayor a 1MB, o si es PNG/HEIC/HEIF (formatos grandes)
+    const isLargeFormat = ['image/png', 'image/heic', 'image/heif'].includes(file.type);
+    return file.size > this.compressionThresholdBytes || isLargeFormat;
   }
 
   private async optimizeFileForScan(file: File): Promise<File> {

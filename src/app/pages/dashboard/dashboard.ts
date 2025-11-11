@@ -3,12 +3,21 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
 import { DashboardDataService } from '../../shared/services/dashboard-data.service';
+import { DashboardApiService } from '../../shared/services/dashboard-api.service';
 import { DashboardKpiCardComponent } from '../../shared/components/dashboard-kpi-card/dashboard-kpi-card.component';
 import { DashboardChartComponent } from '../../shared/components/dashboard-chart/dashboard-chart.component';
 import { DashboardTableComponent } from '../../shared/components/dashboard-table/dashboard-table.component';
 import { DashboardFiltersComponent } from '../../shared/components/dashboard-filters/dashboard-filters.component';
 import { MenuService } from '../../shared/services/menu.service';
 import { AuthService } from '../login/services/auth.service';
+import { signal } from '@angular/core';
+import { TableModule } from 'primeng/table';
+import {
+  DashboardFiltersParams,
+  DashboardKpi,
+  TimeTrackingByUser,
+  TimeTrackingDetail,
+} from '../../shared/interfaces/dashboard.interface';
 
 /**
  * Página principal del Dashboard
@@ -20,6 +29,7 @@ import { AuthService } from '../login/services/auth.service';
   imports: [
     CommonModule,
     RouterModule,
+    TableModule,
     DashboardKpiCardComponent,
     DashboardChartComponent,
     DashboardTableComponent,
@@ -30,11 +40,17 @@ import { AuthService } from '../login/services/auth.service';
 })
 export class DashboardPage implements OnInit {
   protected readonly dashboardService = inject(DashboardDataService);
+  private readonly dashboardApiService = inject(DashboardApiService);
   private readonly menuService = inject(MenuService);
   private readonly authService = inject(AuthService);
 
   // Computed para verificar si el usuario es gerencia
   protected readonly isGerencia = computed(() => this.authService.isGerencia());
+
+  // Signals para reportes de horas (solo gerencia)
+  protected readonly timeTrackingDetails = signal<TimeTrackingDetail[]>([]);
+  protected readonly timeTrackingByUser = signal<TimeTrackingByUser[]>([]);
+  protected readonly loadingTimeTracking = signal(false);
 
   // Mapeo de KPIs a rutas del sistema para verificar permisos
   private readonly kpiRouteMap: Record<string, string> = {
@@ -92,21 +108,54 @@ export class DashboardPage implements OnInit {
    * Para gerencia: carga datos agregados de todas las empresas si no hay filtro
    */
   private async loadDashboard(): Promise<void> {
-    const filters: import('../../shared/interfaces/dashboard.interface').DashboardFiltersParams = { 
-      period: '30d' 
+    const filters: DashboardFiltersParams = {
+      period: '30d',
     };
-    
+
     // Para gerencia, no enviar tenantId inicialmente para obtener datos agregados
     // El interceptor ya maneja esto, pero es bueno ser explícito
     await this.dashboardService.loadDashboardData(filters);
+
+    // Si es gerencia, cargar también los reportes de horas
+    if (this.isGerencia()) {
+      await this.loadTimeTrackingReports(filters);
+    }
   }
 
   /**
    * Maneja los cambios en los filtros del dashboard
    * @param filters Nuevos filtros aplicados
    */
-  async onFiltersChanged(filters: import('../../shared/interfaces/dashboard.interface').DashboardFiltersParams): Promise<void> {
+  async onFiltersChanged(filters: DashboardFiltersParams): Promise<void> {
     await this.dashboardService.loadDashboardData(filters);
+    // Si es gerencia, cargar también los reportes de horas
+    if (this.isGerencia()) {
+      await this.loadTimeTrackingReports(filters);
+    }
+  }
+
+  /**
+   * Carga los reportes de horas (solo para gerencia)
+   * @param filters Filtros del dashboard
+   */
+  private async loadTimeTrackingReports(filters?: DashboardFiltersParams): Promise<void> {
+    if (!this.isGerencia()) return;
+
+    this.loadingTimeTracking.set(true);
+    try {
+      const [details, byUser] = await Promise.all([
+        this.dashboardApiService.getTimeTrackingDetails(filters).toPromise(),
+        this.dashboardApiService.getTimeTrackingByUser(filters).toPromise(),
+      ]);
+      this.timeTrackingDetails.set((details as unknown as TimeTrackingDetail[]) || []);
+      this.timeTrackingByUser.set((byUser as unknown as TimeTrackingByUser[]) || []);
+    } catch (error) {
+      console.error('Error al cargar reportes de horas:', error);
+      this.timeTrackingDetails.set([]);
+      this.timeTrackingByUser.set([]);
+    } finally {
+      this.loadingTimeTracking.set(false);
+    }
   }
 
   /**
@@ -123,7 +172,7 @@ export class DashboardPage implements OnInit {
    * El rol gerencia puede ver todos los KPIs
    * @returns Array de entradas KPI filtradas
    */
-  protected getKpiEntries(): { key: string; value: import('../../shared/interfaces/dashboard.interface').DashboardKpi }[] {
+  protected getKpiEntries(): { key: string; value: DashboardKpi }[] {
     const kpis = this.dashboardService.kpis();
     if (!kpis) return [];
 
@@ -137,12 +186,12 @@ export class DashboardPage implements OnInit {
       .filter(([key]) => {
         // Obtener la ruta asociada al KPI
         const requiredRoute = this.kpiRouteMap[key];
-        
+
         // Si no hay ruta mapeada, mostrar el KPI (KPIs sin restricción)
         if (!requiredRoute) {
           return true;
         }
-        
+
         // Verificar si el usuario tiene permiso para acceder a la ruta
         return this.menuService.hasPermission(requiredRoute);
       })
@@ -162,12 +211,12 @@ export class DashboardPage implements OnInit {
     }
 
     const requiredRoute = this.chartRouteMap[chartKey];
-    
+
     // Si no hay ruta mapeada, mostrar el gráfico (gráficos sin restricción)
     if (!requiredRoute) {
       return true;
     }
-    
+
     // Verificar si el usuario tiene permiso para acceder a la ruta
     return this.menuService.hasPermission(requiredRoute);
   }
@@ -185,13 +234,46 @@ export class DashboardPage implements OnInit {
     }
 
     const requiredRoute = this.tableRouteMap[tableKey];
-    
+
     // Si no hay ruta mapeada, mostrar la tabla (tablas sin restricción)
     if (!requiredRoute) {
       return true;
     }
-    
+
     // Verificar si el usuario tiene permiso para acceder a la ruta
     return this.menuService.hasPermission(requiredRoute);
+  }
+
+  /**
+   * Formatea la fecha y hora ISO a formato legible
+   */
+  protected formatDateTime(dateString?: string): string {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('es-PE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateString;
+    }
+  }
+
+  /**
+   * Obtiene el badge class según el tipo de marcación
+   */
+  protected getTypeBadgeClass(type?: string): string {
+    switch (type) {
+      case 'INGRESO':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'SALIDA':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
   }
 }

@@ -36,9 +36,11 @@ export async function compressImage(
 ): Promise<File> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
-  // Si el archivo ya es pequeño y es JPEG, no comprimir
+  // Si el archivo ya es pequeño y es JPEG, comprimir de todas formas si es mayor a 500KB
+  // para asegurar que esté dentro del límite del servidor
   const fileSizeMB = file.size / (1024 * 1024);
-  if (fileSizeMB <= opts.maxSizeMB && file.type === 'image/jpeg') {
+  const fileSizeKB = file.size / 1024;
+  if (fileSizeMB <= opts.maxSizeMB && file.type === 'image/jpeg' && fileSizeKB <= 500) {
     return file;
   }
 
@@ -85,36 +87,58 @@ export async function compressImage(
                 return;
               }
 
-              // Verificar tamaño final
-              const finalSizeMB = blob.size / (1024 * 1024);
-              
-              // Si aún es muy grande, reducir calidad
-              if (finalSizeMB > opts.maxSizeMB) {
-                const reducedQuality = Math.max(0.5, opts.quality - 0.15);
+              // Compresión iterativa: reducir calidad progresivamente hasta alcanzar el tamaño objetivo
+              const compressIteratively = (
+                currentBlob: Blob,
+                currentQuality: number,
+                attempts = 0
+              ): void => {
+                if (attempts >= 3) {
+                  // Después de 3 intentos, usar el blob más pequeño que tengamos
+                  const compressedFile = new File(
+                    [currentBlob],
+                    file.name.replace(/\.[^/.]+$/, '.jpg'),
+                    { type: opts.outputType, lastModified: Date.now() }
+                  );
+                  resolve(compressedFile);
+                  return;
+                }
+
+                const currentSizeMB = currentBlob.size / (1024 * 1024);
+
+                if (currentSizeMB <= opts.maxSizeMB) {
+                  // Tamaño aceptable
+                  const compressedFile = new File(
+                    [currentBlob],
+                    file.name.replace(/\.[^/.]+$/, '.jpg'),
+                    { type: opts.outputType, lastModified: Date.now() }
+                  );
+                  resolve(compressedFile);
+                  return;
+                }
+
+                // Reducir calidad más agresivamente
+                const newQuality = Math.max(0.4, currentQuality - 0.1);
                 canvas.toBlob(
-                  (reducedBlob) => {
-                    if (!reducedBlob) {
-                      reject(new Error('Error al comprimir la imagen con calidad reducida'));
+                  (newBlob) => {
+                    if (!newBlob) {
+                      // Si falla, usar el blob anterior
+                      const compressedFile = new File(
+                        [currentBlob],
+                        file.name.replace(/\.[^/.]+$/, '.jpg'),
+                        { type: opts.outputType, lastModified: Date.now() }
+                      );
+                      resolve(compressedFile);
                       return;
                     }
-                    const compressedFile = new File(
-                      [reducedBlob],
-                      file.name.replace(/\.[^/.]+$/, '.jpg'),
-                      { type: opts.outputType, lastModified: Date.now() }
-                    );
-                    resolve(compressedFile);
+                    compressIteratively(newBlob, newQuality, attempts + 1);
                   },
                   opts.outputType,
-                  reducedQuality
+                  newQuality
                 );
-              } else {
-                const compressedFile = new File(
-                  [blob],
-                  file.name.replace(/\.[^/.]+$/, '.jpg'),
-                  { type: opts.outputType, lastModified: Date.now() }
-                );
-                resolve(compressedFile);
-              }
+              };
+
+              compressIteratively(blob, opts.quality);
             },
             opts.outputType,
             opts.quality
@@ -155,4 +179,3 @@ export async function compressImages(
 ): Promise<File[]> {
   return Promise.all(files.map((file) => compressImage(file, options)));
 }
-

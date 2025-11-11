@@ -1,89 +1,137 @@
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 mt-4 lg:mt-0">
+  <!-- Vista de Lista de Tableros -->
+  @if (!selectedBoard()) {
   <!-- Header -->
   <div class="mb-6">
     <div class="flex items-center flex-wrap gap-4 justify-between">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Gestión de Tareas</h1>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Tableros de Tareas</h1>
         <p class="text-gray-600 dark:text-gray-400 mt-1">
-          Organiza y gestiona tus tareas con el tablero Kanban
+          Organiza tus tareas en tableros colaborativos
         </p>
       </div>
       <div class="flex items-center gap-3">
+        <div class="relative">
+          <p-button
+            icon="pi pi-bell"
+            [text]="true"
+            severity="secondary"
+            (onClick)="openBoardInvitations()"
+            [pTooltip]="
+              pendingInvitationsCount() > 0
+                ? 'Tienes ' + pendingInvitationsCount() + ' invitación(es) pendiente(s)'
+                : 'Ver invitaciones pendientes'
+            "
+          ></p-button>
+          @if (pendingInvitationsCount() > 0) {
+          <span
+            class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+            >{{ pendingInvitationsCount() }}</span
+          >
+          }
+        </div>
         <p-button
           icon="pi pi-refresh"
           [text]="true"
           severity="secondary"
-          (onClick)="refreshTasks()"
-          [loading]="tasksService.loading()"
-          pTooltip="Actualizar tareas"
-        >
-        </p-button>
+          (onClick)="refreshBoards()"
+          [loading]="boardsService.loading()"
+          pTooltip="Actualizar tableros"
+        ></p-button>
         <p-button
           icon="pi pi-plus"
-          label="Nueva Tarea"
-          (onClick)="openTaskForm()"
+          label="Nuevo Tablero"
+          (onClick)="openBoardForm()"
           severity="primary"
-        >
-        </p-button>
+        ></p-button>
       </div>
     </div>
   </div>
 
-  <!-- Stats Cards -->
-  <app-native-task-stats [stats]="tasksService.taskStats()" class="mb-6"> </app-native-task-stats>
-
-  <!-- Loading State -->
-  @if (tasksService.loading()) {
-  <div class="flex justify-center items-center py-12">
-    <p-progressSpinner styleClass="w-8 h-8" strokeWidth="4"> </p-progressSpinner>
-  </div>
+  <!-- Lista de Tableros -->
+  <app-board-list
+    [boards]="boardsService.boards()"
+    [loading]="boardsService.loading()"
+    [error]="boardsService.error()"
+    [currentUserId]="currentUserId()"
+    (createBoard)="openBoardForm()"
+    (viewBoard)="onViewBoard($event)"
+    (editBoard)="openBoardFormFromList($event)"
+    (inviteUser)="openBoardInviteFromList($event)"
+    (deleteBoard)="confirmDeleteBoard($event)"
+  ></app-board-list>
   }
 
-  <!-- Error State -->
-  @if (tasksService.error()) {
-  <p-message severity="error" [text]="tasksService.error()!" class="mb-6"> </p-message>
-  }
-
-  <!-- Native Kanban Board -->
-  @if (!tasksService.loading() && !tasksService.error() && (tasksService.tasks() || []).length > 0)
-  {
-  <app-native-kanban-board
-    [tasksByStatus]="tasksService.tasksByStatus()"
+  <!-- Vista de Tablero con Tareas -->
+  @if (selectedBoard()) {
+  <app-board-view
+    [board]="selectedBoard()!"
+    [isOwner]="isBoardOwner()"
+    [tasksByStatus]="tasksByStatus()"
+    [taskStats]="taskStats()"
     [loading]="tasksService.loading()"
+    (back)="onBackToBoards()"
+    (edit)="openBoardForm(selectedBoard()!)"
+    (invite)="openBoardInvite()"
+    (refresh)="onRefreshBoard()"
     (taskStatusChanged)="onTaskStatusChanged($event)"
     (editTask)="openTaskForm($event)"
     (deleteTask)="confirmDeleteTask($event)"
     (viewTask)="viewTaskDetails($event)"
-  >
-  </app-native-kanban-board>
-  }
-
-  <!-- Empty State -->
-  @if (!tasksService.loading() && !tasksService.error() && (tasksService.tasks() || []).length ===
-  0) {
-  <div class="text-center py-12">
-    <i class="pi pi-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-    <h3 class="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">No hay tareas</h3>
-    <p class="text-gray-500 dark:text-gray-500 mb-6">Comienza creando tu primera tarea</p>
-    <p-button
-      icon="pi pi-plus"
-      label="Crear Primera Tarea"
-      (onClick)="openTaskForm()"
-      severity="primary"
-    >
-    </p-button>
-  </div>
+    (createTask)="openTaskForm()"
+  ></app-board-view>
   }
 </div>
 
-<!-- Native Task Form Dialog -->
-<p-dialog [modal]="true" [(visible)]="showTaskForm" [style]="{ width: '700px' }" [closable]="true">
+<!-- Dialog: Formulario de Tablero -->
+<p-dialog
+  [modal]="true"
+  [(visible)]="showBoardForm"
+  [style]="{ width: '600px' }"
+  [closable]="true"
+  [header]="isEditingBoard() ? 'Editar Tablero' : 'Nuevo Tablero'"
+>
+  <app-board-form
+    [board]="editingBoardFromList() || selectedBoard() || null"
+    [loading]="boardFormLoading"
+    (save)="onBoardSave($event)"
+    (cancelled)="closeBoardForm()"
+  ></app-board-form>
+</p-dialog>
+
+<!-- Dialog: Invitar Usuario -->
+<p-dialog
+  [modal]="true"
+  [(visible)]="showBoardInvite"
+  [style]="{ width: '500px' }"
+  [closable]="true"
+  header="Invitar Usuario al Tablero"
+>
+  @if (invitingBoardFromList() || selectedBoard()) {
+  <app-board-invite
+    [boardId]="(invitingBoardFromList() || selectedBoard())!._id"
+    [loading]="boardInviteLoading"
+    [existingMemberIds]="existingMemberIds()"
+    (invite)="onInviteUser($event)"
+    (cancelled)="closeBoardInvite()"
+  ></app-board-invite>
+  }
+</p-dialog>
+
+<!-- Dialog: Formulario de Tarea -->
+<p-dialog
+  [modal]="true"
+  [(visible)]="showTaskForm"
+  [style]="{ width: '700px' }"
+  [closable]="true"
+  [header]="isEditingTask() ? 'Editar Tarea' : 'Nueva Tarea'"
+>
   <app-native-task-form
     [task]="selectedTask() || undefined"
+    [boardId]="selectedBoard()?._id"
     (save)="onTaskSave()"
     (formCancel)="closeTaskForm()"
-  >
-  </app-native-task-form>
+  ></app-native-task-form>
 </p-dialog>
 
 <!-- Confirm Dialog -->
@@ -92,6 +140,25 @@
 <!-- Toast Messages -->
 <p-toast></p-toast>
 
-<!-- Task Details Dialog -->
-<app-task-details [task]="selectedTask()" [visible]="showTaskDetails" (closeDialog)="closeTaskDetails()">
-</app-task-details>
+<!-- Dialog: Detalles de Tarea -->
+<app-task-details
+  [task]="selectedTask()"
+  [visible]="showTaskDetails"
+  (closeDialog)="closeTaskDetails()"
+></app-task-details>
+
+<!-- Dialog: Invitaciones Pendientes -->
+<p-dialog
+  [modal]="true"
+  [(visible)]="showBoardInvitations"
+  [style]="{ width: '90vw', maxWidth: '1200px' }"
+  [closable]="true"
+  [maximizable]="true"
+  header="Invitaciones Pendientes"
+>
+  <app-board-invitations
+    [visible]="showBoardInvitations()"
+    (invitationAccepted)="onInvitationAccepted($event)"
+    (invitationRejected)="onInvitationRejected($event)"
+  ></app-board-invitations>
+</p-dialog>

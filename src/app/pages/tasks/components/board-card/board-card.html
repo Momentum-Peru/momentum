@@ -1,0 +1,92 @@
+<p-card [style]="{ height: '100%' }" styleClass="h-full hover:shadow-lg transition-shadow">
+  <ng-template pTemplate="header">
+    <div class="p-4 bg-gradient-to-r from-blue-500 to-blue-600">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-th-large text-white text-xl"></i>
+          <h3 class="text-white font-semibold text-lg truncate">{{ board.title }}</h3>
+        </div>
+        @if (isOwner) {
+        <p-tag value="Propietario" severity="success" [rounded]="true"></p-tag>
+        }
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="content">
+    <div class="flex flex-col gap-4">
+      @if (board.description) {
+      <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">
+        {{ board.description }}
+      </p>
+      } @else {
+      <p class="text-gray-400 dark:text-gray-500 text-sm italic">Sin descripción</p>
+      }
+
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <i class="pi pi-user"></i>
+          <span class="font-medium">Propietario:</span>
+          <span>{{ board.owner.name }}</span>
+        </div>
+
+        @if (board.members.length > 0) {
+        <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <i class="pi pi-users"></i>
+          <span class="font-medium">Miembros:</span>
+          <span>{{ board.members.length }}</span>
+        </div>
+        } @if (pendingInvitationsCount > 0) {
+        <div class="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+          <i class="pi pi-envelope"></i>
+          <span class="font-medium">Invitaciones pendientes:</span>
+          <span>{{ pendingInvitationsCount }}</span>
+        </div>
+        }
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <div class="flex flex-wrap gap-1 sm:gap-2 justify-end">
+      <p-button
+        icon="pi pi-eye"
+        label="Ver"
+        [text]="true"
+        severity="secondary"
+        (onClick)="onView($event)"
+        pTooltip="Ver tablero"
+        styleClass="responsive-button"
+      ></p-button>
+      @if (isOwner) {
+      <p-button
+        icon="pi pi-pencil"
+        label="Editar"
+        [text]="true"
+        severity="info"
+        (onClick)="onEdit($event)"
+        pTooltip="Editar nombre y descripción del tablero"
+        styleClass="responsive-button"
+      ></p-button>
+      <p-button
+        icon="pi pi-user-plus"
+        label="Invitar"
+        [text]="true"
+        severity="success"
+        (onClick)="onInvite($event)"
+        pTooltip="Invitar usuario"
+        styleClass="responsive-button"
+      ></p-button>
+      <p-button
+        icon="pi pi-trash"
+        label="Eliminar"
+        [text]="true"
+        severity="danger"
+        (onClick)="onDelete($event)"
+        pTooltip="Eliminar tablero"
+        styleClass="responsive-button"
+      ></p-button>
+      }
+    </div>
+  </ng-template>
+</p-card>

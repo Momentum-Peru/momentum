@@ -35,6 +35,7 @@ export interface Task {
   createdByName?: string; // User name for display
   dueDate?: Date | string;
   tags: string[];
+  boardId?: string; // Board ID (opcional)
   info?: TaskComment[]; // Comentarios/información de la tarea
   files?: TaskFile[];
   createdAt: Date | string;
@@ -51,6 +52,7 @@ export interface CreateTaskRequest {
   createdBy: string;
   dueDate?: Date | string;
   tags?: string[];
+  boardId?: string;
 }
 
 export interface UpdateTaskRequest {
@@ -61,6 +63,7 @@ export interface UpdateTaskRequest {
   assignedTo?: string;
   dueDate?: Date | string;
   tags?: string[];
+  boardId?: string;
   isActive?: boolean;
 }
 
@@ -90,6 +93,7 @@ export interface TasksSearchParams {
   priority?: 'Baja' | 'Media' | 'Alta' | 'Crítica';
   assignedTo?: string;
   createdBy?: string;
+  boardId?: string;
   tags?: string[];
   dueDateFrom?: Date | string;
   dueDateTo?: Date | string;

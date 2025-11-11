@@ -100,11 +100,15 @@ export class FaceRecognitionRegisterPage implements OnInit {
   filteredDescriptors = computed(() => {
     const userId = this.selectedUserId();
     if (!userId) return [];
-    return this.descriptors().filter((d) => {
+    const allDescriptors = this.descriptors();
+    return allDescriptors.filter((d) => {
+      if (!d.userId) return false;
       const id =
-        typeof d.userId === 'object' && d.userId && '_id' in d.userId
+        typeof d.userId === 'object' && d.userId !== null && '_id' in d.userId
           ? (d.userId as { _id: string })._id
-          : d.userId;
+          : typeof d.userId === 'string'
+            ? d.userId
+            : null;
       return id === userId;
     });
   });
@@ -204,15 +208,18 @@ export class FaceRecognitionRegisterPage implements OnInit {
     this.loading.set(true);
     this.faceRecognitionApi.getDescriptorsByUser(userId, tenantId).subscribe({
       next: (descriptors) => {
-        this.descriptors.set(descriptors);
+        console.log('Descriptores cargados:', descriptors);
+        this.descriptors.set(descriptors || []);
         this.loading.set(false);
       },
-      error: () => {
+      error: (error) => {
+        console.error('Error al cargar descriptores:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
           detail: 'Error al cargar los descriptores faciales',
         });
+        this.descriptors.set([]);
         this.loading.set(false);
       },
     });
@@ -225,6 +232,8 @@ export class FaceRecognitionRegisterPage implements OnInit {
   onUserSelect(userId: string) {
     this.selectedUserId.set(userId);
     if (userId) {
+      // Limpiar descriptores anteriores antes de cargar nuevos
+      this.descriptors.set([]);
       this.loadDescriptors(userId);
     } else {
       this.descriptors.set([]);
@@ -581,8 +590,10 @@ export class FaceRecognitionRegisterPage implements OnInit {
               detail: 'Rostro registrado correctamente',
             });
             this.closeDialog();
-            if (userId) {
-              this.loadDescriptors(userId);
+            // Recargar descriptores después de registrar
+            const currentUserId = this.selectedUserId();
+            if (currentUserId) {
+              this.loadDescriptors(currentUserId);
             }
           },
           error: (error) => {
@@ -649,28 +660,50 @@ export class FaceRecognitionRegisterPage implements OnInit {
     });
   }
 
-  getUserName(userId: string | { _id?: string } | null | undefined): string {
+  getUserName(userId: string | { _id?: string; name?: string } | null | undefined): string {
     if (!userId) return 'Usuario desconocido';
+    
+    // Si userId es un objeto populado con name, usarlo directamente
+    if (typeof userId === 'object' && userId !== null && 'name' in userId && userId.name) {
+      return userId.name;
+    }
+    
+    // Si es un objeto con _id o un string, buscar en la lista de usuarios
     const id =
       typeof userId === 'object' && userId && '_id' in userId
         ? (userId as { _id?: string })._id
-        : userId;
+        : typeof userId === 'string'
+          ? userId
+          : null;
+    
     if (!id) {
       return 'Usuario desconocido';
     }
+    
     const user = this.users().find((u) => u._id === id);
     return user?.name || 'Usuario desconocido';
   }
 
-  getUserEmail(userId: string | { _id?: string } | null | undefined): string {
+  getUserEmail(userId: string | { _id?: string; email?: string } | null | undefined): string {
     if (!userId) return '';
+    
+    // Si userId es un objeto populado con email, usarlo directamente
+    if (typeof userId === 'object' && userId !== null && 'email' in userId && userId.email) {
+      return userId.email;
+    }
+    
+    // Si es un objeto con _id o un string, buscar en la lista de usuarios
     const id =
       typeof userId === 'object' && userId && '_id' in userId
         ? (userId as { _id?: string })._id
-        : userId;
+        : typeof userId === 'string'
+          ? userId
+          : null;
+    
     if (!id) {
       return '';
     }
+    
     const user = this.users().find((u) => u._id === id);
     return user?.email || '';
   }

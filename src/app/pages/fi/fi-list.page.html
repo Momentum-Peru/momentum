@@ -1,0 +1,180 @@
+<div class="p-4 space-y-4">
+  <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+    <h2 class="text-xl font-semibold">Futuros Imposibles</h2>
+    <div class="flex items-center gap-2">
+      <span class="pi pi-search text-gray-500"></span>
+      <input pInputText [(ngModel)]="q" (ngModelChange)="refresh()" placeholder="Buscar..." class="w-56" />
+      <div class="flex items-center gap-2 ml-4">
+        <span class="text-sm">Activos</span>
+        <p-toggleSwitch [(ngModel)]="filterActive" (ngModelChange)="refresh()"></p-toggleSwitch>
+      </div>
+      <p-button (onClick)="openCreate()" label="Nuevo" icon="pi pi-plus" styleClass="ml-2"></p-button>
+    </div>
+  </div>
+
+  <!-- Vista Desktop: Tabla -->
+  <div class="hidden md:block">
+    <p-table [value]="fiList()" [tableStyle]="{ 'min-width': '50rem' }" [paginator]="true" [rows]="10" class="rounded-lg overflow-hidden">
+      <ng-template pTemplate="header">
+        <tr class="text-sm">
+          <th>Título</th>
+          <th>Atravesar</th>
+          <th>Plan</th>
+          <th>Rango</th>
+          <th>Activo</th>
+          <th></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr class="hover:bg-gray-50 cursor-pointer transition-colors" (click)="goDetail(item)">
+          <td class="font-medium">{{ item.titulo }}</td>
+          <td class="text-gray-600">{{ item.atravesar }}</td>
+          <td class="text-gray-600">{{ item.plan.descripcion }}</td>
+          <td class="text-gray-600">{{ formatDateRange(item.plan.fechaInicio, item.plan.fechaFin) }}</td>
+          <td>
+            <span class="px-2 py-0.5 rounded text-xs" [ngClass]="item.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'">
+              {{ item.isActive ? 'Sí' : 'No' }}
+            </span>
+          </td>
+          <td class="text-right">
+            <p-button icon="pi pi-angle-right" severity="secondary" [text]="true" (onClick)="$event.stopPropagation(); goDetail(item)"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil: Lista tipo accordion -->
+  <div class="md:hidden space-y-3">
+    @for (item of fiList(); track item._id) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+    >
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        (click)="toggleRow(item._id)"
+      >
+        <div class="flex-1 text-left min-w-0 pr-4">
+          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+            {{ item.titulo }}
+          </div>
+          <div class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <span class="px-2 py-0.5 rounded text-xs" [ngClass]="item.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'">
+              {{ item.isActive ? 'Activo' : 'Inactivo' }}
+            </span>
+            <span>•</span>
+            <span class="truncate">{{ formatDateRange(item.plan.fechaInicio, item.plan.fechaFin) }}</span>
+          </div>
+        </div>
+        <div class="flex-shrink-0 flex items-center gap-2">
+          <p-button 
+            icon="pi pi-angle-right" 
+            severity="secondary" 
+            [text]="true" 
+            (onClick)="$event.stopPropagation(); goDetail(item)"
+            class="!p-2"
+          ></p-button>
+          <i
+            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+            [class.pi-chevron-down]="!isRowExpanded(item._id)"
+            [class.pi-chevron-up]="isRowExpanded(item._id)"
+          ></i>
+        </div>
+      </button>
+
+      @if (isRowExpanded(item._id)) {
+      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+        <div class="px-4 py-4 space-y-3">
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Atravesar
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+              {{ item.atravesar || '-' }}
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Plan - Descripción
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+              {{ item.plan.descripcion || '-' }}
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Rango
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">
+              {{ formatDateRange(item.plan.fechaInicio, item.plan.fechaFin) }}
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Estado
+            </div>
+            <div>
+              <span class="px-2 py-0.5 rounded text-xs" [ngClass]="item.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'">
+                {{ item.isActive ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    } @empty {
+    <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+      <i class="pi pi-inbox text-4xl mb-2"></i>
+      <p>No hay futuros imposibles registrados</p>
+    </div>
+    }
+  </div>
+</div>
+
+<!-- Crear / Editar -->
+<p-dialog [(visible)]="createOpen" [modal]="true" [draggable]="false" [resizable]="false" [style]="{ width: '32rem' }" [appendTo]="'body'" header="Nuevo FI">
+  <form class="space-y-4" (ngSubmit)="submitCreate()">
+    <div>
+      <label class="text-sm text-gray-600 mb-1 block">Título</label>
+      <input pInputText [(ngModel)]="createForm.titulo" name="titulo" required class="w-full" />
+    </div>
+    <div>
+      <label class="text-sm text-gray-600 mb-1 block">Atravesar</label>
+      <textarea pTextarea [(ngModel)]="createForm.atravesar" name="atravesar" rows="2" class="w-full"></textarea>
+    </div>
+    <div>
+      <label class="text-sm text-gray-600 mb-1 block">Plan - Descripción</label>
+      <textarea pTextarea [(ngModel)]="createForm.plan.descripcion" name="planDescripcion" rows="2" class="w-full"></textarea>
+    </div>
+    <div>
+      <label class="text-sm text-gray-600 mb-1 block">Rango de fechas</label>
+      <p-datepicker
+        [(ngModel)]="dateRange"
+        (ngModelChange)="onRangeChange($event)"
+        name="rangoFechas"
+        [selectionMode]="'range'"
+        dateFormat="yy-mm-dd"
+        [showIcon]="true"
+        [showButtonBar]="true"
+        [numberOfMonths]="isLargeScreen ? 2 : 1"
+        [touchUI]="isSmallScreen"
+        [appendTo]="'body'"
+      ></p-datepicker>
+      <div class="mt-1 text-xs text-gray-500" *ngIf="startDate && endDate">
+        Seleccionado: {{ startDate | date:'yyyy-MM-dd' }} → {{ endDate | date:'yyyy-MM-dd' }}
+      </div>
+    </div>
+    <div class="flex items-center gap-2 pt-2">
+      <p-toggleSwitch [(ngModel)]="createForm.isActive" name="isActive"></p-toggleSwitch>
+      <span class="text-sm">Activo</span>
+    </div>
+    <div class="flex justify-end gap-2 pt-2">
+      <p-button label="Cancelar" severity="secondary" (onClick)="createOpen=false"></p-button>
+      <p-button type="submit" label="Crear" icon="pi pi-check"></p-button>
+    </div>
+  </form>
+</p-dialog>
+
+
