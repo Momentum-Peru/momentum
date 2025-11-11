@@ -42,6 +42,7 @@ export class MenuConfigService {
     { path: '/contacts-crm', label: 'Contactos CRM', icon: 'pi pi-address-book' },
     { path: '/follow-ups', label: 'Seguimientos', icon: 'pi pi-calendar-plus' },
     { path: '/companies-crm', label: 'Empresas Momentum', icon: 'pi pi-building' },
+    { path: '/fi', label: 'Futuros Imposibles', icon: 'pi pi-bolt' },
   ];
 
   /**
@@ -118,6 +119,11 @@ export class MenuConfigService {
             routerLink: '/documents',
           },
         ],
+      },
+      {
+        label: 'Futuros Imposibles',
+        icon: 'pi pi-bolt',
+        routerLink: '/fi',
       },
       {
         label: 'Talento Humano',

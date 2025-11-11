@@ -16,7 +16,7 @@ export interface User {
 }
 
 export interface MenuPermissionWithUser extends Omit<MenuPermission, 'userId'> {
-  userId: User;
+  userId: User | string | null;
 }
 
 export interface AssignPermissionsRequest {

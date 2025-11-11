@@ -119,7 +119,7 @@ import { Board, UpdateInvitationRequest } from '../../../../shared/interfaces/bo
               <div class="flex items-center justify-between mb-2">
                 <p-badge
                   value="Pendiente"
-                  severity="warning"
+                  severity="warn"
                   [style]="{ 'font-size': '0.75rem' }"
                 ></p-badge>
                 <span class="text-xs text-gray-500 dark:text-gray-400">

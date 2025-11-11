@@ -38,10 +38,18 @@ export class MenuService {
 
     this.menuPermissionsApi.getByUserId(currentUser.id).subscribe({
       next: (permissions) => {
-        const normalized = permissions.map((p) => ({
-          ...p,
-          userId: typeof p.userId === 'string' ? p.userId : p.userId._id,
-        }));
+        const normalized = permissions
+          .filter((p) => p.userId !== null && p.userId !== undefined)
+          .map((p) => ({
+            ...p,
+            userId:
+              typeof p.userId === 'string'
+                ? p.userId
+                : p.userId !== null && typeof p.userId === 'object'
+                  ? p.userId._id
+                  : '',
+          }))
+          .filter((p) => p.userId !== '');
         this.userPermissions.set(normalized);
       },
       error: () => {

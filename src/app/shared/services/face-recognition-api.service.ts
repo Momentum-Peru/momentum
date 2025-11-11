@@ -104,8 +104,11 @@ export class FaceRecognitionApiService {
    * Obtiene los descriptores faciales de un usuario
    */
   getDescriptorsByUser(userId: string, tenantId: string): Observable<FaceDescriptor[]> {
+    const encodedUserId = encodeURIComponent(userId);
+    const params = new HttpParams().set('tenantId', tenantId);
     return this.http.get<FaceDescriptor[]>(
-      `${this.baseUrl}/descriptors/user/${userId}?tenantId=${tenantId}`
+      `${this.baseUrl}/descriptors/user/${encodedUserId}`,
+      { params }
     );
   }
 

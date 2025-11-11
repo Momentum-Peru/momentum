@@ -103,6 +103,7 @@ export class DynamicMenuComponent implements OnInit {
     { label: 'Usuarios', icon: 'pi pi-user', route: '/users' },
     { label: 'Reportes', icon: 'pi pi-calendar', route: '/daily-reports' },
     { label: 'Permisos', icon: 'pi pi-shield', route: '/menu-permissions' },
+    { label: 'Futuros Imposibles', icon: 'pi pi-bolt', route: '/fi' },
   ];
 
   // Computed para filtrar elementos del menú basado en permisos

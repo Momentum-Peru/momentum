@@ -155,6 +155,18 @@ export const routes: Routes = [
         data: { menuPermission: '/contacts-crm' },
       },
       {
+        path: 'fi',
+        loadComponent: () => import('./pages/fi/fi-list.page').then((m) => m.FiListPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/fi' },
+      },
+      {
+        path: 'fi/:id',
+        loadComponent: () => import('./pages/fi/fi-detail.page').then((m) => m.FiDetailPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/fi' },
+      },
+      {
         path: 'follow-ups',
         loadComponent: () => import('./pages/follow-ups/follow-ups').then((m) => m.FollowUpsPage),
         canActivate: [MenuPermissionGuard],

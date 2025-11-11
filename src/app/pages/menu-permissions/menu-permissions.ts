@@ -155,17 +155,33 @@ export class MenuPermissionsPage implements OnInit {
 
     // Agrupar permisos por usuario
     permissions.forEach((permission) => {
+      // Validar que userId no sea null o undefined
+      if (!permission.userId) {
+        console.warn('Permission with null/undefined userId found:', permission);
+        return; // Saltar este permiso si no tiene userId válido
+      }
+
+      // Determinar userId y userInfo de forma segura
       const userId =
-        typeof permission.userId === 'object' ? permission.userId._id : permission.userId;
+        typeof permission.userId === 'object' && permission.userId !== null
+          ? permission.userId._id
+          : permission.userId;
+
+      // Validar que userId sea válido
+      if (!userId) {
+        console.warn('Permission with invalid userId found:', permission);
+        return; // Saltar este permiso si userId no es válido
+      }
+
       const userInfo =
-        typeof permission.userId === 'object'
+        typeof permission.userId === 'object' && permission.userId !== null
           ? permission.userId
           : this.users().find((u) => u._id === userId) || {
-              _id: userId,
-              name: 'Usuario desconocido',
-              email: '',
-              role: '',
-            };
+            _id: userId,
+            name: 'Usuario desconocido',
+            email: '',
+            role: '',
+          };
 
       if (!usersMap.has(userId)) {
         usersMap.set(userId, {
@@ -195,20 +211,20 @@ export class MenuPermissionsPage implements OnInit {
   loadUsers() {
     const currentTenantId = this.tenantService.tenantId();
     console.log('Loading users for tenant:', currentTenantId);
-    
+
     // Obtener usuarios completos con tenantIds para filtrar
     this.usersApi.listWithFilters({}).subscribe({
       next: (response) => {
         const allUsers = response.data ?? response.users ?? [];
         console.log('Users API response:', allUsers);
-        
+
         const toUserOption = (user: User): UserOption => ({
           _id: user._id || user.id,
           name: user.name,
           email: user.email,
           role: user.role,
         });
-        
+
         // Filtrar usuarios por tenant seleccionado
         if (currentTenantId) {
           const filteredUsers = allUsers.filter((user) => {
@@ -218,9 +234,9 @@ export class MenuPermissionsPage implements OnInit {
             }
             return tenantIds.includes(currentTenantId);
           });
-          
+
           const userOptions = filteredUsers.map(toUserOption);
-          
+
           console.log('Filtered users for tenant:', userOptions);
           this.users.set(userOptions);
         } else {
@@ -483,13 +499,22 @@ export class MenuPermissionsPage implements OnInit {
   }
 
   getUserName(item: MenuPermissionWithUser): string {
-    if (typeof item.userId === 'object') {
-      return item.userId.name;
+    if (!item.userId) {
+      return 'Usuario no encontrado';
     }
-    const user = this.users().find(
-      (u) => u._id === (typeof item.userId === 'string' ? item.userId : item.userId._id)
-    );
-    return user?.name || 'Usuario no encontrado';
+
+    // Si userId es un objeto User, usar su nombre directamente
+    if (typeof item.userId === 'object' && item.userId !== null) {
+      return item.userId.name || 'Usuario no encontrado';
+    }
+
+    // Si userId es un string, buscar el usuario en la lista
+    if (typeof item.userId === 'string') {
+      const user = this.users().find((u) => u._id === item.userId);
+      return user?.name || 'Usuario no encontrado';
+    }
+
+    return 'Usuario no encontrado';
   }
 
   getStatusClass(isActive: boolean): string {
