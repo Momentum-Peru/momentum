@@ -1,20 +1,57 @@
 <div class="p-4 space-y-4">
-  <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-    <h2 class="text-xl font-semibold">Futuros Imposibles</h2>
-    <div class="flex items-center gap-2">
-      <span class="pi pi-search text-gray-500"></span>
-      <input pInputText [(ngModel)]="q" (ngModelChange)="refresh()" placeholder="Buscar..." class="w-56" />
-      <div class="flex items-center gap-2 ml-4">
-        <span class="text-sm">Activos</span>
-        <p-toggleSwitch [(ngModel)]="filterActive" (ngModelChange)="refresh()"></p-toggleSwitch>
+  <!-- Toast para mensajes -->
+  <p-toast></p-toast>
+  <div class="flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-semibold dark:text-gray-800">Futuros Imposibles</h2>
+      <p-button
+        (onClick)="openCreate()"
+        label="Nuevo"
+        icon="pi pi-plus"
+        [text]="false"
+        class="sm:hidden"
+      ></p-button>
+    </div>
+    <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+      <!-- Búsqueda -->
+      <div class="flex-1 relative">
+        <span
+          class="pi pi-search text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+        ></span>
+        <input
+          pInputText
+          [(ngModel)]="q"
+          (ngModelChange)="refresh()"
+          placeholder="Buscar..."
+          class="w-full pl-10 pr-3"
+        />
       </div>
-      <p-button (onClick)="openCreate()" label="Nuevo" icon="pi pi-plus" styleClass="ml-2"></p-button>
+      <!-- Filtro Activos y Botón Nuevo -->
+      <div class="flex items-center gap-3 sm:gap-4">
+        <div class="flex items-center gap-2">
+          <span class="text-sm dark:text-gray-800 whitespace-nowrap">Activos</span>
+          <p-toggleSwitch [(ngModel)]="filterActive" (ngModelChange)="refresh()"></p-toggleSwitch>
+        </div>
+        <p-button
+          (onClick)="openCreate()"
+          label="Nuevo"
+          icon="pi pi-plus"
+          [text]="false"
+          class="hidden sm:inline-flex"
+        ></p-button>
+      </div>
     </div>
   </div>
 
   <!-- Vista Desktop: Tabla -->
   <div class="hidden md:block">
-    <p-table [value]="fiList()" [tableStyle]="{ 'min-width': '50rem' }" [paginator]="true" [rows]="10" class="rounded-lg overflow-hidden">
+    <p-table
+      [value]="fiList()"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [paginator]="true"
+      [rows]="10"
+      class="rounded-lg overflow-hidden"
+    >
       <ng-template pTemplate="header">
         <tr class="text-sm">
           <th>Título</th>
@@ -30,14 +67,26 @@
           <td class="font-medium">{{ item.titulo }}</td>
           <td class="text-gray-600">{{ item.atravesar }}</td>
           <td class="text-gray-600">{{ item.plan.descripcion }}</td>
-          <td class="text-gray-600">{{ formatDateRange(item.plan.fechaInicio, item.plan.fechaFin) }}</td>
+          <td class="text-gray-600">
+            {{ formatDateRange(item.plan.fechaInicio, item.plan.fechaFin) }}
+          </td>
           <td>
-            <span class="px-2 py-0.5 rounded text-xs" [ngClass]="item.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'">
+            <span
+              class="px-2 py-0.5 rounded text-xs"
+              [ngClass]="
+                item.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+              "
+            >
               {{ item.isActive ? 'Sí' : 'No' }}
             </span>
           </td>
           <td class="text-right">
-            <p-button icon="pi pi-angle-right" severity="secondary" [text]="true" (onClick)="$event.stopPropagation(); goDetail(item)"></p-button>
+            <p-button
+              icon="pi pi-angle-right"
+              severity="secondary"
+              [text]="true"
+              (onClick)="$event.stopPropagation(); goDetail(item)"
+            ></p-button>
           </td>
         </tr>
       </ng-template>
@@ -60,18 +109,25 @@
             {{ item.titulo }}
           </div>
           <div class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-            <span class="px-2 py-0.5 rounded text-xs" [ngClass]="item.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'">
+            <span
+              class="px-2 py-0.5 rounded text-xs"
+              [ngClass]="
+                item.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+              "
+            >
               {{ item.isActive ? 'Activo' : 'Inactivo' }}
             </span>
             <span>•</span>
-            <span class="truncate">{{ formatDateRange(item.plan.fechaInicio, item.plan.fechaFin) }}</span>
+            <span class="truncate">{{
+              formatDateRange(item.plan.fechaInicio, item.plan.fechaFin)
+            }}</span>
           </div>
         </div>
         <div class="flex-shrink-0 flex items-center gap-2">
-          <p-button 
-            icon="pi pi-angle-right" 
-            severity="secondary" 
-            [text]="true" 
+          <p-button
+            icon="pi pi-angle-right"
+            severity="secondary"
+            [text]="true"
             (onClick)="$event.stopPropagation(); goDetail(item)"
             class="!p-2"
           ></p-button>
@@ -115,7 +171,12 @@
               Estado
             </div>
             <div>
-              <span class="px-2 py-0.5 rounded text-xs" [ngClass]="item.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'">
+              <span
+                class="px-2 py-0.5 rounded text-xs"
+                [ngClass]="
+                  item.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                "
+              >
                 {{ item.isActive ? 'Activo' : 'Inactivo' }}
               </span>
             </div>
@@ -134,23 +195,55 @@
 </div>
 
 <!-- Crear / Editar -->
-<p-dialog [(visible)]="createOpen" [modal]="true" [draggable]="false" [resizable]="false" [style]="{ width: '32rem' }" [appendTo]="'body'" header="Nuevo FI">
+<p-dialog
+  [(visible)]="createOpen"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '32rem' }"
+  [appendTo]="'body'"
+  header="Nuevo FI"
+>
   <form class="space-y-4" (ngSubmit)="submitCreate()">
     <div>
-      <label class="text-sm text-gray-600 mb-1 block">Título</label>
-      <input pInputText [(ngModel)]="createForm.titulo" name="titulo" required class="w-full" />
+      <label for="titulo" class="text-sm text-gray-600 mb-1 block">Título</label>
+      <input
+        id="titulo"
+        pInputText
+        [(ngModel)]="createForm.titulo"
+        name="titulo"
+        required
+        class="w-full"
+      />
     </div>
     <div>
-      <label class="text-sm text-gray-600 mb-1 block">Atravesar</label>
-      <textarea pTextarea [(ngModel)]="createForm.atravesar" name="atravesar" rows="2" class="w-full"></textarea>
+      <label for="atravesar" class="text-sm text-gray-600 mb-1 block">Atravesar</label>
+      <textarea
+        id="atravesar"
+        pTextarea
+        [(ngModel)]="createForm.atravesar"
+        name="atravesar"
+        rows="2"
+        class="w-full"
+      ></textarea>
     </div>
     <div>
-      <label class="text-sm text-gray-600 mb-1 block">Plan - Descripción</label>
-      <textarea pTextarea [(ngModel)]="createForm.plan.descripcion" name="planDescripcion" rows="2" class="w-full"></textarea>
+      <label for="planDescripcion" class="text-sm text-gray-600 mb-1 block"
+        >Plan - Descripción</label
+      >
+      <textarea
+        id="planDescripcion"
+        pTextarea
+        [(ngModel)]="createForm.plan.descripcion"
+        name="planDescripcion"
+        rows="2"
+        class="w-full"
+      ></textarea>
     </div>
     <div>
-      <label class="text-sm text-gray-600 mb-1 block">Rango de fechas</label>
+      <label for="rangoFechas" class="text-sm text-gray-600 mb-1 block">Rango de fechas</label>
       <p-datepicker
+        id="rangoFechas"
         [(ngModel)]="dateRange"
         (ngModelChange)="onRangeChange($event)"
         name="rangoFechas"
@@ -163,7 +256,7 @@
         [appendTo]="'body'"
       ></p-datepicker>
       <div class="mt-1 text-xs text-gray-500" *ngIf="startDate && endDate">
-        Seleccionado: {{ startDate | date:'yyyy-MM-dd' }} → {{ endDate | date:'yyyy-MM-dd' }}
+        Seleccionado: {{ startDate | date : 'yyyy-MM-dd' }} → {{ endDate | date : 'yyyy-MM-dd' }}
       </div>
     </div>
     <div class="flex items-center gap-2 pt-2">
@@ -171,10 +264,8 @@
       <span class="text-sm">Activo</span>
     </div>
     <div class="flex justify-end gap-2 pt-2">
-      <p-button label="Cancelar" severity="secondary" (onClick)="createOpen=false"></p-button>
+      <p-button label="Cancelar" severity="secondary" (onClick)="createOpen = false"></p-button>
       <p-button type="submit" label="Crear" icon="pi pi-check"></p-button>
     </div>
   </form>
 </p-dialog>
-
-
