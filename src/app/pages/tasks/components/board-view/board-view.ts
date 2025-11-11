@@ -54,6 +54,7 @@ export class BoardViewComponent {
   @Output() back = new EventEmitter<void>();
   @Output() edit = new EventEmitter<void>();
   @Output() invite = new EventEmitter<void>();
+  @Output() refresh = new EventEmitter<void>();
   @Output() taskStatusChanged = new EventEmitter<DragDropEvent>();
   @Output() editTask = new EventEmitter<Task>();
   @Output() deleteTask = new EventEmitter<Task>();
@@ -77,6 +78,11 @@ export class BoardViewComponent {
   onInvite(event: Event): void {
     event.stopPropagation();
     this.invite.emit();
+  }
+
+  onRefresh(event: Event): void {
+    event.stopPropagation();
+    this.refresh.emit();
   }
 
   onCreateTask(event: Event): void {

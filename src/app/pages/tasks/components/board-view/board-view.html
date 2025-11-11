@@ -39,6 +39,14 @@
       <!-- Botones de acción - Ocultos en móviles, visibles en desktop -->
       <div class="hidden sm:flex gap-2 flex-shrink-0">
         <p-button
+          icon="pi pi-refresh"
+          [text]="true"
+          severity="secondary"
+          (onClick)="onRefresh($event)"
+          [loading]="loading"
+          pTooltip="Actualizar tablero"
+        ></p-button>
+        <p-button
           icon="pi pi-arrow-left"
           label="Volver"
           [text]="true"
@@ -68,8 +76,17 @@
     </div>
 
     <!-- Botones de acción para móviles - Debajo del título -->
-    @if (isOwner) {
     <div class="flex flex-wrap gap-2 mt-4 sm:hidden">
+      <p-button
+        icon="pi pi-refresh"
+        [text]="true"
+        severity="secondary"
+        (onClick)="onRefresh($event)"
+        [loading]="loading"
+        pTooltip="Actualizar tablero"
+        styleClass="flex-1 sm:flex-none"
+      ></p-button>
+      @if (isOwner) {
       <p-button
         icon="pi pi-pencil"
         label="Editar"
@@ -88,8 +105,8 @@
         pTooltip="Invitar usuario"
         styleClass="flex-1 sm:flex-none"
       ></p-button>
+      }
     </div>
-    }
 
     <!-- Board Info -->
     <div

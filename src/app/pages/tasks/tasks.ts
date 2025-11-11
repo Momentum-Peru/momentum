@@ -359,6 +359,29 @@ export class TasksPage implements OnInit {
   }
 
   /**
+   * Refresca el tablero actual y sus tareas
+   */
+  public onRefreshBoard(): void {
+    const board = this.selectedBoard();
+    if (!board) return;
+
+    // Recargar el tablero
+    this.boardsService.getById(board._id).subscribe({
+      next: (refreshedBoard) => {
+        this.selectedBoard.set(refreshedBoard);
+        this.loadBoardTasks(board._id);
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar el tablero',
+        });
+      },
+    });
+  }
+
+  /**
    * Vuelve a la lista de tableros
    */
   public onBackToBoards(): void {
