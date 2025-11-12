@@ -49,7 +49,10 @@
 
       <!-- Proyecto -->
       <div class="flex flex-col w-full sm:w-auto">
-        <label for="projectSelect" class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label
+          for="projectSelect"
+          class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
           <i class="pi pi-folder mr-1"></i>
           Proyecto
         </label>
@@ -98,7 +101,10 @@
       <!-- Empresa (solo para rol gerencia) -->
       @if (isGerencia()) {
       <div class="flex flex-col w-full sm:w-auto">
-        <label for="companySelect" class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label
+          for="companySelect"
+          class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
           <i class="pi pi-building mr-1"></i>
           Empresa
         </label>
@@ -123,7 +129,7 @@
     </div>
 
     <!-- Botones de acción -->
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
       <!-- Botón aplicar filtros -->
       <button
         (click)="applyFilters()"

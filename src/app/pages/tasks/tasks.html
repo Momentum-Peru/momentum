@@ -73,6 +73,7 @@
     (back)="onBackToBoards()"
     (edit)="openBoardForm(selectedBoard()!)"
     (invite)="openBoardInvite()"
+    (refresh)="onRefreshBoard()"
     (taskStatusChanged)="onTaskStatusChanged($event)"
     (editTask)="openTaskForm($event)"
     (deleteTask)="confirmDeleteTask($event)"
@@ -157,7 +158,7 @@
 >
   <app-board-invitations
     [visible]="showBoardInvitations()"
-    (onInvitationAccepted)="onInvitationAccepted($event)"
-    (onInvitationRejected)="onInvitationRejected($event)"
+    (invitationAccepted)="onInvitationAccepted($event)"
+    (invitationRejected)="onInvitationRejected($event)"
   ></app-board-invitations>
 </p-dialog>

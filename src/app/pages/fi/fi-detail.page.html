@@ -1,4 +1,5 @@
 <div class="p-4 space-y-4" *ngIf="fi() as fi">
+  <p-toast></p-toast>
   <p-confirmDialog></p-confirmDialog>
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-3">
@@ -14,17 +15,33 @@
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
     <div class="lg:col-span-1 space-y-4">
       <div class="bg-white rounded-md border p-4 space-y-3">
-        <label class="text-sm text-gray-600">Título</label>
-        <input pInputText [(ngModel)]="form.titulo" class="w-full" />
-        <label class="text-sm text-gray-600">Atravesar</label>
-        <textarea pTextarea rows="2" [(ngModel)]="form.atravesar" class="w-full"></textarea>
-        <label class="text-sm text-gray-600">Plan - Descripción</label>
-        <textarea pTextarea rows="2" [(ngModel)]="planDesc" class="w-full"></textarea>
+        <label for="titulo" class="text-sm text-gray-600">Título</label>
+        <input id="titulo" pInputText [(ngModel)]="form.titulo" name="titulo" class="w-full" />
+        <label for="atravesar" class="text-sm text-gray-600">Atravesar</label>
+        <textarea
+          id="atravesar"
+          pTextarea
+          rows="2"
+          [(ngModel)]="form.atravesar"
+          name="atravesar"
+          class="w-full"
+        ></textarea>
+        <label for="planDesc" class="text-sm text-gray-600">Plan - Descripción</label>
+        <textarea
+          id="planDesc"
+          pTextarea
+          rows="2"
+          [(ngModel)]="planDesc"
+          name="planDesc"
+          class="w-full"
+        ></textarea>
         <div>
-          <label class="text-sm text-gray-600 mb-2 block">Rango de fechas</label>
+          <label for="rangoFechas" class="text-sm text-gray-600 mb-2 block">Rango de fechas</label>
           <p-datepicker
+            id="rangoFechas"
             [(ngModel)]="dateRange"
             (ngModelChange)="onRangeChange($event)"
+            name="rangoFechas"
             [selectionMode]="'range'"
             dateFormat="yy-mm-dd"
             [showIcon]="true"
@@ -47,7 +64,7 @@
           <h3 class="font-medium">Calendario</h3>
           <div class="text-sm text-gray-600">Rango: {{ rangeText() }}</div>
         </div>
-        
+
         <!-- Navegación de mes -->
         <div class="flex items-center justify-between mb-4 pb-3 border-b">
           <button
@@ -61,11 +78,11 @@
           >
             <i class="pi pi-chevron-left text-gray-600"></i>
           </button>
-          
+
           <div class="flex-1 text-center">
             <h4 class="text-lg font-semibold text-gray-800 capitalize">{{ currentMonthText() }}</h4>
           </div>
-          
+
           <button
             type="button"
             (click)="nextMonth()"
@@ -81,26 +98,42 @@
 
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           @for (day of filteredCalendarDays(); track day.fecha) {
-            <div 
-              class="border rounded-md p-3 hover:border-blue-400 transition-colors flex flex-col gap-2 cursor-pointer min-h-[100px]"
-              (click)="day.accionable ? openEdit(day.accionable) : openAdd(day.fecha)"
-            >
-              <div class="text-lg font-semibold text-gray-700">{{ getDayNumber(day.fecha) }}</div>
-              @if (day.accionable) {
-                <div class="flex-1">
-                  <div class="text-sm font-medium text-gray-900">{{ day.accionable.descripcion }}</div>
-                  <div class="mt-1">
-                    <span class="px-2 py-0.5 rounded text-xs" [ngClass]="day.accionable.estado === 'cumplido' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">
-                      {{ day.accionable.estado }}
-                    </span>
-                  </div>
-                </div>
-              } @else {
-                <div class="flex-1 flex items-center justify-center">
-                  <i class="pi pi-plus text-gray-400 text-xl"></i>
-                </div>
-              }
+          <div
+            class="border rounded-md p-3 hover:border-blue-400 transition-colors flex flex-col gap-2 cursor-pointer min-h-[100px]"
+            (click)="day.accionable ? openEdit(day.accionable) : openAdd(day.fecha)"
+            (keyup.enter)="day.accionable ? openEdit(day.accionable) : openAdd(day.fecha)"
+            (keyup.space)="day.accionable ? openEdit(day.accionable) : openAdd(day.fecha)"
+            tabindex="0"
+            role="button"
+            [attr.aria-label]="
+              day.accionable
+                ? 'Editar accionable del día ' + getDayNumber(day.fecha)
+                : 'Agregar accionable al día ' + getDayNumber(day.fecha)
+            "
+          >
+            <div class="text-lg font-semibold text-gray-700">{{ getDayNumber(day.fecha) }}</div>
+            @if (day.accionable) {
+            <div class="flex-1">
+              <div class="text-sm font-medium text-gray-900">{{ day.accionable.descripcion }}</div>
+              <div class="mt-1">
+                <span
+                  class="px-2 py-0.5 rounded text-xs"
+                  [ngClass]="
+                    day.accionable.estado === 'cumplido'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-amber-100 text-amber-700'
+                  "
+                >
+                  {{ day.accionable.estado }}
+                </span>
+              </div>
             </div>
+            } @else {
+            <div class="flex-1 flex items-center justify-center">
+              <i class="pi pi-plus text-gray-400 text-xl"></i>
+            </div>
+            }
+          </div>
           }
         </div>
       </div>
@@ -109,29 +142,50 @@
 </div>
 
 <!-- Dialog agregar/editar accionable -->
-<p-dialog [(visible)]="accionableOpen" [modal]="true" [draggable]="false" [resizable]="false" [style]="{ width: '28rem' }" [header]="accionableEdit()? 'Editar accionable' : 'Nuevo accionable'" [appendTo]="'body'">
+<p-dialog
+  [(visible)]="accionableOpen"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '28rem' }"
+  [header]="accionableEdit() ? 'Editar accionable' : 'Nuevo accionable'"
+  [appendTo]="'body'"
+>
   <form class="space-y-4" (ngSubmit)="saveAccionable()">
     @if (accionableEdit()) {
     <div>
-      <label class="text-sm text-gray-600 mb-1 block">Fecha</label>
-      <input pInputText [value]="formatAccionableDate()" readonly class="w-full bg-gray-50" />
+      <label for="accionableFecha" class="text-sm text-gray-600 mb-1 block">Fecha</label>
+      <input
+        id="accionableFecha"
+        pInputText
+        [value]="formatAccionableDate()"
+        readonly
+        class="w-full bg-gray-50"
+      />
     </div>
     }
     <div>
-      <label class="text-sm text-gray-600 mb-1 block">Descripción</label>
-      <textarea pTextarea rows="3" [(ngModel)]="accionableDesc" name="accionableDesc" class="w-full"></textarea>
+      <label for="accionableDesc" class="text-sm text-gray-600 mb-1 block">Descripción</label>
+      <textarea
+        id="accionableDesc"
+        pTextarea
+        rows="3"
+        [(ngModel)]="accionableDesc"
+        name="accionableDesc"
+        class="w-full"
+      ></textarea>
     </div>
     @if (accionableEdit()) {
     <div class="flex items-center justify-between pt-2 border-t">
       <div class="flex gap-2">
-        <p-button 
-          [label]="getToggleLabel()" 
+        <p-button
+          [label]="getToggleLabel()"
           [severity]="getToggleSeverity()"
           [icon]="getToggleIcon()"
           (onClick)="toggleEstadoFromDialog()"
         ></p-button>
-        <p-button 
-          label="Eliminar" 
+        <p-button
+          label="Eliminar"
           severity="danger"
           icon="pi pi-trash"
           (onClick)="deleteFromDialog()"
@@ -140,10 +194,8 @@
     </div>
     }
     <div class="flex justify-end gap-2 pt-2">
-      <p-button label="Cancelar" severity="secondary" (onClick)="accionableOpen=false"></p-button>
+      <p-button label="Cancelar" severity="secondary" (onClick)="accionableOpen = false"></p-button>
       <p-button type="submit" label="Guardar" icon="pi pi-check"></p-button>
     </div>
   </form>
 </p-dialog>
-
-
