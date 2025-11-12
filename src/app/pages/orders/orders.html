@@ -8,7 +8,14 @@
       (ngModelChange)="setQuery($event)"
       class="w-full"
     />
-    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus" aria-label="Crear nueva orden"></button>
+    <button
+      pButton
+      type="button"
+      (click)="newItem()"
+      label="Nuevo"
+      icon="pi pi-plus"
+      aria-label="Crear nueva orden"
+    ></button>
   </div>
 
   <!-- Vista Desktop: Tabla normal -->
@@ -449,7 +456,13 @@
           @if (documentsViewing()?.documents?.length) {
           {{ documentsViewing()?.documents?.length }} documento(s) adjunto(s) }
         </div>
-        <button pButton label="Cerrar" class="p-button-text" (click)="closeDocuments()" aria-label="Cerrar documentos"></button>
+        <button
+          pButton
+          label="Cerrar"
+          class="p-button-text"
+          (click)="closeDocuments()"
+          aria-label="Cerrar documentos"
+        ></button>
       </div>
     </ng-template>
   </p-dialog>
@@ -571,7 +584,13 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeDetails()"
+        aria-label="Cerrar"
+      ></button>
     </ng-template>
   </p-dialog>
 
@@ -591,7 +610,9 @@
     <div class="grid gap-4">
       <!-- Cliente -->
       <div>
-        <label for="orderClient" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label
+          for="orderClient"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Cliente *</label
         >
         <p-select
@@ -602,14 +623,16 @@
           [ngModel]="editing()?.clientId"
           (ngModelChange)="onClientChange($event)"
           placeholder="Seleccionar cliente"
-          appendTo="body"
+          [appendTo]="'body'"
           class="w-full"
         ></p-select>
       </div>
 
       <!-- Nombre del cliente -->
       <div>
-        <label for="orderClientName" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label
+          for="orderClientName"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Nombre del Cliente *</label
         >
         <input
@@ -625,7 +648,9 @@
       <!-- Número y Tipo -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label for="orderNumber" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="orderNumber"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Número *</label
           >
           <input
@@ -638,7 +663,11 @@
           />
         </div>
         <div>
-          <label for="orderType" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Tipo *</label>
+          <label
+            for="orderType"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Tipo *</label
+          >
           <p-select
             id="orderType"
             [options]="tipos"
@@ -647,7 +676,7 @@
             [ngModel]="editing()?.type"
             (ngModelChange)="onEditChange('type', $event)"
             placeholder="Seleccionar tipo"
-            appendTo="body"
+            [appendTo]="'body'"
             class="w-full"
           ></p-select>
         </div>
@@ -655,7 +684,13 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
       <button pButton label="Guardar" (click)="save()" aria-label="Guardar orden"></button>
     </ng-template>
   </p-dialog>

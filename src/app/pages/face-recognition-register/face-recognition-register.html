@@ -219,7 +219,7 @@
           class="w-full"
           [filter]="true"
           filterPlaceholder="Buscar usuario..."
-          appendTo="body"
+          [appendTo]="'body'"
         >
           <ng-template let-user pTemplate="item">
             <div>
