@@ -87,6 +87,7 @@ export class UsersPage implements OnInit, OnDestroy {
   showDetailsDialog = signal<boolean>(false);
   viewingUser = signal<User | null>(null);
   expandedRowIds = signal<Set<string>>(new Set());
+  showPassword = signal<boolean>(false);
 
   // Subject para debounce de búsqueda
   private searchSubject = new Subject<string>();
@@ -132,6 +133,7 @@ export class UsersPage implements OnInit, OnDestroy {
     effect(() => {
       if (!this.showDialog()) {
         this.editing.set(null);
+        this.showPassword.set(false); // Resetear visibilidad de contraseña al cerrar
       }
     });
 
@@ -670,5 +672,12 @@ export class UsersPage implements OnInit, OnDestroy {
   isRowExpanded(id?: string): boolean {
     if (!id) return false;
     return this.expandedRowIds().has(id);
+  }
+
+  /**
+   * Alterna la visibilidad de la contraseña
+   */
+  togglePassword(): void {
+    this.showPassword.update(value => !value);
   }
 }

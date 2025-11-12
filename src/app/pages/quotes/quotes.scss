@@ -59,3 +59,54 @@
 .quote-state-observed {
   @apply bg-orange-100 text-orange-800;
 }
+
+// Estilos para el selector de proyectos - evitar desbordamiento
+:host ::ng-deep {
+  // Asegurar que el diálogo no corte el dropdown
+  .p-dialog {
+    overflow: visible !important;
+    
+    .p-dialog-content {
+      overflow: visible !important;
+    }
+  }
+
+
+  // Estilos para el panel del dropdown del selector de proyectos
+  body > .p-select-overlay {
+    max-width: min(90vw, 32rem) !important;
+    width: auto !important;
+    min-width: 12rem;
+    box-sizing: border-box !important;
+    
+    .p-select-items-wrapper,
+    .p-select-list,
+    [data-pc-section="list"],
+    ul {
+      max-height: 20rem;
+      overflow-y: auto;
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
+
+    // Asegurar que las opciones no se desborden
+    .p-select-item,
+    .p-select-list-item,
+    [data-pc-section="item"],
+    li {
+      overflow: hidden !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      
+      // Asegurar que el contenido de texto no se desborde
+      > span,
+      > div {
+        overflow: hidden !important;
+        max-width: 100% !important;
+        display: block !important;
+        box-sizing: border-box !important;
+      }
+    }
+  }
+}
