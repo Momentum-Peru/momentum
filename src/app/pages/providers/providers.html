@@ -48,7 +48,11 @@
     <ng-template pTemplate="content">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label for="providerSearch" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Buscar</label>
+          <label
+            for="providerSearch"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Buscar</label
+          >
           <input
             id="providerSearch"
             pInputText
@@ -59,7 +63,9 @@
           />
         </div>
         <div>
-          <label for="providerService" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="providerService"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Servicio</label
           >
           <p-select
@@ -74,7 +80,11 @@
           ></p-select>
         </div>
         <div>
-          <label for="providerStatus" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
+          <label
+            for="providerStatus"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Estado</label
+          >
           <p-select
             id="providerStatus"
             [options]="[
@@ -491,7 +501,13 @@
       </p-table>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeContacts()" aria-label="Cerrar"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeContacts()"
+        aria-label="Cerrar"
+      ></button>
     </ng-template>
   </p-dialog>
 
@@ -549,7 +565,13 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()" aria-label="Cerrar estadísticas"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeStats()"
+        aria-label="Cerrar estadísticas"
+      ></button>
     </ng-template>
   </p-dialog>
 
@@ -686,7 +708,8 @@
           @if (viewingProvider()?.ubicacion?.paisCodigo) {
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >País</span>
+              >País</span
+            >
             <div class="text-gray-900 dark:text-gray-100">
               {{ getCountryName(viewingProvider()?.ubicacion?.paisCodigo ?? '') }}
             </div>
@@ -694,7 +717,8 @@
           } @if (viewingProvider()?.ubicacion?.provinciaCodigo) {
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Provincia/Estado</span>
+              >Provincia/Estado</span
+            >
             <div class="text-gray-900 dark:text-gray-100">
               {{ getProvinceName(viewingProvider()?.ubicacion?.provinciaCodigo ?? '') }}
             </div>
@@ -702,7 +726,8 @@
           } @if (viewingProvider()?.ubicacion?.distritoCodigo) {
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Distrito/Municipio</span>
+              >Distrito/Municipio</span
+            >
             <div class="text-gray-900 dark:text-gray-100">
               {{ getDistrictName(viewingProvider()?.ubicacion?.distritoCodigo ?? '') }}
             </div>
@@ -710,7 +735,8 @@
           } @if (viewingProvider()?.ubicacion?.direccion) {
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Dirección</span>
+              >Dirección</span
+            >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingProvider()?.ubicacion?.direccion }}
             </div>
@@ -788,7 +814,13 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar detalles del proveedor"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeDetails()"
+        aria-label="Cerrar detalles del proveedor"
+      ></button>
     </ng-template>
   </p-dialog>
 
@@ -819,7 +851,9 @@
         <ng-template pTemplate="content">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label for="providerName" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label
+                for="providerName"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Nombre *</label
               >
               <input
@@ -832,7 +866,9 @@
               />
             </div>
             <div>
-              <label for="providerTaxId" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label
+                for="providerTaxId"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >RUC/DNI</label
               >
               <input
@@ -845,7 +881,9 @@
               />
             </div>
             <div>
-              <label for="providerWebsite" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label
+                for="providerWebsite"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Sitio Web (opcional)</label
               >
               <input
@@ -861,7 +899,9 @@
               </div>
             </div>
             <div>
-              <label for="providerRating" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label
+                for="providerRating"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Calificación</label
               >
               <p-rating
@@ -871,7 +911,9 @@
               ></p-rating>
             </div>
             <div class="md:col-span-2">
-              <label for="providerDescription" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label
+                for="providerDescription"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Descripción</label
               >
               <textarea
@@ -892,7 +934,9 @@
                   (ngModelChange)="onEditChange('isActive', $event)"
                   [binary]="true"
                 ></p-checkbox>
-                <label for="providerIsActive" class="text-sm font-medium text-gray-700 dark:text-white"
+                <label
+                  for="providerIsActive"
+                  class="text-sm font-medium text-gray-700 dark:text-white"
                   >Proveedor activo</label
                 >
               </div>
@@ -912,7 +956,9 @@
         <ng-template pTemplate="content">
           <div class="space-y-3">
             <div>
-              <label for="providerServices" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label
+                for="providerServices"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Servicios (separados por comas)</label
               >
               <input
@@ -949,7 +995,9 @@
         <ng-template pTemplate="content">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label for="providerCountry" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label
+                for="providerCountry"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >País *</label
               >
               <p-select
@@ -961,6 +1009,7 @@
                 (ngModelChange)="onCountryChange(findCountryByCode($event))"
                 placeholder="Seleccionar país"
                 [showClear]="true"
+                [appendTo]="'body'"
                 class="w-full"
               >
                 <ng-template let-country pTemplate="item">
@@ -972,7 +1021,9 @@
               </p-select>
             </div>
             <div>
-              <label for="providerProvince" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label
+                for="providerProvince"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Provincia/Estado</label
               >
               <p-select
@@ -985,6 +1036,7 @@
                 placeholder="Seleccionar provincia"
                 [showClear]="true"
                 [disabled]="!selectedCountry()"
+                [appendTo]="'body'"
                 class="w-full"
               >
                 <ng-template let-province pTemplate="item">
@@ -996,7 +1048,9 @@
               </p-select>
             </div>
             <div>
-              <label for="providerDistrict" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label
+                for="providerDistrict"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Distrito/Municipio</label
               >
               <p-select
@@ -1009,6 +1063,7 @@
                 placeholder="Seleccionar distrito"
                 [showClear]="true"
                 [disabled]="!selectedProvince()"
+                [appendTo]="'body'"
                 class="w-full"
               >
                 <ng-template let-district pTemplate="item">
@@ -1020,7 +1075,9 @@
               </p-select>
             </div>
             <div>
-              <label for="providerAddress" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              <label
+                for="providerAddress"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
                 >Dirección específica</label
               >
               <input
@@ -1101,7 +1158,13 @@
       </p-card>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
       <button pButton label="Guardar" (click)="save()" aria-label="Guardar proveedor"></button>
     </ng-template>
   </p-dialog>
