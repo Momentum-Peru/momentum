@@ -28,6 +28,7 @@ import {
   QuoteListResponse,
 } from '../../shared/interfaces/quote.interface';
 import { Project } from '../../shared/interfaces/project.interface';
+import { TruncatePipe } from './truncate.pipe';
 
 @Component({
   selector: 'app-quotes',
@@ -50,6 +51,7 @@ import { Project } from '../../shared/interfaces/project.interface';
     MenuModule,
     ToastModule,
     ConfirmDialogModule,
+    TruncatePipe,
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './quotes.html',
