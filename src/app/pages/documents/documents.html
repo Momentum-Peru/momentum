@@ -426,4 +426,15 @@
     (scanComplete)="onScanComplete($event)"
     (scanCancel)="closeScannerDialog()"
   ></app-document-scanner>
+
+  <!-- Diálogo de voucher de pago -->
+  @if (scannedInvoiceId()) {
+  <app-payment-voucher-dialog
+    [visible]="showVoucherDialog()"
+    [documentId]="scannedInvoiceId()!"
+    (visibleChange)="showVoucherDialog.set($event)"
+    (voucherUploaded)="onVoucherUploaded($event)"
+    (canceled)="closeVoucherDialog()"
+  ></app-payment-voucher-dialog>
+  }
 </div>
