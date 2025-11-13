@@ -1,6 +1,6 @@
 <div class="p-4">
   <!-- Toast para notificaciones -->
-  <p-toast></p-toast>
+  <p-toast [life]="5000"></p-toast>
   <p-confirmDialog></p-confirmDialog>
 
   <!-- Header con título y botón de crear -->
@@ -426,4 +426,15 @@
     (scanComplete)="onScanComplete($event)"
     (scanCancel)="closeScannerDialog()"
   ></app-document-scanner>
+
+  <!-- Diálogo de voucher de pago -->
+  @if (scannedInvoiceId()) {
+  <app-payment-voucher-dialog
+    [visible]="showVoucherDialog()"
+    [documentId]="scannedInvoiceId()!"
+    (visibleChange)="showVoucherDialog.set($event)"
+    (voucherUploaded)="onVoucherUploaded($event)"
+    (canceled)="closeVoucherDialog()"
+  ></app-payment-voucher-dialog>
+  }
 </div>

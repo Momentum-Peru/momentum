@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { Menu } from '../../components/menu/menu';
 import { AuthService } from '../../pages/login/services/auth.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ToastModule } from 'primeng/toast';
 import { ConfirmationService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { TenantService } from '../../core/services/tenant.service';
@@ -15,6 +16,7 @@ import { Router } from '@angular/router';
     RouterOutlet,
     Menu,
     ConfirmDialogModule,
+    ToastModule,
     Button
   ],
   templateUrl: './main.html',

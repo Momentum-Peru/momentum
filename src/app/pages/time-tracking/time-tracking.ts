@@ -678,21 +678,15 @@ export class TimeTrackingPage implements OnInit {
 
   /**
    * Abre el diálogo para marcar asistencia con reconocimiento facial
-   * Optimizado: carga modelos y geolocalización en paralelo
+   * Solo pre-carga modelos, NO solicita permisos automáticamente
    */
   openFaceMarkDialog() {
     this.showFaceDialog.set(true);
     this.autoCaptureTriggered.set(false);
     this.markingType.set('INGRESO');
 
-    // Iniciar procesos en paralelo para mayor velocidad
+    // Solo pre-cargar modelos, NO solicitar permisos hasta que el usuario presione INGRESO/SALIDA
     this.preloadModels();
-    this.getCurrentLocation();
-
-    // Iniciar cámara automáticamente al abrir el diálogo
-    setTimeout(() => {
-      this.startCamera();
-    }, 100);
   }
 
   /**
@@ -717,47 +711,54 @@ export class TimeTrackingPage implements OnInit {
 
   /**
    * Obtiene la ubicación GPS actual del dispositivo
+   * Retorna true si el permiso fue denegado
    */
-  private getCurrentLocation(): void {
+  private async getCurrentLocation(): Promise<boolean> {
     this.currentLocation.set(null);
     this.locationError.set(null);
 
     if (!navigator.geolocation) {
       this.locationError.set('La geolocalización no está disponible en este navegador');
-      return;
+      return false;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        this.currentLocation.set({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-        this.locationError.set(null);
-      },
-      (error) => {
-        let errorMessage = 'No se pudo obtener la ubicación';
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage =
-              'Permiso de ubicación denegado. La marcación se guardará sin coordenadas.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Ubicación no disponible. La marcación se guardará sin coordenadas.';
-            break;
-          case error.TIMEOUT:
-            errorMessage = 'Tiempo de espera agotado. La marcación se guardará sin coordenadas.';
-            break;
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          this.currentLocation.set({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          this.locationError.set(null);
+          resolve(false);
+        },
+        (error) => {
+          let errorMessage = 'No se pudo obtener la ubicación';
+          let permissionDenied = false;
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              permissionDenied = true;
+              errorMessage =
+                'Permiso de ubicación denegado. La marcación se guardará sin coordenadas.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Ubicación no disponible. La marcación se guardará sin coordenadas.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Tiempo de espera agotado. La marcación se guardará sin coordenadas.';
+              break;
+          }
+          this.locationError.set(errorMessage);
+          this.currentLocation.set(null);
+          resolve(permissionDenied);
+        },
+        {
+          enableHighAccuracy: false, // Más rápido, menos preciso (suficiente para marcación)
+          timeout: 5000, // Reducido a 5 segundos para respuesta más rápida
+          maximumAge: 30000, // Aceptar ubicación cacheada de hasta 30 segundos
         }
-        this.locationError.set(errorMessage);
-        this.currentLocation.set(null);
-      },
-      {
-        enableHighAccuracy: false, // Más rápido, menos preciso (suficiente para marcación)
-        timeout: 5000, // Reducido a 5 segundos para respuesta más rápida
-        maximumAge: 30000, // Aceptar ubicación cacheada de hasta 30 segundos
-      }
-    );
+      );
+    });
   }
 
   /**
@@ -768,10 +769,46 @@ export class TimeTrackingPage implements OnInit {
   }
 
   /**
+   * Solicita permisos de cámara y ubicación cuando el usuario presiona INGRESO o SALIDA
+   * Muestra un toast si los permisos son denegados
+   */
+  async requestPermissionsAndStart() {
+    let cameraDenied = false;
+    let locationDenied = false;
+
+    // Solicitar permiso de cámara
+    cameraDenied = await this.startCamera();
+
+    // Solicitar permiso de ubicación
+    locationDenied = await this.getCurrentLocation();
+
+    // Mostrar toast si algún permiso fue denegado
+    if (cameraDenied || locationDenied) {
+      const missingPermissions: string[] = [];
+      if (cameraDenied) {
+        missingPermissions.push('cámara');
+      }
+      if (locationDenied) {
+        missingPermissions.push('ubicación');
+      }
+
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Permisos requeridos',
+        detail: `Debe tener los permisos de ${missingPermissions.join(
+          ' y '
+        )} para realizar la marcación.`,
+        life: 5000,
+      });
+    }
+  }
+
+  /**
    * Inicia la cámara para detección en tiempo real
    * Optimizado: usa modelos pre-cargados si están disponibles
+   * Retorna true si el permiso fue denegado
    */
-  async startCamera() {
+  async startCamera(): Promise<boolean> {
     try {
       this.stopCamera();
 
@@ -802,7 +839,7 @@ export class TimeTrackingPage implements OnInit {
             detail: 'No se pudieron cargar los modelos de reconocimiento facial',
           });
           this.isMarkingAttendance.set(false);
-          return;
+          return false;
         }
         this.isMarkingAttendance.set(false);
       }
@@ -854,7 +891,20 @@ export class TimeTrackingPage implements OnInit {
       };
 
       setTimeout(assignStream, 200);
-    } catch {
+      return false; // Permiso no denegado
+    } catch (error: unknown) {
+      // Verificar si el error es por permiso denegado
+      const errorObj = error as { name?: string; message?: string };
+      const isPermissionDenied =
+        errorObj?.name === 'NotAllowedError' ||
+        errorObj?.name === 'PermissionDeniedError' ||
+        errorObj?.message?.includes('permission') ||
+        errorObj?.message?.includes('Permission');
+
+      if (isPermissionDenied) {
+        return true; // Permiso denegado
+      }
+
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -864,6 +914,7 @@ export class TimeTrackingPage implements OnInit {
       this.isCameraActive.set(false);
       this.isVideoReady.set(false);
       this.isMarkingAttendance.set(false);
+      return false;
     }
   }
 
