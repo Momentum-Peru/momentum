@@ -71,9 +71,13 @@
 
         <!-- Enlace de ayuda -->
         <div class="text-center">
-          <a href="#" class="text-sm text-gray-600 hover:text-gray-800"
-            >¿Tienes problemas para ingresar?</a
+          <button
+            type="button"
+            (click)="openPasswordRecovery()"
+            class="text-sm text-gray-600 hover:text-gray-800 underline bg-transparent border-none cursor-pointer p-0"
           >
+            ¿Tienes problemas para ingresar?
+          </button>
         </div>
 
         <!-- Botón de login -->
@@ -120,4 +124,7 @@
       <p class="text-xs text-gray-500">Copyright @Momentum 2024 | Política de Privacidad</p>
     </div>
   </div>
+
+  <!-- Diálogo de recuperación de contraseña -->
+  <app-password-recovery-dialog></app-password-recovery-dialog>
 </div>

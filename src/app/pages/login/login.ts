@@ -1,4 +1,4 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, viewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
@@ -7,11 +7,12 @@ import { Router } from '@angular/router';
 import { AuthService, LoginRequest } from './services/auth.service';
 import { MessageService } from 'primeng/api';
 import { firstValueFrom } from 'rxjs';
+import { PasswordRecoveryDialog } from './components/password-recovery-dialog/password-recovery-dialog';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [Button, InputText, Toast, ReactiveFormsModule],
+  imports: [Button, InputText, Toast, ReactiveFormsModule, PasswordRecoveryDialog],
   templateUrl: './login.html',
   styleUrl: './login.scss'
 })
@@ -24,6 +25,9 @@ export class Login {
   loginForm: FormGroup;
   showPassword = signal(false);
   isLoading = signal(false);
+  
+  // Referencia al diálogo de recuperación de contraseña
+  passwordRecoveryDialog = viewChild(PasswordRecoveryDialog);
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -165,5 +169,12 @@ export class Login {
       summary: 'Próximamente',
       detail: 'Login con Facebook estará disponible pronto'
     });
+  }
+
+  /**
+   * Abre el diálogo de recuperación de contraseña
+   */
+  openPasswordRecovery(): void {
+    this.passwordRecoveryDialog()?.open();
   }
 }
