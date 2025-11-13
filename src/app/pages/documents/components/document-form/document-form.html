@@ -1,5 +1,5 @@
 <div class="p-4">
-  <p-toast></p-toast>
+  <p-toast [life]="5000"></p-toast>
 
   <form [formGroup]="documentForm" (ngSubmit)="onSubmit()" class="space-y-6">
     <!-- Información Básica -->

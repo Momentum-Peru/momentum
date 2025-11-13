@@ -1,5 +1,5 @@
 <div class="w-full">
-  <p-toast></p-toast>
+  <p-toast [life]="5000"></p-toast>
   <p-card class="shadow-sm">
     <form [formGroup]="filtersForm" (ngSubmit)="applyFilters()" class="space-y-4">
       <!-- Filtros Básicos -->
