@@ -209,6 +209,41 @@ export class DocumentsApiService {
             })
         );
     }
+
+    /**
+     * Subir voucher de pago para una factura
+     * @param documentId ID de la factura
+     * @param file Archivo de imagen del voucher
+     */
+    uploadPaymentVoucher(documentId: string, file: File): Observable<{ voucher: PaymentVoucher; document: Document }> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        return this.http.post<{ voucher: PaymentVoucher; document: Document }>(
+            `${this.baseUrl}/documents/${documentId}/payment-voucher`,
+            formData
+        );
+    }
+
+    /**
+     * Obtener todos los vouchers de pago de una factura
+     * @param documentId ID de la factura
+     */
+    getPaymentVouchers(documentId: string): Observable<PaymentVoucher[]> {
+        return this.http.get<PaymentVoucher[]>(
+            `${this.baseUrl}/documents/${documentId}/payment-vouchers`
+        );
+    }
+
+    /**
+     * Eliminar un voucher de pago
+     * @param voucherId ID del voucher
+     */
+    deletePaymentVoucher(voucherId: string): Observable<void> {
+        return this.http.delete<void>(
+            `${this.baseUrl}/documents/payment-vouchers/${voucherId}`
+        );
+    }
 }
 
 /**
@@ -234,4 +269,16 @@ export interface ScanInvoiceResponse {
     };
     document?: Document;
     imageUrl: string;
+}
+
+/**
+ * Voucher de pago
+ */
+export interface PaymentVoucher {
+    _id: string;
+    documentId: string;
+    voucherImageUrl: string;
+    isActive: boolean;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
 }

@@ -1,5 +1,5 @@
 <div class="p-4 space-y-4">
-  <p-toast></p-toast>
+  <p-toast [life]="5000"></p-toast>
   <div class="flex items-center gap-2">
     <input
       pInputText
@@ -799,7 +799,7 @@
           (ngModelChange)="onClientChange($event)"
           placeholder="Seleccionar cliente"
           class="w-full"
-          appendTo="body"
+          [appendTo]="'body'"
         ></p-select>
       </div>
 
@@ -836,7 +836,7 @@
             (ngModelChange)="onEditChange('estado', $event)"
             placeholder="Seleccionar estado"
             class="w-full"
-            appendTo="body"
+            [appendTo]="'body'"
           ></p-select>
         </div>
       </div>

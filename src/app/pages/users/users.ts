@@ -400,7 +400,8 @@ export class UsersPage implements OnInit, OnDestroy {
    */
   deleteUser(user: User) {
     this.loading.set(true);
-    this.usersApi.delete(user.id).subscribe({
+    const userId = user._id || user.id;
+    this.usersApi.delete(userId).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',

@@ -1,5 +1,5 @@
 <div class="p-4 space-y-4 mt-5 overflow-x-hidden">
-  <p-toast></p-toast>
+  <p-toast [life]="5000"></p-toast>
 
   <!-- Título -->
   <div class="mb-4">
@@ -240,7 +240,6 @@
           <button
             type="button"
             pButton
-            [label]="'INGRESO'"
             [icon]="'pi pi-sign-in'"
             [severity]="editing()?.type === 'INGRESO' ? 'success' : 'secondary'"
             [outlined]="editing()?.type !== 'INGRESO'"
@@ -252,7 +251,6 @@
           <button
             type="button"
             pButton
-            [label]="'SALIDA'"
             [icon]="'pi pi-sign-out'"
             [severity]="editing()?.type === 'SALIDA' ? 'danger' : 'secondary'"
             [outlined]="editing()?.type !== 'SALIDA'"
@@ -341,30 +339,8 @@
     (onHide)="closeFaceDialog()"
   >
     <div class="space-y-4">
-      <!-- Información -->
-      <div
-        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
-      >
-        <div class="flex items-start gap-3">
-          <i class="pi pi-info-circle text-blue-600 dark:text-blue-400 text-xl mt-0.5"></i>
-          <div class="flex-1">
-            <p class="text-sm text-blue-800 dark:text-blue-200 font-medium mb-1">
-              Validación de Identidad
-            </p>
-            <p class="text-xs text-blue-700 dark:text-blue-300">
-              Captura una imagen de tu rostro para validar tu identidad. El sistema comparará tu
-              rostro con los descriptores registrados.
-            </p>
-          </div>
-        </div>
-      </div>
-
       <!-- Video de la cámara con detección en tiempo real -->
       <div class="space-y-3">
-        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Reconocimiento Facial
-        </span>
-
         <!-- Video de la cámara -->
         @if (isCameraActive() && !faceImagePreview()) {
         <div class="space-y-3">
@@ -441,11 +417,10 @@
           <button
             type="button"
             pButton
-            [label]="'INGRESO'"
             [icon]="'pi pi-sign-in'"
             [severity]="markingType() === 'INGRESO' ? 'success' : 'secondary'"
             [outlined]="markingType() !== 'INGRESO'"
-            (click)="markingType.set('INGRESO')"
+            (click)="markingType.set('INGRESO'); requestPermissionsAndStart()"
             class="flex-1"
           >
             <span>INGRESO</span>
@@ -453,11 +428,10 @@
           <button
             type="button"
             pButton
-            [label]="'SALIDA'"
             [icon]="'pi pi-sign-out'"
             [severity]="markingType() === 'SALIDA' ? 'danger' : 'secondary'"
             [outlined]="markingType() !== 'SALIDA'"
-            (click)="markingType.set('SALIDA')"
+            (click)="markingType.set('SALIDA'); requestPermissionsAndStart()"
             class="flex-1"
           >
             <span>SALIDA</span>

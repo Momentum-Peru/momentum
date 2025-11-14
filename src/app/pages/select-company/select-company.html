@@ -3,7 +3,9 @@
     <ng-template pTemplate="header">
       <div class="flex items-center gap-2">
         <i class="pi pi-building text-blue-600"></i>
-        <span class="text-lg font-semibold text-gray-800 dark:text-gray-200">Selecciona tu empresa</span>
+        <span class="text-lg font-semibold text-gray-800 dark:text-gray-200"
+          >Selecciona tu empresa</span
+        >
       </div>
     </ng-template>
 
@@ -16,7 +18,13 @@
           (ngModelChange)="setQuery($event)"
           class="flex-1"
         />
-        <button pButton icon="pi pi-refresh" [text]="true" (click)="load()" aria-label="Refrescar lista"></button>
+        <button
+          pButton
+          icon="pi pi-refresh"
+          [text]="true"
+          (click)="load()"
+          aria-label="Refrescar lista"
+        ></button>
       </div>
 
       @if (loading()) {
@@ -32,16 +40,27 @@
         (ngModelChange)="selectedId.set($event)"
         placeholder="Seleccione una empresa"
         class="w-full"
-        appendTo="body"
+        [appendTo]="'body'"
       ></p-select>
       }
 
       <div class="flex justify-end gap-2 pt-2">
-        <button pButton icon="pi pi-times" label="Cancelar" [text]="true" routerLink="/dashboard" aria-label="Cancelar"></button>
-        <button pButton icon="pi pi-check" label="Continuar" (click)="confirm()" aria-label="Continuar"></button>
+        <button
+          pButton
+          icon="pi pi-times"
+          label="Cancelar"
+          [text]="true"
+          routerLink="/dashboard"
+          aria-label="Cancelar"
+        ></button>
+        <button
+          pButton
+          icon="pi pi-check"
+          label="Continuar"
+          (click)="confirm()"
+          aria-label="Continuar"
+        ></button>
       </div>
     </div>
   </p-card>
 </div>
-
-

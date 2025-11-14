@@ -1,14 +1,18 @@
 <div class="p-4 space-y-4 mt-5 overflow-x-hidden">
-  <p-toast></p-toast>
+  <p-toast [life]="5000"></p-toast>
 
   <!-- Título -->
   <div class="mb-4">
     <div class="flex items-center justify-between flex-wrap gap-4">
       <h1 class="text-2xl font-semibold text-gray-800">Reportes diarios</h1>
       @if (isGerencia()) {
-      <div class="flex items-center gap-2 px-4 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+      <div
+        class="flex items-center gap-2 px-4 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg"
+      >
         <i class="pi pi-building text-orange-600 dark:text-orange-400"></i>
-        <span class="text-sm font-medium text-orange-800 dark:text-orange-200">Vista Gerencia - Todos los usuarios y empresas</span>
+        <span class="text-sm font-medium text-orange-800 dark:text-orange-200"
+          >Vista Gerencia - Todos los usuarios y empresas</span
+        >
       </div>
       }
     </div>
@@ -114,7 +118,9 @@
           <td>{{ row.time }}</td>
           @if (isGerencia()) {
           <td>
-            <span class="text-sm text-gray-700 dark:text-white font-medium break-words whitespace-normal">
+            <span
+              class="text-sm text-gray-700 dark:text-white font-medium break-words whitespace-normal"
+            >
               {{ getUserName(row.userId) }}
             </span>
           </td>
@@ -139,7 +145,13 @@
             </div>
           </td>
           <td class="text-right">
-            <button pButton icon="pi pi-eye" class="p-button-text" (click)="viewItem(row)" aria-label="Ver detalles del reporte"></button>
+            <button
+              pButton
+              icon="pi pi-eye"
+              class="p-button-text"
+              (click)="viewItem(row)"
+              aria-label="Ver detalles del reporte"
+            ></button>
             <button
               pButton
               icon="pi pi-pencil"
@@ -269,7 +281,9 @@
       <!-- Fecha y Hora -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label for="reportDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="reportDate"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Fecha *</label
           >
           <p-datepicker
@@ -286,7 +300,11 @@
           ></p-datepicker>
         </div>
         <div>
-          <label for="reportTime" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Hora *</label>
+          <label
+            for="reportTime"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Hora *</label
+          >
           <input
             id="reportTime"
             pInputText
@@ -301,7 +319,9 @@
 
       <!-- Proyecto (opcional) -->
       <div>
-        <label for="reportProject" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label
+          for="reportProject"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Proyecto (opcional)</label
         >
         <p-select
@@ -313,6 +333,7 @@
           (ngModelChange)="onEditChange('projectId', $event)"
           name="reportProject"
           placeholder="Seleccionar proyecto"
+          [appendTo]="'body'"
           class="w-full break-words whitespace-normal max-w-full"
         ></p-select>
       </div>
@@ -327,7 +348,9 @@
             type="button"
             [icon]="isRecordingAudio() ? 'pi pi-stop-circle' : 'pi pi-volume-up'"
             [label]="isRecordingAudio() ? 'Soltar para finalizar' : 'Mantén presionado para grabar'"
-            [attr.aria-label]="isRecordingAudio() ? 'Soltar para finalizar' : 'Mantén presionado para grabar'"
+            [attr.aria-label]="
+              isRecordingAudio() ? 'Soltar para finalizar' : 'Mantén presionado para grabar'
+            "
             (touchstart)="startRecordingAudio($event)"
             (touchend)="stopRecordingAudio($event)"
             (touchcancel)="stopRecordingAudio($event)"
@@ -474,8 +497,12 @@
             <div
               class="w-full h-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
               (click)="openMediaModal('audio', normalizeToArray(editing()?.audioDescription), 0)"
-              (keyup.enter)="openMediaModal('audio', normalizeToArray(editing()?.audioDescription), 0)"
-              (keyup.space)="openMediaModal('audio', normalizeToArray(editing()?.audioDescription), 0)"
+              (keyup.enter)="
+                openMediaModal('audio', normalizeToArray(editing()?.audioDescription), 0)
+              "
+              (keyup.space)="
+                openMediaModal('audio', normalizeToArray(editing()?.audioDescription), 0)
+              "
               tabindex="0"
               role="button"
               aria-label="Abrir audios guardados"
@@ -516,8 +543,12 @@
               class="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
               alt="Foto portada"
               (click)="openMediaModal('photo', normalizeToArray(editing()?.photoDescription), 0)"
-              (keyup.enter)="openMediaModal('photo', normalizeToArray(editing()?.photoDescription), 0)"
-              (keyup.space)="openMediaModal('photo', normalizeToArray(editing()?.photoDescription), 0)"
+              (keyup.enter)="
+                openMediaModal('photo', normalizeToArray(editing()?.photoDescription), 0)
+              "
+              (keyup.space)="
+                openMediaModal('photo', normalizeToArray(editing()?.photoDescription), 0)
+              "
               tabindex="0"
               role="button"
               aria-label="Abrir fotos guardadas"
@@ -556,8 +587,12 @@
             <div
               class="w-full h-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
               (click)="openMediaModal('video', normalizeToArray(editing()?.videoDescription), 0)"
-              (keyup.enter)="openMediaModal('video', normalizeToArray(editing()?.videoDescription), 0)"
-              (keyup.space)="openMediaModal('video', normalizeToArray(editing()?.videoDescription), 0)"
+              (keyup.enter)="
+                openMediaModal('video', normalizeToArray(editing()?.videoDescription), 0)
+              "
+              (keyup.space)="
+                openMediaModal('video', normalizeToArray(editing()?.videoDescription), 0)
+              "
               tabindex="0"
               role="button"
               aria-label="Abrir videos guardados"
@@ -727,7 +762,9 @@
 
       <!-- Descripción -->
       <div>
-        <label for="reportDescription" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label
+          for="reportDescription"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Descripción *</label
         >
         <textarea
@@ -744,7 +781,9 @@
 
       <!-- Adjuntar documentos (múltiples) -->
       <div>
-        <label for="reportDocuments" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label
+          for="reportDocuments"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Documentos</label
         >
         <input
@@ -808,7 +847,13 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
       <button pButton label="Guardar" (click)="save()" aria-label="Guardar reporte"></button>
     </ng-template>
   </p-dialog>
@@ -1085,7 +1130,12 @@
             aria-label="Eliminar archivo actual"
           ></button>
           }
-          <button pButton label="Cerrar" (click)="closeMediaModal()" aria-label="Cerrar modal"></button>
+          <button
+            pButton
+            label="Cerrar"
+            (click)="closeMediaModal()"
+            aria-label="Cerrar modal"
+          ></button>
         </div>
       </div>
     </ng-template>

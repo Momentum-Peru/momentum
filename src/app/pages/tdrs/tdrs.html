@@ -1,5 +1,5 @@
 <div class="p-4 space-y-4">
-  <p-toast></p-toast>
+  <p-toast [life]="5000"></p-toast>
   <div class="flex items-center gap-2">
     <input
       pInputText
@@ -8,7 +8,14 @@
       (ngModelChange)="setQuery($event)"
       class="w-full"
     />
-    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus" aria-label="Crear nuevo TDR"></button>
+    <button
+      pButton
+      type="button"
+      (click)="newItem()"
+      label="Nuevo"
+      icon="pi pi-plus"
+      aria-label="Crear nuevo TDR"
+    ></button>
   </div>
 
   <!-- Vista Desktop: Tabla normal -->
@@ -466,7 +473,13 @@
           @if (documentsViewing()?.documents?.length) {
           {{ documentsViewing()?.documents?.length }} documento(s) adjunto(s) }
         </div>
-        <button pButton label="Cerrar" class="p-button-text" (click)="closeDocuments()" aria-label="Cerrar"></button>
+        <button
+          pButton
+          label="Cerrar"
+          class="p-button-text"
+          (click)="closeDocuments()"
+          aria-label="Cerrar"
+        ></button>
       </div>
     </ng-template>
   </p-dialog>
@@ -612,7 +625,13 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeDetails()"
+        aria-label="Cerrar"
+      ></button>
     </ng-template>
   </p-dialog>
 
@@ -642,21 +661,24 @@
           (ngModelChange)="onClientChange($event)"
           placeholder="Selecciona cliente"
           class="w-full"
-          appendTo="body"
+          [appendTo]="'body'"
         ></p-select>
       </div>
       <div>
-        <label for="tdrType" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Tipo *</label>
+        <label for="tdrType" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Tipo *</label
+        >
         <p-selectButton
           id="tdrType"
           [options]="tdrTypeOptions"
           [ngModel]="editing()?.type"
           (ngModelChange)="onEditChange('type', $event)"
-          appendTo="body"
         ></p-selectButton>
       </div>
       <div>
-        <label for="tdrSummary" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Resumen</label>
+        <label for="tdrSummary" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Resumen</label
+        >
         <input
           id="tdrSummary"
           pInputText
@@ -668,7 +690,13 @@
       </div>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
       <button pButton label="Guardar" (click)="save()" aria-label="Guardar TDR"></button>
     </ng-template>
   </p-dialog>

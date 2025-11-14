@@ -1,5 +1,5 @@
 <div class="p-4 space-y-4 mt-5 overflow-x-hidden">
-  <p-toast></p-toast>
+  <p-toast [life]="5000"></p-toast>
   <p-confirmDialog></p-confirmDialog>
 
   <!-- Título -->
@@ -219,7 +219,7 @@
           class="w-full"
           [filter]="true"
           filterPlaceholder="Buscar usuario..."
-          appendTo="body"
+          [appendTo]="'body'"
         >
           <ng-template let-user pTemplate="item">
             <div>

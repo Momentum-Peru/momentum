@@ -1,5 +1,5 @@
 <div class="p-4">
-  <p-toast></p-toast>
+  <p-toast [life]="5000"></p-toast>
 
   <form [formGroup]="documentForm" (ngSubmit)="onSubmit()" class="space-y-6">
     <!-- Información Básica -->
@@ -52,6 +52,7 @@
             formControlName="proyectoId"
             [options]="projectOptions()"
             placeholder="Seleccione un proyecto"
+            [appendTo]="'body'"
             class="w-full"
           >
           </p-select>
@@ -67,6 +68,7 @@
             formControlName="categoria"
             [options]="categoryOptions"
             placeholder="Seleccione una categoría"
+            [appendTo]="'body'"
             class="w-full"
           >
           </p-select>

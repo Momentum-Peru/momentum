@@ -14,12 +14,14 @@ import { ConfirmationService } from 'primeng/api';
 import {
   DocumentsApiService,
   ScanInvoiceResponse,
+  PaymentVoucher,
 } from '../../shared/services/documents-api.service';
 import { Document, DocumentFilters } from '../../shared/interfaces/document.interface';
 import { DocumentFormComponent } from './components/document-form/document-form';
 import { DocumentListComponent } from './components/document-list/document-list';
 import { DocumentFiltersComponent } from './components/document-filters/document-filters';
 import { DocumentScannerComponent } from './components/document-scanner/document-scanner';
+import { PaymentVoucherDialogComponent } from './components/payment-voucher-dialog/payment-voucher-dialog';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
@@ -40,6 +42,7 @@ import { environment } from '../../../environments/environment';
     DocumentListComponent,
     DocumentFiltersComponent,
     DocumentScannerComponent,
+    PaymentVoucherDialogComponent,
   ],
   templateUrl: './documents.html',
   styleUrl: './documents.scss',
@@ -60,11 +63,13 @@ export class DocumentsPage implements OnInit {
   showDetailsDialog = signal(false);
   showFilesDialog = signal(false);
   showScannerDialog = signal(false);
+  showVoucherDialog = signal(false);
   editingDocument = signal<Document | null>(null);
   viewingDocument = signal<Document | null>(null);
   filesViewingDocument = signal<Document | null>(null);
   selectedFiles = signal<File[]>([]);
   currentFilters = signal<DocumentFilters>({});
+  scannedInvoiceId = signal<string | null>(null);
 
   // Paginación
   totalRecords = signal(0);
@@ -150,18 +155,55 @@ export class DocumentsPage implements OnInit {
   }
 
   /**
+   * Cerrar diálogo de voucher
+   */
+  closeVoucherDialog(): void {
+    this.showVoucherDialog.set(false);
+    this.scannedInvoiceId.set(null);
+  }
+
+  /**
+   * Manejar voucher subido
+   */
+  onVoucherUploaded(response: { voucher: PaymentVoucher; document: Document }): void {
+    this.closeVoucherDialog();
+    this.loadDocuments(); // Recargar documentos para mostrar el voucher en los adjuntos
+
+    // Si hay un documento en la respuesta, actualizar el documento actual si está siendo visualizado
+    if (response.document && this.filesViewingDocument()?._id === response.document._id) {
+      this.filesViewingDocument.set(response.document);
+    }
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: 'Voucher de pago subido correctamente y agregado a los documentos adjuntos',
+    });
+  }
+
+  /**
    * Manejar escaneo completado
    */
   onScanComplete(response: ScanInvoiceResponse): void {
     this.closeScannerDialog();
     this.loadDocuments();
 
-    if (response.document) {
+    // Verificar si es una factura y si se creó el documento
+    const categoria = response.scannedData.categoria?.toLowerCase() || '';
+    const isFactura = categoria.includes('factura');
+
+    if (response.document && response.document._id) {
       this.messageService.add({
         severity: 'success',
         summary: 'Éxito',
         detail: `Documento ${response.scannedData.categoria} creado correctamente`,
       });
+
+      // Si es una factura, mostrar el diálogo para subir voucher
+      if (isFactura) {
+        this.scannedInvoiceId.set(response.document._id);
+        this.showVoucherDialog.set(true);
+      }
     } else {
       this.messageService.add({
         severity: 'success',

@@ -1,5 +1,5 @@
 <div class="p-4 space-y-4">
-  <p-toast></p-toast>
+  <p-toast [life]="5000"></p-toast>
   <div class="flex items-center gap-2">
     <input
       pInputText
@@ -8,7 +8,14 @@
       (ngModelChange)="setQuery($event)"
       class="w-full"
     />
-    <button pButton type="button" (click)="newItem()" label="Nuevo" icon="pi pi-plus" aria-label="Crear nuevo proyecto"></button>
+    <button
+      pButton
+      type="button"
+      (click)="newItem()"
+      label="Nuevo"
+      icon="pi pi-plus"
+      aria-label="Crear nuevo proyecto"
+    ></button>
   </div>
 
   <!-- Vista Desktop: Tabla -->
@@ -267,7 +274,9 @@
           </div>
         </div>
         <div>
-          <label for="projectName" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="projectName"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Nombre *</label
           >
           <input
@@ -285,7 +294,9 @@
       <!-- Cliente y Estado -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label for="projectClient" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="projectClient"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Cliente *</label
           >
           <p-select
@@ -298,11 +309,13 @@
             placeholder="Seleccionar cliente"
             class="w-full"
             [showClear]="true"
-            appendTo="body"
+            [appendTo]="'body'"
           ></p-select>
         </div>
         <div>
-          <label for="projectStatus" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="projectStatus"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Estado *</label
           >
           <p-select
@@ -314,7 +327,7 @@
             (ngModelChange)="onEditChange('status', $event)"
             placeholder="Seleccionar estado"
             class="w-full"
-            appendTo="body"
+            [appendTo]="'body'"
           ></p-select>
         </div>
       </div>
@@ -322,7 +335,9 @@
       <!-- Ubicación y Presupuesto -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label for="projectLocation" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="projectLocation"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Ubicación</label
           >
           <input
@@ -336,7 +351,9 @@
           />
         </div>
         <div>
-          <label for="projectBudget" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="projectBudget"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Presupuesto</label
           >
           <input
@@ -355,7 +372,9 @@
       <!-- Fechas -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label for="projectStartDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="projectStartDate"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Fecha Inicio</label
           >
           <p-datepicker
@@ -372,7 +391,9 @@
           ></p-datepicker>
         </div>
         <div>
-          <label for="projectEndDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="projectEndDate"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Fecha Fin</label
           >
           <p-datepicker
@@ -392,7 +413,9 @@
 
       <!-- Descripción -->
       <div>
-        <label for="projectDescription" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        <label
+          for="projectDescription"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >Descripción</label
         >
         <textarea
@@ -408,7 +431,11 @@
 
       <!-- Notas -->
       <div>
-        <label for="projectNotes" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Notas</label>
+        <label
+          for="projectNotes"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Notas</label
+        >
         <textarea
           id="projectNotes"
           pTextarea
@@ -422,7 +449,13 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
       <button pButton label="Guardar" (click)="save()" aria-label="Guardar proyecto"></button>
     </ng-template>
   </p-dialog>
@@ -455,7 +488,8 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Código</span>
+              >Código</span
+            >
             <div
               class="text-gray-900 dark:text-gray-100 font-mono font-medium bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
             >
@@ -464,7 +498,8 @@
           </div>
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</span>
+              >Estado</span
+            >
             <div class="text-gray-900 dark:text-gray-100">
               <span
                 class="px-2 py-1 rounded-full text-xs font-medium"
@@ -476,28 +511,32 @@
           </div>
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cliente</span>
+              >Cliente</span
+            >
             <div class="text-gray-900 dark:text-gray-100 font-medium">
               {{ getClientName(viewingProject()?.clientId ?? '') }}
             </div>
           </div>
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Ubicación</span>
+              >Ubicación</span
+            >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingProject()?.location || 'Sin ubicación' }}
             </div>
           </div>
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Presupuesto</span>
+              >Presupuesto</span
+            >
             <div class="text-gray-900 dark:text-gray-100 font-semibold text-lg">
               {{ viewingProject()?.budget | currency : 'USD' : 'symbol' : '1.0-0' }}
             </div>
           </div>
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado Activo</span>
+              >Estado Activo</span
+            >
             <div class="text-gray-900 dark:text-gray-100">
               <span
                 class="px-2 py-1 rounded-full text-xs font-medium"
@@ -514,7 +553,8 @@
           @if (viewingProject()?.startDate) {
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Inicio</span>
+              >Fecha de Inicio</span
+            >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingProject()?.startDate | date : 'dd/MM/yyyy' }}
             </div>
@@ -522,7 +562,8 @@
           } @if (viewingProject()?.endDate) {
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Fin</span>
+              >Fecha de Fin</span
+            >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingProject()?.endDate | date : 'dd/MM/yyyy' }}
             </div>
@@ -567,7 +608,13 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar detalles del proyecto"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeDetails()"
+        aria-label="Cerrar detalles del proyecto"
+      ></button>
     </ng-template>
   </p-dialog>
 </div>
