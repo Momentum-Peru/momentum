@@ -26,7 +26,11 @@
           <div class="flex-1 text-sm text-gray-700 dark:text-gray-300">
             <p class="font-medium mb-1">Instrucciones:</p>
             <ul class="list-disc list-inside space-y-1 text-xs">
-              <li>Suba una imagen clara del voucher de pago</li>
+              <li>
+                Puede subir una imagen del voucher de pago <strong>o</strong> ingresar un número de
+                operación
+              </li>
+              <li>Al menos uno de los dos campos debe estar presente</li>
               <li>Formatos soportados: JPEG, PNG, WebP</li>
               <li>Tamaño máximo: 10MB</li>
               <li>Puede tomar una foto o seleccionar de galería/archivos</li>
@@ -42,7 +46,7 @@
         for="voucherFileUpload"
         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
       >
-        Seleccionar imagen del voucher
+        Seleccionar imagen del voucher <span class="text-gray-400 text-xs">(opcional)</span>
       </label>
       @if (!selectedFile()) {
       <p-fileUpload
@@ -95,6 +99,26 @@
       }
     </div>
 
+    <!-- Campo de número de operación -->
+    <div class="w-full">
+      <label
+        for="numeroOperacion"
+        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+      >
+        Número de Operación <span class="text-gray-400 text-xs">(opcional)</span>
+      </label>
+      <input
+        id="numeroOperacion"
+        type="text"
+        pInputText
+        [value]="numeroOperacion()"
+        (input)="numeroOperacion.set($any($event.target).value)"
+        placeholder="Ingrese el número de operación"
+        class="w-full"
+        [disabled]="uploading()"
+      />
+    </div>
+
     <!-- Progreso de subida -->
     @if (uploading()) {
     <div class="w-full">
@@ -124,11 +148,11 @@
         [disabled]="uploading()"
       ></p-button>
       <p-button
-        label="Subir Voucher"
+        label="Guardar Voucher"
         icon="pi pi-upload"
         severity="success"
         (onClick)="uploadVoucher()"
-        [disabled]="!selectedFile() || uploading()"
+        [disabled]="(!selectedFile() && !numeroOperacion().trim()) || uploading()"
       ></p-button>
     </div>
   </ng-template>

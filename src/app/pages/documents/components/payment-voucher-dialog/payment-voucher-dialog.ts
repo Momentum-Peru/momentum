@@ -18,6 +18,7 @@ import { DialogModule } from 'primeng/dialog';
 import { CardModule } from 'primeng/card';
 import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
+import { InputTextModule } from 'primeng/inputtext';
 import {
   DocumentsApiService,
   PaymentVoucher,
@@ -43,6 +44,7 @@ import {
     CardModule,
     TooltipModule,
     ToastModule,
+    InputTextModule,
   ],
   templateUrl: './payment-voucher-dialog.html',
   styleUrl: './payment-voucher-dialog.scss',
@@ -83,6 +85,7 @@ export class PaymentVoucherDialogComponent {
   progress = signal(0);
   selectedFile = signal<File | null>(null);
   previewUrl = signal<string | null>(null);
+  numeroOperacion = signal<string>('');
 
   constructor() {
     // Effect para agregar atributo capture cuando el diálogo se abre y es móvil
@@ -317,6 +320,7 @@ export class PaymentVoucherDialogComponent {
   private clearFields(): void {
     this.selectedFile.set(null);
     this.previewUrl.set(null);
+    this.numeroOperacion.set('');
     this.uploading.set(false);
     this.progress.set(0);
   }
@@ -327,12 +331,14 @@ export class PaymentVoucherDialogComponent {
   async uploadVoucher(): Promise<void> {
     const file = this.selectedFile();
     const documentId = this.documentId();
+    const numeroOperacionValue = this.numeroOperacion()?.trim() || undefined;
 
-    if (!file) {
+    // Validar que al menos uno de los dos campos esté presente
+    if (!file && !numeroOperacionValue) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Advertencia',
-        detail: 'Por favor, seleccione una imagen del voucher',
+        detail: 'Por favor, seleccione una imagen del voucher o ingrese un número de operación',
       });
       return;
     }
@@ -350,16 +356,19 @@ export class PaymentVoucherDialogComponent {
       return;
     }
 
-    let fileToUpload = file;
+    let fileToUpload: File | undefined = file || undefined;
 
-    try {
-      // Optimizar archivo si es necesario
-      if (this.shouldCompress(file)) {
-        fileToUpload = await this.optimizeFileForUpload(file);
+    // Si hay archivo, optimizarlo si es necesario
+    if (fileToUpload) {
+      try {
+        // Optimizar archivo si es necesario
+        if (this.shouldCompress(fileToUpload)) {
+          fileToUpload = await this.optimizeFileForUpload(fileToUpload);
+        }
+      } catch (error) {
+        console.error('Error durante la optimización:', error);
+        fileToUpload = file || undefined;
       }
-    } catch (error) {
-      console.error('Error durante la optimización:', error);
-      fileToUpload = file;
     }
 
     this.uploading.set(true);
@@ -372,7 +381,7 @@ export class PaymentVoucherDialogComponent {
       }
     }, 300);
 
-    this.documentsApi.uploadPaymentVoucher(documentId, fileToUpload).subscribe({
+    this.documentsApi.uploadPaymentVoucher(documentId, fileToUpload, numeroOperacionValue).subscribe({
       next: (response: { voucher: PaymentVoucher; document: Document }) => {
         clearInterval(progressInterval);
         this.progress.set(100);

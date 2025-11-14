@@ -213,11 +213,17 @@ export class DocumentsApiService {
     /**
      * Subir voucher de pago para una factura
      * @param documentId ID de la factura
-     * @param file Archivo de imagen del voucher
+     * @param file Archivo de imagen del voucher (opcional)
+     * @param numeroOperacion Número de operación (opcional)
      */
-    uploadPaymentVoucher(documentId: string, file: File): Observable<{ voucher: PaymentVoucher; document: Document }> {
+    uploadPaymentVoucher(documentId: string, file?: File, numeroOperacion?: string): Observable<{ voucher: PaymentVoucher; document: Document }> {
         const formData = new FormData();
-        formData.append('file', file);
+        if (file) {
+            formData.append('file', file);
+        }
+        if (numeroOperacion) {
+            formData.append('numeroOperacion', numeroOperacion);
+        }
 
         return this.http.post<{ voucher: PaymentVoucher; document: Document }>(
             `${this.baseUrl}/documents/${documentId}/payment-voucher`,
@@ -232,6 +238,22 @@ export class DocumentsApiService {
     getPaymentVouchers(documentId: string): Observable<PaymentVoucher[]> {
         return this.http.get<PaymentVoucher[]>(
             `${this.baseUrl}/documents/${documentId}/payment-vouchers`
+        );
+    }
+
+    /**
+     * Actualizar un voucher de pago
+     * @param voucherId ID del voucher
+     * @param numeroOperacion Número de operación (opcional)
+     */
+    updatePaymentVoucher(voucherId: string, numeroOperacion?: string): Observable<PaymentVoucher> {
+        const body: { numeroOperacion?: string } = {};
+        if (numeroOperacion !== undefined) {
+            body.numeroOperacion = numeroOperacion;
+        }
+        return this.http.patch<PaymentVoucher>(
+            `${this.baseUrl}/documents/payment-vouchers/${voucherId}`,
+            body
         );
     }
 
@@ -277,7 +299,8 @@ export interface ScanInvoiceResponse {
 export interface PaymentVoucher {
     _id: string;
     documentId: string;
-    voucherImageUrl: string;
+    voucherImageUrl?: string;
+    numeroOperacion?: string;
     isActive: boolean;
     createdAt?: Date | string;
     updatedAt?: Date | string;
