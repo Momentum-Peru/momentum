@@ -23,10 +23,13 @@ import { FileUploadModule, FileUpload, FileSelectEvent } from 'primeng/fileuploa
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
 
-import { DocumentsApiService } from '../../../../shared/services/documents-api.service';
+import { DocumentsApiService, PaymentVoucher } from '../../../../shared/services/documents-api.service';
 import { ProjectsApiService } from '../../../../shared/services/projects-api.service';
 import { Document } from '../../../../shared/interfaces/document.interface';
+import { ConfirmationService } from 'primeng/api';
 
 @Component({
   selector: 'app-document-form',
@@ -43,21 +46,24 @@ import { Document } from '../../../../shared/interfaces/document.interface';
     CardModule,
     DividerModule,
     ToastModule,
+    ConfirmDialogModule,
+    TooltipModule,
   ],
   templateUrl: './document-form.html',
   styleUrl: './document-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
 })
 export class DocumentFormComponent implements OnInit, OnChanges {
   @Input({ required: true }) document: Document | null = null;
-  @Output() documentSaved = new EventEmitter<void>();
+  @Output() documentSaved = new EventEmitter<Document | null>();
   @Output() formCancel = new EventEmitter<void>();
 
   private readonly fb = inject(FormBuilder);
   private readonly documentsApi = inject(DocumentsApiService);
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
 
   @ViewChild('fileUpload') fileUploadComponent!: FileUpload;
 
@@ -66,6 +72,9 @@ export class DocumentFormComponent implements OnInit, OnChanges {
   loadingProjects = signal(false);
   uploadedFiles = signal<File[]>([]);
   existingFiles = signal<string[]>([]);
+  paymentVouchers = signal<PaymentVoucher[]>([]);
+  editingVoucherId = signal<string | null>(null);
+  editingVoucherNumeroOperacion = signal<string>('');
 
   // Opciones para el dropdown de proyectos
   projectOptions = signal<{ label: string; value: string }[]>([]);
@@ -87,6 +96,10 @@ export class DocumentFormComponent implements OnInit, OnChanges {
 
     if (this.document) {
       this.populateForm();
+      // Cargar vouchers si es edición
+      if (this.document._id) {
+        this.loadPaymentVouchers(this.document._id);
+      }
     }
   }
 
@@ -235,7 +248,111 @@ export class DocumentFormComponent implements OnInit, OnChanges {
       }
 
       this.existingFiles.set(this.document.documentos || []);
+      // Cargar vouchers si es edición
+      if (this.document._id) {
+        this.loadPaymentVouchers(this.document._id);
+      }
     }
+  }
+
+  /**
+   * Cargar vouchers de pago de un documento
+   */
+  loadPaymentVouchers(documentId: string): void {
+    this.documentsApi.getPaymentVouchers(documentId).subscribe({
+      next: (vouchers) => {
+        this.paymentVouchers.set(vouchers);
+      },
+      error: (error: unknown) => {
+        console.error('Error al cargar vouchers:', error);
+        this.paymentVouchers.set([]);
+      },
+    });
+  }
+
+  /**
+   * Iniciar edición del número de operación de un voucher
+   */
+  startEditingVoucher(voucher: PaymentVoucher): void {
+    this.editingVoucherId.set(voucher._id);
+    this.editingVoucherNumeroOperacion.set(voucher.numeroOperacion || '');
+  }
+
+  /**
+   * Cancelar edición del voucher
+   */
+  cancelEditingVoucher(): void {
+    this.editingVoucherId.set(null);
+    this.editingVoucherNumeroOperacion.set('');
+  }
+
+  /**
+   * Guardar número de operación del voucher
+   */
+  saveVoucherNumeroOperacion(voucherId: string): void {
+    const numeroOperacion = this.editingVoucherNumeroOperacion()?.trim() || undefined;
+    
+    this.documentsApi.updatePaymentVoucher(voucherId, numeroOperacion).subscribe({
+      next: (updatedVoucher) => {
+        // Actualizar el voucher en la lista
+        const vouchers = this.paymentVouchers();
+        const index = vouchers.findIndex(v => v._id === voucherId);
+        if (index !== -1) {
+          vouchers[index] = updatedVoucher;
+          this.paymentVouchers.set([...vouchers]);
+        }
+        this.editingVoucherId.set(null);
+        this.editingVoucherNumeroOperacion.set('');
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Número de operación actualizado correctamente',
+        });
+      },
+      error: (error: unknown) => {
+        console.error('Error al actualizar voucher:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar el número de operación',
+        });
+      },
+    });
+  }
+
+  /**
+   * Eliminar voucher de pago
+   */
+  deletePaymentVoucher(voucherId: string): void {
+    this.confirmationService.confirm({
+      message: '¿Está seguro de que desea eliminar este voucher de pago?',
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.documentsApi.deletePaymentVoucher(voucherId).subscribe({
+          next: () => {
+            // Remover el voucher de la lista
+            const vouchers = this.paymentVouchers();
+            this.paymentVouchers.set(vouchers.filter(v => v._id !== voucherId));
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Voucher eliminado correctamente',
+            });
+          },
+          error: (error: unknown) => {
+            console.error('Error al eliminar voucher:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo eliminar el voucher',
+            });
+          },
+        });
+      },
+    });
   }
 
   /**
@@ -384,19 +501,19 @@ export class DocumentFormComponent implements OnInit, OnChanges {
     // Si hay archivos nuevos para subir
     const filesToUpload = this.uploadedFiles();
     if (filesToUpload.length > 0) {
-      this.uploadFiles(document._id!, filesToUpload);
+      this.uploadFiles(document._id!, filesToUpload, document);
     } else {
-      this.finishSave();
+      this.finishSave(document);
     }
   }
 
   /**
    * Subir archivos al documento
    */
-  private uploadFiles(documentId: string, files: File[]): void {
+  private uploadFiles(documentId: string, files: File[], document: Document): void {
     this.documentsApi.uploadFiles(documentId, files).subscribe({
       next: () => {
-        this.finishSave();
+        this.finishSave(document);
       },
       error: (error: unknown) => {
         this.handleError('Error al subir archivos', error);
@@ -407,15 +524,19 @@ export class DocumentFormComponent implements OnInit, OnChanges {
   /**
    * Finalizar proceso de guardado
    */
-  private finishSave(): void {
+  private finishSave(savedDocument?: Document): void {
     this.loading.set(false);
     
+    const isNewDocument = !this.document;
+    
     // Si es creación, limpiar el formulario
-    if (!this.document) {
+    if (isNewDocument) {
       this.resetForm();
     }
     
-    this.documentSaved.emit();
+    // Emitir el documento guardado solo si es creación (nuevo documento)
+    // Si es actualización, emitir null
+    this.documentSaved.emit(isNewDocument ? (savedDocument || null) : null);
     this.messageService.add({
       severity: 'success',
       summary: 'Éxito',
