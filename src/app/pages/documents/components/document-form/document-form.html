@@ -55,7 +55,18 @@
             placeholder="Seleccione un proyecto"
             [appendTo]="'body'"
             class="w-full"
+            styleClass="w-full"
           >
+            <ng-template let-option pTemplate="item">
+              <span class="truncate block max-w-full" [title]="option.fullLabel || option.label">
+                {{ option.label }}
+              </span>
+            </ng-template>
+            <ng-template let-option pTemplate="selectedItem">
+              <span class="truncate block max-w-full" [title]="option?.fullLabel || option?.label">
+                {{ option?.label }}
+              </span>
+            </ng-template>
           </p-select>
         </div>
 
@@ -112,6 +123,7 @@
             id="fechaEmision"
             formControlName="fechaEmision"
             placeholder="Seleccione fecha de emisión"
+            [appendTo]="'body'"
             [showIcon]="true"
             dateFormat="dd/mm/yy"
             class="w-full"
@@ -133,6 +145,7 @@
             placeholder="Seleccione fecha de vencimiento"
             [showIcon]="true"
             dateFormat="dd/mm/yy"
+            [appendTo]="'body'"
             class="w-full"
           >
           </p-datepicker>
@@ -192,7 +205,9 @@
     <p-card header="Vouchers de Pago" class="shadow-sm">
       <div class="space-y-3">
         @for (voucher of paymentVouchers(); track voucher._id) {
-        <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+        <div
+          class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+        >
           <div class="flex flex-col gap-3">
             <!-- Número de operación -->
             <div class="flex items-center gap-3">

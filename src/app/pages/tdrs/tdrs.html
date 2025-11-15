@@ -1,6 +1,6 @@
 <div class="p-4 space-y-4">
   <p-toast [life]="5000"></p-toast>
-  <div class="flex items-center gap-2">
+  <div class="flex flex-wrap xl:flex-nowrap items-center gap-2">
     <input
       pInputText
       placeholder="Buscar"
@@ -15,6 +15,7 @@
       label="Nuevo"
       icon="pi pi-plus"
       aria-label="Crear nuevo TDR"
+      class="w-full xl:w-auto"
     ></button>
   </div>
 
