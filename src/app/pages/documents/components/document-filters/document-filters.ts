@@ -53,7 +53,7 @@ export class DocumentFiltersComponent implements OnInit {
 
   filtersForm!: FormGroup;
   showAdvancedFilters = signal(false);
-  projectOptions = signal<{ label: string; value: string }[]>([]);
+  projectOptions = signal<{ label: string; fullLabel?: string; value: string }[]>([]);
 
   // Opciones para categorías
   categoryOptions = [
@@ -98,6 +98,14 @@ export class DocumentFiltersComponent implements OnInit {
   }
 
   /**
+   * Trunca un texto a una longitud máxima
+   */
+  private truncateText(text: string, maxLength = 40): string {
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  }
+
+  /**
    * Cargar proyectos desde el backend
    */
   private loadProjects(): void {
@@ -105,8 +113,9 @@ export class DocumentFiltersComponent implements OnInit {
       next: (projects) => {
         const options = [{ label: 'Todos los proyectos', value: '' }];
         projects.forEach((project) => {
+          const fullLabel = `${project.name} (${project.code})`;
           options.push({
-            label: `${project.name} (${project.code})`,
+            label: this.truncateText(fullLabel, 40),
             value: project._id!,
           });
         });
@@ -131,11 +140,10 @@ export class DocumentFiltersComponent implements OnInit {
     const filters: DocumentFilters = {};
 
     // Procesar cada campo del formulario
-    const numericKeys: (keyof Pick<DocumentFilters, 'numeroDocumento' | 'totalMinimo' | 'totalMaximo'>)[] = [
-      'numeroDocumento',
-      'totalMinimo',
-      'totalMaximo',
-    ];
+    const numericKeys: (keyof Pick<
+      DocumentFilters,
+      'numeroDocumento' | 'totalMinimo' | 'totalMaximo'
+    >)[] = ['numeroDocumento', 'totalMinimo', 'totalMaximo'];
     const stringKeys: (keyof Pick<DocumentFilters, 'proyectoId' | 'categoria' | 'serie'>)[] = [
       'proyectoId',
       'categoria',
@@ -167,8 +175,8 @@ export class DocumentFiltersComponent implements OnInit {
       }
 
       // Convertir números (numeroDocumento, totalMinimo, totalMaximo)
-      if (numericKeys.includes(key as typeof numericKeys[number])) {
-        const typedKey = key as typeof numericKeys[number];
+      if (numericKeys.includes(key as (typeof numericKeys)[number])) {
+        const typedKey = key as (typeof numericKeys)[number];
         const numValue = typeof value === 'number' ? value : Number(value);
         if (!Number.isNaN(numValue) && numValue >= 0) {
           filters[typedKey] = numValue;
@@ -177,8 +185,8 @@ export class DocumentFiltersComponent implements OnInit {
       }
 
       // Para proyectoId, categoria y serie, solo incluir si tiene valor
-      if (stringKeys.includes(key as typeof stringKeys[number])) {
-        const typedKey = key as typeof stringKeys[number];
+      if (stringKeys.includes(key as (typeof stringKeys)[number])) {
+        const typedKey = key as (typeof stringKeys)[number];
         const stringValue = String(value ?? '').trim();
         if (stringValue) {
           filters[typedKey] = stringValue;

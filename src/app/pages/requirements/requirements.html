@@ -1,6 +1,6 @@
 <div class="p-4 space-y-4">
   <p-toast [life]="5000"></p-toast>
-  <div class="flex items-center gap-2">
+  <div class="flex flex-wrap xl:flex-nowrap items-center gap-2">
     <input
       pInputText
       placeholder="Buscar requerimientos..."
@@ -15,6 +15,7 @@
       label="Nuevo"
       icon="pi pi-plus"
       aria-label="Crear nuevo requerimiento"
+      class="w-full xl:w-auto"
     ></button>
   </div>
 
@@ -896,7 +897,7 @@
       </div>
 
       <!-- Tercera fila - Fechas -->
-      <div class="grid grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <label
             for="requirementEmissionDate"
@@ -909,7 +910,7 @@
             (ngModelChange)="onEditChange('fechaEmision', $event)"
             dateFormat="dd/mm/yy"
             placeholder="Seleccionar fecha"
-            appendTo="body"
+            [appendTo]="'body'"
             iconDisplay="input"
             class="w-full"
           ></p-datepicker>
@@ -926,7 +927,7 @@
             (ngModelChange)="onEditChange('fechaRequerimiento', $event)"
             dateFormat="dd/mm/yy"
             placeholder="Seleccionar fecha"
-            appendTo="body"
+            [appendTo]="'body'"
             iconDisplay="input"
             class="w-full"
           ></p-datepicker>
@@ -943,7 +944,7 @@
             (ngModelChange)="onEditChange('fechaAprobacion', $event)"
             dateFormat="dd/mm/yy"
             placeholder="Seleccionar fecha"
-            appendTo="body"
+            [appendTo]="'body'"
             iconDisplay="input"
             class="w-full"
           ></p-datepicker>

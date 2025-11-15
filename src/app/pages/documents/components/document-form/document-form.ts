@@ -26,7 +26,10 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
 
-import { DocumentsApiService, PaymentVoucher } from '../../../../shared/services/documents-api.service';
+import {
+  DocumentsApiService,
+  PaymentVoucher,
+} from '../../../../shared/services/documents-api.service';
 import { ProjectsApiService } from '../../../../shared/services/projects-api.service';
 import { Document } from '../../../../shared/interfaces/document.interface';
 import { ConfirmationService } from 'primeng/api';
@@ -77,7 +80,7 @@ export class DocumentFormComponent implements OnInit, OnChanges {
   editingVoucherNumeroOperacion = signal<string>('');
 
   // Opciones para el dropdown de proyectos
-  projectOptions = signal<{ label: string; value: string }[]>([]);
+  projectOptions = signal<{ label: string; fullLabel?: string; value: string }[]>([]);
 
   // Opciones para categorías
   categoryOptions = [
@@ -121,10 +124,14 @@ export class DocumentFormComponent implements OnInit, OnChanges {
           this.loadingProjects.set(true);
           this.projectsApi.listActive().subscribe({
             next: (projects) => {
-              const options = projects.map((project) => ({
-                label: `${project.name} (${project.code})`,
-                value: project._id!,
-              }));
+              const options = projects.map((project) => {
+                const fullLabel = `${project.name} (${project.code})`;
+                return {
+                  label: this.truncateText(fullLabel, 40),
+                  fullLabel: fullLabel, // Guardar el texto completo para el tooltip
+                  value: project._id!,
+                };
+              });
               this.projectOptions.set(options);
               this.loadingProjects.set(false);
               setTimeout(() => {
@@ -185,16 +192,28 @@ export class DocumentFormComponent implements OnInit, OnChanges {
   }
 
   /**
+   * Trunca un texto a una longitud máxima
+   */
+  private truncateText(text: string, maxLength = 40): string {
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  }
+
+  /**
    * Cargar proyectos desde el backend
    */
   private loadProjects(): void {
     this.loadingProjects.set(true);
     this.projectsApi.listActive().subscribe({
       next: (projects) => {
-        const options = projects.map((project) => ({
-          label: `${project.name} (${project.code})`,
-          value: project._id!,
-        }));
+        const options = projects.map((project) => {
+          const fullLabel = `${project.name} (${project.code})`;
+          return {
+            label: this.truncateText(fullLabel, 40),
+            fullLabel: fullLabel, // Guardar el texto completo para el tooltip
+            value: project._id!,
+          };
+        });
         this.projectOptions.set(options);
         this.loadingProjects.set(false);
       },
@@ -219,9 +238,9 @@ export class DocumentFormComponent implements OnInit, OnChanges {
       const categoriaExiste = this.categoryOptions.some(
         (opt) => opt.value === this.document!.categoria
       );
-      
+
       const esOtros = !categoriaExiste;
-      
+
       this.documentForm.patchValue({
         numeroDocumento: this.document.numeroDocumento,
         serie: this.document.serie,
@@ -291,12 +310,12 @@ export class DocumentFormComponent implements OnInit, OnChanges {
    */
   saveVoucherNumeroOperacion(voucherId: string): void {
     const numeroOperacion = this.editingVoucherNumeroOperacion()?.trim() || undefined;
-    
+
     this.documentsApi.updatePaymentVoucher(voucherId, numeroOperacion).subscribe({
       next: (updatedVoucher) => {
         // Actualizar el voucher en la lista
         const vouchers = this.paymentVouchers();
-        const index = vouchers.findIndex(v => v._id === voucherId);
+        const index = vouchers.findIndex((v) => v._id === voucherId);
         if (index !== -1) {
           vouchers[index] = updatedVoucher;
           this.paymentVouchers.set([...vouchers]);
@@ -335,7 +354,7 @@ export class DocumentFormComponent implements OnInit, OnChanges {
           next: () => {
             // Remover el voucher de la lista
             const vouchers = this.paymentVouchers();
-            this.paymentVouchers.set(vouchers.filter(v => v._id !== voucherId));
+            this.paymentVouchers.set(vouchers.filter((v) => v._id !== voucherId));
             this.messageService.add({
               severity: 'success',
               summary: 'Éxito',
@@ -445,9 +464,17 @@ export class DocumentFormComponent implements OnInit, OnChanges {
     }
 
     // Manejar categoría: si es "Otros", usar el valor del campo categoriaOtros
-    if (formValue.categoria === 'Otros' && formValue.categoriaOtros && formValue.categoriaOtros.trim()) {
+    if (
+      formValue.categoria === 'Otros' &&
+      formValue.categoriaOtros &&
+      formValue.categoriaOtros.trim()
+    ) {
       formData.categoria = formValue.categoriaOtros.trim();
-    } else if (formValue.categoria && formValue.categoria !== 'Otros' && formValue.categoria.trim()) {
+    } else if (
+      formValue.categoria &&
+      formValue.categoria !== 'Otros' &&
+      formValue.categoria.trim()
+    ) {
       formData.categoria = formValue.categoria.trim();
     }
 
@@ -526,17 +553,17 @@ export class DocumentFormComponent implements OnInit, OnChanges {
    */
   private finishSave(savedDocument?: Document): void {
     this.loading.set(false);
-    
+
     const isNewDocument = !this.document;
-    
+
     // Si es creación, limpiar el formulario
     if (isNewDocument) {
       this.resetForm();
     }
-    
+
     // Emitir el documento guardado solo si es creación (nuevo documento)
     // Si es actualización, emitir null
-    this.documentSaved.emit(isNewDocument ? (savedDocument || null) : null);
+    this.documentSaved.emit(isNewDocument ? savedDocument || null : null);
     this.messageService.add({
       severity: 'success',
       summary: 'Éxito',
@@ -561,7 +588,11 @@ export class DocumentFormComponent implements OnInit, OnChanges {
     } else if (error && typeof error === 'object') {
       const errorObject = error as { message?: unknown; error?: unknown };
 
-      if (errorObject.error && typeof errorObject.error === 'object' && errorObject.error !== null) {
+      if (
+        errorObject.error &&
+        typeof errorObject.error === 'object' &&
+        errorObject.error !== null
+      ) {
         const nestedError = errorObject.error as { message?: unknown };
         if (typeof nestedError.message === 'string') {
           errorMessage = nestedError.message;
@@ -603,16 +634,16 @@ export class DocumentFormComponent implements OnInit, OnChanges {
   private resetForm(): void {
     // Resetear el formulario
     this.documentForm.reset();
-    
+
     // Limpiar archivos subidos y existentes
     this.uploadedFiles.set([]);
     this.existingFiles.set([]);
-    
+
     // Limpiar el componente de carga de archivos
     if (this.fileUploadComponent) {
       this.fileUploadComponent.clear();
     }
-    
+
     // Restablecer validaciones del campo categoriaOtros
     const categoriaOtrosControl = this.documentForm.get('categoriaOtros');
     categoriaOtrosControl?.clearValidators();
