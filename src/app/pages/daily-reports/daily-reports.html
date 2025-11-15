@@ -334,8 +334,29 @@
           name="reportProject"
           placeholder="Seleccionar proyecto"
           [appendTo]="'body'"
-          class="w-full break-words whitespace-normal max-w-full"
-        ></p-select>
+          class="w-full"
+          styleClass="w-full"
+        >
+          <ng-template let-project pTemplate="item">
+            <span class="truncate block max-w-full" [title]="project.label">
+              {{ project.label | truncate : 40 }}
+            </span>
+          </ng-template>
+          <ng-template let-project pTemplate="selectedItem">
+            @if (project?.label) {
+            <span class="truncate block max-w-full" [title]="project.label">
+              {{ project.label | truncate : 40 }}
+            </span>
+            } @else {
+            <span
+              class="truncate block max-w-full"
+              [title]="getSelectedProjectLabel(editing()?.projectId)"
+            >
+              {{ getSelectedProjectLabel(editing()?.projectId) | truncate : 40 }}
+            </span>
+            }
+          </ng-template>
+        </p-select>
       </div>
 
       <!-- Captura multimedia (mobile) -->

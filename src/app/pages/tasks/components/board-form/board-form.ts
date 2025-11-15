@@ -36,6 +36,7 @@ import {
 export class BoardFormComponent implements OnInit, OnChanges {
   @Input() board: Board | null = null;
   @Input() loading = signal<boolean>(false);
+  @Input() visible = false;
   @Output() save = new EventEmitter<CreateBoardRequest | UpdateBoardRequest>();
   @Output() cancelled = new EventEmitter<void>();
 
@@ -46,12 +47,35 @@ export class BoardFormComponent implements OnInit, OnChanges {
   };
 
   private readonly cdr = inject(ChangeDetectorRef);
+  private previousVisible = false;
 
   ngOnInit(): void {
     this.updateFormData();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    // Limpiar el formulario cuando el diálogo se abre para crear un nuevo tablero
+    if (changes['visible']) {
+      const currentVisible = this.visible;
+      const previousVisible = changes['visible'].previousValue ?? false;
+
+      // Si el diálogo se abre (visible cambia de false a true) y no hay board para editar
+      if (currentVisible && !previousVisible && !this.board) {
+        this.formData = {
+          title: '',
+          description: '',
+        };
+        this.isEditing.set(false);
+        this.cdr.markForCheck();
+        // Si también cambió board, no procesarlo porque estamos creando
+        if (changes['board']) {
+          return;
+        }
+      }
+
+      this.previousVisible = currentVisible;
+    }
+
     if (changes['board']) {
       this.updateFormData();
     }
@@ -85,6 +109,17 @@ export class BoardFormComponent implements OnInit, OnChanges {
       description: this.formData.description?.trim() || undefined,
     };
 
+    const wasEditing = this.isEditing();
+
     this.save.emit(data);
+
+    // Limpiar el formulario después de crear (no después de editar)
+    if (!wasEditing) {
+      this.formData = {
+        title: '',
+        description: '',
+      };
+      this.cdr.markForCheck();
+    }
   }
 }

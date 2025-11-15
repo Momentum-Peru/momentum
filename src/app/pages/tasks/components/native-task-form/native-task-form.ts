@@ -195,6 +195,7 @@ import { take } from 'rxjs';
               styleClass="w-full"
               [showIcon]="true"
               [showButtonBar]="true"
+              [appendTo]="'body'"
             ></p-datePicker>
           </div>
         </div>

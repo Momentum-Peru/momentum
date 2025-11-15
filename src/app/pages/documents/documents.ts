@@ -9,6 +9,7 @@ import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
+import { InputTextModule } from 'primeng/inputtext';
 import { ConfirmationService } from 'primeng/api';
 
 import {
@@ -38,6 +39,7 @@ import { environment } from '../../../environments/environment';
     ToastModule,
     ConfirmDialogModule,
     TooltipModule,
+    InputTextModule,
     DocumentFormComponent,
     DocumentListComponent,
     DocumentFiltersComponent,
@@ -70,6 +72,9 @@ export class DocumentsPage implements OnInit {
   selectedFiles = signal<File[]>([]);
   currentFilters = signal<DocumentFilters>({});
   scannedInvoiceId = signal<string | null>(null);
+  paymentVouchers = signal<PaymentVoucher[]>([]);
+  editingVoucherId = signal<string | null>(null);
+  editingVoucherNumeroOperacion = signal<string>('');
 
   // Paginación
   totalRecords = signal(0);
@@ -174,6 +179,11 @@ export class DocumentsPage implements OnInit {
       this.filesViewingDocument.set(response.document);
     }
 
+    // Si el diálogo de detalles está abierto y es el mismo documento, recargar los vouchers
+    if (response.document?._id && this.viewingDocument()?._id === response.document._id) {
+      this.loadPaymentVouchers(response.document._id);
+    }
+
     this.messageService.add({
       severity: 'success',
       summary: 'Éxito',
@@ -233,6 +243,10 @@ export class DocumentsPage implements OnInit {
         this.editingDocument.set(fullDocument);
         this.showFormDialog.set(true);
         this.loading.set(false);
+        // Cargar vouchers del documento para edición
+        if (fullDocument._id) {
+          this.loadPaymentVouchers(fullDocument._id);
+        }
       },
       error: (error: unknown) => {
         console.error('Error al cargar documento:', error);
@@ -252,19 +266,31 @@ export class DocumentsPage implements OnInit {
   closeFormDialog(): void {
     this.showFormDialog.set(false);
     this.editingDocument.set(null);
+    this.paymentVouchers.set([]);
+    this.editingVoucherId.set(null);
+    this.editingVoucherNumeroOperacion.set('');
   }
 
   /**
    * Manejar documento guardado
    */
-  onDocumentSaved(): void {
+  onDocumentSaved(savedDocument: Document | null): void {
+    const wasEditing = !!this.editingDocument();
     this.closeFormDialog();
     this.loadDocuments();
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Éxito',
-      detail: 'Documento guardado correctamente',
-    });
+    
+    // Si se creó un nuevo documento (no edición) y es factura, boleta o recibo por honorarios, mostrar diálogo de voucher
+    if (savedDocument && savedDocument._id && !wasEditing) {
+      const categoria = savedDocument.categoria?.toLowerCase() || '';
+      const isFactura = categoria.includes('factura');
+      const isBoleta = categoria.includes('boleta');
+      const isReciboHonorarios = categoria.includes('recibo') && categoria.includes('honorario');
+      
+      if (isFactura || isBoleta || isReciboHonorarios) {
+        this.scannedInvoiceId.set(savedDocument._id);
+        this.showVoucherDialog.set(true);
+      }
+    }
   }
 
   /**
@@ -320,6 +346,25 @@ export class DocumentsPage implements OnInit {
   viewDocumentDetails(document: Document): void {
     this.viewingDocument.set(document);
     this.showDetailsDialog.set(true);
+    // Cargar vouchers del documento solo para visualización
+    if (document._id) {
+      this.loadPaymentVouchers(document._id);
+    }
+  }
+
+  /**
+   * Cargar vouchers de pago de un documento
+   */
+  loadPaymentVouchers(documentId: string): void {
+    this.documentsApi.getPaymentVouchers(documentId).subscribe({
+      next: (vouchers) => {
+        this.paymentVouchers.set(vouchers);
+      },
+      error: (error: unknown) => {
+        console.error('Error al cargar vouchers:', error);
+        this.paymentVouchers.set([]);
+      },
+    });
   }
 
   /**
@@ -328,6 +373,94 @@ export class DocumentsPage implements OnInit {
   closeDetailsDialog(): void {
     this.showDetailsDialog.set(false);
     this.viewingDocument.set(null);
+    this.paymentVouchers.set([]);
+    this.editingVoucherId.set(null);
+    this.editingVoucherNumeroOperacion.set('');
+  }
+
+  /**
+   * Iniciar edición del número de operación de un voucher
+   */
+  startEditingVoucher(voucher: PaymentVoucher): void {
+    this.editingVoucherId.set(voucher._id);
+    this.editingVoucherNumeroOperacion.set(voucher.numeroOperacion || '');
+  }
+
+  /**
+   * Cancelar edición del voucher
+   */
+  cancelEditingVoucher(): void {
+    this.editingVoucherId.set(null);
+    this.editingVoucherNumeroOperacion.set('');
+  }
+
+  /**
+   * Guardar número de operación del voucher
+   */
+  saveVoucherNumeroOperacion(voucherId: string): void {
+    const numeroOperacion = this.editingVoucherNumeroOperacion()?.trim() || undefined;
+    
+    this.documentsApi.updatePaymentVoucher(voucherId, numeroOperacion).subscribe({
+      next: (updatedVoucher) => {
+        // Actualizar el voucher en la lista
+        const vouchers = this.paymentVouchers();
+        const index = vouchers.findIndex(v => v._id === voucherId);
+        if (index !== -1) {
+          vouchers[index] = updatedVoucher;
+          this.paymentVouchers.set([...vouchers]);
+        }
+        this.editingVoucherId.set(null);
+        this.editingVoucherNumeroOperacion.set('');
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Número de operación actualizado correctamente',
+        });
+      },
+      error: (error: unknown) => {
+        console.error('Error al actualizar voucher:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar el número de operación',
+        });
+      },
+    });
+  }
+
+  /**
+   * Eliminar voucher de pago
+   */
+  deletePaymentVoucher(voucherId: string): void {
+    this.confirmationService.confirm({
+      message: '¿Está seguro de que desea eliminar este voucher de pago?',
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.documentsApi.deletePaymentVoucher(voucherId).subscribe({
+          next: () => {
+            // Remover el voucher de la lista
+            const vouchers = this.paymentVouchers();
+            this.paymentVouchers.set(vouchers.filter(v => v._id !== voucherId));
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Voucher eliminado correctamente',
+            });
+          },
+          error: (error: unknown) => {
+            console.error('Error al eliminar voucher:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo eliminar el voucher',
+            });
+          },
+        });
+      },
+    });
   }
 
   /**

@@ -254,12 +254,18 @@ export class TasksPage implements OnInit {
         this.selectedBoard.set(board);
       }
       this.isEditingBoard.set(true);
+      // Limpiar editingBoardFromList cuando se edita desde la vista
+      this.editingBoardFromList.set(null);
     } else {
+      // Para crear un nuevo tablero, limpiar TODOS los estados de edición
+      // Esto asegura que no se confunda con un tablero existente
+      this.editingBoardFromList.set(null);
+      this.isEditingBoard.set(false);
       // Solo resetear selectedBoard si no estamos en la vista de un tablero
+      // para no perder la vista actual si el usuario cancela
       if (!this.selectedBoard()) {
         this.selectedBoard.set(null);
       }
-      this.isEditingBoard.set(false);
     }
     this.showBoardForm.set(true);
   }
@@ -290,11 +296,14 @@ export class TasksPage implements OnInit {
   public onBoardSave(data: CreateBoardRequest | UpdateBoardRequest): void {
     this.boardFormLoading.set(true);
 
-    const board = this.editingBoardFromList() || this.selectedBoard();
-    const wasEditing = !!board;
+    // Determinar si estamos editando basándose en el flag de edición y si hay un board
+    // Esto es más confiable que solo verificar si hay un board, ya que el estado puede estar desincronizado
+    const isEditing = this.isEditingBoard();
+    const board = isEditing ? (this.editingBoardFromList() || this.selectedBoard()) : null;
+    const wasEditing = !!board && isEditing;
     const boardId = board?._id;
 
-    const operation = board
+    const operation = wasEditing && board
       ? this.boardsService.update(board._id, data as UpdateBoardRequest)
       : this.boardsService.create(data as CreateBoardRequest);
 

@@ -15,8 +15,19 @@
             [options]="projectOptions()"
             placeholder="Seleccionar proyecto"
             class="w-full"
+            styleClass="w-full"
             [appendTo]="'body'"
           >
+            <ng-template let-option pTemplate="item">
+              <span class="truncate block max-w-full" [title]="option.fullLabel || option.label">
+                {{ option.label }}
+              </span>
+            </ng-template>
+            <ng-template let-option pTemplate="selectedItem">
+              <span class="truncate block max-w-full" [title]="option?.fullLabel || option?.label">
+                {{ option?.label }}
+              </span>
+            </ng-template>
           </p-select>
         </div>
 

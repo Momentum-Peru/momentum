@@ -123,9 +123,8 @@ export class BoardsApiService {
    * Invita a un usuario a un tablero
    */
   inviteUser(boardId: string, inviteData: InviteUserRequest): Observable<Board> {
-    this.setLoading(true);
-    this.setError(null);
-
+    // No establecer loading ni error global para no afectar la UI de la lista
+    // El error se maneja localmente en el componente con toast
     return this.http.post<Board>(`${this.baseUrl}/${boardId}/invite`, inviteData).pipe(
       tap((updatedBoard) => {
         const currentBoards = this.boards();
@@ -137,9 +136,8 @@ export class BoardsApiService {
         if (this.selectedBoard()?._id === boardId) {
           this.selectedBoard.set(updatedBoard);
         }
-      }),
-      tap(() => this.setLoading(false)),
-      tap({ error: (err) => this.handleError(err) })
+      })
+      // No manejar el error aquí, se maneja en el componente con toast
     );
   }
 

@@ -21,6 +21,7 @@ import { DailyReport } from '../../shared/interfaces/daily-report.interface';
 import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
 import { compressImage } from '../../shared/utils/image-compression.util';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
+import { TruncatePipe } from './truncate.pipe';
 
 @Component({
   selector: 'app-daily-expenses',
@@ -38,6 +39,7 @@ import { UserOption } from '../../shared/interfaces/menu-permission.interface';
     TooltipModule,
     ToastModule,
     ConfirmDialogModule,
+    TruncatePipe,
   ],
   templateUrl: './daily-reports.html',
   styleUrl: './daily-reports.scss',
@@ -59,8 +61,12 @@ export class DailyExpensesPage implements OnInit {
   filterDate = signal<string | null>(null);
   selectedCompany = signal<{ id: string; name: string; code?: string } | null>(null);
   selectedUser = signal<{ id: string; name: string; email: string } | null>(null);
-  companyOptions = signal<{ label: string; value: { id: string; name: string; code?: string } | null }[]>([]);
-  userOptions = signal<{ label: string; value: { id: string; name: string; email: string } | null }[]>([]);
+  companyOptions = signal<
+    { label: string; value: { id: string; name: string; code?: string } | null }[]
+  >([]);
+  userOptions = signal<
+    { label: string; value: { id: string; name: string; email: string } | null }[]
+  >([]);
   loadingCompanies = signal(false);
   loadingUsers = signal(false);
   showDialog = signal(false);
@@ -345,9 +351,10 @@ export class DailyExpensesPage implements OnInit {
     this.loadingCompanies.set(true);
     this.companiesApi.list({ isActive: true }).subscribe({
       next: (companies) => {
-        const options: { label: string; value: { id: string; name: string; code?: string } | null }[] = [
-          { label: 'Todas las empresas', value: null },
-        ];
+        const options: {
+          label: string;
+          value: { id: string; name: string; code?: string } | null;
+        }[] = [{ label: 'Todas las empresas', value: null }];
         companies.forEach((company) => {
           if (company._id) {
             options.push({
@@ -403,9 +410,10 @@ export class DailyExpensesPage implements OnInit {
     this.loadingUsers.set(true);
     this.usersApi.list(tenantId).subscribe({
       next: (userOptions) => {
-        const options: { label: string; value: { id: string; name: string; email: string } | null }[] = [
-          { label: 'Todos los usuarios', value: null },
-        ];
+        const options: {
+          label: string;
+          value: { id: string; name: string; email: string } | null;
+        }[] = [{ label: 'Todos los usuarios', value: null }];
         userOptions.forEach((user) => {
           if (user._id) {
             options.push({
@@ -445,7 +453,9 @@ export class DailyExpensesPage implements OnInit {
    * @param userId ID del usuario o objeto populado
    * @returns Nombre del usuario o 'Usuario desconocido'
    */
-  getUserName(userId: string | { _id?: string; name?: string; email?: string } | undefined): string {
+  getUserName(
+    userId: string | { _id?: string; name?: string; email?: string } | undefined
+  ): string {
     if (!userId) return 'Usuario desconocido';
 
     // Si es un objeto populado
@@ -646,8 +656,9 @@ export class DailyExpensesPage implements OnInit {
     if (isPending) {
       // Confirmar eliminación de archivo pendiente
       this.confirmationService.confirm({
-        message: `¿Está seguro de que desea eliminar este ${type === 'audio' ? 'audio' : type === 'video' ? 'video' : 'foto'
-          }?`,
+        message: `¿Está seguro de que desea eliminar este ${
+          type === 'audio' ? 'audio' : type === 'video' ? 'video' : 'foto'
+        }?`,
         header: 'Confirmar Eliminación',
         icon: 'pi pi-exclamation-triangle',
         acceptLabel: 'Sí, eliminar',
@@ -920,7 +931,7 @@ export class DailyExpensesPage implements OnInit {
     if (files.length === 0) return;
 
     // Mostrar mensaje de compresión si hay archivos grandes
-    const hasLargeFiles = files.some(f => f.size > 2 * 1024 * 1024); // > 2MB
+    const hasLargeFiles = files.some((f) => f.size > 2 * 1024 * 1024); // > 2MB
     if (hasLargeFiles) {
       this.messageService.add({
         severity: 'info',
@@ -937,7 +948,10 @@ export class DailyExpensesPage implements OnInit {
           try {
             return await compressImage(file);
           } catch (error) {
-            console.warn('Error al comprimir imagen, usando original:', { fileName: file.name, error });
+            console.warn('Error al comprimir imagen, usando original:', {
+              fileName: file.name,
+              error,
+            });
             return file; // Fallback al archivo original
           }
         })
@@ -1200,13 +1214,13 @@ export class DailyExpensesPage implements OnInit {
     const upsert$ = item._id
       ? this.dailyExpensesApi.update(item._id, payload)
       : this.dailyExpensesApi.create({
-        ...payload,
-        userId:
-          typeof item.userId === 'object' && item.userId && '_id' in item.userId
-            ? (item.userId as { _id: string })._id
-            : (item.userId as string),
-        documents: [],
-      } as DailyReport);
+          ...payload,
+          userId:
+            typeof item.userId === 'object' && item.userId && '_id' in item.userId
+              ? (item.userId as { _id: string })._id
+              : (item.userId as string),
+          documents: [],
+        } as DailyReport);
 
     upsert$.subscribe({
       next: (saved) => {
@@ -1298,28 +1312,42 @@ export class DailyExpensesPage implements OnInit {
             originalSize: file.size,
             compressedSize: compressedFile.size,
             compressionRatio: ((1 - compressedFile.size / file.size) * 100).toFixed(1) + '%',
-            reportId: id
+            reportId: id,
           });
           return compressedFile;
         })
         .catch((compressionError) => {
-          console.warn('Error al comprimir foto, usando original:', { fileName: file.name, error: compressionError });
+          console.warn('Error al comprimir foto, usando original:', {
+            fileName: file.name,
+            error: compressionError,
+          });
           return file; // Fallback al archivo original
         })
         .then((fileToUpload) => {
           this.dailyExpensesApi.uploadPhoto(id, fileToUpload).subscribe({
             next: (response) => {
-              console.log('Foto subida exitosamente:', { fileName: fileToUpload.name, reportId: id });
+              console.log('Foto subida exitosamente:', {
+                fileName: fileToUpload.name,
+                reportId: id,
+              });
               resolve(response);
             },
             error: (error) => {
-              console.error('Error al subir foto:', { fileName: fileToUpload.name, error, reportId: id });
+              console.error('Error al subir foto:', {
+                fileName: fileToUpload.name,
+                error,
+                reportId: id,
+              });
               reject({ type: 'photo', fileName: fileToUpload.name, error });
             },
           });
         })
         .catch((error) => {
-          console.error('Error inesperado al procesar foto:', { fileName: file.name, error, reportId: id });
+          console.error('Error inesperado al procesar foto:', {
+            fileName: file.name,
+            error,
+            reportId: id,
+          });
           reject({ type: 'photo', fileName: file.name, error });
         });
     });
@@ -1379,7 +1407,9 @@ export class DailyExpensesPage implements OnInit {
             reportId,
           });
         } else {
-          const errorInfo = result.reason as { fileName?: string; type?: string; error?: unknown } | undefined;
+          const errorInfo = result.reason as
+            | { fileName?: string; type?: string; error?: unknown }
+            | undefined;
           results.push({
             status: 'rejected',
             fileName: errorInfo?.fileName || 'desconocido',
@@ -1396,7 +1426,9 @@ export class DailyExpensesPage implements OnInit {
           this.messageService.add({
             severity: 'warn',
             summary: 'Advertencia',
-            detail: `No se pudo subir ${errorInfo?.type || 'archivo'}: ${errorInfo?.fileName || 'desconocido'}. ${errorMsg}`,
+            detail: `No se pudo subir ${errorInfo?.type || 'archivo'}: ${
+              errorInfo?.fileName || 'desconocido'
+            }. ${errorMsg}`,
             life: 5000,
           });
         }
@@ -1412,10 +1444,13 @@ export class DailyExpensesPage implements OnInit {
     const successful = results.filter((r) => r.status === 'fulfilled').length;
     const failed = results.filter((r) => r.status === 'rejected').length;
 
-    console.log(`Subida completada: ${successful} exitosos, ${failed} fallidos de ${tasks.length} totales`, {
-      reportId,
-      totalResults: results.length,
-    });
+    console.log(
+      `Subida completada: ${successful} exitosos, ${failed} fallidos de ${tasks.length} totales`,
+      {
+        reportId,
+        totalResults: results.length,
+      }
+    );
 
     if (failed > 0) {
       this.messageService.add({
@@ -1482,6 +1517,28 @@ export class DailyExpensesPage implements OnInit {
     }
 
     return 'Sin proyecto';
+  }
+
+  /**
+   * Obtiene el label del proyecto seleccionado para mostrar en el selector
+   * @param projectId ID del proyecto seleccionado o objeto Project
+   * @returns Label del proyecto o string vacío
+   */
+  getSelectedProjectLabel(projectId: string | Project | null | undefined): string {
+    if (!projectId) return '';
+
+    // Si projectId es un objeto Project (populado), usar el nombre directamente
+    if (typeof projectId === 'object' && 'name' in projectId) {
+      return projectId.name || '';
+    }
+
+    // Si projectId es un string, buscar en la lista de proyectos
+    if (typeof projectId === 'string') {
+      const project = this.projects().find((p) => p.value === projectId);
+      return project?.label || '';
+    }
+
+    return '';
   }
 
   // Verificar si el proyecto en edición ha sido eliminado
@@ -1667,7 +1724,8 @@ export class DailyExpensesPage implements OnInit {
           return 'La fecha es requerida';
         }
         if (message.includes('time should not be empty')) return 'La hora es requerida';
-        if (message.includes('description should not be empty')) return 'La descripción es requerida';
+        if (message.includes('description should not be empty'))
+          return 'La descripción es requerida';
 
         return message;
       }
@@ -1678,7 +1736,12 @@ export class DailyExpensesPage implements OnInit {
     }
 
     // Verificar si es un objeto Error
-    if (error && typeof error === 'object' && 'message' in error && typeof (error as { message: unknown }).message === 'string') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof (error as { message: unknown }).message === 'string'
+    ) {
       return (error as { message: string }).message;
     }
 

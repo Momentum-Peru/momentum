@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -11,7 +11,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { TextareaModule } from 'primeng/textarea';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
-import { FileUploadModule } from 'primeng/fileupload';
+import { FileUploadModule, FileUpload } from 'primeng/fileupload';
 import { MenuModule } from 'primeng/menu';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
@@ -65,6 +65,9 @@ export class QuotesPage implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly fb = inject(FormBuilder);
+
+  // Referencia al componente FileUpload
+  @ViewChild('fileUpload') fileUploadComponent!: FileUpload;
 
   // Signals para estado
   quotes = signal<Quote[]>([]);
@@ -129,8 +132,17 @@ export class QuotesPage implements OnInit {
     effect(() => {
       if (!this.showDialog()) {
         this.editing.set(null);
+        this.selectedFiles.set([]);
+        this.existingDocuments.set([]);
         this.quoteForm.reset();
-        // this.itemsFormArray.clear(); // REMOVIDO: Ya no se manejan items
+        
+        // Limpiar el componente FileUpload cuando se cierra el diálogo
+        // Usar setTimeout para asegurar que el componente esté disponible
+        setTimeout(() => {
+          if (this.fileUploadComponent) {
+            this.fileUploadComponent.clear();
+          }
+        }, 0);
       }
     });
 
@@ -215,18 +227,36 @@ export class QuotesPage implements OnInit {
   }
 
   newQuote() {
+    // Limpiar todos los estados relacionados
     this.editing.set(null);
     this.selectedFiles.set([]);
     this.existingDocuments.set([]);
+    
+    // Resetear el formulario con valores por defecto limpios
     this.quoteForm.reset({
+      clientId: '',
+      projectId: '',
       state: 'Pendiente',
       createDate: new Date(),
-      // items: [], // REMOVIDO: Ya no se manejan items
+      sendDate: null,
+      notes: '',
       documents: [],
     });
-    // this.itemsFormArray.clear(); // REMOVIDO: Ya no se manejan items
-    // this.addItem(); // REMOVIDO: Ya no se manejan items
+    
+    // Marcar todos los campos como no tocados para limpiar estados de validación
+    this.quoteForm.markAsUntouched();
+    this.quoteForm.markAsPristine();
+    
+    // Abrir el diálogo
     this.showDialog.set(true);
+    
+    // Limpiar el componente FileUpload después de que el diálogo se abra
+    // Usar setTimeout para asegurar que el componente esté disponible en el DOM
+    setTimeout(() => {
+      if (this.fileUploadComponent) {
+        this.fileUploadComponent.clear();
+      }
+    }, 0);
   }
 
   editQuote(quote: Quote) {

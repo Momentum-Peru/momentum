@@ -92,8 +92,9 @@
   [header]="isEditingBoard() ? 'Editar Tablero' : 'Nuevo Tablero'"
 >
   <app-board-form
-    [board]="editingBoardFromList() || selectedBoard() || null"
+    [board]="isEditingBoard() ? (editingBoardFromList() || selectedBoard() || null) : null"
     [loading]="boardFormLoading"
+    [visible]="showBoardForm()"
     (save)="onBoardSave($event)"
     (cancelled)="closeBoardForm()"
   ></app-board-form>

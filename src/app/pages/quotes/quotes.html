@@ -6,7 +6,7 @@
   <p-confirmDialog></p-confirmDialog>
 
   <!-- Header con búsqueda y acciones -->
-  <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+  <div class="flex flex-wrap xl:flex-nowrap items-center gap-2">
     <div class="flex-1 w-full md:max-w-md">
       <div class="w-full">
         <input
@@ -313,12 +313,12 @@
             <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
               Acciones
             </div>
-            <div class="flex flex-col gap-2">
+            <div class="flex flex-col gap-2 items-start">
               <button
                 pButton
                 icon="pi pi-file-pdf"
                 label="Ver documento"
-                class="p-button-text p-button-sm w-full justify-start"
+                class="p-button-text p-button-sm"
                 (click)="openPdf(quote)"
                 aria-label="Ver documento PDF"
               ></button>
@@ -326,7 +326,7 @@
                 pButton
                 icon="pi pi-eye"
                 label="Ver detalles"
-                class="p-button-text p-button-sm w-full justify-start"
+                class="p-button-text p-button-sm"
                 (click)="viewDetails(quote)"
                 aria-label="Ver detalles de la cotización"
               ></button>
@@ -334,7 +334,7 @@
                 pButton
                 icon="pi pi-cog"
                 label="Cambiar estado"
-                class="p-button-text p-button-sm w-full justify-start"
+                class="p-button-text p-button-sm"
                 (click)="stateMenu.toggle($event)"
                 aria-label="Cambiar estado de la cotización"
               ></button>
@@ -342,7 +342,7 @@
                 pButton
                 icon="pi pi-pencil"
                 label="Editar"
-                class="p-button-text p-button-sm w-full justify-start"
+                class="p-button-text p-button-sm"
                 (click)="editQuote(quote)"
                 aria-label="Editar cotización"
               ></button>
@@ -350,7 +350,7 @@
                 pButton
                 icon="pi pi-trash"
                 label="Eliminar"
-                class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                class="p-button-text p-button-sm p-button-danger"
                 (click)="deleteQuote(quote)"
                 aria-label="Eliminar cotización"
               ></button>
@@ -398,11 +398,12 @@
   <p-dialog
     [(visible)]="showDialog"
     [modal]="true"
-    [style]="{ width: '60rem' }"
+    [style]="{ width: '95vw', maxWidth: '60rem', maxHeight: '90vh' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
     [maximizable]="true"
+    [contentStyle]="{ overflow: 'auto', maxHeight: 'calc(90vh - 120px)' }"
   >
     <ng-template pTemplate="header">
       <div class="flex items-center gap-2">
@@ -495,7 +496,7 @@
             formControlName="createDate"
             dateFormat="dd/mm/yy"
             placeholder="Seleccionar fecha"
-            appendTo="body"
+            [appendTo]="'body'"
             iconDisplay="input"
             [showClear]="true"
             class="w-full"
@@ -512,7 +513,7 @@
             formControlName="sendDate"
             dateFormat="dd/mm/yy"
             placeholder="Seleccionar fecha"
-            appendTo="body"
+            [appendTo]="'body'"
             iconDisplay="input"
             [showClear]="true"
             class="w-full"
@@ -546,6 +547,7 @@
           >Documentos</label
         >
         <p-fileUpload
+          #fileUpload
           id="documentsUpload"
           mode="basic"
           name="files[]"
@@ -572,10 +574,9 @@
             >
               <div class="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
                 <i class="pi pi-file text-blue-500 flex-shrink-0"></i>
-                <span
-                  class="text-sm text-gray-700 break-words flex-1 min-w-0 [overflow-wrap:anywhere]"
-                  >{{ getDocumentName(doc) }}</span
-                >
+                <span class="text-sm text-gray-700 break-words flex-1 min-w-0">{{
+                  getDocumentName(doc)
+                }}</span>
                 <span class="text-xs text-gray-500 dark:text-white whitespace-nowrap flex-shrink-0"
                   >(Documento existente)</span
                 >
@@ -667,7 +668,7 @@
   <p-dialog
     [(visible)]="showDetailsDialog"
     [modal]="true"
-    [style]="{ width: '95vw', maxWidth: '60rem' }"
+    [style]="{ width: '50rem' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
