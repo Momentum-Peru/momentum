@@ -399,7 +399,6 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       this.taskForm.reset();
       this.taskForm.patchValue({
         status: 'Pendiente',
-        priority: 'Media',
       });
     }
   }
@@ -583,7 +582,6 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
             this.taskForm.reset();
             this.taskForm.patchValue({
               status: 'Pendiente',
-              priority: 'Media',
             });
           }
 
