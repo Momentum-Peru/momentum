@@ -397,6 +397,10 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     } else {
       this.isEditing.set(false);
       this.taskForm.reset();
+      this.taskForm.patchValue({
+        status: 'Pendiente',
+        priority: 'Media',
+      });
     }
   }
 
@@ -573,6 +577,16 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
             detail: `Tarea ${this.isEditing() ? 'actualizada' : 'creada'} correctamente.`,
           });
           this.save.emit(res);
+
+          // Limpiar el formulario solo cuando se crea una nueva tarea
+          if (!this.isEditing()) {
+            this.taskForm.reset();
+            this.taskForm.patchValue({
+              status: 'Pendiente',
+              priority: 'Media',
+            });
+          }
+
           this.loading.set(false);
         },
         error: () => {
