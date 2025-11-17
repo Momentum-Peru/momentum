@@ -47,8 +47,16 @@ export class BoardInviteComponent implements OnInit {
 
   private loadUsers(): void {
     this.loadingUsers.set(true);
-    this.usersApi.list().subscribe({
-      next: (userOptions) => {
+    // Usar listWithFilters con un límite alto para traer todos los usuarios
+    this.usersApi.listWithFilters({ limit: 10000 }).subscribe({
+      next: (response) => {
+        // Convertir la respuesta a UserOption[]
+        const userOptions: UserOption[] = (response.users || []).map((user) => ({
+          _id: user._id || user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        }));
         // Filtrar usuarios que ya son miembros
         const filteredUsers = userOptions.filter(
           (user) => !this.existingMemberIds.includes(user._id)
