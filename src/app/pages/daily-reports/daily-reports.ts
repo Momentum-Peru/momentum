@@ -21,6 +21,7 @@ import { DailyReport } from '../../shared/interfaces/daily-report.interface';
 import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
 import { compressImage } from '../../shared/utils/image-compression.util';
 import { compressVideo } from '../../shared/utils/video-compression.util';
+import { firstValueFrom } from 'rxjs';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import { TruncatePipe } from './truncate.pipe';
 
@@ -912,6 +913,14 @@ export class DailyExpensesPage implements OnInit {
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
 
+    const reportId = this.editing()?._id;
+    if (!reportId) {
+      // Si no hay reporte, agregar a pendientes (comportamiento anterior)
+      this.pendingVideo.set([...this.pendingVideo(), ...files]);
+      input.value = '';
+      return;
+    }
+
     // Mostrar mensaje de compresión si hay archivos grandes
     const hasLargeFiles = files.some((f) => f.size > 5 * 1024 * 1024); // > 5MB
     if (hasLargeFiles) {
@@ -924,7 +933,7 @@ export class DailyExpensesPage implements OnInit {
     }
 
     try {
-      // Comprimir todos los videos en paralelo, usando el original si falla la compresión
+      // Paso 1: Comprimir todos los videos en paralelo
       const processedFiles = await Promise.all(
         files.map(async (file) => {
           try {
@@ -967,21 +976,65 @@ export class DailyExpensesPage implements OnInit {
         })
       );
 
-      if (this.editing()?._id) {
-        // Subir múltiples archivos
-        processedFiles.forEach((file) => {
-          this.dailyExpensesApi.uploadVideo(this.editing()!._id!, file).subscribe({
-            next: (updated) => this.editing.set(updated),
-            error: () => this.toastError(`No se pudo subir el video: ${file.name}`),
-          });
-        });
-      } else {
-        // Agregar a pendientes
-        this.pendingVideo.set([...this.pendingVideo(), ...processedFiles]);
-      }
+      // Paso 2: Generar Presigned URLs para todos los archivos
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Preparando subida',
+        detail: 'Generando URLs de subida...',
+        life: 3000,
+      });
+
+      const presignedUrls = await firstValueFrom(
+        this.dailyExpensesApi.generateMultipleVideoPresignedUrls(
+          reportId,
+          processedFiles.map((file) => ({
+            fileName: file.name,
+            contentType: file.type || 'video/mp4',
+          })),
+          3600 // 1 hora de expiración
+        )
+      );
+
+      // Paso 3: Subir todos los archivos directamente a S3 en paralelo
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Subiendo videos',
+        detail: `Subiendo ${processedFiles.length} video(s) directamente a S3...`,
+        life: 5000,
+      });
+
+      await Promise.all(
+        presignedUrls.map(async (presigned, index) => {
+          try {
+            const file = processedFiles[index];
+            await this.dailyExpensesApi.uploadFileToS3(presigned.presignedUrl, file);
+
+            // Paso 4: Confirmar subida al backend
+            const updated = await firstValueFrom(
+              this.dailyExpensesApi.confirmVideoUpload(reportId, presigned.publicUrl)
+            );
+
+            this.editing.set(updated);
+
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Video subido',
+              detail: `${file.name} subido exitosamente`,
+              life: 3000,
+            });
+          } catch (error) {
+            console.error(`Error al subir video ${processedFiles[index].name}:`, error);
+            this.toastError(
+              `No se pudo subir el video: ${processedFiles[index].name}. ${
+                (error as Error).message
+              }`
+            );
+          }
+        })
+      );
     } catch (error) {
       console.error('Error al procesar videos:', error);
-      this.toastError('Error al procesar los videos. Intenta nuevamente.');
+      this.toastError(`Error al procesar los videos. ${(error as Error).message}`);
     }
 
     input.value = '';
@@ -1349,20 +1402,57 @@ export class DailyExpensesPage implements OnInit {
       });
     });
   }
-  private uploadVideoPromise(id: string, file: File) {
-    return new Promise((resolve, reject) => {
+  private async uploadVideoPromise(id: string, file: File): Promise<unknown> {
+    try {
       console.log('Subiendo video:', { fileName: file.name, fileSize: file.size, reportId: id });
-      this.dailyExpensesApi.uploadVideo(id, file).subscribe({
-        next: (response) => {
-          console.log('Video subido exitosamente:', { fileName: file.name, reportId: id });
-          resolve(response);
-        },
-        error: (error) => {
-          console.error('Error al subir video:', { fileName: file.name, error, reportId: id });
-          reject({ type: 'video', fileName: file.name, error });
-        },
-      });
-    });
+
+      // Paso 1: Comprimir video si es necesario
+      let fileToUpload = file;
+      try {
+        const compressed = await compressVideo(file, {
+          maxWidth: 1280,
+          maxHeight: 720,
+          bitrate: 2000000, // 2Mbps
+          maxSizeMB: 50,
+          maxFPS: 30,
+          quality: 0.7,
+        });
+
+        if (compressed.size < file.size) {
+          fileToUpload = compressed;
+          console.log('Video comprimido antes de subir:', {
+            original: `${(file.size / (1024 * 1024)).toFixed(2)}MB`,
+            compressed: `${(compressed.size / (1024 * 1024)).toFixed(2)}MB`,
+          });
+        }
+      } catch (compressionError) {
+        console.warn('Error al comprimir video, usando original:', compressionError);
+      }
+
+      // Paso 2: Generar Presigned URL
+      const presignedResponse = await firstValueFrom(
+        this.dailyExpensesApi.generateVideoPresignedUrl(
+          id,
+          fileToUpload.name,
+          fileToUpload.type || 'video/mp4',
+          3600 // 1 hora
+        )
+      );
+
+      // Paso 3: Subir directamente a S3
+      await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, fileToUpload);
+
+      // Paso 4: Confirmar subida al backend
+      const response = await firstValueFrom(
+        this.dailyExpensesApi.confirmVideoUpload(id, presignedResponse.publicUrl)
+      );
+
+      console.log('Video subido exitosamente:', { fileName: file.name, reportId: id });
+      return response;
+    } catch (error) {
+      console.error('Error al subir video:', { fileName: file.name, error, reportId: id });
+      throw { type: 'video', fileName: file.name, error };
+    }
   }
   private uploadPhotoPromise(id: string, file: File) {
     return new Promise((resolve, reject) => {
