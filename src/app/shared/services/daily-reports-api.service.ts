@@ -5,10 +5,25 @@ import { environment } from '../../../environments/environment';
 import { DailyReport } from '../interfaces/daily-report.interface';
 
 interface DailyReportStats {
-    total: number;
-    byProject: { projectId: string; projectName: string; count: number }[];
-    byUser: { userId: string; userName: string; count: number }[];
-    byDate: { date: string; count: number }[];
+  total: number;
+  byProject: { projectId: string; projectName: string; count: number }[];
+  byUser: { userId: string; userName: string; count: number }[];
+  byDate: { date: string; count: number }[];
+}
+
+/**
+ * Interfaces para Presigned URLs
+ */
+export interface PresignedUrlRequest {
+  fileName: string;
+  contentType: string;
+  expirationTime?: number;
+}
+
+export interface PresignedUrlResponse {
+  presignedUrl: string;
+  publicUrl: string;
+  key: string;
 }
 
 @Injectable({
@@ -107,23 +122,25 @@ export class DailyExpensesApiService {
   uploadDocument(reportId: string, file: File): Observable<DailyReport> {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     // Calcular timeout basado en el tamaño del archivo
     const fileSizeMB = file.size / (1024 * 1024);
-    const timeoutMs = Math.max(30000, 30000 + (fileSizeMB * 5000)); // Mínimo 30s, +5s por MB
+    const timeoutMs = Math.max(30000, 30000 + fileSizeMB * 5000); // Mínimo 30s, +5s por MB
     const maxTimeout = 300000; // Máximo 5 minutos
     const finalTimeout = Math.min(timeoutMs, maxTimeout);
 
-    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/documents`, formData, {
-      headers: new HttpHeaders({}),
-      reportProgress: false,
-    }).pipe(
-      timeout(finalTimeout),
-      catchError((error) => {
-        console.error('Error en uploadDocument:', { fileName: file.name, error });
-        return throwError(() => error);
+    return this.http
+      .post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/documents`, formData, {
+        headers: new HttpHeaders({}),
+        reportProgress: false,
       })
-    );
+      .pipe(
+        timeout(finalTimeout),
+        catchError((error) => {
+          console.error('Error en uploadDocument:', { fileName: file.name, error });
+          return throwError(() => error);
+        })
+      );
   }
 
   deleteDocument(reportId: string, documentUrl: string): Observable<DailyReport> {
@@ -135,67 +152,73 @@ export class DailyExpensesApiService {
   uploadAudio(reportId: string, file: File): Observable<DailyReport> {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     // Calcular timeout basado en el tamaño del archivo
     const fileSizeMB = file.size / (1024 * 1024);
-    const timeoutMs = Math.max(30000, 30000 + (fileSizeMB * 5000)); // Mínimo 30s, +5s por MB
+    const timeoutMs = Math.max(30000, 30000 + fileSizeMB * 5000); // Mínimo 30s, +5s por MB
     const maxTimeout = 300000; // Máximo 5 minutos
     const finalTimeout = Math.min(timeoutMs, maxTimeout);
 
-    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/audio`, formData, {
-      headers: new HttpHeaders({}),
-      reportProgress: false,
-    }).pipe(
-      timeout(finalTimeout),
-      catchError((error) => {
-        console.error('Error en uploadAudio:', { fileName: file.name, error });
-        return throwError(() => error);
+    return this.http
+      .post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/audio`, formData, {
+        headers: new HttpHeaders({}),
+        reportProgress: false,
       })
-    );
+      .pipe(
+        timeout(finalTimeout),
+        catchError((error) => {
+          console.error('Error en uploadAudio:', { fileName: file.name, error });
+          return throwError(() => error);
+        })
+      );
   }
 
   uploadVideo(reportId: string, file: File): Observable<DailyReport> {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     // Calcular timeout basado en el tamaño del archivo
     const fileSizeMB = file.size / (1024 * 1024);
-    const timeoutMs = Math.max(60000, 60000 + (fileSizeMB * 10000)); // Mínimo 60s, +10s por MB (videos son más grandes)
+    const timeoutMs = Math.max(60000, 60000 + fileSizeMB * 10000); // Mínimo 60s, +10s por MB (videos son más grandes)
     const maxTimeout = 600000; // Máximo 10 minutos para videos
     const finalTimeout = Math.min(timeoutMs, maxTimeout);
 
-    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/video`, formData, {
-      headers: new HttpHeaders({}),
-      reportProgress: false,
-    }).pipe(
-      timeout(finalTimeout),
-      catchError((error) => {
-        console.error('Error en uploadVideo:', { fileName: file.name, error });
-        return throwError(() => error);
+    return this.http
+      .post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/video`, formData, {
+        headers: new HttpHeaders({}),
+        reportProgress: false,
       })
-    );
+      .pipe(
+        timeout(finalTimeout),
+        catchError((error) => {
+          console.error('Error en uploadVideo:', { fileName: file.name, error });
+          return throwError(() => error);
+        })
+      );
   }
 
   uploadPhoto(reportId: string, file: File): Observable<DailyReport> {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     // Calcular timeout basado en el tamaño del archivo
     const fileSizeMB = file.size / (1024 * 1024);
-    const timeoutMs = Math.max(30000, 30000 + (fileSizeMB * 5000)); // Mínimo 30s, +5s por MB
+    const timeoutMs = Math.max(30000, 30000 + fileSizeMB * 5000); // Mínimo 30s, +5s por MB
     const maxTimeout = 300000; // Máximo 5 minutos
     const finalTimeout = Math.min(timeoutMs, maxTimeout);
 
-    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/photo`, formData, {
-      headers: new HttpHeaders({}),
-      reportProgress: false,
-    }).pipe(
-      timeout(finalTimeout),
-      catchError((error) => {
-        console.error('Error en uploadPhoto:', { fileName: file.name, error });
-        return throwError(() => error);
+    return this.http
+      .post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/photo`, formData, {
+        headers: new HttpHeaders({}),
+        reportProgress: false,
       })
-    );
+      .pipe(
+        timeout(finalTimeout),
+        catchError((error) => {
+          console.error('Error en uploadPhoto:', { fileName: file.name, error });
+          return throwError(() => error);
+        })
+      );
   }
 
   deleteAudio(reportId: string, audioUrl: string): Observable<DailyReport> {
@@ -214,5 +237,102 @@ export class DailyExpensesApiService {
     return this.http.delete<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/photo`, {
       body: { photoUrl },
     });
+  }
+
+  // ============================================
+  // MÉTODOS PARA PRESIGNED URLS (Subida directa a S3)
+  // ============================================
+
+  /**
+   * Genera una Presigned URL para subir un video directamente a S3
+   * @param reportId ID del reporte
+   * @param fileName Nombre del archivo
+   * @param contentType Tipo MIME del archivo
+   * @param expirationTime Tiempo de expiración en segundos (opcional, default: 3600)
+   * @returns Observable con la Presigned URL y URL pública
+   */
+  generateVideoPresignedUrl(
+    reportId: string,
+    fileName: string,
+    contentType: string,
+    expirationTime?: number
+  ): Observable<PresignedUrlResponse> {
+    const body: PresignedUrlRequest = {
+      fileName,
+      contentType,
+      ...(expirationTime && { expirationTime }),
+    };
+
+    return this.http.post<PresignedUrlResponse>(
+      `${this.baseUrl}/daily-reports/${reportId}/video/presigned-url`,
+      body
+    );
+  }
+
+  /**
+   * Genera múltiples Presigned URLs para subir varios videos
+   * @param reportId ID del reporte
+   * @param files Array de objetos con fileName y contentType
+   * @param expirationTime Tiempo de expiración en segundos (opcional)
+   * @returns Observable con array de Presigned URLs
+   */
+  generateMultipleVideoPresignedUrls(
+    reportId: string,
+    files: { fileName: string; contentType: string }[],
+    expirationTime?: number
+  ): Observable<PresignedUrlResponse[]> {
+    const body: {
+      files: PresignedUrlRequest[];
+      expirationTime?: number;
+    } = {
+      files: files.map((f) => ({
+        fileName: f.fileName,
+        contentType: f.contentType,
+      })),
+      ...(expirationTime && { expirationTime }),
+    };
+
+    return this.http.post<PresignedUrlResponse[]>(
+      `${this.baseUrl}/daily-reports/${reportId}/video/presigned-urls`,
+      body
+    );
+  }
+
+  /**
+   * Confirma la subida de un video y lo agrega al reporte
+   * Debe llamarse después de subir el archivo a S3 usando la Presigned URL
+   * @param reportId ID del reporte
+   * @param videoUrl URL pública del video en S3
+   * @returns Observable con el reporte actualizado
+   */
+  confirmVideoUpload(reportId: string, videoUrl: string): Observable<DailyReport> {
+    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/video/confirm`, {
+      videoUrl,
+    });
+  }
+
+  /**
+   * Sube un archivo directamente a S3 usando una Presigned URL
+   * IMPORTANTE: No incluye headers de Authorization (la URL ya está firmada)
+   * @param presignedUrl URL firmada de S3
+   * @param file Archivo a subir
+   * @returns Promise que se resuelve cuando la subida es exitosa
+   */
+  async uploadFileToS3(presignedUrl: string, file: File): Promise<void> {
+    const response = await fetch(presignedUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type,
+        // NO incluir Authorization - la URL ya está firmada
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Error al subir archivo a S3: ${response.status} ${response.statusText}. ${errorText}`
+      );
+    }
   }
 }
