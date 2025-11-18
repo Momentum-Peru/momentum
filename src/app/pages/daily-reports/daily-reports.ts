@@ -20,6 +20,7 @@ import { AuthService } from '../login/services/auth.service';
 import { DailyReport } from '../../shared/interfaces/daily-report.interface';
 import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
 import { compressImage } from '../../shared/utils/image-compression.util';
+import { compressVideo } from '../../shared/utils/video-compression.util';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import { TruncatePipe } from './truncate.pipe';
 
@@ -906,22 +907,83 @@ export class DailyExpensesPage implements OnInit {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
-  onVideoSelected(event: Event) {
+  async onVideoSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
-    if (this.editing()?._id) {
-      // Subir múltiples archivos
-      files.forEach((file) => {
-        this.dailyExpensesApi.uploadVideo(this.editing()!._id!, file).subscribe({
-          next: (updated) => this.editing.set(updated),
-          error: () => this.toastError(`No se pudo subir el video: ${file.name}`),
-        });
+
+    // Mostrar mensaje de compresión si hay archivos grandes
+    const hasLargeFiles = files.some((f) => f.size > 5 * 1024 * 1024); // > 5MB
+    if (hasLargeFiles) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Comprimiendo videos',
+        detail: 'Los videos grandes se están comprimiendo para reducir su tamaño...',
+        life: 5000,
       });
-    } else {
-      // Agregar a pendientes
-      this.pendingVideo.set([...this.pendingVideo(), ...files]);
     }
+
+    try {
+      // Comprimir todos los videos en paralelo, usando el original si falla la compresión
+      const processedFiles = await Promise.all(
+        files.map(async (file) => {
+          try {
+            const compressed = await compressVideo(file, {
+              maxWidth: 1280,
+              maxHeight: 720,
+              bitrate: 2000000, // 2Mbps
+              maxSizeMB: 50,
+              maxFPS: 30,
+              quality: 0.7,
+            });
+
+            if (compressed.size < file.size) {
+              const originalSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+              const compressedSizeMB = (compressed.size / (1024 * 1024)).toFixed(2);
+              const reduction = (((file.size - compressed.size) / file.size) * 100).toFixed(1);
+
+              console.log(`Video comprimido: ${file.name}`, {
+                original: `${originalSizeMB}MB`,
+                compressed: `${compressedSizeMB}MB`,
+                reduction: `${reduction}%`,
+              });
+
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Video comprimido',
+                detail: `${file.name}: ${originalSizeMB}MB → ${compressedSizeMB}MB (${reduction}% reducción)`,
+                life: 4000,
+              });
+
+              return compressed;
+            }
+
+            return file;
+          } catch (error) {
+            console.error(`Error al comprimir video ${file.name}:`, error);
+            // Si falla la compresión, usar el archivo original
+            return file;
+          }
+        })
+      );
+
+      if (this.editing()?._id) {
+        // Subir múltiples archivos
+        processedFiles.forEach((file) => {
+          this.dailyExpensesApi.uploadVideo(this.editing()!._id!, file).subscribe({
+            next: (updated) => this.editing.set(updated),
+            error: () => this.toastError(`No se pudo subir el video: ${file.name}`),
+          });
+        });
+      } else {
+        // Agregar a pendientes
+        this.pendingVideo.set([...this.pendingVideo(), ...processedFiles]);
+      }
+    } catch (error) {
+      console.error('Error al procesar videos:', error);
+      this.toastError('Error al procesar los videos. Intenta nuevamente.');
+    }
+
     input.value = '';
   }
 
