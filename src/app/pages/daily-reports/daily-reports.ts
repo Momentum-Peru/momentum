@@ -807,22 +807,79 @@ export class DailyExpensesPage implements OnInit {
   }
 
   // Captura de archivos (mobile friendly) - múltiples archivos
-  onAudioSelected(event: Event) {
+  async onAudioSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
-    if (this.editing()?._id) {
-      // Subir múltiples archivos
-      files.forEach((file) => {
-        this.dailyExpensesApi.uploadAudio(this.editing()!._id!, file).subscribe({
-          next: (updated) => this.editing.set(updated),
-          error: () => this.toastError(`No se pudo subir el audio: ${file.name}`),
-        });
-      });
-    } else {
-      // Agregar a pendientes
+
+    const reportId = this.editing()?._id;
+    if (!reportId) {
+      // Si no hay reporte, agregar a pendientes (comportamiento anterior)
       this.pendingAudio.set([...this.pendingAudio(), ...files]);
+      input.value = '';
+      return;
     }
+
+    try {
+      // Paso 1: Generar Presigned URLs para todos los archivos
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Preparando subida',
+        detail: 'Generando URLs de subida...',
+        life: 3000,
+      });
+
+      const presignedUrls = await firstValueFrom(
+        this.dailyExpensesApi.generateMultipleAudioPresignedUrls(
+          reportId,
+          files.map((file) => ({
+            fileName: file.name,
+            contentType: file.type || 'audio/mpeg',
+          })),
+          3600 // 1 hora de expiración
+        )
+      );
+
+      // Paso 2: Subir todos los archivos directamente a S3 en paralelo
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Subiendo audios',
+        detail: `Subiendo ${files.length} audio(s) directamente a S3...`,
+        life: 5000,
+      });
+
+      await Promise.all(
+        presignedUrls.map(async (presigned, index) => {
+          try {
+            const file = files[index];
+            await this.dailyExpensesApi.uploadFileToS3(presigned.presignedUrl, file);
+
+            // Paso 3: Confirmar subida al backend
+            const updated = await firstValueFrom(
+              this.dailyExpensesApi.confirmAudioUpload(reportId, presigned.publicUrl)
+            );
+
+            this.editing.set(updated);
+
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Audio subido',
+              detail: `${file.name} subido exitosamente`,
+              life: 3000,
+            });
+          } catch (error) {
+            console.error(`Error al subir audio ${files[index].name}:`, error);
+            this.toastError(
+              `No se pudo subir el audio: ${files[index].name}. ${(error as Error).message}`
+            );
+          }
+        })
+      );
+    } catch (error) {
+      console.error('Error al procesar audios:', error);
+      this.toastError(`Error al procesar los audios. ${(error as Error).message}`);
+    }
+
     input.value = '';
   }
 
@@ -847,16 +904,42 @@ export class DailyExpensesPage implements OnInit {
         }
       };
 
-      this.mediaRecorder.onstop = () => {
+      this.mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
         const audioFile = new File([audioBlob], `audio-${Date.now()}.webm`, { type: 'audio/webm' });
 
-        if (this.editing()?._id) {
-          this.dailyExpensesApi.uploadAudio(this.editing()!._id!, audioFile).subscribe({
-            next: (updated) => this.editing.set(updated),
-            error: () => this.toastError('No se pudo subir el audio'),
-          });
+        const reportId = this.editing()?._id;
+        if (reportId) {
+          // Usar Presigned URL para subir el audio
+          try {
+            const presignedResponse = await firstValueFrom(
+              this.dailyExpensesApi.generateAudioPresignedUrl(
+                reportId,
+                audioFile.name,
+                audioFile.type,
+                3600
+              )
+            );
+
+            await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, audioFile);
+
+            const updated = await firstValueFrom(
+              this.dailyExpensesApi.confirmAudioUpload(reportId, presignedResponse.publicUrl)
+            );
+
+            this.editing.set(updated);
+
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Audio grabado',
+              detail: 'Audio grabado y subido exitosamente',
+              life: 3000,
+            });
+          } catch (error) {
+            this.toastError(`No se pudo subir el audio. ${(error as Error).message}`);
+          }
         } else {
+          // Agregar a pendientes si no hay reporte
           this.pendingAudio.set([...this.pendingAudio(), audioFile]);
         }
 
@@ -1387,20 +1470,34 @@ export class DailyExpensesPage implements OnInit {
     });
   }
 
-  private uploadAudioPromise(id: string, file: File) {
-    return new Promise((resolve, reject) => {
+  private async uploadAudioPromise(id: string, file: File): Promise<unknown> {
+    try {
       console.log('Subiendo audio:', { fileName: file.name, fileSize: file.size, reportId: id });
-      this.dailyExpensesApi.uploadAudio(id, file).subscribe({
-        next: (response) => {
-          console.log('Audio subido exitosamente:', { fileName: file.name, reportId: id });
-          resolve(response);
-        },
-        error: (error) => {
-          console.error('Error al subir audio:', { fileName: file.name, error, reportId: id });
-          reject({ type: 'audio', fileName: file.name, error });
-        },
-      });
-    });
+
+      // Paso 1: Generar Presigned URL
+      const presignedResponse = await firstValueFrom(
+        this.dailyExpensesApi.generateAudioPresignedUrl(
+          id,
+          file.name,
+          file.type || 'audio/mpeg',
+          3600 // 1 hora
+        )
+      );
+
+      // Paso 2: Subir directamente a S3
+      await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, file);
+
+      // Paso 3: Confirmar subida al backend
+      const response = await firstValueFrom(
+        this.dailyExpensesApi.confirmAudioUpload(id, presignedResponse.publicUrl)
+      );
+
+      console.log('Audio subido exitosamente:', { fileName: file.name, reportId: id });
+      return response;
+    } catch (error) {
+      console.error('Error al subir audio:', { fileName: file.name, error, reportId: id });
+      throw { type: 'audio', fileName: file.name, error };
+    }
   }
   private async uploadVideoPromise(id: string, file: File): Promise<unknown> {
     try {

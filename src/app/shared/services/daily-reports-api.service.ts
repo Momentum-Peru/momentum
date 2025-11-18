@@ -312,6 +312,74 @@ export class DailyExpensesApiService {
   }
 
   /**
+   * Genera una Presigned URL para subir un audio directamente a S3
+   * @param reportId ID del reporte
+   * @param fileName Nombre del archivo
+   * @param contentType Tipo MIME del archivo
+   * @param expirationTime Tiempo de expiración en segundos (opcional, default: 3600)
+   * @returns Observable con la Presigned URL y URL pública
+   */
+  generateAudioPresignedUrl(
+    reportId: string,
+    fileName: string,
+    contentType: string,
+    expirationTime?: number
+  ): Observable<PresignedUrlResponse> {
+    const body: PresignedUrlRequest = {
+      fileName,
+      contentType,
+      ...(expirationTime && { expirationTime }),
+    };
+
+    return this.http.post<PresignedUrlResponse>(
+      `${this.baseUrl}/daily-reports/${reportId}/audio/presigned-url`,
+      body
+    );
+  }
+
+  /**
+   * Genera múltiples Presigned URLs para subir varios audios
+   * @param reportId ID del reporte
+   * @param files Array de objetos con fileName y contentType
+   * @param expirationTime Tiempo de expiración en segundos (opcional)
+   * @returns Observable con array de Presigned URLs
+   */
+  generateMultipleAudioPresignedUrls(
+    reportId: string,
+    files: { fileName: string; contentType: string }[],
+    expirationTime?: number
+  ): Observable<PresignedUrlResponse[]> {
+    const body: {
+      files: PresignedUrlRequest[];
+      expirationTime?: number;
+    } = {
+      files: files.map((f) => ({
+        fileName: f.fileName,
+        contentType: f.contentType,
+      })),
+      ...(expirationTime && { expirationTime }),
+    };
+
+    return this.http.post<PresignedUrlResponse[]>(
+      `${this.baseUrl}/daily-reports/${reportId}/audio/presigned-urls`,
+      body
+    );
+  }
+
+  /**
+   * Confirma la subida de un audio y lo agrega al reporte
+   * Debe llamarse después de subir el archivo a S3 usando la Presigned URL
+   * @param reportId ID del reporte
+   * @param audioUrl URL pública del audio en S3
+   * @returns Observable con el reporte actualizado
+   */
+  confirmAudioUpload(reportId: string, audioUrl: string): Observable<DailyReport> {
+    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/audio/confirm`, {
+      audioUrl,
+    });
+  }
+
+  /**
    * Sube un archivo directamente a S3 usando una Presigned URL
    * IMPORTANTE: No incluye headers de Authorization (la URL ya está firmada)
    * @param presignedUrl URL firmada de S3
@@ -319,20 +387,47 @@ export class DailyExpensesApiService {
    * @returns Promise que se resuelve cuando la subida es exitosa
    */
   async uploadFileToS3(presignedUrl: string, file: File): Promise<void> {
-    const response = await fetch(presignedUrl, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type,
-        // NO incluir Authorization - la URL ya está firmada
-      },
-    });
+    try {
+      const response = await fetch(presignedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+          // NO incluir Authorization - la URL ya está firmada
+        },
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Error al subir archivo a S3: ${response.status} ${response.statusText}. ${errorText}`
-      );
+      if (!response.ok) {
+        const errorText = await response.text();
+
+        // Detectar errores CORS específicamente
+        if (
+          response.status === 0 ||
+          errorText.includes('CORS') ||
+          errorText.includes('Access-Control')
+        ) {
+          const currentOrigin = window.location.origin;
+          throw new Error(
+            `Error CORS: El bucket de S3 no permite el origen "${currentOrigin}". ` +
+              `Configura CORS en el bucket para permitir este origen. ` +
+              `Ver documentación: s3-cors-configuration.md`
+          );
+        }
+
+        throw new Error(
+          `Error al subir archivo a S3: ${response.status} ${response.statusText}. ${errorText}`
+        );
+      }
+    } catch (error) {
+      // Si es un error de red (CORS bloqueado), mejorar el mensaje
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        const currentOrigin = window.location.origin;
+        throw new Error(
+          `Error de red/CORS: No se pudo conectar a S3 desde "${currentOrigin}". ` +
+            `Verifica que el bucket tenga configurado CORS para permitir este origen.`
+        );
+      }
+      throw error;
     }
   }
 }
