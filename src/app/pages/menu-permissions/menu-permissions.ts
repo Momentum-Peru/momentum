@@ -18,6 +18,7 @@ import { UsersApiService, User } from '../../shared/services/users-api.service';
 import { MenuService } from '../../shared/services/menu.service';
 import { MenuConfigService } from '../../shared/services/menu-config.service';
 import { TenantService } from '../../core/services/tenant.service';
+import { AuthService } from '../../pages/login/services/auth.service';
 import {
   MenuPermissionWithUser,
   AssignPermissionsRequest,
@@ -62,6 +63,7 @@ export class MenuPermissionsPage implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly tenantService = inject(TenantService);
+  private readonly authService = inject(AuthService);
 
   // Signals para el estado del componente
   items = signal<MenuPermissionWithUser[]>([]);
@@ -210,7 +212,8 @@ export class MenuPermissionsPage implements OnInit {
 
   loadUsers() {
     const currentTenantId = this.tenantService.tenantId();
-    console.log('Loading users for tenant:', currentTenantId);
+    const isGerencia = this.authService.isGerencia();
+    console.log('Loading users for tenant:', currentTenantId, 'isGerencia:', isGerencia);
 
     // Obtener usuarios completos con tenantIds para filtrar
     this.usersApi.listWithFilters({}).subscribe({
@@ -225,8 +228,13 @@ export class MenuPermissionsPage implements OnInit {
           role: user.role,
         });
 
-        // Filtrar usuarios por tenant seleccionado
-        if (currentTenantId) {
+        // Para gerencia: mostrar todos los usuarios sin filtrar por tenant
+        // Para otros roles: filtrar por tenant seleccionado
+        if (isGerencia) {
+          console.log('Gerencia: showing all users');
+          const userOptions = allUsers.map(toUserOption);
+          this.users.set(userOptions);
+        } else if (currentTenantId) {
           const filteredUsers = allUsers.filter((user) => {
             const tenantIds = user.tenantIds ?? [];
             if (tenantIds.length === 0) {
