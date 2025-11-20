@@ -29,6 +29,7 @@ import {
   UserCreateRequest,
   UserUpdateRequest,
 } from '../../shared/services/users-api.service';
+import { AuthService } from '../login/services/auth.service';
 
 interface UserFormData {
   _id?: string;
@@ -72,6 +73,7 @@ export class UsersPage implements OnInit, OnDestroy {
   private readonly usersApi = inject(UsersApiService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
+  private readonly authService = inject(AuthService);
   private readonly baseUrl = environment.apiUrl;
 
   // Estado de la aplicación

@@ -39,6 +39,11 @@ export class MenuPermissionGuard implements CanActivate {
       return of(false);
     }
 
+    // Para gerencia: permitir acceso a todas las rutas sin verificar permisos
+    if (this.authService.isGerencia()) {
+      return of(true);
+    }
+
     // Verificar si el usuario tiene permiso para acceder a la ruta
     return this.menuPermissionsApi.checkPermission(currentUser.id, requiredRoute).pipe(
       map((response) => {
