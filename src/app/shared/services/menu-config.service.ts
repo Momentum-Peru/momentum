@@ -43,6 +43,7 @@ export class MenuConfigService {
     { path: '/follow-ups', label: 'Seguimientos', icon: 'pi pi-calendar-plus' },
     { path: '/companies-crm', label: 'Empresas Momentum', icon: 'pi pi-building' },
     { path: '/fi', label: 'Futuros Imposibles', icon: 'pi pi-bolt' },
+    { path: '/payroll', label: 'Planillas y Pagos', icon: 'pi pi-wallet' },
   ];
 
   /**
@@ -148,6 +149,11 @@ export class MenuConfigService {
             label: 'Empleados',
             icon: 'pi pi-user',
             routerLink: '/employees',
+          },
+          {
+            label: 'Planillas y Pagos',
+            icon: 'pi pi-wallet',
+            routerLink: '/payroll',
           },
         ],
       },
