@@ -189,6 +189,25 @@ export const routes: Routes = [
         data: { menuPermission: '/user-tenants-assignment' },
       },
       {
+        path: 'payroll',
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/payroll' },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./pages/payroll/payroll-list/payroll-list.component').then(m => m.PayrollListComponent)
+          },
+          {
+            path: 'upload',
+            loadComponent: () => import('./pages/payroll/payroll-upload/payroll-upload.component').then(m => m.PayrollUploadComponent)
+          },
+          {
+            path: 'detail/:id',
+            loadComponent: () => import('./pages/payroll/payroll-detail/payroll-detail.component').then(m => m.PayrollDetailComponent)
+          }
+        ]
+      },
+      {
         path: '**',
         redirectTo: 'dashboard',
         pathMatch: 'full',
