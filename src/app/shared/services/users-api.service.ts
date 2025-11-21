@@ -10,7 +10,7 @@ export interface User {
   id: string; // Para compatibilidad con código existente
   name: string;
   email: string;
-  role: 'user' | 'moderator' | 'admin' | 'gerencia'; // Tipos específicos para compatibilidad
+  role: 'user' | 'admin' | 'gerencia'; // Tipos específicos para compatibilidad
   isActive: boolean;
   tenantIds?: string[]; // Empresas asignadas al usuario
   createdAt: string;
@@ -23,14 +23,14 @@ export interface UserCreateRequest {
   name: string;
   email: string;
   password: string;
-  role: 'user' | 'moderator' | 'admin' | 'gerencia';
+  role: 'user' | 'admin' | 'gerencia';
   isActive?: boolean;
 }
 
 export interface UserUpdateRequest {
   name?: string;
   email?: string;
-  role?: 'user' | 'moderator' | 'admin' | 'gerencia';
+  role?: 'user' | 'admin' | 'gerencia';
   isActive?: boolean;
   tenantIds?: string[]; // Actualizar empresas asignadas
 }

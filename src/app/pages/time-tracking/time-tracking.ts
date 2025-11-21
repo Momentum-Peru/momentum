@@ -86,6 +86,13 @@ export class TimeTrackingPage implements OnInit {
   viewing = signal<TimeTracking | null>(null);
   private expandedRowKeys = signal<Set<string>>(new Set());
 
+  // Verificar si el usuario puede editar o eliminar marcaciones
+  // Solo admin y gerencia pueden editar/eliminar, los usuarios regulares no
+  canEditOrDelete = computed(() => {
+    const user = this.authService.getCurrentUser();
+    return user?.role === 'admin' || user?.role === 'gerencia';
+  });
+
   // Estado para marcación con reconocimiento facial
   faceImage = signal<File | null>(null);
   faceImagePreview = signal<string | null>(null);
