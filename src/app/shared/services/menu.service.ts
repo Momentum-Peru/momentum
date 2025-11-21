@@ -2,6 +2,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { MenuPermissionsApiService } from './menu-permissions-api.service';
 import { AuthService } from '../../pages/login/services/auth.service';
 import { MenuPermission } from '../interfaces/menu-permission.interface';
+import { MenuConfigService } from './menu-config.service';
 
 // Eliminamos MenuItem ya que no necesitamos crear menús
 // Solo verificamos permisos de acceso
@@ -12,14 +13,24 @@ import { MenuPermission } from '../interfaces/menu-permission.interface';
 export class MenuService {
   private readonly menuPermissionsApi = inject(MenuPermissionsApiService);
   private readonly authService = inject(AuthService);
+  private readonly menuConfigService = inject(MenuConfigService);
 
   // Signal para almacenar los permisos del usuario actual
   private userPermissions = signal<MenuPermission[]>([]);
 
   // Ya no necesitamos generar menús, solo verificamos permisos
 
+  // Computed para verificar si el usuario es gerencia
+  private isGerencia = computed(() => this.authService.isGerencia());
+
   // Computed para obtener las rutas permitidas
+  // Para gerencia: retorna todas las rutas disponibles del sistema
   allowedRoutes = computed(() => {
+    // Si es gerencia, retornar todas las rutas disponibles del sistema
+    if (this.isGerencia()) {
+      return this.menuConfigService.getProtectedRoutes();
+    }
+    
     return this.userPermissions()
       .filter((permission) => permission.isActive)
       .map((permission) => permission.route);
@@ -61,10 +72,16 @@ export class MenuService {
   /**
    * Verifica si el usuario tiene permiso para acceder a una ruta específica
    * El dashboard siempre está disponible sin restricciones
+   * Para gerencia: todas las rutas están disponibles
    */
   hasPermission(route: string): boolean {
     // El dashboard siempre está disponible sin restricciones
     if (route === '/dashboard') {
+      return true;
+    }
+    
+    // Para gerencia: todas las rutas están disponibles
+    if (this.isGerencia()) {
       return true;
     }
     
@@ -89,10 +106,16 @@ export class MenuService {
    * Verifica si el usuario puede acceder a una ruta específica
    * Útil para mostrar/ocultar elementos del menú
    * El dashboard siempre está disponible sin restricciones
+   * Para gerencia: todas las rutas están disponibles
    */
   canAccess(route: string): boolean {
     // El dashboard siempre está disponible sin restricciones
     if (route === '/dashboard') {
+      return true;
+    }
+    
+    // Para gerencia: todas las rutas están disponibles
+    if (this.isGerencia()) {
       return true;
     }
     

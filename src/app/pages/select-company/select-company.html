@@ -1,66 +1,60 @@
-<div class="p-6 flex items-center justify-center min-h-[60vh]">
-  <p-card class="w-full max-w-2xl">
-    <ng-template pTemplate="header">
-      <div class="flex items-center gap-2">
-        <i class="pi pi-building text-blue-600"></i>
-        <span class="text-lg font-semibold text-gray-800 dark:text-gray-200"
-          >Selecciona tu empresa</span
+<div class="p-4 sm:p-6 min-h-[60vh] space-y-6">
+  <!-- Logo -->
+  <div class="flex justify-center mb-6">
+    <img src="/images/logo_b.png" alt="Logo Momentum" class="max-w-[150px] invert dark:invert-0" />
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+  <div class="flex flex-col items-center justify-center py-16">
+    <p-progressSpinner styleClass="w-8 h-8" strokeWidth="4"></p-progressSpinner>
+    <p class="mt-4 text-gray-600 dark:text-gray-400">Cargando empresas...</p>
+  </div>
+  }
+
+  <!-- Empty State -->
+  @if (!loading() && filtered().length === 0) {
+  <div class="text-center py-16">
+    <i class="pi pi-building text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+    <h3 class="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
+      No hay empresas disponibles
+    </h3>
+    <p class="text-gray-500 dark:text-gray-500">No hay empresas disponibles para seleccionar</p>
+  </div>
+  }
+
+  <!-- Companies Grid -->
+  @if (!loading() && filtered().length > 0) {
+  <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+    @for (company of filtered(); track company._id) {
+    <button
+      type="button"
+      class="w-full aspect-square bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:ring-offset-2"
+      (click)="selectCompany(company)"
+      (keyup.enter)="selectCompany(company)"
+      (keyup.space)="selectCompany(company)"
+      [attr.aria-label]="'Seleccionar empresa: ' + company.name"
+    >
+      <div class="h-full flex flex-col items-center justify-center p-4 text-center">
+        <div
+          class="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4"
         >
+          <i class="pi pi-building text-gray-900 dark:text-white text-2xl"></i>
+        </div>
+        <h3
+          class="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2"
+          [title]="company.name"
+        >
+          {{ company.name }}
+        </h3>
+        @if (company.code) {
+        <p class="text-sm text-gray-500 dark:text-gray-400 font-mono">
+          {{ company.code }}
+        </p>
+        }
       </div>
-    </ng-template>
-
-    <div class="space-y-4">
-      <div class="flex gap-2 items-center">
-        <input
-          pInputText
-          placeholder="Buscar por nombre o código"
-          [ngModel]="query()"
-          (ngModelChange)="setQuery($event)"
-          class="flex-1"
-        />
-        <button
-          pButton
-          icon="pi pi-refresh"
-          [text]="true"
-          (click)="load()"
-          aria-label="Refrescar lista"
-        ></button>
-      </div>
-
-      @if (loading()) {
-      <div class="flex items-center justify-center py-10">
-        <p-progressSpinner></p-progressSpinner>
-      </div>
-      } @else {
-      <p-select
-        [options]="filtered()"
-        optionLabel="name"
-        optionValue="_id"
-        [ngModel]="selectedId()"
-        (ngModelChange)="selectedId.set($event)"
-        placeholder="Seleccione una empresa"
-        class="w-full"
-        [appendTo]="'body'"
-      ></p-select>
-      }
-
-      <div class="flex justify-end gap-2 pt-2">
-        <button
-          pButton
-          icon="pi pi-times"
-          label="Cancelar"
-          [text]="true"
-          routerLink="/dashboard"
-          aria-label="Cancelar"
-        ></button>
-        <button
-          pButton
-          icon="pi pi-check"
-          label="Continuar"
-          (click)="confirm()"
-          aria-label="Continuar"
-        ></button>
-      </div>
-    </div>
-  </p-card>
+    </button>
+    }
+  </div>
+  }
 </div>
