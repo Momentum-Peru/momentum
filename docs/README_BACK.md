@@ -41,8 +41,8 @@ Esta API proporciona un sistema completo de autenticación con JWT y Google OAut
 
 | Método   | Endpoint     | Descripción                | Autenticación | Roles            |
 | -------- | ------------ | -------------------------- | ------------- | ---------------- |
-| `GET`    | `/users`     | Lista paginada de usuarios | ✅ JWT        | admin, moderator |
-| `GET`    | `/users/:id` | Obtener usuario por ID     | ✅ JWT        | admin, moderator |
+| `GET`    | `/users`     | Lista paginada de usuarios | ✅ JWT        | admin, gerencia, user |
+| `GET`    | `/users/:id` | Obtener usuario por ID     | ✅ JWT        | admin, gerencia |
 | `DELETE` | `/users/:id` | Eliminar usuario           | ✅ JWT        | admin            |
 
 ### 📱 **Gestión de Teléfonos**
@@ -338,7 +338,7 @@ Authorization: Bearer <jwt_token>
 
 #### `GET /users`
 
-**Descripción**: Obtiene una lista paginada de usuarios (solo admin y moderator).
+**Descripción**: Obtiene una lista paginada de usuarios (admin, gerencia, user).
 
 **Headers**:
 
@@ -382,7 +382,7 @@ Authorization: Bearer <jwt_token>
 
 #### `GET /users/:id`
 
-**Descripción**: Obtiene un usuario específico por ID (solo admin y moderator).
+**Descripción**: Obtiene un usuario específico por ID (solo admin y gerencia).
 
 **Headers**:
 
@@ -710,8 +710,8 @@ Authorization: Bearer <jwt_token>
 ### **Roles de Usuario**
 
 - `user`: Usuario básico
-- `moderator`: Moderador (puede ver usuarios)
 - `admin`: Administrador (puede ver y eliminar usuarios)
+- `gerencia`: Gerencia (acceso completo a todos los tenants)
 
 ### **Códigos de Estado HTTP**
 
@@ -749,7 +749,7 @@ Authorization: Bearer <jwt_token>
 8. POST /auth/google/disconnect → Desconectar cuando sea necesario
 ```
 
-### **3. Gestión de Usuarios (Admin/Moderator)**
+### **3. Gestión de Usuarios (Admin/Gerencia)**
 
 ```
 1. POST /auth/login → Autenticarse como admin
@@ -781,7 +781,7 @@ Authorization: Bearer <jwt_token>
   email: string;
   name: string;
   password?: string; // Solo para usuarios tradicionales
-  role: 'user' | 'moderator' | 'admin';
+  role: 'user' | 'admin' | 'gerencia';
   isActive: boolean;
   googleId?: string;
   profilePicture?: string;

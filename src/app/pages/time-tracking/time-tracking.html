@@ -81,6 +81,7 @@
               (click)="viewItem(row)"
               aria-label="Ver detalles de la marcación"
             ></button>
+            @if (canEditOrDelete()) {
             <button
               pButton
               icon="pi pi-pencil"
@@ -95,6 +96,7 @@
               (click)="remove(row)"
               aria-label="Eliminar marcación"
             ></button>
+            }
           </td>
         </tr>
       </ng-template>
@@ -103,7 +105,7 @@
 
   <!-- Vista Móvil: Lista tipo tarjetas -->
   <div class="md:hidden space-y-3">
-    @for (row of filteredItems(); track row._id || $index; let i = $index) {
+    @for (row of filteredItems(); track row._id || row.date; let i = $index) {
     <div
       class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
     >
@@ -173,6 +175,7 @@
               (click)="viewItem(row)"
               aria-label="Ver detalles de la marcación"
             ></button>
+            @if (canEditOrDelete()) {
             <button
               pButton
               icon="pi pi-pencil"
@@ -189,6 +192,7 @@
               (click)="remove(row)"
               aria-label="Eliminar marcación"
             ></button>
+            }
           </div>
         </div>
       </div>
@@ -199,7 +203,8 @@
 
   <!-- Modal de edición/creación -->
   <p-dialog
-    [(visible)]="showDialog"
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '42rem' }"
     [draggable]="false"
@@ -277,7 +282,8 @@
 
   <!-- Diálogo de visualización (solo lectura) -->
   <p-dialog
-    [(visible)]="showViewDialog"
+    [visible]="showViewDialog()"
+    (visibleChange)="showViewDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '42rem' }"
     [draggable]="false"
@@ -331,7 +337,8 @@
 
   <!-- Diálogo para Marcación con Reconocimiento Facial -->
   <p-dialog
-    [(visible)]="showFaceDialog"
+    [visible]="showFaceDialog()"
+    (visibleChange)="showFaceDialog.set($event)"
     header="Marcar Asistencia con Reconocimiento Facial"
     [modal]="true"
     [style]="{ width: '90vw', maxWidth: '600px' }"

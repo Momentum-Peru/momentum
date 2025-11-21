@@ -35,7 +35,7 @@ interface UserFormData {
   _id?: string;
   email: string;
   name: string;
-  role: 'user' | 'moderator' | 'admin' | 'gerencia';
+  role: 'user' | 'admin' | 'gerencia';
   password?: string;
 }
 
@@ -104,7 +104,6 @@ export class UsersPage implements OnInit, OnDestroy {
   // Opciones para los selectores
   roleOptions = [
     { label: 'Usuario', value: 'user' },
-    { label: 'Moderador', value: 'moderator' },
     { label: 'Administrador', value: 'admin' },
     { label: 'Gerencia', value: 'gerencia' },
   ];
@@ -481,10 +480,10 @@ export class UsersPage implements OnInit, OnDestroy {
     switch (role) {
       case 'admin':
         return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'moderator':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'user':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'gerencia':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
