@@ -8,6 +8,7 @@ import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { PayrollService } from '../../../core/services/payroll.service';
+import { Payroll } from '../../../core/models/payroll.model';
 
 @Component({
   selector: 'app-payroll-upload',
@@ -115,7 +116,7 @@ export class PayrollUploadComponent {
           detail: `Plantilla ${type} descargada correctamente`,
         });
       },
-      error: (err) => {
+      error: (err: unknown) => {
         console.error('Error al descargar plantilla:', err);
         this.messageService.add({
           severity: 'error',
@@ -131,7 +132,7 @@ export class PayrollUploadComponent {
     if (!file) return;
 
     this.payrollService.uploadPayrollExcel(file, this.selectedType).subscribe({
-      next: (payroll) => {
+      next: (payroll: Payroll) => {
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
@@ -141,7 +142,7 @@ export class PayrollUploadComponent {
           this.router.navigate(['/payroll/detail', payroll.id]);
         }, 1000);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
