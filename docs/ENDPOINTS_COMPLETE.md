@@ -55,7 +55,7 @@ Registra un nuevo usuario en el sistema.
   "email": "usuario@ejemplo.com",
   "password": "miPassword123",
   "name": "Juan Pérez",
-  "role": "user" // Opcional: "user", "admin", "moderator", "gerencia"
+  "role": "user" // Opcional: "user", "admin", "gerencia"
 }
 ```
 
@@ -117,7 +117,7 @@ Authorization: Bearer <token>
 
 ### GET /users
 
-Obtiene lista paginada de usuarios. Requiere roles: `admin`, `moderator`, `gerencia`.
+Obtiene lista paginada de usuarios. Requiere roles: `admin`, `gerencia`, `user`.
 
 **Query Parameters:**
 - `page` (number, opcional): Número de página (default: 1)
@@ -148,7 +148,7 @@ Obtiene lista paginada de usuarios. Requiere roles: `admin`, `moderator`, `geren
 
 ### GET /users/:id
 
-Obtiene un usuario específico por ID. Requiere roles: `admin`, `moderator`, `gerencia`.
+Obtiene un usuario específico por ID. Requiere roles: `admin`, `gerencia`.
 
 **Response (200):** Objeto de usuario completo
 
@@ -162,14 +162,14 @@ Crea un nuevo usuario.
   "email": "nuevo@ejemplo.com",
   "password": "password123",
   "name": "Nuevo Usuario",
-  "role": "user", // Opcional: "user", "admin", "moderator", "gerencia"
+  "role": "user", // Opcional: "user", "admin", "gerencia"
   "tenantIds": [] // Opcional: Array de IDs de tenants
 }
 ```
 
 ### PATCH /users/:id
 
-Actualiza un usuario. Requiere roles: `admin`, `moderator`, `gerencia`.
+Actualiza un usuario. Requiere roles: `admin`, `gerencia`.
 
 **Body:**
 ```json
@@ -1121,7 +1121,6 @@ Elimina un permiso de menú.
 
 - **user**: Usuario básico
 - **admin**: Administrador con acceso completo
-- **moderator**: Moderador con permisos intermedios
 - **gerencia**: Gerencia con acceso a todas las empresas y módulos
 
 ### Notas sobre el Rol de Gerencia
