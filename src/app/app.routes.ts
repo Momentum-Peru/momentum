@@ -148,13 +148,6 @@ export const routes: Routes = [
         data: { menuPermission: '/leads' },
       },
       {
-        path: 'contacts-crm',
-        loadComponent: () =>
-          import('./pages/contacts-crm/contacts-crm').then((m) => m.ContactsCrmPage),
-        canActivate: [MenuPermissionGuard],
-        data: { menuPermission: '/contacts-crm' },
-      },
-      {
         path: 'fi',
         loadComponent: () => import('./pages/fi/fi-list.page').then((m) => m.FiListPage),
         canActivate: [MenuPermissionGuard],

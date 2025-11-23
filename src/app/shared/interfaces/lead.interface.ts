@@ -72,6 +72,7 @@ export interface CreateLeadRequest {
     status?: LeadStatus;
     source?: LeadSource;
     estimatedValue?: number;
+    estimatedCloseDate?: string;
     notes?: string;
     assignedTo?: string;
     companyId?: string; // ID de la empresa de Momentum a la que pertenece el lead
@@ -85,6 +86,7 @@ export interface UpdateLeadRequest {
     status?: LeadStatus;
     source?: LeadSource;
     estimatedValue?: number;
+    estimatedCloseDate?: string;
     notes?: string;
     assignedTo?: string;
     companyId?: string; // ID de la empresa de Momentum a la que pertenece el lead

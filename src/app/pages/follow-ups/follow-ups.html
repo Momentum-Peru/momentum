@@ -109,8 +109,6 @@
             <div class="text-sm text-gray-600 dark:text-gray-400">
               @if (row.leadId) {
               <span>Lead: {{ getLeadName(row.leadId) }}</span>
-              } @else if (row.contactId) {
-              <span>Contacto: {{ getContactName(row.contactId) }}</span>
               } @else if (row.clientId) {
               <span>Cliente: {{ getClientName(row.clientId) }}</span>
               } @else {
@@ -235,81 +233,29 @@
       {{ editing()?._id ? 'Editar Seguimiento' : 'Nuevo Seguimiento' }}
     </ng-template>
     <div class="space-y-4">
+      <!-- Lead Selector -->
       <div>
-        <label for="followUpTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Título *</label
-        >
-        <input
-          id="followUpTitle"
-          pInputText
-          [ngModel]="editing()?.title"
-          (ngModelChange)="onEditChange('title', $event)"
-          class="w-full"
-        />
-      </div>
-      <div>
-        <label for="followUpDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Descripción *</label
-        >
-        <textarea
-          id="followUpDescription"
-          pTextarea
-          rows="4"
-          [ngModel]="editing()?.description"
-          (ngModelChange)="onEditChange('description', $event)"
-          class="w-full"
-        ></textarea>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label for="followUpType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >Tipo *</label
-          >
-          <p-select
-            id="followUpType"
-            [options]="typeOptions"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="editing()?.type"
-            (ngModelChange)="onEditChange('type', $event)"
-            [appendTo]="'body'"
-            class="w-full"
-          ></p-select>
-        </div>
-        <div>
-          <label for="followUpStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >Estado</label
-          >
-          <p-select
-            id="followUpStatus"
-            [options]="statusOptions"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="editing()?.status"
-            (ngModelChange)="onEditChange('status', $event)"
-            [appendTo]="'body'"
-            class="w-full"
-          ></p-select>
-        </div>
-      </div>
-      <div>
-        <label for="followUpScheduledDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Fecha Programada *</label
-        >
-        <p-datepicker
-          id="followUpScheduledDate"
-          [ngModel]="getScheduledDate()"
-          (ngModelChange)="onScheduledDateChange($event)"
-          [showTime]="true"
-          [hourFormat]="'24'"
+        <label for="followUpLead" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asociar a Lead *</label>
+        <p-select
+          id="followUpLead"
+          [options]="leads()"
+          optionLabel="name"
+          optionValue="_id"
+          [ngModel]="editing()?.leadId"
+          (ngModelChange)="onEditChange('leadId', $event)"
+          placeholder="Seleccionar lead"
+          [showClear]="true"
           [appendTo]="'body'"
+          styleClass="w-full"
           class="w-full"
-        ></p-datepicker>
+          [filter]="true"
+          filterBy="name"
+        ></p-select>
       </div>
+
+      <!-- User Selector -->
       <div>
-        <label for="followUpUser" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Usuario *</label
-        >
+        <label for="followUpUser" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Usuario *</label>
         <p-select
           id="followUpUser"
           [options]="users()"
@@ -318,85 +264,112 @@
           [ngModel]="editing()?.userId"
           (ngModelChange)="onEditChange('userId', $event)"
           [appendTo]="'body'"
+          styleClass="w-full"
           class="w-full"
         ></p-select>
       </div>
-      <div>
-        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Asociar a (seleccionar uno)</span
-        >
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label for="followUpLead" class="block text-xs text-gray-600 dark:text-white mb-1">Lead</label>
-            <p-select
-              id="followUpLead"
-              [options]="leads()"
-              optionLabel="name"
-              optionValue="_id"
-              [ngModel]="editing()?.leadId"
-              (ngModelChange)="onEditChange('leadId', $event)"
-              placeholder="Seleccionar lead"
-              [appendTo]="'body'"
-              class="w-full"
-            ></p-select>
-          </div>
-          <div>
-            <label for="followUpContact" class="block text-xs text-gray-600 dark:text-white mb-1">Contacto</label>
-            <p-select
-              id="followUpContact"
-              [options]="contacts()"
-              optionLabel="name"
-              optionValue="_id"
-              [ngModel]="editing()?.contactId"
-              (ngModelChange)="onEditChange('contactId', $event)"
-              placeholder="Seleccionar contacto"
-              [appendTo]="'body'"
-              class="w-full"
-            ></p-select>
-          </div>
-          <div>
-            <label for="followUpClient" class="block text-xs text-gray-600 dark:text-white mb-1">Cliente</label>
-            <p-select
-              id="followUpClient"
-              [options]="clients()"
-              optionLabel="name"
-              optionValue="_id"
-              [ngModel]="editing()?.clientId"
-              (ngModelChange)="onEditChange('clientId', $event)"
-              placeholder="Seleccionar cliente"
-              [appendTo]="'body'"
-              class="w-full"
-            ></p-select>
-          </div>
+
+      <!-- Description & AI Recording -->
+      <div class="space-y-2">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-microphone"
+          label="Grabar con IA"
+          class="w-full"
+          (click)="openAudioAnalysisDialog()"
+          pTooltip="Grabar audio para autocompletar"
+        ></button>
+        <div>
+          <label for="followUpDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción *</label>
+          <textarea
+            id="followUpDescription"
+            pTextarea
+            rows="4"
+            [ngModel]="editing()?.description"
+            (ngModelChange)="onEditChange('description', $event)"
+            class="w-full"
+            placeholder="Detalles del seguimiento..."
+          ></textarea>
         </div>
       </div>
+
+      <!-- Type & Status -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="followUpType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo *</label>
+          <p-select
+            id="followUpType"
+            [options]="typeOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="editing()?.type"
+            (ngModelChange)="onEditChange('type', $event)"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div>
+          <label for="followUpStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+          <p-select
+            id="followUpStatus"
+            [options]="statusOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="editing()?.status"
+            (ngModelChange)="onEditChange('status', $event)"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            class="w-full"
+          ></p-select>
+        </div>
+      </div>
+
+      <!-- Dates -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="followUpScheduledDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Programada *</label>
+          <p-datepicker
+            id="followUpScheduledDate"
+            [ngModel]="getScheduledDate()"
+            (ngModelChange)="onScheduledDateChange($event)"
+            [showTime]="true"
+            [hourFormat]="'24'"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            class="w-full"
+            placeholder="dd/mm/aaaa hh:mm"
+          ></p-datepicker>
+        </div>
+        <div>
+          <label for="followUpNextDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Próximo Seguimiento</label>
+          <p-datepicker
+            id="followUpNextDate"
+            [ngModel]="getNextFollowUpDate()"
+            (ngModelChange)="onNextFollowUpDateChange($event)"
+            [showTime]="true"
+            [hourFormat]="'24'"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            class="w-full"
+            placeholder="dd/mm/aaaa hh:mm"
+          ></p-datepicker>
+        </div>
+      </div>
+
+      <!-- Outcome -->
       <div>
-        <label for="followUpOutcome" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Resultado</label
-        >
+        <label for="followUpOutcome" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Resultado</label>
         <textarea
           id="followUpOutcome"
           pTextarea
           rows="3"
           [ngModel]="editing()?.outcome"
           (ngModelChange)="onEditChange('outcome', $event)"
-          placeholder="Resultado del seguimiento..."
+          placeholder="Resultado obtenido..."
           class="w-full"
         ></textarea>
-      </div>
-      <div>
-        <label for="followUpNextDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >Próximo Seguimiento</label
-        >
-        <p-datepicker
-          id="followUpNextDate"
-          [ngModel]="getNextFollowUpDate()"
-          (ngModelChange)="onNextFollowUpDateChange($event)"
-          [showTime]="true"
-          [hourFormat]="'24'"
-          [appendTo]="'body'"
-          class="w-full"
-        ></p-datepicker>
       </div>
     </div>
     <ng-template pTemplate="footer">
@@ -442,5 +415,57 @@
     <ng-template pTemplate="footer">
       <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
     </ng-template>
+  </p-dialog>
+
+  <!-- Modal de Grabación de Audio -->
+  <p-dialog
+    [(visible)]="showAudioAnalysisDialog"
+    [modal]="true"
+    [style]="{ width: '90vw', maxWidth: '400px' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="!isRecording()"
+    header="Grabar Audio"
+    (onHide)="closeAudioAnalysisDialog()"
+  >
+    <div class="flex flex-col items-center justify-center p-6 space-y-6">
+        <div class="relative">
+            <div class="w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300"
+                [ngClass]="{
+                    'bg-red-100 animate-pulse': isRecording(),
+                    'bg-gray-100': !isRecording()
+                }">
+                <i class="pi text-4xl" [ngClass]="isRecording() ? 'pi-microphone text-red-600' : 'pi-microphone text-gray-400'"></i>
+            </div>
+        </div>
+
+        <div class="text-center space-y-2">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-white">
+                {{ isRecording() ? 'Grabando...' : 'Listo para grabar' }}
+            </h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                {{ isRecording() ? 'Habla claramente para obtener un mejor análisis.' : 'Presiona el botón para comenzar.' }}
+            </p>
+        </div>
+
+        @if (uploadingAudio() || analyzingAudio()) {
+            <div class="w-full space-y-2">
+                <div class="flex items-center justify-center gap-2 text-blue-600">
+                    <i class="pi pi-spin pi-spinner"></i>
+                    <span class="text-sm font-medium">{{ uploadingAudio() ? 'Subiendo audio...' : 'Analizando con IA...' }}</span>
+                </div>
+            </div>
+        }
+
+        <button
+            pButton
+            [label]="isRecording() ? 'Detener y Analizar' : 'Comenzar Grabación'"
+            [icon]="isRecording() ? 'pi pi-stop' : 'pi pi-circle-fill'"
+            [class]="isRecording() ? 'p-button-danger' : 'p-button-primary'"
+            class="w-full"
+            (click)="toggleRecording()"
+            [disabled]="uploadingAudio() || analyzingAudio()"
+        ></button>
+    </div>
   </p-dialog>
 </div>

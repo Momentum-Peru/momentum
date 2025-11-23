@@ -50,6 +50,7 @@
           >
           <input
             id="leadSearch"
+            name="leadSearch"
             pInputText
             placeholder="Nombre, email, empresa..."
             [ngModel]="query()"
@@ -441,6 +442,7 @@
             </label>
             <input
               id="leadName"
+              name="leadName"
               pInputText
               placeholder="Nombre del lead"
               [ngModel]="editing()?.name"
@@ -490,7 +492,7 @@
             </label>
             <p-select
               id="leadStatus"
-              [options]="statusOptions"
+              [options]="getStatusOptionsForEdit()"
               optionLabel="label"
               optionValue="value"
               [ngModel]="editing()?.status"
@@ -537,6 +539,7 @@
           </label>
         <textarea
             id="leadDescription"
+            name="leadDescription"
             pTextarea
             rows="3"
             placeholder="Descripción del lead..."
@@ -557,6 +560,7 @@
             </label>
             <input
               id="contactName"
+              name="contactName"
               pInputText
               placeholder="Nombre completo"
               [ngModel]="editing()?.contact?.name"
@@ -570,6 +574,7 @@
             </label>
             <input
               id="contactEmail"
+              name="contactEmail"
               pInputText
               type="email"
               placeholder="email@ejemplo.com"
@@ -584,6 +589,7 @@
             </label>
             <input
               id="contactPhone"
+              name="contactPhone"
               pInputText
               placeholder="+51 987654321"
               [ngModel]="editing()?.contact?.phone"
@@ -597,6 +603,7 @@
             </label>
             <input
               id="contactPosition"
+              name="contactPosition"
               pInputText
               placeholder="Gerente de TI"
               [ngModel]="editing()?.contact?.position"
@@ -610,6 +617,7 @@
             </label>
             <input
               id="contactDepartment"
+              name="contactDepartment"
               pInputText
               placeholder="Tecnología"
               [ngModel]="editing()?.contact?.department"
@@ -630,6 +638,7 @@
             </label>
             <input
               id="companyName"
+              name="companyName"
               pInputText
               placeholder="Nombre de la empresa"
               [ngModel]="editing()?.company?.name"
@@ -643,6 +652,7 @@
             </label>
             <input
               id="companyTaxId"
+              name="companyTaxId"
               pInputText
               placeholder="20123456789"
               [ngModel]="editing()?.company?.taxId"
@@ -656,6 +666,7 @@
             </label>
             <input
               id="companySector"
+              name="companySector"
               pInputText
               placeholder="Tecnología"
               [ngModel]="editing()?.company?.sector"
@@ -669,6 +680,7 @@
             </label>
             <input
               id="companySize"
+              name="companySize"
               pInputText
               placeholder="50-100 empleados"
               [ngModel]="editing()?.company?.companySize"
@@ -682,6 +694,7 @@
             </label>
             <input
               id="companyWebsite"
+              name="companyWebsite"
               pInputText
               placeholder="https://www.ejemplo.com"
               [ngModel]="editing()?.company?.website"
@@ -755,6 +768,7 @@
             </label>
             <input
               id="locationAddress"
+              name="locationAddress"
               pInputText
               placeholder="Av. Principal 123"
               [ngModel]="editing()?.location?.direccion"
@@ -773,6 +787,7 @@
         </label>
         <textarea
           id="leadNotes"
+          name="leadNotes"
           pTextarea
           rows="4"
           placeholder="Notas adicionales sobre el lead..."
@@ -780,18 +795,6 @@
           (ngModelChange)="onEditChange('notes', $event)"
           class="w-full"
         ></textarea>
-      </div>
-      <div class="mt-3">
-        <label for="leadCloseDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Fecha de Cierre Estimada
-        </label>
-        <p-calendar
-          id="leadCloseDate"
-          [ngModel]="getEstimatedCloseDate()"
-          (ngModelChange)="onEditChange('estimatedCloseDate', $event)"
-          dateFormat="dd/mm/yy"
-          class="w-full"
-        ></p-calendar>
       </div>
     </div>
     <ng-template pTemplate="footer">
@@ -838,10 +841,24 @@
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >Estado</span
             >
-            <p-tag
-              [value]="getStatusLabel(viewingLead()?.status || 'NEW')"
-              [severity]="getStatusSeverity(viewingLead()?.status || 'NEW')"
-            ></p-tag>
+            <div class="flex items-center gap-2">
+              <p-tag
+                [value]="getStatusLabel(viewingLead()?.status || 'NEW')"
+                [severity]="getStatusSeverity(viewingLead()?.status || 'NEW')"
+              ></p-tag>
+              @if (viewingLead()?.status && viewingLead()!.status !== 'CONVERTED') {
+              <p-select
+                [options]="getValidNextStatuses(viewingLead()!.status)"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Cambiar estado"
+                [appendTo]="'body'"
+                styleClass="text-xs"
+                (ngModelChange)="onStatusChange($event)"
+                [showClear]="false"
+              ></p-select>
+              }
+            </div>
           </div>
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
@@ -1066,10 +1083,87 @@
         </div>
       </div>
       }
+
+      <!-- Seguimientos -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
+          >
+            <i class="pi pi-calendar-plus text-purple-500"></i>
+            Seguimientos
+          </h3>
+          <button
+            pButton
+            icon="pi pi-plus"
+            label="Nuevo Seguimiento"
+            class="p-button-sm"
+            (click)="openFollowUpDialog()"
+            aria-label="Crear nuevo seguimiento"
+          ></button>
+        </div>
+        @if (leadFollowUps().length === 0) {
+        <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+          <i class="pi pi-calendar-times text-2xl mb-2"></i>
+          <p>No hay seguimientos registrados</p>
+        </div>
+        } @else {
+        <div class="space-y-3">
+          @for (followUp of leadFollowUps(); track followUp._id || $index) {
+          <div class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <h4 class="font-semibold text-gray-900 dark:text-gray-100">{{ followUp.title }}</h4>
+                  <p-tag
+                    [value]="getFollowUpTypeLabel(followUp.type)"
+                    severity="info"
+                    styleClass="text-xs"
+                  ></p-tag>
+                  <p-tag
+                    [value]="getFollowUpStatusLabel(followUp.status)"
+                    [severity]="followUp.status === 'COMPLETED' ? 'success' : followUp.status === 'CANCELLED' ? 'danger' : 'warn'"
+                    styleClass="text-xs"
+                  ></p-tag>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ followUp.description }}</p>
+                <div class="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-500">
+                  <span>
+                    <i class="pi pi-calendar mr-1"></i>
+                    {{ followUp.scheduledDate | date : 'dd/MM/yyyy HH:mm' }}
+                  </span>
+                  <span>
+                    <i class="pi pi-user mr-1"></i>
+                    {{ getUserName(followUp.userId) }}
+                  </span>
+                </div>
+                @if (followUp.outcome) {
+                <div class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm text-gray-700 dark:text-gray-300">
+                  <strong>Resultado:</strong> {{ followUp.outcome }}
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+        }
+      </div>
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
+      <div class="flex items-center justify-between w-full">
+        <button
+          pButton
+          icon="pi pi-calendar-plus"
+          label="Nuevo Seguimiento"
+          class="p-button-outlined"
+          (click)="openFollowUpDialog()"
+          [disabled]="!viewingLead()?._id"
+          aria-label="Crear nuevo seguimiento"
+        ></button>
+        <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
+      </div>
     </ng-template>
   </p-dialog>
 
@@ -1199,4 +1293,5 @@
       <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()" aria-label="Cerrar estadísticas"></button>
     </ng-template>
   </p-dialog>
+
 </div>

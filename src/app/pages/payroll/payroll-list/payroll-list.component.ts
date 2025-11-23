@@ -6,11 +6,12 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { PayrollService } from '../../../core/services/payroll.service';
 import { Payroll } from '../../../core/models/payroll.model';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
     selector: 'app-payroll-list',
     standalone: true,
-    imports: [CommonModule, RouterModule, TableModule, ButtonModule, TagModule],
+    imports: [CommonModule, RouterModule, TableModule, ButtonModule, TagModule, TooltipModule],
     template: `
     <div class="card p-6">
       <div class="flex justify-between items-center mb-6">
@@ -37,7 +38,7 @@ import { Payroll } from '../../../core/models/payroll.model';
             <td>
               <p-tag [value]="payroll.type" [severity]="payroll.type === 'PLANILLA' ? 'info' : 'warn'"></p-tag>
             </td>
-            <td>{{ payroll.totalAmount | currency:'PEN':'symbol' }}</td>
+            <td>{{ payroll.totalToPay | currency:'PEN':'symbol' }}</td>
             <td>
               <p-tag [value]="payroll.status" [severity]="getStatusSeverity(payroll.status)"></p-tag>
             </td>
@@ -94,7 +95,8 @@ export class PayrollListComponent implements OnInit {
 
     getStatusSeverity(status: string): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" | undefined {
         switch (status) {
-            case 'PROCESSED': return 'success';
+            case 'PROCESSED': 
+            case 'APPROVED': return 'success';
             case 'DRAFT': return 'secondary';
             case 'PAID': return 'info';
             default: return 'info';

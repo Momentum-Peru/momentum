@@ -21,6 +21,7 @@ import {
   AreaInfo,
 } from '../../shared/interfaces/employee.interface';
 import { Area } from '../../shared/interfaces/area.interface';
+import { BANKS, getBankCode } from '../../shared/constants/banks.constants';
 
 @Component({
   selector: 'app-employees',
@@ -57,6 +58,9 @@ export class EmployeesPage implements OnInit {
   editing = signal<Employee | null>(null);
   viewing = signal<Employee | null>(null);
   loading = signal(false);
+
+  // Constante de bancos reutilizable
+  readonly banks = BANKS;
 
   // Estado de expansión para vista móvil
   private expandedRowKeys = signal<Set<string>>(new Set());
@@ -159,6 +163,10 @@ export class EmployeesPage implements OnInit {
       numeroSeguroSocial: '',
       userId: '',
       areaId: undefined,
+      accountNumber: '',
+      bank: '',
+      bankCode: '',
+      accountType: undefined,
     });
     this.showDialog.set(true);
   }
@@ -208,6 +216,18 @@ export class EmployeesPage implements OnInit {
     const current = this.editing();
     if (current) {
       this.editing.set({ ...current, [field]: value });
+    }
+  }
+
+  onBankChange(bankName: string) {
+    const current = this.editing();
+    if (current) {
+      const bankCode = getBankCode(bankName);
+      this.editing.set({
+        ...current,
+        bank: bankName || undefined,
+        bankCode: bankCode || undefined,
+      });
     }
   }
 
@@ -278,6 +298,10 @@ export class EmployeesPage implements OnInit {
         cargo: item.cargo || undefined,
         numeroSeguroSocial: item.numeroSeguroSocial,
         userId: typeof item.userId === 'string' ? item.userId : undefined,
+        accountNumber: item.accountNumber || undefined,
+        bank: item.bank || undefined,
+        bankCode: item.bankCode || undefined,
+        accountType: item.accountType || undefined,
       };
 
       // Manejar areaId: solo incluir si tiene un valor válido
@@ -327,6 +351,10 @@ export class EmployeesPage implements OnInit {
         numeroSeguroSocial: item.numeroSeguroSocial,
         userId: item.userId,
         areaId: typeof item.areaId === 'string' && item.areaId ? item.areaId : undefined,
+        accountNumber: item.accountNumber || undefined,
+        bank: item.bank || undefined,
+        bankCode: item.bankCode || undefined,
+        accountType: item.accountType || undefined,
       };
 
       this.employeesApi.create(createData).subscribe({
