@@ -23,6 +23,10 @@ export interface Employee {
   numeroSeguroSocial: string;
   userId: string | UserInfo;
   areaId?: string | AreaInfo;
+  accountNumber?: string;
+  bank?: string;
+  bankCode?: string;
+  accountType?: 'Ahorro' | 'Corriente';
   createdAt?: string;
   updatedAt?: string;
 }
@@ -38,6 +42,10 @@ export interface CreateEmployeeRequest {
   numeroSeguroSocial: string;
   userId: string;
   areaId?: string;
+  accountNumber?: string;
+  bank?: string;
+  bankCode?: string;
+  accountType?: 'Ahorro' | 'Corriente';
 }
 
 export interface UpdateEmployeeRequest {
@@ -51,6 +59,10 @@ export interface UpdateEmployeeRequest {
   numeroSeguroSocial?: string;
   userId?: string;
   areaId?: string | null;
+  accountNumber?: string;
+  bank?: string;
+  bankCode?: string;
+  accountType?: 'Ahorro' | 'Corriente';
 }
 
 export interface EmployeeQueryParams {

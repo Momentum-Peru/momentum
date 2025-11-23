@@ -10,6 +10,12 @@ import {
     LeadStatistics,
     ConvertLeadToClientRequest,
 } from '../interfaces/lead.interface';
+import {
+    PresignedUrlRequest,
+    PresignedUrlResponse,
+    AudioAnalysisRequest,
+    AudioAnalysisResponse,
+} from '../interfaces/audio-analysis.interface';
 
 /**
  * Servicio para gestionar Leads (Posibles Clientes) del CRM
@@ -91,6 +97,34 @@ export class LeadsApiService {
         const formData = new FormData();
         formData.append('file', file);
         return this.http.post<Lead>(`${this.baseUrl}/${id}/documents`, formData);
+    }
+
+    /**
+     * Obtiene una URL presignada para subir audio a S3
+     */
+    getPresignedUrlForAudio(id: string, request: PresignedUrlRequest): Observable<PresignedUrlResponse> {
+        return this.http.post<PresignedUrlResponse>(`${this.baseUrl}/${id}/audio/presigned-url`, request);
+    }
+
+    /**
+     * Analiza un audio y lo asocia a un lead
+     */
+    analyzeAudio(id: string, request: AudioAnalysisRequest): Observable<AudioAnalysisResponse> {
+        return this.http.post<AudioAnalysisResponse>(`${this.baseUrl}/${id}/analyze-audio`, request);
+    }
+
+    /**
+     * Actualiza únicamente el estado de un lead
+     */
+    updateStatus(id: string, status: string): Observable<Lead> {
+        return this.http.post<Lead>(`${this.baseUrl}/${id}/status`, { status });
+    }
+
+    /**
+     * Obtiene los seguimientos de un lead
+     */
+    getFollowUps(id: string): Observable<any[]> {
+        return this.http.get<any[]>(`${this.baseUrl}/${id}/follow-ups`);
     }
 }
 

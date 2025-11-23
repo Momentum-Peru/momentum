@@ -187,6 +187,37 @@
               {{ row.numeroSeguroSocial }}
             </div>
           </div>
+          @if (row.accountNumber || row.bank || row.bankCode || row.accountType) {
+          <div class="col-span-2 border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
+            <div class="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Información Bancaria</div>
+            <div class="grid grid-cols-2 gap-2">
+              @if (row.accountNumber) {
+              <div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">N° Cuenta</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ row.accountNumber }}</div>
+              </div>
+              }
+              @if (row.bank) {
+              <div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Banco</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ row.bank }}</div>
+              </div>
+              }
+              @if (row.bankCode) {
+              <div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Código</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ row.bankCode }}</div>
+              </div>
+              }
+              @if (row.accountType) {
+              <div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Tipo</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ row.accountType }}</div>
+              </div>
+              }
+            </div>
+          </div>
+          }
         </div>
 
         <div class="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
@@ -415,6 +446,85 @@
           </ng-template>
         </p-select>
       </div>
+
+      <!-- Información Bancaria -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Información Bancaria</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="employeeAccountNumber" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+              Número de Cuenta
+            </label>
+            <input
+              id="employeeAccountNumber"
+              pInputText
+              [ngModel]="e.accountNumber"
+              (ngModelChange)="onEditChange('accountNumber', $event)"
+              name="accountNumber"
+              placeholder="193-12345678-0-12"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label for="employeeBank" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+              Banco
+            </label>
+            <p-select
+              id="employeeBank"
+              [options]="banks"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="e.bank"
+              (ngModelChange)="onBankChange($event)"
+              name="bank"
+              placeholder="Seleccionar banco"
+              class="w-full"
+              [appendTo]="'body'"
+            >
+              <ng-template let-bank pTemplate="item">
+                <div class="flex items-center justify-between">
+                  <span>{{ bank.label }}</span>
+                  <span class="text-xs text-gray-500">({{ bank.code }})</span>
+                </div>
+              </ng-template>
+            </p-select>
+          </div>
+          <div>
+            <label for="employeeBankCode" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+              Código de Banco
+            </label>
+            <input
+              id="employeeBankCode"
+              pInputText
+              [ngModel]="e.bankCode"
+              (ngModelChange)="onEditChange('bankCode', $event)"
+              name="bankCode"
+              placeholder="002"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label for="employeeAccountType" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+              Tipo de Cuenta
+            </label>
+            <p-select
+              id="employeeAccountType"
+              [options]="[
+                { label: 'Ahorro', value: 'Ahorro' },
+                { label: 'Corriente', value: 'Corriente' }
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="e.accountType"
+              (ngModelChange)="onEditChange('accountType', $event)"
+              name="accountType"
+              placeholder="Seleccionar tipo"
+              class="w-full"
+              [appendTo]="'body'"
+            ></p-select>
+          </div>
+        </div>
+      </div>
     </div>
 
     <ng-template pTemplate="footer">
@@ -505,6 +615,39 @@
         </div>
         }
       </div>
+
+      <!-- Información Bancaria -->
+      @if (v.accountNumber || v.bank || v.bankCode || v.accountType) {
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Información Bancaria</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          @if (v.accountNumber) {
+          <div>
+            <span class="block text-xs text-gray-500 dark:text-white mb-1">Número de Cuenta</span>
+            <div class="font-medium text-gray-700 dark:text-white">{{ v.accountNumber }}</div>
+          </div>
+          }
+          @if (v.bank) {
+          <div>
+            <span class="block text-xs text-gray-500 dark:text-white mb-1">Banco</span>
+            <div class="font-medium text-gray-700 dark:text-white">{{ v.bank }}</div>
+          </div>
+          }
+          @if (v.bankCode) {
+          <div>
+            <span class="block text-xs text-gray-500 dark:text-white mb-1">Código de Banco</span>
+            <div class="font-medium text-gray-700 dark:text-white">{{ v.bankCode }}</div>
+          </div>
+          }
+          @if (v.accountType) {
+          <div>
+            <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo de Cuenta</span>
+            <div class="font-medium text-gray-700 dark:text-white">{{ v.accountType }}</div>
+          </div>
+          }
+        </div>
+      </div>
+      }
     </div>
 
     <ng-template pTemplate="footer">

@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router'; // Added import
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -23,7 +24,6 @@ import { TextareaModule } from 'primeng/textarea';
 import { DatePickerModule } from 'primeng/datepicker';
 import { FollowUpsApiService } from '../../shared/services/follow-ups-api.service';
 import { LeadsApiService } from '../../shared/services/leads-api.service';
-import { ContactsCrmApiService } from '../../shared/services/contacts-crm-api.service';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
@@ -36,7 +36,13 @@ import {
     FollowUpQueryParams,
 } from '../../shared/interfaces/follow-up.interface';
 import { Lead } from '../../shared/interfaces/lead.interface';
-import { ContactCrm } from '../../shared/interfaces/contact-crm.interface';
+import {
+    PresignedUrlRequest,
+    PresignedUrlResponse,
+    AudioAnalysisRequest,
+    AudioAnalysisResponse,
+} from '../../shared/interfaces/audio-analysis.interface';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
     selector: 'app-follow-ups',
@@ -65,11 +71,11 @@ import { ContactCrm } from '../../shared/interfaces/contact-crm.interface';
 export class FollowUpsPage implements OnInit {
     private readonly followUpsApi = inject(FollowUpsApiService);
     private readonly leadsApi = inject(LeadsApiService);
-    private readonly contactsApi = inject(ContactsCrmApiService);
     private readonly clientsApi = inject(ClientsApiService);
     private readonly usersApi = inject(UsersApiService);
     private readonly messageService = inject(MessageService);
     private readonly confirmationService = inject(ConfirmationService);
+    private readonly route = inject(ActivatedRoute); // Injected Route
 
     // Signals
     items = signal<FollowUp[]>([]);
@@ -82,9 +88,17 @@ export class FollowUpsPage implements OnInit {
     viewingFollowUp = signal<FollowUp | null>(null);
     expandedRows = signal<Set<string>>(new Set());
 
+    // Audio Analysis Signals
+    showAudioAnalysisDialog = signal<boolean>(false);
+    audioAnalysisResult = signal<AudioAnalysisResponse | null>(null);
+    uploadingAudio = signal<boolean>(false);
+    analyzingAudio = signal<boolean>(false);
+    isRecording = signal<boolean>(false);
+    mediaRecorder: MediaRecorder | null = null;
+    recordedChunks: Blob[] = [];
+
     // Selectores
     leads = signal<Lead[]>([]);
-    contacts = signal<ContactCrm[]>([]);
     clients = signal<ClientOption[]>([]);
     users = signal<UserOption[]>([]);
 
@@ -184,12 +198,18 @@ export class FollowUpsPage implements OnInit {
     private usersLoaded = signal<boolean>(false);
     private clientsLoaded = signal<boolean>(false);
     private leadsLoaded = signal<boolean>(false);
-    private contactsLoaded = signal<boolean>(false);
 
     ngOnInit() {
         this.load();
         // Cargar usuarios inmediatamente ya que se usan en la tabla
         this.loadUsers();
+
+        // Verificar si hay parámetros de navegación para abrir modal automáticamente
+        this.route.queryParams.subscribe(params => {
+            if (params['leadId'] && params['action'] === 'new') {
+                this.newItem(params['leadId']);
+            }
+        });
     }
 
     constructor() {
@@ -238,12 +258,6 @@ export class FollowUpsPage implements OnInit {
         });
     }
 
-    loadContacts() {
-        this.contactsApi.list().subscribe({
-            next: (contacts) => this.contacts.set(contacts),
-            error: () => this.contacts.set([]),
-        });
-    }
 
     setStatusFilter(value: FollowUpStatus | '') {
         this.statusFilter.set(value);
@@ -261,7 +275,7 @@ export class FollowUpsPage implements OnInit {
         this.load();
     }
 
-    newItem() {
+    newItem(preselectedLeadId?: string) {
         // Cargar datos si no se han cargado antes
         if (!this.clientsLoaded()) {
             this.loadClients();
@@ -270,10 +284,6 @@ export class FollowUpsPage implements OnInit {
         if (!this.leadsLoaded()) {
             this.loadLeads();
             this.leadsLoaded.set(true);
-        }
-        if (!this.contactsLoaded()) {
-            this.loadContacts();
-            this.contactsLoaded.set(true);
         }
 
         // Preparar el objeto de edición antes de abrir el diálogo
@@ -284,6 +294,7 @@ export class FollowUpsPage implements OnInit {
             status: 'SCHEDULED',
             scheduledDate: new Date().toISOString(),
             userId: '',
+            leadId: preselectedLeadId // Preseleccionar lead si se provee
         };
         this.editing.set(newEditing);
         this.showDialog.set(true);
@@ -307,6 +318,11 @@ export class FollowUpsPage implements OnInit {
         this.cachedScheduledDateString = null;
         this.cachedNextFollowUpDate = null;
         this.cachedNextFollowUpDateString = null;
+        
+        // Detener grabación si está activa al cerrar el diálogo principal (por seguridad)
+        if (this.isRecording()) {
+            this.stopRecording();
+        }
     }
 
     closeDetails() {
@@ -343,15 +359,17 @@ export class FollowUpsPage implements OnInit {
             return;
         }
 
+        // Generar título automático si no existe
+        const title = item.title || `Seguimiento - ${this.getTypeLabel(item.type || 'CALL')} - ${new Date().toLocaleDateString()}`;
+
         if (item._id) {
             const updatePayload: UpdateFollowUpRequest = {
-                title: item.title,
+                title: title,
                 description: item.description,
                 type: item.type,
                 status: item.status,
                 scheduledDate: item.scheduledDate,
                 leadId: item.leadId,
-                contactId: item.contactId,
                 clientId: item.clientId,
                 userId: item.userId,
                 attachments: item.attachments,
@@ -378,13 +396,12 @@ export class FollowUpsPage implements OnInit {
             });
         } else {
             const createPayload: CreateFollowUpRequest = {
-                title: item.title!,
+                title: title,
                 description: item.description!,
                 type: item.type!,
                 status: item.status,
                 scheduledDate: item.scheduledDate!,
                 leadId: item.leadId,
-                contactId: item.contactId,
                 clientId: item.clientId,
                 userId: item.userId!,
                 attachments: item.attachments,
@@ -473,13 +490,6 @@ export class FollowUpsPage implements OnInit {
         return lead ? lead.name : id;
     }
 
-    getContactName(id: string | undefined): string {
-        if (!id) {
-            return '-';
-        }
-        const contact = this.contacts().find((c) => c._id === id);
-        return contact ? contact.name : id;
-    }
 
     getClientName(id: string | undefined): string {
         if (!id) {
@@ -508,10 +518,6 @@ export class FollowUpsPage implements OnInit {
     private validateForm(item: Partial<FollowUp>): string[] {
         const errors: string[] = [];
 
-        if (!item.title || item.title.trim() === '') {
-            errors.push('El título del seguimiento es requerido');
-        }
-
         if (!item.description || item.description.trim() === '') {
             errors.push('La descripción del seguimiento es requerida');
         }
@@ -528,8 +534,8 @@ export class FollowUpsPage implements OnInit {
             errors.push('Debe asignar el seguimiento a un usuario');
         }
 
-        if (!item.leadId && !item.contactId && !item.clientId) {
-            errors.push('Debe asociar el seguimiento a un lead, contacto o cliente');
+        if (!item.leadId) {
+            errors.push('Debe asociar el seguimiento a un lead');
         }
 
         return errors;
@@ -568,6 +574,182 @@ export class FollowUpsPage implements OnInit {
         }
 
         return 'Ha ocurrido un error inesperado';
+    }
+
+    // ========== MÉTODOS DE GRABACIÓN Y ANÁLISIS DE AUDIO ==========
+
+    openAudioAnalysisDialog() {
+        const currentEditing = this.editing();
+        // Validar que haya un lead seleccionado para asociar el análisis
+        if (!currentEditing?.leadId) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Requerido',
+                detail: 'Debes seleccionar un Lead antes de grabar audio',
+            });
+            return;
+        }
+        this.showAudioAnalysisDialog.set(true);
+        this.audioAnalysisResult.set(null);
+    }
+
+    closeAudioAnalysisDialog() {
+        this.showAudioAnalysisDialog.set(false);
+        this.audioAnalysisResult.set(null);
+        if (this.isRecording()) {
+            this.stopRecording();
+        }
+    }
+
+    async toggleRecording() {
+        if (this.isRecording()) {
+            this.stopRecording();
+        } else {
+            await this.startRecording();
+        }
+    }
+
+    async startRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'audio/webm;codecs=opus',
+            });
+
+            this.recordedChunks = [];
+
+            this.mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    this.recordedChunks.push(event.data);
+                }
+            };
+
+            this.mediaRecorder.onstop = () => {
+                stream.getTracks().forEach((track) => track.stop());
+                this.processRecordedAudio();
+            };
+
+            this.mediaRecorder.start();
+            this.isRecording.set(true);
+
+            this.messageService.add({
+                severity: 'info',
+                summary: 'Grabando',
+                detail: 'Haz clic en "Detener" para analizar.',
+                life: 3000,
+            });
+        } catch (error) {
+            console.error('Error al iniciar la grabación:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No se pudo acceder al micrófono.',
+            });
+        }
+    }
+
+    stopRecording() {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+            this.isRecording.set(false);
+        }
+    }
+
+    async processRecordedAudio() {
+        if (this.recordedChunks.length === 0) return;
+
+        const currentEditing = this.editing();
+        if (!currentEditing?.leadId) return;
+
+        const audioBlob = new Blob(this.recordedChunks, { type: 'audio/webm;codecs=opus' });
+        const fileName = `followup-recording-${Date.now()}.webm`;
+        const audioFile = new File([audioBlob], fileName, { type: 'audio/webm;codecs=opus' });
+        this.recordedChunks = [];
+
+        try {
+            this.uploadingAudio.set(true);
+            
+            // 1. Presigned URL (Usamos LeadsApiService porque el endpoint está ahí por ahora)
+            const presignedRequest: PresignedUrlRequest = {
+                fileName: fileName,
+                contentType: 'audio/webm',
+                expirationTime: 3600,
+            };
+
+            const presignedResponse = await firstValueFrom(
+                this.leadsApi.getPresignedUrlForAudio(currentEditing.leadId, presignedRequest)
+            );
+
+            // 2. Upload S3
+            const uploadResponse = await fetch(presignedResponse.presignedUrl, {
+                method: 'PUT',
+                body: audioFile,
+                headers: { 'Content-Type': 'audio/webm' },
+            });
+
+            if (!uploadResponse.ok) throw new Error('Error al subir audio');
+
+            // 3. Analyze
+            this.uploadingAudio.set(false);
+            this.analyzingAudio.set(true);
+
+            const analysisRequest: AudioAnalysisRequest = {
+                audioUrl: presignedResponse.publicUrl,
+                leadId: currentEditing.leadId,
+            };
+
+            const analysisResult = await firstValueFrom(
+                this.leadsApi.analyzeAudio(currentEditing.leadId, analysisRequest)
+            );
+
+            this.audioAnalysisResult.set(analysisResult);
+            this.analyzingAudio.set(false);
+
+            // 4. Autocompletar campos del seguimiento
+            this.applyAnalysisToForm(analysisResult);
+
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Análisis completado',
+                detail: 'Se han completado la descripción y resultado automáticamente.',
+            });
+
+        } catch (error) {
+            this.uploadingAudio.set(false);
+            this.analyzingAudio.set(false);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: this.getErrorMessage(error),
+            });
+        }
+    }
+
+    applyAnalysisToForm(result: AudioAnalysisResponse) {
+        const cur = this.editing();
+        if (!cur) return;
+
+        // Construir descripción desde el resumen
+        const newDescription = result.summary;
+
+        // Construir outcome (resultado) desde acuerdos y acciones
+        let newOutcome = '';
+        if (result.agreements?.length) {
+            newOutcome += 'ACUERDOS:\n' + result.agreements.map(a => `- ${a}`).join('\n') + '\n\n';
+        }
+        if (result.followUpActions?.length) {
+            newOutcome += 'ACCIONES:\n' + result.followUpActions.map(a => `- ${a}`).join('\n');
+        }
+
+        this.editing.set({
+            ...cur,
+            description: newDescription,
+            outcome: newOutcome,
+            // Si se detecta "negative", podríamos sugerir un estado o flag, pero por ahora texto
+        });
+        
+        // Cerrar el modal de análisis ya que los datos se pasaron al form
+        this.closeAudioAnalysisDialog();
     }
 }
 

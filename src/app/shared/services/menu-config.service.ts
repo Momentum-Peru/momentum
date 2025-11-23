@@ -39,7 +39,6 @@ export class MenuConfigService {
     { path: '/menu-permissions', label: 'Permisos', icon: 'pi pi-shield' },
     { path: '/user-tenants-assignment', label: 'Asignación de Empresas', icon: 'pi pi-building' },
     { path: '/leads', label: 'Leads', icon: 'pi pi-user-plus' },
-    { path: '/contacts-crm', label: 'Contactos CRM', icon: 'pi pi-address-book' },
     { path: '/follow-ups', label: 'Seguimientos', icon: 'pi pi-calendar-plus' },
     { path: '/companies-crm', label: 'Empresas Momentum', icon: 'pi pi-building' },
     { path: '/fi', label: 'Futuros Imposibles', icon: 'pi pi-bolt' },
@@ -196,11 +195,6 @@ export class MenuConfigService {
             label: 'Leads',
             icon: 'pi pi-user-plus',
             routerLink: '/leads',
-          },
-          {
-            label: 'Contactos CRM',
-            icon: 'pi pi-address-book',
-            routerLink: '/contacts-crm',
           },
           {
             label: 'Seguimientos',

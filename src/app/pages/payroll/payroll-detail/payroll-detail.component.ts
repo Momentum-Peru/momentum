@@ -8,11 +8,17 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { FileUploadModule } from 'primeng/fileupload';
+import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
+import { TooltipModule } from 'primeng/tooltip';
+import { forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { PayrollService } from '../../../core/services/payroll.service';
+import { EmployeesApiService } from '../../../shared/services/employees-api.service';
 import { Payroll, PayrollDetail } from '../../../core/models/payroll.model';
-import { BcpGenerator } from '../../../core/utils/bcp-generator';
+import { BcpGenerator, BcpHeaderConfig } from '../../../core/utils/bcp-generator';
+import { Employee } from '../../../shared/interfaces/employee.interface';
 
 @Component({
   selector: 'app-payroll-detail',
@@ -27,7 +33,9 @@ import { BcpGenerator } from '../../../core/utils/bcp-generator';
     SelectModule,
     ToastModule,
     FileUploadModule,
+    DialogModule,
     FormsModule,
+    TooltipModule
   ],
   template: `
     @if (payroll(); as payrollData) {
@@ -51,7 +59,7 @@ import { BcpGenerator } from '../../../core/utils/bcp-generator';
             label="Generar TXT BCP"
             icon="pi pi-file"
             styleClass="p-button-success"
-            (onClick)="generateTxt()"
+            (onClick)="openReferenceDialog()"
           ></p-button>
         </div>
       </div>
@@ -67,6 +75,10 @@ import { BcpGenerator } from '../../../core/utils/bcp-generator';
           <span class="text-sm text-gray-600">Registros</span>
           <div class="text-2xl font-bold text-gray-700">{{ detailsCount() }}</div>
         </div>
+        <div class="bg-green-50 p-4 rounded-lg">
+          <span class="text-sm text-gray-600">Estado</span>
+          <div class="text-2xl font-bold text-green-700">{{ payrollData.status }}</div>
+        </div>
       </div>
 
       <p-table
@@ -74,76 +86,74 @@ import { BcpGenerator } from '../../../core/utils/bcp-generator';
         dataKey="id"
         editMode="row"
         styleClass="p-datatable-sm"
+        [scrollable]="true" 
+        scrollHeight="600px"
       >
         <ng-template pTemplate="header">
           <tr>
-            <th>Empleado/Proveedor</th>
-            <th>Doc. Identidad</th>
-            <th>Cuenta</th>
-            <th>Monto</th>
-            <th>Constancia</th>
-            <th style="width:8rem"></th>
+            <th style="min-width:200px">Empleado</th>
+            <th style="min-width:100px">DNI</th>
+            <th style="min-width:100px">Contrato</th>
+            <th style="min-width:120px">Fechas</th>
+            <th style="min-width:100px">Horas/Días</th>
+            <th style="min-width:100px">Ingresos</th>
+            <th style="min-width:100px">Descuentos</th>
+            <th style="min-width:120px">Neto a Pagar</th>
+            <th style="min-width:100px">Constancia</th>
+            <th style="min-width:100px">Acciones</th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-detail let-editing="editing" let-ri="rowIndex">
           <tr [pEditableRow]="detail">
             <td>
-              <p-cellEditor>
-                <ng-template pTemplate="input">
-                  <input pInputText type="text" [(ngModel)]="detail.employeeName" class="w-full" />
-                </ng-template>
-                <ng-template pTemplate="output">
-                  {{ detail.employeeName }}
-                </ng-template>
-              </p-cellEditor>
+              <div class="font-bold">{{ detail.firstName }} {{ detail.lastName }}</div>
+              <div class="text-xs text-gray-500">{{ detail.cargo || 'Sin cargo' }}</div>
             </td>
             <td>
-              <p-cellEditor>
-                <ng-template pTemplate="input">
-                  <div class="flex gap-1">
-                    <input
-                      pInputText
-                      type="text"
-                      [(ngModel)]="detail.documentNumber"
-                      class="w-full"
-                    />
-                  </div>
-                </ng-template>
-                <ng-template pTemplate="output">
-                  {{ detail.documentType }} - {{ detail.documentNumber }}
-                </ng-template>
-              </p-cellEditor>
+                {{ detail.dni }}
             </td>
             <td>
-              <p-cellEditor>
-                <ng-template pTemplate="input">
-                  <input pInputText type="text" [(ngModel)]="detail.accountNumber" class="w-full" />
-                </ng-template>
-                <ng-template pTemplate="output">
-                  {{ detail.accountNumber }}
-                </ng-template>
-              </p-cellEditor>
+                {{ detail.contractType }}
+            </td>
+            <td>
+                <div class="text-xs">
+                    <div>In: {{ detail.startDate | date:'dd/MM/yyyy' }}</div>
+                    <div>Fi: {{ detail.endDate | date:'dd/MM/yyyy' }}</div>
+                </div>
+            </td>
+            <td>
+                <div class="text-xs">
+                    <div>Hrs: {{ detail.workedHours }}</div>
+                    <div>Días: {{ detail.workedDays || 0 }}</div>
+                </div>
+            </td>
+            <td>
+                <div class="text-green-600 font-medium">{{ detail.totalIncome | currency:'PEN':'symbol' }}</div>
+            </td>
+            <td>
+                <div class="text-red-600">{{ detail.discounts | currency:'PEN':'symbol' }}</div>
             </td>
             <td>
               <p-cellEditor>
                 <ng-template pTemplate="input">
                   <p-inputNumber
-                    [(ngModel)]="detail.amount"
+                    [(ngModel)]="detail.totalToPay"
                     mode="currency"
                     currency="PEN"
                     locale="es-PE"
                   ></p-inputNumber>
                 </ng-template>
                 <ng-template pTemplate="output">
-                  {{ detail.amount | currency : 'PEN' : 'symbol' }}
+                  <div class="font-bold text-blue-700">{{ detail.totalToPay | currency : 'PEN' : 'symbol' }}</div>
                 </ng-template>
               </p-cellEditor>
             </td>
             <td>
-              @if (detail.proofUrl) {
+              @if (detail.paymentProof) {
               <div class="flex items-center gap-2">
-                <i class="pi pi-check-circle text-green-500"></i>
-                <span class="text-xs">Subido</span>
+                <a [href]="detail.paymentProof" target="_blank" class="text-blue-600 hover:underline">
+                    <i class="pi pi-check-circle text-green-500"></i> Ver
+                </a>
               </div>
               } @else {
               <p-fileUpload
@@ -196,20 +206,194 @@ import { BcpGenerator } from '../../../core/utils/bcp-generator';
       </p-table>
     </div>
     }
+
+    <!-- Modal para ingresar referencia BCP -->
+    <p-dialog
+      [(visible)]="showReferenceDialog"
+      [modal]="true"
+      [style]="{ width: '90vw', maxWidth: '500px' }"
+      [draggable]="false"
+      [resizable]="false"
+      [closable]="true"
+      appendTo="body"
+    >
+      <ng-template pTemplate="header">
+        <span class="font-semibold text-lg">Referencia para Pago Masivo BCP</span>
+      </ng-template>
+
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="bcpReference" class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+              Referencia de la Planilla *
+            </label>
+            <input
+              id="bcpReference"
+              pInputText
+              [(ngModel)]="bcpReference"
+              name="bcpReference"
+              placeholder="Ej: Referencia Haberes"
+              class="w-full"
+              maxlength="40"
+              required
+            />
+            <small class="text-gray-500 dark:text-gray-400">
+              Referencia del lote de pagos (máx. 40 caracteres)
+            </small>
+          </div>
+
+          <div>
+            <label for="bcpPayrollSubtype" class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+              Subtipo de Planilla *
+            </label>
+            <p-select
+              id="bcpPayrollSubtype"
+              [options]="[
+                { label: 'Z - Haberes', value: 'Z' }
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              [(ngModel)]="bcpPayrollSubtype"
+              name="bcpPayrollSubtype"
+              class="w-full"
+              [appendTo]="'body'"
+            ></p-select>
+            <small class="text-gray-500 dark:text-gray-400">
+              Subtipo de planilla (Z para Haberes)
+            </small>
+          </div>
+
+          <div>
+            <label for="bcpAccountType" class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+              Tipo de Cuenta de Cargo *
+            </label>
+            <p-select
+              id="bcpAccountType"
+              [options]="[
+                { label: 'C - Corriente', value: 'C' },
+                { label: 'M - Maestra', value: 'M' }
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              [(ngModel)]="bcpAccountType"
+              name="bcpAccountType"
+              class="w-full"
+              [appendTo]="'body'"
+            ></p-select>
+            <small class="text-gray-500 dark:text-gray-400">
+              Tipo de cuenta desde la que se cargará el pago
+            </small>
+          </div>
+
+          <div>
+            <label for="bcpCurrency" class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+              Moneda *
+            </label>
+            <p-select
+              id="bcpCurrency"
+              [options]="[
+                { label: '0001 - Soles (PEN)', value: '0001' },
+                { label: '1001 - Dólares (USD)', value: '1001' }
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              [(ngModel)]="bcpCurrency"
+              name="bcpCurrency"
+              class="w-full"
+              [appendTo]="'body'"
+            ></p-select>
+            <small class="text-gray-500 dark:text-gray-400">
+              Moneda de la transacción
+            </small>
+          </div>
+
+          <div>
+            <label for="bcpCompanyAccount" class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+              Cuenta de Cargo *
+            </label>
+            <input
+              id="bcpCompanyAccount"
+              pInputText
+              [(ngModel)]="bcpCompanyAccount"
+              name="bcpCompanyAccount"
+              placeholder="1942056198075"
+              class="w-full"
+              maxlength="20"
+              required
+            />
+            <small class="text-gray-500 dark:text-gray-400">
+              Número de cuenta desde la que se realizará el cargo (máx. 20 caracteres)
+            </small>
+          </div>
+
+          <div>
+            <label for="bcpProcessDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+              Fecha de Proceso
+            </label>
+            <input
+              id="bcpProcessDate"
+              pInputText
+              [(ngModel)]="bcpProcessDate"
+              name="bcpProcessDate"
+              placeholder="YYYYMMDD (ej: 20251120)"
+              class="w-full"
+              maxlength="8"
+              pattern="[0-9]{8}"
+            />
+            <small class="text-gray-500 dark:text-gray-400">
+              Fecha de proceso en formato YYYYMMDD. Si se deja vacío, se usará la fecha actual.
+            </small>
+          </div>
+        </div>
+
+        <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+          <p class="text-sm text-blue-800 dark:text-blue-200">
+            <strong>Nota:</strong> Todos los campos marcados con * son obligatorios. La referencia aparecerá en el header del archivo BCP y se usará para identificar el lote de pagos masivos en el sistema bancario.
+          </p>
+        </div>
+      </div>
+
+      <ng-template pTemplate="footer">
+        <button
+          pButton
+          label="Cancelar"
+          class="p-button-text"
+          (click)="closeReferenceDialog()"
+          aria-label="Cancelar"
+        ></button>
+        <button
+          pButton
+          label="Generar TXT"
+          (click)="generateTxtWithReference()"
+          [disabled]="!bcpReference() || bcpReference().trim().length === 0 || !bcpCompanyAccount() || bcpCompanyAccount().trim().length === 0"
+          aria-label="Generar archivo TXT"
+        ></button>
+      </ng-template>
+    </p-dialog>
   `,
 })
 export class PayrollDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private payrollService = inject(PayrollService);
+  private employeesApi = inject(EmployeesApiService);
   private messageService = inject(MessageService);
 
   // Main payroll signal
   payroll = signal<Payroll | undefined>(undefined);
 
+  // Modal para referencia BCP
+  showReferenceDialog = signal(false);
+  bcpReference = signal('');
+  bcpPayrollSubtype = signal('Z'); // Z para Haberes
+  bcpAccountType = signal('C'); // C: Corriente, M: Maestra
+  bcpCurrency = signal('0001'); // 0001: Soles, 1001: Dólares
+  bcpCompanyAccount = signal('');
+  bcpProcessDate = signal('');
+
   // Computed values
   totalAmount = computed(() => {
     const payrollData = this.payroll();
-    return payrollData?.totalAmount ?? 0;
+    return payrollData?.totalToPay ?? 0;
   });
 
   detailsCount = computed(() => {
@@ -252,7 +436,7 @@ export class PayrollDetailComponent implements OnInit {
         if (currentPayroll) {
           const updatedPayroll: Payroll = {
             ...currentPayroll,
-            totalAmount: currentPayroll.details?.reduce((sum, d) => sum + d.amount, 0) ?? 0,
+            totalToPay: currentPayroll.details?.reduce((sum, d) => sum + d.totalToPay, 0) ?? 0,
           };
           this.payroll.set(updatedPayroll);
         }
@@ -267,36 +451,229 @@ export class PayrollDetailComponent implements OnInit {
     });
   }
 
-  generateTxt() {
+  openReferenceDialog() {
     const payrollData = this.payroll();
-    if (!payrollData) return;
+    if (!payrollData || !payrollData.details || payrollData.details.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No hay detalles en la planilla para generar el archivo',
+      });
+      return;
+    }
 
-    // Mock company data
-    const companyAccount = '191-9999999-0-99';
-    const companyRuc = '20123456789';
+    // Generar valores por defecto
+    const defaultRef = payrollData.period 
+      ? `PLANILLA ${payrollData.period}`
+      : `PLANILLA ${new Date().toISOString().slice(0, 7)}`;
+    this.bcpReference.set(defaultRef);
+    this.bcpPayrollSubtype.set('Z');
+    this.bcpAccountType.set('C');
+    this.bcpCurrency.set('0001');
+    this.bcpCompanyAccount.set('');
+    this.bcpProcessDate.set('');
+    this.showReferenceDialog.set(true);
+  }
 
-    const txtContent = BcpGenerator.generateTxt(payrollData, companyAccount, companyRuc);
+  closeReferenceDialog() {
+    this.showReferenceDialog.set(false);
+    this.bcpReference.set('');
+    this.bcpCompanyAccount.set('');
+    this.bcpProcessDate.set('');
+  }
 
-    const blob = new Blob([txtContent], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `BCP_PAGOS_${payrollData.period}_${payrollData.type}.txt`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+  generateTxtWithReference() {
+    const reference = this.bcpReference().trim();
+    const companyAccount = this.bcpCompanyAccount().trim();
+    
+    if (!reference || reference.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'Debe ingresar una referencia para generar el archivo',
+      });
+      return;
+    }
 
+    if (!companyAccount || companyAccount.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'Debe ingresar la cuenta de cargo para generar el archivo',
+      });
+      return;
+    }
+
+    // Validar formato de fecha si se proporciona
+    const processDate = this.bcpProcessDate().trim();
+    if (processDate && !/^\d{8}$/.test(processDate)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'La fecha de proceso debe tener el formato YYYYMMDD (8 dígitos)',
+      });
+      return;
+    }
+
+    this.closeReferenceDialog();
+    this.generateTxt(reference, companyAccount, processDate);
+  }
+
+  generateTxt(reference: string, companyAccount: string, processDate?: string) {
+    const payrollData = this.payroll();
+    if (!payrollData || !payrollData.details || payrollData.details.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No hay detalles en la planilla para generar el archivo',
+      });
+      return;
+    }
+
+    // Mostrar mensaje de carga
     this.messageService.add({
-      severity: 'success',
-      summary: 'Generado',
-      detail: 'Archivo TXT generado correctamente',
+      severity: 'info',
+      summary: 'Generando',
+      detail: 'Obteniendo información bancaria de los empleados...',
+    });
+
+    // Obtener información bancaria de todos los empleados
+    const employeeRequests = payrollData.details.map((detail) => {
+      if (!detail.employeeId) {
+        return of(null);
+      }
+      let employeeId: string;
+      const empId = detail.employeeId as string | { _id: string } | undefined;
+      if (typeof empId === 'string') {
+        employeeId = empId;
+      } else if (empId && typeof empId === 'object' && '_id' in empId) {
+        employeeId = empId._id;
+      } else {
+        return of(null);
+      }
+      
+      return this.employeesApi.getById(employeeId).pipe(
+        catchError(() => {
+          // Si falla la consulta, retornar null
+          return of(null);
+        })
+      );
+    });
+
+    forkJoin(employeeRequests).subscribe({
+      next: (employees) => {
+        // Crear un mapa de employeeId -> Employee para acceso rápido
+        const employeeMap = new Map<string, Employee>();
+        employees.forEach((employee, index) => {
+          if (employee) {
+            const detail = payrollData.details![index];
+            let employeeId: string;
+            const empId = detail.employeeId as string | { _id: string } | undefined;
+            if (typeof empId === 'string') {
+              employeeId = empId;
+            } else if (empId && typeof empId === 'object' && '_id' in empId) {
+              employeeId = empId._id;
+            } else {
+              return;
+            }
+            employeeMap.set(employeeId, employee);
+          }
+        });
+
+        // Enriquecer los detalles con información bancaria del empleado
+        const enrichedDetails = payrollData.details!.map((detail) => {
+          let employeeId: string;
+          const empId = detail.employeeId as string | { _id: string } | undefined;
+          if (typeof empId === 'string') {
+            employeeId = empId;
+          } else if (empId && typeof empId === 'object' && '_id' in empId) {
+            employeeId = empId._id;
+          } else {
+            // Si no hay employeeId válido, retornar el detalle sin cambios
+            return {
+              ...detail,
+              accountType: detail.accountType || ('A' as const),
+            };
+          }
+          const employee = employeeMap.get(employeeId);
+
+          if (employee) {
+            // Mapear accountType del empleado al formato BCP
+            let accountType: 'A' | 'C' = 'A'; // Default Ahorro
+            if (employee.accountType === 'Corriente') {
+              accountType = 'C';
+            } else if (employee.accountType === 'Ahorro') {
+              accountType = 'A';
+            }
+
+            return {
+              ...detail,
+              accountNumber: employee.accountNumber || detail.accountNumber,
+              accountType: accountType,
+            };
+          }
+
+          // Si no se encontró el empleado, usar valores por defecto
+          return {
+            ...detail,
+            accountType: detail.accountType || 'A',
+          };
+        });
+
+        // Crear una copia de la planilla con detalles enriquecidos
+        const enrichedPayroll: Payroll = {
+          ...payrollData,
+          details: enrichedDetails,
+        };
+
+        // Configuración del header BCP (usar los valores de los signals que se configuraron en el modal)
+        const bcpConfig: BcpHeaderConfig = {
+          reference: reference,
+          payrollSubtype: this.bcpPayrollSubtype(),
+          accountType: this.bcpAccountType(),
+          currency: this.bcpCurrency(),
+          companyAccount: companyAccount,
+          processDate: processDate && processDate.length === 8 ? processDate : undefined,
+        };
+
+        const txtContent = BcpGenerator.generateTxt(enrichedPayroll, bcpConfig);
+
+        const blob = new Blob([txtContent], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `BCP_PAGOS_${payrollData.period || 'PLANILLA'}_${payrollData.type || 'PLANILLA'}.txt`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Generado',
+          detail: 'Archivo TXT generado correctamente',
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al obtener información de los empleados',
+        });
+      },
     });
   }
 
   uploadProofHandler(event: { files: File[] }, detail: PayrollDetail) {
-    // Mock upload
+    // Mock upload because real upload endpoint for proof is usually different or not implemented in this example context
+    // Ideally we should upload to S3 and get URL.
+    // API `updateDetail` accepts `paymentProof` URL.
+    // For now I will simulate it or assume a service exists for file upload.
+    
+    // Actually, the `documents-api.service.ts` might handle generic uploads?
+    // I'll keep the mock behavior but update the field name to `paymentProof`.
+    
     setTimeout(() => {
-      detail.proofUrl = 'mock-url-to-proof.pdf';
-      this.payrollService.updatePayrollDetail(detail.id, { proofUrl: detail.proofUrl }).subscribe();
+      detail.paymentProof = 'https://mock-url-to-proof.pdf'; // Mock
+      this.payrollService.updatePayrollDetail(detail.id, { paymentProof: detail.paymentProof }).subscribe();
       this.messageService.add({
         severity: 'success',
         summary: 'Subido',

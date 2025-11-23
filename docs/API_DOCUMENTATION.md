@@ -912,13 +912,24 @@ Agrega un empleado (detalle) a una planilla existente.
 | discounts | number | Sí | Descuentos totales |
 | bonuses | number | Sí | Bonificaciones |
 | totalIncome | number | Sí | Ingreso total bruto |
-| totalToPay | number | Sí | Total neto a pagar |
+| totalToPay | number | Sí | Saldo a pagar (Neto) |
 | comments | string | No | Comentarios del detalle |
 | paymentProof | string | No | URL de constancia de pago individual |
 | retention | number | No | Retención (solo para RXH) |
 | pensionSystem | string | No | Sistema de pensiones: ONP/AFP (solo para PLANILLA) |
 | pensionContribution | number | No | Aporte a pensión (solo para PLANILLA) |
 | essaludContribution | number | No | Aporte a EsSalud (solo para PLANILLA) |
+| cargo | string | No | Cargo del empleado |
+| workedDays | number | No | Días trabajados |
+| basicSalary | number | No | Sueldo básico |
+| overtime | number | No | Monto por horas extras |
+| totalIncomeTaxable | number | No | Total ingresos afectos |
+| totalIncomeNonTaxable | number | No | Total ingresos inafectos |
+| pensionFund | number | No | Fondo de pensión |
+| pensionInsurance | number | No | Seguro de pensión |
+| pensionCommission | number | No | Comisión de pensión |
+| fifthCategoryTax | number | No | Impuesto 5ta categoría |
+| firstCategoryTax | number | No | Impuesto 1ra categoría |
 
 #### Ejemplo de Request (Planilla)
 
@@ -943,6 +954,16 @@ curl -X POST "http://localhost:3027/payrolls/507f1f77bcf86cd799439011/details" \
     "pensionSystem": "AFP INTEGRA",
     "pensionContribution": 200,
     "essaludContribution": 180,
+    "cargo": "Desarrollador",
+    "workedDays": 30,
+    "basicSalary": 1500,
+    "overtime": 100,
+    "totalIncomeTaxable": 1800,
+    "totalIncomeNonTaxable": 200,
+    "pensionFund": 150,
+    "pensionInsurance": 20,
+    "pensionCommission": 30,
+    "fifthCategoryTax": 50,
     "comments": "Pago regular"
   }'
 ```
@@ -994,6 +1015,16 @@ curl -X POST "http://localhost:3027/payrolls/507f1f77bcf86cd799439011/details" \
   "pensionSystem": "AFP INTEGRA",
   "pensionContribution": 200,
   "essaludContribution": 180,
+  "cargo": "Desarrollador",
+  "workedDays": 30,
+  "basicSalary": 1500,
+  "overtime": 100,
+  "totalIncomeTaxable": 1800,
+  "totalIncomeNonTaxable": 200,
+  "pensionFund": 150,
+  "pensionInsurance": 20,
+  "pensionCommission": 30,
+  "fifthCategoryTax": 50,
   "comments": "Pago regular",
   "editedBy": "507f1f77bcf86cd799439013",
   "createdAt": "2024-01-15T10:30:00.000Z",
@@ -1103,6 +1134,17 @@ Todos los campos son opcionales. Solo se actualizarán los campos enviados.
 | pensionSystem | string | No | Sistema pensión (solo PLANILLA) |
 | pensionContribution | number | No | Aporte pensión (solo PLANILLA) |
 | essaludContribution | number | No | Aporte EsSalud (solo PLANILLA) |
+| cargo | string | No | Cargo |
+| workedDays | number | No | Días trabajados |
+| basicSalary | number | No | Sueldo básico |
+| overtime | number | No | Horas extras |
+| totalIncomeTaxable | number | No | Total ingresos afectos |
+| totalIncomeNonTaxable | number | No | Total ingresos inafectos |
+| pensionFund | number | No | Fondo pensión |
+| pensionInsurance | number | No | Seguro pensión |
+| pensionCommission | number | No | Comisión pensión |
+| fifthCategoryTax | number | No | Renta 5ta |
+| firstCategoryTax | number | No | Renta 1ra |
 
 #### Ejemplo de Request
 
@@ -1196,6 +1238,16 @@ curl -X DELETE "http://localhost:3027/payrolls/details/507f1f77bcf86cd799439016"
   "pensionSystem": "AFP INTEGRA",
   "pensionContribution": 200,
   "essaludContribution": 180,
+  "cargo": "Desarrollador",
+  "workedDays": 30,
+  "basicSalary": 1500,
+  "overtime": 100,
+  "totalIncomeTaxable": 1800,
+  "totalIncomeNonTaxable": 200,
+  "pensionFund": 150,
+  "pensionInsurance": 20,
+  "pensionCommission": 30,
+  "fifthCategoryTax": 50,
   "comments": "Pago regular",
   "paymentProof": "https://s3.aws.com/proof-individual.pdf",
   "createdAt": "2024-01-15T10:30:00.000Z",
@@ -1641,3 +1693,290 @@ window.URL.revokeObjectURL(url);
  E l i m i n a   u n   d e t a l l e   e s p e c � � f i c o . 
  
  
+---
+
+## API de Empleados
+
+### Descripción General
+
+Esta API permite gestionar la información de los empleados, incluyendo información personal y bancaria.
+
+### Base URL
+
+```
+http://localhost:3027/employees
+```
+
+### Endpoints
+
+### 1. Crear Empleado
+
+**POST** `/employees`
+
+Crea un nuevo empleado en el sistema.
+
+#### Body (JSON)
+
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| nombre | string | Sí | Nombre del empleado |
+| apellido | string | Sí | Apellido del empleado |
+| dni | string | Sí | DNI del empleado (8 dígitos) |
+| correo | string | Sí | Correo electrónico único |
+| numeroSeguroSocial | string | Sí | Número de seguro social único |
+| userId | string | Sí | ID del usuario asociado |
+| telefono | string | No | Teléfono de contacto |
+| direccion | string | No | Dirección de residencia |
+| cargo | string | No | Cargo en la empresa |
+| areaId | string | No | ID del área (ObjectId) |
+| accountNumber | string | No | Número de cuenta bancaria |
+| bank | string | No | Nombre del banco |
+| bankCode | string | No | Código de banco |
+| accountType | string | No | Tipo de cuenta: `Ahorro` o `Corriente` |
+
+#### Ejemplo de Request
+
+```json
+{
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "dni": "12345678",
+  "correo": "juan.perez@example.com",
+  "numeroSeguroSocial": "12345678901",
+  "userId": "507f1f77bcf86cd799439011",
+  "telefono": "+51987654321",
+  "cargo": "Desarrollador",
+  "accountNumber": "193-12345678-0-12",
+  "bank": "BCP",
+  "bankCode": "002",
+  "accountType": "Ahorro"
+}
+```
+
+#### Ejemplo de Response (201 Created)
+
+```json
+{
+  "_id": "507f1f77bcf86cd799439022",
+  "tenantId": "507f1f77bcf86cd799439012",
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "dni": "12345678",
+  "correo": "juan.perez@example.com",
+  "telefono": "+51987654321",
+  "direccion": "Av. Principal 123, Lima",
+  "cargo": "Desarrollador",
+  "numeroSeguroSocial": "12345678901",
+  "userId": {
+    "_id": "507f1f77bcf86cd799439011",
+    "name": "Juan Pérez",
+    "email": "juan.perez@example.com",
+    "role": "user"
+  },
+  "accountNumber": "193-12345678-0-12",
+  "bank": "BCP",
+  "bankCode": "002",
+  "accountType": "Ahorro",
+  "areaId": null,
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
+
+### 2. Actualizar Empleado
+
+**PUT** `/employees/:id`
+
+Actualiza los datos de un empleado existente.
+
+#### Path Parameters
+
+| Parámetro | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| id | string | Sí | ID del empleado |
+
+#### Body (JSON)
+
+Todos los campos son opcionales.
+
+```json
+{
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "telefono": "+51987654322",
+  "direccion": "Av. Nueva 456, Lima",
+  "cargo": "Desarrollador Senior",
+  "accountNumber": "200-3000000-0-1",
+  "bank": "Interbank",
+  "bankCode": "003",
+  "accountType": "Corriente",
+  "areaId": "507f1f77bcf86cd799439013"
+}
+```
+
+### 3. Obtener Empleados
+
+**GET** `/employees`
+
+Obtiene la lista de empleados con filtros opcionales.
+
+#### Query Parameters
+
+| Parámetro | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| q | string | No | Término de búsqueda (nombre, apellido, DNI, correo, número de seguro social, cargo) |
+| userId | string | No | Filtrar por ID de usuario |
+
+#### Ejemplo de Request
+
+```bash
+GET /employees?q=Juan&userId=507f1f77bcf86cd799439011
+```
+
+#### Ejemplo de Response (200 OK)
+
+```json
+[
+  {
+    "_id": "507f1f77bcf86cd799439022",
+    "tenantId": "507f1f77bcf86cd799439012",
+    "nombre": "Juan",
+    "apellido": "Pérez",
+    "dni": "12345678",
+    "correo": "juan.perez@example.com",
+    "telefono": "+51987654321",
+    "direccion": "Av. Principal 123, Lima",
+    "cargo": "Desarrollador",
+    "numeroSeguroSocial": "12345678901",
+    "accountNumber": "193-12345678-0-12",
+    "bank": "BCP",
+    "bankCode": "002",
+    "accountType": "Ahorro",
+    "userId": {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Juan Pérez",
+      "email": "juan.perez@example.com",
+      "role": "user"
+    },
+    "areaId": null,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+]
+```
+
+### 4. Obtener Empleado por ID
+
+**GET** `/employees/:id`
+
+Obtiene el detalle completo de un empleado.
+
+#### Path Parameters
+
+| Parámetro | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| id | string | Sí | ID del empleado (ObjectId) |
+
+#### Ejemplo de Response (200 OK)
+
+```json
+{
+  "_id": "507f1f77bcf86cd799439022",
+  "tenantId": "507f1f77bcf86cd799439012",
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "dni": "12345678",
+  "correo": "juan.perez@example.com",
+  "telefono": "+51987654321",
+  "direccion": "Av. Principal 123, Lima",
+  "cargo": "Desarrollador",
+  "numeroSeguroSocial": "12345678901",
+  "accountNumber": "193-12345678-0-12",
+  "bank": "BCP",
+  "bankCode": "002",
+  "accountType": "Ahorro",
+  "userId": {
+    "_id": "507f1f77bcf86cd799439011",
+    "name": "Juan Pérez",
+    "email": "juan.perez@example.com",
+    "role": "user"
+  },
+  "areaId": null,
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
+
+### 5. Obtener Empleado por DNI
+
+**GET** `/employees/dni/:dni`
+
+Obtiene un empleado por su número de DNI.
+
+#### Path Parameters
+
+| Parámetro | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| dni | string | Sí | Número de DNI (8 dígitos) |
+
+### 6. Obtener Empleados por Usuario
+
+**GET** `/employees/user/:userId`
+
+Obtiene todos los empleados asociados a un usuario específico.
+
+#### Path Parameters
+
+| Parámetro | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| userId | string | Sí | ID del usuario (ObjectId) |
+
+### 7. Eliminar Empleado
+
+**DELETE** `/employees/:id`
+
+Elimina un empleado del sistema.
+
+#### Path Parameters
+
+| Parámetro | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| id | string | Sí | ID del empleado (ObjectId) |
+
+#### Ejemplo de Response (200 OK)
+
+```json
+{
+  "deleted": true,
+  "id": "507f1f77bcf86cd799439022"
+}
+```
+
+#### Códigos de Estado
+
+- `200 OK`: Operación exitosa
+- `201 Created`: Empleado creado exitosamente
+- `400 Bad Request`: Error en la validación de datos
+- `404 Not Found`: Empleado no encontrado
+- `409 Conflict`: Ya existe un empleado con estos datos únicos (DNI, correo, número de seguro social o userId)
+
+#### Notas Importantes
+
+1. **Campos Únicos**: Los siguientes campos deben ser únicos en el sistema:
+   - `dni`: Número de DNI (8 dígitos)
+   - `correo`: Correo electrónico
+   - `numeroSeguroSocial`: Número de seguro social
+   - `userId`: ID del usuario (un usuario solo puede tener un empleado asociado)
+
+2. **Información Bancaria**: Los campos bancarios son opcionales pero recomendados para el procesamiento de planillas:
+   - `accountNumber`: Número de cuenta bancaria
+   - `bank`: Nombre del banco (ej: "BCP", "Interbank", "BBVA")
+   - `bankCode`: Código de banco (ej: "002" para BCP, "003" para Interbank)
+   - `accountType`: Tipo de cuenta, debe ser `Ahorro` o `Corriente`
+
+3. **Validaciones**:
+   - El DNI debe tener exactamente 8 dígitos
+   - El correo electrónico debe tener un formato válido
+   - El teléfono debe tener un formato válido (opcional)
+   - El `userId` y `areaId` deben ser ObjectIds válidos de MongoDB
+

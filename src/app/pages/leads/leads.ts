@@ -3,6 +3,7 @@ import {
     Component,
     inject,
     signal,
+    computed,
     effect,
     OnInit,
 } from '@angular/core';
@@ -23,14 +24,18 @@ import { TagModule } from 'primeng/tag';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TextareaModule } from 'primeng/textarea';
 import { DatePickerModule } from 'primeng/datepicker';
+import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { LeadsApiService } from '../../shared/services/leads-api.service';
+import { FollowUpsApiService } from '../../shared/services/follow-ups-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
 import { CompaniesApiService } from '../../shared/services/companies-api.service';
 import { CompanyOption } from '../../shared/interfaces/company.interface';
+import { AuthService } from '../login/services/auth.service';
 import {
     Lead,
     LeadStatus,
@@ -42,6 +47,14 @@ import {
     CreateLeadRequest,
     UpdateLeadRequest,
 } from '../../shared/interfaces/lead.interface';
+import {
+    PresignedUrlRequest,
+    PresignedUrlResponse,
+    AudioAnalysisRequest,
+    AudioAnalysisResponse,
+} from '../../shared/interfaces/audio-analysis.interface';
+import { FollowUp } from '../../shared/interfaces/follow-up.interface';
+import { firstValueFrom } from 'rxjs';
 
 interface Country {
     _id: string;
@@ -82,6 +95,7 @@ interface District {
         InputNumberModule,
         TextareaModule,
         DatePickerModule,
+        DragDropModule,
     ],
     providers: [ConfirmationService, MessageService],
     templateUrl: './leads.html',
@@ -90,15 +104,19 @@ interface District {
 })
 export class LeadsPage implements OnInit {
     private readonly leadsApi = inject(LeadsApiService);
+    private readonly followUpsApi = inject(FollowUpsApiService);
     private readonly usersApi = inject(UsersApiService);
     private readonly clientsApi = inject(ClientsApiService);
     private readonly companiesApi = inject(CompaniesApiService);
     private readonly messageService = inject(MessageService);
     private readonly confirmationService = inject(ConfirmationService);
     private readonly http = inject(HttpClient);
+    private readonly auth = inject(AuthService);
+    private readonly router = inject(Router);
     private readonly baseUrl = environment.apiUrl;
 
     // Signals
+    viewMode = signal<'list' | 'pipeline'>('pipeline'); // Default to pipeline as requested
     items = signal<Lead[]>([]);
     query = signal<string>('');
     statusFilter = signal<LeadStatus | ''>('');
@@ -114,6 +132,7 @@ export class LeadsPage implements OnInit {
     convertingLead = signal<Lead | null>(null);
     stats = signal<LeadStatistics | null>(null);
     expandedRows = signal<Set<string>>(new Set());
+    leadFollowUps = signal<FollowUp[]>([]);
 
     // Selectores
     users = signal<UserOption[]>([]);
@@ -125,6 +144,31 @@ export class LeadsPage implements OnInit {
     selectedCountry = signal<Country | null>(null);
     selectedProvince = signal<Province | null>(null);
     selectedDistrict = signal<District | null>(null);
+
+    // Computed para agrupar leads por estado (Pipeline)
+    leadsByStatus = computed(() => {
+        const leads = this.items();
+        const grouped: Record<LeadStatus, Lead[]> = {
+            NEW: [],
+            CONTACTED: [],
+            QUALIFIED: [],
+            PROPOSAL: [],
+            NEGOTIATION: [],
+            CONVERTED: [],
+            LOST: [],
+        };
+
+        leads.forEach((lead) => {
+            if (lead.status && grouped[lead.status]) {
+                grouped[lead.status].push(lead);
+            } else {
+                // Fallback para estados desconocidos o sin estado
+                grouped['NEW'].push(lead);
+            }
+        });
+
+        return grouped;
+    });
 
     // Opciones de enums
     statusOptions: { label: string; value: LeadStatus | '' }[] = [
@@ -328,6 +372,9 @@ export class LeadsPage implements OnInit {
     viewDetails(item: Lead) {
         this.viewingLead.set(item);
         this.showDetailsDialog.set(true);
+        if (item._id) {
+            this.loadFollowUps(item._id);
+        }
     }
 
     closeDialog() {
@@ -680,7 +727,20 @@ export class LeadsPage implements OnInit {
     }
 
     getCompanyFilterOptions() {
-        return this.companies().map(c => ({ label: c.name, value: c._id }));
+        const allCompanies = this.companies();
+        
+        // Filtrar por acceso del usuario si tiene tenantIds definidos
+        const user = this.auth.getCurrentUser();
+        if (!user || typeof user !== 'object' || !('tenantIds' in user)) {
+            return allCompanies.map(c => ({ label: c.name, value: c._id }));
+        }
+        
+        const tenantIds = (user as { tenantIds?: string[] }).tenantIds;
+        const filteredCompanies = !tenantIds || tenantIds.length === 0
+            ? allCompanies
+            : allCompanies.filter((c) => tenantIds.includes(c._id));
+        
+        return filteredCompanies.map(c => ({ label: c.name, value: c._id }));
     }
 
     getCompanyName(id: string | undefined): string {
@@ -701,10 +761,6 @@ export class LeadsPage implements OnInit {
         return this.stats()?.bySource[source] || 0;
     }
 
-    getEstimatedCloseDate(): Date | null {
-        const date = (this.editing() as Partial<Lead> | null)?.estimatedCloseDate;
-        return date ? new Date(date) : null;
-    }
 
     getSourceLabel(source: LeadSource): string {
         const option = this.sourceOptions.find((o) => o.value === source);
@@ -774,6 +830,221 @@ export class LeadsPage implements OnInit {
             return error.message;
         }
         return 'Ha ocurrido un error inesperado';
+    }
+
+    /**
+     * Maneja el drop de una tarjeta en el pipeline
+     */
+    onDrop(event: CdkDragDrop<Lead[]>, newStatus: string) {
+        if (event.previousContainer === event.container) {
+            // Reordenar en la misma columna (opcional, por ahora solo visual)
+            moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+        } else {
+            // Mover a otra columna (cambio de estado)
+            const lead = event.previousContainer.data[event.previousIndex];
+            const targetStatus = newStatus as LeadStatus;
+
+            // Verificar si la transición es válida
+            if (this.isValidStatusTransition(lead.status, targetStatus)) {
+                // Actualizar visualmente inmediatamente (optimistic UI)
+                transferArrayItem(
+                    event.previousContainer.data,
+                    event.container.data,
+                    event.previousIndex,
+                    event.currentIndex
+                );
+                
+                // Llamar a la API
+                this.updateLeadStatus(lead, targetStatus);
+            } else {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Movimiento no permitido',
+                    detail: `No se puede mover de ${this.getStatusLabel(lead.status)} a ${this.getStatusLabel(targetStatus)}`,
+                });
+            }
+        }
+    }
+
+    // ========== MÉTODOS DE ANÁLISIS DE AUDIO ==========
+
+    // Métodos eliminados y movidos a FollowUps
+
+    // ========== MÉTODOS DE SEGUIMIENTOS ==========
+
+    /**
+     * Carga los seguimientos de un lead
+     */
+    loadFollowUps(leadId: string | undefined) {
+        if (!leadId) {
+            this.leadFollowUps.set([]);
+            return;
+        }
+        this.followUpsApi.list({ leadId }).subscribe({
+            next: (followUps) => this.leadFollowUps.set(followUps),
+            error: () => this.leadFollowUps.set([]),
+        });
+    }
+
+    /**
+     * Obtiene el nombre del tipo de seguimiento
+     */
+    getFollowUpTypeLabel(type: string): string {
+        const types: Record<string, string> = {
+            CALL: 'Llamada',
+            EMAIL: 'Email',
+            MEETING: 'Reunión',
+            NOTE: 'Nota',
+            PROPOSAL: 'Propuesta',
+            OTHER: 'Otro',
+        };
+        return types[type] || type;
+    }
+
+    /**
+     * Obtiene el nombre del estado de seguimiento
+     */
+    getFollowUpStatusLabel(status: string): string {
+        const statuses: Record<string, string> = {
+            SCHEDULED: 'Programado',
+            COMPLETED: 'Completado',
+            CANCELLED: 'Cancelado',
+        };
+        return statuses[status] || status;
+    }
+
+    // ========== VALIDACIONES DE TRANSICIÓN DE ESTADOS ==========
+
+    /**
+     * Valida si una transición de estado es válida
+     */
+    isValidStatusTransition(currentStatus: LeadStatus, newStatus: LeadStatus): boolean {
+        const validTransitions: Record<LeadStatus, LeadStatus[]> = {
+            NEW: ['CONTACTED', 'LOST'],
+            CONTACTED: ['QUALIFIED', 'LOST', 'NEW'],
+            QUALIFIED: ['PROPOSAL', 'CONTACTED', 'LOST'],
+            PROPOSAL: ['NEGOTIATION', 'QUALIFIED', 'LOST'],
+            NEGOTIATION: ['CONVERTED', 'PROPOSAL', 'LOST'],
+            CONVERTED: [], // Estado final, no se puede cambiar
+            LOST: ['NEW', 'CONTACTED'],
+        };
+
+        return validTransitions[currentStatus]?.includes(newStatus) ?? false;
+    }
+
+    /**
+     * Obtiene los estados válidos a los que se puede transicionar desde el estado actual
+     */
+    getValidNextStatuses(currentStatus: LeadStatus): { label: string; value: LeadStatus }[] {
+        const validTransitions: Record<LeadStatus, LeadStatus[]> = {
+            NEW: ['CONTACTED', 'LOST'],
+            CONTACTED: ['QUALIFIED', 'LOST', 'NEW'],
+            QUALIFIED: ['PROPOSAL', 'CONTACTED', 'LOST'],
+            PROPOSAL: ['NEGOTIATION', 'QUALIFIED', 'LOST'],
+            NEGOTIATION: ['CONVERTED', 'PROPOSAL', 'LOST'],
+            CONVERTED: [],
+            LOST: ['NEW', 'CONTACTED'],
+        };
+
+        const validStatuses = validTransitions[currentStatus] || [];
+        return this.statusOptions
+            .filter((option) => option.value !== '' && validStatuses.includes(option.value as LeadStatus))
+            .map((option) => ({ label: option.label, value: option.value as LeadStatus }));
+    }
+
+    /**
+     * Obtiene las opciones de estado para el formulario de edición
+     */
+    getStatusOptionsForEdit(): { label: string; value: LeadStatus | '' }[] {
+        const editingValue = this.editing();
+        if (editingValue?._id && editingValue.status) {
+            const validStatuses = this.getValidNextStatuses(editingValue.status);
+            return [{ label: 'Seleccionar...', value: '' }, ...validStatuses];
+        }
+        return this.statusOptions.filter((s) => s.value !== '');
+    }
+
+    /**
+     * Wrapper para actualizar el estado del lead desde el template
+     */
+    onStatusChange(newStatus: LeadStatus | string | Event) {
+        // Si es un Event, extraer el valor del target
+        let statusValue: LeadStatus;
+        if (newStatus instanceof Event) {
+            const target = newStatus.target as HTMLSelectElement;
+            statusValue = target.value as LeadStatus;
+        } else {
+            statusValue = newStatus as LeadStatus;
+        }
+        
+        const lead = this.viewingLead();
+        if (!lead || !lead._id) return;
+        this.updateLeadStatus(lead, statusValue);
+    }
+
+    /**
+     * Actualiza el estado del lead con validación de transición
+     */
+    updateLeadStatus(lead: Lead, newStatus: LeadStatus) {
+        if (!lead._id) return;
+
+        if (!this.isValidStatusTransition(lead.status, newStatus)) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Transición inválida',
+                detail: `No se puede cambiar de ${this.getStatusLabel(lead.status)} a ${this.getStatusLabel(newStatus)}`,
+            });
+            return;
+        }
+
+        this.leadsApi.updateStatus(lead._id, newStatus).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Estado actualizado correctamente',
+                });
+                this.load();
+                if (this.viewingLead()?._id === lead._id && lead._id) {
+                    this.leadsApi.getById(lead._id).subscribe({
+                        next: (updatedLead) => {
+                            this.viewingLead.set(updatedLead);
+                            this.loadFollowUps(lead._id);
+                        },
+                    });
+                }
+            },
+            error: (error) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: this.getErrorMessage(error),
+                });
+            },
+        });
+    }
+
+    /**
+     * Abre el diálogo para crear un nuevo seguimiento desde el lead actual
+     */
+    openFollowUpDialog() {
+        const lead = this.viewingLead();
+        if (!lead?._id) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'No hay un lead seleccionado',
+            });
+            return;
+        }
+
+        // Redirigir a la página de seguimientos con el leadId pre-seleccionado
+        this.router.navigate(['/follow-ups'], {
+            queryParams: { leadId: lead._id, action: 'new' },
+        });
+        
+        // Cerrar el modal de detalles
+        this.showDetailsDialog.set(false);
     }
 }
 
