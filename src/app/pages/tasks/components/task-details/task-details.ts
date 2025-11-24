@@ -24,6 +24,7 @@ import { MessageModule } from 'primeng/message';
 
 // Services
 import { TaskCommentsApiService } from '../../../../shared/services/task-comments-api.service';
+import { TasksApiService } from '../../../../shared/services/tasks-api.service';
 import { MessageService } from 'primeng/api';
 import { AuthService } from '../../../login/services/auth.service';
 
@@ -32,6 +33,8 @@ import {
   Task,
   TaskComment,
   CreateTaskCommentRequest,
+  TaskSubtask,
+  TaskAttachment,
 } from '../../../../shared/interfaces/task.interface';
 
 @Component({
@@ -102,6 +105,66 @@ import {
             <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
               {{ task.description }}
             </p>
+          </div>
+          }
+
+          <!-- Subtasks -->
+          @if (task.subtasks && task.subtasks.length > 0) {
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Subtareas</h3>
+            <div class="space-y-2">
+              @for (subtask of task.subtasks; track subtask._id || $index) {
+              <div class="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                <input
+                  type="checkbox"
+                  [checked]="subtask.completed"
+                  (change)="toggleSubtask(subtask)"
+                  class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                />
+                <label
+                  [class.line-through]="subtask.completed"
+                  [class.text-gray-400]="subtask.completed"
+                  class="flex-1 text-gray-700 dark:text-gray-300 cursor-pointer"
+                  (click)="toggleSubtask(subtask)"
+                >
+                  {{ subtask.title }}
+                </label>
+              </div>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- Attachments -->
+          @if (task.attachments && task.attachments.length > 0) {
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Archivos Adjuntos</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              @for (attachment of task.attachments; track attachment._id || $index) {
+              <div
+                class="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              >
+                <i class="pi pi-file text-gray-500 text-lg"></i>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {{ attachment.originalName }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ formatFileSize(attachment.size) }}
+                  </p>
+                </div>
+                <a
+                  [href]="attachment.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                  pTooltip="Abrir archivo"
+                >
+                  <i class="pi pi-external-link"></i>
+                </a>
+              </div>
+              }
+            </div>
           </div>
           }
         </div>
@@ -345,38 +408,6 @@ import {
           </form>
         </div>
 
-        <!-- Files Section -->
-        @if (task.files && task.files.length > 0) {
-        <div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Archivos adjuntos
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            @for (file of task.files; track file._id) {
-            <div
-              class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700"
-            >
-              <i class="pi pi-file text-gray-500 text-lg"></i>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {{ file.originalName }}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ formatFileSize(file.fileSize) }} • {{ formatDateTime(file.uploadedAt) }}
-                </p>
-              </div>
-              <p-button
-                icon="pi pi-download"
-                [text]="true"
-                size="small"
-                severity="secondary"
-                pTooltip="Descargar archivo"
-              ></p-button>
-            </div>
-            }
-          </div>
-        </div>
-        }
       </div>
       }
     </p-dialog>
@@ -395,6 +426,7 @@ export class TaskDetailsComponent {
   @Output() closeDialog = new EventEmitter<void>();
 
   public readonly commentsService = inject(TaskCommentsApiService);
+  private readonly tasksApiService = inject(TasksApiService);
   private readonly messageService = inject(MessageService);
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
@@ -695,6 +727,56 @@ export class TaskDetailsComponent {
           severity: 'error',
           summary: 'Error',
           detail: 'No se pudo eliminar el comentario',
+        });
+      },
+    });
+  }
+
+  /**
+   * Marca o desmarca una subtarea
+   */
+  public toggleSubtask(subtask: TaskSubtask): void {
+    if (!this.task || !subtask._id) {
+      // Si la subtarea no tiene _id, solo actualizar localmente (puede ser una subtarea nueva)
+      if (this.task?.subtasks) {
+        const index = this.task.subtasks.findIndex((st) => st === subtask);
+        if (index !== -1) {
+          this.task.subtasks[index] = { ...this.task.subtasks[index], completed: !subtask.completed };
+        }
+      }
+      return;
+    }
+
+    const newCompletedState = !subtask.completed;
+
+    // Actualizar localmente primero para mejor UX
+    if (this.task?.subtasks) {
+      const index = this.task.subtasks.findIndex((st) => st._id === subtask._id);
+      if (index !== -1) {
+        this.task.subtasks[index] = { ...this.task.subtasks[index], completed: newCompletedState };
+      }
+    }
+
+    this.tasksApiService.updateSubtaskStatus(this.task._id, subtask._id, newCompletedState).subscribe({
+      next: (updatedTask) => {
+        // Si el backend devuelve la tarea completa actualizada, usar esos datos
+        if (updatedTask.subtasks && this.task) {
+          this.task.subtasks = updatedTask.subtasks;
+        }
+      },
+      error: (error) => {
+        console.error('Error updating subtask:', error);
+        // Revertir el cambio local en caso de error
+        if (this.task?.subtasks) {
+          const index = this.task.subtasks.findIndex((st) => st._id === subtask._id);
+          if (index !== -1) {
+            this.task.subtasks[index] = { ...this.task.subtasks[index], completed: !newCompletedState };
+          }
+        }
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar la subtarea',
         });
       },
     });

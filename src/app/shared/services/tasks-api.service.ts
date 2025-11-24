@@ -67,16 +67,14 @@ export class TasksApiService {
         }
       });
     }
-    return this.http
-      .get<TasksListResponse>(`${this.baseUrl}/tasks`, { params: httpParams })
-      .pipe(
-        tap((response) => {
-          this.tasks.set(response.data || []);
-          this.tasksSubject.next(response.data);
-        }),
-        tap(() => this.setLoading(false)),
-        tap({ error: (err) => this.handleError(err) })
-      );
+    return this.http.get<TasksListResponse>(`${this.baseUrl}/tasks`, { params: httpParams }).pipe(
+      tap((response) => {
+        this.tasks.set(response.data || []);
+        this.tasksSubject.next(response.data);
+      }),
+      tap(() => this.setLoading(false)),
+      tap({ error: (err) => this.handleError(err) })
+    );
   }
 
   /**
@@ -222,6 +220,93 @@ export class TasksApiService {
   }
 
   /**
+   * Sube archivos a una tarea
+   */
+  uploadTaskAttachments(
+    taskId: string,
+    files: File[],
+    uploadedBy: string,
+    description?: string
+  ): Observable<Task> {
+    this.setLoading(true);
+    this.setError(null);
+
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    formData.append('uploadedBy', uploadedBy);
+    if (description) {
+      formData.append('description', description);
+    }
+
+    return this.http.post<Task>(`${this.baseUrl}/tasks/${taskId}/attachments`, formData).pipe(
+      tap((updatedTask) => {
+        const currentTasks = this.tasks();
+        const index = currentTasks.findIndex((task) => task._id === taskId);
+        if (index !== -1) {
+          currentTasks[index] = updatedTask;
+          this.tasks.set([...currentTasks]);
+          this.tasksSubject.next([...currentTasks]);
+        }
+      }),
+      tap(() => this.setLoading(false)),
+      tap({ error: (err) => this.handleError(err) })
+    );
+  }
+
+  /**
+   * Actualiza el estado de una subtarea
+   */
+  updateSubtaskStatus(taskId: string, subtaskId: string, completed: boolean): Observable<Task> {
+    this.setLoading(true);
+    this.setError(null);
+
+    return this.http
+      .patch<Task>(`${this.baseUrl}/tasks/${taskId}/subtasks/${subtaskId}`, { completed })
+      .pipe(
+        tap((updatedTask) => {
+          const currentTasks = this.tasks();
+          const index = currentTasks.findIndex((task) => task._id === taskId);
+          if (index !== -1) {
+            currentTasks[index] = updatedTask;
+            this.tasks.set([...currentTasks]);
+            this.tasksSubject.next([...currentTasks]);
+          }
+        }),
+        tap(() => this.setLoading(false)),
+        tap({ error: (err) => this.handleError(err) })
+      );
+  }
+
+  /**
+   * Elimina un archivo adjunto de una tarea
+   */
+  deleteTaskAttachment(taskId: string, attachmentId: string): Observable<void> {
+    this.setLoading(true);
+    this.setError(null);
+
+    return this.http
+      .delete<void>(`${this.baseUrl}/tasks/${taskId}/attachments/${attachmentId}`)
+      .pipe(
+        tap(() => {
+          // Actualizar la tarea localmente removiendo el attachment
+          const currentTasks = this.tasks();
+          const index = currentTasks.findIndex((task) => task._id === taskId);
+          if (index !== -1 && currentTasks[index].attachments) {
+            currentTasks[index].attachments = currentTasks[index].attachments?.filter(
+              (att) => att._id !== attachmentId
+            );
+            this.tasks.set([...currentTasks]);
+            this.tasksSubject.next([...currentTasks]);
+          }
+        }),
+        tap(() => this.setLoading(false)),
+        tap({ error: (err) => this.handleError(err) })
+      );
+  }
+
+  /**
    * Limpia el estado del servicio
    */
   clearState(): void {
@@ -245,7 +330,12 @@ export class TasksApiService {
   private handleError(error: unknown): void {
     let errorMessage = 'Error desconocido';
     if (error && typeof error === 'object') {
-      if ('error' in error && error.error && typeof error.error === 'object' && 'message' in error.error) {
+      if (
+        'error' in error &&
+        error.error &&
+        typeof error.error === 'object' &&
+        'message' in error.error
+      ) {
         errorMessage = String(error.error.message);
       } else if ('message' in error && typeof error.message === 'string') {
         errorMessage = error.message;
