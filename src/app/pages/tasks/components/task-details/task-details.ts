@@ -228,7 +228,7 @@ import {
             <!-- Due Date -->
             <div>
               <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Fecha límite
+                Fecha y hora límite
               </h3>
               <div class="flex items-center gap-2">
                 <i class="pi pi-calendar text-gray-500"></i>
@@ -238,7 +238,7 @@ import {
                   [class.dark:text-red-400]="isOverdue()"
                   [class.font-semibold]="isOverdue()"
                 >
-                  {{ task.dueDate ? formatDate(task.dueDate) : 'Sin fecha límite' }}
+                  {{ task.dueDate ? formatDateTime(task.dueDate) : 'Sin fecha límite' }}
                 </span>
                 @if (isOverdue()) {
                 <p-badge value="Vencida" severity="danger"></p-badge>

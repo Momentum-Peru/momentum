@@ -193,13 +193,16 @@ import { take } from 'rxjs';
           <!-- Due Date Field -->
           <div class="space-y-2">
             <label for="dueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Fecha Límite
+              Fecha y Hora Límite
             </label>
             <p-datePicker
               id="dueDate"
               formControlName="dueDate"
-              placeholder="Selecciona una fecha"
+              placeholder="Selecciona fecha y hora"
               dateFormat="dd/mm/yy"
+              [showTime]="true"
+              [showSeconds]="false"
+              hourFormat="24"
               styleClass="w-full"
               [showIcon]="true"
               [showButtonBar]="true"
