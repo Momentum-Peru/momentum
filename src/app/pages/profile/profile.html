@@ -1,0 +1,219 @@
+<div class="p-4 space-y-6">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Título -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">Mi Perfil</h1>
+  </div>
+
+  @if (loading() && !profile()) {
+  <!-- Loading state -->
+  <div class="flex items-center justify-center py-20">
+    <i class="pi pi-spin pi-spinner text-4xl text-gray-400"></i>
+  </div>
+  } @else if (profile()) {
+  <!-- Contenido principal -->
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Columna izquierda: Información del perfil -->
+    <div class="lg:col-span-1">
+      <p-card class="h-full">
+        <ng-template pTemplate="content">
+          <div class="flex flex-col items-center text-center">
+            <!-- Foto de perfil -->
+            <div class="relative mb-6">
+              @if (profile()?.profilePicture) {
+              <img
+                [src]="profile()!.profilePicture!"
+                [alt]="profile()!.name"
+                class="w-40 h-40 rounded-full object-cover border-4 border-gray-300 dark:border-gray-600 shadow-xl"
+              />
+              } @else {
+              <div
+                class="w-40 h-40 rounded-full bg-gradient-to-br from-gray-800 to-black flex items-center justify-center border-4 border-gray-300 dark:border-gray-600 shadow-xl"
+              >
+                <i class="pi pi-user text-6xl text-white"></i>
+              </div>
+              } @if (uploadingPhoto()) {
+              <div
+                class="absolute inset-0 rounded-full bg-black bg-opacity-60 flex items-center justify-center backdrop-blur-sm"
+              >
+                <i class="pi pi-spin pi-spinner text-white text-3xl"></i>
+              </div>
+              }
+            </div>
+
+            <!-- Información del usuario -->
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+              {{ profile()!.name }}
+            </h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 break-all">
+              {{ profile()!.email }}
+            </p>
+
+            <!-- Rol -->
+            <p-tag
+              [value]="
+                profile()!.role === 'admin'
+                  ? 'Administrador'
+                  : profile()!.role === 'gerencia'
+                  ? 'Gerencia'
+                  : 'Usuario'
+              "
+              [severity]="getRoleSeverity(profile()!.role)"
+              class="mb-6"
+            ></p-tag>
+
+            <!-- Controles de foto -->
+            <div class="w-full space-y-3">
+              <p-fileUpload
+                #fileUpload
+                id="photoUpload"
+                mode="basic"
+                accept="image/*"
+                [maxFileSize]="20971520"
+                [auto]="false"
+                [disabled]="uploadingPhoto() || deletingPhoto()"
+                (onSelect)="onFileSelect($event)"
+                chooseLabel="Cambiar Foto"
+                chooseIcon="pi pi-upload"
+                [showUploadButton]="false"
+                [showCancelButton]="false"
+                class="w-full"
+              ></p-fileUpload>
+              @if (profile()?.profilePicture) {
+              <button
+                pButton
+                type="button"
+                icon="pi pi-trash"
+                severity="danger"
+                [outlined]="true"
+                [disabled]="uploadingPhoto() || deletingPhoto()"
+                (click)="deletePhoto()"
+                class="w-full"
+              >
+                Eliminar Foto
+              </button>
+              }
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Formatos: JPEG, PNG, GIF, WebP, etc.<br />
+                Máximo 20MB
+              </p>
+            </div>
+          </div>
+        </ng-template>
+      </p-card>
+    </div>
+
+    <!-- Columna derecha: Formulario -->
+    <div class="lg:col-span-3">
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">
+              <i class="pi pi-pencil mr-2"></i>
+              Información Personal
+            </h3>
+          </div>
+        </ng-template>
+
+        <ng-template pTemplate="content">
+          <form [formGroup]="profileForm" (ngSubmit)="updateProfile()" class="space-y-6">
+            <!-- Nombre -->
+            <div>
+              <label
+                for="name"
+                class="block text-sm font-semibold text-gray-700 dark:text-white mb-2"
+              >
+                <i class="pi pi-user mr-2"></i>
+                Nombre Completo
+                <span class="text-red-500 ml-1">*</span>
+              </label>
+              <input
+                id="name"
+                type="text"
+                pInputText
+                formControlName="name"
+                placeholder="Ingresa tu nombre completo"
+                [class.ng-invalid]="hasFieldError('name')"
+                class="w-full text-base"
+                [class.border-red-500]="hasFieldError('name')"
+              />
+              @if (hasFieldError('name')) {
+              <p class="text-sm text-red-500 mt-2 flex items-center">
+                <i class="pi pi-exclamation-circle mr-2"></i>
+                {{ getFieldError('name') }}
+              </p>
+              }
+            </div>
+
+            <!-- Información adicional -->
+            <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+              <h4 class="text-sm font-semibold text-gray-700 dark:text-white mb-4">
+                <i class="pi pi-info-circle mr-2"></i>
+                Información Adicional
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <div class="flex items-center mb-2">
+                    <i class="pi pi-clock text-gray-500 dark:text-gray-400 mr-2"></i>
+                    <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      Último Acceso
+                    </span>
+                  </div>
+                  <div class="text-base font-semibold text-gray-900 dark:text-white">
+                    @if (profile()!.lastLogin) {
+                    {{ profile()!.lastLogin | date : 'dd/MM/yyyy HH:mm' }}
+                    } @else {
+                    <span class="text-gray-400 font-normal">Nunca</span>
+                    }
+                  </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <div class="flex items-center mb-2">
+                    <i class="pi pi-calendar text-gray-500 dark:text-gray-400 mr-2"></i>
+                    <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      Miembro Desde
+                    </span>
+                  </div>
+                  <div class="text-base font-semibold text-gray-900 dark:text-white">
+                    {{ profile()!.createdAt | date : 'dd/MM/yyyy' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div
+              class="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200 dark:border-gray-700"
+            >
+              <button
+                pButton
+                type="submit"
+                icon="pi pi-save"
+                [disabled]="profileForm.invalid || loading() || uploadingPhoto() || deletingPhoto()"
+                [loading]="loading()"
+                class="flex-1"
+              >
+                Guardar Cambios
+              </button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-times"
+                severity="secondary"
+                [outlined]="true"
+                [disabled]="loading() || uploadingPhoto() || deletingPhoto()"
+                (click)="loadProfile()"
+                class="flex-1"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </ng-template>
+      </p-card>
+    </div>
+  </div>
+  }
+</div>

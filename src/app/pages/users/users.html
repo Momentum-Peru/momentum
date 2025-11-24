@@ -395,7 +395,8 @@
 
   <!-- Diálogo de edición/creación -->
   <p-dialog
-    [(visible)]="showDialog"
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
     [modal]="true"
     [style]="{ width: '90vw', maxWidth: '32rem' }"
     [draggable]="false"
@@ -531,7 +532,8 @@
 
   <!-- Modal de estadísticas -->
   <p-dialog
-    [(visible)]="showStatsDialog"
+    [visible]="showStatsDialog()"
+    (visibleChange)="showStatsDialog.set($event)"
     [modal]="true"
     [style]="{ width: '90vw', maxWidth: '32rem' }"
     [draggable]="false"
@@ -593,7 +595,8 @@
 
   <!-- Modal de detalles del usuario -->
   <p-dialog
-    [(visible)]="showDetailsDialog"
+    [visible]="showDetailsDialog()"
+    (visibleChange)="showDetailsDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '60rem' }"
     [draggable]="false"

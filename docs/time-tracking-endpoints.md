@@ -77,9 +77,13 @@ Crea un nuevo registro de marcación de hora asociado a una marcación con recon
 }
 ```
 
+**Permisos:**
+- Los usuarios regulares solo pueden crear marcaciones para sí mismos
+- Los supervisores pueden crear marcaciones para cualquier usuario registrado
+
 **Errores:**
 - `400`: Datos de entrada inválidos o falta el attendanceRecordId
-- `403`: No puedes crear registros para otros usuarios
+- `403`: No puedes crear registros para otros usuarios (solo aplica a usuarios regulares)
 
 ---
 
@@ -277,7 +281,7 @@ Array de registros de marcación (mismo formato que el endpoint anterior)
 
 **PATCH** `/time-tracking/:id`
 
-Actualiza un registro de marcación existente. Solo el propietario puede editar sus registros.
+Actualiza un registro de marcación existente. Solo administradores, gerencia y supervisores pueden editar marcaciones.
 
 **Parámetros:**
 - `id` (string): ID del registro de marcación
@@ -319,9 +323,13 @@ Actualiza un registro de marcación existente. Solo el propietario puede editar 
 }
 ```
 
+**Permisos:**
+- Solo administradores, gerencia y supervisores pueden editar marcaciones
+- Los supervisores pueden editar marcaciones de cualquier usuario
+
 **Errores:**
 - `400`: Datos de entrada inválidos
-- `403`: No puedes editar registros de otros usuarios
+- `403`: No tienes permisos para editar esta marcación
 - `404`: Registro de tiempo no encontrado
 
 ---
@@ -330,7 +338,7 @@ Actualiza un registro de marcación existente. Solo el propietario puede editar 
 
 **DELETE** `/time-tracking/:id`
 
-Elimina un registro de marcación. Solo el propietario puede eliminar sus registros.
+Elimina un registro de marcación. Solo administradores, gerencia y supervisores pueden eliminar marcaciones.
 
 **Parámetros:**
 - `id` (string): ID del registro de marcación
@@ -347,8 +355,12 @@ DELETE /time-tracking/507f1f77bcf86cd799439014
 }
 ```
 
+**Permisos:**
+- Solo administradores, gerencia y supervisores pueden eliminar marcaciones
+- Los supervisores pueden eliminar marcaciones de cualquier usuario
+
 **Errores:**
-- `403`: No puedes eliminar registros de otros usuarios
+- `403`: No tienes permisos para eliminar esta marcación
 - `404`: Registro de tiempo no encontrado
 
 ---
@@ -363,7 +375,10 @@ DELETE /time-tracking/507f1f77bcf86cd799439014
 
 4. **Tipo de Marcación**: Solo se permiten dos tipos: `INGRESO` (entrada) y `SALIDA` (salida).
 
-5. **Permisos**: Los usuarios solo pueden crear, editar y eliminar sus propios registros de marcación.
+5. **Permisos**: 
+   - Los usuarios regulares solo pueden crear marcaciones para sí mismos
+   - Los supervisores pueden crear, editar y eliminar marcaciones de cualquier usuario registrado
+   - Los administradores y gerencia pueden editar y eliminar cualquier marcación
 
 6. **Fecha y Hora**: El campo `date` almacena fecha y hora completa (datetime), no solo la fecha.
 
