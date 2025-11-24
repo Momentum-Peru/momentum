@@ -138,7 +138,20 @@
     <div class="flex-1 min-w-0">
       <app-native-task-stats [stats]="taskStats"></app-native-task-stats>
     </div>
-    <div class="flex-shrink-0">
+    <div class="flex flex-shrink-0 gap-2">
+      <p-button
+        icon="pi pi-filter"
+        [label]="showFilters() ? 'Ocultar Filtros' : 'Filtros'"
+        [text]="true"
+        severity="secondary"
+        (onClick)="toggleFilters()"
+        [styleClass]="
+          hasActiveFilters()
+            ? 'w-full sm:w-auto bg-blue-50 dark:bg-blue-900/20'
+            : 'w-full sm:w-auto'
+        "
+        pTooltip="Filtrar tareas"
+      ></p-button>
       <p-button
         icon="pi pi-plus"
         label="Nueva Tarea"
@@ -149,6 +162,89 @@
       ></p-button>
     </div>
   </div>
+
+  <!-- Filtros -->
+  @if (showFilters()) {
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Filtros</h3>
+      @if (hasActiveFilters()) {
+      <p-button
+        icon="pi pi-times"
+        label="Limpiar"
+        [text]="true"
+        severity="secondary"
+        size="small"
+        (onClick)="clearFilters()"
+        pTooltip="Limpiar todos los filtros"
+      ></p-button>
+      }
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Filtro por Asignado a -->
+      <div class="space-y-2">
+        <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Asignado a</div>
+        <p-select
+          [ngModel]="filterAssignedTo()"
+          (ngModelChange)="filterAssignedTo.set($event); applyFilters()"
+          [options]="availableUsers"
+          placeholder="Todos los usuarios"
+          [appendTo]="'body'"
+          styleClass="w-full"
+          [showClear]="true"
+        ></p-select>
+      </div>
+
+      <!-- Filtro por Fecha Desde -->
+      <div class="space-y-2">
+        <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha desde</div>
+        <p-datePicker
+          [ngModel]="filterDateFrom()"
+          (ngModelChange)="filterDateFrom.set($event); applyFilters()"
+          placeholder="Seleccionar fecha"
+          dateFormat="dd/mm/yy"
+          styleClass="w-full"
+          [showIcon]="true"
+          [showButtonBar]="true"
+          [appendTo]="'body'"
+          [showClear]="true"
+        ></p-datePicker>
+      </div>
+
+      <!-- Filtro por Fecha Hasta -->
+      <div class="space-y-2">
+        <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha hasta</div>
+        <p-datePicker
+          [ngModel]="filterDateTo()"
+          (ngModelChange)="filterDateTo.set($event); applyFilters()"
+          placeholder="Seleccionar fecha"
+          dateFormat="dd/mm/yy"
+          styleClass="w-full"
+          [showIcon]="true"
+          [showButtonBar]="true"
+          [appendTo]="'body'"
+          [showClear]="true"
+        ></p-datePicker>
+      </div>
+
+      <!-- Filtro por Etiquetas -->
+      <div class="space-y-2 md:col-span-3">
+        <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Etiquetas</div>
+        <p-multiSelect
+          [ngModel]="filterTags()"
+          (ngModelChange)="filterTags.set($event); applyFilters()"
+          [options]="tagOptions"
+          placeholder="Seleccionar etiquetas"
+          [appendTo]="'body'"
+          styleClass="w-full"
+          [showClear]="true"
+          display="chip"
+        ></p-multiSelect>
+      </div>
+    </div>
+  </div>
+  }
 
   <!-- Kanban Board -->
   <app-native-kanban-board

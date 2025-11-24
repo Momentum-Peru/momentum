@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { UsersApiService } from '../../shared/services/users-api.service';
 
 // PrimeNG Components
 import { ButtonModule } from 'primeng/button';
@@ -35,7 +36,8 @@ import {
   UpdateBoardRequest,
   InviteUserRequest,
 } from '../../shared/interfaces/board.interface';
-import { Task, DragDropEvent } from '../../shared/interfaces/task.interface';
+import { Task, DragDropEvent, TasksSearchParams } from '../../shared/interfaces/task.interface';
+import { User } from '../../shared/services/users-api.service';
 
 /**
  * Componente principal de gestión de tareas con tableros
@@ -76,6 +78,7 @@ import { Task, DragDropEvent } from '../../shared/interfaces/task.interface';
 export class TasksPage implements OnInit {
   public readonly boardsService = inject(BoardsApiService);
   public readonly tasksService = inject(TasksApiService);
+  private readonly usersApiService = inject(UsersApiService);
   private readonly authService = inject(AuthService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
@@ -94,6 +97,9 @@ export class TasksPage implements OnInit {
   public readonly boardInviteLoading = signal<boolean>(false);
   public readonly editingBoardFromList = signal<Board | null>(null);
   public readonly invitingBoardFromList = signal<Board | null>(null);
+  public readonly taskFilters = signal<TasksSearchParams>({});
+  public readonly availableUsers = signal<{ label: string; value: string }[]>([]);
+  public readonly availableTags = signal<string[]>([]);
 
   // Computed
   public readonly currentUserId = computed(() => {
@@ -195,11 +201,21 @@ export class TasksPage implements OnInit {
         this.isEditingTask.set(false);
       }
     });
+
+    // Efecto para extraer etiquetas cuando cambian las tareas
+    effect(() => {
+      const tasks = this.tasksService.tasks();
+      if (tasks.length > 0) {
+        this.extractTags();
+      }
+    });
   }
 
   ngOnInit(): void {
     this.loadBoards();
     this.loadPendingInvitations();
+    this.loadUsers();
+    this.extractTags();
   }
 
   /**
@@ -299,13 +315,14 @@ export class TasksPage implements OnInit {
     // Determinar si estamos editando basándose en el flag de edición y si hay un board
     // Esto es más confiable que solo verificar si hay un board, ya que el estado puede estar desincronizado
     const isEditing = this.isEditingBoard();
-    const board = isEditing ? (this.editingBoardFromList() || this.selectedBoard()) : null;
+    const board = isEditing ? this.editingBoardFromList() || this.selectedBoard() : null;
     const wasEditing = !!board && isEditing;
     const boardId = board?._id;
 
-    const operation = wasEditing && board
-      ? this.boardsService.update(board._id, data as UpdateBoardRequest)
-      : this.boardsService.create(data as CreateBoardRequest);
+    const operation =
+      wasEditing && board
+        ? this.boardsService.update(board._id, data as UpdateBoardRequest)
+        : this.boardsService.create(data as CreateBoardRequest);
 
     operation.subscribe({
       next: () => {
@@ -352,10 +369,15 @@ export class TasksPage implements OnInit {
   /**
    * Carga las tareas de un tablero
    */
-  private loadBoardTasks(boardId: string): void {
-    this.tasksService.getTasks({ boardId }).subscribe({
+  private loadBoardTasks(boardId: string, filters?: TasksSearchParams): void {
+    const searchParams: TasksSearchParams = {
+      boardId,
+      ...filters,
+    };
+    this.tasksService.getTasks(searchParams).subscribe({
       next: () => {
         // Tareas cargadas exitosamente
+        this.extractTags(); // Actualizar etiquetas disponibles
       },
       error: () => {
         this.messageService.add({
@@ -365,6 +387,52 @@ export class TasksPage implements OnInit {
         });
       },
     });
+  }
+
+  /**
+   * Carga los usuarios disponibles para el filtro
+   */
+  private loadUsers(): void {
+    this.usersApiService.listWithFilters().subscribe({
+      next: (response) => {
+        const users = Array.isArray(response.users) ? response.users : [];
+        this.availableUsers.set(
+          users.map((user: User) => ({
+            label: user.name,
+            value: user.id,
+          }))
+        );
+      },
+      error: () => {
+        // Error silencioso
+        this.availableUsers.set([]);
+      },
+    });
+  }
+
+  /**
+   * Extrae todas las etiquetas únicas de las tareas
+   */
+  private extractTags(): void {
+    const tasks = this.tasksService.tasks();
+    const tagsSet = new Set<string>();
+    tasks.forEach((task) => {
+      if (task.tags && Array.isArray(task.tags)) {
+        task.tags.forEach((tag) => tagsSet.add(tag));
+      }
+    });
+    this.availableTags.set(Array.from(tagsSet).sort());
+  }
+
+  /**
+   * Maneja los cambios en los filtros
+   */
+  public onFiltersChanged(filters: TasksSearchParams): void {
+    this.taskFilters.set(filters);
+    const board = this.selectedBoard();
+    if (board) {
+      this.loadBoardTasks(board._id, filters);
+    }
   }
 
   /**
@@ -378,7 +446,8 @@ export class TasksPage implements OnInit {
     this.boardsService.getById(board._id).subscribe({
       next: (refreshedBoard) => {
         this.selectedBoard.set(refreshedBoard);
-        this.loadBoardTasks(board._id);
+        const filters = this.taskFilters();
+        this.loadBoardTasks(board._id, filters);
       },
       error: () => {
         this.messageService.add({
@@ -527,7 +596,8 @@ export class TasksPage implements OnInit {
     this.closeTaskForm();
     const board = this.selectedBoard();
     if (board) {
-      this.loadBoardTasks(board._id);
+      const filters = this.taskFilters();
+      this.loadBoardTasks(board._id, filters);
     }
   }
 

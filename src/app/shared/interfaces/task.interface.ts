@@ -13,6 +13,17 @@ export interface TaskFile {
   uploadedAt: Date | string;
 }
 
+export interface TaskAttachment {
+  _id?: string;
+  fileName: string;
+  originalName: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  uploadedBy: string;
+  description?: string;
+}
+
 export interface TaskComment {
   _id: string;
   taskId: string;
@@ -21,6 +32,13 @@ export interface TaskComment {
   createdAt: Date | string;
   updatedAt: Date | string;
   attachments?: TaskFile[];
+}
+
+export interface TaskSubtask {
+  _id?: string;
+  title: string;
+  completed: boolean;
+  order?: number;
 }
 
 export interface Task {
@@ -38,6 +56,8 @@ export interface Task {
   boardId?: string; // Board ID (opcional)
   info?: TaskComment[]; // Comentarios/información de la tarea
   files?: TaskFile[];
+  subtasks?: TaskSubtask[];
+  attachments?: TaskAttachment[];
   createdAt: Date | string;
   updatedAt: Date | string;
   isActive: boolean;
@@ -53,6 +73,8 @@ export interface CreateTaskRequest {
   dueDate?: Date | string;
   tags?: string[];
   boardId?: string;
+  subtasks?: TaskSubtask[];
+  attachments?: TaskAttachment[];
 }
 
 export interface UpdateTaskRequest {
@@ -64,6 +86,8 @@ export interface UpdateTaskRequest {
   dueDate?: Date | string;
   tags?: string[];
   boardId?: string;
+  subtasks?: TaskSubtask[];
+  attachments?: TaskAttachment[];
   isActive?: boolean;
 }
 
@@ -99,6 +123,7 @@ export interface TasksSearchParams {
   dueDateTo?: Date | string;
   page?: number;
   limit?: number;
+  q?: string;
 }
 
 export interface TaskStats {

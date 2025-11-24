@@ -43,6 +43,7 @@ export class MenuConfigService {
     { path: '/companies-crm', label: 'Empresas Momentum', icon: 'pi pi-building' },
     { path: '/fi', label: 'Futuros Imposibles', icon: 'pi pi-bolt' },
     { path: '/payroll', label: 'Planillas y Pagos', icon: 'pi pi-wallet' },
+    { path: '/profile', label: 'Mi Perfil', icon: 'pi pi-user-edit' },
   ];
 
   /**
@@ -184,6 +185,11 @@ export class MenuConfigService {
             label: 'Registro Facial',
             icon: 'pi pi-id-card',
             routerLink: '/face-recognition-register',
+          },
+          {
+            label: 'Mi Perfil',
+            icon: 'pi pi-user-edit',
+            routerLink: '/profile',
           },
         ],
       },
