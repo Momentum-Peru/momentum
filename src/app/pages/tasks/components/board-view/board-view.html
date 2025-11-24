@@ -196,36 +196,45 @@
         ></p-select>
       </div>
 
-      <!-- Filtro por Fecha Desde -->
-      <div class="space-y-2">
-        <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha desde</div>
-        <p-datePicker
-          [ngModel]="filterDateFrom()"
-          (ngModelChange)="filterDateFrom.set($event); applyFilters()"
-          placeholder="Seleccionar fecha"
-          dateFormat="dd/mm/yy"
-          styleClass="w-full"
-          [showIcon]="true"
-          [showButtonBar]="true"
-          [appendTo]="'body'"
-          [showClear]="true"
-        ></p-datePicker>
-      </div>
+      <!-- Filtros de Fecha - Agrupados en 2 columnas -->
+      <div class="grid grid-cols-2 gap-3 md:col-span-2">
+        <!-- Filtro por Fecha Desde -->
+        <div class="space-y-2">
+          <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha desde</div>
+          <div class="relative w-full">
+            <p-datePicker
+              [ngModel]="filterDateFrom()"
+              (ngModelChange)="filterDateFrom.set($event); applyFilters()"
+              placeholder="Seleccionar fecha"
+              dateFormat="dd/mm/yy"
+              styleClass="w-full"
+              inputStyleClass="w-full pr-20"
+              [showIcon]="true"
+              [showButtonBar]="true"
+              [appendTo]="'body'"
+              [showClear]="true"
+            ></p-datePicker>
+          </div>
+        </div>
 
-      <!-- Filtro por Fecha Hasta -->
-      <div class="space-y-2">
-        <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha hasta</div>
-        <p-datePicker
-          [ngModel]="filterDateTo()"
-          (ngModelChange)="filterDateTo.set($event); applyFilters()"
-          placeholder="Seleccionar fecha"
-          dateFormat="dd/mm/yy"
-          styleClass="w-full"
-          [showIcon]="true"
-          [showButtonBar]="true"
-          [appendTo]="'body'"
-          [showClear]="true"
-        ></p-datePicker>
+        <!-- Filtro por Fecha Hasta -->
+        <div class="space-y-2">
+          <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha hasta</div>
+          <div class="relative w-full">
+            <p-datePicker
+              [ngModel]="filterDateTo()"
+              (ngModelChange)="filterDateTo.set($event); applyFilters()"
+              placeholder="Seleccionar fecha"
+              dateFormat="dd/mm/yy"
+              styleClass="w-full"
+              inputStyleClass="w-full pr-20"
+              [showIcon]="true"
+              [showButtonBar]="true"
+              [appendTo]="'body'"
+              [showClear]="true"
+            ></p-datePicker>
+          </div>
+        </div>
       </div>
 
       <!-- Filtro por Etiquetas -->

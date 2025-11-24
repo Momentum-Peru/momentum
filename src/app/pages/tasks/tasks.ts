@@ -202,11 +202,26 @@ export class TasksPage implements OnInit {
       }
     });
 
-    // Efecto para extraer etiquetas cuando cambian las tareas
+    // Efecto para cargar todas las etiquetas cuando se selecciona un tablero
     effect(() => {
-      const tasks = this.tasksService.tasks();
-      if (tasks.length > 0) {
-        this.extractTags();
+      const board = this.selectedBoard();
+      if (board) {
+        // Cargar todas las etiquetas del tablero (sin filtros)
+        const allTagsParams: TasksSearchParams = { boardId: board._id };
+        this.tasksService.getTasks(allTagsParams).subscribe({
+          next: (response) => {
+            const tagsSet = new Set<string>();
+            (response.data || []).forEach((task) => {
+              if (task.tags && Array.isArray(task.tags)) {
+                task.tags.forEach((tag) => tagsSet.add(tag));
+              }
+            });
+            this.availableTags.set(Array.from(tagsSet).sort());
+          },
+          error: () => {
+            // Error silencioso
+          },
+        });
       }
     });
   }
@@ -215,7 +230,6 @@ export class TasksPage implements OnInit {
     this.loadBoards();
     this.loadPendingInvitations();
     this.loadUsers();
-    this.extractTags();
   }
 
   /**
@@ -374,10 +388,29 @@ export class TasksPage implements OnInit {
       boardId,
       ...filters,
     };
+
+    // Cargar todas las tareas del tablero (sin filtros) para extraer todas las etiquetas
+    const allTagsParams: TasksSearchParams = { boardId };
+    this.tasksService.getTasks(allTagsParams).subscribe({
+      next: (allTagsResponse) => {
+        // Extraer todas las etiquetas de todas las tareas del tablero
+        const tagsSet = new Set<string>();
+        (allTagsResponse.data || []).forEach((task) => {
+          if (task.tags && Array.isArray(task.tags)) {
+            task.tags.forEach((tag) => tagsSet.add(tag));
+          }
+        });
+        this.availableTags.set(Array.from(tagsSet).sort());
+      },
+      error: () => {
+        // Error silencioso, no es crítico para la funcionalidad principal
+      },
+    });
+
+    // Cargar las tareas filtradas para mostrar
     this.tasksService.getTasks(searchParams).subscribe({
       next: () => {
         // Tareas cargadas exitosamente
-        this.extractTags(); // Actualizar etiquetas disponibles
       },
       error: () => {
         this.messageService.add({
