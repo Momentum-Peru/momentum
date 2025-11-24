@@ -26,7 +26,7 @@ export interface User {
     id: string;
     email: string;
     name: string;
-    role: 'user' | 'admin' | 'gerencia';
+    role: 'user' | 'admin' | 'gerencia' | 'supervisor';
     isActive: boolean;
     googleId?: string;
     profilePicture?: string;
@@ -300,7 +300,7 @@ export class AuthService {
     /**
      * Verificar si el usuario tiene rol específico
      */
-    hasRole(role: 'user' | 'admin' | 'gerencia'): boolean {
+    hasRole(role: 'user' | 'admin' | 'gerencia' | 'supervisor'): boolean {
         const user = this.getCurrentUser();
         return user?.role === role;
     }

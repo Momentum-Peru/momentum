@@ -35,7 +35,7 @@ interface UserFormData {
   _id?: string;
   email: string;
   name: string;
-  role: 'user' | 'admin' | 'gerencia';
+  role: 'user' | 'admin' | 'gerencia' | 'supervisor';
   password?: string;
 }
 
@@ -106,6 +106,7 @@ export class UsersPage implements OnInit, OnDestroy {
     { label: 'Usuario', value: 'user' },
     { label: 'Administrador', value: 'admin' },
     { label: 'Gerencia', value: 'gerencia' },
+    { label: 'Supervisor', value: 'supervisor' },
   ];
 
   statusOptions = [
@@ -323,7 +324,7 @@ export class UsersPage implements OnInit, OnDestroy {
       const updateData: UserUpdateRequest = {
         email: userData.email,
         name: userData.name,
-        role: userData.role,
+        role: userData.role as UserUpdateRequest['role'],
       };
 
       this.usersApi.update(userData._id, updateData).subscribe({

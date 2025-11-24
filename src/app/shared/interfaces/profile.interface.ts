@@ -6,7 +6,7 @@ export interface UserProfile {
   id: string;
   email: string;
   name: string;
-  role: 'user' | 'admin' | 'gerencia';
+  role: 'user' | 'admin' | 'gerencia' | 'supervisor';
   isActive: boolean;
   profilePicture?: string | null;
   lastLogin?: string | null;
