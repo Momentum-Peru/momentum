@@ -1,5 +1,5 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
@@ -59,11 +59,22 @@ export class TasksApiService {
     this.setLoading(true);
     this.setError(null);
 
-    const httpParams: Record<string, string> = {};
+    let httpParams = new HttpParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          httpParams[key] = String(value);
+          if (Array.isArray(value)) {
+            // Para arrays (como tags), agregar cada elemento por separado
+            value.forEach((item) => {
+              httpParams = httpParams.append(key, item);
+            });
+          } else if (value instanceof Date) {
+            // Para fechas, convertir a ISO string
+            httpParams = httpParams.set(key, value.toISOString());
+          } else {
+            // Para otros valores, convertir a string
+            httpParams = httpParams.set(key, String(value));
+          }
         }
       });
     }

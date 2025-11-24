@@ -123,6 +123,7 @@ export interface TasksSearchParams {
   dueDateTo?: Date | string;
   page?: number;
   limit?: number;
+  q?: string;
 }
 
 export interface TaskStats {
