@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { UsersApiService } from '../../shared/services/users-api.service';
 
 // PrimeNG Components
@@ -82,6 +83,8 @@ export class TasksPage implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   // Signals
   public readonly showBoardForm = signal<boolean>(false);
@@ -230,6 +233,69 @@ export class TasksPage implements OnInit {
     this.loadBoards();
     this.loadPendingInvitations();
     this.loadUsers();
+
+    // Leer query params para acciones desde notificaciones
+    this.route.queryParams.subscribe((params) => {
+      // Si viene showInvitations=true, abrir el modal de invitaciones
+      if (params['showInvitations'] === 'true') {
+        this.openBoardInvitations();
+        // NO intentar cargar el tablero directamente si es una invitación pendiente
+        // porque el usuario aún no tiene acceso hasta que acepte la invitación
+        // El modal de invitaciones mostrará todas las invitaciones pendientes
+        // Limpiar query params
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: {},
+          replaceUrl: true,
+        });
+      }
+
+      // Si viene taskId, cargar la tarea y mostrar su tablero
+      if (params['taskId']) {
+        this.tasksService.getTaskById(params['taskId']).subscribe({
+          next: (task) => {
+            // Obtener el boardId de la tarea
+            const boardId =
+              typeof task.boardId === 'string'
+                ? task.boardId
+                : (task.boardId as any)?._id || (task.boardId as any)?.toString();
+
+            if (boardId) {
+              // Cargar el tablero y luego mostrar la tarea
+              this.boardsService.getById(boardId).subscribe({
+                next: (board) => {
+                  this.onViewBoard(board);
+                  // Cargar las tareas del tablero y luego mostrar la tarea
+                  this.loadBoardTasks(boardId);
+                  // Mostrar la tarea después de cargar el tablero
+                  this.viewTaskDetails(task);
+                },
+                error: () => {
+                  // Si no se puede cargar el tablero, solo mostrar la tarea
+                  this.viewTaskDetails(task);
+                },
+              });
+            } else {
+              // Si la tarea no tiene tablero, solo mostrar la tarea
+              this.viewTaskDetails(task);
+            }
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo cargar la tarea',
+            });
+          },
+        });
+        // Limpiar query params
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: {},
+          replaceUrl: true,
+        });
+      }
+    });
   }
 
   /**
