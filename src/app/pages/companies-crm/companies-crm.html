@@ -319,7 +319,8 @@
 
   <!-- Modal de creación/edición -->
   <p-dialog
-    [(visible)]="showDialog"
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '50rem' }"
     [draggable]="false"
@@ -514,7 +515,8 @@
 
   <!-- Modal de detalles -->
   <p-dialog
-    [(visible)]="showDetailsDialog"
+    [visible]="showDetailsDialog()"
+    (visibleChange)="showDetailsDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '40rem' }"
     [draggable]="false"
