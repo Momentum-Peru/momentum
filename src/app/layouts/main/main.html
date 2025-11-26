@@ -18,7 +18,10 @@
     >
       <!-- Selector de empresa -->
       <div class="flex items-center gap-2 w-full sm:w-auto sm:order-1 mt-3 lg:mt-0">
-        <div class="flex items-center justify-end flex-shrink-0 sm:hidden">
+        <div class="flex items-center justify-end gap-2 flex-shrink-0 sm:hidden">
+          <!-- Campana de notificaciones (solo mobile) -->
+          <app-notifications-bell />
+          
           <!-- Foto de perfil con menú desplegable (solo mobile) -->
           <div class="relative">
             <button
@@ -123,8 +126,12 @@
         />
       </div>
 
-      <!-- Perfil de usuario (solo desktop) -->
-      <div class="hidden sm:flex items-center justify-end flex-shrink-0 sm:order-2">
+      <!-- Notificaciones y Perfil de usuario (solo desktop) -->
+      <div class="hidden sm:flex items-center justify-end gap-3 flex-shrink-0 sm:order-2">
+        <!-- Campana de notificaciones -->
+        <app-notifications-bell />
+        
+        <!-- Perfil de usuario -->
         <!-- Foto de perfil con menú desplegable -->
         <div class="relative">
           <button
