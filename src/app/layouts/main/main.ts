@@ -1,6 +1,7 @@
 import { Component, inject, computed, signal, OnInit, effect, HostListener } from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
 import { Menu } from '../../components/menu/menu';
+import { NotificationsBellComponent } from '../../components/notifications-bell/notifications-bell';
 import { AuthService } from '../../pages/login/services/auth.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
@@ -13,7 +14,7 @@ import { UserProfile } from '../../shared/interfaces/profile.interface';
 @Component({
   selector: 'app-main',
   standalone: true,
-  imports: [RouterOutlet, Menu, ConfirmDialogModule, ToastModule, Button],
+  imports: [RouterOutlet, Menu, NotificationsBellComponent, ConfirmDialogModule, ToastModule, Button],
   templateUrl: './main.html',
   styleUrl: './main.scss',
   providers: [ConfirmationService],

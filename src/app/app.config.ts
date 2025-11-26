@@ -10,6 +10,7 @@ import MayaPreset from './themes/maya-preset';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { tokenInterceptor } from './interceptors/token.interceptor';
 import { tenantInterceptor } from './interceptors/tenant.interceptor';
+import { logsInterceptor } from './interceptors/logs.interceptor';
 import { AuthService } from './pages/login/services/auth.service';
 import { TenantService } from './core/services/tenant.service';
 
@@ -24,7 +25,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideAnimationsAsync(),
     provideHttpClient(
-      withInterceptors([tokenInterceptor, tenantInterceptor, authInterceptor])
+      withInterceptors([tokenInterceptor, tenantInterceptor, authInterceptor, logsInterceptor])
     ),
     MessageService,
     providePrimeNG({
