@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -86,10 +87,16 @@ export class TimeTrackingPage implements OnInit {
   viewing = signal<TimeTracking | null>(null);
   private expandedRowKeys = signal<Set<string>>(new Set());
 
+  // Convertir el observable del usuario a un signal para reactividad
+  // Usar getCurrentUser() como valor inicial para asegurar que tenga el usuario desde localStorage
+  currentUser = toSignal(this.authService.currentUser$, { 
+    initialValue: this.authService.getCurrentUser() 
+  });
+
   // Verificar si el usuario puede editar o eliminar marcaciones
   // Solo admin y gerencia pueden editar/eliminar, los usuarios regulares no
   canEditOrDelete = computed(() => {
-    const user = this.authService.getCurrentUser();
+    const user = this.currentUser();
     return user?.role === 'admin' || user?.role === 'gerencia';
   });
 
@@ -185,7 +192,7 @@ export class TimeTrackingPage implements OnInit {
   }
 
   load() {
-    const currentUser = this.authService.getCurrentUser();
+    const currentUser = this.currentUser();
     if (!currentUser?.id) {
       this.items.set([]);
       return;
@@ -443,11 +450,20 @@ export class TimeTrackingPage implements OnInit {
       return;
     }
 
+    // Limpiar el objeto location removiendo campos no permitidos (como _id)
+    let cleanedLocation: Location | undefined = undefined;
+    if (item.location) {
+      cleanedLocation = {
+        latitude: item.location.latitude,
+        longitude: item.location.longitude,
+      };
+    }
+
     // Usar UpdateTimeTrackingRequest con los nuevos campos
     const payload: UpdateTimeTrackingRequest = {
       date: item.date,
       type: item.type,
-      location: item.location || undefined,
+      location: cleanedLocation,
     };
 
     this.timeTrackingApi.update(item._id, payload).subscribe({
