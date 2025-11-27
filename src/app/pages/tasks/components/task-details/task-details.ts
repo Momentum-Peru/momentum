@@ -98,6 +98,19 @@ import {
             </div>
           </div>
 
+          <!-- Project -->
+          @if (getProjectName()) {
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Proyecto</h3>
+            <div class="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <i class="pi pi-folder text-blue-600 dark:text-blue-400"></i>
+              <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
+                {{ getProjectName() }}
+              </span>
+            </div>
+          </div>
+          }
+
           <!-- Description -->
           @if (task.description) {
           <div class="mb-4">
@@ -542,6 +555,24 @@ export class TaskDetailsComponent {
     }
 
     return 'Usuario';
+  }
+
+  /**
+   * Obtiene el nombre del proyecto
+   */
+  public getProjectName(): string | null {
+    if (!this.task?.projectId) return null;
+
+    // Si projectId es un objeto (poblado), usar directamente
+    if (typeof this.task.projectId === 'object' && this.task.projectId !== null) {
+      const projectObj = this.task.projectId as { name?: string; code?: string };
+      if (projectObj.code && projectObj.name) {
+        return `${projectObj.code} - ${projectObj.name}`;
+      }
+      return projectObj.name || projectObj.code || null;
+    }
+
+    return null;
   }
 
   /**

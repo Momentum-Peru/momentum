@@ -47,13 +47,14 @@ export interface Task {
   description?: string;
   status: TaskStatus;
   priority: 'Baja' | 'Media' | 'Alta' | 'Crítica';
-  assignedTo: string; // User ID
+  assignedTo: string | { _id?: string; name?: string; email?: string }; // User ID o objeto poblado
   assignedToName?: string; // User name for display
-  createdBy: string; // User ID
+  createdBy: string | { _id?: string; name?: string; email?: string }; // User ID o objeto poblado
   createdByName?: string; // User name for display
   dueDate?: Date | string;
   tags: string[];
   boardId?: string; // Board ID (opcional)
+  projectId?: string | { _id?: string; name?: string; code?: string }; // Project ID o objeto poblado (opcional)
   info?: TaskComment[]; // Comentarios/información de la tarea
   files?: TaskFile[];
   subtasks?: TaskSubtask[];
@@ -73,6 +74,7 @@ export interface CreateTaskRequest {
   dueDate?: Date | string;
   tags?: string[];
   boardId?: string;
+  projectId?: string;
   subtasks?: TaskSubtask[];
   attachments?: TaskAttachment[];
 }
@@ -86,6 +88,7 @@ export interface UpdateTaskRequest {
   dueDate?: Date | string;
   tags?: string[];
   boardId?: string;
+  projectId?: string;
   subtasks?: TaskSubtask[];
   attachments?: TaskAttachment[];
   isActive?: boolean;
