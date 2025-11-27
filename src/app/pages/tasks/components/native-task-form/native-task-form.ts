@@ -28,6 +28,7 @@ import { TasksApiService } from '../../../../shared/services/tasks-api.service';
 import { UsersApiService } from '../../../../shared/services/users-api.service';
 import { AuthService } from '../../../login/services/auth.service';
 import { BoardsApiService } from '../../../../shared/services/boards-api.service';
+import { ProjectsApiService } from '../../../../shared/services/projects-api.service';
 
 // Interfaces
 import {
@@ -39,6 +40,7 @@ import {
 } from '../../../../shared/interfaces/task.interface';
 import { User } from '../../../../shared/services/users-api.service';
 import { Board } from '../../../../shared/interfaces/board.interface';
+import { Project } from '../../../../shared/interfaces/project.interface';
 
 // PrimeNG Services
 import { MessageService } from 'primeng/api';
@@ -190,6 +192,27 @@ import { take } from 'rxjs';
             </p>
           </div>
 
+          <!-- Project Field -->
+          <div class="space-y-2">
+            <label
+              for="projectId"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Proyecto
+            </label>
+            <p-select
+              id="projectId"
+              formControlName="projectId"
+              [options]="projectOptions()"
+              placeholder="Selecciona un proyecto"
+              [appendTo]="'body'"
+              styleClass="w-full"
+              [loading]="projectsLoading()"
+            ></p-select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Due Date Field -->
           <div class="space-y-2">
             <label for="dueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -446,17 +469,20 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   private readonly tasksApiService = inject(TasksApiService);
   private readonly usersApiService = inject(UsersApiService);
   private readonly boardsApiService = inject(BoardsApiService);
+  private readonly projectsApiService = inject(ProjectsApiService);
   private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
 
   @Input() task: Task | undefined;
   @Input() boardId?: string;
-  @Output() save = new EventEmitter<CreateTaskRequest | UpdateTaskRequest>();
+  @Output() save = new EventEmitter<Task>();
   @Output() formCancel = new EventEmitter<void>();
 
   public taskForm: FormGroup = this.createForm();
   public readonly allUsers = signal<User[]>([]);
   public readonly board = signal<Board | null>(null);
+  public readonly projects = signal<Project[]>([]);
+  public readonly projectsLoading = signal<boolean>(false);
   public readonly usersLoading = signal<boolean>(false);
   public readonly loading = signal<boolean>(false);
   public readonly subtasks = signal<TaskSubtask[]>([]);
@@ -529,8 +555,16 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     }));
   });
 
+  public readonly projectOptions = computed(() => {
+    return this.projects().map((project) => ({
+      label: `${project.code} - ${project.name}`,
+      value: project._id || '',
+    }));
+  });
+
   ngOnInit(): void {
     this.loadUsers();
+    this.loadProjects();
     if (this.boardId) {
       this.loadBoard();
     }
@@ -556,6 +590,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       status: ['Pendiente', [Validators.required]],
       priority: ['Media', [Validators.required]],
       assignedTo: [null, [Validators.required]],
+      projectId: [null],
       dueDate: [null],
       tags: [''],
     });
@@ -577,6 +612,12 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       // Resetear el formulario primero
       this.taskForm.reset();
 
+      // Extraer el ID del projectId si es un objeto
+      const projectId =
+        typeof this.task.projectId === 'object' && this.task.projectId !== null
+          ? (this.task.projectId as { _id?: string })._id
+          : this.task.projectId;
+
       // Llenar con los datos de la tarea
       this.taskForm.patchValue({
         title: this.task.title,
@@ -584,6 +625,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         status: this.task.status,
         priority: this.task.priority,
         assignedTo: assignedToId,
+        projectId: projectId || null,
         dueDate: this.task.dueDate ? new Date(this.task.dueDate) : null,
         tags: Array.isArray(this.task.tags) ? this.task.tags.join(', ') : this.task.tags || '',
       });
@@ -612,6 +654,30 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     }
     this.selectedFiles.set([]);
     this.attachmentsToDelete.set([]);
+  }
+
+  /**
+   * Carga la lista de proyectos
+   */
+  private loadProjects(): void {
+    this.projectsLoading.set(true);
+    this.projectsApiService
+      .list()
+      .pipe(take(1))
+      .subscribe({
+        next: (data) => {
+          this.projects.set(data);
+          this.projectsLoading.set(false);
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Advertencia',
+            detail: 'No se pudieron cargar los proyectos.',
+          });
+          this.projectsLoading.set(false);
+        },
+      });
   }
 
   /**
@@ -765,6 +831,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         ...(this.isEditing() ? {} : { createdBy: currentUser.id }),
         // Agregar boardId si está disponible
         ...(this.boardId ? { boardId: this.boardId } : {}),
+        // Agregar projectId si está disponible
+        ...(formValue.projectId ? { projectId: formValue.projectId } : {}),
         dueDate: formValue.dueDate ? formValue.dueDate.toISOString() : undefined,
         tags: formValue.tags
           ? formValue.tags

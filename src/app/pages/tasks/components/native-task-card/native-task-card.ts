@@ -38,6 +38,20 @@ import { Task } from '../../../../shared/interfaces/task.interface';
         </div>
       </div>
 
+      <!-- Project -->
+      @if (getProjectName()) {
+      <div class="mb-2">
+        <div class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+          <svg class="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+          </svg>
+          <span class="text-xs font-medium text-blue-700 dark:text-blue-300">
+            {{ getProjectName() }}
+          </span>
+        </div>
+      </div>
+      }
+
       <!-- Description -->
       @if (task.description) {
       <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
@@ -208,6 +222,24 @@ export class NativeTaskCardComponent {
       month: '2-digit',
       year: 'numeric',
     });
+  }
+
+  /**
+   * Obtiene el nombre del proyecto
+   */
+  public getProjectName(): string | null {
+    if (!this.task?.projectId) return null;
+
+    // Si projectId es un objeto (poblado), usar directamente
+    if (typeof this.task.projectId === 'object' && this.task.projectId !== null) {
+      const projectObj = this.task.projectId as { name?: string; code?: string };
+      if (projectObj.code && projectObj.name) {
+        return `${projectObj.code} - ${projectObj.name}`;
+      }
+      return projectObj.name || projectObj.code || null;
+    }
+
+    return null;
   }
 
   /**
