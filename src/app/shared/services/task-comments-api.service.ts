@@ -83,20 +83,29 @@ export class TaskCommentsApiService {
   }
 
   /**
-   * Sube un archivo asociado a un comentario
+   * Sube archivos asociados a un comentario (info)
    */
-  uploadCommentFile(taskId: string, commentId: string, file: File): Observable<TaskFile> {
+  uploadCommentFiles(
+    taskId: string,
+    infoId: string,
+    files: File[],
+    uploadedBy: string
+  ): Observable<Task> {
     this.setLoading(true);
     this.setError(null);
 
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('commentId', commentId);
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    formData.append('uploadedBy', uploadedBy);
 
-    return this.http.post<TaskFile>(`${this.baseUrl}/tasks/${taskId}/files`, formData).pipe(
-      tap(() => this.setLoading(false)),
-      tap({ error: (err) => this.handleError(err) })
-    );
+    return this.http
+      .post<Task>(`${this.baseUrl}/tasks/${taskId}/info/${infoId}/attachments`, formData)
+      .pipe(
+        tap(() => this.setLoading(false)),
+        tap({ error: (err) => this.handleError(err) })
+      );
   }
 
   /**

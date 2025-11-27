@@ -55,10 +55,10 @@
     [error]="boardsService.error()"
     [currentUserId]="currentUserId()"
     (createBoard)="openBoardForm()"
-    (viewBoard)="onViewBoard($event)"
-    (editBoard)="openBoardFormFromList($event)"
-    (inviteUser)="openBoardInviteFromList($event)"
-    (deleteBoard)="confirmDeleteBoard($event)"
+    (viewBoard)="onViewBoard($any($event))"
+    (editBoard)="openBoardFormFromList($any($event))"
+    (inviteUser)="openBoardInviteFromList($any($event))"
+    (deleteBoard)="confirmDeleteBoard($any($event))"
   ></app-board-list>
   }
 
@@ -89,13 +89,14 @@
 <!-- Dialog: Formulario de Tablero -->
 <p-dialog
   [modal]="true"
-  [(visible)]="showBoardForm"
+  [visible]="showBoardForm()"
+  (visibleChange)="showBoardForm.set($event)"
   [style]="{ width: '600px' }"
   [closable]="true"
   [header]="isEditingBoard() ? 'Editar Tablero' : 'Nuevo Tablero'"
 >
   <app-board-form
-    [board]="isEditingBoard() ? (editingBoardFromList() || selectedBoard() || null) : null"
+    [board]="isEditingBoard() ? editingBoardFromList() || selectedBoard() || null : null"
     [loading]="boardFormLoading"
     [visible]="showBoardForm()"
     (save)="onBoardSave($event)"
@@ -106,7 +107,8 @@
 <!-- Dialog: Invitar Usuario -->
 <p-dialog
   [modal]="true"
-  [(visible)]="showBoardInvite"
+  [visible]="showBoardInvite()"
+  (visibleChange)="showBoardInvite.set($event)"
   [style]="{ width: '500px' }"
   [closable]="true"
   header="Invitar Usuario al Tablero"
@@ -125,7 +127,8 @@
 <!-- Dialog: Formulario de Tarea -->
 <p-dialog
   [modal]="true"
-  [(visible)]="showTaskForm"
+  [visible]="showTaskForm()"
+  (visibleChange)="showTaskForm.set($event)"
   [style]="{ width: '700px' }"
   [closable]="true"
   [header]="isEditingTask() ? 'Editar Tarea' : 'Nueva Tarea'"
@@ -147,14 +150,15 @@
 <!-- Dialog: Detalles de Tarea -->
 <app-task-details
   [task]="selectedTask()"
-  [visible]="showTaskDetails"
+  [visible]="showTaskDetails()"
   (closeDialog)="closeTaskDetails()"
 ></app-task-details>
 
 <!-- Dialog: Invitaciones Pendientes -->
 <p-dialog
   [modal]="true"
-  [(visible)]="showBoardInvitations"
+  [visible]="showBoardInvitations()"
+  (visibleChange)="showBoardInvitations.set($event)"
   [style]="{ width: '90vw', maxWidth: '1200px' }"
   [closable]="true"
   [maximizable]="true"
@@ -162,7 +166,7 @@
 >
   <app-board-invitations
     [visible]="showBoardInvitations()"
-    (invitationAccepted)="onInvitationAccepted($event)"
-    (invitationRejected)="onInvitationRejected($event)"
+    (invitationAccepted)="onInvitationAccepted($any($event))"
+    (invitationRejected)="onInvitationRejected($any($event))"
   ></app-board-invitations>
 </p-dialog>

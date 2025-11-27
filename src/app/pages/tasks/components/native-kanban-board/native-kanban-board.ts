@@ -79,6 +79,27 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
             </svg>
             <p class="text-sm">No hay tareas pendientes</p>
           </div>
+          } @if (pendingTasks().length > 0) {
+          <button
+            type="button"
+            (click)="onCreateTask()"
+            class="w-full flex items-center justify-center gap-2 px-4 py-3 mt-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
+          >
+            <svg
+              class="w-5 h-5 text-gray-500 dark:text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4v16m8-8H4"
+              ></path>
+            </svg>
+            <span>Agregar tarea</span>
+          </button>
           }
         </div>
       </div>
@@ -266,6 +287,7 @@ export class NativeKanbanBoardComponent implements OnInit, OnChanges {
   @Output() editTask = new EventEmitter<Task>();
   @Output() deleteTask = new EventEmitter<Task>();
   @Output() viewTask = new EventEmitter<Task>();
+  @Output() createTask = new EventEmitter<void>();
 
   // Signals para las tareas
   public readonly pendingTasks = signal<Task[]>([]);
@@ -352,5 +374,12 @@ export class NativeKanbanBoardComponent implements OnInit, OnChanges {
    */
   public onViewTask(task: Task): void {
     this.viewTask.emit(task);
+  }
+
+  /**
+   * Maneja la creación de una nueva tarea
+   */
+  public onCreateTask(): void {
+    this.createTask.emit();
   }
 }
