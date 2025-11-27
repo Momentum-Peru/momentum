@@ -29,16 +29,16 @@ Registra un descriptor facial para un usuario. El descriptor debe ser extraído 
 
 #### Query Parameters
 
-| Parámetro | Tipo   | Requerido | Descripción           |
-|-----------|--------|-----------|-----------------------|
-| tenantId  | string | Sí        | ID del tenant         |
+| Parámetro | Tipo   | Requerido | Descripción   |
+| --------- | ------ | --------- | ------------- |
+| tenantId  | string | Sí        | ID del tenant |
 
 #### Body (multipart/form-data)
 
-| Campo      | Tipo   | Requerido | Descripción                                                                 |
-|------------|--------|-----------|-----------------------------------------------------------------------------|
-| image      | file   | Sí        | Imagen con el rostro del usuario (JPEG, PNG, WebP)                        |
-| userId     | string | Sí        | ID del usuario al que se asociará el descriptor facial (ObjectId válido)  |
+| Campo      | Tipo   | Requerido | Descripción                                                                |
+| ---------- | ------ | --------- | -------------------------------------------------------------------------- |
+| image      | file   | Sí        | Imagen con el rostro del usuario (JPEG, PNG, WebP)                         |
+| userId     | string | Sí        | ID del usuario al que se asociará el descriptor facial (ObjectId válido)   |
 | descriptor | string | Sí        | Descriptor facial extraído en el frontend (array de 128 números como JSON) |
 
 #### Ejemplo de Request
@@ -53,10 +53,10 @@ curl -X POST "http://localhost:3026/face-recognition/register?tenantId=507f1f77b
 #### Ejemplo de Request (JavaScript/Fetch)
 
 ```javascript
-const formData = new FormData();
-formData.append('image', imageFile);
-formData.append('userId', '507f1f77bcf86cd799439011');
-formData.append('descriptor', JSON.stringify(faceDescriptor)); // Array de 128 números
+const formData = new FormData()
+formData.append('image', imageFile)
+formData.append('userId', '507f1f77bcf86cd799439011')
+formData.append('descriptor', JSON.stringify(faceDescriptor)) // Array de 128 números
 
 const response = await fetch(
   'http://localhost:3026/face-recognition/register?tenantId=507f1f77bcf86cd799439011',
@@ -64,7 +64,7 @@ const response = await fetch(
     method: 'POST',
     body: formData,
   }
-);
+)
 ```
 
 #### Ejemplo de Response (201 Created)
@@ -74,7 +74,7 @@ const response = await fetch(
   "_id": "507f1f77bcf86cd799439011",
   "tenantId": "507f1f77bcf86cd799439011",
   "userId": "507f1f77bcf86cd799439011",
-  "descriptor": [0.123, -0.456, 0.789, /* ... 125 números más ... */],
+  "descriptor": [0.123, -0.456, 0.789 /* ... 125 números más ... */],
   "imageUrl": "https://bucket.s3.amazonaws.com/face-recognition/user123/1234567890-reference.jpg",
   "isActive": true,
   "createdAt": "2024-01-15T10:30:00.000Z",
@@ -105,18 +105,18 @@ Marca la entrada o salida de un usuario comparando el descriptor facial con los 
 #### Query Parameters
 
 | Parámetro | Tipo   | Requerido | Descripción   |
-|-----------|--------|-----------|---------------|
+| --------- | ------ | --------- | ------------- |
 | tenantId  | string | Sí        | ID del tenant |
 
 #### Body (multipart/form-data)
 
-| Campo      | Tipo   | Requerido | Descripción                                                                 |
-|------------|--------|-----------|-----------------------------------------------------------------------------|
-| image      | file   | Sí        | Imagen con el rostro del usuario (JPEG, PNG, WebP)                        |
-| descriptor | string | Sí        | Descriptor facial extraído en el frontend (array de 128 números como JSON) |
+| Campo      | Tipo   | Requerido | Descripción                                                                                 |
+| ---------- | ------ | --------- | ------------------------------------------------------------------------------------------- |
+| image      | file   | Sí        | Imagen con el rostro del usuario (JPEG, PNG, WebP)                                          |
+| descriptor | string | Sí        | Descriptor facial extraído en el frontend (array de 128 números como JSON)                  |
 | type       | string | No        | Tipo de marcación: `ENTRADA` o `SALIDA`. Si no se proporciona, se determina automáticamente |
-| location   | string | No        | Ubicación donde se realiza la marcación (máx. 500 caracteres)              |
-| notes      | string | No        | Notas adicionales sobre la marcación (máx. 1000 caracteres)                 |
+| location   | string | No        | Ubicación donde se realiza la marcación (máx. 500 caracteres)                               |
+| notes      | string | No        | Notas adicionales sobre la marcación (máx. 1000 caracteres)                                 |
 
 #### Ejemplo de Request
 
@@ -132,12 +132,12 @@ curl -X POST "http://localhost:3026/face-recognition/attendance?tenantId=507f1f7
 #### Ejemplo de Request (JavaScript/Fetch)
 
 ```javascript
-const formData = new FormData();
-formData.append('image', imageFile);
-formData.append('descriptor', JSON.stringify(faceDescriptor)); // Array de 128 números
-formData.append('type', 'ENTRADA'); // Opcional
-formData.append('location', 'Oficina Principal - Lima'); // Opcional
-formData.append('notes', 'Marcación desde móvil'); // Opcional
+const formData = new FormData()
+formData.append('image', imageFile)
+formData.append('descriptor', JSON.stringify(faceDescriptor)) // Array de 128 números
+formData.append('type', 'ENTRADA') // Opcional
+formData.append('location', 'Oficina Principal - Lima') // Opcional
+formData.append('notes', 'Marcación desde móvil') // Opcional
 
 const response = await fetch(
   'http://localhost:3026/face-recognition/attendance?tenantId=507f1f77bcf86cd799439011',
@@ -145,7 +145,7 @@ const response = await fetch(
     method: 'POST',
     body: formData,
   }
-);
+)
 ```
 
 #### Ejemplo de Response (201 Created)
@@ -196,14 +196,14 @@ Retorna todos los descriptores faciales activos asociados a un usuario.
 
 #### Path Parameters
 
-| Parámetro | Tipo   | Requerido | Descripción   |
-|-----------|--------|-----------|---------------|
+| Parámetro | Tipo   | Requerido | Descripción    |
+| --------- | ------ | --------- | -------------- |
 | userId    | string | Sí        | ID del usuario |
 
 #### Query Parameters
 
 | Parámetro | Tipo   | Requerido | Descripción   |
-|-----------|--------|-----------|---------------|
+| --------- | ------ | --------- | ------------- |
 | tenantId  | string | Sí        | ID del tenant |
 
 #### Ejemplo de Request
@@ -220,7 +220,7 @@ curl -X GET "http://localhost:3026/face-recognition/descriptors/user/507f1f77bcf
     "_id": "507f1f77bcf86cd799439011",
     "tenantId": "507f1f77bcf86cd799439011",
     "userId": "507f1f77bcf86cd799439011",
-    "descriptor": [0.123, -0.456, 0.789, /* ... 125 números más ... */],
+    "descriptor": [0.123, -0.456, 0.789 /* ... 125 números más ... */],
     "imageUrl": "https://bucket.s3.amazonaws.com/face-recognition/user123/1234567890-reference.jpg",
     "isActive": true,
     "createdAt": "2024-01-15T10:30:00.000Z",
@@ -244,14 +244,14 @@ Elimina (soft delete) un descriptor facial por su ID.
 
 #### Path Parameters
 
-| Parámetro | Tipo   | Requerido | Descripción         |
-|-----------|--------|-----------|---------------------|
-| id        | string | Sí        | ID del descriptor   |
+| Parámetro | Tipo   | Requerido | Descripción       |
+| --------- | ------ | --------- | ----------------- |
+| id        | string | Sí        | ID del descriptor |
 
 #### Query Parameters
 
 | Parámetro | Tipo   | Requerido | Descripción   |
-|-----------|--------|-----------|---------------|
+| --------- | ------ | --------- | ------------- |
 | tenantId  | string | Sí        | ID del tenant |
 
 #### Ejemplo de Request
@@ -276,12 +276,12 @@ Retorna los registros de asistencia con filtros opcionales por usuario y rango d
 
 #### Query Parameters
 
-| Parámetro | Tipo   | Requerido | Descripción                                    |
-|-----------|--------|-----------|------------------------------------------------|
-| tenantId  | string | Sí        | ID del tenant                                  |
-| userId    | string | No        | ID del usuario (filtro opcional)             |
+| Parámetro | Tipo   | Requerido | Descripción                                             |
+| --------- | ------ | --------- | ------------------------------------------------------- |
+| tenantId  | string | Sí        | ID del tenant                                           |
+| userId    | string | No        | ID del usuario (filtro opcional)                        |
 | startDate | string | No        | Fecha de inicio (formato ISO: YYYY-MM-DDTHH:mm:ss.sssZ) |
-| endDate   | string | No        | Fecha de fin (formato ISO: YYYY-MM-DDTHH:mm:ss.sssZ)     |
+| endDate   | string | No        | Fecha de fin (formato ISO: YYYY-MM-DDTHH:mm:ss.sssZ)    |
 
 #### Ejemplo de Request
 
@@ -343,6 +343,7 @@ curl -X GET "http://localhost:3026/face-recognition/attendance?tenantId=507f1f77
 El descriptor facial es un array de **exactamente 128 números** (floats) que representa las características biométricas del rostro. Este descriptor es extraído por face.js api en el frontend.
 
 **Ejemplo:**
+
 ```json
 [0.123, -0.456, 0.789, 0.234, -0.567, ...] // 128 números en total
 ```
@@ -387,26 +388,26 @@ El sistema utiliza un umbral de similitud de **0.6** para determinar si dos desc
 const detection = await faceapi
   .detectSingleFace(imageElement)
   .withFaceLandmarks()
-  .withFaceDescriptor();
+  .withFaceDescriptor()
 
-const descriptor = Array.from(detection.descriptor); // Array de 128 números
+const descriptor = Array.from(detection.descriptor) // Array de 128 números
 
 // 2. Frontend: Enviar al backend
-const formData = new FormData();
-formData.append('image', imageFile);
-formData.append('userId', userId);
-formData.append('descriptor', JSON.stringify(descriptor));
+const formData = new FormData()
+formData.append('image', imageFile)
+formData.append('userId', userId)
+formData.append('descriptor', JSON.stringify(descriptor))
 
 const response = await fetch(
   `${API_URL}/face-recognition/register?tenantId=${tenantId}`,
   {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
     body: formData,
   }
-);
+)
 ```
 
 ### Flujo de Marcación
@@ -416,31 +417,31 @@ const response = await fetch(
 const detection = await faceapi
   .detectSingleFace(imageElement)
   .withFaceLandmarks()
-  .withFaceDescriptor();
+  .withFaceDescriptor()
 
-const descriptor = Array.from(detection.descriptor);
+const descriptor = Array.from(detection.descriptor)
 
 // 2. Frontend: Enviar al backend para comparar
-const formData = new FormData();
-formData.append('image', imageFile);
-formData.append('descriptor', JSON.stringify(descriptor));
-formData.append('location', 'Oficina Principal');
+const formData = new FormData()
+formData.append('image', imageFile)
+formData.append('descriptor', JSON.stringify(descriptor))
+formData.append('location', 'Oficina Principal')
 
 const response = await fetch(
   `${API_URL}/face-recognition/attendance?tenantId=${tenantId}`,
   {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
     body: formData,
   }
-);
+)
 
-const attendanceRecord = await response.json();
-console.log(`Usuario identificado: ${attendanceRecord.userId}`);
-console.log(`Tipo: ${attendanceRecord.type}`);
-console.log(`Confianza: ${attendanceRecord.confidence}`);
+const attendanceRecord = await response.json()
+console.log(`Usuario identificado: ${attendanceRecord.userId}`)
+console.log(`Tipo: ${attendanceRecord.type}`)
+console.log(`Confianza: ${attendanceRecord.confidence}`)
 ```
 
 ---
@@ -458,6 +459,7 @@ console.log(`Confianza: ${attendanceRecord.confidence}`);
 **Causa**: El descriptor no coincide con ningún usuario registrado (distancia > 0.6).
 
 **Soluciones**:
+
 - Verificar que el usuario tenga un descriptor registrado
 - Asegurar que la imagen tenga buena calidad y iluminación
 - Verificar que el descriptor se esté extrayendo correctamente en el frontend
@@ -473,12 +475,14 @@ console.log(`Confianza: ${attendanceRecord.confidence}`);
 ## Changelog
 
 ### Versión 2.0 (Actual)
+
 - ✅ Extracción de descriptores movida al frontend
 - ✅ Backend simplificado para solo almacenar y comparar descriptores
 - ✅ Eliminación de dependencias de canvas y modelos de face-api.js en el backend
 - ✅ Mejora en la validación de descriptores
 
 ### Versión 1.0 (Anterior)
+
 - Extracción de descriptores en el backend
 - Carga de modelos de face-api.js en el servidor
 - Validación de imágenes en el backend
@@ -513,14 +517,14 @@ Crea una nueva planilla. El `tenantId` y `userId` se obtienen automáticamente d
 
 #### Body (JSON)
 
-| Campo | Tipo | Requerido | Descripción |
-|------|------|-----------|-------------|
-| startDate | string | Sí | Fecha de inicio del periodo (YYYY-MM-DD) |
-| endDate | string | Sí | Fecha de fin del periodo (YYYY-MM-DD) |
-| totalToPay | number | Sí | Total a pagar en la planilla |
-| paymentProof | string | No | URL de la constancia de pago global |
-| status | string | No | Estado: `DRAFT`, `APPROVED`, `PAID`. Default: `DRAFT` |
-| comments | string | No | Comentarios generales |
+| Campo        | Tipo   | Requerido | Descripción                                           |
+| ------------ | ------ | --------- | ----------------------------------------------------- |
+| startDate    | string | Sí        | Fecha de inicio del periodo (YYYY-MM-DD)              |
+| endDate      | string | Sí        | Fecha de fin del periodo (YYYY-MM-DD)                 |
+| totalToPay   | number | Sí        | Total a pagar en la planilla                          |
+| paymentProof | string | No        | URL de la constancia de pago global                   |
+| status       | string | No        | Estado: `DRAFT`, `APPROVED`, `PAID`. Default: `DRAFT` |
+| comments     | string | No        | Comentarios generales                                 |
 
 #### Ejemplo de Request
 
@@ -544,7 +548,7 @@ curl -X POST "http://localhost:3027/payrolls" \
   "tenantId": "507f1f77bcf86cd799439012",
   "startDate": "2024-01-01T00:00:00.000Z",
   "endDate": "2024-01-31T00:00:00.000Z",
-  "totalToPay": 15000.50,
+  "totalToPay": 15000.5,
   "status": "DRAFT",
   "comments": "Planilla Enero 2024",
   "editedBy": "507f1f77bcf86cd799439013",
@@ -583,7 +587,7 @@ curl -X GET "http://localhost:3027/payrolls" \
     "tenantId": "507f1f77bcf86cd799439012",
     "startDate": "2024-01-01T00:00:00.000Z",
     "endDate": "2024-01-31T00:00:00.000Z",
-    "totalToPay": 15000.50,
+    "totalToPay": 15000.5,
     "status": "DRAFT",
     "comments": "Planilla Enero 2024",
     "createdAt": "2024-01-15T10:30:00.000Z",
@@ -607,9 +611,9 @@ Descarga una plantilla Excel para cargar datos de planillas o recibos por honora
 
 #### Query Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|-----------|------|-----------|-------------|
-| type | string | No | Tipo de plantilla: `PLANILLA` o `RXH`. Default: `PLANILLA` |
+| Parámetro | Tipo   | Requerido | Descripción                                                |
+| --------- | ------ | --------- | ---------------------------------------------------------- |
+| type      | string | No        | Tipo de plantilla: `PLANILLA` o `RXH`. Default: `PLANILLA` |
 
 #### Ejemplo de Request
 
@@ -633,18 +637,18 @@ const response = await fetch(
   {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   }
-);
+)
 
-const blob = await response.blob();
-const url = window.URL.createObjectURL(blob);
-const a = document.createElement('a');
-a.href = url;
-a.download = 'plantilla_planilla.xlsx';
-a.click();
-window.URL.revokeObjectURL(url);
+const blob = await response.blob()
+const url = window.URL.createObjectURL(blob)
+const a = document.createElement('a')
+a.href = url
+a.download = 'plantilla_planilla.xlsx'
+a.click()
+window.URL.revokeObjectURL(url)
 ```
 
 #### Códigos de Estado
@@ -671,9 +675,9 @@ Obtiene una planilla específica por su ID.
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|-----------|------|-----------|-------------|
-| id | string | Sí | ID de la planilla (ObjectId de MongoDB) |
+| Parámetro | Tipo   | Requerido | Descripción                             |
+| --------- | ------ | --------- | --------------------------------------- |
+| id        | string | Sí        | ID de la planilla (ObjectId de MongoDB) |
 
 #### Ejemplo de Request
 
@@ -690,7 +694,7 @@ curl -X GET "http://localhost:3027/payrolls/507f1f77bcf86cd799439011" \
   "tenantId": "507f1f77bcf86cd799439012",
   "startDate": "2024-01-01T00:00:00.000Z",
   "endDate": "2024-01-31T00:00:00.000Z",
-  "totalToPay": 15000.50,
+  "totalToPay": 15000.5,
   "status": "DRAFT",
   "comments": "Planilla Enero 2024",
   "paymentProof": "https://s3.aws.com/proof.pdf",
@@ -716,22 +720,22 @@ Actualiza los datos de una planilla existente.
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|-----------|------|-----------|-------------|
-| id | string | Sí | ID de la planilla |
+| Parámetro | Tipo   | Requerido | Descripción       |
+| --------- | ------ | --------- | ----------------- |
+| id        | string | Sí        | ID de la planilla |
 
 #### Body (JSON)
 
 Todos los campos son opcionales. Solo se actualizarán los campos enviados.
 
-| Campo | Tipo | Requerido | Descripción |
-|------|------|-----------|-------------|
-| startDate | string | No | Fecha de inicio (YYYY-MM-DD) |
-| endDate | string | No | Fecha de fin (YYYY-MM-DD) |
-| totalToPay | number | No | Total a pagar |
-| paymentProof | string | No | URL de constancia de pago |
-| status | string | No | Estado: `DRAFT`, `APPROVED`, `PAID` |
-| comments | string | No | Comentarios |
+| Campo        | Tipo   | Requerido | Descripción                         |
+| ------------ | ------ | --------- | ----------------------------------- |
+| startDate    | string | No        | Fecha de inicio (YYYY-MM-DD)        |
+| endDate      | string | No        | Fecha de fin (YYYY-MM-DD)           |
+| totalToPay   | number | No        | Total a pagar                       |
+| paymentProof | string | No        | URL de constancia de pago           |
+| status       | string | No        | Estado: `DRAFT`, `APPROVED`, `PAID` |
+| comments     | string | No        | Comentarios                         |
 
 #### Ejemplo de Request
 
@@ -762,9 +766,9 @@ Elimina una planilla y todos sus detalles asociados.
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|-----------|------|-----------|-------------|
-| id | string | Sí | ID de la planilla |
+| Parámetro | Tipo   | Requerido | Descripción       |
+| --------- | ------ | --------- | ----------------- |
+| id        | string | Sí        | ID de la planilla |
 
 #### Ejemplo de Request
 
@@ -789,15 +793,15 @@ Importa los detalles de una planilla desde un archivo Excel. **Reemplaza todos l
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|-----------|------|-----------|-------------|
-| id | string | Sí | ID de la planilla |
+| Parámetro | Tipo   | Requerido | Descripción       |
+| --------- | ------ | --------- | ----------------- |
+| id        | string | Sí        | ID de la planilla |
 
 #### Body (multipart/form-data)
 
-| Campo | Tipo | Requerido | Descripción |
-|-------|------|-----------|-------------|
-| file | file | Sí | Archivo Excel (.xlsx) con los datos de la planilla (máx. 5MB) |
+| Campo | Tipo | Requerido | Descripción                                                   |
+| ----- | ---- | --------- | ------------------------------------------------------------- |
+| file  | file | Sí        | Archivo Excel (.xlsx) con los datos de la planilla (máx. 5MB) |
 
 #### Validaciones del Archivo
 
@@ -826,24 +830,24 @@ curl -X POST "http://localhost:3027/payrolls/507f1f77bcf86cd799439011/import" \
 #### Ejemplo de Request (JavaScript/Fetch)
 
 ```javascript
-const formData = new FormData();
-formData.append('file', excelFile);
+const formData = new FormData()
+formData.append('file', excelFile)
 
 const response = await fetch(
   'http://localhost:3027/payrolls/507f1f77bcf86cd799439011/import',
   {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
     body: formData,
   }
-);
+)
 
-const result = await response.json();
-console.log(`Importados ${result.count} registros`);
+const result = await response.json()
+console.log(`Importados ${result.count} registros`)
 if (result.errors.length > 0) {
-  console.error('Errores:', result.errors);
+  console.error('Errores:', result.errors)
 }
 ```
 
@@ -892,44 +896,44 @@ Agrega un empleado (detalle) a una planilla existente.
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|-----------|------|-----------|-------------|
-| id | string | Sí | ID de la planilla |
+| Parámetro | Tipo   | Requerido | Descripción       |
+| --------- | ------ | --------- | ----------------- |
+| id        | string | Sí        | ID de la planilla |
 
 #### Body (JSON)
 
-| Campo | Tipo | Requerido | Descripción |
-|------|------|-----------|-------------|
-| employeeId | string | Sí | ID del empleado (ObjectId válido) |
-| firstName | string | Sí | Nombre del empleado |
-| lastName | string | Sí | Apellido del empleado |
-| dni | string | Sí | DNI del empleado |
-| contractType | string | Sí | `PLANILLA` o `RXH` |
-| startDate | string | Sí | Fecha inicio periodo empleado (YYYY-MM-DD) |
-| endDate | string | Sí | Fecha fin periodo empleado (YYYY-MM-DD) |
-| workedHours | number | Sí | Horas trabajadas |
-| absences | number | Sí | Días de inasistencia |
-| discounts | number | Sí | Descuentos totales |
-| bonuses | number | Sí | Bonificaciones |
-| totalIncome | number | Sí | Ingreso total bruto |
-| totalToPay | number | Sí | Saldo a pagar (Neto) |
-| comments | string | No | Comentarios del detalle |
-| paymentProof | string | No | URL de constancia de pago individual |
-| retention | number | No | Retención (solo para RXH) |
-| pensionSystem | string | No | Sistema de pensiones: ONP/AFP (solo para PLANILLA) |
-| pensionContribution | number | No | Aporte a pensión (solo para PLANILLA) |
-| essaludContribution | number | No | Aporte a EsSalud (solo para PLANILLA) |
-| cargo | string | No | Cargo del empleado |
-| workedDays | number | No | Días trabajados |
-| basicSalary | number | No | Sueldo básico |
-| overtime | number | No | Monto por horas extras |
-| totalIncomeTaxable | number | No | Total ingresos afectos |
-| totalIncomeNonTaxable | number | No | Total ingresos inafectos |
-| pensionFund | number | No | Fondo de pensión |
-| pensionInsurance | number | No | Seguro de pensión |
-| pensionCommission | number | No | Comisión de pensión |
-| fifthCategoryTax | number | No | Impuesto 5ta categoría |
-| firstCategoryTax | number | No | Impuesto 1ra categoría |
+| Campo                 | Tipo   | Requerido | Descripción                                        |
+| --------------------- | ------ | --------- | -------------------------------------------------- |
+| employeeId            | string | Sí        | ID del empleado (ObjectId válido)                  |
+| firstName             | string | Sí        | Nombre del empleado                                |
+| lastName              | string | Sí        | Apellido del empleado                              |
+| dni                   | string | Sí        | DNI del empleado                                   |
+| contractType          | string | Sí        | `PLANILLA` o `RXH`                                 |
+| startDate             | string | Sí        | Fecha inicio periodo empleado (YYYY-MM-DD)         |
+| endDate               | string | Sí        | Fecha fin periodo empleado (YYYY-MM-DD)            |
+| workedHours           | number | Sí        | Horas trabajadas                                   |
+| absences              | number | Sí        | Días de inasistencia                               |
+| discounts             | number | Sí        | Descuentos totales                                 |
+| bonuses               | number | Sí        | Bonificaciones                                     |
+| totalIncome           | number | Sí        | Ingreso total bruto                                |
+| totalToPay            | number | Sí        | Saldo a pagar (Neto)                               |
+| comments              | string | No        | Comentarios del detalle                            |
+| paymentProof          | string | No        | URL de constancia de pago individual               |
+| retention             | number | No        | Retención (solo para RXH)                          |
+| pensionSystem         | string | No        | Sistema de pensiones: ONP/AFP (solo para PLANILLA) |
+| pensionContribution   | number | No        | Aporte a pensión (solo para PLANILLA)              |
+| essaludContribution   | number | No        | Aporte a EsSalud (solo para PLANILLA)              |
+| cargo                 | string | No        | Cargo del empleado                                 |
+| workedDays            | number | No        | Días trabajados                                    |
+| basicSalary           | number | No        | Sueldo básico                                      |
+| overtime              | number | No        | Monto por horas extras                             |
+| totalIncomeTaxable    | number | No        | Total ingresos afectos                             |
+| totalIncomeNonTaxable | number | No        | Total ingresos inafectos                           |
+| pensionFund           | number | No        | Fondo de pensión                                   |
+| pensionInsurance      | number | No        | Seguro de pensión                                  |
+| pensionCommission     | number | No        | Comisión de pensión                                |
+| fifthCategoryTax      | number | No        | Impuesto 5ta categoría                             |
+| firstCategoryTax      | number | No        | Impuesto 1ra categoría                             |
 
 #### Ejemplo de Request (Planilla)
 
@@ -1049,9 +1053,9 @@ Obtiene todos los detalles (empleados) de una planilla específica.
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|-----------|------|-----------|-------------|
-| id | string | Sí | ID de la planilla |
+| Parámetro | Tipo   | Requerido | Descripción       |
+| --------- | ------ | --------- | ----------------- |
+| id        | string | Sí        | ID de la planilla |
 
 #### Ejemplo de Request
 
@@ -1106,45 +1110,45 @@ Actualiza un detalle específico de una planilla.
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|-----------|------|-----------|-------------|
-| detailId | string | Sí | ID del detalle |
+| Parámetro | Tipo   | Requerido | Descripción    |
+| --------- | ------ | --------- | -------------- |
+| detailId  | string | Sí        | ID del detalle |
 
 #### Body (JSON)
 
 Todos los campos son opcionales. Solo se actualizarán los campos enviados.
 
-| Campo | Tipo | Requerido | Descripción |
-|------|------|-----------|-------------|
-| firstName | string | No | Nombre |
-| lastName | string | No | Apellido |
-| dni | string | No | DNI |
-| contractType | string | No | `PLANILLA` o `RXH` |
-| startDate | string | No | Fecha inicio (YYYY-MM-DD) |
-| endDate | string | No | Fecha fin (YYYY-MM-DD) |
-| workedHours | number | No | Horas trabajadas |
-| absences | number | No | Días de inasistencia |
-| discounts | number | No | Descuentos |
-| bonuses | number | No | Bonificaciones |
-| totalIncome | number | No | Ingreso total bruto |
-| totalToPay | number | No | Total neto a pagar |
-| comments | string | No | Comentarios |
-| paymentProof | string | No | URL constancia de pago |
-| retention | number | No | Retención (solo RXH) |
-| pensionSystem | string | No | Sistema pensión (solo PLANILLA) |
-| pensionContribution | number | No | Aporte pensión (solo PLANILLA) |
-| essaludContribution | number | No | Aporte EsSalud (solo PLANILLA) |
-| cargo | string | No | Cargo |
-| workedDays | number | No | Días trabajados |
-| basicSalary | number | No | Sueldo básico |
-| overtime | number | No | Horas extras |
-| totalIncomeTaxable | number | No | Total ingresos afectos |
-| totalIncomeNonTaxable | number | No | Total ingresos inafectos |
-| pensionFund | number | No | Fondo pensión |
-| pensionInsurance | number | No | Seguro pensión |
-| pensionCommission | number | No | Comisión pensión |
-| fifthCategoryTax | number | No | Renta 5ta |
-| firstCategoryTax | number | No | Renta 1ra |
+| Campo                 | Tipo   | Requerido | Descripción                     |
+| --------------------- | ------ | --------- | ------------------------------- |
+| firstName             | string | No        | Nombre                          |
+| lastName              | string | No        | Apellido                        |
+| dni                   | string | No        | DNI                             |
+| contractType          | string | No        | `PLANILLA` o `RXH`              |
+| startDate             | string | No        | Fecha inicio (YYYY-MM-DD)       |
+| endDate               | string | No        | Fecha fin (YYYY-MM-DD)          |
+| workedHours           | number | No        | Horas trabajadas                |
+| absences              | number | No        | Días de inasistencia            |
+| discounts             | number | No        | Descuentos                      |
+| bonuses               | number | No        | Bonificaciones                  |
+| totalIncome           | number | No        | Ingreso total bruto             |
+| totalToPay            | number | No        | Total neto a pagar              |
+| comments              | string | No        | Comentarios                     |
+| paymentProof          | string | No        | URL constancia de pago          |
+| retention             | number | No        | Retención (solo RXH)            |
+| pensionSystem         | string | No        | Sistema pensión (solo PLANILLA) |
+| pensionContribution   | number | No        | Aporte pensión (solo PLANILLA)  |
+| essaludContribution   | number | No        | Aporte EsSalud (solo PLANILLA)  |
+| cargo                 | string | No        | Cargo                           |
+| workedDays            | number | No        | Días trabajados                 |
+| basicSalary           | number | No        | Sueldo básico                   |
+| overtime              | number | No        | Horas extras                    |
+| totalIncomeTaxable    | number | No        | Total ingresos afectos          |
+| totalIncomeNonTaxable | number | No        | Total ingresos inafectos        |
+| pensionFund           | number | No        | Fondo pensión                   |
+| pensionInsurance      | number | No        | Seguro pensión                  |
+| pensionCommission     | number | No        | Comisión pensión                |
+| fifthCategoryTax      | number | No        | Renta 5ta                       |
+| firstCategoryTax      | number | No        | Renta 1ra                       |
 
 #### Ejemplo de Request
 
@@ -1175,9 +1179,9 @@ Elimina un detalle específico de una planilla.
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|-----------|------|-----------|-------------|
-| detailId | string | Sí | ID del detalle |
+| Parámetro | Tipo   | Requerido | Descripción    |
+| --------- | ------ | --------- | -------------- |
+| detailId  | string | Sí        | ID del detalle |
 
 #### Ejemplo de Request
 
@@ -1204,7 +1208,7 @@ curl -X DELETE "http://localhost:3027/payrolls/details/507f1f77bcf86cd799439016"
   "tenantId": "507f1f77bcf86cd799439012",
   "startDate": "2024-01-01T00:00:00.000Z",
   "endDate": "2024-01-31T00:00:00.000Z",
-  "totalToPay": 15000.50,
+  "totalToPay": 15000.5,
   "paymentProof": "https://s3.aws.com/proof.pdf",
   "status": "DRAFT",
   "comments": "Planilla Enero 2024",
@@ -1293,7 +1297,7 @@ curl -X DELETE "http://localhost:3027/payrolls/details/507f1f77bcf86cd799439016"
 const createResponse = await fetch('http://localhost:3027/payrolls', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${token}`,
+    Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
@@ -1303,29 +1307,29 @@ const createResponse = await fetch('http://localhost:3027/payrolls', {
     status: 'DRAFT',
     comments: 'Planilla Enero 2024',
   }),
-});
+})
 
-const payroll = await createResponse.json();
+const payroll = await createResponse.json()
 
 // Paso 2: Importar archivo Excel
-const formData = new FormData();
-formData.append('file', excelFile);
+const formData = new FormData()
+formData.append('file', excelFile)
 
 const importResponse = await fetch(
   `http://localhost:3027/payrolls/${payroll._id}/import`,
   {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
     body: formData,
   }
-);
+)
 
-const importResult = await importResponse.json();
-console.log(`Importados ${importResult.count} registros`);
+const importResult = await importResponse.json()
+console.log(`Importados ${importResult.count} registros`)
 if (importResult.errors.length > 0) {
-  console.warn('Errores:', importResult.errors);
+  console.warn('Errores:', importResult.errors)
 }
 
 // Paso 3: Obtener la planilla actualizada con detalles
@@ -1333,21 +1337,21 @@ const updatedPayroll = await fetch(
   `http://localhost:3027/payrolls/${payroll._id}`,
   {
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   }
-).then(res => res.json());
+).then(res => res.json())
 
 const details = await fetch(
   `http://localhost:3027/payrolls/${payroll._id}/details`,
   {
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   }
-).then(res => res.json());
+).then(res => res.json())
 
-updatedPayroll.details = details;
+updatedPayroll.details = details
 ```
 
 ### 2. Descargar Plantilla
@@ -1358,18 +1362,18 @@ const templateResponse = await fetch(
   'http://localhost:3027/payrolls/template?type=PLANILLA',
   {
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   }
-);
+)
 
-const blob = await templateResponse.blob();
-const url = window.URL.createObjectURL(blob);
-const a = document.createElement('a');
-a.href = url;
-a.download = 'plantilla_planilla.xlsx';
-a.click();
-window.URL.revokeObjectURL(url);
+const blob = await templateResponse.blob()
+const url = window.URL.createObjectURL(blob)
+const a = document.createElement('a')
+a.href = url
+a.download = 'plantilla_planilla.xlsx'
+a.click()
+window.URL.revokeObjectURL(url)
 ```
 
 ---
@@ -1425,7 +1429,6 @@ window.URL.revokeObjectURL(url);
 **Causa**: El valor en la columna `contractType` no es exactamente `PLANILLA` o `RXH`.
 
 **Solución**: Verificar que el valor esté escrito correctamente y en mayúsculas.
-
 
  
  - - - 
@@ -1693,6 +1696,7 @@ window.URL.revokeObjectURL(url);
  E l i m i n a   u n   d e t a l l e   e s p e c � � f i c o . 
  
  
+
 ---
 
 ## API de Empleados
@@ -1717,22 +1721,22 @@ Crea un nuevo empleado en el sistema.
 
 #### Body (JSON)
 
-| Campo | Tipo | Requerido | Descripción |
-|---|---|---|---|
-| nombre | string | Sí | Nombre del empleado |
-| apellido | string | Sí | Apellido del empleado |
-| dni | string | Sí | DNI del empleado (8 dígitos) |
-| correo | string | Sí | Correo electrónico único |
-| numeroSeguroSocial | string | Sí | Número de seguro social único |
-| userId | string | Sí | ID del usuario asociado |
-| telefono | string | No | Teléfono de contacto |
-| direccion | string | No | Dirección de residencia |
-| cargo | string | No | Cargo en la empresa |
-| areaId | string | No | ID del área (ObjectId) |
-| accountNumber | string | No | Número de cuenta bancaria |
-| bank | string | No | Nombre del banco |
-| bankCode | string | No | Código de banco |
-| accountType | string | No | Tipo de cuenta: `Ahorro` o `Corriente` |
+| Campo              | Tipo   | Requerido | Descripción                                                 |
+| ------------------ | ------ | --------- | ----------------------------------------------------------- |
+| nombre             | string | Sí        | Nombre del empleado                                         |
+| apellido           | string | Sí        | Apellido del empleado                                       |
+| dni                | string | Sí        | DNI del empleado (8 dígitos)                                |
+| correo             | string | Sí        | Correo electrónico único                                    |
+| numeroSeguroSocial | string | Sí        | Número de seguro social único                               |
+| userId             | string | No        | ID del usuario asociado (opcional, puede asignarse después) |
+| telefono           | string | No        | Teléfono de contacto                                        |
+| direccion          | string | No        | Dirección de residencia                                     |
+| cargo              | string | No        | Cargo en la empresa                                         |
+| areaId             | string | No        | ID del área (ObjectId)                                      |
+| accountNumber      | string | No        | Número de cuenta bancaria                                   |
+| bank               | string | No        | Nombre del banco                                            |
+| bankCode           | string | No        | Código de banco                                             |
+| accountType        | string | No        | Tipo de cuenta: `Ahorro` o `Corriente`                      |
 
 #### Ejemplo de Request
 
@@ -1743,7 +1747,6 @@ Crea un nuevo empleado en el sistema.
   "dni": "12345678",
   "correo": "juan.perez@example.com",
   "numeroSeguroSocial": "12345678901",
-  "userId": "507f1f77bcf86cd799439011",
   "telefono": "+51987654321",
   "cargo": "Desarrollador",
   "accountNumber": "193-12345678-0-12",
@@ -1753,7 +1756,11 @@ Crea un nuevo empleado en el sistema.
 }
 ```
 
+**Nota**: El campo `userId` es opcional. Si no se proporciona, el empleado se creará sin estar vinculado a un usuario del sistema. El `userId` puede asignarse posteriormente mediante una actualización del empleado.
+
 #### Ejemplo de Response (201 Created)
+
+**Con userId:**
 
 ```json
 {
@@ -1783,6 +1790,31 @@ Crea un nuevo empleado en el sistema.
 }
 ```
 
+**Sin userId (empleado creado sin usuario asociado):**
+
+```json
+{
+  "_id": "507f1f77bcf86cd799439022",
+  "tenantId": "507f1f77bcf86cd799439012",
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "dni": "12345678",
+  "correo": "juan.perez@example.com",
+  "telefono": "+51987654321",
+  "direccion": "Av. Principal 123, Lima",
+  "cargo": "Desarrollador",
+  "numeroSeguroSocial": "12345678901",
+  "userId": null,
+  "accountNumber": "193-12345678-0-12",
+  "bank": "BCP",
+  "bankCode": "002",
+  "accountType": "Ahorro",
+  "areaId": null,
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
+
 ### 2. Actualizar Empleado
 
 **PUT** `/employees/:id`
@@ -1791,13 +1823,15 @@ Actualiza los datos de un empleado existente.
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|---|---|---|---|
-| id | string | Sí | ID del empleado |
+| Parámetro | Tipo   | Requerido | Descripción     |
+| --------- | ------ | --------- | --------------- |
+| id        | string | Sí        | ID del empleado |
 
 #### Body (JSON)
 
 Todos los campos son opcionales.
+
+**Asignar o cambiar userId:**
 
 ```json
 {
@@ -1810,9 +1844,26 @@ Todos los campos son opcionales.
   "bank": "Interbank",
   "bankCode": "003",
   "accountType": "Corriente",
-  "areaId": "507f1f77bcf86cd799439013"
+  "areaId": "507f1f77bcf86cd799439013",
+  "userId": "507f1f77bcf86cd799439011"
 }
 ```
+
+**Eliminar vinculación con usuario:**
+
+```json
+{
+  "userId": null
+}
+```
+
+**Notas sobre userId:**
+
+- Si no se incluye `userId` en el body, el valor actual no se modifica
+- Para **asignar** un `userId` a un empleado que no tiene uno: envía el ObjectId del usuario
+- Para **cambiar** el `userId` de un empleado: envía el nuevo ObjectId del usuario
+- Para **eliminar** la vinculación: envía `null` o una cadena vacía `""`
+- Un usuario solo puede estar vinculado a un empleado a la vez
 
 ### 3. Obtener Empleados
 
@@ -1822,10 +1873,10 @@ Obtiene la lista de empleados con filtros opcionales.
 
 #### Query Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|---|---|---|---|
-| q | string | No | Término de búsqueda (nombre, apellido, DNI, correo, número de seguro social, cargo) |
-| userId | string | No | Filtrar por ID de usuario |
+| Parámetro | Tipo   | Requerido | Descripción                                                                         |
+| --------- | ------ | --------- | ----------------------------------------------------------------------------------- |
+| q         | string | No        | Término de búsqueda (nombre, apellido, DNI, correo, número de seguro social, cargo) |
+| userId    | string | No        | Filtrar por ID de usuario                                                           |
 
 #### Ejemplo de Request
 
@@ -1873,11 +1924,13 @@ Obtiene el detalle completo de un empleado.
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|---|---|---|---|
-| id | string | Sí | ID del empleado (ObjectId) |
+| Parámetro | Tipo   | Requerido | Descripción                |
+| --------- | ------ | --------- | -------------------------- |
+| id        | string | Sí        | ID del empleado (ObjectId) |
 
 #### Ejemplo de Response (200 OK)
+
+**Con userId:**
 
 ```json
 {
@@ -1907,6 +1960,31 @@ Obtiene el detalle completo de un empleado.
 }
 ```
 
+**Sin userId:**
+
+```json
+{
+  "_id": "507f1f77bcf86cd799439022",
+  "tenantId": "507f1f77bcf86cd799439012",
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "dni": "12345678",
+  "correo": "juan.perez@example.com",
+  "telefono": "+51987654321",
+  "direccion": "Av. Principal 123, Lima",
+  "cargo": "Desarrollador",
+  "numeroSeguroSocial": "12345678901",
+  "accountNumber": "193-12345678-0-12",
+  "bank": "BCP",
+  "bankCode": "002",
+  "accountType": "Ahorro",
+  "userId": null,
+  "areaId": null,
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
+
 ### 5. Obtener Empleado por DNI
 
 **GET** `/employees/dni/:dni`
@@ -1915,9 +1993,9 @@ Obtiene un empleado por su número de DNI.
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|---|---|---|---|
-| dni | string | Sí | Número de DNI (8 dígitos) |
+| Parámetro | Tipo   | Requerido | Descripción               |
+| --------- | ------ | --------- | ------------------------- |
+| dni       | string | Sí        | Número de DNI (8 dígitos) |
 
 ### 6. Obtener Empleados por Usuario
 
@@ -1927,9 +2005,9 @@ Obtiene todos los empleados asociados a un usuario específico.
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|---|---|---|---|
-| userId | string | Sí | ID del usuario (ObjectId) |
+| Parámetro | Tipo   | Requerido | Descripción               |
+| --------- | ------ | --------- | ------------------------- |
+| userId    | string | Sí        | ID del usuario (ObjectId) |
 
 ### 7. Eliminar Empleado
 
@@ -1939,9 +2017,9 @@ Elimina un empleado del sistema.
 
 #### Path Parameters
 
-| Parámetro | Tipo | Requerido | Descripción |
-|---|---|---|---|
-| id | string | Sí | ID del empleado (ObjectId) |
+| Parámetro | Tipo   | Requerido | Descripción                |
+| --------- | ------ | --------- | -------------------------- |
+| id        | string | Sí        | ID del empleado (ObjectId) |
 
 #### Ejemplo de Response (200 OK)
 
@@ -1966,7 +2044,13 @@ Elimina un empleado del sistema.
    - `dni`: Número de DNI (8 dígitos)
    - `correo`: Correo electrónico
    - `numeroSeguroSocial`: Número de seguro social
-   - `userId`: ID del usuario (un usuario solo puede tener un empleado asociado)
+   - `userId`: ID del usuario (opcional, pero si se proporciona, un usuario solo puede tener un empleado asociado)
+
+   **Importante sobre userId:**
+   - El `userId` es completamente opcional y no es necesario al crear un empleado
+   - Puede asignarse después mediante una actualización del empleado
+   - Puede cambiarse o eliminarse en cualquier momento
+   - Si un empleado ya tiene un `userId` y se intenta asignar el mismo `userId` a otro empleado, se generará un error de conflicto
 
 2. **Información Bancaria**: Los campos bancarios son opcionales pero recomendados para el procesamiento de planillas:
    - `accountNumber`: Número de cuenta bancaria
@@ -1978,5 +2062,5 @@ Elimina un empleado del sistema.
    - El DNI debe tener exactamente 8 dígitos
    - El correo electrónico debe tener un formato válido
    - El teléfono debe tener un formato válido (opcional)
-   - El `userId` y `areaId` deben ser ObjectIds válidos de MongoDB
-
+   - El `userId` y `areaId` deben ser ObjectIds válidos de MongoDB (si se proporcionan)
+   - El `userId` se valida solo si se proporciona un valor (no es obligatorio)
