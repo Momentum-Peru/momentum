@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { tap } from 'rxjs/operators';
 import { AuthService } from '../pages/login/services/auth.service';
 import { LogsApiService } from '../shared/services/logs-api.service';
+import { environment } from '../../environments/environment';
 
 /**
  * Interceptor que registra logs automáticamente para peticiones HTTP
@@ -13,6 +14,11 @@ import { LogsApiService } from '../shared/services/logs-api.service';
 export const logsInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const logsService = inject(LogsApiService);
+
+  // Excluir peticiones externas (como Google Maps)
+  if (!req.url.startsWith(environment.apiUrl)) {
+      return next(req);
+  }
 
   // Obtener el usuario actual
   const currentUser = authService.getCurrentUser();

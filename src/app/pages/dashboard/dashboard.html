@@ -276,9 +276,9 @@
               <td>{{ row.project?.name || row.project?.code || '-' }}</td>
               <td>
                 @if (row.location) {
-                <div class="text-xs text-gray-500">
-                  <i class="pi pi-map-marker mr-1"></i>
-                  {{ row.location.latitude.toFixed(4) }}, {{ row.location.longitude.toFixed(4) }}
+                <div class="flex items-center gap-1 text-xs text-gray-500">
+                  <i class="pi pi-map-marker text-base"></i>
+                  {{ getLocationLabel(row) }}
                 </div>
                 } @else {
                 <span class="text-gray-400">-</span>

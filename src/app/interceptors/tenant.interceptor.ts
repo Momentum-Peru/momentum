@@ -2,6 +2,7 @@ import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { TenantService } from '../core/services/tenant.service';
 import { AuthService } from '../pages/login/services/auth.service';
+import { environment } from '../../environments/environment';
 
 /**
  * Interceptor que agrega el header X-Tenant-Id a todas las peticiones,
@@ -11,10 +12,15 @@ import { AuthService } from '../pages/login/services/auth.service';
 export const tenantInterceptor: HttpInterceptorFn = (req, next) => {
   const tenantService = inject(TenantService);
   const authService = inject(AuthService);
+  const isInternalRequest = req.url.startsWith(environment.apiUrl);
 
   // Excepciones: auth y companies no requieren X-Tenant-Id
   const isAuth = req.url.includes('/auth/');
   const isCompanies = req.url.includes('/companies');
+
+  if (!isInternalRequest) {
+    return next(req);
+  }
 
   if (isAuth || isCompanies) {
     return next(req);

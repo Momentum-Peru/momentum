@@ -16,6 +16,7 @@ import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { PayrollService } from '../../../core/services/payroll.service';
 import { EmployeesApiService } from '../../../shared/services/employees-api.service';
+import { UploadService } from '../../../shared/services/upload.service';
 import { Payroll, PayrollDetail } from '../../../core/models/payroll.model';
 import { BcpGenerator, BcpHeaderConfig } from '../../../core/utils/bcp-generator';
 import { Employee } from '../../../shared/interfaces/employee.interface';
@@ -80,6 +81,40 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
           <div class="text-2xl font-bold text-green-700">{{ payrollData.status }}</div>
         </div>
       </div>
+
+      @if (payrollData.type === 'PLANILLA') {
+      <div class="mb-6 p-4 border rounded-lg bg-white">
+        <div class="flex items-center justify-between">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Constancia General de Pago
+            </label>
+            @if (payrollData.paymentProof) {
+            <div class="flex items-center gap-2">
+              <a [href]="payrollData.paymentProof" target="_blank" class="text-blue-600 hover:underline flex items-center gap-2">
+                <i class="pi pi-check-circle text-green-500"></i>
+                <span>Ver constancia</span>
+              </a>
+            </div>
+            } @else {
+            <p class="text-sm text-gray-500 mb-2">No hay constancia subida</p>
+            }
+          </div>
+          <div class="ml-4">
+            <p-fileUpload
+              mode="basic"
+              chooseLabel="Subir Constancia"
+              [auto]="true"
+              (onUpload)="onGeneralProofUpload($event)"
+              [customUpload]="true"
+              (uploadHandler)="uploadGeneralProofHandler($event)"
+              accept=".pdf,.jpg,.jpeg,.png"
+              [maxFileSize]="5000000"
+            ></p-fileUpload>
+          </div>
+        </div>
+      </div>
+      }
 
       <p-table
         [value]="payrollData.details || []"
@@ -370,12 +405,91 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
         ></button>
       </ng-template>
     </p-dialog>
+
+    <!-- Modal de error para datos bancarios incompletos -->
+    <p-dialog
+      [(visible)]="showBankDataErrorDialog"
+      [modal]="true"
+      [style]="{ width: '90vw', maxWidth: '700px' }"
+      [draggable]="false"
+      [resizable]="false"
+      [closable]="true"
+      appendTo="body"
+    >
+      <ng-template pTemplate="header">
+        <span class="font-semibold text-lg text-red-600">
+          <i class="pi pi-exclamation-triangle mr-2"></i>
+          Error: Datos Bancarios Incompletos
+        </span>
+      </ng-template>
+
+      <div class="space-y-4">
+        <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+          <p class="text-sm text-red-800 dark:text-red-200">
+            <strong>No se puede generar el archivo BCP.</strong> Los siguientes empleados no tienen datos bancarios completos:
+          </p>
+        </div>
+
+        <div class="max-h-96 overflow-auto">
+          <p-table
+            [value]="employeesWithoutBankData()"
+            styleClass="p-datatable-sm"
+            [scrollable]="true"
+            scrollHeight="300px"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Empleado</th>
+                <th>DNI</th>
+                <th>Campos Faltantes</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-employee>
+              <tr>
+                <td class="font-medium">{{ employee.name }}</td>
+                <td>{{ employee.dni }}</td>
+                <td>
+                  <div class="flex flex-wrap gap-1">
+                    @for (field of employee.missingFields; track field) {
+                    <span class="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded text-xs">
+                      {{ field }}
+                    </span>
+                    }
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+          <p class="text-xs text-blue-800 dark:text-blue-200">
+            <strong>Nota:</strong> Para generar el archivo BCP, todos los empleados deben tener:
+            <br />- Número de cuenta bancaria (accountNumber)
+            <br />- Tipo de cuenta bancaria (Ahorro o Corriente)
+            <br />
+            <br />Por favor, complete la información bancaria de los empleados antes de intentar generar el archivo nuevamente.
+          </p>
+        </div>
+      </div>
+
+      <ng-template pTemplate="footer">
+        <button
+          pButton
+          label="Cerrar"
+          class="p-button-primary"
+          (click)="showBankDataErrorDialog.set(false)"
+          aria-label="Cerrar"
+        ></button>
+      </ng-template>
+    </p-dialog>
   `,
 })
 export class PayrollDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private payrollService = inject(PayrollService);
   private employeesApi = inject(EmployeesApiService);
+  private uploadService = inject(UploadService);
   private messageService = inject(MessageService);
 
   // Main payroll signal
@@ -389,6 +503,10 @@ export class PayrollDetailComponent implements OnInit {
   bcpCurrency = signal('0001'); // 0001: Soles, 1001: Dólares
   bcpCompanyAccount = signal('');
   bcpProcessDate = signal('');
+
+  // Modal para errores de datos bancarios
+  showBankDataErrorDialog = signal(false);
+  employeesWithoutBankData = signal<Array<{ name: string; dni: string; missingFields: string[] }>>([]);
 
   // Computed values
   totalAmount = computed(() => {
@@ -580,6 +698,68 @@ export class PayrollDetailComponent implements OnInit {
           }
         });
 
+        // Validar que todos los empleados tengan datos bancarios completos
+        const employeesWithoutBankData: Array<{ name: string; dni: string; missingFields: string[] }> = [];
+        
+        payrollData.details!.forEach((detail) => {
+          let employeeId: string;
+          const empId = detail.employeeId as string | { _id: string } | undefined;
+          if (typeof empId === 'string') {
+            employeeId = empId;
+          } else if (empId && typeof empId === 'object' && '_id' in empId) {
+            employeeId = empId._id;
+          } else {
+            // Si no hay employeeId, agregar a la lista de faltantes
+            employeesWithoutBankData.push({
+              name: `${detail.firstName} ${detail.lastName}`,
+              dni: detail.dni || 'N/A',
+              missingFields: ['Empleado no encontrado'],
+            });
+            return;
+          }
+
+          const employee = employeeMap.get(employeeId);
+          const missingFields: string[] = [];
+
+          // Verificar accountNumber: debe estar en el empleado o en el detalle
+          const hasAccountNumber = 
+            (employee?.accountNumber && employee.accountNumber.trim() !== '') ||
+            (detail.accountNumber && detail.accountNumber.trim() !== '');
+          
+          if (!hasAccountNumber) {
+            missingFields.push('Número de cuenta bancaria');
+          }
+          
+          // Verificar accountType: debe estar en el empleado o en el detalle
+          const hasAccountType = 
+            (employee?.accountType && (employee.accountType === 'Ahorro' || employee.accountType === 'Corriente')) ||
+            (detail.accountType && (detail.accountType === 'A' || detail.accountType === 'C'));
+          
+          if (!hasAccountType) {
+            missingFields.push('Tipo de cuenta bancaria');
+          }
+
+          // Si no se encontró el empleado y no hay datos en el detalle, es un problema
+          if (!employee && !hasAccountNumber && !hasAccountType) {
+            missingFields.push('Empleado no encontrado');
+          }
+
+          if (missingFields.length > 0) {
+            employeesWithoutBankData.push({
+              name: `${detail.firstName} ${detail.lastName}`,
+              dni: detail.dni || 'N/A',
+              missingFields,
+            });
+          }
+        });
+
+        // Si hay empleados sin datos bancarios, mostrar error y no generar el archivo
+        if (employeesWithoutBankData.length > 0) {
+          this.employeesWithoutBankData.set(employeesWithoutBankData);
+          this.showBankDataErrorDialog.set(true);
+          return;
+        }
+
         // Enriquecer los detalles con información bancaria del empleado
         const enrichedDetails = payrollData.details!.map((detail) => {
           let employeeId: string;
@@ -684,6 +864,55 @@ export class PayrollDetailComponent implements OnInit {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onProofUpload(_event: { files: File[] }, _detail: PayrollDetail) {
+    // This is called by default upload, but we use customHandler
+  }
+
+  uploadGeneralProofHandler(event: { files: File[] }) {
+    const file = event.files[0];
+    if (!file) return;
+
+    const payrollData = this.payroll();
+    if (!payrollData) return;
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Subiendo',
+      detail: 'Subiendo constancia general...',
+    });
+
+    // Subir archivo usando el servicio de upload
+    this.uploadService.upload('payrolls', payrollData.id, file).subscribe({
+      next: (fileUrl: string) => {
+        // Actualizar la planilla con la URL del archivo
+        this.payrollService.updatePayroll(payrollData.id, { paymentProof: fileUrl }).subscribe({
+          next: (updatedPayroll) => {
+            this.payroll.set(updatedPayroll);
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Constancia general subida correctamente',
+            });
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Error al actualizar la planilla con la constancia',
+            });
+          },
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al subir el archivo',
+        });
+      },
+    });
+  }
+
+  onGeneralProofUpload(_event: { files: File[] }) {
     // This is called by default upload, but we use customHandler
   }
 }
