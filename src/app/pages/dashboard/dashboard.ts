@@ -10,6 +10,7 @@ import { DashboardTableComponent } from '../../shared/components/dashboard-table
 import { DashboardFiltersComponent } from '../../shared/components/dashboard-filters/dashboard-filters.component';
 import { MenuService } from '../../shared/services/menu.service';
 import { AuthService } from '../login/services/auth.service';
+import { GeocodingService } from '../../shared/services/geocoding.service';
 import { signal } from '@angular/core';
 import { TableModule } from 'primeng/table';
 import {
@@ -18,6 +19,8 @@ import {
   TimeTrackingByUser,
   TimeTrackingDetail,
 } from '../../shared/interfaces/dashboard.interface';
+
+type TrackingLocation = NonNullable<TimeTrackingDetail['location']>;
 
 /**
  * Página principal del Dashboard
@@ -43,6 +46,7 @@ export class DashboardPage implements OnInit {
   private readonly dashboardApiService = inject(DashboardApiService);
   private readonly menuService = inject(MenuService);
   private readonly authService = inject(AuthService);
+  private readonly geocodingService = inject(GeocodingService);
 
   // Computed para verificar si el usuario es gerencia
   protected readonly isGerencia = computed(() => this.authService.isGerencia());
@@ -51,6 +55,8 @@ export class DashboardPage implements OnInit {
   protected readonly timeTrackingDetails = signal<TimeTrackingDetail[]>([]);
   protected readonly timeTrackingByUser = signal<TimeTrackingByUser[]>([]);
   protected readonly loadingTimeTracking = signal(false);
+  protected readonly locationAddresses = signal<Record<string, string>>({});
+  protected readonly locationLoading = signal<Record<string, boolean>>({});
 
   // Mapeo de KPIs a rutas del sistema para verificar permisos
   private readonly kpiRouteMap: Record<string, string> = {
@@ -144,11 +150,13 @@ export class DashboardPage implements OnInit {
     this.loadingTimeTracking.set(true);
     try {
       const [details, byUser] = await Promise.all([
-        this.dashboardApiService.getTimeTrackingDetails(filters).toPromise(),
-        this.dashboardApiService.getTimeTrackingByUser(filters).toPromise(),
-      ]);
-      this.timeTrackingDetails.set((details as unknown as TimeTrackingDetail[]) || []);
+      this.dashboardApiService.getTimeTrackingDetails(filters).toPromise(),
+      this.dashboardApiService.getTimeTrackingByUser(filters).toPromise(),
+    ]);
+      const parsedDetails = (details as unknown as TimeTrackingDetail[]) || [];
+      this.timeTrackingDetails.set(parsedDetails);
       this.timeTrackingByUser.set((byUser as unknown as TimeTrackingByUser[]) || []);
+      this.prefetchLocationAddresses(parsedDetails);
     } catch (error) {
       console.error('Error al cargar reportes de horas:', error);
       this.timeTrackingDetails.set([]);
@@ -275,5 +283,68 @@ export class DashboardPage implements OnInit {
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
+  }
+
+  protected getLocationLabel(row: TimeTrackingDetail): string {
+    const location = row.location;
+    if (!location) {
+      return '-';
+    }
+    const key = this.buildLocationKey(location);
+    if (this.locationLoading()[key]) {
+      return 'Buscando dirección...';
+    }
+    return this.locationAddresses()[key] ?? this.formatCoordinates(location);
+  }
+
+  private prefetchLocationAddresses(details: TimeTrackingDetail[]): void {
+    details.forEach((detail) => {
+      const location = detail.location;
+      if (!location) {
+        return;
+      }
+      this.resolveLocationAddress(location);
+    });
+  }
+
+  private resolveLocationAddress(location: TrackingLocation): void {
+    const key = this.buildLocationKey(location);
+    if (this.locationAddresses()[key] || this.locationLoading()[key]) {
+      return;
+    }
+
+    this.locationLoading.update((state) => ({
+      ...state,
+      [key]: true,
+    }));
+
+    this.geocodingService
+      .getAddress(location.latitude, location.longitude)
+      .then((address) => {
+        this.locationAddresses.update((state) => ({
+          ...state,
+          [key]: address,
+        }));
+      })
+      .catch(() => {
+        this.locationAddresses.update((state) => ({
+          ...state,
+          [key]: this.formatCoordinates(location),
+        }));
+      })
+      .finally(() => {
+        this.locationLoading.update((state) => {
+          const { [key]: _, ...rest } = state;
+          return rest;
+        });
+      });
+  }
+
+  private buildLocationKey(location: TrackingLocation): string {
+    return `${location.latitude.toFixed(6)},${location.longitude.toFixed(6)}`;
+  }
+
+  private formatCoordinates(location: TrackingLocation): string {
+    return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
   }
 }

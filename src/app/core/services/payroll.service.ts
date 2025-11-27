@@ -178,14 +178,14 @@ export class PayrollService {
       .pipe(map((detail) => this.transformDetailResponse(detail)));
   }
 
-  deletePayroll(id: string): Observable<boolean> {
-    return this.http.delete(`${this.apiUrl}/payrolls/${id}`).pipe(map(() => true));
+  updatePayroll(id: string, updates: Partial<Payroll>): Observable<Payroll> {
+    return this.http
+      .put<BackendPayroll>(`${this.apiUrl}/payrolls/${id}`, updates)
+      .pipe(map((payroll) => this.transformPayrollResponse(payroll)));
   }
 
-  downloadTemplate(type: 'PLANILLA' | 'RXH'): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/payrolls/template?type=${type}`, {
-      responseType: 'blob',
-    });
+  deletePayroll(id: string): Observable<boolean> {
+    return this.http.delete(`${this.apiUrl}/payrolls/${id}`).pipe(map(() => true));
   }
 
   private transformPayrollResponse(backendPayroll: BackendPayroll): Payroll {
