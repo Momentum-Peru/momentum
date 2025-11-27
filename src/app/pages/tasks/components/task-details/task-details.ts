@@ -34,7 +34,6 @@ import {
   TaskComment,
   CreateTaskCommentRequest,
   TaskSubtask,
-  TaskAttachment,
 } from '../../../../shared/interfaces/task.interface';
 
 @Component({
@@ -102,7 +101,9 @@ import {
           @if (getProjectName()) {
           <div class="mb-4">
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Proyecto</h3>
-            <div class="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div
+              class="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+            >
               <i class="pi pi-folder text-blue-600 dark:text-blue-400"></i>
               <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
                 {{ getProjectName() }}
@@ -127,18 +128,21 @@ import {
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Subtareas</h3>
             <div class="space-y-2">
               @for (subtask of task.subtasks; track subtask._id || $index) {
-              <div class="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+              <div
+                class="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              >
                 <input
                   type="checkbox"
+                  [id]="'subtask-' + $index"
                   [checked]="subtask.completed"
                   (change)="toggleSubtask(subtask)"
                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                 />
                 <label
+                  [for]="'subtask-' + $index"
                   [class.line-through]="subtask.completed"
                   [class.text-gray-400]="subtask.completed"
                   class="flex-1 text-gray-700 dark:text-gray-300 cursor-pointer"
-                  (click)="toggleSubtask(subtask)"
                 >
                   {{ subtask.title }}
                 </label>
@@ -151,7 +155,9 @@ import {
           <!-- Attachments -->
           @if (task.attachments && task.attachments.length > 0) {
           <div class="mb-4">
-            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Archivos Adjuntos</h3>
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Archivos Adjuntos
+            </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
               @for (attachment of task.attachments; track attachment._id || $index) {
               <div
@@ -339,22 +345,85 @@ import {
 
                     <!-- Comment Files -->
                     @if (comment.attachments && comment.attachments.length > 0) {
-                    <div class="mt-3">
-                      <div class="flex flex-wrap gap-2">
-                        @for (file of comment.attachments || []; track file._id) {
-                        <div
-                          class="flex items-center gap-2 bg-white dark:bg-gray-700 px-3 py-2 rounded-md border border-gray-200 dark:border-gray-600"
-                        >
+                    <div class="mt-3 space-y-2">
+                      @for (file of comment.attachments || []; track file._id) {
+                      <div
+                        class="bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden"
+                      >
+                        @if (file.mimeType && file.mimeType.startsWith('audio/')) {
+                        <!-- Audio -->
+                        <div class="p-3">
+                          <div class="flex items-center gap-2 mb-2">
+                            <i class="pi pi-volume-up text-blue-500"></i>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {{ file.originalName }}
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                              ({{ formatFileSize(file.size || 0) }})
+                            </span>
+                          </div>
+                          <audio [src]="file.url" controls class="w-full"></audio>
+                        </div>
+                        } @else if (file.mimeType && file.mimeType.startsWith('video/')) {
+                        <!-- Video -->
+                        <div class="p-3">
+                          <div class="flex items-center gap-2 mb-2">
+                            <i class="pi pi-video text-red-500"></i>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {{ file.originalName }}
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                              ({{ formatFileSize(file.size || 0) }})
+                            </span>
+                          </div>
+                          <video [src]="file.url" controls class="w-full max-h-64 rounded"></video>
+                        </div>
+                        } @else if (file.mimeType && file.mimeType.startsWith('image/')) {
+                        <!-- Imagen -->
+                        <div class="p-3">
+                          <div class="flex items-center gap-2 mb-2">
+                            <i class="pi pi-image text-green-500"></i>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {{ file.originalName }}
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                              ({{ formatFileSize(file.size || 0) }})
+                            </span>
+                          </div>
+                          <img
+                            [src]="file.url"
+                            [alt]="file.originalName"
+                            class="w-full max-h-64 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity"
+                            (click)="openFileInNewTab(file.url)"
+                            (keydown.enter)="openFileInNewTab(file.url)"
+                            tabindex="0"
+                            role="button"
+                            [attr.aria-label]="'Abrir imagen ' + file.originalName"
+                          />
+                        </div>
+                        } @else {
+                        <!-- Documento genérico -->
+                        <div class="flex items-center gap-2 p-3">
                           <i class="pi pi-file text-gray-500"></i>
-                          <span class="text-sm text-gray-700 dark:text-gray-300">
+                          <span class="text-sm text-gray-700 dark:text-gray-300 flex-1">
                             {{ file.originalName }}
                           </span>
                           <span class="text-xs text-gray-500 dark:text-gray-400">
-                            ({{ formatFileSize(file.fileSize) }})
+                            ({{ formatFileSize(file.size || 0) }})
                           </span>
+                          <a
+                            [href]="file.url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                            pTooltip="Abrir archivo"
+                          >
+                            <i class="pi pi-external-link"></i>
+                          </a>
                         </div>
                         }
                       </div>
+                      }
                     </div>
                     }
                   </div>
@@ -387,7 +456,7 @@ import {
                 <textarea
                   pInputTextarea
                   formControlName="content"
-                  placeholder="Escribe tu comentario aquí..."
+                  placeholder="Escribe tu comentario aquí (opcional si subes archivos)..."
                   rows="4"
                   class="w-full"
                   [class.p-invalid]="
@@ -396,8 +465,193 @@ import {
                 ></textarea>
                 @if (commentForm.get('content')?.invalid && commentForm.get('content')?.touched) {
                 <small class="text-red-500 dark:text-red-400 mt-1 block">
-                  El comentario es requerido y debe tener al menos 3 caracteres
+                  Si escribes un comentario, debe tener al menos 3 caracteres
                 </small>
+                }
+              </div>
+
+              <!-- Botones de Media -->
+              <div class="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  pButton
+                  icon="pi pi-volume-up"
+                  label="Audio"
+                  (click)="audioInput.click()"
+                  class="flex-1 min-w-[100px]"
+                  severity="secondary"
+                  [outlined]="pendingAudio().length === 0"
+                  aria-label="Seleccionar archivos de audio"
+                ></button>
+                <input
+                  type="file"
+                  #audioInput
+                  accept="audio/*"
+                  capture
+                  multiple
+                  (change)="onAudioSelected($event)"
+                  class="hidden"
+                />
+
+                <button
+                  type="button"
+                  pButton
+                  icon="pi pi-image"
+                  label="Foto"
+                  (click)="photoInput.click()"
+                  class="flex-1 min-w-[100px]"
+                  severity="secondary"
+                  [outlined]="pendingPhoto().length === 0"
+                  aria-label="Seleccionar fotos"
+                ></button>
+                <input
+                  type="file"
+                  #photoInput
+                  accept="image/*"
+                  capture="environment"
+                  multiple
+                  (change)="onPhotoSelected($event)"
+                  class="hidden"
+                />
+
+                <button
+                  type="button"
+                  pButton
+                  icon="pi pi-video"
+                  label="Video"
+                  (click)="videoInput.click()"
+                  class="flex-1 min-w-[100px]"
+                  severity="secondary"
+                  [outlined]="pendingVideo().length === 0"
+                  aria-label="Seleccionar videos"
+                ></button>
+                <input
+                  type="file"
+                  #videoInput
+                  accept="video/*"
+                  capture
+                  multiple
+                  (change)="onVideoSelected($event)"
+                  class="hidden"
+                />
+              </div>
+
+              <!-- Archivos seleccionados -->
+              @if (pendingAudio().length > 0 || pendingPhoto().length > 0 || pendingVideo().length >
+              0 || pendingDocuments().length > 0) {
+              <div class="space-y-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                @if (pendingAudio().length > 0) {
+                <div class="text-sm">
+                  <span class="font-medium text-gray-700 dark:text-gray-300">Audios:</span>
+                  @for (file of pendingAudio(); track $index) {
+                  <div class="flex items-center justify-between mt-1">
+                    <span class="text-gray-600 dark:text-gray-400 text-xs">{{ file.name }}</span>
+                    <button
+                      type="button"
+                      pButton
+                      icon="pi pi-times"
+                      [text]="true"
+                      severity="danger"
+                      size="small"
+                      (click)="removePendingAudio($index)"
+                      [attr.aria-label]="'Eliminar ' + file.name"
+                    ></button>
+                  </div>
+                  }
+                </div>
+                } @if (pendingPhoto().length > 0) {
+                <div class="text-sm">
+                  <span class="font-medium text-gray-700 dark:text-gray-300">Fotos:</span>
+                  @for (file of pendingPhoto(); track $index) {
+                  <div class="flex items-center justify-between mt-1">
+                    <span class="text-gray-600 dark:text-gray-400 text-xs">{{ file.name }}</span>
+                    <button
+                      type="button"
+                      pButton
+                      icon="pi pi-times"
+                      [text]="true"
+                      severity="danger"
+                      size="small"
+                      (click)="removePendingPhoto($index)"
+                      [attr.aria-label]="'Eliminar ' + file.name"
+                    ></button>
+                  </div>
+                  }
+                </div>
+                } @if (pendingVideo().length > 0) {
+                <div class="text-sm">
+                  <span class="font-medium text-gray-700 dark:text-gray-300">Videos:</span>
+                  @for (file of pendingVideo(); track $index) {
+                  <div class="flex items-center justify-between mt-1">
+                    <span class="text-gray-600 dark:text-gray-400 text-xs">{{ file.name }}</span>
+                    <button
+                      type="button"
+                      pButton
+                      icon="pi pi-times"
+                      [text]="true"
+                      severity="danger"
+                      size="small"
+                      (click)="removePendingVideo($index)"
+                      [attr.aria-label]="'Eliminar ' + file.name"
+                    ></button>
+                  </div>
+                  }
+                </div>
+                } @if (pendingDocuments().length > 0) {
+                <div class="text-sm">
+                  <span class="font-medium text-gray-700 dark:text-gray-300">Documentos:</span>
+                  @for (file of pendingDocuments(); track $index) {
+                  <div class="flex items-center justify-between mt-1">
+                    <span class="text-gray-600 dark:text-gray-400 text-xs">{{ file.name }}</span>
+                    <button
+                      type="button"
+                      pButton
+                      icon="pi pi-times"
+                      [text]="true"
+                      severity="danger"
+                      size="small"
+                      (click)="removePendingDocument($index)"
+                      [attr.aria-label]="'Eliminar ' + file.name"
+                    ></button>
+                  </div>
+                  }
+                </div>
+                }
+              </div>
+              }
+
+              <!-- Campo de Documentos -->
+              <div>
+                <label
+                  for="documents-input"
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Documentos
+                </label>
+                <button
+                  type="button"
+                  pButton
+                  icon="pi pi-file"
+                  label="Elegir archivos"
+                  (click)="documentsInput.click()"
+                  severity="secondary"
+                  [outlined]="true"
+                  class="w-full"
+                  aria-label="Seleccionar documentos"
+                ></button>
+                <input
+                  type="file"
+                  id="documents-input"
+                  #documentsInput
+                  accept="*/*"
+                  multiple
+                  (change)="onDocumentsSelected($event)"
+                  class="hidden"
+                />
+                @if (pendingDocuments().length === 0) {
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Ningún archivo seleccionado
+                </p>
                 }
               </div>
 
@@ -420,7 +674,6 @@ import {
             </div>
           </form>
         </div>
-
       </div>
       }
     </p-dialog>
@@ -435,7 +688,7 @@ import {
 })
 export class TaskDetailsComponent {
   @Input() task: Task | null = null;
-  @Input() visible = signal<boolean>(false);
+  @Input() visible = false;
   @Output() closeDialog = new EventEmitter<void>();
 
   public readonly commentsService = inject(TaskCommentsApiService);
@@ -447,13 +700,17 @@ export class TaskDetailsComponent {
   // Signals
   public readonly commentsLoading = signal<boolean>(false);
   public readonly commentError = signal<string | null>(null);
+  public readonly pendingAudio = signal<File[]>([]);
+  public readonly pendingPhoto = signal<File[]>([]);
+  public readonly pendingVideo = signal<File[]>([]);
+  public readonly pendingDocuments = signal<File[]>([]);
 
   // Form
   public readonly commentForm: FormGroup;
 
   constructor() {
     this.commentForm = this.fb.group({
-      content: ['', [Validators.required, Validators.minLength(3)]],
+      content: ['', [Validators.minLength(3)]], // Opcional, pero si se escribe debe tener al menos 3 caracteres
     });
   }
 
@@ -578,7 +835,9 @@ export class TaskDetailsComponent {
   /**
    * Obtiene el nombre del autor del comentario
    */
-  public getAuthorName(createdBy: string | { name?: string; email?: string; _id?: string } | null | undefined): string {
+  public getAuthorName(
+    createdBy: string | { name?: string; email?: string; _id?: string } | null | undefined
+  ): string {
     // Si createdBy es un objeto (poblado), usar directamente
     if (typeof createdBy === 'object' && createdBy !== null) {
       return createdBy.name || createdBy.email || 'Usuario';
@@ -655,7 +914,6 @@ export class TaskDetailsComponent {
    * Maneja el cierre del modal
    */
   public onClose(): void {
-    this.visible.set(false);
     this.closeDialog.emit();
   }
 
@@ -663,66 +921,121 @@ export class TaskDetailsComponent {
    * Maneja el envío del formulario de comentario
    */
   public onSubmitComment(): void {
-    if (this.commentForm.valid && this.task) {
-      const currentUser = this.authService.getCurrentUser();
+    if (!this.task) return;
 
-      if (!currentUser?.id) {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo obtener la información del usuario',
-        });
-        return;
-      }
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser?.id) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo obtener la información del usuario',
+      });
+      return;
+    }
 
-      const commentData = {
-        content: this.commentForm.get('content')?.value,
-        taskId: this.task._id,
-        createdBy: currentUser.id,
-      } as CreateTaskCommentRequest;
+    // Verificar si hay archivos seleccionados
+    const hasFiles =
+      this.pendingAudio().length > 0 ||
+      this.pendingPhoto().length > 0 ||
+      this.pendingVideo().length > 0 ||
+      this.pendingDocuments().length > 0;
 
-      this.commentError.set(null);
-      this.commentsService.createComment(commentData).subscribe({
-        next: (response) => {
-          // El backend devuelve la tarea completa actualizada
-          if (response && response._id) {
-            // Actualizar la tarea completa con la información del servidor
-            if (this.task && response.info) {
-              this.task.info = response.info;
+    // Obtener el contenido del comentario
+    const content = this.commentForm.get('content')?.value?.trim() || '';
+
+    // Validar: debe haber comentario O archivos
+    if (!content && !hasFiles) {
+      this.commentError.set('Debes escribir un comentario o seleccionar archivos para subir');
+      return;
+    }
+
+    // Validar: si hay comentario, debe tener al menos 3 caracteres
+    if (content && content.length < 3) {
+      this.commentError.set('El comentario debe tener al menos 3 caracteres');
+      return;
+    }
+
+    // Si no hay comentario pero hay archivos, crear un comentario automático
+    const finalContent = content || this.generateCommentFileDescriptionMessage();
+
+    const commentData = {
+      content: finalContent,
+      taskId: this.task._id,
+      createdBy: currentUser.id,
+    } as CreateTaskCommentRequest;
+
+    this.commentError.set(null);
+    this.commentsService.createComment(commentData).subscribe({
+      next: (response) => {
+        // El backend devuelve la tarea completa actualizada
+        if (response && response._id) {
+          // Actualizar la tarea completa con la información del servidor
+          if (this.task && response.info) {
+            this.task.info = response.info;
+          }
+
+          // Obtener el ID del comentario recién creado
+          const newComment = response.info?.[response.info.length - 1];
+          if (newComment?._id) {
+            // Subir archivos multimedia si hay
+            const hasFiles =
+              this.pendingAudio().length > 0 ||
+              this.pendingPhoto().length > 0 ||
+              this.pendingVideo().length > 0 ||
+              this.pendingDocuments().length > 0;
+
+            if (hasFiles) {
+              // Convertir el ID a string si es necesario
+              const commentId =
+                typeof newComment._id === 'string'
+                  ? newComment._id
+                  : typeof newComment._id === 'object' &&
+                    newComment._id !== null &&
+                    '_id' in newComment._id
+                  ? String((newComment._id as { _id?: string })._id || newComment._id)
+                  : String(newComment._id);
+
+              this.uploadCommentFiles(commentId);
+              this.messageService.add({
+                severity: 'info',
+                summary: 'Subiendo archivos',
+                detail: 'Comentario agregado. Subiendo archivos...',
+              });
+            } else {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: 'Comentario agregado correctamente',
+              });
             }
-
+          } else {
             this.messageService.add({
               severity: 'success',
               summary: 'Éxito',
               detail: 'Comentario agregado correctamente',
             });
-
-            this.resetCommentForm();
-          } else {
-            console.warn('Comment created but with unexpected structure:', response);
-            this.messageService.add({
-              severity: 'warn',
-              summary: 'Advertencia',
-              detail: 'Comentario creado pero con estructura inesperada',
-            });
-            this.resetCommentForm();
           }
-        },
-        error: () => {
-          this.commentError.set('Error al agregar el comentario');
+
+          this.resetCommentForm();
+        } else {
+          console.warn('Comment created but with unexpected structure:', response);
           this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo agregar el comentario',
+            severity: 'warn',
+            summary: 'Advertencia',
+            detail: 'Comentario creado pero con estructura inesperada',
           });
-        },
-      });
-    } else {
-      // Marcar todos los campos como tocados para mostrar errores
-      Object.keys(this.commentForm.controls).forEach((key) => {
-        this.commentForm.get(key)?.markAsTouched();
-      });
-    }
+          this.resetCommentForm();
+        }
+      },
+      error: () => {
+        this.commentError.set('Error al agregar el comentario');
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo agregar el comentario',
+        });
+      },
+    });
   }
 
   /**
@@ -731,6 +1044,173 @@ export class TaskDetailsComponent {
   public resetCommentForm(): void {
     this.commentForm.reset();
     this.commentError.set(null);
+    this.pendingAudio.set([]);
+    this.pendingPhoto.set([]);
+    this.pendingVideo.set([]);
+    this.pendingDocuments.set([]);
+  }
+
+  /**
+   * Genera un mensaje descriptivo basado en los archivos del comentario
+   */
+  private generateCommentFileDescriptionMessage(): string {
+    const audioCount = this.pendingAudio().length;
+    const photoCount = this.pendingPhoto().length;
+    const videoCount = this.pendingVideo().length;
+    const docCount = this.pendingDocuments().length;
+
+    const parts: string[] = [];
+    if (audioCount > 0) parts.push(`${audioCount} audio${audioCount > 1 ? 's' : ''}`);
+    if (photoCount > 0) parts.push(`${photoCount} foto${photoCount > 1 ? 's' : ''}`);
+    if (videoCount > 0) parts.push(`${videoCount} video${videoCount > 1 ? 's' : ''}`);
+    if (docCount > 0) parts.push(`${docCount} documento${docCount > 1 ? 's' : ''}`);
+
+    if (parts.length === 0) return 'Archivos subidos';
+    if (parts.length === 1) return `Se subió ${parts[0]}`;
+    if (parts.length === 2) return `Se subieron ${parts[0]} y ${parts[1]}`;
+    return `Se subieron ${parts.slice(0, -1).join(', ')} y ${parts[parts.length - 1]}`;
+  }
+
+  /**
+   * Maneja la selección de archivos de audio
+   */
+  public onAudioSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const files = Array.from(input.files);
+      this.pendingAudio.set([...this.pendingAudio(), ...files]);
+      input.value = '';
+    }
+  }
+
+  /**
+   * Maneja la selección de fotos
+   */
+  public onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const files = Array.from(input.files);
+      this.pendingPhoto.set([...this.pendingPhoto(), ...files]);
+      input.value = '';
+    }
+  }
+
+  /**
+   * Maneja la selección de videos
+   */
+  public onVideoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const files = Array.from(input.files);
+      this.pendingVideo.set([...this.pendingVideo(), ...files]);
+      input.value = '';
+    }
+  }
+
+  /**
+   * Maneja la selección de documentos
+   */
+  public onDocumentsSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const files = Array.from(input.files);
+      this.pendingDocuments.set([...this.pendingDocuments(), ...files]);
+      input.value = '';
+    }
+  }
+
+  /**
+   * Elimina un archivo de audio pendiente
+   */
+  public removePendingAudio(index: number): void {
+    const current = this.pendingAudio();
+    current.splice(index, 1);
+    this.pendingAudio.set([...current]);
+  }
+
+  /**
+   * Elimina una foto pendiente
+   */
+  public removePendingPhoto(index: number): void {
+    const current = this.pendingPhoto();
+    current.splice(index, 1);
+    this.pendingPhoto.set([...current]);
+  }
+
+  /**
+   * Elimina un video pendiente
+   */
+  public removePendingVideo(index: number): void {
+    const current = this.pendingVideo();
+    current.splice(index, 1);
+    this.pendingVideo.set([...current]);
+  }
+
+  /**
+   * Elimina un documento pendiente
+   */
+  public removePendingDocument(index: number): void {
+    const current = this.pendingDocuments();
+    current.splice(index, 1);
+    this.pendingDocuments.set([...current]);
+  }
+
+  /**
+   * Abre un archivo en una nueva pestaña
+   */
+  public openFileInNewTab(url: string): void {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  /**
+   * Sube los archivos multimedia después de crear el comentario
+   */
+  private uploadCommentFiles(commentId: string): void {
+    if (!this.task) return;
+
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser?.id) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo obtener la información del usuario',
+      });
+      return;
+    }
+
+    const allFiles: File[] = [
+      ...this.pendingAudio(),
+      ...this.pendingPhoto(),
+      ...this.pendingVideo(),
+      ...this.pendingDocuments(),
+    ];
+
+    if (allFiles.length === 0) return;
+
+    // Subir todos los archivos en una sola petición
+    this.commentsService
+      .uploadCommentFiles(this.task._id, commentId, allFiles, currentUser.id)
+      .subscribe({
+        next: (updatedTask) => {
+          // Actualizar la tarea con los datos del servidor
+          if (this.task) {
+            this.task = updatedTask;
+          }
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: `${allFiles.length} archivo(s) subido(s) correctamente`,
+          });
+        },
+        error: (error) => {
+          console.error('Error uploading files:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Error al subir los archivos. Intenta nuevamente.',
+          });
+        },
+      });
   }
 
   /**
@@ -772,7 +1252,10 @@ export class TaskDetailsComponent {
       if (this.task?.subtasks) {
         const index = this.task.subtasks.findIndex((st) => st === subtask);
         if (index !== -1) {
-          this.task.subtasks[index] = { ...this.task.subtasks[index], completed: !subtask.completed };
+          this.task.subtasks[index] = {
+            ...this.task.subtasks[index],
+            completed: !subtask.completed,
+          };
         }
       }
       return;
@@ -788,28 +1271,33 @@ export class TaskDetailsComponent {
       }
     }
 
-    this.tasksApiService.updateSubtaskStatus(this.task._id, subtask._id, newCompletedState).subscribe({
-      next: (updatedTask) => {
-        // Si el backend devuelve la tarea completa actualizada, usar esos datos
-        if (updatedTask.subtasks && this.task) {
-          this.task.subtasks = updatedTask.subtasks;
-        }
-      },
-      error: (error) => {
-        console.error('Error updating subtask:', error);
-        // Revertir el cambio local en caso de error
-        if (this.task?.subtasks) {
-          const index = this.task.subtasks.findIndex((st) => st._id === subtask._id);
-          if (index !== -1) {
-            this.task.subtasks[index] = { ...this.task.subtasks[index], completed: !newCompletedState };
+    this.tasksApiService
+      .updateSubtaskStatus(this.task._id, subtask._id, newCompletedState)
+      .subscribe({
+        next: (updatedTask) => {
+          // Si el backend devuelve la tarea completa actualizada, usar esos datos
+          if (updatedTask.subtasks && this.task) {
+            this.task.subtasks = updatedTask.subtasks;
           }
-        }
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo actualizar la subtarea',
-        });
-      },
-    });
+        },
+        error: (error) => {
+          console.error('Error updating subtask:', error);
+          // Revertir el cambio local en caso de error
+          if (this.task?.subtasks) {
+            const index = this.task.subtasks.findIndex((st) => st._id === subtask._id);
+            if (index !== -1) {
+              this.task.subtasks[index] = {
+                ...this.task.subtasks[index],
+                completed: !newCompletedState,
+              };
+            }
+          }
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo actualizar la subtarea',
+          });
+        },
+      });
   }
 }

@@ -258,7 +258,11 @@ export class TasksPage implements OnInit {
             const boardId =
               typeof task.boardId === 'string'
                 ? task.boardId
-                : (task.boardId as any)?._id || (task.boardId as any)?.toString();
+                : typeof task.boardId === 'object' && task.boardId !== null && '_id' in task.boardId
+                ? String((task.boardId as { _id?: string })._id || task.boardId)
+                : task.boardId
+                ? String(task.boardId)
+                : undefined;
 
             if (boardId) {
               // Cargar el tablero y luego mostrar la tarea

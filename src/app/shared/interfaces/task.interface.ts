@@ -31,7 +31,7 @@ export interface TaskComment {
   createdBy: string; // ID del usuario que creó el comentario
   createdAt: Date | string;
   updatedAt: Date | string;
-  attachments?: TaskFile[];
+  attachments?: TaskAttachment[];
 }
 
 export interface TaskSubtask {
