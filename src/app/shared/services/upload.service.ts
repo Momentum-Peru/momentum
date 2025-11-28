@@ -7,7 +7,7 @@ export class UploadService {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = environment.apiUrl;
 
-    upload(entity: 'clients' | 'requirements' | 'tdrs' | 'quotes' | 'orders' | 'payrolls', id: string, file: File) {
+    upload(entity: 'clients' | 'requirements' | 'tdrs' | 'quotes' | 'orders' | 'payrolls' | 'engineering', id: string, file: File) {
         const form = new FormData();
         form.append('file', file);
         return this.http.post<string>(`${this.baseUrl}/${entity}/${id}/documents`, form);
