@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -26,6 +26,7 @@ import {
   Contact,
   Ubicacion,
 } from '../../shared/services/providers.service';
+import { MenuService } from '../../shared/services/menu.service';
 
 interface Country {
   _id: string;
@@ -85,8 +86,12 @@ export class ProvidersPage implements OnInit {
   private readonly providersService = inject(ProvidersService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly menuService = inject(MenuService);
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
+
+  // Verificar si el usuario tiene permiso de edición para este módulo
+  readonly canEdit = computed(() => this.menuService.canEdit('/providers'));
 
   items = signal<Provider[]>([]);
   query = signal<string>('');

@@ -8,6 +8,7 @@
       (ngModelChange)="setQuery($event)"
       class="w-full"
     />
+    @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -17,6 +18,7 @@
       aria-label="Crear nuevo TDR"
       class="w-full xl:w-auto"
     ></button>
+    }
   </div>
 
   <!-- Vista Desktop: Tabla normal -->
@@ -79,6 +81,7 @@
                 [disabled]="row.approved"
                 aria-label="Aprobar TDR"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -96,6 +99,7 @@
                 (click)="remove(row)"
                 aria-label="Eliminar TDR"
               ></button>
+              }
             </div>
           </td>
         </tr>
@@ -255,6 +259,7 @@
                 [disabled]="row.approved"
                 aria-label="Aprobar TDR"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -271,6 +276,7 @@
                 (click)="remove(row)"
                 aria-label="Eliminar TDR"
               ></button>
+              }
             </div>
           </div>
         </div>

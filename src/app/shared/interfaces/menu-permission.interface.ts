@@ -4,6 +4,7 @@ export interface MenuPermission {
   tenantId?: string;
   route: string;
   isActive: boolean;
+  permissionType?: 'view' | 'edit';
   createdAt?: string;
   updatedAt?: string;
 }

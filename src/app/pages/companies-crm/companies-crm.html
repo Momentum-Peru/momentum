@@ -5,6 +5,7 @@
   <!-- Header -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <h1 class="text-2xl font-bold text-gray-800">Gestión de Empresas Momentum</h1>
+    @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -13,6 +14,7 @@
       (click)="newItem()"
       aria-label="Crear nueva empresa"
     ></button>
+    }
   </div>
 
   <!-- Filtros -->
@@ -133,6 +135,7 @@
                 (click)="viewDetails(row)"
                 aria-label="Ver detalles de la empresa"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -168,6 +171,7 @@
                 (click)="remove(row)"
                 aria-label="Eliminar empresa"
               ></button>
+              }
             </div>
           </td>
         </tr>
@@ -268,6 +272,7 @@
                 (click)="viewDetails(row)"
                 aria-label="Ver detalles de la empresa"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -303,6 +308,7 @@
                 (click)="remove(row)"
                 aria-label="Eliminar empresa"
               ></button>
+              }
             </div>
           </div>
         </div>

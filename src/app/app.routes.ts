@@ -209,6 +209,12 @@ export const routes: Routes = [
         data: { menuPermission: '/profile' },
       },
       {
+        path: 'logs',
+        loadComponent: () => import('./pages/logs/logs').then((m) => m.LogsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/logs' },
+      },
+      {
         path: 'payroll',
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/payroll' },

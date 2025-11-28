@@ -13,6 +13,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { EmployeesApiService } from '../../shared/services/employees-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { AreasApiService } from '../../shared/services/areas-api.service';
+import { MenuService } from '../../shared/services/menu.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import {
   Employee,
@@ -48,6 +49,10 @@ export class EmployeesPage implements OnInit {
   private readonly areasApi = inject(AreasApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly menuService = inject(MenuService);
+
+  // Verificar si el usuario tiene permiso de edición para este módulo
+  readonly canEdit = computed(() => this.menuService.canEdit('/employees'));
 
   items = signal<Employee[]>([]);
   users = signal<UserOption[]>([]);
