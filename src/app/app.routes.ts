@@ -66,9 +66,30 @@ export const routes: Routes = [
       },
       {
         path: 'projects',
-        loadComponent: () => import('./pages/projects/projects').then((m) => m.ProjectsPage),
+        children: [
+          {
+            path: 'dashboard',
+            loadComponent: () =>
+              import('./pages/projects-dashboard/projects-dashboard').then(
+                (m) => m.ProjectsDashboardPage
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/projects/dashboard' },
+          },
+          {
+            path: '',
+            loadComponent: () => import('./pages/projects/projects').then((m) => m.ProjectsPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/projects' },
+          },
+        ],
+      },
+      {
+        path: 'engineering',
+        loadComponent: () =>
+          import('./pages/engineering/engineering').then((m) => m.EngineeringPage),
         canActivate: [MenuPermissionGuard],
-        data: { menuPermission: '/projects' },
+        data: { menuPermission: '/engineering' },
       },
       {
         path: 'daily-reports',

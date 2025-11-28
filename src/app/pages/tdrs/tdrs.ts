@@ -284,8 +284,8 @@ export class TdrsPage implements OnInit {
   }
 
   private processFiles(files: File[]) {
-    // Validar tamaño de archivos (10MB máximo)
-    const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+    // Validar tamaño de archivos (50MB máximo)
+    const maxSize = 50 * 1024 * 1024; // 50MB en bytes
     const validFiles: File[] = [];
     const invalidFiles: File[] = [];
 
@@ -302,7 +302,7 @@ export class TdrsPage implements OnInit {
       this.messageService.add({
         severity: 'error',
         summary: 'Error de validación',
-        detail: `El archivo ${file.name} es demasiado grande. Máximo 10MB.`,
+        detail: `El archivo ${file.name} es demasiado grande. Máximo 50MB.`,
       });
     });
 
