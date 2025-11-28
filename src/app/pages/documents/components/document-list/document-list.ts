@@ -39,6 +39,7 @@ export class DocumentListComponent {
   @Input({ required: true }) pageSize = 10;
   @Input({ required: true }) first = 0;
   @Input({ required: true }) trackByFn!: (index: number, item: Document) => string;
+  @Input() canEdit = false;
 
   @Output() pageChange = new EventEmitter<{ page: number; first: number; rows: number }>();
   @Output() editDocument = new EventEmitter<Document>();

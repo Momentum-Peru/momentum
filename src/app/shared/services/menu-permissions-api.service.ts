@@ -98,9 +98,21 @@ export class MenuPermissionsApiService {
   checkPermission(
     userId: string,
     route: string
-  ): Observable<{ hasPermission: boolean; userId: string; route: string }> {
-    return this.http.get<{ hasPermission: boolean; userId: string; route: string }>(
+  ): Observable<{ hasPermission: boolean; userId: string; route: string; permissionType?: 'view' | 'edit' | null }> {
+    return this.http.get<{ hasPermission: boolean; userId: string; route: string; permissionType?: 'view' | 'edit' | null }>(
       `${this.baseUrl}/check/${userId}/${encodeURIComponent(route)}`
+    );
+  }
+
+  /**
+   * Verifica si un usuario tiene permiso de edición para una ruta
+   */
+  checkEditPermission(
+    userId: string,
+    route: string
+  ): Observable<{ hasEditPermission: boolean; userId: string; route: string }> {
+    return this.http.get<{ hasEditPermission: boolean; userId: string; route: string }>(
+      `${this.baseUrl}/check-edit/${userId}/${encodeURIComponent(route)}`
     );
   }
 

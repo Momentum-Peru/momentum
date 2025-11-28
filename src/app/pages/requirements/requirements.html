@@ -8,6 +8,7 @@
       (ngModelChange)="setQuery($event)"
       class="w-full"
     />
+    @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -17,6 +18,7 @@
       aria-label="Crear nuevo requerimiento"
       class="w-full xl:w-auto"
     ></button>
+    }
   </div>
 
   <!-- Vista Desktop: Tabla normal -->
@@ -90,6 +92,7 @@
                 (click)="viewDetails(row)"
                 aria-label="Ver detalles del requerimiento"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -106,6 +109,7 @@
                 (click)="remove(row)"
                 aria-label="Eliminar requerimiento"
               ></button>
+              }
             </div>
           </td>
         </tr>
@@ -284,6 +288,7 @@
                 (click)="viewDetails(row)"
                 aria-label="Ver detalles del requerimiento"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -300,6 +305,7 @@
                 (click)="remove(row)"
                 aria-label="Eliminar requerimiento"
               ></button>
+              }
             </div>
           </div>
         </div>

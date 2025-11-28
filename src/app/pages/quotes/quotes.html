@@ -19,6 +19,7 @@
         />
       </div>
     </div>
+    @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -28,6 +29,7 @@
       class="p-button-primary w-full sm:w-auto"
       aria-label="Crear nueva cotización"
     ></button>
+    }
   </div>
 
   <!-- Vista Desktop: Tabla normal -->
@@ -134,6 +136,7 @@
                 aria-label="Cambiar estado de la cotización"
               ></button>
 
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -153,6 +156,7 @@
                 tooltipPosition="top"
                 aria-label="Eliminar cotización"
               ></button>
+              }
             </div>
           </td>
         </tr>
@@ -338,6 +342,7 @@
                 (click)="stateMenu.toggle($event)"
                 aria-label="Cambiar estado de la cotización"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -354,6 +359,7 @@
                 (click)="deleteQuote(quote)"
                 aria-label="Eliminar cotización"
               ></button>
+              }
             </div>
           </div>
         </div>

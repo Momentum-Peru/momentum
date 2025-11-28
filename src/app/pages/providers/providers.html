@@ -32,6 +32,7 @@
         (click)="openStats()"
         aria-label="Ver estadísticas de proveedores"
       ></button>
+      @if (canEdit()) {
       <button
         pButton
         type="button"
@@ -40,6 +41,7 @@
         (click)="newItem()"
         aria-label="Crear nuevo proveedor"
       ></button>
+      }
     </div>
   </div>
 
@@ -222,6 +224,7 @@
                 (click)="viewDetails(row)"
                 aria-label="Ver detalles del proveedor"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -247,6 +250,7 @@
                 (click)="remove(row)"
                 aria-label="Eliminar proveedor"
               ></button>
+              }
             </div>
           </td>
         </tr>
@@ -427,6 +431,7 @@
                 (click)="viewDetails(row)"
                 aria-label="Ver detalles del proveedor"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -451,6 +456,7 @@
                 (click)="remove(row)"
                 aria-label="Eliminar proveedor"
               ></button>
+              }
             </div>
           </div>
         </div>

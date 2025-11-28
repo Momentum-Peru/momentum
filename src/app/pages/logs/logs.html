@@ -1,0 +1,504 @@
+<div class="p-4 space-y-4">
+  <p-toast [life]="5000"></p-toast>
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <h1 class="text-2xl font-bold text-gray-800">Logs del Sistema</h1>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Filtro por módulo -->
+        <div>
+          <label
+            for="moduloFilter"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Módulo</label
+          >
+          <p-select
+            id="moduloFilter"
+            [options]="modulos()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="moduloFilter()"
+            (ngModelChange)="moduloFilter.set($event)"
+            placeholder="Todos los módulos"
+            [showClear]="true"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+        </div>
+
+        <!-- Filtro por usuario -->
+        <div>
+          <label
+            for="userIdFilter"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Usuario</label
+          >
+          <p-select
+            id="userIdFilter"
+            [options]="users()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="userIdFilter()"
+            (ngModelChange)="userIdFilter.set($event)"
+            placeholder="Todos los usuarios"
+            [showClear]="true"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+        </div>
+
+        <!-- Filtro por fecha inicio -->
+        <div>
+          <label
+            for="fechaInicioFilter"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Fecha Inicio</label
+          >
+          <p-datepicker
+            id="fechaInicioFilter"
+            [ngModel]="fechaInicioFilter()"
+            (ngModelChange)="fechaInicioFilter.set($event)"
+            [showIcon]="true"
+            [showTime]="true"
+            dateFormat="dd/mm/yy"
+            [appendTo]="'body'"
+            placeholder="Seleccionar fecha"
+            [showClear]="true"
+            class="w-full"
+          ></p-datepicker>
+        </div>
+
+        <!-- Filtro por fecha fin -->
+        <div>
+          <label
+            for="fechaFinFilter"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Fecha Fin</label
+          >
+          <p-datepicker
+            id="fechaFinFilter"
+            [ngModel]="fechaFinFilter()"
+            (ngModelChange)="fechaFinFilter.set($event)"
+            [showIcon]="true"
+            [showTime]="true"
+            dateFormat="dd/mm/yy"
+            [appendTo]="'body'"
+            placeholder="Seleccionar fecha"
+            [showClear]="true"
+            class="w-full"
+          ></p-datepicker>
+        </div>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="flex gap-2 mt-4">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-filter"
+          (click)="applyFilters()"
+          class="p-button-primary"
+          aria-label="Aplicar filtros"
+        >
+          Aplicar Filtros
+        </button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-times"
+          (click)="clearFilters()"
+          class="p-button-secondary"
+          aria-label="Limpiar filtros"
+        >
+          Limpiar
+        </button>
+      </div>
+    </ng-template>
+  </p-card>
+
+  <!-- Tabla de logs - Desktop -->
+  <div class="hidden md:block overflow-x-auto">
+    <p-card>
+      <ng-template pTemplate="content">
+        <p-table
+          [value]="logs()"
+          [loading]="loading()"
+          [paginator]="true"
+          [rows]="pageSize()"
+          [first]="first()"
+          [totalRecords]="totalRecords()"
+          [lazy]="true"
+          (onLazyLoad)="onPageChange($event)"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} logs"
+          [rowsPerPageOptions]="[10, 20, 50, 100]"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '50rem' }"
+          [responsiveLayout]="'scroll'"
+        >
+          <!-- Columnas -->
+          <ng-template pTemplate="header">
+            <tr>
+              <th class="text-left whitespace-nowrap">Módulo</th>
+              <th class="text-left whitespace-nowrap">Usuario</th>
+              <th class="text-left whitespace-nowrap">Fecha</th>
+              <th class="text-left whitespace-nowrap">Acción</th>
+              <th class="text-right whitespace-nowrap">Acciones</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-log>
+            <tr>
+              <td>
+                <p-tag [value]="log.modulo" severity="info" [rounded]="true"></p-tag>
+              </td>
+              <td>
+                <div class="flex flex-col min-w-[200px]">
+                  <span class="font-medium text-gray-900 dark:text-white break-words">{{
+                    getUserName(log)
+                  }}</span>
+                  @if (getUserEmail(log)) {
+                  <span class="text-sm text-gray-500 dark:text-gray-400 break-words">{{
+                    getUserEmail(log)
+                  }}</span>
+                  }
+                </div>
+              </td>
+              <td>
+                <span class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                  {{ formatDate(log.fechaModificacion) }}
+                </span>
+              </td>
+              <td>
+                <span class="text-sm text-gray-700 dark:text-gray-300 break-words">
+                  {{ log.detalle['accion'] || log.detalle['action'] || 'N/A' }}
+                </span>
+              </td>
+              <td class="text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    class="p-button-text p-button-sm"
+                    pTooltip="Ver detalles"
+                    (click)="viewDetails(log)"
+                    aria-label="Ver detalles del log"
+                  ></button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+
+          <!-- Mensaje cuando no hay datos -->
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="5" class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <i class="pi pi-inbox text-4xl mb-2"></i>
+                <p>No se encontraron logs</p>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </ng-template>
+    </p-card>
+  </div>
+
+  <!-- Vista Móvil: Accordion desplegable -->
+  <div class="md:hidden space-y-3">
+    @if (loading()) {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <i class="pi pi-spin pi-spinner text-4xl mb-2"></i>
+      <p>Cargando logs...</p>
+    </div>
+    } @else if (logs().length === 0) {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <i class="pi pi-inbox text-4xl mb-2"></i>
+      <p>No se encontraron logs</p>
+    </div>
+    } @else { @for (log of logs(); track log._id || $index) {
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+    >
+      <!-- Header del accordion -->
+      <button
+        type="button"
+        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        (click)="toggleRow(log._id)"
+      >
+        <div class="flex-1 text-left min-w-0 pr-4">
+          <div class="flex items-center gap-2 mb-1">
+            <p-tag
+              [value]="log.modulo"
+              severity="info"
+              [rounded]="true"
+              styleClass="text-xs"
+            ></p-tag>
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              {{ formatDate(log.fechaModificacion) }}
+            </span>
+          </div>
+          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+            {{ getUserName(log) }}
+          </div>
+          @if (getUserEmail(log)) {
+          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+            {{ getUserEmail(log) }}
+          </div>
+          }
+          <div class="text-sm text-gray-600 dark:text-gray-300 mt-1 truncate">
+            {{ log.detalle['accion'] || log.detalle['action'] || 'N/A' }}
+          </div>
+        </div>
+        <div class="flex-shrink-0">
+          <i
+            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+            [class.pi-chevron-down]="!isRowExpanded(log._id)"
+            [class.pi-chevron-up]="isRowExpanded(log._id)"
+          ></i>
+        </div>
+      </button>
+
+      <!-- Contenido del accordion (desplegable) -->
+      @if (isRowExpanded(log._id)) {
+      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+        <div class="px-4 py-4 space-y-4">
+          <!-- ID -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              ID
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">{{ log._id }}</div>
+          </div>
+
+          <!-- Módulo -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Módulo
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">
+              <p-tag [value]="log.modulo" severity="info" [rounded]="true"></p-tag>
+            </div>
+          </div>
+
+          <!-- Usuario -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Usuario
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+              {{ getUserName(log) }}
+            </div>
+            @if (getUserEmail(log)) {
+            <div class="text-sm text-gray-600 dark:text-gray-300 break-words">
+              {{ getUserEmail(log) }}
+            </div>
+            }
+          </div>
+
+          <!-- Fechas -->
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Fecha Modificación
+              </div>
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ formatDate(log.fechaModificacion) }}
+              </div>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Creado
+              </div>
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ formatDate(log.createdAt) }}
+              </div>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Actualizado
+              </div>
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ formatDate(log.updatedAt) }}
+              </div>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Acción
+              </div>
+              <div class="text-gray-900 dark:text-gray-100 break-words">
+                {{ log.detalle['accion'] || log.detalle['action'] || 'N/A' }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Detalles del log -->
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+              Detalles Completos
+            </div>
+            <pre
+              class="bg-gray-100 dark:bg-gray-900 p-3 rounded text-xs overflow-x-auto text-gray-800 dark:text-gray-200"
+              >{{ formatDetail(log.detalle) }}</pre
+            >
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    }
+
+    <!-- Paginación móvil -->
+    @if (!loading() && logs().length > 0) {
+    <div class="flex justify-center items-center gap-2 pt-4">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-chevron-left"
+        class="p-button-text p-button-sm"
+        [disabled]="currentPage() === 1"
+        (click)="goToPreviousPage()"
+        aria-label="Página anterior"
+      ></button>
+      <span class="text-sm text-gray-600 dark:text-gray-400">
+        Página {{ currentPage() }} de {{ getTotalPages() }}
+      </span>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-chevron-right"
+        class="p-button-text p-button-sm"
+        [disabled]="currentPage() >= getTotalPages()"
+        (click)="goToNextPage()"
+        aria-label="Página siguiente"
+      ></button>
+    </div>
+    } }
+  </div>
+
+  <!-- Diálogo de detalles del log -->
+  <p-dialog
+    [visible]="showDetailsDialog()"
+    (visibleChange)="showDetailsDialog.set($any($event))"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '60rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-eye text-blue-500"></i>
+        Detalles del Log
+      </div>
+    </ng-template>
+    @if (viewingLog()) {
+    <div class="space-y-6">
+      <!-- Información básica -->
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-info-circle text-blue-500"></i>
+          Información Básica
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >ID del Log</span
+            >
+            <div class="text-gray-900 dark:text-gray-100 font-mono text-sm break-words">
+              {{ viewingLog()?._id }}
+            </div>
+          </div>
+          <div>
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Módulo</span
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              <p-tag [value]="viewingLog()?.modulo" severity="info" [rounded]="true"></p-tag>
+            </div>
+          </div>
+          <div>
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Usuario</span
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              <div class="font-medium">{{ getUserName(viewingLog()!) }}</div>
+              @if (getUserEmail(viewingLog()!)) {
+              <div class="text-sm text-gray-600 dark:text-gray-400">
+                {{ getUserEmail(viewingLog()!) }}
+              </div>
+              }
+            </div>
+          </div>
+          <div>
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Modificación</span
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ formatDate(viewingLog()!.fechaModificacion) }}
+            </div>
+          </div>
+          <div>
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Fecha de Creación</span
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ formatDate(viewingLog()!.createdAt) }}
+            </div>
+          </div>
+          <div>
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Última Actualización</span
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ formatDate(viewingLog()!.updatedAt) }}
+            </div>
+          </div>
+          <div class="md:col-span-2">
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Acción</span
+            >
+            <div class="text-gray-900 dark:text-gray-100">
+              {{ viewingLog()!.detalle['accion'] || viewingLog()!.detalle['action'] || 'N/A' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalles completos -->
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-code text-blue-500"></i>
+          Detalles Completos (JSON)
+        </h3>
+        <div class="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 overflow-auto max-h-96">
+          <pre class="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{{
+            formatDetail(viewingLog()!.detalle)
+          }}</pre>
+        </div>
+      </div>
+    </div>
+    }
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2">
+        <button
+          pButton
+          label="Cerrar"
+          class="p-button-text"
+          (click)="closeDetailsDialog()"
+          aria-label="Cerrar detalles"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</div>

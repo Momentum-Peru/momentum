@@ -21,6 +21,23 @@ export interface Log {
   updatedAt: string;
 }
 
+export interface LogQueryParams {
+  modulo?: string;
+  userId?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface LogsResponse {
+  logs: Log[];
+  total: number;
+  page: number;
+  totalPages: number;
+  limit: number;
+}
+
 /**
  * Servicio para interactuar con la API de logs
  * Principio de Responsabilidad Única: Solo maneja las peticiones HTTP relacionadas con logs
@@ -37,6 +54,50 @@ export class LogsApiService {
    */
   create(log: CreateLogRequest): Observable<Log> {
     return this.http.post<Log>(this.baseUrl, log);
+  }
+
+  /**
+   * Obtiene todos los logs con filtros opcionales
+   */
+  findAll(params?: LogQueryParams): Observable<LogsResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.modulo) queryParams.append('modulo', params.modulo);
+    if (params?.userId) queryParams.append('userId', params.userId);
+    if (params?.fechaInicio) queryParams.append('fechaInicio', params.fechaInicio);
+    if (params?.fechaFin) queryParams.append('fechaFin', params.fechaFin);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const queryString = queryParams.toString();
+    const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;
+    return this.http.get<LogsResponse>(url);
+  }
+
+  /**
+   * Obtiene logs por módulo
+   */
+  findByModulo(modulo: string, limit?: number): Observable<Log[]> {
+    const url = limit
+      ? `${this.baseUrl}/modulo/${modulo}?limit=${limit}`
+      : `${this.baseUrl}/modulo/${modulo}`;
+    return this.http.get<Log[]>(url);
+  }
+
+  /**
+   * Obtiene logs por usuario
+   */
+  findByUser(userId: string, limit?: number): Observable<Log[]> {
+    const url = limit
+      ? `${this.baseUrl}/user/${userId}?limit=${limit}`
+      : `${this.baseUrl}/user/${userId}`;
+    return this.http.get<Log[]>(url);
+  }
+
+  /**
+   * Obtiene un log por ID
+   */
+  findOne(id: string): Observable<Log> {
+    return this.http.get<Log>(`${this.baseUrl}/${id}`);
   }
 }
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -13,6 +13,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { UploadService } from '../../shared/services/upload.service';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
+import { MenuService } from '../../shared/services/menu.service';
 import { SelectModule } from 'primeng/select';
 
 interface OrderItem {
@@ -49,8 +50,12 @@ export class OrdersPage implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly upload = inject(UploadService);
   private readonly clientsApi = inject(ClientsApiService);
+  private readonly menuService = inject(MenuService);
   private readonly baseUrl = environment.apiUrl;
   private readonly messageService = inject(MessageService);
+
+  // Verificar si el usuario tiene permiso de edición para este módulo
+  readonly canEdit = computed(() => this.menuService.canEdit('/orders'));
 
   items = signal<OrderItem[]>([]);
   clients = signal<ClientOption[]>([]);
