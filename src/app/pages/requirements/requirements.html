@@ -29,8 +29,6 @@
           <th>Solicitante</th>
           <th>Cliente</th>
           <th>Estado</th>
-          <th>Fecha Emisión</th>
-          <th>Centro Costo</th>
           <th>Documentos</th>
           <th class="text-right">Acciones</th>
         </tr>
@@ -66,8 +64,6 @@
               {{ row.estado }}
             </span>
           </td>
-          <td>{{ row.fechaEmision | date : 'dd/MM/yyyy' }}</td>
-          <td>{{ row.centroCosto }}</td>
           <td>
             <div class="flex items-center gap-2">
               <span class="text-sm text-gray-600">{{ row.documentos?.length || 0 }} docs</span>
@@ -252,27 +248,6 @@
             </div>
           </div>
 
-          <!-- Fecha Emisión -->
-          @if (row.fechaEmision) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Fecha Emisión
-            </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100">
-              {{ row.fechaEmision | date : 'dd/MM/yyyy' }}
-            </div>
-          </div>
-          }
-
-          <!-- Centro Costo -->
-          @if (row.centroCosto) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Centro Costo
-            </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100">{{ row.centroCosto }}</div>
-          </div>
-          }
 
           <!-- Documentos -->
           <div>
@@ -352,11 +327,39 @@
 
     <div class="space-y-6">
       <!-- Upload de archivos -->
-      <div class="bg-gray-50 rounded-lg p-6">
-        <h4 class="text-lg font-semibold text-gray-800 mb-4">Subir Nuevos Documentos</h4>
-        <!-- Input de archivos nativo -->
+      <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+            <i class="pi pi-cloud-upload text-blue-500"></i>
+            Subir Nuevos Documentos
+          </h4>
+          @if (selectedFiles().length > 0) {
+          <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">
+            {{ selectedFiles().length }} archivo(s) seleccionado(s)
+          </span>
+          }
+        </div>
+
         <div class="space-y-4">
-          <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+          <!-- Área de drag and drop -->
+          <div
+            class="border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 cursor-pointer group"
+            [class.border-gray-300]="!isDragging()"
+            [class.border-blue-400]="isDragging()"
+            [class.bg-blue-50]="isDragging()"
+            [class.dark:border-gray-600]="!isDragging()"
+            [class.dark:border-blue-500]="isDragging()"
+            [class.dark:bg-blue-900/20]="isDragging()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+            (click)="fileInput.click()"
+            (keyup.enter)="fileInput.click()"
+            (keyup.space)="fileInput.click()"
+            tabindex="0"
+            role="button"
+            aria-label="Seleccionar archivos para subir"
+          >
             <input
               type="file"
               #fileInput
@@ -366,73 +369,117 @@
               class="hidden"
             />
 
-            <div class="flex flex-col items-center justify-center py-8">
-              <i class="pi pi-cloud-upload text-5xl text-gray-400 mb-4"></i>
-              <p class="text-lg font-medium text-gray-700 mb-2">Selecciona archivos para subir</p>
-              <p class="text-sm text-gray-500 mb-4">o arrastra y suelta archivos aquí</p>
-
+            <div class="flex flex-col items-center justify-center py-6 pointer-events-none">
+              <div
+                class="mb-4 transition-transform duration-200"
+                [class.scale-110]="isDragging()"
+              >
+                <i
+                  class="pi text-6xl transition-colors duration-200"
+                  [class.pi-cloud-upload]="!isDragging()"
+                  [class.pi-cloud]="isDragging()"
+                  [class.text-gray-400]="!isDragging()"
+                  [class.text-blue-500]="isDragging()"
+                ></i>
+              </div>
+              <p class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                @if (isDragging()) {
+                <span class="text-blue-600 dark:text-blue-400">Suelta los archivos aquí</span>
+                } @else {
+                <span>Arrastra y suelta archivos aquí</span>
+                }
+              </p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">o</p>
               <button
                 pButton
                 type="button"
                 label="Seleccionar Archivos"
-                icon="pi pi-upload"
-                (click)="fileInput.click()"
-                class="mb-4"
+                icon="pi pi-folder-open"
+                (click)="fileInput.click(); $event.stopPropagation()"
+                class="pointer-events-auto"
+                [class.p-button-outlined]="!isDragging()"
+                [class.p-button-primary]="isDragging()"
                 aria-label="Seleccionar archivos para subir"
               ></button>
 
-              <div class="text-xs text-gray-400 space-y-1">
+              <div class="mt-6 text-xs text-gray-500 dark:text-gray-400 space-y-1 bg-white/50 dark:bg-gray-800/50 rounded-lg px-4 py-2">
                 <p>
-                  <strong>Formatos soportados:</strong> PDF, DOC, DOCX, XLS, XLSX, TXT, PNG, JPG,
-                  JPEG
+                  <i class="pi pi-info-circle mr-1"></i>
+                  <strong>Formatos soportados:</strong> PDF, DOC, DOCX, XLS, XLSX, TXT, PNG, JPG, JPEG
                 </p>
-                <p><strong>Tamaño máximo:</strong> 10MB por archivo</p>
+                <p>
+                  <i class="pi pi-info-circle mr-1"></i>
+                  <strong>Tamaño máximo:</strong> 10MB por archivo
+                </p>
               </div>
             </div>
           </div>
 
           <!-- Lista de archivos seleccionados -->
           @if (selectedFiles().length > 0) {
-          <div class="space-y-2">
-            <h5 class="font-medium text-gray-800">Archivos seleccionados:</h5>
-            @for (file of selectedFiles(); track file.name) {
-            <div class="flex items-center justify-between p-2 bg-white rounded border">
-              <div class="flex items-center gap-2">
-                <i class="pi pi-file text-blue-500"></i>
-                <span class="text-sm dark:text-gray-400">{{ file.name }}</span>
-                <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
-              </div>
+          <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <h5 class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                <i class="pi pi-list text-blue-500"></i>
+                Archivos Seleccionados
+              </h5>
               <button
                 pButton
+                type="button"
                 icon="pi pi-times"
-                class="p-button-text p-button-danger p-button-sm"
-                (click)="removeSelectedFile(file)"
-                aria-label="Eliminar archivo seleccionado"
+                label="Limpiar Todo"
+                class="p-button-text p-button-sm"
+                (click)="clearSelectedFiles()"
+                [disabled]="uploading()"
+                aria-label="Limpiar todos los archivos"
               ></button>
             </div>
-            }
 
-            <!-- Botones de acción -->
-            <div class="flex gap-2 pt-2">
+            <div class="space-y-2 max-h-64 overflow-y-auto">
+              @for (file of selectedFiles(); track $index) {
+              <div
+                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+              >
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                  <div class="flex-shrink-0">
+                    <i class="pi pi-file text-2xl text-blue-500"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" [title]="file.name">
+                      {{ file.name }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ formatFileSize(file.size) }}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  pButton
+                  icon="pi pi-times"
+                  class="p-button-text p-button-danger p-button-sm flex-shrink-0"
+                  (click)="removeSelectedFile($index)"
+                  [disabled]="uploading()"
+                  pTooltip="Eliminar archivo"
+                  tooltipPosition="left"
+                  aria-label="Eliminar archivo seleccionado"
+                ></button>
+              </div>
+              }
+            </div>
+
+            <!-- Botón de subida -->
+            <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
               <button
                 pButton
                 type="button"
-                label="Subir Archivos"
-                icon="pi pi-upload"
+                [label]="uploading() ? 'Subiendo...' : 'Subir ' + selectedFiles().length + ' Archivo(s)'"
+                [icon]="uploading() ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
                 (click)="uploadSelectedFiles()"
-                [disabled]="selectedFiles().length === 0"
-                class="flex-1"
+                [disabled]="selectedFiles().length === 0 || uploading()"
+                class="w-full"
+                [class.p-button-primary]="!uploading()"
+                [class.p-button-loading]="uploading()"
                 aria-label="Subir archivos seleccionados"
-              ></button>
-              <button
-                pButton
-                type="button"
-                label="Limpiar"
-                icon="pi pi-times"
-                class="p-button-text"
-                (click)="clearSelectedFiles()"
-                [disabled]="selectedFiles().length === 0"
-                aria-label="Limpiar archivos seleccionados"
               ></button>
             </div>
           </div>
@@ -575,26 +622,10 @@
           </div>
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Centro de Costo</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingRequirement()?.centroCosto }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >Cliente</span
             >
             <div class="text-gray-900 dark:text-gray-100">
               {{ viewingRequirement()?.clientId?.name || 'No especificado' }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Emisión</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingRequirement()?.fechaEmision | date : 'dd/MM/yyyy' }}
             </div>
           </div>
           <div>
@@ -878,43 +909,8 @@
         ></textarea>
       </div>
 
-      <!-- Centro de Costo -->
-      <div>
-        <label
-          for="requirementCostCenter"
-          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-          >Centro de Costo *</label
-        >
-        <input
-          id="requirementCostCenter"
-          pInputText
-          name="requirementCostCenter"
-          placeholder="Desarrollo de Software"
-          [ngModel]="editing()?.centroCosto"
-          (ngModelChange)="onEditChange('centroCosto', $event)"
-          class="w-full"
-        />
-      </div>
-
-      <!-- Tercera fila - Fechas -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div>
-          <label
-            for="requirementEmissionDate"
-            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-            >Fecha Emisión *</label
-          >
-          <p-datepicker
-            id="requirementEmissionDate"
-            [ngModel]="editing()?.fechaEmision"
-            (ngModelChange)="onEditChange('fechaEmision', $event)"
-            dateFormat="dd/mm/yy"
-            placeholder="Seleccionar fecha"
-            [appendTo]="'body'"
-            iconDisplay="input"
-            class="w-full"
-          ></p-datepicker>
-        </div>
+      <!-- Fechas -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label
             for="requirementRequestDate"
@@ -974,7 +970,7 @@
             <label
               for="solicitanteCodigo"
               class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-              >Código *</label
+              >Código</label
             >
             <input
               id="solicitanteCodigo"

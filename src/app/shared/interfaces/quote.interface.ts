@@ -9,6 +9,7 @@ export interface Quote {
   clientId: string | { _id: string; name: string; taxId?: string };
   state: QuoteState;
   projectId: string | { _id: string; name: string; code: string };
+  requirementId?: string | { _id: string; codigo: string; title: string };
   number: string;
   createDate: string | Date;
   sendDate?: string | Date;

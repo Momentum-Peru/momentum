@@ -21,8 +21,10 @@ export class MenuConfigService {
   // Configuración centralizada de todas las rutas del sistema
   private readonly routesConfig: RouteConfig[] = [
     { path: '/dashboard', label: 'Dashboard', icon: 'pi pi-chart-line' },
+    { path: '/projects/dashboard', label: 'Dashboard de Proyectos', icon: 'pi pi-chart-line' },
     { path: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
     { path: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
+    { path: '/engineering', label: 'Ingeniería', icon: 'pi pi-cog' },
     { path: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
     { path: '/requirements', label: 'Requerimientos', icon: 'pi pi-inbox' },
     { path: '/tdrs', label: 'TDRs', icon: 'pi pi-file' },
@@ -76,18 +78,23 @@ export class MenuConfigService {
         routerLink: '/dashboard',
       },
       {
-        label: 'Administración',
-        icon: 'pi pi-cog',
+        label: 'Proyectos',
+        icon: 'pi pi-folder',
         items: [
           {
-            label: 'Clientes',
-            icon: 'pi pi-briefcase',
-            routerLink: '/clients',
+            label: 'Dashboard',
+            icon: 'pi pi-chart-line',
+            routerLink: '/projects/dashboard',
           },
           {
             label: 'Proyectos',
             icon: 'pi pi-folder',
             routerLink: '/projects',
+          },
+          {
+            label: 'Ingeniería',
+            icon: 'pi pi-cog',
+            routerLink: '/engineering',
           },
           {
             label: 'Órdenes',
@@ -109,6 +116,22 @@ export class MenuConfigService {
             icon: 'pi pi-dollar',
             routerLink: '/quotes',
           },
+        ],
+      },
+      {
+        label: 'Futuros Imposibles',
+        icon: 'pi pi-bolt',
+        routerLink: '/fi',
+      },
+      {
+        label: 'Administración',
+        icon: 'pi pi-cog',
+        items: [
+          {
+            label: 'Clientes',
+            icon: 'pi pi-briefcase',
+            routerLink: '/clients',
+          },
           {
             label: 'Proveedores',
             icon: 'pi pi-building',
@@ -120,11 +143,6 @@ export class MenuConfigService {
             routerLink: '/documents',
           },
         ],
-      },
-      {
-        label: 'Futuros Imposibles',
-        icon: 'pi pi-bolt',
-        routerLink: '/fi',
       },
       {
         label: 'Talento Humano',
@@ -154,6 +172,27 @@ export class MenuConfigService {
             label: 'Planillas y Pagos',
             icon: 'pi pi-wallet',
             routerLink: '/payroll',
+          },
+        ],
+      },
+      {
+        label: 'CRM',
+        icon: 'pi pi-sitemap',
+        items: [
+          {
+            label: 'Leads',
+            icon: 'pi pi-user-plus',
+            routerLink: '/leads',
+          },
+          {
+            label: 'Seguimientos',
+            icon: 'pi pi-calendar-plus',
+            routerLink: '/follow-ups',
+          },
+          {
+            label: 'Empresas',
+            icon: 'pi pi-building',
+            routerLink: '/companies-crm',
           },
         ],
       },
@@ -190,27 +229,6 @@ export class MenuConfigService {
             label: 'Mi Perfil',
             icon: 'pi pi-user-edit',
             routerLink: '/profile',
-          },
-        ],
-      },
-      {
-        label: 'CRM',
-        icon: 'pi pi-sitemap',
-        items: [
-          {
-            label: 'Leads',
-            icon: 'pi pi-user-plus',
-            routerLink: '/leads',
-          },
-          {
-            label: 'Seguimientos',
-            icon: 'pi pi-calendar-plus',
-            routerLink: '/follow-ups',
-          },
-          {
-            label: 'Empresas',
-            icon: 'pi pi-building',
-            routerLink: '/companies-crm',
           },
         ],
       },

@@ -320,7 +320,7 @@
               type="file"
               #fileInput
               multiple
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg"
+              accept="*/*"
               (change)="onFileInputChange($event)"
               class="hidden"
             />
@@ -348,10 +348,9 @@
 
               <div class="text-xs text-gray-400 space-y-1">
                 <p>
-                  <strong>Formatos soportados:</strong> PDF, DOC, DOCX, XLS, XLSX, TXT, PNG, JPG,
-                  JPEG
+                  <strong>Formatos soportados:</strong> Todos los tipos de archivo
                 </p>
-                <p><strong>Tamaño máximo:</strong> 10MB por archivo</p>
+                <p><strong>Tamaño máximo:</strong> 50MB por archivo</p>
                 <p><strong>Múltiples archivos:</strong> Puedes seleccionar varios a la vez</p>
               </div>
             </div>
