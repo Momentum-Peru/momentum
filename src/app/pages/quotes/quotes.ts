@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -31,6 +31,7 @@ import { Project } from '../../shared/interfaces/project.interface';
 import { TruncatePipe } from './truncate.pipe';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { MenuService } from '../../shared/services/menu.service';
 
 @Component({
   selector: 'app-quotes',
@@ -66,9 +67,13 @@ export class QuotesPage implements OnInit {
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly menuService = inject(MenuService);
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
+
+  // Verificar si el usuario tiene permiso de edición para este módulo
+  readonly canEdit = computed(() => this.menuService.canEdit('/quotes'));
 
   // Referencia al componente FileUpload
   @ViewChild('fileUpload') fileUploadComponent!: FileUpload;

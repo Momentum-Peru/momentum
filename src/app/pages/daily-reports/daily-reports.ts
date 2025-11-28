@@ -17,6 +17,7 @@ import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { CompaniesApiService } from '../../shared/services/companies-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { AuthService } from '../login/services/auth.service';
+import { MenuService } from '../../shared/services/menu.service';
 import { DailyReport } from '../../shared/interfaces/daily-report.interface';
 import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
 import { compressImage } from '../../shared/utils/image-compression.util';
@@ -55,6 +56,10 @@ export class DailyExpensesPage implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly menuService = inject(MenuService);
+
+  // Verificar si el usuario tiene permiso de edición para este módulo
+  readonly canEdit = computed(() => this.menuService.canEdit('/daily-reports'));
 
   items = signal<DailyReport[]>([]);
   projects = signal<ProjectOption[]>([]);

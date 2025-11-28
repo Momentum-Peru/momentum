@@ -3,12 +3,14 @@ import {
   Component,
   inject,
   signal,
+  computed,
   OnInit,
   OnDestroy,
   effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { FormsModule } from '@angular/forms';
 import { InputText } from 'primeng/inputtext';
@@ -30,6 +32,7 @@ import {
   UserUpdateRequest,
 } from '../../shared/services/users-api.service';
 import { AuthService } from '../login/services/auth.service';
+import { MenuService } from '../../shared/services/menu.service';
 
 interface UserFormData {
   _id?: string;
@@ -74,7 +77,12 @@ export class UsersPage implements OnInit, OnDestroy {
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
   private readonly authService = inject(AuthService);
+  private readonly menuService = inject(MenuService);
+  private readonly router = inject(Router);
   private readonly baseUrl = environment.apiUrl;
+
+  // Verificar si el usuario tiene permiso de edición para este módulo
+  readonly canEdit = computed(() => this.menuService.canEdit('/users'));
 
   // Estado de la aplicación
   private _users = signal<User[]>([]);

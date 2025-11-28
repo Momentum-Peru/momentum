@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -15,6 +15,7 @@ import { ClientsApiService, ClientOption } from '../../shared/services/clients-a
 import { SelectModule } from 'primeng/select';
 import { forkJoin } from 'rxjs';
 import { catchError, map, of } from 'rxjs';
+import { MenuService } from '../../shared/services/menu.service';
 
 interface Client {
   _id: string;
@@ -54,8 +55,12 @@ interface TdrItem {
 export class TdrsPage implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly clientsApi = inject(ClientsApiService);
+  private readonly menuService = inject(MenuService);
   private readonly baseUrl = environment.apiUrl;
   private readonly messageService = inject(MessageService);
+
+  // Verificar si el usuario tiene permiso de edición para este módulo
+  readonly canEdit = computed(() => this.menuService.canEdit('/tdrs'));
 
   items = signal<TdrItem[]>([]);
   query = signal<string>('');

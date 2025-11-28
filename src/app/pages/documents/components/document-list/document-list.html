@@ -149,6 +149,7 @@
               </p-button>
 
               <!-- Botón Editar -->
+              @if (canEdit) {
               <p-button
                 icon="pi pi-pencil"
                 size="small"
@@ -169,6 +170,7 @@
                 pTooltip="Eliminar documento"
               >
               </p-button>
+              }
             </div>
           </td>
         </tr>

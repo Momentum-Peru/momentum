@@ -8,6 +8,7 @@
       (ngModelChange)="setQuery($event)"
       class="w-full"
     />
+    @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -17,6 +18,7 @@
       aria-label="Crear nuevo proyecto"
       class="w-full xl:w-auto"
     ></button>
+    }
   </div>
 
   <!-- Vista Desktop: Tabla -->
@@ -83,6 +85,7 @@
               pTooltip="Ver detalles"
               aria-label="Ver detalles del proyecto"
             ></button>
+            @if (canEdit()) {
             <button
               pButton
               icon="pi pi-pencil"
@@ -99,6 +102,7 @@
               pTooltip="Eliminar proyecto"
               aria-label="Eliminar proyecto"
             ></button>
+            }
           </td>
         </tr>
       </ng-template>
@@ -212,6 +216,7 @@
                 (click)="viewDetails(row)"
                 aria-label="Ver detalles del proyecto"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -228,6 +233,7 @@
                 (click)="remove(row)"
                 aria-label="Eliminar proyecto"
               ></button>
+              }
             </div>
           </div>
         </div>

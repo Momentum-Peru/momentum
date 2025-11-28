@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject, effect } from '@angular/core';
+import { Component, OnInit, signal, inject, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -12,6 +12,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { ClientsApiService } from '../../shared/services/clients-api.service';
+import { MenuService } from '../../shared/services/menu.service';
 import { Project } from '../../shared/interfaces/project.interface';
 import { ClientOption } from '../../shared/services/clients-api.service';
 
@@ -37,6 +38,10 @@ export class ProjectsPage implements OnInit {
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly clientsApi = inject(ClientsApiService);
   private readonly messageService = inject(MessageService);
+  private readonly menuService = inject(MenuService);
+
+  // Verificar si el usuario tiene permiso de edición para este módulo
+  readonly canEdit = computed(() => this.menuService.canEdit('/projects'));
 
   items = signal<Project[]>([]);
   filteredItems = signal<Project[]>([]);

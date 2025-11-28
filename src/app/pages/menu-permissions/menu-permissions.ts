@@ -36,6 +36,7 @@ export interface UserPermissionsGroup {
 
 @Component({
   selector: 'app-menu-permissions',
+  standalone: true,
   imports: [
     CommonModule,
     FormsModule,
@@ -77,6 +78,7 @@ export class MenuPermissionsPage implements OnInit {
   editing = signal<{
     userId: string;
     selectedRoutes: string[];
+    routePermissions: Map<string, 'view' | 'edit'>;
     isEditing: boolean;
   } | null>(null);
   expandedRows = signal<Set<string>>(new Set());
@@ -99,8 +101,19 @@ export class MenuPermissionsPage implements OnInit {
     { label: 'Inactivo', value: false },
   ];
 
+  // Opciones para tipo de permiso
+  permissionTypeOptions = [
+    { label: 'Ver', value: 'view', icon: 'pi pi-eye' },
+    { label: 'Editar', value: 'edit', icon: 'pi pi-pencil' },
+  ];
+
   // Rutas predefinidas del sistema (extraídas automáticamente del servicio de configuración)
   predefinedRoutes = computed(() => this.menuConfig.getProtectedRoutes());
+
+  // Getter para usar en *ngFor (necesario porque *ngFor no funciona bien con computed signals)
+  get routesList(): string[] {
+    return this.predefinedRoutes();
+  }
 
   ngOnInit() {
     // Cargar usuarios y permisos
@@ -179,11 +192,11 @@ export class MenuPermissionsPage implements OnInit {
         typeof permission.userId === 'object' && permission.userId !== null
           ? permission.userId
           : this.users().find((u) => u._id === userId) || {
-            _id: userId,
-            name: 'Usuario desconocido',
-            email: '',
-            role: '',
-          };
+              _id: userId,
+              name: 'Usuario desconocido',
+              email: '',
+              role: '',
+            };
 
       if (!usersMap.has(userId)) {
         usersMap.set(userId, {
@@ -299,6 +312,7 @@ export class MenuPermissionsPage implements OnInit {
     this.editing.set({
       userId: '',
       selectedRoutes: [],
+      routePermissions: new Map(),
       isEditing: false,
     });
     this.showDialog.set(true);
@@ -307,10 +321,16 @@ export class MenuPermissionsPage implements OnInit {
   editUserPermissions(group: UserPermissionsGroup) {
     const userPermissions = group.permissions.filter((p) => p.isActive);
     const routes = userPermissions.map((p) => p.route);
+    const routePermissions = new Map<string, 'view' | 'edit'>();
+
+    userPermissions.forEach((p) => {
+      routePermissions.set(p.route, p.permissionType || 'view');
+    });
 
     this.editing.set({
       userId: group.user._id,
       selectedRoutes: routes,
+      routePermissions: routePermissions,
       isEditing: true,
     });
     this.showDialog.set(true);
@@ -342,15 +362,42 @@ export class MenuPermissionsPage implements OnInit {
     if (!current) return;
 
     const selectedRoutes = current.selectedRoutes;
+    const routePermissions = new Map(current.routePermissions);
     const index = selectedRoutes.indexOf(route);
 
     if (index === -1) {
       selectedRoutes.push(route);
+      // Por defecto, nuevo permiso es 'view'
+      routePermissions.set(route, 'view');
     } else {
       selectedRoutes.splice(index, 1);
+      routePermissions.delete(route);
     }
 
-    this.editing.set({ ...current, selectedRoutes: [...selectedRoutes] });
+    this.editing.set({
+      ...current,
+      selectedRoutes: [...selectedRoutes],
+      routePermissions: routePermissions,
+    });
+  }
+
+  setRoutePermissionType(route: string, permissionType: 'view' | 'edit') {
+    const current = this.editing();
+    if (!current) return;
+
+    const routePermissions = new Map(current.routePermissions);
+    routePermissions.set(route, permissionType);
+
+    this.editing.set({
+      ...current,
+      routePermissions: routePermissions,
+    });
+  }
+
+  getRoutePermissionType(route: string): 'view' | 'edit' {
+    const current = this.editing();
+    if (!current) return 'view';
+    return current.routePermissions.get(route) || 'view';
   }
 
   isRouteSelected(route: string): boolean {
@@ -364,9 +411,18 @@ export class MenuPermissionsPage implements OnInit {
     if (!current) return;
 
     const allRoutes = [...this.predefinedRoutes()];
+    const routePermissions = new Map(current.routePermissions);
+
+    allRoutes.forEach((route) => {
+      if (!routePermissions.has(route)) {
+        routePermissions.set(route, 'view');
+      }
+    });
+
     this.editing.set({
       ...current,
       selectedRoutes: allRoutes,
+      routePermissions: routePermissions,
     });
   }
 
@@ -377,6 +433,7 @@ export class MenuPermissionsPage implements OnInit {
     this.editing.set({
       ...current,
       selectedRoutes: [],
+      routePermissions: new Map(),
     });
   }
 
@@ -417,6 +474,7 @@ export class MenuPermissionsPage implements OnInit {
       permissions: item.selectedRoutes.map((route) => ({
         route: route,
         isActive: true,
+        permissionType: item.routePermissions.get(route) || 'view',
       })),
     };
 
@@ -551,6 +609,28 @@ export class MenuPermissionsPage implements OnInit {
     return config?.icon || 'pi pi-circle';
   }
 
+  /**
+   * Obtiene el label del tipo de permiso
+   */
+  getPermissionTypeLabel(permissionType: 'view' | 'edit' | undefined): string {
+    if (!permissionType) return 'Ver';
+    return permissionType === 'edit' ? 'Editar' : 'Ver';
+  }
+
+  /**
+   * Obtiene la clase CSS para el tipo de permiso
+   */
+  getPermissionTypeClass(permissionType: 'view' | 'edit' | undefined): string {
+    if (!permissionType || permissionType === 'view') {
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+    }
+    return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+  }
+
+  trackByRoute(index: number, route: string): string {
+    return route;
+  }
+
   private getErrorMessage(error: unknown): string {
     if (error && typeof error === 'object' && 'error' in error) {
       const httpError = error as { error?: { message?: string | string[] }; message?: string };
@@ -575,11 +655,21 @@ export class MenuPermissionsPage implements OnInit {
           return message;
         }
       }
-      if (httpError.error && typeof httpError.error === 'object' && 'error' in httpError.error && typeof httpError.error.error === 'string') {
+      if (
+        httpError.error &&
+        typeof httpError.error === 'object' &&
+        'error' in httpError.error &&
+        typeof httpError.error.error === 'string'
+      ) {
         return httpError.error.error;
       }
     }
-    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
       return error.message;
     }
     return 'Ha ocurrido un error inesperado';
