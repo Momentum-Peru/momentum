@@ -187,8 +187,10 @@
         <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Asignado a</div>
         <p-select
           [ngModel]="filterAssignedTo()"
-          (ngModelChange)="filterAssignedTo.set($event); applyFilters()"
+          (ngModelChange)="onAssignedToChange($event)"
           [options]="availableUsers"
+          optionLabel="label"
+          optionValue="value"
           placeholder="Todos los usuarios"
           [appendTo]="'body'"
           styleClass="w-full"
@@ -200,13 +202,16 @@
       <div class="grid grid-cols-2 gap-3 md:col-span-2">
         <!-- Filtro por Fecha Desde -->
         <div class="space-y-2">
-          <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha desde</div>
+          <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha y hora desde</div>
           <div class="relative w-full">
             <p-datePicker
               [ngModel]="filterDateFrom()"
-              (ngModelChange)="filterDateFrom.set($event); applyFilters()"
-              placeholder="Seleccionar fecha"
+              (ngModelChange)="onDateFromChange($event)"
+              placeholder="Seleccionar fecha y hora"
               dateFormat="dd/mm/yy"
+              [showTime]="true"
+              [showSeconds]="false"
+              hourFormat="24"
               styleClass="w-full"
               inputStyleClass="w-full pr-20"
               [showIcon]="true"
@@ -219,13 +224,16 @@
 
         <!-- Filtro por Fecha Hasta -->
         <div class="space-y-2">
-          <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha hasta</div>
+          <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha y hora hasta</div>
           <div class="relative w-full">
             <p-datePicker
               [ngModel]="filterDateTo()"
-              (ngModelChange)="filterDateTo.set($event); applyFilters()"
-              placeholder="Seleccionar fecha"
+              (ngModelChange)="onDateToChange($event)"
+              placeholder="Seleccionar fecha y hora"
               dateFormat="dd/mm/yy"
+              [showTime]="true"
+              [showSeconds]="false"
+              hourFormat="24"
               styleClass="w-full"
               inputStyleClass="w-full pr-20"
               [showIcon]="true"
@@ -242,7 +250,7 @@
         <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Etiquetas</div>
         <p-multiSelect
           [ngModel]="filterTags()"
-          (ngModelChange)="filterTags.set($event); applyFilters()"
+          (ngModelChange)="onTagsChange($event)"
           [options]="tagOptions"
           placeholder="Seleccionar etiquetas"
           [appendTo]="'body'"
