@@ -64,25 +64,27 @@
 
   <!-- Vista de Tablero con Tareas - Visible cuando hay un tablero seleccionado -->
   @if (selectedBoard()) {
-  <app-board-view
-    [board]="selectedBoard()!"
-    [isOwner]="isBoardOwner()"
-    [tasksByStatus]="tasksByStatus()"
-    [taskStats]="taskStats()"
-    [loading]="tasksService.loading()"
-    [availableUsers]="availableUsers()"
-    [availableTags]="availableTags()"
-    (back)="onBackToBoards()"
-    (edit)="openBoardForm(selectedBoard()!)"
-    (invite)="openBoardInvite()"
-    (refresh)="onRefreshBoard()"
-    (taskStatusChanged)="onTaskStatusChanged($event)"
-    (editTask)="openTaskForm($event)"
-    (deleteTask)="confirmDeleteTask($event)"
-    (viewTask)="viewTaskDetails($event)"
-    (createTask)="openTaskForm()"
-    (filtersChanged)="onFiltersChanged($event)"
-  ></app-board-view>
+  <div data-board-view>
+    <app-board-view
+      [board]="selectedBoard()!"
+      [isOwner]="isBoardOwner()"
+      [tasksByStatus]="tasksByStatus()"
+      [taskStats]="taskStats()"
+      [loading]="tasksService.loading()"
+      [availableUsers]="availableUsers()"
+      [availableTags]="availableTags()"
+      (back)="onBackToBoards()"
+      (edit)="openBoardForm(selectedBoard()!)"
+      (invite)="openBoardInvite()"
+      (refresh)="onRefreshBoard()"
+      (taskStatusChanged)="onTaskStatusChanged($event)"
+      (editTask)="openTaskForm($event)"
+      (deleteTask)="confirmDeleteTask($event)"
+      (viewTask)="viewTaskDetails($event)"
+      (createTask)="openTaskForm()"
+      (filtersChanged)="onFiltersChanged($event)"
+    ></app-board-view>
+  </div>
   }
 </div>
 
