@@ -1,6 +1,4 @@
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 mt-4 lg:mt-0">
-  <!-- Vista de Lista de Tableros -->
-  @if (!selectedBoard()) {
   <!-- Header -->
   <div class="mb-6">
     <div class="flex items-center flex-wrap gap-4 justify-between">
@@ -48,21 +46,23 @@
     </div>
   </div>
 
-  <!-- Lista de Tableros -->
-  <app-board-list
-    [boards]="boardsService.boards()"
-    [loading]="boardsService.loading()"
-    [error]="boardsService.error()"
-    [currentUserId]="currentUserId()"
-    (createBoard)="openBoardForm()"
-    (viewBoard)="onViewBoard($any($event))"
-    (editBoard)="openBoardFormFromList($any($event))"
-    (inviteUser)="openBoardInviteFromList($any($event))"
-    (deleteBoard)="confirmDeleteBoard($any($event))"
-  ></app-board-list>
-  }
+  <!-- Lista de Tableros - Siempre visible arriba -->
+  <div class="mb-6">
+    <app-board-list
+      [boards]="boardsService.boards()"
+      [loading]="boardsService.loading()"
+      [error]="boardsService.error()"
+      [currentUserId]="currentUserId()"
+      [selectedBoardId]="selectedBoard()?._id"
+      (createBoard)="openBoardForm()"
+      (viewBoard)="onViewBoard($any($event))"
+      (editBoard)="openBoardFormFromList($any($event))"
+      (inviteUser)="openBoardInviteFromList($any($event))"
+      (deleteBoard)="confirmDeleteBoard($any($event))"
+    ></app-board-list>
+  </div>
 
-  <!-- Vista de Tablero con Tareas -->
+  <!-- Vista de Tablero con Tareas - Visible cuando hay un tablero seleccionado -->
   @if (selectedBoard()) {
   <app-board-view
     [board]="selectedBoard()!"

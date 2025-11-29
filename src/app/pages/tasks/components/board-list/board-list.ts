@@ -23,6 +23,7 @@ export class BoardListComponent {
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly currentUserId = input('');
+  readonly selectedBoardId = input<string | undefined>(undefined);
 
   // Outputs usando signal-based outputs (Angular 20)
   readonly createBoard = output<void>();

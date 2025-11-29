@@ -1,19 +1,6 @@
 <div class="space-y-4 sm:space-y-6">
   <!-- Board Header -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
-    <!-- Botón Volver - Visible primero en móviles -->
-    <div class="mb-4 sm:hidden">
-      <p-button
-        icon="pi pi-arrow-left"
-        label="Volver"
-        [text]="true"
-        severity="secondary"
-        (onClick)="onBack($event)"
-        pTooltip="Volver a la lista de tableros"
-        styleClass="w-full sm:w-auto"
-      ></p-button>
-    </div>
-
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
       <div class="flex-1 min-w-0">
         <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">

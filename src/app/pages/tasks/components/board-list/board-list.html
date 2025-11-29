@@ -17,6 +17,7 @@
   <app-board-card
     [board]="board"
     [isOwner]="isBoardOwner(board)"
+    [isSelected]="selectedBoardId() === board._id"
     (view)="viewBoard.emit(board)"
     (edit)="editBoard.emit(board)"
     (invite)="inviteUser.emit(board)"
