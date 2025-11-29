@@ -32,6 +32,7 @@ import { Board } from '../../../../shared/interfaces/board.interface';
 export class BoardCardComponent {
   @Input({ required: true }) board!: Board;
   @Input() isOwner = false;
+  @Input() isSelected = false;
   @Output() view = new EventEmitter<Board>();
   @Output() edit = new EventEmitter<Board>();
   @Output() invite = new EventEmitter<Board>();

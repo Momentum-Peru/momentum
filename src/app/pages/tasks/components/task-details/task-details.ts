@@ -450,6 +450,53 @@ import {
           <p-message severity="error" [text]="commentError()!" class="mb-4"></p-message>
           }
 
+          <!-- Zona de Drag and Drop -->
+          <div
+            class="mb-4 p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer"
+            [class.border-blue-500]="isDragging()"
+            [class.bg-blue-50]="isDragging()"
+            [class.dark:bg-blue-900/20]="isDragging()"
+            [class.border-gray-300]="!isDragging()"
+            [class.dark:border-gray-600]="!isDragging()"
+            [class.hover:border-blue-400]="!isDragging()"
+            [class.hover:bg-gray-50]="!isDragging()"
+            [class.dark:hover:bg-gray-700]="!isDragging()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+            (click)="documentsInput.click()"
+            role="button"
+            tabindex="0"
+            (keydown.enter)="documentsInput.click()"
+            (keydown.space)="documentsInput.click()"
+            [attr.aria-label]="'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos'"
+          >
+            <div class="text-center">
+              <i
+                class="pi pi-cloud-upload text-5xl mb-3 transition-colors"
+                [class.text-blue-500]="isDragging()"
+                [class.text-gray-400]="!isDragging()"
+                [class.dark:text-gray-500]="!isDragging()"
+              ></i>
+              <p
+                class="text-sm font-medium mb-1 transition-colors"
+                [class.text-blue-700]="isDragging()"
+                [class.dark:text-blue-300]="isDragging()"
+                [class.text-gray-700]="!isDragging()"
+                [class.dark:text-gray-300]="!isDragging()"
+              >
+                @if (isDragging()) {
+                <span>Suelta los archivos aquí</span>
+                } @else {
+                <span>Arrastra archivos aquí o haz clic para seleccionar</span>
+                }
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Imágenes desde WhatsApp, videos, audios o documentos desde tu PC
+              </p>
+            </div>
+          </div>
+
           <form [formGroup]="commentForm" (ngSubmit)="onSubmitComment()">
             <div class="space-y-4">
               <div>
@@ -704,6 +751,7 @@ export class TaskDetailsComponent {
   public readonly pendingPhoto = signal<File[]>([]);
   public readonly pendingVideo = signal<File[]>([]);
   public readonly pendingDocuments = signal<File[]>([]);
+  public readonly isDragging = signal<boolean>(false);
 
   // Form
   public readonly commentForm: FormGroup;
@@ -1160,6 +1208,83 @@ export class TaskDetailsComponent {
    */
   public openFileInNewTab(url: string): void {
     window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  /**
+   * Maneja el evento dragover
+   */
+  public onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  /**
+   * Maneja el evento dragleave
+   */
+  public onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  /**
+   * Maneja el evento drop
+   */
+  public onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+
+    const files = event.dataTransfer?.files;
+    if (!files || files.length === 0) return;
+
+    this.processDroppedFiles(Array.from(files));
+  }
+
+  /**
+   * Procesa los archivos arrastrados y los clasifica según su tipo
+   */
+  private processDroppedFiles(files: File[]): void {
+    files.forEach((file) => {
+      const fileType = file.type || '';
+      const fileName = file.name.toLowerCase();
+      
+      // Clasificar por tipo MIME primero
+      if (fileType.startsWith('audio/')) {
+        // Archivo de audio
+        this.pendingAudio.set([...this.pendingAudio(), file]);
+      } else if (fileType.startsWith('image/')) {
+        // Archivo de imagen (incluye imágenes de WhatsApp)
+        this.pendingPhoto.set([...this.pendingPhoto(), file]);
+      } else if (fileType.startsWith('video/')) {
+        // Archivo de video
+        this.pendingVideo.set([...this.pendingVideo(), file]);
+      } else {
+        // Si no hay tipo MIME, intentar clasificar por extensión
+        // Esto es útil para archivos de WhatsApp que pueden no tener tipo MIME
+        if (fileName.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i)) {
+          // Imagen por extensión
+          this.pendingPhoto.set([...this.pendingPhoto(), file]);
+        } else if (fileName.match(/\.(mp3|wav|ogg|aac|m4a|flac)$/i)) {
+          // Audio por extensión
+          this.pendingAudio.set([...this.pendingAudio(), file]);
+        } else if (fileName.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i)) {
+          // Video por extensión
+          this.pendingVideo.set([...this.pendingVideo(), file]);
+        } else {
+          // Documento genérico o archivo sin tipo MIME definido
+          this.pendingDocuments.set([...this.pendingDocuments(), file]);
+        }
+      }
+    });
+
+    // Mostrar mensaje de éxito
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Archivos agregados',
+      detail: `${files.length} archivo(s) agregado(s) correctamente`,
+    });
   }
 
   /**
