@@ -22,6 +22,10 @@ import {
 // PrimeNG Components
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { ButtonModule } from 'primeng/button';
 
 // Services
 import { TasksApiService } from '../../../../shared/services/tasks-api.service';
@@ -29,6 +33,7 @@ import { UsersApiService } from '../../../../shared/services/users-api.service';
 import { AuthService } from '../../../login/services/auth.service';
 import { BoardsApiService } from '../../../../shared/services/boards-api.service';
 import { ProjectsApiService } from '../../../../shared/services/projects-api.service';
+import { ClientsApiService } from '../../../../shared/services/clients-api.service';
 
 // Interfaces
 import {
@@ -49,7 +54,17 @@ import { take } from 'rxjs';
 @Component({
   selector: 'app-native-task-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, SelectModule, DatePickerModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    SelectModule,
+    DatePickerModule,
+    DialogModule,
+    InputTextModule,
+    TextareaModule,
+    ButtonModule,
+  ],
   providers: [MessageService],
   template: `
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
@@ -208,6 +223,7 @@ import { take } from 'rxjs';
               [appendTo]="'body'"
               styleClass="w-full"
               [loading]="projectsLoading()"
+              (onChange)="onProjectChange($event)"
             ></p-select>
           </div>
         </div>
@@ -480,6 +496,143 @@ import { take } from 'rxjs';
         </div>
       </form>
     </div>
+
+    <!-- Dialog: Crear Nuevo Proyecto -->
+    <p-dialog
+      [modal]="true"
+      [(visible)]="showProjectDialog"
+      [style]="{ width: '600px' }"
+      [closable]="true"
+      header="Crear Nuevo Proyecto"
+      (onHide)="closeProjectDialog()"
+    >
+      <form [formGroup]="projectForm" (ngSubmit)="onCreateProject()" class="space-y-4">
+        <!-- Name -->
+        <div class="space-y-2">
+          <label for="projectName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Nombre <span class="text-red-500">*</span>
+          </label>
+          <input
+            pInputText
+            id="projectName"
+            formControlName="name"
+            placeholder="Nombre del proyecto"
+            class="w-full"
+            [class.p-invalid]="projectForm.get('name')?.invalid && projectForm.get('name')?.touched"
+          />
+          @if (projectForm.get('name')?.invalid && projectForm.get('name')?.touched) {
+          <small class="text-red-500">El nombre es requerido (2-100 caracteres)</small>
+          }
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-2">
+          <label
+            for="projectDescription"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Descripción
+          </label>
+          <textarea
+            pInputTextarea
+            id="projectDescription"
+            formControlName="description"
+            rows="4"
+            placeholder="Descripción del proyecto (opcional)"
+            class="w-full"
+            [class.p-invalid]="
+              projectForm.get('description')?.invalid && projectForm.get('description')?.touched
+            "
+          ></textarea>
+          @if (projectForm.get('description')?.invalid && projectForm.get('description')?.touched) {
+          <small class="text-red-500">Si proporcionas una descripción, debe tener entre 10 y 500 caracteres</small>
+          }
+        </div>
+
+        <!-- Client -->
+        <div class="space-y-2">
+          <label for="projectClient" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Cliente <span class="text-red-500">*</span>
+          </label>
+          <p-select
+            id="projectClient"
+            formControlName="clientId"
+            [options]="clientOptions()"
+            placeholder="Selecciona un cliente"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            [class.p-invalid]="
+              projectForm.get('clientId')?.invalid && projectForm.get('clientId')?.touched
+            "
+          ></p-select>
+          @if (projectForm.get('clientId')?.invalid && projectForm.get('clientId')?.touched) {
+          <small class="text-red-500">El cliente es requerido</small>
+          }
+        </div>
+
+        <!-- Start Date -->
+        <div class="space-y-2">
+          <label
+            for="projectStartDate"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Fecha de Inicio <span class="text-red-500">*</span>
+          </label>
+          <p-datePicker
+            id="projectStartDate"
+            formControlName="startDate"
+            placeholder="Selecciona fecha de inicio"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            [class.p-invalid]="
+              projectForm.get('startDate')?.invalid && projectForm.get('startDate')?.touched
+            "
+          ></p-datePicker>
+          @if (projectForm.get('startDate')?.invalid && projectForm.get('startDate')?.touched) {
+          <small class="text-red-500">La fecha de inicio es requerida</small>
+          }
+        </div>
+
+        <!-- End Date (Optional) -->
+        <div class="space-y-2">
+          <label
+            for="projectEndDate"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Fecha de Fin
+          </label>
+          <p-datePicker
+            id="projectEndDate"
+            formControlName="endDate"
+            placeholder="Selecciona fecha de fin (opcional)"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full"
+          ></p-datePicker>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-3 pt-4">
+          <p-button
+            label="Cancelar"
+            severity="secondary"
+            [text]="true"
+            (onClick)="closeProjectDialog()"
+            [disabled]="projectFormLoading()"
+          ></p-button>
+          <p-button
+            label="Crear Proyecto"
+            severity="primary"
+            [loading]="projectFormLoading()"
+            [disabled]="projectForm.invalid"
+            type="submit"
+          ></p-button>
+        </div>
+      </form>
+    </p-dialog>
   `,
   styles: [
     `
@@ -495,6 +648,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   private readonly usersApiService = inject(UsersApiService);
   private readonly boardsApiService = inject(BoardsApiService);
   private readonly projectsApiService = inject(ProjectsApiService);
+  private readonly clientsApiService = inject(ClientsApiService);
   private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
 
@@ -504,12 +658,16 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   @Output() formCancel = new EventEmitter<void>();
 
   public taskForm: FormGroup = this.createForm();
+  public projectForm: FormGroup = this.createProjectForm();
   public readonly allUsers = signal<User[]>([]);
   public readonly board = signal<Board | null>(null);
   public readonly projects = signal<Project[]>([]);
   public readonly projectsLoading = signal<boolean>(false);
   public readonly usersLoading = signal<boolean>(false);
   public readonly loading = signal<boolean>(false);
+  public readonly showProjectDialog = signal<boolean>(false);
+  public readonly projectFormLoading = signal<boolean>(false);
+  public readonly clients = signal<{ _id: string; name: string }[]>([]);
   public readonly subtasks = signal<TaskSubtask[]>([]);
   public readonly selectedFiles = signal<File[]>([]);
   public readonly existingAttachments = signal<TaskAttachment[]>([]);
@@ -582,15 +740,21 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   });
 
   public readonly projectOptions = computed(() => {
-    return this.projects().map((project) => ({
+    const options = this.projects().map((project) => ({
       label: `${project.code} - ${project.name}`,
       value: project._id || '',
     }));
+    // Agregar opción para crear nuevo proyecto al principio
+    return [
+      { label: '+ Crear nuevo proyecto', value: '__CREATE_NEW__' },
+      ...options,
+    ];
   });
 
   ngOnInit(): void {
     this.loadUsers();
     this.loadProjects();
+    this.loadClients();
     if (this.boardId) {
       this.loadBoard();
     }
@@ -619,6 +783,123 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       projectId: [null],
       dueDate: [null],
       tags: [''],
+    });
+  }
+
+  /**
+   * Crea el formulario de proyecto
+   */
+  private createProjectForm(): FormGroup {
+    return this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      description: ['', [Validators.minLength(10), Validators.maxLength(500)]],
+      clientId: ['', [Validators.required]],
+      startDate: [null, [Validators.required]],
+      endDate: [null],
+    });
+  }
+
+  /**
+   * Carga la lista de clientes
+   */
+  private loadClients(): void {
+    this.clientsApiService.list().subscribe({
+      next: (clients) => {
+        this.clients.set(clients);
+      },
+      error: (error) => {
+        console.error('Error loading clients:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar los clientes',
+        });
+      },
+    });
+  }
+
+  /**
+   * Opciones de clientes para el selector
+   */
+  public readonly clientOptions = computed(() => {
+    return this.clients().map((client) => ({
+      label: client.name,
+      value: client._id,
+    }));
+  });
+
+  /**
+   * Maneja el cambio en el selector de proyectos
+   */
+  public onProjectChange(event: any): void {
+    if (event.value === '__CREATE_NEW__') {
+      // Abrir diálogo para crear nuevo proyecto
+      this.showProjectDialog.set(true);
+      // Limpiar el valor del selector
+      this.taskForm.patchValue({ projectId: null });
+    }
+  }
+
+  /**
+   * Cierra el diálogo de proyecto
+   */
+  public closeProjectDialog(): void {
+    this.showProjectDialog.set(false);
+    this.projectForm.reset();
+    this.projectFormLoading.set(false);
+  }
+
+  /**
+   * Crea un nuevo proyecto
+   */
+  public onCreateProject(): void {
+    if (this.projectForm.invalid) {
+      this.projectForm.markAllAsTouched();
+      return;
+    }
+
+    this.projectFormLoading.set(true);
+
+    const formValue = this.projectForm.value;
+    const payload = {
+      name: formValue.name.trim(),
+      description: formValue.description?.trim() || '',
+      clientId: formValue.clientId,
+      startDate: formValue.startDate ? new Date(formValue.startDate).toISOString() : undefined,
+      endDate: formValue.endDate ? new Date(formValue.endDate).toISOString() : undefined,
+      status: 'PENDIENTE' as const,
+      isActive: true,
+    };
+
+    this.projectsApiService.create(payload).subscribe({
+      next: (newProject) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Proyecto creado correctamente',
+        });
+
+        // Recargar la lista de proyectos
+        this.loadProjects();
+
+        // Seleccionar el nuevo proyecto en el formulario de tarea
+        this.taskForm.patchValue({ projectId: newProject._id });
+
+        // Resetear el estado de carga antes de cerrar
+        this.projectFormLoading.set(false);
+
+        // Cerrar el diálogo
+        this.closeProjectDialog();
+      },
+      error: (error) => {
+        console.error('Error creating project:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error?.error?.message || 'No se pudo crear el proyecto',
+        });
+        this.projectFormLoading.set(false);
+      },
     });
   }
 
