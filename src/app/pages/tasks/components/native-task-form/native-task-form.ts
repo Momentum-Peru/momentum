@@ -395,11 +395,26 @@ import { take } from 'rxjs';
             </div>
             }
             <label
-              class="flex flex-col items-center justify-center w-full px-4 py-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+              class="flex flex-col items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200"
+              [class.border-blue-500]="isDragging()"
+              [class.bg-blue-50]="isDragging()"
+              [class.dark:bg-blue-900/20]="isDragging()"
+              [class.border-gray-300]="!isDragging()"
+              [class.dark:border-gray-600]="!isDragging()"
+              [class.bg-gray-50]="!isDragging()"
+              [class.dark:bg-gray-700]="!isDragging()"
+              [class.hover:bg-gray-100]="!isDragging()"
+              [class.dark:hover:bg-gray-600]="!isDragging()"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)"
+              (drop)="onDrop($event)"
             >
               <div class="flex flex-col items-center justify-center pt-5 pb-6">
                 <svg
-                  class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400"
+                  class="w-8 h-8 mb-4 transition-colors"
+                  [class.text-blue-500]="isDragging()"
+                  [class.text-gray-500]="!isDragging()"
+                  [class.dark:text-gray-400]="!isDragging()"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -411,11 +426,21 @@ import { take } from 'rxjs';
                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                   />
                 </svg>
-                <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                <p
+                  class="mb-2 text-sm transition-colors"
+                  [class.text-blue-700]="isDragging()"
+                  [class.dark:text-blue-300]="isDragging()"
+                  [class.text-gray-500]="!isDragging()"
+                  [class.dark:text-gray-400]="!isDragging()"
+                >
+                  @if (isDragging()) {
+                  <span class="font-semibold">Suelta los archivos aquí</span>
+                  } @else {
                   <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta
+                  }
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  PNG, JPG, PDF, DOC, DOCX (MAX. 20MB)
+                  PNG, JPG, PDF, DOC, DOCX (MAX. 20MB). También puedes arrastrar desde WhatsApp
                 </p>
               </div>
               <input
@@ -489,6 +514,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   public readonly selectedFiles = signal<File[]>([]);
   public readonly existingAttachments = signal<TaskAttachment[]>([]);
   public readonly attachmentsToDelete = signal<string[]>([]);
+  public readonly isDragging = signal<boolean>(false);
 
   public readonly isEditing = signal<boolean>(false);
 
@@ -965,10 +991,80 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const newFiles = Array.from(input.files);
-      const currentFiles = this.selectedFiles();
-      this.selectedFiles.set([...currentFiles, ...newFiles]);
+      this.processDroppedFiles(newFiles);
       // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
       input.value = '';
+    }
+  }
+
+  /**
+   * Maneja el evento dragover
+   */
+  public onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  /**
+   * Maneja el evento dragleave
+   */
+  public onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  /**
+   * Maneja el evento drop
+   */
+  public onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+
+    const files = event.dataTransfer?.files;
+    if (!files || files.length === 0) return;
+
+    this.processDroppedFiles(Array.from(files));
+  }
+
+  /**
+   * Procesa los archivos arrastrados o seleccionados
+   */
+  private processDroppedFiles(files: File[]): void {
+    // Validar tamaño máximo (20MB)
+    const maxSize = 20 * 1024 * 1024; // 20MB en bytes
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    files.forEach((file) => {
+      if (file.size > maxSize) {
+        invalidFiles.push(file.name);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    // Mostrar error si hay archivos que exceden el tamaño
+    if (invalidFiles.length > 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Archivos muy grandes',
+        detail: `Los siguientes archivos exceden el tamaño máximo de 20MB: ${invalidFiles.join(', ')}`,
+      });
+    }
+
+    // Agregar archivos válidos
+    if (validFiles.length > 0) {
+      const currentFiles = this.selectedFiles();
+      this.selectedFiles.set([...currentFiles, ...validFiles]);
+
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Archivos agregados',
+        detail: `${validFiles.length} archivo(s) agregado(s) correctamente`,
+      });
     }
   }
 
