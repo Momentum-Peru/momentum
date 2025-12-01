@@ -382,17 +382,23 @@ export class DailyExpensesApiService {
   /**
    * Sube un archivo directamente a S3 usando una Presigned URL
    * IMPORTANTE: No incluye headers de Authorization (la URL ya está firmada)
+   * IMPORTANTE: El contentType debe coincidir exactamente con el usado para generar la Presigned URL
    * @param presignedUrl URL firmada de S3
    * @param file Archivo a subir
+   * @param contentType Tipo MIME del archivo (debe coincidir con el usado en la Presigned URL)
    * @returns Promise que se resuelve cuando la subida es exitosa
    */
-  async uploadFileToS3(presignedUrl: string, file: File): Promise<void> {
+  async uploadFileToS3(presignedUrl: string, file: File, contentType?: string): Promise<void> {
     try {
+      // Usar el contentType proporcionado o el del archivo como fallback
+      // Es importante que coincida con el usado para generar la Presigned URL
+      const finalContentType = contentType || file.type || 'application/octet-stream';
+      
       const response = await fetch(presignedUrl, {
         method: 'PUT',
         body: file,
         headers: {
-          'Content-Type': file.type,
+          'Content-Type': finalContentType,
           // NO incluir Authorization - la URL ya está firmada
         },
       });
