@@ -857,7 +857,8 @@ export class DailyExpensesPage implements OnInit {
         presignedUrls.map(async (presigned, index) => {
           try {
             const file = files[index];
-            await this.dailyExpensesApi.uploadFileToS3(presigned.presignedUrl, file);
+            const contentType = file.type || 'audio/mpeg';
+            await this.dailyExpensesApi.uploadFileToS3(presigned.presignedUrl, file, contentType);
 
             // Paso 3: Confirmar subida al backend
             const updated = await firstValueFrom(
@@ -926,7 +927,7 @@ export class DailyExpensesPage implements OnInit {
               )
             );
 
-            await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, audioFile);
+            await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, audioFile, audioFile.type);
 
             const updated = await firstValueFrom(
               this.dailyExpensesApi.confirmAudioUpload(reportId, presignedResponse.publicUrl)
@@ -1077,7 +1078,7 @@ export class DailyExpensesPage implements OnInit {
           reportId,
           processedFiles.map((file) => ({
             fileName: file.name,
-            contentType: file.type || 'video/mp4',
+            contentType: this.getVideoContentType(file),
           })),
           3600 // 1 hora de expiración
         )
@@ -1095,7 +1096,8 @@ export class DailyExpensesPage implements OnInit {
         presignedUrls.map(async (presigned, index) => {
           try {
             const file = processedFiles[index];
-            await this.dailyExpensesApi.uploadFileToS3(presigned.presignedUrl, file);
+            const contentType = this.getVideoContentType(file);
+            await this.dailyExpensesApi.uploadFileToS3(presigned.presignedUrl, file, contentType);
 
             // Paso 4: Confirmar subida al backend
             const updated = await firstValueFrom(
@@ -1489,8 +1491,9 @@ export class DailyExpensesPage implements OnInit {
         )
       );
 
-      // Paso 2: Subir directamente a S3
-      await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, file);
+      // Paso 2: Subir directamente a S3 (usar el mismo contentType que se usó para generar la Presigned URL)
+      const contentType = file.type || 'audio/mpeg';
+      await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, file, contentType);
 
       // Paso 3: Confirmar subida al backend
       const response = await firstValueFrom(
@@ -1536,13 +1539,14 @@ export class DailyExpensesPage implements OnInit {
         this.dailyExpensesApi.generateVideoPresignedUrl(
           id,
           fileToUpload.name,
-          fileToUpload.type || 'video/mp4',
+          this.getVideoContentType(fileToUpload),
           3600 // 1 hora
         )
       );
 
-      // Paso 3: Subir directamente a S3
-      await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, fileToUpload);
+      // Paso 3: Subir directamente a S3 (usar el mismo contentType que se usó para generar la Presigned URL)
+      const contentType = this.getVideoContentType(fileToUpload);
+      await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, fileToUpload, contentType);
 
       // Paso 4: Confirmar subida al backend
       const response = await firstValueFrom(
@@ -2004,5 +2008,46 @@ export class DailyExpensesPage implements OnInit {
 
   private toastError(detail: string) {
     this.messageService.add({ severity: 'error', summary: 'Error', detail });
+  }
+
+  /**
+   * Detecta el tipo MIME de un video basándose en su extensión
+   * Útil cuando file.type está vacío o es inválido
+   */
+  private getVideoContentType(file: File): string {
+    // Si el archivo ya tiene un tipo MIME válido, usarlo
+    if (file.type && file.type !== '' && file.type.startsWith('video/')) {
+      return file.type;
+    }
+
+    // Mapeo de extensiones de video a tipos MIME
+    const extensionToMime: Record<string, string> = {
+      '.mp4': 'video/mp4',
+      '.mpeg': 'video/mpeg',
+      '.mpeg4': 'video/mp4',
+      '.mov': 'video/quicktime',
+      '.avi': 'video/x-msvideo',
+      '.wmv': 'video/x-ms-wmv',
+      '.flv': 'video/x-flv',
+      '.webm': 'video/webm',
+      '.mkv': 'video/x-matroska',
+      '.3gp': 'video/3gpp',
+      '.3g2': 'video/3gpp2',
+    };
+
+    // Obtener la extensión del archivo
+    const fileName = file.name.toLowerCase();
+    const extension = fileName.substring(fileName.lastIndexOf('.'));
+
+    // Buscar el tipo MIME correspondiente
+    const mimeType = extensionToMime[extension];
+
+    // Si encontramos un tipo MIME, retornarlo
+    if (mimeType) {
+      return mimeType;
+    }
+
+    // Fallback a video/mp4 si no se puede determinar
+    return 'video/mp4';
   }
 }
