@@ -10,8 +10,9 @@ import { ToastModule } from 'primeng/toast';
 import { FileUploadModule } from 'primeng/fileupload';
 import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { PayrollService } from '../../../core/services/payroll.service';
@@ -36,7 +37,8 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
     FileUploadModule,
     DialogModule,
     FormsModule,
-    TooltipModule
+    TooltipModule,
+    ConfirmDialogModule
   ],
   template: `
     @if (payroll(); as payrollData) {
@@ -233,6 +235,18 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
                   class="p-button-rounded p-button-text p-button-danger"
                   aria-label="Cancelar"
                 ></button>
+                } @if (!editing) {
+                <button
+                  pButton
+                  pRipple
+                  type="button"
+                  icon="pi pi-trash"
+                  class="p-button-rounded p-button-text p-button-danger"
+                  (click)="onRowDelete(detail)"
+                  pTooltip="Eliminar fila"
+                  tooltipPosition="top"
+                  aria-label="Eliminar"
+                ></button>
                 }
               </div>
             </td>
@@ -346,18 +360,19 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
             <label for="bcpCompanyAccount" class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
               Cuenta de Cargo *
             </label>
-            <input
+            <p-select
               id="bcpCompanyAccount"
-              pInputText
+              [options]="bcpCompanyAccounts"
+              optionLabel="label"
+              optionValue="value"
               [(ngModel)]="bcpCompanyAccount"
               name="bcpCompanyAccount"
-              placeholder="1942056198075"
+              placeholder="Seleccionar cuenta"
               class="w-full"
-              maxlength="20"
-              required
-            />
+              [appendTo]="'body'"
+            ></p-select>
             <small class="text-gray-500 dark:text-gray-400">
-              Número de cuenta desde la que se realizará el cargo (máx. 20 caracteres)
+              Número de cuenta desde la que se realizará el cargo
             </small>
           </div>
 
@@ -367,16 +382,13 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
             </label>
             <input
               id="bcpProcessDate"
-              pInputText
+              type="date"
               [(ngModel)]="bcpProcessDate"
               name="bcpProcessDate"
-              placeholder="YYYYMMDD (ej: 20251120)"
-              class="w-full"
-              maxlength="8"
-              pattern="[0-9]{8}"
+              class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             />
             <small class="text-gray-500 dark:text-gray-400">
-              Fecha de proceso en formato YYYYMMDD. Si se deja vacío, se usará la fecha actual.
+              Fecha de proceso. Si se deja vacío, se usará la fecha actual.
             </small>
           </div>
         </div>
@@ -400,7 +412,7 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
           pButton
           label="Generar TXT"
           (click)="generateTxtWithReference()"
-          [disabled]="!bcpReference() || bcpReference().trim().length === 0 || !bcpCompanyAccount() || bcpCompanyAccount().trim().length === 0"
+          [disabled]="!bcpReference() || bcpReference().trim().length === 0 || !bcpCompanyAccount()"
           aria-label="Generar archivo TXT"
         ></button>
       </ng-template>
@@ -491,6 +503,7 @@ export class PayrollDetailComponent implements OnInit {
   private employeesApi = inject(EmployeesApiService);
   private uploadService = inject(UploadService);
   private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
 
   // Main payroll signal
   payroll = signal<Payroll | undefined>(undefined);
@@ -502,7 +515,12 @@ export class PayrollDetailComponent implements OnInit {
   bcpAccountType = signal('C'); // C: Corriente, M: Maestra
   bcpCurrency = signal('0001'); // 0001: Soles, 1001: Dólares
   bcpCompanyAccount = signal('');
-  bcpProcessDate = signal('');
+  bcpProcessDate = signal<string>(''); // Formato YYYY-MM-DD para input date
+
+  // Constante de cuentas de cargo disponibles
+  readonly bcpCompanyAccounts = [
+    { label: '194-2056198-0-75', value: '1942056198075' }
+  ];
 
   // Modal para errores de datos bancarios
   showBankDataErrorDialog = signal(false);
@@ -526,7 +544,7 @@ export class PayrollDetailComponent implements OnInit {
     }
   }
 
-  private loadPayroll(id: string) {
+  loadPayroll(id: string) {
     this.payrollService.getPayrollById(id).subscribe({
       next: (data) => {
         this.payroll.set(data);
@@ -588,7 +606,7 @@ export class PayrollDetailComponent implements OnInit {
     this.bcpPayrollSubtype.set('Z');
     this.bcpAccountType.set('C');
     this.bcpCurrency.set('0001');
-    this.bcpCompanyAccount.set('');
+    this.bcpCompanyAccount.set('1942056198075'); // Valor por defecto
     this.bcpProcessDate.set('');
     this.showReferenceDialog.set(true);
   }
@@ -602,7 +620,7 @@ export class PayrollDetailComponent implements OnInit {
 
   generateTxtWithReference() {
     const reference = this.bcpReference().trim();
-    const companyAccount = this.bcpCompanyAccount().trim();
+    const companyAccount = this.bcpCompanyAccount();
     
     if (!reference || reference.length === 0) {
       this.messageService.add({
@@ -613,24 +631,24 @@ export class PayrollDetailComponent implements OnInit {
       return;
     }
 
-    if (!companyAccount || companyAccount.length === 0) {
+    if (!companyAccount) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Advertencia',
-        detail: 'Debe ingresar la cuenta de cargo para generar el archivo',
+        detail: 'Debe seleccionar la cuenta de cargo para generar el archivo',
       });
       return;
     }
 
-    // Validar formato de fecha si se proporciona
-    const processDate = this.bcpProcessDate().trim();
-    if (processDate && !/^\d{8}$/.test(processDate)) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'La fecha de proceso debe tener el formato YYYYMMDD (8 dígitos)',
-      });
-      return;
+    // Convertir fecha de YYYY-MM-DD a YYYYMMDD si se proporciona
+    let processDate: string | undefined;
+    const selectedDate = this.bcpProcessDate().trim();
+    if (selectedDate) {
+      // Convertir de YYYY-MM-DD a YYYYMMDD
+      const dateParts = selectedDate.split('-');
+      if (dateParts.length === 3) {
+        processDate = `${dateParts[0]}${dateParts[1]}${dateParts[2]}`;
+      }
     }
 
     this.closeReferenceDialog();
@@ -914,5 +932,38 @@ export class PayrollDetailComponent implements OnInit {
 
   onGeneralProofUpload(_event: { files: File[] }) {
     // This is called by default upload, but we use customHandler
+  }
+
+  onRowDelete(detail: PayrollDetail) {
+    this.confirmationService.confirm({
+      message: `¿Está seguro de que desea eliminar el registro de ${detail.firstName} ${detail.lastName}?`,
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.payrollService.deletePayrollDetail(detail.id).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Eliminado',
+              detail: 'Registro eliminado correctamente',
+            });
+            // Recargar la planilla para actualizar los datos
+            const payrollData = this.payroll();
+            if (payrollData) {
+              this.loadPayroll(payrollData.id);
+            }
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo eliminar el registro',
+            });
+          },
+        });
+      },
+    });
   }
 }

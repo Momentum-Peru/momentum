@@ -16,12 +16,11 @@ export interface Employee {
   nombre: string;
   apellido: string;
   dni: string;
-  correo: string;
+  correo?: string;
   telefono?: string;
   direccion?: string;
   cargo?: string;
-  numeroSeguroSocial: string;
-  userId: string | UserInfo;
+  userId?: string | UserInfo;
   areaId?: string | AreaInfo;
   accountNumber?: string;
   bank?: string;
@@ -35,12 +34,11 @@ export interface CreateEmployeeRequest {
   nombre: string;
   apellido: string;
   dni: string;
-  correo: string;
+  correo?: string;
   telefono?: string;
   direccion?: string;
   cargo?: string;
-  numeroSeguroSocial: string;
-  userId: string;
+  userId?: string;
   areaId?: string;
   accountNumber?: string;
   bank?: string;
@@ -56,7 +54,6 @@ export interface UpdateEmployeeRequest {
   telefono?: string;
   direccion?: string;
   cargo?: string;
-  numeroSeguroSocial?: string;
   userId?: string;
   areaId?: string | null;
   accountNumber?: string;
