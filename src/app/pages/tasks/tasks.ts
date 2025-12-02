@@ -308,7 +308,26 @@ export class TasksPage implements OnInit {
   private loadBoards(): void {
     this.boardsService.getAll().subscribe({
       next: () => {
-        // Tableros cargados exitosamente
+        // Seleccionar automáticamente el primer tablero si no hay uno seleccionado
+        const boards = this.boardsService.boards();
+        const selected = this.selectedBoard();
+
+        if (boards.length > 0 && !selected) {
+          const firstBoard = boards[0];
+          this.selectedBoard.set(firstBoard);
+          this.loadBoardTasks(firstBoard._id);
+
+          // Hacer scroll hacia la vista del tablero después de un pequeño delay
+          setTimeout(() => {
+            const boardViewElement = document.querySelector('[data-board-view]');
+            if (boardViewElement) {
+              boardViewElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+              });
+            }
+          }, 200);
+        }
       },
       error: () => {
         this.messageService.add({
@@ -448,6 +467,18 @@ export class TasksPage implements OnInit {
   public onViewBoard(board: Board): void {
     this.selectedBoard.set(board);
     this.loadBoardTasks(board._id);
+
+    // Hacer scroll hacia la vista del tablero después de un pequeño delay
+    // para asegurar que el componente se haya renderizado
+    setTimeout(() => {
+      const boardViewElement = document.querySelector('[data-board-view]');
+      if (boardViewElement) {
+        boardViewElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    }, 100);
   }
 
   /**

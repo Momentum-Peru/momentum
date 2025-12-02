@@ -14,6 +14,7 @@
       </ng-template>
       <ng-template pTemplate="right">
         <div class="flex items-center gap-2 flex-wrap sm:justify-end justify-start">
+          @if (canEdit()) {
           <p-button
             label="Escanear Documento"
             icon="pi pi-camera"
@@ -32,6 +33,7 @@
             styleClass="w-full lg:w-auto"
           >
           </p-button>
+          }
         </div>
       </ng-template>
     </p-toolbar>
@@ -50,6 +52,7 @@
       [currentPage]="currentPage()"
       [pageSize]="pageSize()"
       [first]="first()"
+      [canEdit]="canEdit()"
       (pageChange)="onPageChange($event)"
       (editDocument)="openEditForm($event)"
       (deleteDocument)="confirmDelete($event)"

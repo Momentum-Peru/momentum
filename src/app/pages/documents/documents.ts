@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -25,6 +25,7 @@ import { DocumentScannerComponent } from './components/document-scanner/document
 import { PaymentVoucherDialogComponent } from './components/payment-voucher-dialog/payment-voucher-dialog';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { MenuService } from '../../shared/services/menu.service';
 
 @Component({
   selector: 'app-documents',
@@ -55,8 +56,12 @@ export class DocumentsPage implements OnInit {
   private readonly documentsApi = inject(DocumentsApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly menuService = inject(MenuService);
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
+
+  // Verificar si el usuario tiene permiso de edición para este módulo
+  readonly canEdit = computed(() => this.menuService.canEdit('/documents'));
 
   // Estado de la página
   documents = signal<Document[]>([]);

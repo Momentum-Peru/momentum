@@ -25,7 +25,9 @@
         <div class="flex items-center">
           <i class="pi pi-users text-blue-600 dark:text-blue-400 text-2xl mr-3"></i>
           <div>
-            <p class="text-sm font-medium text-blue-600 dark:text-blue-400">Usuarios con Permisos</p>
+            <p class="text-sm font-medium text-blue-600 dark:text-blue-400">
+              Usuarios con Permisos
+            </p>
             <p class="text-2xl font-bold text-blue-900 dark:text-blue-300">{{ totalUsers() }}</p>
           </div>
         </div>
@@ -35,7 +37,9 @@
           <i class="pi pi-list text-purple-600 dark:text-purple-400 text-2xl mr-3"></i>
           <div>
             <p class="text-sm font-medium text-purple-600 dark:text-purple-400">Total Permisos</p>
-            <p class="text-2xl font-bold text-purple-900 dark:text-purple-300">{{ totalPermissions() }}</p>
+            <p class="text-2xl font-bold text-purple-900 dark:text-purple-300">
+              {{ totalPermissions() }}
+            </p>
           </div>
         </div>
       </div>
@@ -44,7 +48,9 @@
           <i class="pi pi-check-circle text-green-600 dark:text-green-400 text-2xl mr-3"></i>
           <div>
             <p class="text-sm font-medium text-green-600 dark:text-green-400">Activos</p>
-            <p class="text-2xl font-bold text-green-900 dark:text-green-300">{{ activePermissions() }}</p>
+            <p class="text-2xl font-bold text-green-900 dark:text-green-300">
+              {{ activePermissions() }}
+            </p>
           </div>
         </div>
       </div>
@@ -53,7 +59,9 @@
           <i class="pi pi-times-circle text-red-600 dark:text-red-400 text-2xl mr-3"></i>
           <div>
             <p class="text-sm font-medium text-red-600 dark:text-red-400">Inactivos</p>
-            <p class="text-2xl font-bold text-red-900 dark:text-red-300">{{ inactivePermissions() }}</p>
+            <p class="text-2xl font-bold text-red-900 dark:text-red-300">
+              {{ inactivePermissions() }}
+            </p>
           </div>
         </div>
       </div>
@@ -64,7 +72,11 @@
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-4">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div>
-        <label for="menuPermissionSearch" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Buscar</label>
+        <label
+          for="menuPermissionSearch"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >Buscar</label
+        >
         <input
           id="menuPermissionSearch"
           pInputText
@@ -75,7 +87,11 @@
         />
       </div>
       <div>
-        <label for="menuPermissionUser" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Usuario</label>
+        <label
+          for="menuPermissionUser"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >Usuario</label
+        >
         <p-select
           id="menuPermissionUser"
           [options]="users() || []"
@@ -121,261 +137,310 @@
 
     <!-- Tabla de usuarios con permisos usando PrimeNG - Desktop -->
     <div class="hidden md:block">
-      <p-table *ngIf="!loading()" [value]="filteredUserGroups()" [tableStyle]="{ 'min-width': '50rem' }">
-      <ng-template pTemplate="header">
-        <tr>
-          <th>Usuario</th>
-          <th>Total Permisos</th>
-          <th>Activos</th>
-          <th>Inactivos</th>
-          <th></th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-group>
-        <tr>
-          <td>
-            <div class="flex items-center">
-              <i class="pi pi-user text-gray-400 dark:text-gray-500 mr-3"></i>
-              <div>
-                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ group.user.name }}</div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">{{ group.user.email }}</div>
-              </div>
-            </div>
-          </td>
-          <td>
-            <span class="px-2 py-1 text-sm font-semibold text-purple-900 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-              {{ group.totalPermissions }}
-            </span>
-          </td>
-          <td>
-            <span class="px-2 py-1 text-sm font-semibold text-green-800 dark:text-green-300 bg-green-100 dark:bg-green-900/30 rounded-full">
-              {{ group.activePermissions }}
-            </span>
-          </td>
-          <td>
-            <span class="px-2 py-1 text-sm font-semibold text-red-800 dark:text-red-300 bg-red-100 dark:bg-red-900/30 rounded-full">
-              {{ group.inactivePermissions }}
-            </span>
-          </td>
-          <td class="text-right flex gap-2">
-            <button
-              pButton
-              [icon]="isExpanded(group.user._id) ? 'pi pi-angle-up' : 'pi pi-angle-down'"
-              class="p-button-text"
-              (click)="toggleRow(group.user._id)"
-              pTooltip="Ver detalles"
-              tooltipPosition="top"
-              aria-label="Ver detalles de permisos"
-            ></button>
-            <button
-              pButton
-              icon="pi pi-pencil"
-              class="p-button-text"
-              (click)="editUserPermissions(group)"
-              pTooltip="Editar permisos"
-              tooltipPosition="top"
-              aria-label="Editar permisos del usuario"
-            ></button>
-            <button
-              pButton
-              icon="pi pi-trash"
-              class="p-button-text p-button-danger"
-              (click)="removeUserPermissions(group)"
-              pTooltip="Eliminar todos los permisos"
-              tooltipPosition="top"
-              aria-label="Eliminar todos los permisos del usuario"
-            ></button>
-          </td>
-        </tr>
-        <!-- Detalles expandidos -->
-        <tr *ngIf="isExpanded(group.user._id)" class="bg-gray-50 dark:bg-gray-700">
-          <td colspan="5" class="p-6">
-            <div class="space-y-2">
-              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Permisos:</h4>
-              <div class="flex flex-wrap gap-2">
-                @for (permission of group.permissions; track permission._id) {
-                <div class="flex items-center space-x-2 bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg px-3 py-2">
-                  <span class="font-mono text-sm text-gray-700 dark:text-gray-300">{{ permission.route }}</span>
-                  <span
-                    class="px-2 py-1 rounded-full text-xs font-medium"
-                    [class]="getStatusClass(permission.isActive)"
-                  >
-                    {{ getStatusLabel(permission.isActive) }}
-                  </span>
-                  <button
-                    pButton
-                    icon="pi pi-trash"
-                    class="p-button-text p-button-sm p-button-danger"
-                    (click)="removeSinglePermission(permission)"
-                    pTooltip="Eliminar permiso"
-                    tooltipPosition="top"
-                    aria-label="Eliminar permiso"
-                  ></button>
+      <p-table
+        *ngIf="!loading()"
+        [value]="filteredUserGroups()"
+        [tableStyle]="{ 'min-width': '50rem' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Usuario</th>
+            <th>Total Permisos</th>
+            <th>Activos</th>
+            <th>Inactivos</th>
+            <th></th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-group>
+          <tr>
+            <td>
+              <div class="flex items-center">
+                <i class="pi pi-user text-gray-400 dark:text-gray-500 mr-3"></i>
+                <div>
+                  <div class="text-sm font-medium text-gray-900 dark:text-white">
+                    {{ group.user.name }}
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">{{ group.user.email }}</div>
                 </div>
-                }
               </div>
-            </div>
-          </td>
-        </tr>
-      </ng-template>
+            </td>
+            <td>
+              <span
+                class="px-2 py-1 text-sm font-semibold text-purple-900 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/30 rounded-full"
+              >
+                {{ group.totalPermissions }}
+              </span>
+            </td>
+            <td>
+              <span
+                class="px-2 py-1 text-sm font-semibold text-green-800 dark:text-green-300 bg-green-100 dark:bg-green-900/30 rounded-full"
+              >
+                {{ group.activePermissions }}
+              </span>
+            </td>
+            <td>
+              <span
+                class="px-2 py-1 text-sm font-semibold text-red-800 dark:text-red-300 bg-red-100 dark:bg-red-900/30 rounded-full"
+              >
+                {{ group.inactivePermissions }}
+              </span>
+            </td>
+            <td class="text-right flex gap-2">
+              <button
+                pButton
+                [icon]="isExpanded(group.user._id) ? 'pi pi-angle-up' : 'pi pi-angle-down'"
+                class="p-button-text"
+                (click)="toggleRow(group.user._id)"
+                pTooltip="Ver detalles"
+                tooltipPosition="top"
+                aria-label="Ver detalles de permisos"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text"
+                (click)="editUserPermissions(group)"
+                pTooltip="Editar permisos"
+                tooltipPosition="top"
+                aria-label="Editar permisos del usuario"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-danger"
+                (click)="removeUserPermissions(group)"
+                pTooltip="Eliminar todos los permisos"
+                tooltipPosition="top"
+                aria-label="Eliminar todos los permisos del usuario"
+              ></button>
+            </td>
+          </tr>
+          <!-- Detalles expandidos -->
+          <tr *ngIf="isExpanded(group.user._id)" class="bg-gray-50 dark:bg-gray-700">
+            <td colspan="5" class="p-6">
+              <div class="space-y-2">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Permisos:</h4>
+                <div class="flex flex-wrap gap-2">
+                  @for (permission of group.permissions; track permission._id) {
+                  <div
+                    class="flex items-center space-x-2 bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg px-3 py-2"
+                  >
+                    <span class="font-mono text-sm text-gray-700 dark:text-gray-300">{{
+                      permission.route
+                    }}</span>
+                    <span
+                      class="px-2 py-1 rounded-full text-xs font-medium"
+                      [class]="getStatusClass(permission.isActive)"
+                    >
+                      {{ getStatusLabel(permission.isActive) }}
+                    </span>
+                    <button
+                      pButton
+                      icon="pi pi-trash"
+                      class="p-button-text p-button-sm p-button-danger"
+                      (click)="removeSinglePermission(permission)"
+                      pTooltip="Eliminar permiso"
+                      tooltipPosition="top"
+                      aria-label="Eliminar permiso"
+                    ></button>
+                  </div>
+                  }
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
       </p-table>
     </div>
 
     <!-- Lista de usuarios - Móvil (accordion) -->
     <div class="md:hidden space-y-3">
-      @if (!loading() && filteredUserGroups().length > 0) {
-        @for (group of filteredUserGroups(); track group.user._id || $index) {
-          <div
-            class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
-          >
-            <button
-              type="button"
-              class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-              (click)="toggleRow(group.user._id)"
-              [attr.aria-label]="'Expandir o contraer permisos de: ' + group.user.name"
-            >
-              <div class="flex-1 text-left min-w-0 pr-4">
-                <div class="flex items-center">
-                  <i class="pi pi-user text-gray-400 dark:text-gray-500 mr-3 flex-shrink-0"></i>
-                  <div class="min-w-0">
-                    <div class="font-semibold text-gray-900 dark:text-white truncate">
-                      {{ group.user.name }}
-                    </div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {{ group.user.email }}
-                    </div>
-                    <div class="mt-1 flex items-center gap-2 text-xs">
-                      <span class="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-300 rounded-full font-medium">
-                        {{ group.totalPermissions }} permisos
-                      </span>
-                      <span class="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full font-medium">
-                        {{ group.activePermissions }} activos
-                      </span>
-                    </div>
-                  </div>
+      @if (!loading() && filteredUserGroups().length > 0) { @for (group of filteredUserGroups();
+      track group.user._id || $index) {
+      <div
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+      >
+        <button
+          type="button"
+          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+          (click)="toggleRow(group.user._id)"
+          [attr.aria-label]="'Expandir o contraer permisos de: ' + group.user.name"
+        >
+          <div class="flex-1 text-left min-w-0 pr-4">
+            <div class="flex items-center">
+              <i class="pi pi-user text-gray-400 dark:text-gray-500 mr-3 flex-shrink-0"></i>
+              <div class="min-w-0">
+                <div class="font-semibold text-gray-900 dark:text-white truncate">
+                  {{ group.user.name }}
+                </div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
+                  {{ group.user.email }}
+                </div>
+                <div class="mt-1 flex items-center gap-2 text-xs">
+                  <span
+                    class="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-300 rounded-full font-medium"
+                  >
+                    {{ group.totalPermissions }} permisos
+                  </span>
+                  <span
+                    class="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full font-medium"
+                  >
+                    {{ group.activePermissions }} activos
+                  </span>
                 </div>
               </div>
-              <div class="flex-shrink-0">
-                <i
-                  class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
-                  [class.pi-chevron-down]="!isExpanded(group.user._id)"
-                  [class.pi-chevron-up]="isExpanded(group.user._id)"
-                ></i>
-              </div>
-            </button>
-
-            @if (isExpanded(group.user._id)) {
-              <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
-                <div class="px-4 py-4 space-y-4">
-                  <div class="grid grid-cols-3 gap-3 text-sm">
-                    <div>
-                      <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                        Total
-                      </div>
-                      <div class="text-gray-900 dark:text-gray-100 font-semibold">
-                        <span class="px-2 py-1 text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-300 rounded-full">
-                          {{ group.totalPermissions }}
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                        Activos
-                      </div>
-                      <div class="text-gray-900 dark:text-gray-100 font-semibold">
-                        <span class="px-2 py-1 text-sm bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full">
-                          {{ group.activePermissions }}
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                        Inactivos
-                      </div>
-                      <div class="text-gray-900 dark:text-gray-100 font-semibold">
-                        <span class="px-2 py-1 text-sm bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full">
-                          {{ group.inactivePermissions }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-                      Permisos
-                    </div>
-                    <div class="flex flex-col gap-2">
-                      @for (permission of group.permissions; track permission._id) {
-                        <div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded-lg px-3 py-2">
-                          <div class="flex-1 min-w-0">
-                            <span class="font-mono text-sm text-gray-700 dark:text-gray-300 break-words block">
-                              {{ permission.route }}
-                            </span>
-                          </div>
-                          <div class="flex items-center gap-2 flex-shrink-0">
-                            <span
-                              class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
-                              [class]="getStatusClass(permission.isActive)"
-                            >
-                              {{ getStatusLabel(permission.isActive) }}
-                            </span>
-                            <button
-                              pButton
-                              icon="pi pi-trash"
-                              class="p-button-text p-button-sm p-button-danger flex-shrink-0"
-                              (click)="removeSinglePermission(permission)"
-                              pTooltip="Eliminar permiso"
-                              tooltipPosition="top"
-                              aria-label="Eliminar permiso"
-                            ></button>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  </div>
-
-                  <div>
-                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-                      Acciones
-                    </div>
-                    <div class="flex flex-col gap-2">
-                      <button
-                        pButton
-                        icon="pi pi-pencil"
-                        label="Editar permisos"
-                        class="p-button-text p-button-sm w-full justify-start"
-                        (click)="editUserPermissions(group)"
-                        aria-label="Editar permisos del usuario"
-                      ></button>
-                      <button
-                        pButton
-                        icon="pi pi-trash"
-                        label="Eliminar todos los permisos"
-                        class="p-button-text p-button-sm p-button-danger w-full justify-start"
-                        (click)="removeUserPermissions(group)"
-                        aria-label="Eliminar todos los permisos del usuario"
-                      ></button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            }
+            </div>
           </div>
-        }
-      }
+          <div class="flex-shrink-0">
+            <i
+              class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+              [class.pi-chevron-down]="!isExpanded(group.user._id)"
+              [class.pi-chevron-up]="isExpanded(group.user._id)"
+            ></i>
+          </div>
+        </button>
 
-      @if (!loading() && filteredUserGroups().length === 0) {
-        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-          <i class="pi pi-inbox text-4xl mb-2"></i>
-          <p>No se encontraron usuarios con permisos</p>
+        @if (isExpanded(group.user._id)) {
+        <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+          <div class="px-4 py-4 space-y-4">
+            <div class="grid grid-cols-3 gap-3 text-sm">
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Total
+                </div>
+                <div class="text-gray-900 dark:text-gray-100 font-semibold">
+                  <span
+                    class="px-2 py-1 text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-300 rounded-full"
+                  >
+                    {{ group.totalPermissions }}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Activos
+                </div>
+                <div class="text-gray-900 dark:text-gray-100 font-semibold">
+                  <span
+                    class="px-2 py-1 text-sm bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full"
+                  >
+                    {{ group.activePermissions }}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Inactivos
+                </div>
+                <div class="text-gray-900 dark:text-gray-100 font-semibold">
+                  <span
+                    class="px-2 py-1 text-sm bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full"
+                  >
+                    {{ group.inactivePermissions }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                Permisos
+              </div>
+              <div class="flex flex-col gap-2">
+                @for (permission of group.permissions; track permission._id) {
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center gap-2 bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded-lg px-3 py-2"
+                >
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <i
+                        [class]="getRouteIcon(permission.route)"
+                        class="text-sm text-gray-500 dark:text-gray-400"
+                      ></i>
+                      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ getRouteLabel(permission.route) }}
+                      </span>
+                    </div>
+                    <span
+                      class="font-mono text-xs text-gray-500 dark:text-gray-400 break-words block"
+                    >
+                      {{ permission.route }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <span
+                      class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
+                      [class]="getPermissionTypeClass(permission.permissionType)"
+                    >
+                      <i
+                        [class]="
+                          permission.permissionType === 'edit' ? 'pi pi-pencil' : 'pi pi-eye'
+                        "
+                        class="mr-1"
+                      ></i>
+                      {{ getPermissionTypeLabel(permission.permissionType) }}
+                    </span>
+                    <span
+                      class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
+                      [class]="getStatusClass(permission.isActive)"
+                    >
+                      {{ getStatusLabel(permission.isActive) }}
+                    </span>
+                    <button
+                      pButton
+                      icon="pi pi-trash"
+                      class="p-button-text p-button-sm p-button-danger flex-shrink-0"
+                      (click)="removeSinglePermission(permission)"
+                      pTooltip="Eliminar permiso"
+                      tooltipPosition="top"
+                      aria-label="Eliminar permiso"
+                    ></button>
+                  </div>
+                </div>
+                }
+              </div>
+            </div>
+
+            <div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                Acciones
+              </div>
+              <div class="flex flex-col gap-2">
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  label="Editar permisos"
+                  class="p-button-text p-button-sm w-full justify-start"
+                  (click)="editUserPermissions(group)"
+                  aria-label="Editar permisos del usuario"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  label="Eliminar todos los permisos"
+                  class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                  (click)="removeUserPermissions(group)"
+                  aria-label="Eliminar todos los permisos del usuario"
+                ></button>
+              </div>
+            </div>
+          </div>
         </div>
+        }
+      </div>
+      } } @if (!loading() && filteredUserGroups().length === 0) {
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <i class="pi pi-inbox text-4xl mb-2"></i>
+        <p>No se encontraron usuarios con permisos</p>
+      </div>
       }
     </div>
   </div>
 
   <!-- Modal de edición/creación -->
   <p-dialog
-    [(visible)]="showDialog"
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
     [modal]="true"
     [style]="{ width: '60rem' }"
     [draggable]="false"
@@ -388,10 +453,14 @@
       {{ editing()?.isEditing ? 'Editar Permisos' : 'Asignar Permisos' }}
     </ng-template>
 
-    <div class="grid gap-4 ">
+    <div class="grid gap-4">
       <!-- Usuario -->
       <div>
-        <label for="editMenuPermissionUser" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Usuario *</label>
+        <label
+          for="editMenuPermissionUser"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >Usuario *</label
+        >
         <p-select
           id="editMenuPermissionUser"
           [options]="users() || []"
@@ -439,14 +508,18 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
           Selecciona las rutas a las que tendrá acceso el usuario
         </p>
-        <div class="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto p-2 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+        <div
+          class="max-h-96 overflow-y-auto p-2 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700"
+        >
           @for (route of predefinedRoutes(); track route) {
           <div
-            class="flex items-center space-x-2 p-3 border dark:border-gray-600 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors bg-white dark:bg-gray-800"
-            [class.bg-blue-50]="isRouteSelected(route)"
-            [class.dark:bg-blue-900/30]="isRouteSelected(route)"
-            [class.border-blue-500]="isRouteSelected(route)"
-            [class.dark:border-blue-400]="isRouteSelected(route)"
+            class="flex items-center justify-between p-3 border dark:border-gray-600 rounded mb-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors bg-white dark:bg-gray-800"
+            [ngClass]="{
+              'bg-blue-50': isRouteSelected(route),
+              'dark:bg-blue-900/30': isRouteSelected(route),
+              'border-blue-500': isRouteSelected(route),
+              'dark:border-blue-400': isRouteSelected(route)
+            }"
             (click)="toggleRoute(route)"
             (keyup.enter)="toggleRoute(route)"
             (keyup.space)="toggleRoute(route)"
@@ -455,17 +528,56 @@
             [attr.aria-checked]="isRouteSelected(route)"
             [attr.aria-label]="'Seleccionar ruta: ' + getRouteLabel(route)"
           >
-            <i
-              class="pi text-base"
-              [class.pi-check-square]="isRouteSelected(route)"
-              [class.pi-square]="!isRouteSelected(route)"
-              [class.text-blue-600]="isRouteSelected(route)"
-              [class.dark:text-blue-400]="isRouteSelected(route)"
-              [class.text-gray-400]="!isRouteSelected(route)"
-              [class.dark:text-gray-500]="!isRouteSelected(route)"
-            ></i>
-            <i [class]="getRouteIcon(route)" class="text-sm text-gray-600 dark:text-gray-400"></i>
-            <span class="text-sm text-gray-700 dark:text-gray-300 font-medium">{{ getRouteLabel(route) }}</span>
+            <div class="flex items-center space-x-2 flex-1">
+              <i
+                class="pi text-base"
+                [class.pi-check-square]="isRouteSelected(route)"
+                [class.pi-square]="!isRouteSelected(route)"
+                [class.text-blue-600]="isRouteSelected(route)"
+                [class.dark:text-blue-400]="isRouteSelected(route)"
+                [class.text-gray-400]="!isRouteSelected(route)"
+                [class.dark:text-gray-500]="!isRouteSelected(route)"
+              ></i>
+              <i [class]="getRouteIcon(route)" class="text-sm text-gray-600 dark:text-gray-400"></i>
+              <span class="text-sm text-gray-700 dark:text-gray-300 font-medium">{{
+                getRouteLabel(route)
+              }}</span>
+            </div>
+            @if (isRouteSelected(route)) {
+            <div
+              class="flex items-center gap-2 ml-4"
+              (click)="$event.stopPropagation()"
+              (keyup.enter)="$event.stopPropagation()"
+              (keyup.space)="$event.stopPropagation()"
+              tabindex="0"
+              role="group"
+              [attr.aria-label]="'Tipo de permiso para ' + getRouteLabel(route)"
+            >
+              <p-select
+                [options]="permissionTypeOptions"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="getRoutePermissionType(route)"
+                (ngModelChange)="setRoutePermissionType(route, $event)"
+                [appendTo]="'body'"
+                class="w-32"
+                [style]="{ 'min-width': '8rem' }"
+              >
+                <ng-template let-option pTemplate="item">
+                  <div class="flex items-center gap-2">
+                    <i [class]="option.icon" class="text-sm"></i>
+                    <span>{{ option.label }}</span>
+                  </div>
+                </ng-template>
+                <ng-template let-option pTemplate="selectedItem">
+                  <div class="flex items-center gap-2">
+                    <i [class]="option.icon" class="text-sm"></i>
+                    <span>{{ option.label }}</span>
+                  </div>
+                </ng-template>
+              </p-select>
+            </div>
+            }
           </div>
           }
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
@@ -476,7 +588,13 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
       <button pButton label="Guardar" (click)="save()" aria-label="Guardar permisos"></button>
     </ng-template>
   </p-dialog>

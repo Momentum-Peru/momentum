@@ -16,6 +16,7 @@
       name="searchQuery"
       class="flex-1 min-w-[200px]"
     />
+    @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -25,6 +26,7 @@
       class="w-full xl:w-auto"
       aria-label="Crear nuevo empleado"
     ></button>
+    }
   </div>
 
   <!-- Vista Desktop: Tabla -->
@@ -81,6 +83,7 @@
               tooltipPosition="top"
               aria-label="Ver detalles del empleado"
             ></button>
+            @if (canEdit()) {
             <button
               pButton
               icon="pi pi-pencil"
@@ -99,6 +102,7 @@
               tooltipPosition="top"
               aria-label="Eliminar empleado"
             ></button>
+            }
           </td>
         </tr>
       </ng-template>
@@ -229,6 +233,7 @@
             (click)="viewItem(row)"
             aria-label="Ver detalles del empleado"
           ></button>
+          @if (canEdit()) {
           <button
             pButton
             icon="pi pi-pencil"
@@ -245,6 +250,7 @@
             (click)="remove(row)"
             aria-label="Eliminar empleado"
           ></button>
+          }
         </div>
       </div>
       }

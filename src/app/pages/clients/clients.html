@@ -33,6 +33,7 @@
         (click)="openStats()"
         aria-label="Ver estadísticas"
       ></button>
+      @if (canEdit()) {
       <button
         pButton
         type="button"
@@ -41,6 +42,7 @@
         (click)="newItem()"
         aria-label="Crear nuevo cliente"
       ></button>
+      }
     </div>
   </div>
 
@@ -172,6 +174,7 @@
                 (click)="viewDetails(row)"
                 aria-label="Ver detalles del cliente"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -188,6 +191,7 @@
                 (click)="confirmDelete(row)"
                 aria-label="Eliminar cliente"
               ></button>
+              }
             </div>
           </td>
         </tr>
@@ -312,6 +316,7 @@
                 (click)="viewDetails(row)"
                 aria-label="Ver detalles del cliente"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -328,6 +333,7 @@
                 (click)="confirmDelete(row)"
                 aria-label="Eliminar cliente"
               ></button>
+              }
             </div>
           </div>
         </div>

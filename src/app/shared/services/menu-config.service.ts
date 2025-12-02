@@ -44,6 +44,7 @@ export class MenuConfigService {
     { path: '/follow-ups', label: 'Seguimientos', icon: 'pi pi-calendar-plus' },
     { path: '/companies-crm', label: 'Empresas Momentum', icon: 'pi pi-building' },
     { path: '/fi', label: 'Futuros Imposibles', icon: 'pi pi-bolt' },
+    { path: '/logs', label: 'Logs del Sistema', icon: 'pi pi-list' },
     { path: '/payroll', label: 'Planillas y Pagos', icon: 'pi pi-wallet' },
     { path: '/profile', label: 'Mi Perfil', icon: 'pi pi-user-edit' },
   ];
@@ -229,6 +230,11 @@ export class MenuConfigService {
             label: 'Mi Perfil',
             icon: 'pi pi-user-edit',
             routerLink: '/profile',
+          },
+          {
+            label: 'Logs del Sistema',
+            icon: 'pi pi-list',
+            routerLink: '/logs',
           },
         ],
       },

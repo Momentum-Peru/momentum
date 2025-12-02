@@ -118,24 +118,41 @@ export class BoardViewComponent {
       boardId: this.board._id,
     };
 
-    if (this.filterAssignedTo()) {
-      filters.assignedTo = this.filterAssignedTo();
-    }
-
-    if (this.filterDateFrom() || this.filterDateTo()) {
-      if (this.filterDateFrom()) {
-        filters.dueDateFrom = this.filterDateFrom()!.toISOString();
-      }
-      if (this.filterDateTo()) {
-        // Establecer la hora al final del día
-        const dateTo = new Date(this.filterDateTo()!);
-        dateTo.setHours(23, 59, 59, 999);
-        filters.dueDateTo = dateTo.toISOString();
+    // Normalizar y agregar filtro de asignado a
+    const assignedTo = this.filterAssignedTo();
+    if (assignedTo !== undefined && assignedTo !== null && assignedTo !== '') {
+      // Asegurar que sea un string válido
+      const assignedToValue = typeof assignedTo === 'string' ? assignedTo : String(assignedTo);
+      if (assignedToValue.trim() !== '') {
+        filters.assignedTo = assignedToValue;
       }
     }
 
-    if (this.filterTags().length > 0) {
-      filters.tags = this.filterTags();
+    // Normalizar y agregar filtros de fecha
+    const dateFrom = this.filterDateFrom();
+    const dateTo = this.filterDateTo();
+    
+    if (dateFrom !== undefined && dateFrom !== null) {
+      const dateFromObj = dateFrom instanceof Date ? dateFrom : new Date(dateFrom);
+      // Solo agregar si es una fecha válida
+      if (!isNaN(dateFromObj.getTime())) {
+        filters.dueDateFrom = dateFromObj.toISOString();
+      }
+    }
+    
+    if (dateTo !== undefined && dateTo !== null) {
+      const dateToObj = dateTo instanceof Date ? dateTo : new Date(dateTo);
+      // Solo agregar si es una fecha válida
+      if (!isNaN(dateToObj.getTime())) {
+        // Usar la fecha y hora seleccionada por el usuario
+        filters.dueDateTo = dateToObj.toISOString();
+      }
+    }
+
+    // Normalizar y agregar filtro de etiquetas
+    const tags = this.filterTags();
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      filters.tags = tags;
     }
 
     this.filtersChanged.emit(filters);
@@ -149,6 +166,83 @@ export class BoardViewComponent {
     this.filterDateFrom.set(undefined);
     this.filterDateTo.set(undefined);
     this.filterTags.set([]);
+    this.applyFilters();
+  }
+
+  /**
+   * Normaliza el valor de asignado a cuando cambia
+   */
+  public onAssignedToChange(value: string | { value: string; label: string } | null | undefined): void {
+    if (value === null || value === undefined || value === '') {
+      this.filterAssignedTo.set(undefined);
+    } else if (typeof value === 'object' && 'value' in value) {
+      // Si PrimeNG devuelve el objeto completo, extraer el value
+      const extractedValue = value.value;
+      this.filterAssignedTo.set(extractedValue === null || extractedValue === undefined || extractedValue === '' ? undefined : extractedValue);
+    } else if (typeof value === 'string' && value.trim() !== '') {
+      this.filterAssignedTo.set(value);
+    } else {
+      this.filterAssignedTo.set(undefined);
+    }
+    // Los signals son síncronos, así que podemos llamar applyFilters directamente
+    this.applyFilters();
+  }
+
+  /**
+   * Normaliza el valor de fecha desde cuando cambia
+   */
+  public onDateFromChange(value: Date | null | undefined | string): void {
+    // Manejar todos los casos: null, undefined, string vacío, o Date inválido
+    if (value === null || value === undefined || value === '' || (typeof value === 'string' && value.trim() === '')) {
+      this.filterDateFrom.set(undefined);
+    } else if (value instanceof Date) {
+      // Solo establecer si es una fecha válida
+      if (!isNaN(value.getTime())) {
+        this.filterDateFrom.set(value);
+      } else {
+        this.filterDateFrom.set(undefined);
+      }
+    } else {
+      this.filterDateFrom.set(undefined);
+    }
+    // Los signals son síncronos, así que podemos llamar applyFilters directamente
+    this.applyFilters();
+  }
+
+  /**
+   * Normaliza el valor de fecha hasta cuando cambia
+   */
+  public onDateToChange(value: Date | null | undefined | string): void {
+    // Manejar todos los casos: null, undefined, string vacío, o Date inválido
+    if (value === null || value === undefined || value === '' || (typeof value === 'string' && value.trim() === '')) {
+      this.filterDateTo.set(undefined);
+    } else if (value instanceof Date) {
+      // Solo establecer si es una fecha válida
+      if (!isNaN(value.getTime())) {
+        this.filterDateTo.set(value);
+      } else {
+        this.filterDateTo.set(undefined);
+      }
+    } else {
+      this.filterDateTo.set(undefined);
+    }
+    // Los signals son síncronos, así que podemos llamar applyFilters directamente
+    this.applyFilters();
+  }
+
+  /**
+   * Normaliza el valor de etiquetas cuando cambia
+   */
+  public onTagsChange(value: string[] | null | undefined): void {
+    // Asegurar que siempre sea un array, nunca null
+    if (value === null || value === undefined) {
+      this.filterTags.set([]);
+    } else if (Array.isArray(value)) {
+      this.filterTags.set(value);
+    } else {
+      this.filterTags.set([]);
+    }
+    // Los signals son síncronos, así que podemos llamar applyFilters directamente
     this.applyFilters();
   }
 

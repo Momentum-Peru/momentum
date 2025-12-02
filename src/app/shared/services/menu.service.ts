@@ -36,6 +36,19 @@ export class MenuService {
       .map((permission) => permission.route);
   });
 
+  // Computed para obtener las rutas con permiso de edición
+  // Para gerencia: retorna todas las rutas disponibles del sistema
+  editAllowedRoutes = computed(() => {
+    // Si es gerencia, retornar todas las rutas disponibles del sistema
+    if (this.isGerencia()) {
+      return this.menuConfigService.getProtectedRoutes();
+    }
+    
+    return this.userPermissions()
+      .filter((permission) => permission.isActive && permission.permissionType === 'edit')
+      .map((permission) => permission.route);
+  });
+
   /**
    * Carga los permisos del usuario actual
    */
@@ -122,6 +135,50 @@ export class MenuService {
     const allowedRoutes = this.allowedRoutes();
     const hasAccess = allowedRoutes.includes(route);
     return hasAccess;
+  }
+
+  /**
+   * Verifica si el usuario tiene permiso de edición para una ruta específica
+   * Útil para mostrar/ocultar botones de crear, editar, eliminar
+   * El dashboard siempre tiene permiso de edición
+   * Para gerencia: todas las rutas tienen permiso de edición
+   */
+  canEdit(route: string): boolean {
+    // El dashboard siempre tiene permiso de edición
+    if (route === '/dashboard') {
+      return true;
+    }
+    
+    // Para gerencia: todas las rutas tienen permiso de edición
+    if (this.isGerencia()) {
+      return true;
+    }
+    
+    const editAllowedRoutes = this.editAllowedRoutes();
+    const hasEditAccess = editAllowedRoutes.includes(route);
+    return hasEditAccess;
+  }
+
+  /**
+   * Obtiene el tipo de permiso para una ruta específica
+   * Retorna 'edit', 'view' o null si no tiene permiso
+   */
+  getPermissionType(route: string): 'view' | 'edit' | null {
+    // El dashboard siempre tiene permiso de edición
+    if (route === '/dashboard') {
+      return 'edit';
+    }
+    
+    // Para gerencia: todas las rutas tienen permiso de edición
+    if (this.isGerencia()) {
+      return 'edit';
+    }
+    
+    const permission = this.userPermissions().find(
+      (p) => p.route === route && p.isActive
+    );
+    
+    return permission?.permissionType || null;
   }
 
   // Eliminamos getMenu() ya que no generamos menús

@@ -71,6 +71,7 @@
       </ng-template>
     </p-select>
     }
+    @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -80,6 +81,7 @@
       class="w-full xl:w-auto"
       aria-label="Crear nuevo reporte diario"
     ></button>
+    }
   </div>
 
   <!-- Vista Desktop: Tabla -->
@@ -142,6 +144,7 @@
               (click)="viewItem(row)"
               aria-label="Ver detalles del reporte"
             ></button>
+            @if (canEdit()) {
             <button
               pButton
               icon="pi pi-pencil"
@@ -156,6 +159,7 @@
               (click)="remove(row)"
               aria-label="Eliminar reporte"
             ></button>
+            }
           </td>
         </tr>
       </ng-template>
@@ -228,6 +232,7 @@
               (click)="viewItem(row)"
               aria-label="Ver detalles del reporte"
             ></button>
+            @if (canEdit()) {
             <button
               pButton
               icon="pi pi-pencil"
@@ -244,6 +249,7 @@
               (click)="remove(row)"
               aria-label="Eliminar reporte"
             ></button>
+            }
           </div>
         </div>
       </div>

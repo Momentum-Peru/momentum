@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -16,6 +16,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { UploadService } from '../../shared/services/upload.service';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
+import { MenuService } from '../../shared/services/menu.service';
 
 interface Person {
   nombre: string;
@@ -71,6 +72,10 @@ export class RequirementsPage implements OnInit {
   private readonly baseUrl = environment.apiUrl;
   private readonly clientsApi = inject(ClientsApiService);
   private readonly messageService = inject(MessageService);
+  private readonly menuService = inject(MenuService);
+
+  // Verificar si el usuario tiene permiso de edición para este módulo
+  readonly canEdit = computed(() => this.menuService.canEdit('/requirements'));
 
   items = signal<RequirementItem[]>([]);
   clients = signal<ClientOption[]>([]);
