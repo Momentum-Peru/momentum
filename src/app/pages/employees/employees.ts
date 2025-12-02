@@ -87,9 +87,8 @@ export class EmployeesPage implements OnInit {
       const apellidoMatch = item.apellido?.toLowerCase().includes(searchQuery) ?? false;
       const dniMatch = item.dni?.toLowerCase().includes(searchQuery) ?? false;
       const correoMatch = item.correo?.toLowerCase().includes(searchQuery) ?? false;
-      const seguroMatch = item.numeroSeguroSocial?.toLowerCase().includes(searchQuery) ?? false;
       const cargoMatch = item.cargo?.toLowerCase().includes(searchQuery) ?? false;
-      return nombreMatch || apellidoMatch || dniMatch || correoMatch || seguroMatch || cargoMatch;
+      return nombreMatch || apellidoMatch || dniMatch || correoMatch || cargoMatch;
     });
   });
 
@@ -165,8 +164,7 @@ export class EmployeesPage implements OnInit {
       telefono: '',
       direccion: '',
       cargo: '',
-      numeroSeguroSocial: '',
-      userId: '',
+      userId: undefined,
       areaId: undefined,
       accountNumber: '',
       bank: '',
@@ -297,12 +295,11 @@ export class EmployeesPage implements OnInit {
         nombre: item.nombre,
         apellido: item.apellido,
         dni: item.dni,
-        correo: item.correo,
+        correo: item.correo || undefined,
         telefono: item.telefono || undefined,
         direccion: item.direccion || undefined,
         cargo: item.cargo || undefined,
-        numeroSeguroSocial: item.numeroSeguroSocial,
-        userId: typeof item.userId === 'string' ? item.userId : undefined,
+        userId: typeof item.userId === 'string' && item.userId.trim() !== '' ? item.userId : undefined,
         accountNumber: item.accountNumber || undefined,
         bank: item.bank || undefined,
         bankCode: item.bankCode || undefined,
@@ -339,22 +336,15 @@ export class EmployeesPage implements OnInit {
       });
     } else {
       // Crear
-      if (typeof item.userId !== 'string') {
-        this.toastError('Debe seleccionar un usuario');
-        this.loading.set(false);
-        return;
-      }
-
       const createData: CreateEmployeeRequest = {
         nombre: item.nombre,
         apellido: item.apellido,
         dni: item.dni,
-        correo: item.correo,
+        correo: item.correo || undefined,
         telefono: item.telefono || undefined,
         direccion: item.direccion || undefined,
         cargo: item.cargo || undefined,
-        numeroSeguroSocial: item.numeroSeguroSocial,
-        userId: item.userId,
+        userId: typeof item.userId === 'string' && item.userId ? item.userId : undefined,
         areaId: typeof item.areaId === 'string' && item.areaId ? item.areaId : undefined,
         accountNumber: item.accountNumber || undefined,
         bank: item.bank || undefined,
@@ -418,16 +408,8 @@ export class EmployeesPage implements OnInit {
       errors.push('El DNI debe tener exactamente 8 dígitos');
     }
 
-    if (!item.correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.correo)) {
+    if (item.correo && item.correo.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.correo)) {
       errors.push('El correo electrónico no es válido');
-    }
-
-    if (!item.numeroSeguroSocial || item.numeroSeguroSocial.trim().length === 0) {
-      errors.push('El número de seguro social es obligatorio');
-    }
-
-    if (!item.userId || (typeof item.userId === 'string' && item.userId.trim().length === 0)) {
-      errors.push('Debe seleccionar un usuario');
     }
 
     return errors;
