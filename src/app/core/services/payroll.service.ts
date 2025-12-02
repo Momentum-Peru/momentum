@@ -188,6 +188,10 @@ export class PayrollService {
     return this.http.delete(`${this.apiUrl}/payrolls/${id}`).pipe(map(() => true));
   }
 
+  deletePayrollDetail(detailId: string): Observable<boolean> {
+    return this.http.delete(`${this.apiUrl}/payrolls/details/${detailId}`).pipe(map(() => true));
+  }
+
   private transformPayrollResponse(backendPayroll: BackendPayroll): Payroll {
     const contractType = backendPayroll.details?.[0]?.contractType || 'PLANILLA';
     const startDate = new Date(backendPayroll.startDate);
