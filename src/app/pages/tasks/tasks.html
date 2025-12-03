@@ -46,14 +46,15 @@
     </div>
   </div>
 
-  <!-- Lista de Tableros - Siempre visible arriba -->
+  <!-- Lista de Tableros - Visible solo cuando NO hay un tablero seleccionado (ruta /tasks) -->
+  @if (!selectedBoard()) {
   <div class="mb-6">
     <app-board-list
       [boards]="boardsService.boards()"
       [loading]="boardsService.loading()"
       [error]="boardsService.error()"
       [currentUserId]="currentUserId()"
-      [selectedBoardId]="selectedBoard()?._id"
+      [selectedBoardId]="undefined"
       (createBoard)="openBoardForm()"
       (viewBoard)="onViewBoard($any($event))"
       (editBoard)="openBoardFormFromList($any($event))"
@@ -61,8 +62,9 @@
       (deleteBoard)="confirmDeleteBoard($any($event))"
     ></app-board-list>
   </div>
+  }
 
-  <!-- Vista de Tablero con Tareas - Visible cuando hay un tablero seleccionado -->
+  <!-- Vista de Tablero con Tareas - Visible solo cuando hay un tablero seleccionado (ruta /tasks/:boardId) -->
   @if (selectedBoard()) {
   <div data-board-view>
     <app-board-view
