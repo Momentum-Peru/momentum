@@ -452,15 +452,11 @@ import {
 
           <!-- Zona de Drag and Drop -->
           <div
-            class="mb-4 p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer"
-            [class.border-blue-500]="isDragging()"
-            [class.bg-blue-50]="isDragging()"
-            [class.dark:bg-blue-900/20]="isDragging()"
-            [class.border-gray-300]="!isDragging()"
-            [class.dark:border-gray-600]="!isDragging()"
-            [class.hover:border-blue-400]="!isDragging()"
-            [class.hover:bg-gray-50]="!isDragging()"
-            [class.dark:hover:bg-gray-700]="!isDragging()"
+            [class]="
+              isDragging()
+                ? 'mb-4 p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                : 'mb-4 p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+            "
             (dragover)="onDragOver($event)"
             (dragleave)="onDragLeave($event)"
             (drop)="onDrop($event)"
@@ -469,7 +465,9 @@ import {
             tabindex="0"
             (keydown.enter)="documentsInput.click()"
             (keydown.space)="documentsInput.click()"
-            [attr.aria-label]="'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos'"
+            [attr.aria-label]="
+              'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos'
+            "
           >
             <div class="text-center">
               <i
@@ -968,7 +966,7 @@ export class TaskDetailsComponent {
   /**
    * Maneja el envío del formulario de comentario
    */
-  public onSubmitComment(): void {
+  public async onSubmitComment(): Promise<void> {
     if (!this.task) return;
 
     const currentUser = this.authService.getCurrentUser();
@@ -1014,7 +1012,7 @@ export class TaskDetailsComponent {
 
     this.commentError.set(null);
     this.commentsService.createComment(commentData).subscribe({
-      next: (response) => {
+      next: async (response) => {
         // El backend devuelve la tarea completa actualizada
         if (response && response._id) {
           // Actualizar la tarea completa con la información del servidor
@@ -1043,12 +1041,7 @@ export class TaskDetailsComponent {
                   ? String((newComment._id as { _id?: string })._id || newComment._id)
                   : String(newComment._id);
 
-              this.uploadCommentFiles(commentId);
-              this.messageService.add({
-                severity: 'info',
-                summary: 'Subiendo archivos',
-                detail: 'Comentario agregado. Subiendo archivos...',
-              });
+              await this.uploadCommentFiles(commentId);
             } else {
               this.messageService.add({
                 severity: 'success',
@@ -1249,7 +1242,7 @@ export class TaskDetailsComponent {
     files.forEach((file) => {
       const fileType = file.type || '';
       const fileName = file.name.toLowerCase();
-      
+
       // Clasificar por tipo MIME primero
       if (fileType.startsWith('audio/')) {
         // Archivo de audio
@@ -1288,9 +1281,9 @@ export class TaskDetailsComponent {
   }
 
   /**
-   * Sube los archivos multimedia después de crear el comentario
+   * Sube los archivos multimedia después de crear el comentario usando Presigned URLs
    */
-  private uploadCommentFiles(commentId: string): void {
+  private async uploadCommentFiles(commentId: string): Promise<void> {
     if (!this.task) return;
 
     const currentUser = this.authService.getCurrentUser();
@@ -1312,30 +1305,36 @@ export class TaskDetailsComponent {
 
     if (allFiles.length === 0) return;
 
-    // Subir todos los archivos en una sola petición
-    this.commentsService
-      .uploadCommentFiles(this.task._id, commentId, allFiles, currentUser.id)
-      .subscribe({
-        next: (updatedTask) => {
-          // Actualizar la tarea con los datos del servidor
-          if (this.task) {
-            this.task = updatedTask;
-          }
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: `${allFiles.length} archivo(s) subido(s) correctamente`,
-          });
-        },
-        error: (error) => {
-          console.error('Error uploading files:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Error al subir los archivos. Intenta nuevamente.',
-          });
-        },
+    try {
+      // Subir todos los archivos usando Presigned URLs
+      const updatedTask = await this.commentsService.uploadCommentFiles(
+        this.task._id,
+        commentId,
+        allFiles,
+        currentUser.id,
+        (progress) => {
+          // Opcional: mostrar progreso
+          console.log(`Progreso de subida: ${progress}%`);
+        }
+      );
+
+      // Actualizar la tarea con los datos del servidor
+      if (this.task) {
+        this.task = updatedTask;
+      }
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: `${allFiles.length} archivo(s) subido(s) correctamente`,
       });
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Error al subir archivos',
+      });
+    }
   }
 
   /**

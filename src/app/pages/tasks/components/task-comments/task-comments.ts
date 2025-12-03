@@ -310,9 +310,9 @@ export class TaskCommentsComponent {
   }
 
   /**
-   * Sube los archivos del comentario
+   * Sube los archivos del comentario usando Presigned URLs
    */
-  private uploadFiles(commentId: string): void {
+  private async uploadFiles(commentId: string): Promise<void> {
     const files = this.selectedFiles();
     if (files.length === 0) {
       this.commentAdded.emit();
@@ -332,19 +332,27 @@ export class TaskCommentsComponent {
       ? commentId 
       : (commentId as any)?.toString?.() || String(commentId);
 
-    // Subir todos los archivos en una sola petición
-    this.commentsService.uploadCommentFiles(this.taskId, infoId, files, currentUser.id).subscribe({
-      next: (updatedTask) => {
-        // Emitir el evento para actualizar la vista
-        this.commentAdded.emit();
-        this.resetForm();
-      },
-      error: (error) => {
-        console.error('Error uploading files:', error);
-        this.errorMessage.set('Error al subir archivos');
-        this.loading.set(false);
-      },
-    });
+    try {
+      // Subir todos los archivos usando Presigned URLs
+      await this.commentsService.uploadCommentFiles(
+        this.taskId,
+        infoId,
+        files,
+        currentUser.id,
+        (progress) => {
+          // Opcional: mostrar progreso
+          console.log(`Progreso de subida: ${progress}%`);
+        }
+      );
+
+      // Emitir el evento para actualizar la vista
+      this.commentAdded.emit();
+      this.resetForm();
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      this.errorMessage.set('Error al subir archivos');
+      this.loading.set(false);
+    }
   }
 
   /**
