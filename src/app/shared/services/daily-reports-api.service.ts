@@ -119,7 +119,12 @@ export class DailyExpensesApiService {
   /**
    * Subida de archivos al reporte (según API)
    */
+  /**
+   * @deprecated Usar generateDocumentPresignedUrl + uploadFileToS3 + confirmDocumentUpload
+   * Mantenido solo para compatibilidad temporal
+   */
   uploadDocument(reportId: string, file: File): Observable<DailyReport> {
+    console.warn('uploadDocument está deprecado. Usar Presigned URLs en su lugar.');
     const formData = new FormData();
     formData.append('file', file);
 
@@ -197,7 +202,12 @@ export class DailyExpensesApiService {
       );
   }
 
+  /**
+   * @deprecated Usar generatePhotoPresignedUrl + uploadFileToS3 + confirmPhotoUpload
+   * Mantenido solo para compatibilidad temporal
+   */
   uploadPhoto(reportId: string, file: File): Observable<DailyReport> {
+    console.warn('uploadPhoto está deprecado. Usar Presigned URLs en su lugar.');
     const formData = new FormData();
     formData.append('file', file);
 
@@ -379,6 +389,133 @@ export class DailyExpensesApiService {
     });
   }
 
+  // ============================================
+  // PRESIGNED URLS PARA PHOTOS
+  // ============================================
+
+  /**
+   * Genera una Presigned URL para subir una foto
+   */
+  generatePhotoPresignedUrl(
+    reportId: string,
+    fileName: string,
+    contentType: string,
+    expirationTime?: number
+  ): Observable<PresignedUrlResponse> {
+    // Timeout de 60 segundos (aumentado para archivos grandes, aunque solo envía metadata)
+    // El timeout es solo por seguridad, la llamada debería ser instantánea
+    return this.http
+      .post<PresignedUrlResponse>(`${this.baseUrl}/daily-reports/${reportId}/photo/presigned-url`, {
+        fileName,
+        contentType,
+        ...(expirationTime && { expirationTime }),
+      })
+      .pipe(timeout(60000));
+  }
+
+  /**
+   * Genera múltiples Presigned URLs para subir varias fotos
+   */
+  generateMultiplePhotoPresignedUrls(
+    reportId: string,
+    files: PresignedUrlRequest[],
+    expirationTime?: number
+  ): Observable<PresignedUrlResponse[]> {
+    const body: {
+      files: PresignedUrlRequest[];
+      expirationTime?: number;
+    } = {
+      files: files.map((f) => ({
+        fileName: f.fileName,
+        contentType: f.contentType,
+      })),
+      ...(expirationTime && { expirationTime }),
+    };
+
+    // Timeout de 60 segundos (aumentado para archivos grandes, aunque solo envía metadata)
+    return this.http
+      .post<PresignedUrlResponse[]>(
+        `${this.baseUrl}/daily-reports/${reportId}/photo/presigned-urls`,
+        body
+      )
+      .pipe(timeout(60000));
+  }
+
+  /**
+   * Confirma la subida de una foto y la agrega al reporte
+   */
+  confirmPhotoUpload(reportId: string, photoUrl: string): Observable<DailyReport> {
+    return this.http.post<DailyReport>(`${this.baseUrl}/daily-reports/${reportId}/photo/confirm`, {
+      photoUrl,
+    });
+  }
+
+  // ============================================
+  // PRESIGNED URLS PARA DOCUMENTS
+  // ============================================
+
+  /**
+   * Genera una Presigned URL para subir un documento
+   */
+  generateDocumentPresignedUrl(
+    reportId: string,
+    fileName: string,
+    contentType: string,
+    expirationTime?: number
+  ): Observable<PresignedUrlResponse> {
+    // Timeout de 60 segundos (aumentado para archivos grandes, aunque solo envía metadata)
+    return this.http
+      .post<PresignedUrlResponse>(
+        `${this.baseUrl}/daily-reports/${reportId}/documents/presigned-url`,
+        {
+          fileName,
+          contentType,
+          ...(expirationTime && { expirationTime }),
+        }
+      )
+      .pipe(timeout(60000));
+  }
+
+  /**
+   * Genera múltiples Presigned URLs para subir varios documentos
+   */
+  generateMultipleDocumentPresignedUrls(
+    reportId: string,
+    files: PresignedUrlRequest[],
+    expirationTime?: number
+  ): Observable<PresignedUrlResponse[]> {
+    const body: {
+      files: PresignedUrlRequest[];
+      expirationTime?: number;
+    } = {
+      files: files.map((f) => ({
+        fileName: f.fileName,
+        contentType: f.contentType,
+      })),
+      ...(expirationTime && { expirationTime }),
+    };
+
+    // Timeout de 60 segundos (aumentado para archivos grandes, aunque solo envía metadata)
+    return this.http
+      .post<PresignedUrlResponse[]>(
+        `${this.baseUrl}/daily-reports/${reportId}/documents/presigned-urls`,
+        body
+      )
+      .pipe(timeout(60000));
+  }
+
+  /**
+   * Confirma la subida de un documento y lo agrega al reporte
+   */
+  confirmDocumentUpload(reportId: string, documentUrl: string): Observable<DailyReport> {
+    return this.http.post<DailyReport>(
+      `${this.baseUrl}/daily-reports/${reportId}/documents/confirm`,
+      {
+        documentUrl,
+      }
+    );
+  }
+
   /**
    * Sube un archivo directamente a S3 usando una Presigned URL
    * IMPORTANTE: No incluye headers de Authorization (la URL ya está firmada)
@@ -393,7 +530,7 @@ export class DailyExpensesApiService {
       // Usar el contentType proporcionado o el del archivo como fallback
       // Es importante que coincida con el usado para generar la Presigned URL
       const finalContentType = contentType || file.type || 'application/octet-stream';
-      
+
       const response = await fetch(presignedUrl, {
         method: 'PUT',
         body: file,

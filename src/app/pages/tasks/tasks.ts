@@ -234,6 +234,33 @@ export class TasksPage implements OnInit {
     this.loadPendingInvitations();
     this.loadUsers();
 
+    // Leer parámetros de ruta (boardId)
+    this.route.params.subscribe((params) => {
+      const boardId = params['boardId'];
+      if (boardId) {
+        // Si hay un boardId en la ruta, cargar ese tablero
+        this.boardsService.getById(boardId).subscribe({
+          next: (board) => {
+            this.selectedBoard.set(board);
+            this.loadBoardTasks(boardId);
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo cargar el tablero',
+            });
+            // Si no se puede cargar, volver a la lista
+            this.router.navigate(['/tasks']);
+          },
+        });
+      } else {
+        // Si no hay boardId, limpiar el tablero seleccionado
+        this.selectedBoard.set(null);
+        this.tasksService.clearState();
+      }
+    });
+
     // Leer query params para acciones desde notificaciones
     this.route.queryParams.subscribe((params) => {
       // Si viene showInvitations=true, abrir el modal de invitaciones
@@ -265,19 +292,23 @@ export class TasksPage implements OnInit {
                 : undefined;
 
             if (boardId) {
-              // Cargar el tablero y luego mostrar la tarea
-              this.boardsService.getById(boardId).subscribe({
-                next: (board) => {
-                  this.onViewBoard(board);
-                  // Cargar las tareas del tablero y luego mostrar la tarea
-                  this.loadBoardTasks(boardId);
-                  // Mostrar la tarea después de cargar el tablero
-                  this.viewTaskDetails(task);
-                },
-                error: () => {
-                  // Si no se puede cargar el tablero, solo mostrar la tarea
-                  this.viewTaskDetails(task);
-                },
+              // Navegar al tablero y luego mostrar la tarea
+              this.router.navigate(['/tasks', boardId], { queryParams: { taskId: params['taskId'] } }).then(() => {
+                // Cargar el tablero y luego mostrar la tarea
+                this.boardsService.getById(boardId).subscribe({
+                  next: (board) => {
+                    this.selectedBoard.set(board);
+                    this.loadBoardTasks(boardId);
+                    // Mostrar la tarea después de cargar el tablero
+                    setTimeout(() => {
+                      this.viewTaskDetails(task);
+                    }, 100);
+                  },
+                  error: () => {
+                    // Si no se puede cargar el tablero, solo mostrar la tarea
+                    this.viewTaskDetails(task);
+                  },
+                });
               });
             } else {
               // Si la tarea no tiene tablero, solo mostrar la tarea
@@ -308,26 +339,8 @@ export class TasksPage implements OnInit {
   private loadBoards(): void {
     this.boardsService.getAll().subscribe({
       next: () => {
-        // Seleccionar automáticamente el primer tablero si no hay uno seleccionado
-        const boards = this.boardsService.boards();
-        const selected = this.selectedBoard();
-
-        if (boards.length > 0 && !selected) {
-          const firstBoard = boards[0];
-          this.selectedBoard.set(firstBoard);
-          this.loadBoardTasks(firstBoard._id);
-
-          // Hacer scroll hacia la vista del tablero después de un pequeño delay
-          setTimeout(() => {
-            const boardViewElement = document.querySelector('[data-board-view]');
-            if (boardViewElement) {
-              boardViewElement.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start',
-              });
-            }
-          }, 200);
-        }
+        // Ya no seleccionamos automáticamente el primer tablero
+        // El usuario debe hacer clic para ver un tablero
       },
       error: () => {
         this.messageService.add({
@@ -428,7 +441,7 @@ export class TasksPage implements OnInit {
         : this.boardsService.create(data as CreateBoardRequest);
 
     operation.subscribe({
-      next: () => {
+      next: (savedBoard) => {
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
@@ -446,6 +459,9 @@ export class TasksPage implements OnInit {
               this.loadBoardTasks(boardId);
             },
           });
+        } else if (!wasEditing && savedBoard) {
+          // Si creamos un nuevo tablero, navegar a su vista
+          this.router.navigate(['/tasks', savedBoard._id]);
         }
 
         this.boardFormLoading.set(false);
@@ -465,20 +481,8 @@ export class TasksPage implements OnInit {
    * Maneja la visualización de un tablero
    */
   public onViewBoard(board: Board): void {
-    this.selectedBoard.set(board);
-    this.loadBoardTasks(board._id);
-
-    // Hacer scroll hacia la vista del tablero después de un pequeño delay
-    // para asegurar que el componente se haya renderizado
-    setTimeout(() => {
-      const boardViewElement = document.querySelector('[data-board-view]');
-      if (boardViewElement) {
-        boardViewElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-      }
-    }, 100);
+    // Navegar a la ruta del tablero
+    this.router.navigate(['/tasks', board._id]);
   }
 
   /**
@@ -597,8 +601,7 @@ export class TasksPage implements OnInit {
    * Vuelve a la lista de tableros
    */
   public onBackToBoards(): void {
-    this.selectedBoard.set(null);
-    this.tasksService.clearState();
+    this.router.navigate(['/tasks']);
   }
 
   /**
@@ -688,7 +691,8 @@ export class TasksPage implements OnInit {
           detail: 'Tablero eliminado',
         });
         if (this.selectedBoard()?._id === boardId) {
-          this.onBackToBoards();
+          // Si eliminamos el tablero que estamos viendo, volver a la lista
+          this.router.navigate(['/tasks']);
         }
         this.refreshBoards();
       },
