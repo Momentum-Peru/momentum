@@ -927,7 +927,11 @@ export class DailyExpensesPage implements OnInit {
               )
             );
 
-            await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, audioFile, audioFile.type);
+            await this.dailyExpensesApi.uploadFileToS3(
+              presignedResponse.presignedUrl,
+              audioFile,
+              audioFile.type
+            );
 
             const updated = await firstValueFrom(
               this.dailyExpensesApi.confirmAudioUpload(reportId, presignedResponse.publicUrl)
@@ -1546,7 +1550,11 @@ export class DailyExpensesPage implements OnInit {
 
       // Paso 3: Subir directamente a S3 (usar el mismo contentType que se usó para generar la Presigned URL)
       const contentType = this.getVideoContentType(fileToUpload);
-      await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, fileToUpload, contentType);
+      await this.dailyExpensesApi.uploadFileToS3(
+        presignedResponse.presignedUrl,
+        fileToUpload,
+        contentType
+      );
 
       // Paso 4: Confirmar subida al backend
       const response = await firstValueFrom(

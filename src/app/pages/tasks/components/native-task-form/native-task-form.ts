@@ -1160,24 +1160,23 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         : this.tasksApiService.createTask(taskData as CreateTaskRequest);
 
       operation.pipe(take(1)).subscribe({
-        next: (res) => {
+        next: async (res) => {
           // Si estamos editando y hay archivos para eliminar, eliminarlos primero
           const attachmentsToDelete = this.attachmentsToDelete();
           if (this.isEditing() && attachmentsToDelete.length > 0) {
-            this.deleteAttachments(res._id, attachmentsToDelete).then(() => {
-              // Después de eliminar, subir nuevos archivos si hay
-              const files = this.selectedFiles();
-              if (files.length > 0) {
-                this.uploadFiles(res._id, files, currentUser.id);
-              } else {
-                this.finishTaskUpdate(res);
-              }
-            });
+            await this.deleteAttachments(res._id, attachmentsToDelete);
+            // Después de eliminar, subir nuevos archivos si hay
+            const files = this.selectedFiles();
+            if (files.length > 0) {
+              await this.uploadFiles(res._id, files, currentUser.id);
+            } else {
+              this.finishTaskUpdate(res);
+            }
           } else {
             // Si hay archivos seleccionados, subirlos después de crear/actualizar la tarea
             const files = this.selectedFiles();
             if (files.length > 0) {
-              this.uploadFiles(res._id, files, currentUser.id);
+              await this.uploadFiles(res._id, files, currentUser.id);
             } else {
               this.finishTaskUpdate(res);
             }
@@ -1420,35 +1419,41 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   }
 
   /**
-   * Sube los archivos a la tarea
+   * Sube los archivos a la tarea usando Presigned URLs
    */
-  private uploadFiles(taskId: string, files: File[], uploadedBy: string): void {
-    this.tasksApiService
-      .uploadTaskAttachments(taskId, files, uploadedBy)
-      .pipe(take(1))
-      .subscribe({
-        next: (res) => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: `Tarea ${
-              this.isEditing() ? 'actualizada' : 'creada'
-            } con archivos correctamente.`,
-          });
-          this.save.emit(res);
-          this.selectedFiles.set([]);
-          this.attachmentsToDelete.set([]);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'La tarea se creó pero hubo un error al subir los archivos.',
-          });
-          this.loading.set(false);
-        },
+  private async uploadFiles(taskId: string, files: File[], uploadedBy: string): Promise<void> {
+    try {
+      const res = await this.tasksApiService.uploadTaskAttachments(
+        taskId,
+        files,
+        uploadedBy,
+        undefined,
+        (progress) => {
+          // Opcional: mostrar progreso
+          console.log(`Progreso de subida: ${progress}%`);
+        }
+      );
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: `Tarea ${
+          this.isEditing() ? 'actualizada' : 'creada'
+        } con archivos correctamente.`,
       });
+      this.save.emit(res);
+      this.selectedFiles.set([]);
+      this.attachmentsToDelete.set([]);
+      this.loading.set(false);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'La tarea se creó pero hubo un error al subir los archivos.',
+      });
+      this.loading.set(false);
+    }
   }
 
   /**
