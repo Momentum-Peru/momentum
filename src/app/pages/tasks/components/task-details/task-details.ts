@@ -7,6 +7,7 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 // PrimeNG Components
 import { DialogModule } from 'primeng/dialog';
@@ -442,6 +443,52 @@ import {
                             [attr.aria-label]="'Abrir imagen ' + file.originalName"
                           />
                         </div>
+                        } @else if (file.mimeType === 'application/pdf') {
+                        <!-- PDF -->
+                        <div class="p-3">
+                          <div class="flex items-center justify-between gap-2 mb-2">
+                            <div class="flex items-center gap-2">
+                              <i class="pi pi-file-pdf text-red-500"></i>
+                              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {{ file.originalName }}
+                              </span>
+                              <span class="text-xs text-gray-500 dark:text-gray-400">
+                                ({{ formatFileSize(file.size || 0) }})
+                              </span>
+                            </div>
+                          </div>
+                          <!-- Miniatura del PDF -->
+                          <div
+                            class="relative w-full border border-gray-200 dark:border-gray-600 rounded overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors group"
+                            (click)="openPdfModal(file.url, file.originalName)"
+                            (keydown.enter)="openPdfModal(file.url, file.originalName)"
+                            tabindex="0"
+                            role="button"
+                            [attr.aria-label]="'Ver PDF completo: ' + file.originalName"
+                          >
+                            <!-- Miniatura - Primera página del PDF -->
+                            <iframe
+                              [src]="getSafePdfUrl(file.url, 1)"
+                              class="w-full pointer-events-none"
+                              style="height: 200px; border: none;"
+                              title="Miniatura del PDF"
+                              loading="lazy"
+                            ></iframe>
+                            <!-- Overlay con información -->
+                            <div
+                              class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center"
+                            >
+                              <div
+                                class="opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-800 px-3 py-1.5 rounded-md shadow-lg flex items-center gap-2"
+                              >
+                                <i class="pi pi-eye text-blue-600 dark:text-blue-400"></i>
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                                  >Ver PDF completo</span
+                                >
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                         } @else {
                         <!-- Documento genérico -->
                         <div class="flex items-center gap-2 p-3">
@@ -763,6 +810,48 @@ import {
       </div>
       }
     </p-dialog>
+
+    <!-- Modal del PDF -->
+    <p-dialog
+      [modal]="true"
+      [visible]="showPdfModal()"
+      (visibleChange)="showPdfModal.set($event)"
+      (onHide)="closePdfModal()"
+      [style]="{ width: '90vw', maxWidth: '1200px' }"
+      [contentStyle]="{ height: '90vh', display: 'flex', flexDirection: 'column', padding: '0' }"
+      [closable]="true"
+      [maximizable]="true"
+      [header]="selectedPdfName() || 'Visualizador de PDF'"
+    >
+      @if (selectedPdfUrl()) {
+      <div style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
+        <!-- Botones de acción -->
+        <div
+          class="flex items-center justify-end gap-2 p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0"
+        >
+          <p-button
+            icon="pi pi-download"
+            label="Descargar PDF"
+            severity="primary"
+            (onClick)="downloadPdf(selectedPdfUrl()!, selectedPdfName() || 'documento.pdf')"
+            pTooltip="Descargar el PDF"
+          ></p-button>
+        </div>
+
+        <!-- Contenedor del PDF -->
+        <div
+          style="flex: 1; overflow: hidden; border: 1px solid #e5e7eb; border-radius: 0.375rem; background: #f3f4f6;"
+        >
+          <iframe
+            [src]="getSafePdfUrl(selectedPdfUrl()!)"
+            style="width: 100%; height: 100%; border: none; display: block;"
+            title="Visualizador de PDF"
+            loading="lazy"
+          ></iframe>
+        </div>
+      </div>
+      }
+    </p-dialog>
   `,
   styles: [
     `
@@ -783,6 +872,7 @@ export class TaskDetailsComponent {
   private readonly messageService = inject(MessageService);
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   // Signals
   public readonly commentsLoading = signal<boolean>(false);
@@ -794,6 +884,9 @@ export class TaskDetailsComponent {
   public readonly isDragging = signal<boolean>(false);
   public readonly lastModificationLog = signal<Log | null>(null);
   public readonly logsLoading = signal<boolean>(false);
+  public readonly showPdfModal = signal<boolean>(false);
+  public readonly selectedPdfUrl = signal<string | null>(null);
+  public readonly selectedPdfName = signal<string | null>(null);
 
   // Form
   public readonly commentForm: FormGroup;
@@ -1254,6 +1347,47 @@ export class TaskDetailsComponent {
    */
   public openFileInNewTab(url: string): void {
     window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  /**
+   * Sanitiza la URL del PDF para uso seguro en iframe
+   */
+  public getSafePdfUrl(url: string, page?: number): SafeResourceUrl {
+    // Agregar #page=1 para mostrar solo la primera página (para miniatura)
+    const pageParam = page ? `#page=${page}` : '#page=1';
+    const pdfUrl = url + pageParam;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(pdfUrl);
+  }
+
+  /**
+   * Abre el modal del PDF
+   */
+  public openPdfModal(url: string, fileName: string): void {
+    this.selectedPdfUrl.set(url);
+    this.selectedPdfName.set(fileName);
+    this.showPdfModal.set(true);
+  }
+
+  /**
+   * Cierra el modal del PDF
+   */
+  public closePdfModal(): void {
+    this.showPdfModal.set(false);
+    this.selectedPdfUrl.set(null);
+    this.selectedPdfName.set(null);
+  }
+
+  /**
+   * Descarga el PDF
+   */
+  public downloadPdf(url: string, fileName: string): void {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   /**
