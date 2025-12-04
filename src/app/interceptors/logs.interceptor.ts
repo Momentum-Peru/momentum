@@ -17,7 +17,7 @@ export const logsInterceptor: HttpInterceptorFn = (req, next) => {
 
   // Excluir peticiones externas (como Google Maps)
   if (!req.url.startsWith(environment.apiUrl)) {
-      return next(req);
+    return next(req);
   }
 
   // Obtener el usuario actual
@@ -34,14 +34,16 @@ export const logsInterceptor: HttpInterceptorFn = (req, next) => {
   const method = req.method;
 
   // Configuración de módulos a monitorear
-  // Por ahora solo usuarios, pero fácilmente extensible
   const moduleConfig: Record<string, { path: string; name: string }> = {
     users: {
       path: '/users',
       name: 'users',
     },
+    tasks: {
+      path: '/tasks',
+      name: 'tasks',
+    },
     // Aquí se pueden agregar más módulos en el futuro:
-    // tasks: { path: '/tasks', name: 'tasks' },
     // boards: { path: '/boards', name: 'boards' },
   };
 
