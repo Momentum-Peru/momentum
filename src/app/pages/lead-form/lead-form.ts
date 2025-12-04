@@ -2,7 +2,10 @@ import { Component, signal, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
+import { ToggleSwitch } from 'primeng/toggleswitch';
 import { Toast } from 'primeng/toast';
+import { Dialog } from 'primeng/dialog';
+import { Checkbox } from 'primeng/checkbox';
 import { MessageService } from 'primeng/api';
 import { LeadFormService } from './services/lead-form.service';
 import { firstValueFrom } from 'rxjs';
@@ -14,7 +17,7 @@ import { firstValueFrom } from 'rxjs';
 @Component({
   selector: 'app-lead-form',
   standalone: true,
-  imports: [Button, InputText, Toast, ReactiveFormsModule],
+  imports: [Button, InputText, ToggleSwitch, Toast, Dialog, Checkbox, ReactiveFormsModule],
   templateUrl: './lead-form.html',
   styleUrl: './lead-form.scss'
 })
@@ -26,14 +29,20 @@ export class LeadFormComponent {
   leadForm: FormGroup;
   isLoading = signal(false);
   isSubmitted = signal(false);
+  privacyModalVisible = signal(false);
 
   constructor() {
     this.leadForm = this.formBuilder.group({
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(120)]],
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(20)]],
-      company: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(120)]],
-      taxId: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(20)]]
+      address: ['', [Validators.maxLength(200)]],
+      referredBy: ['', [Validators.maxLength(120)]],
+      hasCompany: [false],
+      company: ['', [Validators.minLength(2), Validators.maxLength(120)]],
+      dni: ['', [Validators.maxLength(15)]],
+      ruc: ['', [Validators.maxLength(20)]],
+      acceptPrivacyPolicy: [false, [Validators.requiredTrue]],
     });
   }
 
@@ -83,10 +92,29 @@ export class LeadFormComponent {
       name: 'Nombre',
       email: 'Correo',
       phone: 'Teléfono',
+      address: 'Dirección',
+      referredBy: 'Referido por',
+      hasCompany: '¿Tiene empresa?',
       company: 'Empresa',
-      taxId: 'DNI o RUC'
+      dni: 'DNI',
+      ruc: 'RUC',
+      acceptPrivacyPolicy: 'Política de Privacidad'
     };
     return labels[fieldName] || fieldName;
+  }
+
+  /**
+   * Abre el modal de política de privacidad
+   */
+  openPrivacyModal(): void {
+    this.privacyModalVisible.set(true);
+  }
+
+  /**
+   * Cierra el modal de política de privacidad
+   */
+  closePrivacyModal(): void {
+    this.privacyModalVisible.set(false);
   }
 
   /**
@@ -98,12 +126,17 @@ export class LeadFormComponent {
     if (this.leadForm.valid) {
       this.isLoading.set(true);
 
+      const formValue = this.leadForm.value;
       const formData = {
-        name: this.leadForm.value.name,
-        email: this.leadForm.value.email,
-        phone: this.leadForm.value.phone,
-        company: this.leadForm.value.company,
-        taxId: this.leadForm.value.taxId
+        name: formValue.name,
+        email: formValue.email,
+        phone: formValue.phone,
+        address: formValue.address,
+        referredBy: formValue.referredBy,
+        hasCompany: formValue.hasCompany,
+        company: formValue.company,
+        dni: formValue.dni,
+        ruc: formValue.ruc
       };
 
       try {
@@ -117,7 +150,10 @@ export class LeadFormComponent {
 
         // Resetear el formulario después de 1 segundo
         setTimeout(() => {
-          this.leadForm.reset();
+          this.leadForm.reset({
+            hasCompany: false,
+            acceptPrivacyPolicy: false,
+          });
           this.isSubmitted.set(false);
         }, 1500);
 

@@ -239,3 +239,111 @@ Obtiene métricas consolidadas de proyectos y flujo de trabajo.
 - `quotesByStatus`: Estado de cotizaciones (ratio de conversión).
 - `totalOrders`: Órdenes de servicio recibidas.
 - `totalTdrs`: Cantidad de TDRs gestionados.
+
+---
+
+## API de Futuros Imposibles (FI)
+
+### Descripción General
+
+Gestiona los **Futuros Imposibles (FI)**, su descripción detallada y el plan de acción asociado con un rango de fechas.
+
+### Base URL
+
+```
+http://localhost:3027/fi
+```
+
+### Modelo FI (estructura general)
+
+```json
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "tenantId": "507f1f77bcf86cd799439011",
+  "titulo": "Correr mi primer ultramaratón",
+  "description": "Complete a 100 km ultramarathon in under 15 hours",
+  "atravesar": "Build mental resilience and consistent training habits",
+  "plan": "12-week progressive training plan with recovery blocks",
+  "startDate": "2025-01-01T00:00:00.000Z",
+  "endDate": "2025-01-31T00:00:00.000Z",
+  "isActive": true,
+  "createdAt": "2025-01-15T10:00:00.000Z",
+  "updatedAt": "2025-01-15T11:30:00.000Z"
+}
+```
+
+### Campos principales de FI
+
+| Campo       | Tipo    | Requerido | Descripción                                                       |
+| ----------  | ------- | --------- | ----------------------------------------------------------------- |
+| `_id`       | string  | Sí        | ID único del FI (ObjectId)                                       |
+| `tenantId`  | string  | Sí        | ID de la compañía (tenant)                                       |
+| `titulo`    | string  | Sí        | Título del futuro imposible                                      |
+| `description` | string | Sí       | Descripción detallada del futuro imposible                       |
+| `atravesar` | string  | Sí        | Qué se debe atravesar para lograr el FI                          |
+| `plan`      | string  | Sí        | Descripción del plan de acción                                   |
+| `startDate` | string  | Sí        | Fecha de inicio del plan (ISO Date, almacenada como UTC midnight)|
+| `endDate`   | string  | Sí        | Fecha fin del plan (ISO Date, almacenada como UTC midnight)      |
+| `isActive`  | boolean | No        | Indica si el FI está activo (por defecto `true`)                 |
+| `createdAt` | string  | Sí        | Fecha de creación (ISO Date)                                     |
+| `updatedAt` | string  | Sí        | Fecha de última actualización (ISO Date)                         |
+
+La búsqueda por texto (`q`) en `GET /fi` utiliza los campos `titulo`, `description`, `atravesar` y `plan`.
+
+### 1. Crear FI
+
+**POST** `/fi`
+
+#### Body (JSON)
+
+| Campo        | Tipo    | Requerido | Descripción                                           |
+| ------------ | ------- | --------- | ----------------------------------------------------- |
+| `titulo`     | string  | Sí        | Título del FI                                         |
+| `description`| string  | Sí        | Descripción detallada del FI                          |
+| `atravesar`  | string  | Sí        | Qué se debe atravesar                                 |
+| `plan`       | string  | Sí        | Descripción del plan de acción                        |
+| `startDate`  | string  | Sí        | Fecha de inicio del plan (ISO Date, sin hora)        |
+| `endDate`    | string  | Sí        | Fecha fin del plan (ISO Date, sin hora)              |
+| `isActive`   | boolean | No        | Estado activo. Por defecto `true`                     |
+
+#### Notas
+
+- El backend valida que `endDate` sea mayor o igual a `startDate`.
+- Los campos de texto se normalizan con `trim()` y longitud mínima de 2 caracteres.
+
+### 2. Listar FIs
+
+**GET** `/fi`
+
+Parámetros opcionales:
+
+- `q` (string): Búsqueda por texto en `titulo`, `description`, `atravesar` y `plan`.
+- `isActive` (boolean): Filtra por estado activo.
+
+### 3. Obtener FI por ID
+
+**GET** `/fi/:id`
+
+Devuelve un FI completo por su ID.
+
+### 4. Actualizar FI
+
+**PATCH** `/fi/:id`
+
+Permite actualización parcial de los campos del FI:
+
+- `titulo`
+- `description`
+- `atravesar`
+- `plan`
+- `startDate`
+- `endDate`
+- `isActive`
+
+Se valida que, tras la actualización, `endDate` no sea menor que `startDate`.
+
+### 5. Eliminar FI
+
+**DELETE** `/fi/:id`
+
+Elimina el FI y todos sus accionables asociados.
