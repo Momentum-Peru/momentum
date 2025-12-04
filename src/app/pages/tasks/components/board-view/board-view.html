@@ -25,6 +25,35 @@
       </div>
       <!-- Botones de acción - Ocultos en móviles, visibles en desktop -->
       <div class="hidden sm:flex gap-2 flex-shrink-0">
+        <!-- Toggle de vista -->
+        <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+          <button
+            (click)="viewMode.set('kanban')"
+            [class]="
+              viewMode() === 'kanban'
+                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400'
+                : 'text-gray-600 dark:text-gray-300'
+            "
+            class="px-3 py-1.5 rounded-md font-medium text-sm transition-colors flex items-center gap-2"
+            pTooltip="Vista Kanban"
+          >
+            <i class="pi pi-th-large"></i>
+            <span class="hidden lg:inline">Kanban</span>
+          </button>
+          <button
+            (click)="viewMode.set('list')"
+            [class]="
+              viewMode() === 'list'
+                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400'
+                : 'text-gray-600 dark:text-gray-300'
+            "
+            class="px-3 py-1.5 rounded-md font-medium text-sm transition-colors flex items-center gap-2"
+            pTooltip="Vista Lista"
+          >
+            <i class="pi pi-list"></i>
+            <span class="hidden lg:inline">Lista</span>
+          </button>
+        </div>
         <p-button
           icon="pi pi-refresh"
           [text]="true"
@@ -64,6 +93,33 @@
 
     <!-- Botones de acción para móviles - Debajo del título -->
     <div class="flex flex-wrap gap-2 mt-4 sm:hidden">
+      <!-- Toggle de vista para móviles -->
+      <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+        <button
+          (click)="viewMode.set('kanban')"
+          [class]="
+            viewMode() === 'kanban'
+              ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400'
+              : 'text-gray-600 dark:text-gray-300'
+          "
+          class="px-3 py-1.5 rounded-md font-medium text-sm transition-colors flex items-center gap-2"
+        >
+          <i class="pi pi-th-large"></i>
+          <span>Kanban</span>
+        </button>
+        <button
+          (click)="viewMode.set('list')"
+          [class]="
+            viewMode() === 'list'
+              ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400'
+              : 'text-gray-600 dark:text-gray-300'
+          "
+          class="px-3 py-1.5 rounded-md font-medium text-sm transition-colors flex items-center gap-2"
+        >
+          <i class="pi pi-list"></i>
+          <span>Lista</span>
+        </button>
+      </div>
       <p-button
         icon="pi pi-refresh"
         [text]="true"
@@ -250,6 +306,8 @@
   </div>
   }
 
+  <!-- Vista según el modo seleccionado -->
+  @if (viewMode() === 'kanban') {
   <!-- Kanban Board -->
   <app-native-kanban-board
     [tasksByStatus]="tasksByStatus"
@@ -260,4 +318,16 @@
     (viewTask)="viewTask.emit($event)"
     (createTask)="createTask.emit()"
   ></app-native-kanban-board>
+  } @else {
+  <!-- List View -->
+  <app-native-task-list
+    [tasksByStatus]="tasksByStatus"
+    [loading]="loading"
+    (taskStatusChanged)="taskStatusChanged.emit($event)"
+    (editTask)="editTask.emit($event)"
+    (deleteTask)="deleteTask.emit($event)"
+    (viewTask)="viewTask.emit($event)"
+    (createTask)="createTask.emit()"
+  ></app-native-task-list>
+  }
 </div>
