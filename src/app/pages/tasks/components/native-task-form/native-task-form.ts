@@ -412,15 +412,11 @@ import { take } from 'rxjs';
             }
             <label
               class="flex flex-col items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200"
-              [class.border-blue-500]="isDragging()"
-              [class.bg-blue-50]="isDragging()"
-              [class.dark:bg-blue-900/20]="isDragging()"
-              [class.border-gray-300]="!isDragging()"
-              [class.dark:border-gray-600]="!isDragging()"
-              [class.bg-gray-50]="!isDragging()"
-              [class.dark:bg-gray-700]="!isDragging()"
-              [class.hover:bg-gray-100]="!isDragging()"
-              [class.dark:hover:bg-gray-600]="!isDragging()"
+              [ngClass]="{
+                'border-blue-500 bg-blue-50 dragging-overlay': isDragging(),
+                'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600':
+                  !isDragging()
+              }"
               (dragover)="onDragOver($event)"
               (dragleave)="onDragLeave($event)"
               (drop)="onDrop($event)"
@@ -452,8 +448,7 @@ import { take } from 'rxjs';
                   @if (isDragging()) {
                   <span class="font-semibold">Suelta los archivos aquí</span>
                   } @else {
-                  <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta
-                  }
+                  <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta }
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
                   PNG, JPG, PDF, DOC, DOCX (MAX. 20MB). También puedes arrastrar desde WhatsApp
@@ -500,7 +495,8 @@ import { take } from 'rxjs';
     <!-- Dialog: Crear Nuevo Proyecto -->
     <p-dialog
       [modal]="true"
-      [(visible)]="showProjectDialog"
+      [visible]="showProjectDialog()"
+      (visibleChange)="showProjectDialog.set($event)"
       [style]="{ width: '600px' }"
       [closable]="true"
       header="Crear Nuevo Proyecto"
@@ -509,7 +505,10 @@ import { take } from 'rxjs';
       <form [formGroup]="projectForm" (ngSubmit)="onCreateProject()" class="space-y-4">
         <!-- Name -->
         <div class="space-y-2">
-          <label for="projectName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            for="projectName"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Nombre <span class="text-red-500">*</span>
           </label>
           <input
@@ -545,13 +544,18 @@ import { take } from 'rxjs';
             "
           ></textarea>
           @if (projectForm.get('description')?.invalid && projectForm.get('description')?.touched) {
-          <small class="text-red-500">Si proporcionas una descripción, debe tener entre 10 y 500 caracteres</small>
+          <small class="text-red-500"
+            >Si proporcionas una descripción, debe tener entre 10 y 500 caracteres</small
+          >
           }
         </div>
 
         <!-- Client -->
         <div class="space-y-2">
-          <label for="projectClient" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            for="projectClient"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Cliente <span class="text-red-500">*</span>
           </label>
           <p-select
@@ -638,6 +642,10 @@ import { take } from 'rxjs';
     `
       :host {
         display: block;
+      }
+
+      :host-context(.dark) .dragging-overlay {
+        background-color: rgba(30, 58, 138, 0.2);
       }
     `,
   ],
@@ -745,10 +753,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       value: project._id || '',
     }));
     // Agregar opción para crear nuevo proyecto al principio
-    return [
-      { label: '+ Crear nuevo proyecto', value: '__CREATE_NEW__' },
-      ...options,
-    ];
+    return [{ label: '+ Crear nuevo proyecto', value: '__CREATE_NEW__' }, ...options];
   });
 
   ngOnInit(): void {
@@ -831,7 +836,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   /**
    * Maneja el cambio en el selector de proyectos
    */
-  public onProjectChange(event: any): void {
+  public onProjectChange(event: { value: string | null }): void {
     if (event.value === '__CREATE_NEW__') {
       // Abrir diálogo para crear nuevo proyecto
       this.showProjectDialog.set(true);
@@ -1331,7 +1336,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       this.messageService.add({
         severity: 'warn',
         summary: 'Archivos muy grandes',
-        detail: `Los siguientes archivos exceden el tamaño máximo de 20MB: ${invalidFiles.join(', ')}`,
+        detail: `Los siguientes archivos exceden el tamaño máximo de 20MB: ${invalidFiles.join(
+          ', '
+        )}`,
       });
     }
 
@@ -1437,13 +1444,26 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       this.messageService.add({
         severity: 'success',
         summary: 'Éxito',
-        detail: `Tarea ${
-          this.isEditing() ? 'actualizada' : 'creada'
-        } con archivos correctamente.`,
+        detail: `Tarea ${this.isEditing() ? 'actualizada' : 'creada'} con archivos correctamente.`,
       });
       this.save.emit(res);
-      this.selectedFiles.set([]);
-      this.attachmentsToDelete.set([]);
+
+      // Limpiar el formulario solo cuando se crea una nueva tarea
+      if (!this.isEditing()) {
+        this.taskForm.reset();
+        this.taskForm.patchValue({
+          status: 'Pendiente',
+        });
+        this.subtasks.set([]);
+        this.selectedFiles.set([]);
+        this.existingAttachments.set([]);
+        this.attachmentsToDelete.set([]);
+      } else {
+        // Limpiar solo los archivos nuevos y la lista de eliminación
+        this.selectedFiles.set([]);
+        this.attachmentsToDelete.set([]);
+      }
+
       this.loading.set(false);
     } catch (error) {
       console.error('Error uploading files:', error);

@@ -293,23 +293,25 @@ export class TasksPage implements OnInit {
 
             if (boardId) {
               // Navegar al tablero y luego mostrar la tarea
-              this.router.navigate(['/tasks', boardId], { queryParams: { taskId: params['taskId'] } }).then(() => {
-                // Cargar el tablero y luego mostrar la tarea
-                this.boardsService.getById(boardId).subscribe({
-                  next: (board) => {
-                    this.selectedBoard.set(board);
-                    this.loadBoardTasks(boardId);
-                    // Mostrar la tarea después de cargar el tablero
-                    setTimeout(() => {
+              this.router
+                .navigate(['/tasks', boardId], { queryParams: { taskId: params['taskId'] } })
+                .then(() => {
+                  // Cargar el tablero y luego mostrar la tarea
+                  this.boardsService.getById(boardId).subscribe({
+                    next: (board) => {
+                      this.selectedBoard.set(board);
+                      this.loadBoardTasks(boardId);
+                      // Mostrar la tarea después de cargar el tablero
+                      setTimeout(() => {
+                        this.viewTaskDetails(task);
+                      }, 100);
+                    },
+                    error: () => {
+                      // Si no se puede cargar el tablero, solo mostrar la tarea
                       this.viewTaskDetails(task);
-                    }, 100);
-                  },
-                  error: () => {
-                    // Si no se puede cargar el tablero, solo mostrar la tarea
-                    this.viewTaskDetails(task);
-                  },
+                    },
+                  });
                 });
-              });
             } else {
               // Si la tarea no tiene tablero, solo mostrar la tarea
               this.viewTaskDetails(task);
