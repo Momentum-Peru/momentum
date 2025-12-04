@@ -34,10 +34,13 @@ export class BoardCardComponent {
   @Input({ required: true }) board!: Board;
   @Input() isOwner = false;
   @Input() isSelected = false;
+  @Input() currentUserId = '';
   @Output() view = new EventEmitter<Board>();
   @Output() edit = new EventEmitter<Board>();
   @Output() invite = new EventEmitter<Board>();
   @Output() delete = new EventEmitter<Board>();
+  @Output() removeMember = new EventEmitter<{ board: Board; memberId: string }>();
+  @Output() leaveBoard = new EventEmitter<Board>();
 
   showMembersDialog = signal(false);
 
@@ -67,5 +70,24 @@ export class BoardCardComponent {
   onDelete(event: Event): void {
     event.stopPropagation();
     this.delete.emit(this.board);
+  }
+
+  onRemoveMember(memberId: string, event: Event): void {
+    event.stopPropagation();
+    this.removeMember.emit({ board: this.board, memberId });
+  }
+
+  onLeaveBoard(event: Event): void {
+    event.stopPropagation();
+    this.leaveBoard.emit(this.board);
+  }
+
+  isCurrentUserMember(): boolean {
+    if (!this.currentUserId) return false;
+    return this.board.members.some((member) => member._id === this.currentUserId);
+  }
+
+  isCurrentUser(memberId: string): boolean {
+    return this.currentUserId === memberId;
   }
 }

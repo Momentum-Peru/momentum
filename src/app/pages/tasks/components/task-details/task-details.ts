@@ -797,7 +797,7 @@ import {
                   (onClick)="onClose()"
                 ></p-button>
                 <p-button
-                  label="Agregar Comentario"
+                  label="Agregar"
                   severity="primary"
                   type="submit"
                   [loading]="commentsService.loading()"

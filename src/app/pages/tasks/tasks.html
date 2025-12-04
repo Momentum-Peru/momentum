@@ -75,6 +75,7 @@
       [loading]="tasksService.loading()"
       [availableUsers]="availableUsers()"
       [availableTags]="availableTags()"
+      [currentUserId]="currentUserId()"
       (back)="onBackToBoards()"
       (edit)="openBoardForm(selectedBoard()!)"
       (invite)="openBoardInvite()"
@@ -85,6 +86,8 @@
       (viewTask)="viewTaskDetails($event)"
       (createTask)="openTaskForm()"
       (filtersChanged)="onFiltersChanged($event)"
+      (removeMember)="onRemoveMember($event)"
+      (leaveBoard)="onLeaveBoard($event)"
     ></app-board-view>
   </div>
   }

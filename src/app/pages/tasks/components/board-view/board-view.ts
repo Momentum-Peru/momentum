@@ -99,6 +99,9 @@ export class BoardViewComponent {
   // Opciones para filtros
   @Input() availableUsers: { label: string; value: string }[] = [];
   @Input() availableTags: string[] = [];
+  @Input() currentUserId = '';
+  @Output() removeMember = new EventEmitter<{ board: Board; memberId: string }>();
+  @Output() leaveBoard = new EventEmitter<Board>();
 
   /**
    * Opciones de etiquetas para el multiSelect
@@ -300,5 +303,22 @@ export class BoardViewComponent {
   onCreateTask(event: Event): void {
     event.stopPropagation();
     this.createTask.emit();
+  }
+
+  isCurrentUserMember(): boolean {
+    if (!this.currentUserId) return false;
+    return this.board.members.some((member) => member._id === this.currentUserId);
+  }
+
+  isCurrentUser(memberId: string): boolean {
+    return this.currentUserId === memberId;
+  }
+
+  onRemoveMember(memberId: string): void {
+    this.removeMember.emit({ board: this.board, memberId });
+  }
+
+  onLeaveBoard(): void {
+    this.leaveBoard.emit(this.board);
   }
 }

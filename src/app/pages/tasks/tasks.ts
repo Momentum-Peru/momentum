@@ -238,22 +238,32 @@ export class TasksPage implements OnInit {
     this.route.params.subscribe((params) => {
       const boardId = params['boardId'];
       if (boardId) {
-        // Si hay un boardId en la ruta, cargar ese tablero
-        this.boardsService.getById(boardId).subscribe({
-          next: (board) => {
-            this.selectedBoard.set(board);
-            this.loadBoardTasks(boardId);
-          },
-          error: () => {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'No se pudo cargar el tablero',
-            });
-            // Si no se puede cargar, volver a la lista
-            this.router.navigate(['/tasks']);
-          },
-        });
+        // Verificar primero si el tablero está en la lista local
+        const boardInList = this.boardsService.boards().find((b) => b._id === boardId);
+        
+        if (boardInList) {
+          // Si está en la lista, usarlo directamente
+          this.selectedBoard.set(boardInList);
+          this.loadBoardTasks(boardId);
+        } else {
+          // Si no está en la lista, intentar cargarlo desde el backend
+          this.boardsService.getById(boardId).subscribe({
+            next: (board) => {
+              this.selectedBoard.set(board);
+              this.loadBoardTasks(boardId);
+            },
+            error: () => {
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No tienes acceso a este tablero o no existe',
+              });
+              // Si no se puede cargar, volver a la lista
+              this.router.navigate(['/tasks'], { replaceUrl: true });
+              this.selectedBoard.set(null);
+            },
+          });
+        }
       } else {
         // Si no hay boardId, limpiar el tablero seleccionado
         this.selectedBoard.set(null);
@@ -373,7 +383,25 @@ export class TasksPage implements OnInit {
    * Refresca la lista de tableros
    */
   public refreshBoards(): void {
-    this.boardsService.refresh();
+    this.boardsService.getAll().subscribe({
+      next: () => {
+        // Verificar si el tablero seleccionado todavía está en la lista
+        const selectedBoardId = this.selectedBoard()?._id;
+        if (selectedBoardId) {
+          const boardStillExists = this.boardsService.boards().some(
+            (board) => board._id === selectedBoardId
+          );
+          // Si el tablero ya no está en la lista, significa que el usuario ya no tiene acceso
+          if (!boardStillExists) {
+            this.router.navigate(['/tasks']);
+            this.selectedBoard.set(null);
+          }
+        }
+      },
+      error: () => {
+        // Error silencioso, la lista ya está actualizada localmente
+      },
+    });
   }
 
   /**
@@ -865,5 +893,104 @@ export class TasksPage implements OnInit {
     // Solo refrescar la lista de tableros
     this.refreshBoards();
     this.loadPendingInvitations();
+  }
+
+  /**
+   * Elimina un miembro del tablero
+   */
+  public onRemoveMember(event: { board: Board; memberId: string }): void {
+    this.confirmationService.confirm({
+      message: `¿Estás seguro de que quieres eliminar a este miembro del tablero "${event.board.title}"?`,
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.boardsService.removeMember(event.board._id, event.memberId, this.currentUserId()).subscribe({
+          next: (updatedBoard) => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Miembro eliminado correctamente',
+            });
+            
+            const currentUserId = this.currentUserId();
+            const isRemovedUserCurrentUser = event.memberId === currentUserId;
+            
+            // Si el usuario eliminado es el usuario actual, eliminar inmediatamente y redirigir
+            if (isRemovedUserCurrentUser) {
+              // Eliminar de la lista local inmediatamente
+              const currentBoards = this.boardsService.boards();
+              const filteredBoards = currentBoards.filter((board) => board._id !== event.board._id);
+              this.boardsService.boards.set(filteredBoards);
+              
+              // Redirigir y limpiar
+              this.router.navigate(['/tasks'], { replaceUrl: true });
+              this.selectedBoard.set(null);
+            } else {
+              // Si estamos viendo el tablero, actualizarlo
+              if (this.selectedBoard()?._id === event.board._id) {
+                this.selectedBoard.set(updatedBoard);
+              }
+            }
+            
+            // Refrescar la lista de tableros desde el backend
+            this.refreshBoards();
+          },
+          error: (error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: error?.error?.message || 'No se pudo eliminar el miembro',
+            });
+          },
+        });
+      },
+    });
+  }
+
+  /**
+   * Maneja cuando un miembro se sale del tablero
+   */
+  public onLeaveBoard(board: Board): void {
+    this.confirmationService.confirm({
+      message: `¿Estás seguro de que quieres salirte del tablero "${board.title}"?`,
+      header: 'Confirmar Salida',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Salirse',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.boardsService.leaveBoard(board._id).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Te has salido del tablero correctamente',
+            });
+            
+            // Eliminar de la lista local inmediatamente (ya se hace en el servicio, pero asegurémonos)
+            const currentBoards = this.boardsService.boards();
+            const filteredBoards = currentBoards.filter((b) => b._id !== board._id);
+            this.boardsService.boards.set(filteredBoards);
+            
+            // Si estamos viendo el tablero del que nos salimos, volver a la lista
+            if (this.selectedBoard()?._id === board._id) {
+              this.router.navigate(['/tasks'], { replaceUrl: true });
+              this.selectedBoard.set(null);
+            }
+            
+            // Refrescar la lista de tableros desde el backend para asegurar consistencia
+            this.refreshBoards();
+          },
+          error: (error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: error?.error?.message || 'No se pudo salir del tablero',
+            });
+          },
+        });
+      },
+    });
   }
 }
