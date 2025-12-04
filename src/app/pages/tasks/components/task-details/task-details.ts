@@ -25,6 +25,7 @@ import { MessageModule } from 'primeng/message';
 // Services
 import { TaskCommentsApiService } from '../../../../shared/services/task-comments-api.service';
 import { TasksApiService } from '../../../../shared/services/tasks-api.service';
+import { LogsApiService, Log } from '../../../../shared/services/logs-api.service';
 import { MessageService } from 'primeng/api';
 import { AuthService } from '../../../login/services/auth.service';
 
@@ -63,6 +64,7 @@ import {
       [style]="{ width: '800px' }"
       [closable]="true"
       (onHide)="onClose()"
+      (onShow)="onDialogShow()"
     >
       @if (task) {
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
@@ -276,6 +278,45 @@ import {
                   {{ formatDateTime(task.updatedAt) }}
                 </span>
               </div>
+            </div>
+
+            <!-- Last Modified By -->
+            <div>
+              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Última modificación
+              </h3>
+              @if (logsLoading()) {
+              <div class="flex items-center gap-2">
+                <i class="pi pi-spin pi-spinner text-gray-500"></i>
+                <span class="text-gray-600 dark:text-gray-400 text-sm">Cargando...</span>
+              </div>
+              } @else if (lastModificationLog()) {
+              <div class="flex items-center gap-2">
+                <p-avatar
+                  [label]="getInitials(getLastModifierName())"
+                  styleClass="bg-purple-500 text-white"
+                  size="normal"
+                ></p-avatar>
+                <div class="flex-1">
+                  <div class="text-sm text-gray-600 dark:text-gray-400">
+                    <span class="font-medium">{{ getLastModifierName() }}</span>
+                    <span> {{ getLastModificationAction() }} la tarea</span>
+                  </div>
+                  @if (getLastModificationDate()) {
+                  <div class="text-xs text-gray-500 dark:text-gray-500">
+                    {{ getLastModificationDate() }}
+                  </div>
+                  }
+                </div>
+              </div>
+              } @else {
+              <div class="flex items-center gap-2">
+                <i class="pi pi-info-circle text-gray-400"></i>
+                <span class="text-gray-500 dark:text-gray-400 text-sm"
+                  >Sin información de modificación</span
+                >
+              </div>
+              }
             </div>
           </div>
         </div>
@@ -738,6 +779,7 @@ export class TaskDetailsComponent {
 
   public readonly commentsService = inject(TaskCommentsApiService);
   private readonly tasksApiService = inject(TasksApiService);
+  private readonly logsApiService = inject(LogsApiService);
   private readonly messageService = inject(MessageService);
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
@@ -750,6 +792,8 @@ export class TaskDetailsComponent {
   public readonly pendingVideo = signal<File[]>([]);
   public readonly pendingDocuments = signal<File[]>([]);
   public readonly isDragging = signal<boolean>(false);
+  public readonly lastModificationLog = signal<Log | null>(null);
+  public readonly logsLoading = signal<boolean>(false);
 
   // Form
   public readonly commentForm: FormGroup;
@@ -961,6 +1005,15 @@ export class TaskDetailsComponent {
    */
   public onClose(): void {
     this.closeDialog.emit();
+  }
+
+  /**
+   * Maneja cuando se abre el diálogo
+   */
+  public onDialogShow(): void {
+    if (this.task?._id) {
+      this.loadLastModificationLog(this.task._id);
+    }
   }
 
   /**
@@ -1365,6 +1418,111 @@ export class TaskDetailsComponent {
         });
       },
     });
+  }
+
+  /**
+   * Carga el último log de modificación de la tarea
+   */
+  private loadLastModificationLog(taskId: string): void {
+    this.logsLoading.set(true);
+    this.logsApiService.findByModulo('tasks', 100).subscribe({
+      next: (logs) => {
+        // Filtrar logs que correspondan a esta tarea específica
+        // Los logs tienen el taskId en detalle.entityId, detalle.datos._id, o en la URL
+        const taskLogs = logs.filter((log) => {
+          const detalle = log.detalle || {};
+
+          // Buscar en entityId (ID extraído de la URL en actualizaciones/eliminaciones)
+          if (detalle['entityId'] === taskId) {
+            return true;
+          }
+
+          // Buscar en datos._id (si el body contiene el _id)
+          if (detalle['datos'] && typeof detalle['datos'] === 'object') {
+            const datos = detalle['datos'] as Record<string, unknown>;
+            if (datos['_id'] === taskId || datos['taskId'] === taskId) {
+              return true;
+            }
+          }
+
+          // Buscar en la URL (para casos donde la URL contiene el taskId)
+          const url = detalle['url'] as string | undefined;
+          if (url && url.includes(`/tasks/${taskId}`)) {
+            return true;
+          }
+
+          return false;
+        });
+
+        // Ordenar por fecha de modificación descendente y tomar el más reciente
+        if (taskLogs.length > 0) {
+          const sortedLogs = taskLogs.sort((a, b) => {
+            const dateA = new Date(a.fechaModificacion).getTime();
+            const dateB = new Date(b.fechaModificacion).getTime();
+            return dateB - dateA;
+          });
+          this.lastModificationLog.set(sortedLogs[0]);
+        } else {
+          this.lastModificationLog.set(null);
+        }
+        this.logsLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading task logs:', error);
+        this.lastModificationLog.set(null);
+        this.logsLoading.set(false);
+      },
+    });
+  }
+
+  /**
+   * Obtiene el nombre del usuario que modificó la tarea
+   */
+  public getLastModifierName(): string {
+    const log = this.lastModificationLog();
+    if (!log) return 'N/A';
+
+    const userId = log.userId;
+    if (typeof userId === 'object' && userId !== null) {
+      return userId.name || userId.email || 'Usuario';
+    }
+
+    return 'Usuario';
+  }
+
+  /**
+   * Obtiene la fecha de la última modificación desde el log
+   */
+  public getLastModificationDate(): string | null {
+    const log = this.lastModificationLog();
+    if (!log) return null;
+    return this.formatDateTime(log.fechaModificacion);
+  }
+
+  /**
+   * Obtiene la acción de la última modificación
+   */
+  public getLastModificationAction(): string {
+    const log = this.lastModificationLog();
+    if (!log || !log.detalle) return 'modificó';
+
+    const detalle = log.detalle;
+    const accion = (detalle as { accion?: string }).accion;
+
+    if (accion) {
+      switch (accion) {
+        case 'crear':
+          return 'creó';
+        case 'actualizar':
+          return 'actualizó';
+        case 'eliminar':
+          return 'eliminó';
+        default:
+          return accion;
+      }
+    }
+
+    return 'modificó';
   }
 
   /**
