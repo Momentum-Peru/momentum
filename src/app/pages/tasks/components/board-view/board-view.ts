@@ -15,6 +15,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { DialogModule } from 'primeng/dialog';
 import { Board } from '../../../../shared/interfaces/board.interface';
 import { NativeKanbanBoardComponent } from '../native-kanban-board/native-kanban-board';
 import { NativeTaskStatsComponent } from '../native-task-stats/native-task-stats';
@@ -42,6 +43,7 @@ import {
     SelectModule,
     DatePickerModule,
     MultiSelectModule,
+    DialogModule,
     NativeKanbanBoardComponent,
     NativeTaskStatsComponent,
     NativeTaskListComponent,
@@ -85,6 +87,7 @@ export class BoardViewComponent {
 
   // Modo de vista
   public readonly viewMode = signal<'kanban' | 'list'>('kanban');
+  public readonly showMembersDialog = signal(false);
 
   // Filtros
   public readonly showFilters = signal<boolean>(false);
@@ -113,6 +116,10 @@ export class BoardViewComponent {
 
   get pendingInvitations(): number {
     return this.board.invitations.filter((inv) => inv.status === 'pending').length;
+  }
+
+  getPendingInvitations() {
+    return this.board.invitations.filter((inv) => inv.status === 'pending');
   }
 
   /**

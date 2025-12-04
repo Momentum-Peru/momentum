@@ -1,9 +1,10 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
 import { Board } from '../../../../shared/interfaces/board.interface';
 
 /**
@@ -13,7 +14,7 @@ import { Board } from '../../../../shared/interfaces/board.interface';
 @Component({
   selector: 'app-board-card',
   standalone: true,
-  imports: [CommonModule, CardModule, ButtonModule, TagModule, TooltipModule],
+  imports: [CommonModule, CardModule, ButtonModule, TagModule, TooltipModule, DialogModule],
   templateUrl: './board-card.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
@@ -38,8 +39,14 @@ export class BoardCardComponent {
   @Output() invite = new EventEmitter<Board>();
   @Output() delete = new EventEmitter<Board>();
 
+  showMembersDialog = signal(false);
+
   get pendingInvitationsCount(): number {
     return this.board.invitations.filter((inv) => inv.status === 'pending').length;
+  }
+
+  getPendingInvitations() {
+    return this.board.invitations.filter((inv) => inv.status === 'pending');
   }
 
   onView(event: Event): void {
