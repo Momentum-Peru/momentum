@@ -48,8 +48,11 @@ export class FiListPage implements OnInit {
   createOpen = false;
   createForm: CreateFiRequest = {
     titulo: '',
+    description: '',
     atravesar: '',
-    plan: { descripcion: '', fechaInicio: '', fechaFin: '' },
+    plan: '',
+    startDate: '',
+    endDate: '',
     isActive: true,
   };
   startDate?: Date;
@@ -85,8 +88,11 @@ export class FiListPage implements OnInit {
   openCreate(): void {
     this.createForm = {
       titulo: '',
+      description: '',
       atravesar: '',
-      plan: { descripcion: '', fechaInicio: '', fechaFin: '' },
+      plan: '',
+      startDate: '',
+      endDate: '',
       isActive: true,
     };
     this.startDate = undefined;
@@ -112,6 +118,14 @@ export class FiListPage implements OnInit {
       });
       return;
     }
+    if (!this.createForm.description) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Error',
+        detail: 'La descripción es requerida',
+      });
+      return;
+    }
     if (!this.createForm.atravesar) {
       this.messageService.add({
         severity: 'warn',
@@ -120,7 +134,7 @@ export class FiListPage implements OnInit {
       });
       return;
     }
-    if (!this.createForm.plan.descripcion) {
+    if (!this.createForm.plan) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Error',
@@ -129,8 +143,8 @@ export class FiListPage implements OnInit {
       return;
     }
     const toIso = (d: Date) => d.toISOString().slice(0, 10);
-    this.createForm.plan.fechaInicio = toIso(this.startDate);
-    this.createForm.plan.fechaFin = toIso(this.endDate);
+    this.createForm.startDate = toIso(this.startDate);
+    this.createForm.endDate = toIso(this.endDate);
     this.api.create(this.createForm).subscribe({
       next: (created) => {
         this.createOpen = false;

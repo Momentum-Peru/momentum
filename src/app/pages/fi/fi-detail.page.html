@@ -17,6 +17,15 @@
       <div class="bg-white rounded-md border p-4 space-y-3">
         <label for="titulo" class="text-sm text-gray-600">Título</label>
         <input id="titulo" pInputText [(ngModel)]="form.titulo" name="titulo" class="w-full" />
+        <label for="description" class="text-sm text-gray-600">Descripción</label>
+        <textarea
+          id="description"
+          pTextarea
+          rows="2"
+          [(ngModel)]="form.description"
+          name="description"
+          class="w-full"
+        ></textarea>
         <label for="atravesar" class="text-sm text-gray-600">Atravesar</label>
         <textarea
           id="atravesar"
@@ -26,7 +35,7 @@
           name="atravesar"
           class="w-full"
         ></textarea>
-        <label for="planDesc" class="text-sm text-gray-600">Plan - Descripción</label>
+        <label for="planDesc" class="text-sm text-gray-600">Plan</label>
         <textarea
           id="planDesc"
           pTextarea

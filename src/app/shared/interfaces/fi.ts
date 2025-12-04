@@ -1,16 +1,13 @@
 export type AccionableEstado = 'pendiente' | 'cumplido';
 
-export interface FiPlan {
-	descripcion: string;
-	fechaInicio: string; // ISO Date (YYYY-MM-DD o ISO completo)
-	fechaFin: string; // ISO Date
-}
-
 export interface Fi {
 	_id: string;
 	titulo: string;
+	description: string;
 	atravesar: string;
-	plan: FiPlan;
+	plan: string;
+	startDate: string; // ISO Date (YYYY-MM-DD, sin hora)
+	endDate: string; // ISO Date (YYYY-MM-DD, sin hora)
 	isActive: boolean;
 	createdAt?: string;
 	updatedAt?: string;
@@ -18,23 +15,21 @@ export interface Fi {
 
 export interface CreateFiRequest {
 	titulo: string;
+	description: string;
 	atravesar: string;
-	plan: {
-		descripcion: string;
-		fechaInicio: string;
-		fechaFin: string;
-	};
-	isActive: boolean;
+	plan: string;
+	startDate: string;
+	endDate: string;
+	isActive?: boolean;
 }
 
 export interface UpdateFiRequest {
 	titulo?: string;
+	description?: string;
 	atravesar?: string;
-	plan?: {
-		descripcion?: string;
-		fechaInicio?: string;
-		fechaFin?: string;
-	};
+	plan?: string;
+	startDate?: string;
+	endDate?: string;
 	isActive?: boolean;
 }
 
