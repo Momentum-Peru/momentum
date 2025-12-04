@@ -51,9 +51,26 @@ export class BoardsApiService {
     return this.http.get<Board>(`${this.baseUrl}/${id}`).pipe(
       tap((board) => {
         this.selectedBoard.set(board);
+        // Verificar si el tablero está en la lista, si no, agregarlo
+        const currentBoards = this.boards();
+        const exists = currentBoards.some((b) => b._id === id);
+        if (!exists) {
+          this.boards.set([...currentBoards, board]);
+        }
       }),
       tap(() => this.setLoading(false)),
-      tap({ error: (err) => this.handleError(err) })
+      tap({ error: (err) => {
+        this.handleError(err);
+        // Si hay error (403 Forbidden), eliminar el tablero de la lista si existe
+        if (err && typeof err === 'object' && 'status' in err && err.status === 403) {
+          const currentBoards = this.boards();
+          const filteredBoards = currentBoards.filter((board) => board._id !== id);
+          this.boards.set(filteredBoards);
+          if (this.selectedBoard()?._id === id) {
+            this.selectedBoard.set(null);
+          }
+        }
+      }})
     );
   }
 
@@ -179,6 +196,69 @@ export class BoardsApiService {
     this.setError(null);
 
     return this.http.get<Board[]>(`${this.baseUrl}/invitations/pending`).pipe(
+      tap(() => this.setLoading(false)),
+      tap({ error: (err) => this.handleError(err) })
+    );
+  }
+
+  /**
+   * Elimina un miembro del tablero
+   * Solo el owner puede eliminar miembros
+   */
+  removeMember(boardId: string, memberId: string, currentUserId?: string): Observable<Board> {
+    this.setLoading(true);
+    this.setError(null);
+
+    return this.http.delete<Board>(`${this.baseUrl}/${boardId}/members/${memberId}`).pipe(
+      tap((updatedBoard) => {
+        // Si el miembro eliminado es el usuario actual, eliminar el tablero de la lista
+        // porque ya no tendrá acceso
+        if (currentUserId && memberId === currentUserId) {
+          const currentBoards = this.boards();
+          const filteredBoards = currentBoards.filter((board) => board._id !== boardId);
+          this.boards.set(filteredBoards);
+          if (this.selectedBoard()?._id === boardId) {
+            this.selectedBoard.set(null);
+          }
+        } else {
+          // Si no es el usuario actual, actualizar el tablero en la lista
+          const currentBoards = this.boards();
+          const index = currentBoards.findIndex((board) => board._id === boardId);
+          if (index !== -1) {
+            currentBoards[index] = updatedBoard;
+            this.boards.set([...currentBoards]);
+          }
+          if (this.selectedBoard()?._id === boardId) {
+            this.selectedBoard.set(updatedBoard);
+          }
+        }
+      }),
+      tap(() => this.setLoading(false)),
+      tap({ error: (err) => this.handleError(err) })
+    );
+  }
+
+  /**
+   * Permite que un miembro se salga del tablero
+   */
+  leaveBoard(boardId: string): Observable<Board> {
+    this.setLoading(true);
+    this.setError(null);
+
+    return this.http.post<Board>(`${this.baseUrl}/${boardId}/leave`, {}).pipe(
+      tap(() => {
+        // Cuando un usuario se sale, ya no tiene acceso al tablero
+        // El backend no lo devolverá en findAll, así que necesitamos refrescar
+        // Limpiar el tablero seleccionado si es el mismo
+        if (this.selectedBoard()?._id === boardId) {
+          this.selectedBoard.set(null);
+        }
+        // Eliminar el tablero de la lista local inmediatamente
+        const currentBoards = this.boards();
+        const filteredBoards = currentBoards.filter((board) => board._id !== boardId);
+        this.boards.set(filteredBoards);
+        // La lista completa se refrescará desde el componente
+      }),
       tap(() => this.setLoading(false)),
       tap({ error: (err) => this.handleError(err) })
     );
