@@ -134,9 +134,20 @@ export const routes: Routes = [
       },
       {
         path: 'tasks',
-        loadComponent: () => import('./pages/tasks/tasks').then((m) => m.TasksPage),
-        canActivate: [MenuPermissionGuard],
-        data: { menuPermission: '/tasks' },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./pages/tasks/tasks').then((m) => m.TasksPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/tasks' },
+          },
+          {
+            path: ':boardId',
+            loadComponent: () => import('./pages/tasks/tasks').then((m) => m.TasksPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/tasks' },
+          },
+        ],
       },
       {
         path: 'documents',

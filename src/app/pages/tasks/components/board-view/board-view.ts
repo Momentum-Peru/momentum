@@ -18,6 +18,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { Board } from '../../../../shared/interfaces/board.interface';
 import { NativeKanbanBoardComponent } from '../native-kanban-board/native-kanban-board';
 import { NativeTaskStatsComponent } from '../native-task-stats/native-task-stats';
+import { NativeTaskListComponent } from '../native-task-list/native-task-list';
 import {
   Task,
   DragDropEvent,
@@ -43,6 +44,7 @@ import {
     MultiSelectModule,
     NativeKanbanBoardComponent,
     NativeTaskStatsComponent,
+    NativeTaskListComponent,
   ],
   templateUrl: './board-view.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -81,6 +83,9 @@ export class BoardViewComponent {
   @Output() createTask = new EventEmitter<void>();
   @Output() filtersChanged = new EventEmitter<TasksSearchParams>();
 
+  // Modo de vista
+  public readonly viewMode = signal<'kanban' | 'list'>('kanban');
+
   // Filtros
   public readonly showFilters = signal<boolean>(false);
   public readonly filterAssignedTo = signal<string | undefined>(undefined);
@@ -97,6 +102,13 @@ export class BoardViewComponent {
    */
   public get tagOptions(): { label: string; value: string }[] {
     return this.availableTags.map((tag) => ({ label: tag, value: tag }));
+  }
+
+  /**
+   * Cambia el modo de vista
+   */
+  public toggleViewMode(): void {
+    this.viewMode.set(this.viewMode() === 'kanban' ? 'list' : 'kanban');
   }
 
   get pendingInvitations(): number {

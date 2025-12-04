@@ -25,6 +25,7 @@ import { MessageModule } from 'primeng/message';
 // Services
 import { TaskCommentsApiService } from '../../../../shared/services/task-comments-api.service';
 import { TasksApiService } from '../../../../shared/services/tasks-api.service';
+import { LogsApiService, Log } from '../../../../shared/services/logs-api.service';
 import { MessageService } from 'primeng/api';
 import { AuthService } from '../../../login/services/auth.service';
 
@@ -63,6 +64,7 @@ import {
       [style]="{ width: '800px' }"
       [closable]="true"
       (onHide)="onClose()"
+      (onShow)="onDialogShow()"
     >
       @if (task) {
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
@@ -277,6 +279,45 @@ import {
                 </span>
               </div>
             </div>
+
+            <!-- Last Modified By -->
+            <div>
+              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Última modificación
+              </h3>
+              @if (logsLoading()) {
+              <div class="flex items-center gap-2">
+                <i class="pi pi-spin pi-spinner text-gray-500"></i>
+                <span class="text-gray-600 dark:text-gray-400 text-sm">Cargando...</span>
+              </div>
+              } @else if (lastModificationLog()) {
+              <div class="flex items-center gap-2">
+                <p-avatar
+                  [label]="getInitials(getLastModifierName())"
+                  styleClass="bg-purple-500 text-white"
+                  size="normal"
+                ></p-avatar>
+                <div class="flex-1">
+                  <div class="text-sm text-gray-600 dark:text-gray-400">
+                    <span class="font-medium">{{ getLastModifierName() }}</span>
+                    <span> {{ getLastModificationAction() }} la tarea</span>
+                  </div>
+                  @if (getLastModificationDate()) {
+                  <div class="text-xs text-gray-500 dark:text-gray-500">
+                    {{ getLastModificationDate() }}
+                  </div>
+                  }
+                </div>
+              </div>
+              } @else {
+              <div class="flex items-center gap-2">
+                <i class="pi pi-info-circle text-gray-400"></i>
+                <span class="text-gray-500 dark:text-gray-400 text-sm"
+                  >Sin información de modificación</span
+                >
+              </div>
+              }
+            </div>
           </div>
         </div>
 
@@ -452,15 +493,11 @@ import {
 
           <!-- Zona de Drag and Drop -->
           <div
-            class="mb-4 p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer"
-            [class.border-blue-500]="isDragging()"
-            [class.bg-blue-50]="isDragging()"
-            [class.dark:bg-blue-900/20]="isDragging()"
-            [class.border-gray-300]="!isDragging()"
-            [class.dark:border-gray-600]="!isDragging()"
-            [class.hover:border-blue-400]="!isDragging()"
-            [class.hover:bg-gray-50]="!isDragging()"
-            [class.dark:hover:bg-gray-700]="!isDragging()"
+            [class]="
+              isDragging()
+                ? 'mb-4 p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                : 'mb-4 p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+            "
             (dragover)="onDragOver($event)"
             (dragleave)="onDragLeave($event)"
             (drop)="onDrop($event)"
@@ -469,7 +506,9 @@ import {
             tabindex="0"
             (keydown.enter)="documentsInput.click()"
             (keydown.space)="documentsInput.click()"
-            [attr.aria-label]="'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos'"
+            [attr.aria-label]="
+              'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos'
+            "
           >
             <div class="text-center">
               <i
@@ -740,6 +779,7 @@ export class TaskDetailsComponent {
 
   public readonly commentsService = inject(TaskCommentsApiService);
   private readonly tasksApiService = inject(TasksApiService);
+  private readonly logsApiService = inject(LogsApiService);
   private readonly messageService = inject(MessageService);
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
@@ -752,6 +792,8 @@ export class TaskDetailsComponent {
   public readonly pendingVideo = signal<File[]>([]);
   public readonly pendingDocuments = signal<File[]>([]);
   public readonly isDragging = signal<boolean>(false);
+  public readonly lastModificationLog = signal<Log | null>(null);
+  public readonly logsLoading = signal<boolean>(false);
 
   // Form
   public readonly commentForm: FormGroup;
@@ -966,9 +1008,18 @@ export class TaskDetailsComponent {
   }
 
   /**
+   * Maneja cuando se abre el diálogo
+   */
+  public onDialogShow(): void {
+    if (this.task?._id) {
+      this.loadLastModificationLog(this.task._id);
+    }
+  }
+
+  /**
    * Maneja el envío del formulario de comentario
    */
-  public onSubmitComment(): void {
+  public async onSubmitComment(): Promise<void> {
     if (!this.task) return;
 
     const currentUser = this.authService.getCurrentUser();
@@ -1014,7 +1065,7 @@ export class TaskDetailsComponent {
 
     this.commentError.set(null);
     this.commentsService.createComment(commentData).subscribe({
-      next: (response) => {
+      next: async (response) => {
         // El backend devuelve la tarea completa actualizada
         if (response && response._id) {
           // Actualizar la tarea completa con la información del servidor
@@ -1043,12 +1094,7 @@ export class TaskDetailsComponent {
                   ? String((newComment._id as { _id?: string })._id || newComment._id)
                   : String(newComment._id);
 
-              this.uploadCommentFiles(commentId);
-              this.messageService.add({
-                severity: 'info',
-                summary: 'Subiendo archivos',
-                detail: 'Comentario agregado. Subiendo archivos...',
-              });
+              await this.uploadCommentFiles(commentId);
             } else {
               this.messageService.add({
                 severity: 'success',
@@ -1249,7 +1295,7 @@ export class TaskDetailsComponent {
     files.forEach((file) => {
       const fileType = file.type || '';
       const fileName = file.name.toLowerCase();
-      
+
       // Clasificar por tipo MIME primero
       if (fileType.startsWith('audio/')) {
         // Archivo de audio
@@ -1288,9 +1334,9 @@ export class TaskDetailsComponent {
   }
 
   /**
-   * Sube los archivos multimedia después de crear el comentario
+   * Sube los archivos multimedia después de crear el comentario usando Presigned URLs
    */
-  private uploadCommentFiles(commentId: string): void {
+  private async uploadCommentFiles(commentId: string): Promise<void> {
     if (!this.task) return;
 
     const currentUser = this.authService.getCurrentUser();
@@ -1312,30 +1358,36 @@ export class TaskDetailsComponent {
 
     if (allFiles.length === 0) return;
 
-    // Subir todos los archivos en una sola petición
-    this.commentsService
-      .uploadCommentFiles(this.task._id, commentId, allFiles, currentUser.id)
-      .subscribe({
-        next: (updatedTask) => {
-          // Actualizar la tarea con los datos del servidor
-          if (this.task) {
-            this.task = updatedTask;
-          }
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: `${allFiles.length} archivo(s) subido(s) correctamente`,
-          });
-        },
-        error: (error) => {
-          console.error('Error uploading files:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Error al subir los archivos. Intenta nuevamente.',
-          });
-        },
+    try {
+      // Subir todos los archivos usando Presigned URLs
+      const updatedTask = await this.commentsService.uploadCommentFiles(
+        this.task._id,
+        commentId,
+        allFiles,
+        currentUser.id,
+        (progress) => {
+          // Opcional: mostrar progreso
+          console.log(`Progreso de subida: ${progress}%`);
+        }
+      );
+
+      // Actualizar la tarea con los datos del servidor
+      if (this.task) {
+        this.task = updatedTask;
+      }
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: `${allFiles.length} archivo(s) subido(s) correctamente`,
       });
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Error al subir archivos',
+      });
+    }
   }
 
   /**
@@ -1366,6 +1418,111 @@ export class TaskDetailsComponent {
         });
       },
     });
+  }
+
+  /**
+   * Carga el último log de modificación de la tarea
+   */
+  private loadLastModificationLog(taskId: string): void {
+    this.logsLoading.set(true);
+    this.logsApiService.findByModulo('tasks', 100).subscribe({
+      next: (logs) => {
+        // Filtrar logs que correspondan a esta tarea específica
+        // Los logs tienen el taskId en detalle.entityId, detalle.datos._id, o en la URL
+        const taskLogs = logs.filter((log) => {
+          const detalle = log.detalle || {};
+
+          // Buscar en entityId (ID extraído de la URL en actualizaciones/eliminaciones)
+          if (detalle['entityId'] === taskId) {
+            return true;
+          }
+
+          // Buscar en datos._id (si el body contiene el _id)
+          if (detalle['datos'] && typeof detalle['datos'] === 'object') {
+            const datos = detalle['datos'] as Record<string, unknown>;
+            if (datos['_id'] === taskId || datos['taskId'] === taskId) {
+              return true;
+            }
+          }
+
+          // Buscar en la URL (para casos donde la URL contiene el taskId)
+          const url = detalle['url'] as string | undefined;
+          if (url && url.includes(`/tasks/${taskId}`)) {
+            return true;
+          }
+
+          return false;
+        });
+
+        // Ordenar por fecha de modificación descendente y tomar el más reciente
+        if (taskLogs.length > 0) {
+          const sortedLogs = taskLogs.sort((a, b) => {
+            const dateA = new Date(a.fechaModificacion).getTime();
+            const dateB = new Date(b.fechaModificacion).getTime();
+            return dateB - dateA;
+          });
+          this.lastModificationLog.set(sortedLogs[0]);
+        } else {
+          this.lastModificationLog.set(null);
+        }
+        this.logsLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading task logs:', error);
+        this.lastModificationLog.set(null);
+        this.logsLoading.set(false);
+      },
+    });
+  }
+
+  /**
+   * Obtiene el nombre del usuario que modificó la tarea
+   */
+  public getLastModifierName(): string {
+    const log = this.lastModificationLog();
+    if (!log) return 'N/A';
+
+    const userId = log.userId;
+    if (typeof userId === 'object' && userId !== null) {
+      return userId.name || userId.email || 'Usuario';
+    }
+
+    return 'Usuario';
+  }
+
+  /**
+   * Obtiene la fecha de la última modificación desde el log
+   */
+  public getLastModificationDate(): string | null {
+    const log = this.lastModificationLog();
+    if (!log) return null;
+    return this.formatDateTime(log.fechaModificacion);
+  }
+
+  /**
+   * Obtiene la acción de la última modificación
+   */
+  public getLastModificationAction(): string {
+    const log = this.lastModificationLog();
+    if (!log || !log.detalle) return 'modificó';
+
+    const detalle = log.detalle;
+    const accion = (detalle as { accion?: string }).accion;
+
+    if (accion) {
+      switch (accion) {
+        case 'crear':
+          return 'creó';
+        case 'actualizar':
+          return 'actualizó';
+        case 'eliminar':
+          return 'eliminó';
+        default:
+          return accion;
+      }
+    }
+
+    return 'modificó';
   }
 
   /**

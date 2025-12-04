@@ -9,6 +9,8 @@ import {
   inject,
   signal,
   computed,
+  Pipe,
+  PipeTransform,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -51,6 +53,18 @@ import { Project } from '../../../../shared/interfaces/project.interface';
 import { MessageService } from 'primeng/api';
 import { take } from 'rxjs';
 
+@Pipe({
+  name: 'truncate',
+  standalone: true,
+})
+export class TruncatePipe implements PipeTransform {
+  transform(value: string | null | undefined, maxLength = 50): string {
+    if (!value) return '';
+    if (value.length <= maxLength) return value;
+    return value.substring(0, maxLength) + '...';
+  }
+}
+
 @Component({
   selector: 'app-native-task-form',
   standalone: true,
@@ -64,6 +78,7 @@ import { take } from 'rxjs';
     InputTextModule,
     TextareaModule,
     ButtonModule,
+    TruncatePipe,
   ],
   providers: [MessageService],
   template: `
@@ -223,8 +238,22 @@ import { take } from 'rxjs';
               [appendTo]="'body'"
               styleClass="w-full"
               [loading]="projectsLoading()"
-              (onChange)="onProjectChange($event)"
-            ></p-select>
+            >
+              <ng-template let-project pTemplate="selectedItem">
+                @if (project?.label) {
+                <span class="truncate block w-full" [title]="project.label">
+                  {{ project.label | truncate : 40 }}
+                </span>
+                } @else {
+                <span class="truncate block w-full">Selecciona un proyecto</span>
+                }
+              </ng-template>
+              <ng-template let-project pTemplate="item">
+                <span class="truncate block w-full" [title]="project.label">
+                  {{ project.label | truncate : 40 }}
+                </span>
+              </ng-template>
+            </p-select>
           </div>
         </div>
 
@@ -412,15 +441,11 @@ import { take } from 'rxjs';
             }
             <label
               class="flex flex-col items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200"
-              [class.border-blue-500]="isDragging()"
-              [class.bg-blue-50]="isDragging()"
-              [class.dark:bg-blue-900/20]="isDragging()"
-              [class.border-gray-300]="!isDragging()"
-              [class.dark:border-gray-600]="!isDragging()"
-              [class.bg-gray-50]="!isDragging()"
-              [class.dark:bg-gray-700]="!isDragging()"
-              [class.hover:bg-gray-100]="!isDragging()"
-              [class.dark:hover:bg-gray-600]="!isDragging()"
+              [ngClass]="{
+                'border-blue-500 bg-blue-50 dragging-overlay': isDragging(),
+                'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600':
+                  !isDragging()
+              }"
               (dragover)="onDragOver($event)"
               (dragleave)="onDragLeave($event)"
               (drop)="onDrop($event)"
@@ -452,8 +477,7 @@ import { take } from 'rxjs';
                   @if (isDragging()) {
                   <span class="font-semibold">Suelta los archivos aquí</span>
                   } @else {
-                  <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta
-                  }
+                  <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta }
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
                   PNG, JPG, PDF, DOC, DOCX (MAX. 20MB). También puedes arrastrar desde WhatsApp
@@ -500,7 +524,8 @@ import { take } from 'rxjs';
     <!-- Dialog: Crear Nuevo Proyecto -->
     <p-dialog
       [modal]="true"
-      [(visible)]="showProjectDialog"
+      [visible]="showProjectDialog()"
+      (visibleChange)="showProjectDialog.set($event)"
       [style]="{ width: '600px' }"
       [closable]="true"
       header="Crear Nuevo Proyecto"
@@ -509,7 +534,10 @@ import { take } from 'rxjs';
       <form [formGroup]="projectForm" (ngSubmit)="onCreateProject()" class="space-y-4">
         <!-- Name -->
         <div class="space-y-2">
-          <label for="projectName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            for="projectName"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Nombre <span class="text-red-500">*</span>
           </label>
           <input
@@ -545,13 +573,18 @@ import { take } from 'rxjs';
             "
           ></textarea>
           @if (projectForm.get('description')?.invalid && projectForm.get('description')?.touched) {
-          <small class="text-red-500">Si proporcionas una descripción, debe tener entre 10 y 500 caracteres</small>
+          <small class="text-red-500"
+            >Si proporcionas una descripción, debe tener entre 10 y 500 caracteres</small
+          >
           }
         </div>
 
         <!-- Client -->
         <div class="space-y-2">
-          <label for="projectClient" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            for="projectClient"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Cliente <span class="text-red-500">*</span>
           </label>
           <p-select
@@ -638,6 +671,10 @@ import { take } from 'rxjs';
     `
       :host {
         display: block;
+      }
+
+      :host-context(.dark) .dragging-overlay {
+        background-color: rgba(30, 58, 138, 0.2);
       }
     `,
   ],
@@ -740,15 +777,10 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   });
 
   public readonly projectOptions = computed(() => {
-    const options = this.projects().map((project) => ({
+    return this.projects().map((project) => ({
       label: `${project.code} - ${project.name}`,
       value: project._id || '',
     }));
-    // Agregar opción para crear nuevo proyecto al principio
-    return [
-      { label: '+ Crear nuevo proyecto', value: '__CREATE_NEW__' },
-      ...options,
-    ];
   });
 
   ngOnInit(): void {
@@ -827,18 +859,6 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       value: client._id,
     }));
   });
-
-  /**
-   * Maneja el cambio en el selector de proyectos
-   */
-  public onProjectChange(event: any): void {
-    if (event.value === '__CREATE_NEW__') {
-      // Abrir diálogo para crear nuevo proyecto
-      this.showProjectDialog.set(true);
-      // Limpiar el valor del selector
-      this.taskForm.patchValue({ projectId: null });
-    }
-  }
 
   /**
    * Cierra el diálogo de proyecto
@@ -1160,24 +1180,23 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         : this.tasksApiService.createTask(taskData as CreateTaskRequest);
 
       operation.pipe(take(1)).subscribe({
-        next: (res) => {
+        next: async (res) => {
           // Si estamos editando y hay archivos para eliminar, eliminarlos primero
           const attachmentsToDelete = this.attachmentsToDelete();
           if (this.isEditing() && attachmentsToDelete.length > 0) {
-            this.deleteAttachments(res._id, attachmentsToDelete).then(() => {
-              // Después de eliminar, subir nuevos archivos si hay
-              const files = this.selectedFiles();
-              if (files.length > 0) {
-                this.uploadFiles(res._id, files, currentUser.id);
-              } else {
-                this.finishTaskUpdate(res);
-              }
-            });
+            await this.deleteAttachments(res._id, attachmentsToDelete);
+            // Después de eliminar, subir nuevos archivos si hay
+            const files = this.selectedFiles();
+            if (files.length > 0) {
+              await this.uploadFiles(res._id, files, currentUser.id);
+            } else {
+              this.finishTaskUpdate(res);
+            }
           } else {
             // Si hay archivos seleccionados, subirlos después de crear/actualizar la tarea
             const files = this.selectedFiles();
             if (files.length > 0) {
-              this.uploadFiles(res._id, files, currentUser.id);
+              await this.uploadFiles(res._id, files, currentUser.id);
             } else {
               this.finishTaskUpdate(res);
             }
@@ -1332,7 +1351,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       this.messageService.add({
         severity: 'warn',
         summary: 'Archivos muy grandes',
-        detail: `Los siguientes archivos exceden el tamaño máximo de 20MB: ${invalidFiles.join(', ')}`,
+        detail: `Los siguientes archivos exceden el tamaño máximo de 20MB: ${invalidFiles.join(
+          ', '
+        )}`,
       });
     }
 
@@ -1420,35 +1441,54 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   }
 
   /**
-   * Sube los archivos a la tarea
+   * Sube los archivos a la tarea usando Presigned URLs
    */
-  private uploadFiles(taskId: string, files: File[], uploadedBy: string): void {
-    this.tasksApiService
-      .uploadTaskAttachments(taskId, files, uploadedBy)
-      .pipe(take(1))
-      .subscribe({
-        next: (res) => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: `Tarea ${
-              this.isEditing() ? 'actualizada' : 'creada'
-            } con archivos correctamente.`,
-          });
-          this.save.emit(res);
-          this.selectedFiles.set([]);
-          this.attachmentsToDelete.set([]);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'La tarea se creó pero hubo un error al subir los archivos.',
-          });
-          this.loading.set(false);
-        },
+  private async uploadFiles(taskId: string, files: File[], uploadedBy: string): Promise<void> {
+    try {
+      const res = await this.tasksApiService.uploadTaskAttachments(
+        taskId,
+        files,
+        uploadedBy,
+        undefined,
+        (progress) => {
+          // Opcional: mostrar progreso
+          console.log(`Progreso de subida: ${progress}%`);
+        }
+      );
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: `Tarea ${this.isEditing() ? 'actualizada' : 'creada'} con archivos correctamente.`,
       });
+      this.save.emit(res);
+
+      // Limpiar el formulario solo cuando se crea una nueva tarea
+      if (!this.isEditing()) {
+        this.taskForm.reset();
+        this.taskForm.patchValue({
+          status: 'Pendiente',
+        });
+        this.subtasks.set([]);
+        this.selectedFiles.set([]);
+        this.existingAttachments.set([]);
+        this.attachmentsToDelete.set([]);
+      } else {
+        // Limpiar solo los archivos nuevos y la lista de eliminación
+        this.selectedFiles.set([]);
+        this.attachmentsToDelete.set([]);
+      }
+
+      this.loading.set(false);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'La tarea se creó pero hubo un error al subir los archivos.',
+      });
+      this.loading.set(false);
+    }
   }
 
   /**

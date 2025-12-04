@@ -27,9 +27,9 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
   standalone: true,
   imports: [CommonModule, DragDropModule, NativeTaskCardComponent],
   template: `
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
       <!-- Pending Column -->
-      <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+      <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-col h-full">
         <div class="flex items-center justify-between mb-4">
           <h3
             class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
@@ -50,10 +50,10 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
           [cdkDropListData]="pendingTasks()"
           [cdkDropListConnectedTo]="['in_progress', 'completed']"
           (cdkDropListDropped)="onTaskDrop($event)"
-          class="min-h-[200px] space-y-3"
+          class="flex-1 task-column"
         >
           @for (task of pendingTasks(); track task._id) {
-          <div cdkDrag class="cursor-move">
+          <div cdkDrag class="cursor-move h-full">
             <app-native-task-card
               [task]="task"
               (edit)="onEditTask($event)"
@@ -105,7 +105,7 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
       </div>
 
       <!-- In Progress Column -->
-      <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+      <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 flex flex-col h-full">
         <div class="flex items-center justify-between mb-4">
           <h3
             class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
@@ -126,10 +126,10 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
           [cdkDropListData]="inProgressTasks()"
           [cdkDropListConnectedTo]="['pending', 'completed']"
           (cdkDropListDropped)="onTaskDrop($event)"
-          class="min-h-[200px] space-y-3"
+          class="flex-1 task-column"
         >
           @for (task of inProgressTasks(); track task._id) {
-          <div cdkDrag class="cursor-move">
+          <div cdkDrag class="cursor-move h-full">
             <app-native-task-card
               [task]="task"
               (edit)="onEditTask($event)"
@@ -160,7 +160,7 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
       </div>
 
       <!-- Completed Column -->
-      <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+      <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 flex flex-col h-full">
         <div class="flex items-center justify-between mb-4">
           <h3
             class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
@@ -181,10 +181,10 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
           [cdkDropListData]="completedTasks()"
           [cdkDropListConnectedTo]="['pending', 'in_progress']"
           (cdkDropListDropped)="onTaskDrop($event)"
-          class="min-h-[200px] space-y-3"
+          class="flex-1 task-column"
         >
           @for (task of completedTasks(); track task._id) {
-          <div cdkDrag class="cursor-move">
+          <div cdkDrag class="cursor-move h-full">
             <app-native-task-card
               [task]="task"
               (edit)="onEditTask($event)"
@@ -219,6 +219,7 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
     `
       :host {
         display: block;
+        height: 100%;
       }
 
       .cdk-drag-preview {
@@ -258,9 +259,24 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
         border-radius: 8px;
       }
 
+      .task-column {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        align-content: start;
+        min-height: 0;
+        overflow-y: auto;
+      }
+
       .cdk-drag {
         cursor: grab;
         transition: transform 200ms ease;
+        min-height: 120px;
+      }
+
+      .cdk-drag app-native-task-card {
+        height: 100%;
+        min-height: 120px;
       }
 
       .cdk-drag:hover {

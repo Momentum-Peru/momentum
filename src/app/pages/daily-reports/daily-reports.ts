@@ -92,6 +92,12 @@ export class DailyExpensesPage implements OnInit {
   pendingPhoto = signal<File[]>([]);
   pendingDocuments = signal<File[]>([]);
 
+  // Estados de carga para archivos
+  uploadingFiles = signal<boolean>(false);
+  uploadProgress = signal<number>(0);
+  uploadingFileType = signal<'audio' | 'video' | 'photo' | 'document' | null>(null);
+  uploadingFileName = signal<string | null>(null);
+
   // Cache de URLs de blob para archivos pendientes (evita recrear URLs)
   private pendingAudioUrlCache = new Map<File, string>();
   private pendingVideoUrlCache = new Map<File, string>();
@@ -927,7 +933,11 @@ export class DailyExpensesPage implements OnInit {
               )
             );
 
-            await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, audioFile, audioFile.type);
+            await this.dailyExpensesApi.uploadFileToS3(
+              presignedResponse.presignedUrl,
+              audioFile,
+              audioFile.type
+            );
 
             const updated = await firstValueFrom(
               this.dailyExpensesApi.confirmAudioUpload(reportId, presignedResponse.publicUrl)
@@ -1022,29 +1032,69 @@ export class DailyExpensesPage implements OnInit {
     }
 
     try {
-      // Paso 1: Comprimir todos los videos en paralelo
+      // Paso 1: Generar Presigned URLs PRIMERO (rápido, solo envía metadata)
+      // CRÍTICO: Esta llamada debe ejecutarse ANTES de cualquier compresión
+      // para evitar bloqueos con archivos grandes
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Preparando subida',
+        detail: 'Generando URLs de subida...',
+        life: 3000,
+      });
+
+      let presignedUrls;
+      try {
+        presignedUrls = await firstValueFrom(
+          this.dailyExpensesApi.generateMultipleVideoPresignedUrls(
+            reportId,
+            files.map((file) => ({
+              fileName: file.name,
+              contentType: this.getVideoContentType(file),
+            })),
+            900 // 15 minutos para dar tiempo a la compresión y subida de archivos pesados
+          )
+        );
+      } catch (presignedError) {
+        throw new Error(
+          `No se pudieron generar las URLs de subida. Por favor, intenta nuevamente. ${
+            presignedError instanceof Error ? presignedError.message : 'Error desconocido'
+          }`
+        );
+      }
+
+      // Paso 2: Comprimir videos DESPUÉS de obtener las Presigned URLs (opcional para archivos grandes)
+      // Para archivos muy grandes (>100MB), saltar la compresión para evitar bloqueos
       const processedFiles = await Promise.all(
         files.map(async (file) => {
+          const shouldCompress = file.size <= 100 * 1024 * 1024; // Solo comprimir si es menor a 100MB
+
+          if (!shouldCompress) {
+            return file;
+          }
+
           try {
-            const compressed = await compressVideo(file, {
+            // Agregar timeout a la compresión (5 minutos máximo)
+            const compressionPromise = compressVideo(file, {
               maxWidth: 1280,
               maxHeight: 720,
               bitrate: 2000000, // 2Mbps
-              maxSizeMB: 50,
+              // maxSizeMB removido para permitir archivos grandes
               maxFPS: 30,
               quality: 0.7,
             });
+
+            const timeoutPromise = new Promise<File>((_, reject) => {
+              setTimeout(() => {
+                reject(new Error('Timeout: La compresión tardó más de 5 minutos'));
+              }, 5 * 60 * 1000); // 5 minutos
+            });
+
+            const compressed = await Promise.race([compressionPromise, timeoutPromise]);
 
             if (compressed.size < file.size) {
               const originalSizeMB = (file.size / (1024 * 1024)).toFixed(2);
               const compressedSizeMB = (compressed.size / (1024 * 1024)).toFixed(2);
               const reduction = (((file.size - compressed.size) / file.size) * 100).toFixed(1);
-
-              console.log(`Video comprimido: ${file.name}`, {
-                original: `${originalSizeMB}MB`,
-                compressed: `${compressedSizeMB}MB`,
-                reduction: `${reduction}%`,
-              });
 
               this.messageService.add({
                 severity: 'success',
@@ -1057,31 +1107,11 @@ export class DailyExpensesPage implements OnInit {
             }
 
             return file;
-          } catch (error) {
-            console.error(`Error al comprimir video ${file.name}:`, error);
+          } catch {
             // Si falla la compresión, usar el archivo original
             return file;
           }
         })
-      );
-
-      // Paso 2: Generar Presigned URLs para todos los archivos
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Preparando subida',
-        detail: 'Generando URLs de subida...',
-        life: 3000,
-      });
-
-      const presignedUrls = await firstValueFrom(
-        this.dailyExpensesApi.generateMultipleVideoPresignedUrls(
-          reportId,
-          processedFiles.map((file) => ({
-            fileName: file.name,
-            contentType: this.getVideoContentType(file),
-          })),
-          3600 // 1 hora de expiración
-        )
       );
 
       // Paso 3: Subir todos los archivos directamente a S3 en paralelo
@@ -1135,65 +1165,51 @@ export class DailyExpensesPage implements OnInit {
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
 
-    // Mostrar mensaje de compresión si hay archivos grandes
-    const hasLargeFiles = files.some((f) => f.size > 2 * 1024 * 1024); // > 2MB
-    if (hasLargeFiles) {
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Comprimiendo imágenes',
-        detail: 'Las imágenes grandes se están comprimiendo para una mejor experiencia...',
-        life: 3000,
-      });
-    }
+    if (this.editing()?._id) {
+      // Subir múltiples archivos usando Presigned URLs
+      // La compresión se hará dentro de uploadPhotoPromise después de obtener la Presigned URL
+      const reportId = this.editing()!._id!;
 
-    try {
-      // Comprimir todas las imágenes en paralelo, usando el original si falla la compresión
-      const compressedFiles = await Promise.all(
-        files.map(async (file) => {
-          try {
-            return await compressImage(file);
-          } catch (error) {
-            console.warn('Error al comprimir imagen, usando original:', {
-              fileName: file.name,
-              error,
-            });
-            return file; // Fallback al archivo original
-          }
-        })
-      );
-
-      if (this.editing()?._id) {
-        // Subir múltiples archivos comprimidos
-        compressedFiles.forEach((file) => {
-          this.dailyExpensesApi.uploadPhoto(this.editing()!._id!, file).subscribe({
-            next: (updated) => this.editing.set(updated),
-            error: () => this.toastError(`No se pudo subir la foto: ${file.name}`),
-          });
-        });
-      } else {
-        // Agregar a pendientes (ya comprimidas)
-        this.pendingPhoto.set([...this.pendingPhoto(), ...compressedFiles]);
+      for (const file of files) {
+        try {
+          await this.uploadPhotoPromise(reportId, file);
+          // Recargar el reporte para obtener la foto actualizada
+          const updated = await firstValueFrom(this.dailyExpensesApi.getById(reportId));
+          this.editing.set(updated);
+        } catch {
+          this.toastError(`No se pudo subir la foto: ${file.name}. Ver consola para más detalles.`);
+        }
       }
-    } catch (error) {
-      console.error('Error al procesar imágenes:', error);
-      this.toastError('Error al procesar las imágenes. Intente nuevamente.');
+    } else {
+      // Agregar a pendientes (sin comprimir, se comprimirá al subir)
+      this.pendingPhoto.set([...this.pendingPhoto(), ...files]);
     }
 
     input.value = '';
   }
 
-  onDocumentsSelected(event: Event) {
+  async onDocumentsSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
     if (this.editing()?._id) {
-      // subir en serie para mantener feedback
-      files.forEach((file) => {
-        this.dailyExpensesApi.uploadDocument(this.editing()!._id!, file).subscribe({
-          next: (updated) => this.editing.set(updated),
-          error: () => this.toastError(`No se pudo subir ${file.name}`),
+      // Subir usando Presigned URLs
+      const reportId = this.editing()!._id!;
+
+      try {
+        await this.uploadDocumentsPromise(reportId, files);
+        // Recargar el reporte para obtener los documentos actualizados
+        const updated = await firstValueFrom(this.dailyExpensesApi.getById(reportId));
+        this.editing.set(updated);
+        console.log('Documentos subidos exitosamente:', { count: files.length });
+      } catch (error) {
+        console.error('Error al subir documentos:', {
+          reportId,
+          fileCount: files.length,
+          error,
         });
-      });
+        this.toastError('Error al subir algunos documentos. Ver consola para más detalles.');
+      }
     } else {
       this.pendingDocuments.set([...this.pendingDocuments(), ...files]);
     }
@@ -1479,8 +1495,6 @@ export class DailyExpensesPage implements OnInit {
 
   private async uploadAudioPromise(id: string, file: File): Promise<unknown> {
     try {
-      console.log('Subiendo audio:', { fileName: file.name, fileSize: file.size, reportId: id });
-
       // Paso 1: Generar Presigned URL
       const presignedResponse = await firstValueFrom(
         this.dailyExpensesApi.generateAudioPresignedUrl(
@@ -1500,67 +1514,166 @@ export class DailyExpensesPage implements OnInit {
         this.dailyExpensesApi.confirmAudioUpload(id, presignedResponse.publicUrl)
       );
 
-      console.log('Audio subido exitosamente:', { fileName: file.name, reportId: id });
       return response;
     } catch (error) {
-      console.error('Error al subir audio:', { fileName: file.name, error, reportId: id });
       throw { type: 'audio', fileName: file.name, error };
     }
   }
   private async uploadVideoPromise(id: string, file: File): Promise<unknown> {
     try {
-      console.log('Subiendo video:', { fileName: file.name, fileSize: file.size, reportId: id });
-
-      // Paso 1: Comprimir video si es necesario
-      let fileToUpload = file;
+      // Paso 1: Generar Presigned URL PRIMERO (rápido, solo envía metadata)
+      // CRÍTICO: Esta llamada debe ejecutarse ANTES de cualquier operación pesada
+      // como compresión, para evitar bloqueos con archivos grandes
+      let presignedResponse;
       try {
-        const compressed = await compressVideo(file, {
-          maxWidth: 1280,
-          maxHeight: 720,
-          bitrate: 2000000, // 2Mbps
-          maxSizeMB: 50,
-          maxFPS: 30,
-          quality: 0.7,
-        });
+        const presignedObservable = this.dailyExpensesApi.generateVideoPresignedUrl(
+          id,
+          file.name, // Usar el nombre original, se actualizará después si se comprime
+          this.getVideoContentType(file),
+          900 // 15 minutos para dar tiempo a la compresión y subida de archivos pesados
+        );
 
-        if (compressed.size < file.size) {
-          fileToUpload = compressed;
-          console.log('Video comprimido antes de subir:', {
-            original: `${(file.size / (1024 * 1024)).toFixed(2)}MB`,
-            compressed: `${(compressed.size / (1024 * 1024)).toFixed(2)}MB`,
-          });
-        }
-      } catch (compressionError) {
-        console.warn('Error al comprimir video, usando original:', compressionError);
+        presignedResponse = await firstValueFrom(presignedObservable);
+      } catch (presignedError) {
+        throw new Error(
+          `No se pudo generar la URL de subida. Por favor, intenta nuevamente. ${
+            presignedError instanceof Error ? presignedError.message : 'Error desconocido'
+          }`
+        );
       }
 
-      // Paso 2: Generar Presigned URL
-      const presignedResponse = await firstValueFrom(
-        this.dailyExpensesApi.generateVideoPresignedUrl(
-          id,
-          fileToUpload.name,
-          this.getVideoContentType(fileToUpload),
-          3600 // 1 hora
-        )
-      );
+      // Paso 2: Comprimir video DESPUÉS de obtener la Presigned URL (opcional para archivos grandes)
+      // Para archivos muy grandes (>100MB), saltar la compresión para evitar bloqueos
+      let fileToUpload = file;
+      const shouldCompress = file.size <= 100 * 1024 * 1024; // Solo comprimir si es menor a 100MB
+
+      if (shouldCompress) {
+        try {
+          // Agregar timeout a la compresión (5 minutos máximo)
+          const compressionPromise = compressVideo(file, {
+            maxWidth: 1280,
+            maxHeight: 720,
+            bitrate: 2000000, // 2Mbps
+            // maxSizeMB removido para permitir archivos grandes
+            maxFPS: 30,
+            quality: 0.7,
+          });
+
+          const timeoutPromise = new Promise<File>((_, reject) => {
+            setTimeout(() => {
+              reject(new Error('Timeout: La compresión tardó más de 5 minutos'));
+            }, 5 * 60 * 1000); // 5 minutos
+          });
+
+          const compressed = await Promise.race([compressionPromise, timeoutPromise]);
+
+          if (compressed.size < file.size) {
+            fileToUpload = compressed;
+          }
+        } catch {
+          fileToUpload = file;
+        }
+      } else {
+        fileToUpload = file;
+      }
 
       // Paso 3: Subir directamente a S3 (usar el mismo contentType que se usó para generar la Presigned URL)
       const contentType = this.getVideoContentType(fileToUpload);
-      await this.dailyExpensesApi.uploadFileToS3(presignedResponse.presignedUrl, fileToUpload, contentType);
+      await this.dailyExpensesApi.uploadFileToS3(
+        presignedResponse.presignedUrl,
+        fileToUpload,
+        contentType
+      );
 
       // Paso 4: Confirmar subida al backend
       const response = await firstValueFrom(
         this.dailyExpensesApi.confirmVideoUpload(id, presignedResponse.publicUrl)
       );
 
-      console.log('Video subido exitosamente:', { fileName: file.name, reportId: id });
       return response;
     } catch (error) {
-      console.error('Error al subir video:', { fileName: file.name, error, reportId: id });
       throw { type: 'video', fileName: file.name, error };
     }
   }
-  private uploadPhotoPromise(id: string, file: File) {
+  private async uploadPhotoPromise(id: string, file: File): Promise<unknown> {
+    // Asegurar que los estados se establezcan ANTES de cualquier operación
+    this.uploadingFiles.set(true);
+    this.uploadingFileType.set('photo');
+    this.uploadingFileName.set(file.name);
+    this.uploadProgress.set(0);
+
+    try {
+      // Paso 1: Generar Presigned URL PRIMERO (rápido, solo envía metadata)
+      // Esto asegura que el servicio se llame inmediatamente, incluso con archivos pesados
+      // IMPORTANTE: Esta llamada se hace ANTES de cualquier procesamiento del archivo
+      // para evitar que operaciones pesadas bloqueen la llamada HTTP
+      this.uploadProgress.set(5);
+
+      let presignedResponse;
+      try {
+        const presignedObservable = this.dailyExpensesApi.generatePhotoPresignedUrl(
+          id,
+          file.name, // Usar el nombre original, se actualizará después si se comprime
+          file.type || 'image/jpeg',
+          900 // 15 minutos para dar tiempo a la compresión y subida de archivos pesados
+        );
+
+        presignedResponse = await firstValueFrom(presignedObservable);
+      } catch (presignedError) {
+        throw new Error(
+          `No se pudo generar la URL de subida. Por favor, intenta nuevamente. ${
+            presignedError instanceof Error ? presignedError.message : 'Error desconocido'
+          }`
+        );
+      }
+
+      // Paso 2: Comprimir la imagen DESPUÉS de obtener la Presigned URL
+      // Esto permite que el usuario vea progreso desde el principio
+      this.uploadProgress.set(10);
+      let fileToUpload: File;
+      try {
+        const compressedFile = await compressImage(file);
+        if (compressedFile.size < file.size) {
+          fileToUpload = compressedFile;
+        } else {
+          fileToUpload = file;
+        }
+      } catch {
+        fileToUpload = file;
+      }
+
+      // Paso 2: Subir directamente a S3 con progreso
+      this.uploadProgress.set(30);
+      await this.uploadFileToS3WithProgress(
+        presignedResponse.presignedUrl,
+        fileToUpload,
+        fileToUpload.type || 'image/jpeg',
+        (progress) => {
+          // Mapear progreso de 30% a 90% (30% inicial + 60% de subida)
+          this.uploadProgress.set(30 + progress * 0.6);
+        }
+      );
+
+      // Paso 3: Confirmar subida al backend
+      this.uploadProgress.set(95);
+      const response = await firstValueFrom(
+        this.dailyExpensesApi.confirmPhotoUpload(id, presignedResponse.publicUrl)
+      );
+
+      this.uploadProgress.set(100);
+      return response;
+    } catch (error) {
+      throw { type: 'photo', fileName: file.name, error };
+    } finally {
+      this.uploadingFiles.set(false);
+      this.uploadingFileType.set(null);
+      this.uploadingFileName.set(null);
+      this.uploadProgress.set(0);
+    }
+  }
+
+  // Método antiguo (deprecado) - mantenido para referencia
+  private uploadPhotoPromise_OLD(id: string, file: File) {
     return new Promise((resolve, reject) => {
       // Comprimir la imagen antes de subir, usando el original si falla
       compressImage(file)
@@ -1574,64 +1687,156 @@ export class DailyExpensesPage implements OnInit {
           });
           return compressedFile;
         })
-        .catch((compressionError) => {
-          console.warn('Error al comprimir foto, usando original:', {
-            fileName: file.name,
-            error: compressionError,
-          });
+        .catch(() => {
           return file; // Fallback al archivo original
         })
         .then((fileToUpload) => {
           this.dailyExpensesApi.uploadPhoto(id, fileToUpload).subscribe({
             next: (response) => {
-              console.log('Foto subida exitosamente:', {
-                fileName: fileToUpload.name,
-                reportId: id,
-              });
               resolve(response);
             },
             error: (error) => {
-              console.error('Error al subir foto:', {
-                fileName: fileToUpload.name,
-                error,
-                reportId: id,
-              });
               reject({ type: 'photo', fileName: fileToUpload.name, error });
             },
           });
         })
         .catch((error) => {
-          console.error('Error inesperado al procesar foto:', {
-            fileName: file.name,
-            error,
-            reportId: id,
-          });
           reject({ type: 'photo', fileName: file.name, error });
         });
     });
   }
-  private uploadDocumentsPromise(id: string, files: File[]) {
-    return new Promise((resolve) => {
-      let remaining = files.length;
-      if (remaining === 0) {
-        resolve(true);
-        return;
+  private async uploadDocumentsPromise(id: string, files: File[]): Promise<unknown> {
+    if (files.length === 0) {
+      return Promise.resolve(true);
+    }
+
+    try {
+      this.uploadingFiles.set(true);
+      this.uploadingFileType.set('document');
+      this.uploadingFileName.set(`${files.length} archivo(s)`);
+      this.uploadProgress.set(0);
+
+      // Paso 1: Generar Presigned URLs para todos los documentos PRIMERO (rápido, solo envía metadata)
+      // Esto asegura que el servicio se llame inmediatamente, incluso con archivos pesados
+      this.uploadProgress.set(10);
+
+      let presignedResponses;
+      try {
+        presignedResponses = await firstValueFrom(
+          this.dailyExpensesApi.generateMultipleDocumentPresignedUrls(
+            id,
+            files.map((f) => ({
+              fileName: f.name,
+              contentType: f.type || 'application/octet-stream',
+            })),
+            900 // 15 minutos para dar tiempo a la subida de archivos pesados
+          )
+        );
+      } catch (presignedError) {
+        throw new Error(
+          `No se pudieron generar las URLs de subida. Por favor, intenta nuevamente. ${
+            presignedError instanceof Error ? presignedError.message : 'Error desconocido'
+          }`
+        );
       }
-      files.forEach((f) => {
-        console.log('Subiendo documento:', { fileName: f.name, fileSize: f.size, reportId: id });
-        this.dailyExpensesApi.uploadDocument(id, f).subscribe({
-          next: () => {
-            console.log('Documento subido exitosamente:', { fileName: f.name, reportId: id });
-            remaining -= 1;
-            if (remaining === 0) resolve(true);
-          },
-          error: (error) => {
-            console.error('Error al subir documento:', { fileName: f.name, error, reportId: id });
-            remaining -= 1;
-            if (remaining === 0) resolve(true);
-          },
+
+      // Paso 2: Subir todos los documentos directamente a S3
+      const totalFiles = files.length;
+      const progressPerFile = 80 / totalFiles; // 80% del progreso total para subidas
+      let currentProgress = 10;
+
+      const uploadPromises = presignedResponses.map(async (presignedResponse, index) => {
+        const file = files[index];
+        const fileStartProgress = currentProgress;
+
+        await this.uploadFileToS3WithProgress(
+          presignedResponse.presignedUrl,
+          file,
+          file.type || 'application/octet-stream',
+          (fileProgress) => {
+            // Progreso individual del archivo
+            const fileProgressValue = fileStartProgress + fileProgress * progressPerFile;
+            this.uploadProgress.set(Math.min(fileProgressValue, 90));
+          }
+        );
+
+        // Confirmar subida al backend
+        await firstValueFrom(
+          this.dailyExpensesApi.confirmDocumentUpload(id, presignedResponse.publicUrl)
+        );
+
+        currentProgress += progressPerFile;
+        console.log('Documento subido exitosamente:', {
+          fileName: file.name,
+          reportId: id,
         });
       });
+
+      await Promise.all(uploadPromises);
+
+      this.uploadProgress.set(100);
+      console.log('Todos los documentos subidos exitosamente:', {
+        count: files.length,
+        reportId: id,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error al subir documentos:', {
+        count: files.length,
+        error,
+        reportId: id,
+      });
+      throw { type: 'document', error };
+    } finally {
+      this.uploadingFiles.set(false);
+      this.uploadingFileType.set(null);
+      this.uploadingFileName.set(null);
+      this.uploadProgress.set(0);
+    }
+  }
+
+  /**
+   * Sube un archivo a S3 con seguimiento de progreso
+   */
+  private async uploadFileToS3WithProgress(
+    presignedUrl: string,
+    file: File,
+    contentType: string,
+    onProgress?: (progress: number) => void
+  ): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable && onProgress) {
+          const percentComplete = (e.loaded / e.total) * 100;
+          onProgress(percentComplete);
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          resolve();
+        } else {
+          const errorText = xhr.responseText || xhr.statusText;
+          reject(new Error(`Error al subir archivo a S3: ${xhr.status} ${errorText}`));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        const currentOrigin = window.location.origin;
+        reject(
+          new Error(
+            `Error de red/CORS: No se pudo conectar a S3 desde "${currentOrigin}". ` +
+              `Verifica que el bucket tenga configurado CORS para permitir este origen.`
+          )
+        );
+      });
+
+      xhr.open('PUT', presignedUrl);
+      xhr.setRequestHeader('Content-Type', contentType);
+      xhr.send(file);
     });
   }
 
@@ -1645,11 +1850,6 @@ export class DailyExpensesPage implements OnInit {
     tasks: Promise<unknown>[],
     reportId: string
   ): Promise<void> {
-    console.log('Iniciando carga de archivos con límite de concurrencia', {
-      reportId,
-      totalTasks: tasks.length,
-    });
-
     const CONCURRENT_LIMIT = 3; // Máximo 3 subidas simultáneas
     const results: { status: string; fileName?: string; type?: string; error?: unknown }[] = [];
 
@@ -1658,12 +1858,9 @@ export class DailyExpensesPage implements OnInit {
       const batch = tasks.slice(i, i + CONCURRENT_LIMIT);
       const batchResults = await Promise.allSettled(batch);
 
-      batchResults.forEach((result, index) => {
+      batchResults.forEach((result) => {
         if (result.status === 'fulfilled') {
           results.push({ status: 'fulfilled' });
-          console.log(`Archivo ${i + index + 1}/${tasks.length} subido exitosamente`, {
-            reportId,
-          });
         } else {
           const errorInfo = result.reason as
             | { fileName?: string; type?: string; error?: unknown }
@@ -1673,10 +1870,6 @@ export class DailyExpensesPage implements OnInit {
             fileName: errorInfo?.fileName || 'desconocido',
             type: errorInfo?.type || 'archivo',
             error: errorInfo?.error || result.reason,
-          });
-          console.error(`Error al subir archivo ${i + index + 1}/${tasks.length}:`, {
-            reportId,
-            ...errorInfo,
           });
 
           // Mostrar error específico al usuario

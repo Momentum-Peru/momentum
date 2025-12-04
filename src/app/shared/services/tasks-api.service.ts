@@ -1,7 +1,8 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { Observable, BehaviorSubject, tap, firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { PresignedUploadService, PresignedUrlResponse } from './presigned-upload.service';
 import {
   Task,
   CreateTaskRequest,
@@ -15,6 +16,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class TasksApiService {
   private readonly http = inject(HttpClient);
+  private readonly presignedUpload = inject(PresignedUploadService);
   private readonly baseUrl = environment.apiUrl;
 
   // Signals para el estado reactivo
@@ -231,39 +233,87 @@ export class TasksApiService {
   }
 
   /**
-   * Sube archivos a una tarea
+   * Sube archivos a una tarea usando Presigned URLs
    */
-  uploadTaskAttachments(
+  async uploadTaskAttachments(
     taskId: string,
     files: File[],
     uploadedBy: string,
-    description?: string
-  ): Observable<Task> {
+    description?: string,
+    onProgress?: (progress: number) => void
+  ): Promise<Task> {
     this.setLoading(true);
     this.setError(null);
 
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append('files', file);
-    });
-    formData.append('uploadedBy', uploadedBy);
-    if (description) {
-      formData.append('description', description);
-    }
+    try {
+      // Paso 1: Generar Presigned URLs
+      const presignedResponses: PresignedUrlResponse[] = await firstValueFrom(
+        this.http.post<PresignedUrlResponse[]>(
+          `${this.baseUrl}/tasks/${taskId}/attachments/presigned-urls`,
+          {
+            files: files.map((f) => ({
+              fileName: f.name,
+              contentType: f.type || 'application/octet-stream',
+            })),
+            expirationTime: 300, // 5 minutos
+          }
+        )
+      );
 
-    return this.http.post<Task>(`${this.baseUrl}/tasks/${taskId}/attachments`, formData).pipe(
-      tap((updatedTask) => {
-        const currentTasks = this.tasks();
-        const index = currentTasks.findIndex((task) => task._id === taskId);
-        if (index !== -1) {
-          currentTasks[index] = updatedTask;
-          this.tasks.set([...currentTasks]);
-          this.tasksSubject.next([...currentTasks]);
+      // Paso 2: Subir archivos directamente a S3
+      const uploadPromises = presignedResponses.map(
+        (presignedResponse: PresignedUrlResponse, index: number) => {
+          const file = files[index];
+          return this.presignedUpload
+            .uploadFileToS3(
+              presignedResponse.presignedUrl,
+              file,
+              file.type || 'application/octet-stream',
+              onProgress
+            )
+            .then(() => presignedResponse);
         }
-      }),
-      tap(() => this.setLoading(false)),
-      tap({ error: (err) => this.handleError(err) })
-    );
+      );
+
+      await Promise.all(uploadPromises);
+
+      // Paso 3: Confirmar subida al backend
+      const attachments = presignedResponses.map(
+        (presignedResponse: PresignedUrlResponse, index: number) => {
+          const file = files[index];
+          return {
+            publicUrl: presignedResponse.publicUrl,
+            key: presignedResponse.key,
+            originalName: file.name,
+            mimeType: file.type || 'application/octet-stream',
+            size: file.size,
+            uploadedBy,
+            description,
+          };
+        }
+      );
+
+      const updatedTask = await firstValueFrom(
+        this.http.post<Task>(`${this.baseUrl}/tasks/${taskId}/attachments/confirm`, {
+          attachments,
+        })
+      );
+
+      // Actualizar el estado local
+      const currentTasks = this.tasks();
+      const index = currentTasks.findIndex((task) => task._id === taskId);
+      if (index !== -1) {
+        currentTasks[index] = updatedTask;
+        this.tasks.set([...currentTasks]);
+        this.tasksSubject.next([...currentTasks]);
+      }
+
+      this.setLoading(false);
+      return updatedTask;
+    } catch (error) {
+      this.handleError(error);
+      throw error;
+    }
   }
 
   /**
