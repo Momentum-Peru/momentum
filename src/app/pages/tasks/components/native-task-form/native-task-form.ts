@@ -238,7 +238,6 @@ export class TruncatePipe implements PipeTransform {
               [appendTo]="'body'"
               styleClass="w-full"
               [loading]="projectsLoading()"
-              (onChange)="onProjectChange($event)"
             >
               <ng-template let-project pTemplate="selectedItem">
                 @if (project?.label) {
@@ -778,12 +777,10 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   });
 
   public readonly projectOptions = computed(() => {
-    const options = this.projects().map((project) => ({
+    return this.projects().map((project) => ({
       label: `${project.code} - ${project.name}`,
       value: project._id || '',
     }));
-    // Agregar opción para crear nuevo proyecto al principio
-    return [{ label: '+ Crear nuevo proyecto', value: '__CREATE_NEW__' }, ...options];
   });
 
   ngOnInit(): void {
@@ -862,18 +859,6 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       value: client._id,
     }));
   });
-
-  /**
-   * Maneja el cambio en el selector de proyectos
-   */
-  public onProjectChange(event: { value: string | null }): void {
-    if (event.value === '__CREATE_NEW__') {
-      // Abrir diálogo para crear nuevo proyecto
-      this.showProjectDialog.set(true);
-      // Limpiar el valor del selector
-      this.taskForm.patchValue({ projectId: null });
-    }
-  }
 
   /**
    * Cierra el diálogo de proyecto
