@@ -17,7 +17,7 @@ export const logsInterceptor: HttpInterceptorFn = (req, next) => {
 
   // Excluir peticiones externas (como Google Maps)
   if (!req.url.startsWith(environment.apiUrl)) {
-      return next(req);
+    return next(req);
   }
 
   // Obtener el usuario actual

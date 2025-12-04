@@ -9,6 +9,8 @@ import {
   inject,
   signal,
   computed,
+  Pipe,
+  PipeTransform,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -51,6 +53,18 @@ import { Project } from '../../../../shared/interfaces/project.interface';
 import { MessageService } from 'primeng/api';
 import { take } from 'rxjs';
 
+@Pipe({
+  name: 'truncate',
+  standalone: true,
+})
+export class TruncatePipe implements PipeTransform {
+  transform(value: string | null | undefined, maxLength = 50): string {
+    if (!value) return '';
+    if (value.length <= maxLength) return value;
+    return value.substring(0, maxLength) + '...';
+  }
+}
+
 @Component({
   selector: 'app-native-task-form',
   standalone: true,
@@ -64,6 +78,7 @@ import { take } from 'rxjs';
     InputTextModule,
     TextareaModule,
     ButtonModule,
+    TruncatePipe,
   ],
   providers: [MessageService],
   template: `
@@ -224,7 +239,22 @@ import { take } from 'rxjs';
               styleClass="w-full"
               [loading]="projectsLoading()"
               (onChange)="onProjectChange($event)"
-            ></p-select>
+            >
+              <ng-template let-project pTemplate="selectedItem">
+                @if (project?.label) {
+                <span class="truncate block w-full" [title]="project.label">
+                  {{ project.label | truncate : 40 }}
+                </span>
+                } @else {
+                <span class="truncate block w-full">Selecciona un proyecto</span>
+                }
+              </ng-template>
+              <ng-template let-project pTemplate="item">
+                <span class="truncate block w-full" [title]="project.label">
+                  {{ project.label | truncate : 40 }}
+                </span>
+              </ng-template>
+            </p-select>
           </div>
         </div>
 
