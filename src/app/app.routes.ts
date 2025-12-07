@@ -25,7 +25,8 @@ export const routes: Routes = [
   },
   {
     path: 'select-company',
-    loadComponent: () => import('./pages/select-company/select-company').then((m) => m.SelectCompanyPage),
+    loadComponent: () =>
+      import('./pages/select-company/select-company').then((m) => m.SelectCompanyPage),
     canActivate: [requireAuthGuard],
   },
   {
@@ -192,6 +193,12 @@ export const routes: Routes = [
         data: { menuPermission: '/fi' },
       },
       {
+        path: 'fi/:id/day/:date',
+        loadComponent: () => import('./pages/fi/fi-day-detail.page').then((m) => m.FiDayDetailPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/fi' },
+      },
+      {
         path: 'follow-ups',
         loadComponent: () => import('./pages/follow-ups/follow-ups').then((m) => m.FollowUpsPage),
         canActivate: [MenuPermissionGuard],
@@ -232,17 +239,26 @@ export const routes: Routes = [
         children: [
           {
             path: '',
-            loadComponent: () => import('./pages/payroll/payroll-list/payroll-list.component').then(m => m.PayrollListComponent)
+            loadComponent: () =>
+              import('./pages/payroll/payroll-list/payroll-list.component').then(
+                (m) => m.PayrollListComponent
+              ),
           },
           {
             path: 'upload',
-            loadComponent: () => import('./pages/payroll/payroll-upload/payroll-upload.component').then(m => m.PayrollUploadComponent)
+            loadComponent: () =>
+              import('./pages/payroll/payroll-upload/payroll-upload.component').then(
+                (m) => m.PayrollUploadComponent
+              ),
           },
           {
             path: 'detail/:id',
-            loadComponent: () => import('./pages/payroll/payroll-detail/payroll-detail.component').then(m => m.PayrollDetailComponent)
-          }
-        ]
+            loadComponent: () =>
+              import('./pages/payroll/payroll-detail/payroll-detail.component').then(
+                (m) => m.PayrollDetailComponent
+              ),
+          },
+        ],
       },
       {
         path: '**',

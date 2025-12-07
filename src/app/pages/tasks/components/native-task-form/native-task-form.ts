@@ -1167,11 +1167,13 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
               .map((tag: string) => tag.trim())
               .filter((tag: string) => tag.length > 0)
           : [],
-        subtasks: this.subtasks().map((st, index) => ({
-          title: st.title,
-          completed: st.completed || false,
-          order: index,
-        })),
+        subtasks: this.subtasks()
+          .map((st, index) => ({
+            title: st.title.trim(),
+            completed: st.completed || false,
+            order: index,
+          }))
+          .filter((st) => st.title.length > 0),
       };
 
       const task = this.task;

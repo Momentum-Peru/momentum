@@ -1,0 +1,249 @@
+<div class="p-4 space-y-4" *ngIf="fi() as fi">
+  <p-toast [life]="5000"></p-toast>
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <p-button icon="pi pi-arrow-left" [text]="true" (onClick)="back()"></p-button>
+      <div>
+        <h2 class="text-xl font-semibold">{{ fi.titulo }}</h2>
+        <p class="text-sm text-gray-600 capitalize">{{ formattedDate() }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de Estadísticas -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <p-card>
+      <ng-template pTemplate="body">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-blue-600">{{ stats().totalTasks }}</div>
+          <div class="text-sm text-gray-600">Tareas Totales</div>
+        </div>
+      </ng-template>
+    </p-card>
+    <p-card>
+      <ng-template pTemplate="body">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-green-600">{{ stats().completedTasks }}</div>
+          <div class="text-sm text-gray-600">Tareas Completadas</div>
+        </div>
+      </ng-template>
+    </p-card>
+    <p-card>
+      <ng-template pTemplate="body">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-purple-600">{{ stats().totalAttachments }}</div>
+          <div class="text-sm text-gray-600">Archivos Adjuntos</div>
+        </div>
+      </ng-template>
+    </p-card>
+  </div>
+
+  @if (loading()) {
+  <div class="flex justify-center items-center py-12">
+    <p-progressSpinner></p-progressSpinner>
+  </div>
+  } @else {
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Checklist de Tareas -->
+    <p-card header="Tareas (Checklist)">
+      <div class="space-y-4">
+        <!-- Agregar nueva tarea -->
+        <div class="flex gap-2">
+          <input
+            pInputText
+            [(ngModel)]="newTaskTitle"
+            placeholder="Nueva tarea..."
+            class="flex-1"
+            (keyup.enter)="addTask()"
+          />
+          <p-button icon="pi pi-plus" label="Agregar" (onClick)="addTask()"></p-button>
+        </div>
+
+        <!-- Lista de tareas -->
+        @if (actionable()?.tasks && actionable()!.tasks!.length > 0) {
+        <div class="space-y-2">
+          @for (task of actionable()!.tasks!; track task._id || $index) {
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-md">
+            <p-checkbox
+              [ngModel]="task.completed"
+              (ngModelChange)="toggleTask(task)"
+              [binary]="true"
+            ></p-checkbox>
+            <span
+              class="flex-1 dark:text-gray-800"
+              [class.line-through]="task.completed"
+              [class.text-gray-500]="task.completed"
+            >
+              {{ task.title }}
+            </span>
+            <p-button
+              icon="pi pi-trash"
+              severity="danger"
+              [text]="true"
+              size="small"
+              (onClick)="deleteTask(task)"
+            ></p-button>
+          </div>
+          }
+        </div>
+        } @else {
+        <div class="text-center py-8 text-gray-500">
+          <i class="pi pi-list text-3xl mb-2"></i>
+          <p>No hay tareas aún</p>
+        </div>
+        }
+      </div>
+    </p-card>
+
+    <!-- Archivos Adjuntos -->
+    <p-card header="Archivos Adjuntos">
+      <div class="space-y-4">
+        <!-- Subir archivos -->
+        <div>
+          <input
+            type="file"
+            #fileInput
+            multiple
+            accept="*/*"
+            (change)="onFileInputChange($event)"
+            class="hidden"
+          />
+          <p-button
+            label="Seleccionar archivos"
+            icon="pi pi-upload"
+            (onClick)="fileInput.click()"
+            class="w-full"
+          ></p-button>
+        </div>
+
+        <!-- Archivos seleccionados para subir -->
+        @if (selectedFiles().length > 0) {
+        <div class="space-y-2">
+          <div class="text-sm font-medium text-gray-700">Archivos seleccionados:</div>
+          @for (file of selectedFiles(); track file.name) {
+          <div class="flex items-center justify-between p-2 bg-blue-50 rounded">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-file text-blue-600"></i>
+              <span class="text-sm text-blue-800">{{ file.name }}</span>
+              <span class="text-xs text-blue-600">({{ formatFileSize(file.size) }})</span>
+            </div>
+            <p-button
+              icon="pi pi-times"
+              size="small"
+              severity="danger"
+              [text]="true"
+              (onClick)="removeFile(file)"
+            ></p-button>
+          </div>
+          } @if (uploading()) {
+          <div class="mt-2">
+            <p-progressSpinner [style]="{ width: '30px', height: '30px' }"></p-progressSpinner>
+            <div class="text-xs text-gray-600 mt-1">Subiendo... {{ uploadProgress() }}%</div>
+          </div>
+          } @else {
+          <p-button
+            label="Subir archivos"
+            icon="pi pi-upload"
+            (onClick)="uploadFiles()"
+            class="w-full"
+          ></p-button>
+          }
+        </div>
+        }
+
+        <!-- Archivos subidos -->
+        @if (actionable()?.attachments && actionable()!.attachments!.length > 0) {
+        <div class="space-y-2">
+          <div class="text-sm font-medium text-gray-700">Archivos subidos:</div>
+          @for (attachment of actionable()!.attachments!; track attachment._id || $index) {
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
+            <div class="flex items-center gap-3 flex-1">
+              <i [class]="getFileIcon(attachment.mimeType)" class="text-gray-600"></i>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-gray-900 truncate">
+                  {{ attachment.originalName }}
+                </div>
+                <div class="text-xs text-gray-500">{{ formatFileSize(attachment.size) }}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <a
+                [href]="attachment.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-blue-600 hover:text-blue-800"
+              >
+                <i class="pi pi-external-link"></i>
+              </a>
+              <p-button
+                icon="pi pi-trash"
+                severity="danger"
+                [text]="true"
+                size="small"
+                (onClick)="deleteAttachment(attachment)"
+              ></p-button>
+            </div>
+          </div>
+          }
+        </div>
+        } @else {
+        <div class="text-center py-8 text-gray-500">
+          <i class="pi pi-paperclip text-3xl mb-2"></i>
+          <p>No hay archivos adjuntos aún</p>
+        </div>
+        }
+      </div>
+    </p-card>
+  </div>
+
+  <!-- Descripción del Accionable -->
+  <p-card header="Descripción del Día">
+    @if (actionable()) {
+    <div class="space-y-3">
+      <textarea
+        pTextarea
+        [(ngModel)]="actionableDescription"
+        placeholder="Descripción para este día..."
+        rows="3"
+        class="w-full"
+      ></textarea>
+      <div class="flex justify-end">
+        <p-button
+          label="Actualizar descripción"
+          icon="pi pi-save"
+          (onClick)="updateActionableDescription()"
+          [loading]="loading()"
+        ></p-button>
+      </div>
+    </div>
+    } @else {
+    <div class="space-y-4">
+      <div class="text-center py-4 text-gray-500">
+        <i class="pi pi-info-circle text-3xl mb-2"></i>
+        <p>No hay accionable creado para este día</p>
+        <p class="text-sm mt-2">
+          Crea uno ingresando una descripción y haciendo clic en "Crear Accionable"
+        </p>
+      </div>
+      <textarea
+        pTextarea
+        [(ngModel)]="actionableDescription"
+        placeholder="Descripción del accionable para este día..."
+        rows="3"
+        class="w-full"
+      ></textarea>
+      <div class="flex justify-end">
+        <p-button
+          label="Crear Accionable"
+          icon="pi pi-plus"
+          (onClick)="createActionable()"
+          [loading]="creatingActionable()"
+        ></p-button>
+      </div>
+    </div>
+    }
+  </p-card>
+  }
+</div>

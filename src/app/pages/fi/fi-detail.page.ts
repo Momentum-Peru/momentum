@@ -296,6 +296,10 @@ export class FiDetailPage implements OnInit {
     return editing?.estado === 'cumplido' ? 'pi pi-refresh' : 'pi pi-check';
   }
 
+  goToDayDetail(fecha: string): void {
+    this.router.navigate(['/fi', this.fiId, 'day', fecha]);
+  }
+
   // Navegación del calendario por mes
   filteredCalendarDays = computed(() => {
     const allDays = this.calendarDays();
