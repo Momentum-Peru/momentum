@@ -109,16 +109,12 @@
           @for (day of filteredCalendarDays(); track day.fecha) {
           <div
             class="border rounded-md p-3 hover:border-blue-400 transition-colors flex flex-col gap-2 cursor-pointer min-h-[100px]"
-            (click)="day.accionable ? openEdit(day.accionable) : openAdd(day.fecha)"
-            (keyup.enter)="day.accionable ? openEdit(day.accionable) : openAdd(day.fecha)"
-            (keyup.space)="day.accionable ? openEdit(day.accionable) : openAdd(day.fecha)"
+            (click)="goToDayDetail(day.fecha)"
+            (keyup.enter)="goToDayDetail(day.fecha)"
+            (keyup.space)="goToDayDetail(day.fecha)"
             tabindex="0"
             role="button"
-            [attr.aria-label]="
-              day.accionable
-                ? 'Editar accionable del día ' + getDayNumber(day.fecha)
-                : 'Agregar accionable al día ' + getDayNumber(day.fecha)
-            "
+            [attr.aria-label]="'Ver detalle del día ' + getDayNumber(day.fecha)"
           >
             <div class="text-lg font-semibold text-gray-700">{{ getDayNumber(day.fecha) }}</div>
             @if (day.accionable) {
