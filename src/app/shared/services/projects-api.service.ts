@@ -1,8 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Project, ProjectOption } from '../interfaces/project.interface';
+import { PresignedUrlResponse } from './presigned-upload.service';
+import { PresignedUploadService } from './presigned-upload.service';
 
 interface ProjectStats {
   total: number;
@@ -18,6 +20,7 @@ interface ProjectStats {
 export class ProjectsApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
+  private readonly presignedUpload = inject(PresignedUploadService);
 
   list(): Observable<Project[]> {
     return this.http.get<Project[]>(`${this.baseUrl}/projects`);
@@ -87,5 +90,85 @@ export class ProjectsApiService {
     let url = `${this.baseUrl}/projects/client/${clientId}`;
     if (activeOnly) url += '?activeOnly=true';
     return this.http.get<Project[]>(url);
+  }
+
+  /**
+   * Sube archivos a un proyecto usando Presigned URLs
+   */
+  async uploadProjectAttachments(
+    projectId: string,
+    files: File[],
+    uploadedBy: string,
+    description?: string,
+    onProgress?: (progress: number) => void
+  ): Promise<Project> {
+    try {
+      // Paso 1: Generar Presigned URLs
+      const presignedResponses: PresignedUrlResponse[] = await firstValueFrom(
+        this.http.post<PresignedUrlResponse[]>(
+          `${this.baseUrl}/projects/${projectId}/attachments/presigned-urls`,
+          {
+            files: files.map((f) => ({
+              fileName: f.name,
+              contentType: f.type || 'application/octet-stream',
+            })),
+            expirationTime: 300, // 5 minutos
+          }
+        )
+      );
+
+      // Paso 2: Subir archivos directamente a S3
+      const uploadPromises = presignedResponses.map(
+        (presignedResponse: PresignedUrlResponse, index: number) => {
+          const file = files[index];
+          return this.presignedUpload
+            .uploadFileToS3(
+              presignedResponse.presignedUrl,
+              file,
+              file.type || 'application/octet-stream',
+              onProgress
+            )
+            .then(() => presignedResponse);
+        }
+      );
+
+      await Promise.all(uploadPromises);
+
+      // Paso 3: Confirmar subida al backend
+      const attachments = presignedResponses.map(
+        (presignedResponse: PresignedUrlResponse, index: number) => {
+          const file = files[index];
+          return {
+            publicUrl: presignedResponse.publicUrl,
+            key: presignedResponse.key,
+            originalName: file.name,
+            mimeType: file.type || 'application/octet-stream',
+            size: file.size,
+            uploadedBy,
+            description,
+          };
+        }
+      );
+
+      const updatedProject = await firstValueFrom(
+        this.http.post<Project>(`${this.baseUrl}/projects/${projectId}/attachments/confirm`, {
+          attachments,
+        })
+      );
+
+      return updatedProject;
+    } catch (error) {
+      console.error('Error uploading project attachments:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Elimina un archivo adjunto de un proyecto
+   */
+  deleteProjectAttachment(projectId: string, attachmentId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/projects/${projectId}/attachments/${attachmentId}`
+    );
   }
 }
