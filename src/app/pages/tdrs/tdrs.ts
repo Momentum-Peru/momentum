@@ -157,7 +157,10 @@ export class TdrsPage implements OnInit {
     this.load();
   }
   newItem() {
-    this.editing.set({ type: 'client' });
+    // Si hay un filtro de tipo activo desde queryParams, usarlo como tipo predeterminado
+    const defaultType = this.selectedType() || 'client';
+
+    this.editing.set({ type: defaultType });
     this.showDialog.set(true);
   }
   editItem(item: TdrItem) {

@@ -108,8 +108,8 @@ export class MenuConfigService {
           {
             label: 'Proyecto Aprobado',
             icon: 'pi pi-check-circle',
-            routerLink: '/quotes',
-            queryParams: { status: 'accepted' },
+            routerLink: '/projects',
+            queryParams: { status: 'APROBADO' },
           },
           {
             label: 'Proyecto en Ejecución',
