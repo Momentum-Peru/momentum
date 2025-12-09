@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+  computed,
+  effect,
+  OnInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -16,6 +24,7 @@ import { SelectModule } from 'primeng/select';
 import { forkJoin } from 'rxjs';
 import { catchError, map, of } from 'rxjs';
 import { MenuService } from '../../shared/services/menu.service';
+import { ActivatedRoute, Router } from '@angular/router';
 
 interface Client {
   _id: string;
@@ -58,12 +67,15 @@ export class TdrsPage implements OnInit {
   private readonly menuService = inject(MenuService);
   private readonly baseUrl = environment.apiUrl;
   private readonly messageService = inject(MessageService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   // Verificar si el usuario tiene permiso de edición para este módulo
   readonly canEdit = computed(() => this.menuService.canEdit('/tdrs'));
 
   items = signal<TdrItem[]>([]);
   query = signal<string>('');
+  selectedType = signal<'client' | 'tecmeing' | null>(null);
   showDialog = signal<boolean>(false);
   showDocumentsDialog = signal<boolean>(false);
   showDetailsDialog = signal<boolean>(false);
@@ -80,7 +92,15 @@ export class TdrsPage implements OnInit {
   ];
 
   ngOnInit() {
-    this.load();
+    // Leer queryParams para filtrar por tipo
+    this.route.queryParams.subscribe((params) => {
+      if (params['type']) {
+        this.selectedType.set(params['type'] as 'client' | 'tecmeing');
+      } else {
+        this.selectedType.set(null);
+      }
+      this.load();
+    });
     this.clientsApi.list().subscribe((v) => this.clients.set(v));
   }
 
@@ -109,9 +129,19 @@ export class TdrsPage implements OnInit {
   }
   load() {
     const q = this.query();
+    const type = this.selectedType();
     const url = q ? `${this.baseUrl}/tdrs?q=${encodeURIComponent(q)}` : `${this.baseUrl}/tdrs`;
+
     this.http.get<TdrItem[]>(url).subscribe({
-      next: (v) => this.items.set(v),
+      next: (v) => {
+        // Filtrar por tipo en el cliente si hay filtro activo
+        if (type) {
+          const filtered = v.filter((item) => item.type === type);
+          this.items.set(filtered);
+        } else {
+          this.items.set(v);
+        }
+      },
       error: (error) => {
         console.error('Error loading TDRs:', error);
         this.messageService.add({
@@ -571,11 +601,21 @@ export class TdrsPage implements OnInit {
         }
         return String(message);
       }
-      if (httpError.error && typeof httpError.error === 'object' && 'error' in httpError.error && typeof httpError.error.error === 'string') {
+      if (
+        httpError.error &&
+        typeof httpError.error === 'object' &&
+        'error' in httpError.error &&
+        typeof httpError.error.error === 'string'
+      ) {
         return httpError.error.error;
       }
     }
-    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
       return error.message;
     }
     return 'Ha ocurrido un error inesperado';

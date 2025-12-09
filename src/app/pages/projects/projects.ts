@@ -15,6 +15,7 @@ import { ClientsApiService } from '../../shared/services/clients-api.service';
 import { MenuService } from '../../shared/services/menu.service';
 import { Project } from '../../shared/interfaces/project.interface';
 import { ClientOption } from '../../shared/services/clients-api.service';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-projects',
@@ -39,6 +40,7 @@ export class ProjectsPage implements OnInit {
   private readonly clientsApi = inject(ClientsApiService);
   private readonly messageService = inject(MessageService);
   private readonly menuService = inject(MenuService);
+  private readonly route = inject(ActivatedRoute);
 
   // Verificar si el usuario tiene permiso de edición para este módulo
   readonly canEdit = computed(() => this.menuService.canEdit('/projects'));
@@ -47,6 +49,8 @@ export class ProjectsPage implements OnInit {
   filteredItems = signal<Project[]>([]);
   clients = signal<ClientOption[]>([]);
   query = signal('');
+  selectedStatus = signal<string | null>(null);
+  selectedIsActive = signal<boolean | null>(null);
   showDialog = signal(false);
   showDetailsDialog = signal(false);
   editing = signal<Project | null>(null);
@@ -64,7 +68,31 @@ export class ProjectsPage implements OnInit {
   ];
 
   ngOnInit() {
-    this.load();
+    // Leer queryParams para filtrar por status e isActive
+    this.route.queryParams.subscribe((params) => {
+      if (params['status']) {
+        this.selectedStatus.set(params['status']);
+      } else {
+        this.selectedStatus.set(null);
+      }
+      // El backend usa 'activeOnly', pero el menú puede pasar 'isActive'
+      // Si isActive es 'false', significa que queremos proyectos archivados (activeOnly=false)
+      // Si no está presente, no aplicamos filtro
+      if (params['isActive'] !== undefined) {
+        const isActiveValue = params['isActive'];
+        // Convertir string 'false' o 'true' a booleano
+        if (isActiveValue === 'false' || isActiveValue === false) {
+          this.selectedIsActive.set(false); // Proyectos archivados
+        } else if (isActiveValue === 'true' || isActiveValue === true) {
+          this.selectedIsActive.set(true); // Solo proyectos activos
+        } else {
+          this.selectedIsActive.set(null);
+        }
+      } else {
+        this.selectedIsActive.set(null);
+      }
+      this.load();
+    });
     this.loadClients();
   }
 
@@ -85,20 +113,47 @@ export class ProjectsPage implements OnInit {
   }
 
   load() {
-    this.projectsApi.list().subscribe({
-      next: (data) => {
-        this.items.set(data);
-        this.applyFilters();
-      },
-      error: (error) => {
-        console.error('Error loading projects:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Error al cargar los proyectos',
+    const status = this.selectedStatus();
+    const isActive = this.selectedIsActive();
+
+    // Si hay filtros desde queryParams, usar listWithFilters
+    if (status || isActive !== null) {
+      this.projectsApi
+        .listWithFilters({
+          status: status || undefined,
+          activeOnly: isActive !== null ? isActive : undefined,
+        })
+        .subscribe({
+          next: (data) => {
+            this.items.set(data);
+            this.applyFilters();
+          },
+          error: (error) => {
+            console.error('Error loading projects:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Error al cargar los proyectos',
+            });
+          },
         });
-      },
-    });
+    } else {
+      // Sin filtros, cargar todos
+      this.projectsApi.list().subscribe({
+        next: (data) => {
+          this.items.set(data);
+          this.applyFilters();
+        },
+        error: (error) => {
+          console.error('Error loading projects:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Error al cargar los proyectos',
+          });
+        },
+      });
+    }
   }
 
   loadClients() {
@@ -133,6 +188,9 @@ export class ProjectsPage implements OnInit {
           item.code.toLowerCase().includes(query)
       );
     }
+
+    // Los filtros por status e isActive ya se aplican en load() mediante listWithFilters
+    // pero si hay filtros locales adicionales, se aplican aquí
 
     this.filteredItems.set(filtered);
   }
@@ -252,7 +310,10 @@ export class ProjectsPage implements OnInit {
       status: item.status,
       startDate: formatDate(item.startDate),
       endDate: formatDate(item.endDate),
-      location: item.location && item.location.toString().trim() !== '' ? item.location.toString().trim() : undefined,
+      location:
+        item.location && item.location.toString().trim() !== ''
+          ? item.location.toString().trim()
+          : undefined,
       budget: item.budget || 0,
       notes: item.notes?.trim() || '',
       isActive: item.isActive ?? true,
@@ -478,7 +539,12 @@ export class ProjectsPage implements OnInit {
       }
     }
 
-    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
       return error.message;
     }
 
