@@ -15,6 +15,8 @@ import { ClientsApiService } from '../../shared/services/clients-api.service';
 import { MenuService } from '../../shared/services/menu.service';
 import { Project } from '../../shared/interfaces/project.interface';
 import { ClientOption } from '../../shared/services/clients-api.service';
+import { ActivatedRoute } from '@angular/router';
+import { AuthService } from '../login/services/auth.service';
 
 @Component({
   selector: 'app-projects',
@@ -39,6 +41,8 @@ export class ProjectsPage implements OnInit {
   private readonly clientsApi = inject(ClientsApiService);
   private readonly messageService = inject(MessageService);
   private readonly menuService = inject(MenuService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly authService = inject(AuthService);
 
   // Verificar si el usuario tiene permiso de edición para este módulo
   readonly canEdit = computed(() => this.menuService.canEdit('/projects'));
@@ -47,16 +51,24 @@ export class ProjectsPage implements OnInit {
   filteredItems = signal<Project[]>([]);
   clients = signal<ClientOption[]>([]);
   query = signal('');
+  selectedStatus = signal<string | null>(null);
+  selectedIsActive = signal<boolean | null>(null);
   showDialog = signal(false);
   showDetailsDialog = signal(false);
   editing = signal<Project | null>(null);
   viewingProject = signal<Project | null>(null);
   expandedRowIds = signal<Set<string>>(new Set());
   nextCode = signal<number | null>(null);
+  selectedFiles = signal<File[]>([]);
+  isDragging = signal<boolean>(false);
+  existingAttachments = signal<Project['attachments']>([]);
+  attachmentsToDelete = signal<string[]>([]);
+  uploadingFiles = signal<boolean>(false);
 
   statusOptions = [
     { label: 'Pendiente', value: 'PENDIENTE' },
     { label: 'En Cotización', value: 'EN_COTIZACION' },
+    { label: 'Aprobado', value: 'APROBADO' },
     { label: 'En Ejecución', value: 'EN_EJECUCION' },
     { label: 'En Observación', value: 'EN_OBSERVACION' },
     { label: 'Terminado', value: 'TERMINADO' },
@@ -64,7 +76,31 @@ export class ProjectsPage implements OnInit {
   ];
 
   ngOnInit() {
-    this.load();
+    // Leer queryParams para filtrar por status e isActive
+    this.route.queryParams.subscribe((params) => {
+      if (params['status']) {
+        this.selectedStatus.set(params['status']);
+      } else {
+        this.selectedStatus.set(null);
+      }
+      // El backend usa 'activeOnly', pero el menú puede pasar 'isActive'
+      // Si isActive es 'false', significa que queremos proyectos archivados (activeOnly=false)
+      // Si no está presente, no aplicamos filtro
+      if (params['isActive'] !== undefined) {
+        const isActiveValue = params['isActive'];
+        // Convertir string 'false' o 'true' a booleano
+        if (isActiveValue === 'false' || isActiveValue === false) {
+          this.selectedIsActive.set(false); // Proyectos archivados
+        } else if (isActiveValue === 'true' || isActiveValue === true) {
+          this.selectedIsActive.set(true); // Solo proyectos activos
+        } else {
+          this.selectedIsActive.set(null);
+        }
+      } else {
+        this.selectedIsActive.set(null);
+      }
+      this.load();
+    });
     this.loadClients();
   }
 
@@ -85,20 +121,47 @@ export class ProjectsPage implements OnInit {
   }
 
   load() {
-    this.projectsApi.list().subscribe({
-      next: (data) => {
-        this.items.set(data);
-        this.applyFilters();
-      },
-      error: (error) => {
-        console.error('Error loading projects:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Error al cargar los proyectos',
+    const status = this.selectedStatus();
+    const isActive = this.selectedIsActive();
+
+    // Si hay filtros desde queryParams, usar listWithFilters
+    if (status || isActive !== null) {
+      this.projectsApi
+        .listWithFilters({
+          status: status || undefined,
+          activeOnly: isActive !== null ? isActive : undefined,
+        })
+        .subscribe({
+          next: (data) => {
+            this.items.set(data);
+            this.applyFilters();
+          },
+          error: (error) => {
+            console.error('Error loading projects:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Error al cargar los proyectos',
+            });
+          },
         });
-      },
-    });
+    } else {
+      // Sin filtros, cargar todos
+      this.projectsApi.list().subscribe({
+        next: (data) => {
+          this.items.set(data);
+          this.applyFilters();
+        },
+        error: (error) => {
+          console.error('Error loading projects:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Error al cargar los proyectos',
+          });
+        },
+      });
+    }
   }
 
   loadClients() {
@@ -134,16 +197,22 @@ export class ProjectsPage implements OnInit {
       );
     }
 
+    // Los filtros por status e isActive ya se aplican en load() mediante listWithFilters
+    // pero si hay filtros locales adicionales, se aplican aquí
+
     this.filteredItems.set(filtered);
   }
 
   newItem() {
+    // Si hay un filtro de estado activo desde queryParams, usarlo como estado predeterminado
+    const defaultStatus = (this.selectedStatus() || 'PENDIENTE') as Project['status'];
+
     this.editing.set({
       name: '',
       description: '',
       code: '',
       clientId: '',
-      status: 'PENDIENTE',
+      status: defaultStatus,
       startDate: '',
       endDate: '',
       location: '',
@@ -179,11 +248,19 @@ export class ProjectsPage implements OnInit {
 
     this.editing.set(editedItem);
     this.nextCode.set(null);
+    // Cargar archivos existentes
+    this.existingAttachments.set(item.attachments || []);
+    this.attachmentsToDelete.set([]);
     this.showDialog.set(true);
   }
 
   closeDialog() {
     this.showDialog.set(false);
+    this.selectedFiles.set([]);
+    this.isDragging.set(false);
+    this.existingAttachments.set([]);
+    this.attachmentsToDelete.set([]);
+    this.uploadingFiles.set(false);
   }
 
   viewDetails(project: Project) {
@@ -252,7 +329,10 @@ export class ProjectsPage implements OnInit {
       status: item.status,
       startDate: formatDate(item.startDate),
       endDate: formatDate(item.endDate),
-      location: item.location && item.location.toString().trim() !== '' ? item.location.toString().trim() : undefined,
+      location:
+        item.location && item.location.toString().trim() !== ''
+          ? item.location.toString().trim()
+          : undefined,
       budget: item.budget || 0,
       notes: item.notes?.trim() || '',
       isActive: item.isActive ?? true,
@@ -260,7 +340,19 @@ export class ProjectsPage implements OnInit {
 
     if (item._id) {
       this.projectsApi.update(item._id, payload).subscribe({
-        next: () => {
+        next: async (updatedProject) => {
+          // Eliminar archivos marcados para eliminar
+          const attachmentsToDelete = this.attachmentsToDelete();
+          if (attachmentsToDelete.length > 0 && updatedProject._id) {
+            await this.deleteAttachments(updatedProject._id, attachmentsToDelete);
+          }
+
+          // Subir archivos si hay alguno seleccionado
+          const files = this.selectedFiles();
+          if (files.length > 0 && updatedProject._id) {
+            await this.uploadFiles(updatedProject._id, files);
+          }
+
           this.messageService.add({
             severity: 'success',
             summary: 'Éxito',
@@ -280,7 +372,13 @@ export class ProjectsPage implements OnInit {
       });
     } else {
       this.projectsApi.create(payload).subscribe({
-        next: () => {
+        next: async (createdProject) => {
+          // Subir archivos si hay alguno seleccionado
+          const files = this.selectedFiles();
+          if (files.length > 0 && createdProject._id) {
+            await this.uploadFiles(createdProject._id, files);
+          }
+
           this.messageService.add({
             severity: 'success',
             summary: 'Éxito',
@@ -336,6 +434,8 @@ export class ProjectsPage implements OnInit {
         return 'info';
       case 'EN_COTIZACION':
         return 'warning';
+      case 'APROBADO':
+        return 'success';
       case 'EN_EJECUCION':
         return 'success';
       case 'EN_OBSERVACION':
@@ -353,15 +453,15 @@ export class ProjectsPage implements OnInit {
     const severity = this.getStatusSeverity(status);
     switch (severity) {
       case 'info':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
       case 'success':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200';
       case 'warning':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200';
       case 'danger':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   }
 
@@ -478,10 +578,192 @@ export class ProjectsPage implements OnInit {
       }
     }
 
-    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
       return error.message;
     }
 
     return 'Ha ocurrido un error inesperado';
+  }
+
+  /**
+   * Maneja la selección de archivos
+   */
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const files = Array.from(input.files);
+      this.addFiles(files);
+    }
+  }
+
+  /**
+   * Agrega archivos a la lista
+   */
+  addFiles(files: File[]): void {
+    const currentFiles = this.selectedFiles();
+    this.selectedFiles.set([...currentFiles, ...files]);
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Archivos agregados',
+      detail: `${files.length} archivo(s) agregado(s) correctamente`,
+    });
+  }
+
+  /**
+   * Elimina un archivo de la lista
+   */
+  removeFile(index: number): void {
+    const current = this.selectedFiles();
+    current.splice(index, 1);
+    this.selectedFiles.set([...current]);
+  }
+
+  /**
+   * Formatea el tamaño del archivo
+   */
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  /**
+   * Maneja el drag over
+   */
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  /**
+   * Maneja el drag leave
+   */
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  /**
+   * Maneja el drop
+   */
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+
+    if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+      const files = Array.from(event.dataTransfer.files);
+      this.addFiles(files);
+    }
+  }
+
+  /**
+   * Sube los archivos al proyecto usando Presigned URLs
+   */
+  private async uploadFiles(projectId: string, files: File[]): Promise<void> {
+    try {
+      this.uploadingFiles.set(true);
+
+      const currentUser = this.authService.getCurrentUser();
+      if (!currentUser || !currentUser.id) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo obtener la información del usuario',
+        });
+        this.uploadingFiles.set(false);
+        return;
+      }
+
+      await this.projectsApi.uploadProjectAttachments(
+        projectId,
+        files,
+        currentUser.id,
+        undefined,
+        (progress) => {
+          // Opcional: mostrar progreso
+          console.log(`Progreso de subida: ${progress}%`);
+        }
+      );
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: `Archivos subidos correctamente al proyecto.`,
+      });
+
+      // Limpiar archivos seleccionados
+      this.selectedFiles.set([]);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'El proyecto se guardó pero hubo un error al subir los archivos.',
+      });
+    } finally {
+      this.uploadingFiles.set(false);
+    }
+  }
+
+  /**
+   * Elimina o restaura un archivo adjunto existente
+   */
+  removeExistingAttachment(attachmentId: string): void {
+    const toDelete = this.attachmentsToDelete();
+    if (toDelete.includes(attachmentId)) {
+      // Restaurar el archivo
+      this.attachmentsToDelete.set(toDelete.filter((id) => id !== attachmentId));
+    } else {
+      // Marcar para eliminar
+      this.attachmentsToDelete.set([...toDelete, attachmentId]);
+    }
+  }
+
+  /**
+   * Elimina archivos adjuntos del proyecto
+   */
+  private async deleteAttachments(projectId: string, attachmentIds: string[]): Promise<void> {
+    const deletePromises = attachmentIds.map((attachmentId) =>
+      this.projectsApi.deleteProjectAttachment(projectId, attachmentId).toPromise()
+    );
+
+    try {
+      await Promise.all(deletePromises);
+    } catch (error) {
+      console.error('Error deleting attachments:', error);
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'Algunos archivos no pudieron ser eliminados.',
+      });
+    }
+  }
+
+  /**
+   * Obtiene el icono según el tipo de archivo
+   */
+  getFileIcon(mimeType: string): string {
+    if (mimeType.startsWith('image/')) {
+      return 'pi pi-image';
+    } else if (mimeType.startsWith('video/')) {
+      return 'pi pi-video';
+    } else if (mimeType.startsWith('audio/')) {
+      return 'pi pi-volume-up';
+    } else if (mimeType.includes('pdf')) {
+      return 'pi pi-file-pdf';
+    } else {
+      return 'pi pi-file';
+    }
   }
 }

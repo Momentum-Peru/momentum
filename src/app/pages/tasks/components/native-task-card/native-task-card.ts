@@ -18,7 +18,9 @@ import { Task } from '../../../../shared/interfaces/task.interface';
       role="button"
       [attr.aria-label]="'Ver detalles de la tarea: ' + task.title"
       [ngClass]="{
-        'border-red-300 dark:border-red-500 bg-red-50 overdue-card': isOverdue()
+        'border-red-300 dark:border-red-500 bg-red-50 overdue-card': isOverdue(),
+        'border-orange-300 dark:border-orange-500 bg-orange-50 due-today-card':
+          isDueToday() && !isOverdue()
       }"
     >
       <!-- Header -->
@@ -49,6 +51,14 @@ import { Task } from '../../../../shared/interfaces/task.interface';
           >
             {{ getPriorityLabel() }}
           </span>
+          <!-- Due Date Status Indicator -->
+          @if (task.dueDate && task.status !== 'Terminada') {
+          <span
+            class="w-2 h-2 rounded-full flex-shrink-0"
+            [ngClass]="getDueDateStatusClass()"
+            [title]="getDueDateStatusTitle()"
+          ></span>
+          }
         </div>
       </div>
 
@@ -103,7 +113,7 @@ import { Task } from '../../../../shared/interfaces/task.interface';
       <div class="flex flex-col gap-1 mt-auto">
         <!-- Due Date Row -->
         @if (task.dueDate) {
-        <div class="flex items-center gap-0.5 text-xs text-gray-500 dark:text-gray-400">
+        <div class="flex items-center gap-0.5 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
           <svg
             class="w-2.5 h-2.5 flex-shrink-0"
             fill="none"
@@ -127,6 +137,10 @@ import { Task } from '../../../../shared/interfaces/task.interface';
           >
             {{ formatDate(task.dueDate) }}
           </span>
+          @if (getAssignedToName()) {
+          <span class="font-medium">delegado:</span>
+          <span class="truncate">{{ getAssignedToName() }}</span>
+          }
         </div>
         }
 
@@ -134,7 +148,9 @@ import { Task } from '../../../../shared/interfaces/task.interface';
         <div class="flex items-center justify-between gap-1">
           <!-- Created Date -->
           @if (task.createdAt) {
-          <div class="flex items-center gap-0.5 min-w-0 text-xs text-gray-500 dark:text-gray-400">
+          <div
+            class="flex items-center gap-0.5 min-w-0 text-xs text-gray-500 dark:text-gray-400 flex-wrap"
+          >
             <svg
               class="w-2.5 h-2.5 flex-shrink-0"
               fill="none"
@@ -148,9 +164,14 @@ import { Task } from '../../../../shared/interfaces/task.interface';
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               ></path>
             </svg>
+            <span class="font-medium">Creado:</span>
             <span class="truncate" [title]="formatDate(task.createdAt)">
               {{ formatDate(task.createdAt) }}
             </span>
+            @if (getCreatedByName()) {
+            <span class="font-medium">por:</span>
+            <span class="truncate">{{ getCreatedByName() }}</span>
+            }
           </div>
           }
 
@@ -225,6 +246,10 @@ import { Task } from '../../../../shared/interfaces/task.interface';
       :host-context(.dark) .overdue-card {
         background-color: rgba(127, 29, 29, 0.2);
       }
+
+      :host-context(.dark) .due-today-card {
+        background-color: rgba(154, 52, 18, 0.2);
+      }
     `,
   ],
 })
@@ -242,6 +267,56 @@ export class NativeTaskCardComponent {
     const now = new Date();
     const dueDate = new Date(this.task.dueDate);
     return dueDate < now && this.task.status !== 'Terminada';
+  }
+
+  /**
+   * Verifica si la tarea se vence hoy
+   */
+  public isDueToday(): boolean {
+    if (!this.task.dueDate || this.task.status === 'Terminada') return false;
+    const now = new Date();
+    const dueDate = new Date(this.task.dueDate);
+
+    // Comparar solo día, mes y año (sin horas)
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const due = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+
+    return today.getTime() === due.getTime();
+  }
+
+  /**
+   * Obtiene la clase CSS para el indicador de estado de vencimiento
+   */
+  public getDueDateStatusClass(): string {
+    if (!this.task.dueDate || this.task.status === 'Terminada') return '';
+
+    if (this.isOverdue()) {
+      return 'bg-red-500 dark:bg-red-400';
+    }
+
+    if (this.isDueToday()) {
+      return 'bg-orange-500 dark:bg-orange-400';
+    }
+
+    // Tarea que aún no vence
+    return 'bg-green-500 dark:bg-green-400';
+  }
+
+  /**
+   * Obtiene el título (tooltip) para el indicador de estado de vencimiento
+   */
+  public getDueDateStatusTitle(): string {
+    if (!this.task.dueDate || this.task.status === 'Terminada') return '';
+
+    if (this.isOverdue()) {
+      return 'Tarea vencida';
+    }
+
+    if (this.isDueToday()) {
+      return 'Vence hoy';
+    }
+
+    return 'Aún no vence';
   }
 
   /**
@@ -311,6 +386,46 @@ export class NativeTaskCardComponent {
         return `${projectObj.code} - ${projectObj.name}`;
       }
       return projectObj.name || projectObj.code || null;
+    }
+
+    return null;
+  }
+
+  /**
+   * Obtiene el nombre del usuario asignado (delegado)
+   */
+  public getAssignedToName(): string | null {
+    if (!this.task?.assignedTo) return null;
+
+    // Si assignedToName está disponible, usarlo directamente
+    if (this.task.assignedToName) {
+      return this.task.assignedToName;
+    }
+
+    // Si assignedTo es un objeto (poblado), extraer el nombre
+    if (typeof this.task.assignedTo === 'object' && this.task.assignedTo !== null) {
+      const userObj = this.task.assignedTo as { name?: string; email?: string };
+      return userObj.name || userObj.email || null;
+    }
+
+    return null;
+  }
+
+  /**
+   * Obtiene el nombre del usuario creador
+   */
+  public getCreatedByName(): string | null {
+    if (!this.task?.createdBy) return null;
+
+    // Si createdByName está disponible, usarlo directamente
+    if (this.task.createdByName) {
+      return this.task.createdByName;
+    }
+
+    // Si createdBy es un objeto (poblado), extraer el nombre
+    if (typeof this.task.createdBy === 'object' && this.task.createdBy !== null) {
+      const userObj = this.task.createdBy as { name?: string; email?: string };
+      return userObj.name || userObj.email || null;
     }
 
     return null;

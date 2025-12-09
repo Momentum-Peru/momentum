@@ -74,58 +74,76 @@ export class MenuConfigService {
   getMenuItemsWithSubmenus(): MenuItem[] {
     return [
       {
-        label: 'Dashboard',
+        label: 'DASHBOARD',
         icon: 'pi pi-chart-line',
         routerLink: '/dashboard',
       },
       {
-        label: 'Proyectos',
+        label: 'PROYECTOS',
         icon: 'pi pi-folder',
         items: [
           {
-            label: 'Dashboard',
-            icon: 'pi pi-chart-line',
-            routerLink: '/projects/dashboard',
-          },
-          {
-            label: 'Proyectos',
-            icon: 'pi pi-folder',
-            routerLink: '/projects',
-          },
-          {
-            label: 'Ingeniería',
-            icon: 'pi pi-cog',
-            routerLink: '/engineering',
-          },
-          {
-            label: 'Órdenes',
-            icon: 'pi pi-shopping-cart',
-            routerLink: '/orders',
-          },
-          {
-            label: 'Requerimientos',
+            label: 'RQ Requerimiento',
             icon: 'pi pi-inbox',
             routerLink: '/requirements',
           },
           {
-            label: 'TDRs',
+            label: 'TDR Cliente',
             icon: 'pi pi-file',
             routerLink: '/tdrs',
+            queryParams: { type: 'client' },
           },
           {
-            label: 'Cotizaciones',
+            label: 'TDR Tecmeing',
+            icon: 'pi pi-file',
+            routerLink: '/tdrs',
+            queryParams: { type: 'tecmeing' },
+          },
+          {
+            label: 'Proyecto Cotización',
             icon: 'pi pi-dollar',
-            routerLink: '/quotes',
+            routerLink: '/projects',
+            queryParams: { status: 'EN_COTIZACION' },
+          },
+          {
+            label: 'Proyecto Aprobado',
+            icon: 'pi pi-check-circle',
+            routerLink: '/projects',
+            queryParams: { status: 'APROBADO' },
+          },
+          {
+            label: 'Proyecto en Ejecución',
+            icon: 'pi pi-cog',
+            routerLink: '/projects',
+            queryParams: { status: 'EN_EJECUCION' },
+          },
+          {
+            label: 'Proyecto en Observación',
+            icon: 'pi pi-exclamation-triangle',
+            routerLink: '/projects',
+            queryParams: { status: 'EN_OBSERVACION' },
+          },
+          {
+            label: 'Proyecto Culminado al 100%',
+            icon: 'pi pi-check',
+            routerLink: '/projects',
+            queryParams: { status: 'TERMINADO' },
+          },
+          {
+            label: 'Proyecto Archivados',
+            icon: 'pi pi-folder',
+            routerLink: '/projects',
+            queryParams: { isActive: 'false' },
           },
         ],
       },
       {
-        label: 'Futuros Imposibles',
+        label: 'FUTUROS IMPOSIBLES',
         icon: 'pi pi-bolt',
         routerLink: '/fi',
       },
       {
-        label: 'Administración',
+        label: 'ADMINISTRACIÓN',
         icon: 'pi pi-cog',
         items: [
           {
@@ -143,10 +161,20 @@ export class MenuConfigService {
             icon: 'pi pi-file',
             routerLink: '/documents',
           },
+          {
+            label: 'Empleados',
+            icon: 'pi pi-user',
+            routerLink: '/employees',
+          },
+          {
+            label: 'Planillas y Pagos',
+            icon: 'pi pi-wallet',
+            routerLink: '/payroll',
+          },
         ],
       },
       {
-        label: 'Talento Humano',
+        label: 'TALENTO HUMANO',
         icon: 'pi pi-users',
         items: [
           {
@@ -163,16 +191,6 @@ export class MenuConfigService {
             label: 'Marcación de Hora',
             icon: 'pi pi-clock',
             routerLink: '/time-tracking',
-          },
-          {
-            label: 'Empleados',
-            icon: 'pi pi-user',
-            routerLink: '/employees',
-          },
-          {
-            label: 'Planillas y Pagos',
-            icon: 'pi pi-wallet',
-            routerLink: '/payroll',
           },
         ],
       },
@@ -198,7 +216,7 @@ export class MenuConfigService {
         ],
       },
       {
-        label: 'Configuración',
+        label: 'CONFIGURACIÓN',
         icon: 'pi pi-sliders-h',
         items: [
           {

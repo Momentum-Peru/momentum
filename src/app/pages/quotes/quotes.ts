@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, OnInit, ViewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+  computed,
+  effect,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -32,6 +41,7 @@ import { TruncatePipe } from './truncate.pipe';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { MenuService } from '../../shared/services/menu.service';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-quotes',
@@ -71,6 +81,7 @@ export class QuotesPage implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
+  private readonly route = inject(ActivatedRoute);
 
   // Verificar si el usuario tiene permiso de edición para este módulo
   readonly canEdit = computed(() => this.menuService.canEdit('/quotes'));
@@ -82,7 +93,7 @@ export class QuotesPage implements OnInit {
   quotes = signal<Quote[]>([]);
   clients = signal<ClientOption[]>([]);
   projects = signal<Project[]>([]);
-  requirements = signal<Array<{ _id: string; codigo: string; title: string }>>([]);
+  requirements = signal<{ _id: string; codigo: string; title: string }[]>([]);
   query = signal<string>('');
   showDialog = signal<boolean>(false);
   showDetailsDialog = signal<boolean>(false);
@@ -155,7 +166,7 @@ export class QuotesPage implements OnInit {
           notes: '',
           documents: [],
         });
-        
+
         // Limpiar el componente FileUpload cuando se cierra el diálogo
         // Usar setTimeout para asegurar que el componente esté disponible
         setTimeout(() => {
@@ -181,7 +192,25 @@ export class QuotesPage implements OnInit {
   }
 
   ngOnInit() {
-    this.loadQuotes();
+    // Leer queryParams para filtrar por estado
+    this.route.queryParams.subscribe((params) => {
+      // Si hay un queryParam 'status', convertirlo a 'state' para el filtro
+      // El menú usa 'status' pero la API usa 'state'
+      if (params['status']) {
+        // Convertir 'accepted' del menú a 'Aprobada' del tipo QuoteState
+        const statusParam = params['status'];
+        const stateValue = statusParam === 'accepted' ? 'Aprobada' : statusParam;
+        // Solo aplicar si es un estado válido
+        if (
+          ['Pendiente', 'Enviada', 'Rechazada', 'Cancelada', 'Observada', 'Aprobada'].includes(
+            stateValue
+          )
+        ) {
+          // No necesitamos un signal separado, solo recargar con el filtro
+        }
+      }
+      this.loadQuotes();
+    });
     this.loadClients();
     this.loadProjects();
     this.loadRequirements();
@@ -189,8 +218,28 @@ export class QuotesPage implements OnInit {
 
   loadQuotes() {
     this.loading.set(true);
+
+    // Leer queryParams actuales
+    const routeParams = this.route.snapshot.queryParams;
+    let stateFilter: QuoteState | undefined = undefined;
+
+    if (routeParams['status']) {
+      const statusParam = routeParams['status'];
+      // Convertir 'accepted' del menú a 'Aprobada' del tipo QuoteState
+      if (statusParam === 'accepted') {
+        stateFilter = 'Aprobada';
+      } else if (
+        ['Pendiente', 'Enviada', 'Rechazada', 'Cancelada', 'Observada', 'Aprobada'].includes(
+          statusParam
+        )
+      ) {
+        stateFilter = statusParam as QuoteState;
+      }
+    }
+
     const params: QuoteQueryParams = {
       q: this.query() || undefined,
+      state: stateFilter,
       page: this.pagination().page,
       limit: this.pagination().limit,
     };
@@ -242,17 +291,19 @@ export class QuotesPage implements OnInit {
   }
 
   loadRequirements() {
-    this.http.get<Array<{ _id: string; codigo: string; title: string }>>(`${this.baseUrl}/requirements`).subscribe({
-      next: (requirements) => this.requirements.set(requirements),
-      error: (error) => {
-        console.error('Error loading requirements:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Error al cargar los requerimientos',
-        });
-      },
-    });
+    this.http
+      .get<{ _id: string; codigo: string; title: string }[]>(`${this.baseUrl}/requirements`)
+      .subscribe({
+        next: (requirements) => this.requirements.set(requirements),
+        error: (error) => {
+          console.error('Error loading requirements:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Error al cargar los requerimientos',
+          });
+        },
+      });
   }
 
   setQuery(value: string) {
@@ -266,7 +317,7 @@ export class QuotesPage implements OnInit {
     this.editing.set(null);
     this.selectedFiles.set([]);
     this.existingDocuments.set([]);
-    
+
     // Resetear el formulario con valores por defecto limpios
     this.quoteForm.reset({
       clientId: '',
@@ -278,14 +329,14 @@ export class QuotesPage implements OnInit {
       notes: '',
       documents: [],
     });
-    
+
     // Marcar todos los campos como no tocados para limpiar estados de validación
     this.quoteForm.markAsUntouched();
     this.quoteForm.markAsPristine();
-    
+
     // Abrir el diálogo
     this.showDialog.set(true);
-    
+
     // Limpiar el componente FileUpload después de que el diálogo se abra
     // Usar setTimeout para asegurar que el componente esté disponible en el DOM
     setTimeout(() => {
@@ -302,9 +353,10 @@ export class QuotesPage implements OnInit {
     // Convertir clientId y projectId si vienen como objetos
     const clientId = typeof quote.clientId === 'object' ? quote.clientId._id : quote.clientId;
     const projectId = typeof quote.projectId === 'object' ? quote.projectId._id : quote.projectId;
-    const requirementId = typeof quote.requirementId === 'object' 
-      ? quote.requirementId._id 
-      : (quote as any).requirementId || '';
+    const requirementId =
+      quote.requirementId && typeof quote.requirementId === 'object'
+        ? quote.requirementId._id
+        : (quote.requirementId as string | undefined) || '';
 
     // Asegurar que los documentos estén disponibles
     const documents = quote.documents || [];
