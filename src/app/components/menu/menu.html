@@ -1,6 +1,6 @@
 <!-- Botón hamburguesa para móvil -->
 <button
-  class="m-3 md:hidden fixed top-2 right-2 z-50 p-2 m-6 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors duration-200"
+  class="md:hidden fixed top-2 right-2 z-50 p-2 m-6 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors duration-200"
   (click)="toggleMenu()"
   [attr.aria-label]="isMenuOpen() ? 'Cerrar menú' : 'Abrir menú'"
 >
@@ -41,16 +41,16 @@
 
 <!-- Menú lateral -->
 <nav
-  class="pt-7 fixed md:static top-0 left-0 h-full w-60 bg-black text-white z-50 transform transition-transform duration-300 ease-in-out md:transform-none flex flex-col"
+  class="pt-7 fixed md:static top-0 left-0 h-full max-h-screen w-60 bg-black text-white z-50 transform transition-transform duration-300 ease-in-out md:transform-none flex flex-col"
   [class.-translate-x-full]="!isMenuOpen()"
   [class.translate-x-0]="isMenuOpen()"
 >
-  <div class="md:hidden flex justify-center items-center p-4">
+  <div class="md:hidden flex justify-center items-center p-4 flex-shrink-0">
     <img width="120" src="/images/logo_b.png" alt="Logo" />
   </div>
 
   <!-- Items del menú -->
-  <div class="flex-1 overflow-y-auto flex flex-col space-y-1 p-2 pb-24">
+  <div class="flex-1 min-h-0 overflow-y-auto flex flex-col space-y-1 p-2 pb-24">
     @if (isLoadingPermissions()) {
     <!-- Estado de carga -->
     <div class="text-center py-8">
@@ -95,7 +95,9 @@
   </div>
 
   <!-- Footer del menú -->
-  <div class="md:hidden w-full flex flex-col justify-center items-center pb-4 md:pb-0">
+  <div
+    class="md:hidden w-full flex flex-col justify-center items-center pb-4 md:pb-0 flex-shrink-0"
+  >
     <!-- Información del usuario y botón de cerrar sesión solo en móvil -->
     <div class="text-center mb-3">
       <div class="text-sm text-gray-300 mb-1">Conectado como:</div>
