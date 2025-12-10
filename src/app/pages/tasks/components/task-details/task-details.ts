@@ -125,6 +125,39 @@ import {
           </div>
           }
 
+          <!-- Incomplete Reason -->
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Razón por la que no se terminó la tarea
+            </h3>
+            <div class="space-y-2">
+              <textarea
+                pInputTextarea
+                [(ngModel)]="incompleteReasonValue"
+                placeholder="Explica por qué no se pudo terminar la tarea..."
+                rows="3"
+                class="w-full"
+                [class.p-invalid]="incompleteReasonError()"
+              ></textarea>
+              @if (incompleteReasonError()) {
+              <small class="text-red-500 dark:text-red-400 block">
+                {{ incompleteReasonError() }}
+              </small>
+              }
+              <div class="flex justify-end gap-2">
+                <p-button
+                  label="Guardar razón"
+                  icon="pi pi-save"
+                  severity="primary"
+                  size="small"
+                  (onClick)="saveIncompleteReason()"
+                  [loading]="savingIncompleteReason()"
+                  [disabled]="savingIncompleteReason()"
+                ></p-button>
+              </div>
+            </div>
+          </div>
+
           <!-- Subtasks -->
           @if (task.subtasks && task.subtasks.length > 0) {
           <div class="mb-4">
@@ -887,6 +920,9 @@ export class TaskDetailsComponent {
   public readonly showPdfModal = signal<boolean>(false);
   public readonly selectedPdfUrl = signal<string | null>(null);
   public readonly selectedPdfName = signal<string | null>(null);
+  public readonly incompleteReasonValue = signal<string>('');
+  public readonly incompleteReasonError = signal<string | null>(null);
+  public readonly savingIncompleteReason = signal<boolean>(false);
 
   // Form
   public readonly commentForm: FormGroup;
@@ -1106,6 +1142,8 @@ export class TaskDetailsComponent {
   public onDialogShow(): void {
     if (this.task?._id) {
       this.loadLastModificationLog(this.task._id);
+      // Inicializar el valor de la razón de no terminación
+      this.incompleteReasonValue.set(this.task?.incompleteReason || '');
     }
   }
 
@@ -1715,5 +1753,63 @@ export class TaskDetailsComponent {
           });
         },
       });
+  }
+
+  /**
+   * Guarda la razón de no terminación
+   */
+  public saveIncompleteReason(): void {
+    if (!this.task) return;
+
+    const value = this.incompleteReasonValue().trim();
+    
+    // Si el valor no cambió, no hacer nada
+    const currentValue = this.task.incompleteReason || '';
+    if (value === currentValue) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Sin cambios',
+        detail: 'No hay cambios para guardar',
+      });
+      return;
+    }
+
+    // Validación: si se proporciona un valor, debe tener al menos 3 caracteres
+    if (value && value.length < 3) {
+      this.incompleteReasonError.set('La razón debe tener al menos 3 caracteres');
+      return;
+    }
+
+    this.savingIncompleteReason.set(true);
+    this.incompleteReasonError.set(null);
+
+    const updateData = {
+      incompleteReason: value || undefined,
+    };
+
+    this.tasksApiService.updateTask(this.task._id, updateData).subscribe({
+      next: (updatedTask) => {
+        // Actualizar la tarea local
+        if (this.task) {
+          this.task.incompleteReason = updatedTask.incompleteReason;
+        }
+        this.savingIncompleteReason.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: value ? 'Razón guardada correctamente' : 'Razón eliminada correctamente',
+        });
+      },
+      error: (error) => {
+        console.error('Error saving incomplete reason:', error);
+        this.incompleteReasonError.set('Error al guardar la razón');
+        this.savingIncompleteReason.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo guardar la razón',
+        });
+      },
+    });
   }
 }
