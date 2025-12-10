@@ -109,6 +109,35 @@ import { Task } from '../../../../shared/interfaces/task.interface';
       </p>
       }
 
+      <!-- Incomplete Reason -->
+      @if (task.incompleteReason) {
+      <div class="mb-1.5 p-1.5 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded text-xs">
+        <div class="flex items-start gap-1">
+          <svg
+            class="w-3 h-3 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            ></path>
+          </svg>
+          <div class="flex-1 min-w-0">
+            <span class="font-semibold text-orange-700 dark:text-orange-300 text-[10px] block mb-0.5">
+              No terminada:
+            </span>
+            <p class="text-orange-800 dark:text-orange-200 line-clamp-2 text-[10px] leading-tight">
+              {{ task.incompleteReason }}
+            </p>
+          </div>
+        </div>
+      </div>
+      }
+
       <!-- Footer -->
       <div class="flex flex-col gap-1 mt-auto">
         <!-- Due Date Row -->

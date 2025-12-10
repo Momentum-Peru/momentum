@@ -59,6 +59,7 @@ export interface Task {
   files?: TaskFile[];
   subtasks?: TaskSubtask[];
   attachments?: TaskAttachment[];
+  incompleteReason?: string;
   createdAt: Date | string;
   updatedAt: Date | string;
   isActive: boolean;
@@ -77,6 +78,7 @@ export interface CreateTaskRequest {
   projectId?: string;
   subtasks?: TaskSubtask[];
   attachments?: TaskAttachment[];
+  incompleteReason?: string;
 }
 
 export interface UpdateTaskRequest {
@@ -91,6 +93,7 @@ export interface UpdateTaskRequest {
   projectId?: string;
   subtasks?: TaskSubtask[];
   attachments?: TaskAttachment[];
+  incompleteReason?: string;
   isActive?: boolean;
 }
 

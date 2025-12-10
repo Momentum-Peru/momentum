@@ -296,6 +296,26 @@ export class TruncatePipe implements PipeTransform {
           </p>
         </div>
 
+        <!-- Incomplete Reason Field -->
+        <div class="space-y-2">
+          <label
+            for="incompleteReason"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Razón por la que no se terminó la tarea
+          </label>
+          <textarea
+            id="incompleteReason"
+            formControlName="incompleteReason"
+            rows="3"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+            placeholder="Explica por qué no se pudo terminar la tarea (opcional)"
+          ></textarea>
+          <p class="text-gray-500 dark:text-gray-400 text-sm">
+            Este campo aparece en los detalles y en la tarjeta de la tarea
+          </p>
+        </div>
+
         <!-- Subtasks Field -->
         <div class="space-y-2">
           <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Subtareas</div>
@@ -815,6 +835,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       projectId: [null],
       dueDate: [null],
       tags: [''],
+      incompleteReason: [''],
     });
   }
 
@@ -955,6 +976,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         projectId: projectId || null,
         dueDate: this.task.dueDate ? new Date(this.task.dueDate) : null,
         tags: Array.isArray(this.task.tags) ? this.task.tags.join(', ') : this.task.tags || '',
+        incompleteReason: this.task.incompleteReason || '',
       });
 
       // Inicializar subtareas
@@ -1167,6 +1189,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
               .map((tag: string) => tag.trim())
               .filter((tag: string) => tag.length > 0)
           : [],
+        incompleteReason: formValue.incompleteReason?.trim() || undefined,
         subtasks: this.subtasks()
           .map((st, index) => ({
             title: st.title.trim(),
