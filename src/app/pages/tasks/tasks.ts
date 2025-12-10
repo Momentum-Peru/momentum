@@ -2,7 +2,6 @@ import { Component, OnInit, inject, signal, computed, effect } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { UsersApiService } from '../../shared/services/users-api.service';
 
 // PrimeNG Components
 import { ButtonModule } from 'primeng/button';
@@ -38,7 +37,6 @@ import {
   InviteUserRequest,
 } from '../../shared/interfaces/board.interface';
 import { Task, DragDropEvent, TasksSearchParams } from '../../shared/interfaces/task.interface';
-import { User } from '../../shared/services/users-api.service';
 
 /**
  * Componente principal de gestión de tareas con tableros
@@ -79,7 +77,6 @@ import { User } from '../../shared/services/users-api.service';
 export class TasksPage implements OnInit {
   public readonly boardsService = inject(BoardsApiService);
   public readonly tasksService = inject(TasksApiService);
-  private readonly usersApiService = inject(UsersApiService);
   private readonly authService = inject(AuthService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
@@ -101,13 +98,51 @@ export class TasksPage implements OnInit {
   public readonly editingBoardFromList = signal<Board | null>(null);
   public readonly invitingBoardFromList = signal<Board | null>(null);
   public readonly taskFilters = signal<TasksSearchParams>({});
-  public readonly availableUsers = signal<{ label: string; value: string }[]>([]);
   public readonly availableTags = signal<string[]>([]);
 
   // Computed
   public readonly currentUserId = computed(() => {
     const user = this.authService.getCurrentUser();
     return user?.id || '';
+  });
+
+  /**
+   * Usuarios disponibles para el filtro "asignado a"
+   * Solo incluye los usuarios que pertenecen al tablero actual (owner + members)
+   */
+  public readonly availableUsers = computed<{ label: string; value: string }[]>(() => {
+    const board = this.selectedBoard();
+    if (!board) {
+      return [];
+    }
+
+    const users: { label: string; value: string }[] = [];
+
+    // Agregar el owner
+    if (board.owner && board.owner._id) {
+      users.push({
+        label: board.owner.name || board.owner.email || 'Sin nombre',
+        value: board.owner._id,
+      });
+    }
+
+    // Agregar los members
+    if (board.members && Array.isArray(board.members)) {
+      board.members.forEach((member) => {
+        if (member && member._id) {
+          // Evitar duplicados (por si el owner también está en members)
+          const isDuplicate = users.some((u) => u.value === member._id);
+          if (!isDuplicate) {
+            users.push({
+              label: member.name || member.email || 'Sin nombre',
+              value: member._id,
+            });
+          }
+        }
+      });
+    }
+
+    return users;
   });
 
   public readonly tasksByStatus = computed(() => {
@@ -232,7 +267,6 @@ export class TasksPage implements OnInit {
   ngOnInit(): void {
     this.loadBoards();
     this.loadPendingInvitations();
-    this.loadUsers();
 
     // Leer parámetros de ruta (boardId)
     this.route.params.subscribe((params) => {
@@ -557,26 +591,6 @@ export class TasksPage implements OnInit {
     });
   }
 
-  /**
-   * Carga los usuarios disponibles para el filtro
-   */
-  private loadUsers(): void {
-    this.usersApiService.listWithFilters().subscribe({
-      next: (response) => {
-        const users = Array.isArray(response.users) ? response.users : [];
-        this.availableUsers.set(
-          users.map((user: User) => ({
-            label: user.name,
-            value: user.id,
-          }))
-        );
-      },
-      error: () => {
-        // Error silencioso
-        this.availableUsers.set([]);
-      },
-    });
-  }
 
   /**
    * Extrae todas las etiquetas únicas de las tareas
