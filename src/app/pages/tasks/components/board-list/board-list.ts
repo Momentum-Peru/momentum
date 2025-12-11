@@ -34,6 +34,6 @@ export class BoardListComponent {
 
   // Método para verificar si un tablero pertenece al usuario actual
   isBoardOwner(board: Board): boolean {
-    return board.owner._id === this.currentUserId();
+    return board.owner?._id === this.currentUserId();
   }
 }

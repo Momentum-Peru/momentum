@@ -1102,8 +1102,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       users.push({
         _id: board.owner._id,
         id: board.owner._id,
-        name: board.owner.name,
-        email: board.owner.email,
+        name: board.owner.name || board.owner.email || 'Sin nombre',
+        email: board.owner.email || '',
         role: 'user', // Valor por defecto, el board no incluye el rol
         isActive: true,
         createdAt: '',
@@ -1118,8 +1118,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
           users.push({
             _id: member._id,
             id: member._id,
-            name: member.name,
-            email: member.email,
+            name: member.name || member.email || 'Sin nombre',
+            email: member.email || '',
             role: 'user', // Valor por defecto
             isActive: true,
             createdAt: '',
@@ -1134,13 +1134,13 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       board.invitations.forEach((invitation) => {
         if (invitation.status === 'accepted' && invitation.userId?._id) {
           // Verificar que no esté ya en la lista
-          const exists = users.some((u) => u._id === invitation.userId._id);
-          if (!exists) {
+          const exists = users.some((u) => u._id === invitation.userId?._id);
+          if (!exists && invitation.userId) {
             users.push({
               _id: invitation.userId._id,
               id: invitation.userId._id,
-              name: invitation.userId.name,
-              email: invitation.userId.email,
+              name: invitation.userId.name || invitation.userId.email || 'Sin nombre',
+              email: invitation.userId.email || '',
               role: 'user', // Valor por defecto
               isActive: true,
               createdAt: '',

@@ -97,7 +97,7 @@ import { Board, UpdateInvitationRequest } from '../../../../shared/interfaces/bo
             <div class="flex items-center gap-2 text-sm">
               <i class="pi pi-user text-gray-500"></i>
               <span class="text-gray-700 dark:text-gray-300">
-                Propietario: <strong>{{ board.owner.name }}</strong>
+                Propietario: <strong>{{ board.owner?.name || board.owner?.email || 'Sin nombre' }}</strong>
               </span>
             </div>
 

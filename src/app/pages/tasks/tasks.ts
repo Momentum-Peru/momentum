@@ -2,7 +2,6 @@ import { Component, OnInit, inject, signal, computed, effect } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { UsersApiService } from '../../shared/services/users-api.service';
 
 // PrimeNG Components
 import { ButtonModule } from 'primeng/button';
@@ -38,7 +37,6 @@ import {
   InviteUserRequest,
 } from '../../shared/interfaces/board.interface';
 import { Task, DragDropEvent, TasksSearchParams } from '../../shared/interfaces/task.interface';
-import { User } from '../../shared/services/users-api.service';
 
 /**
  * Componente principal de gestión de tareas con tableros
@@ -79,7 +77,6 @@ import { User } from '../../shared/services/users-api.service';
 export class TasksPage implements OnInit {
   public readonly boardsService = inject(BoardsApiService);
   public readonly tasksService = inject(TasksApiService);
-  private readonly usersApiService = inject(UsersApiService);
   private readonly authService = inject(AuthService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
@@ -101,13 +98,51 @@ export class TasksPage implements OnInit {
   public readonly editingBoardFromList = signal<Board | null>(null);
   public readonly invitingBoardFromList = signal<Board | null>(null);
   public readonly taskFilters = signal<TasksSearchParams>({});
-  public readonly availableUsers = signal<{ label: string; value: string }[]>([]);
   public readonly availableTags = signal<string[]>([]);
 
   // Computed
   public readonly currentUserId = computed(() => {
     const user = this.authService.getCurrentUser();
     return user?.id || '';
+  });
+
+  /**
+   * Usuarios disponibles para el filtro "asignado a"
+   * Solo incluye los usuarios que pertenecen al tablero actual (owner + members)
+   */
+  public readonly availableUsers = computed<{ label: string; value: string }[]>(() => {
+    const board = this.selectedBoard();
+    if (!board) {
+      return [];
+    }
+
+    const users: { label: string; value: string }[] = [];
+
+    // Agregar el owner
+    if (board.owner && board.owner._id) {
+      users.push({
+        label: board.owner?.name || board.owner?.email || 'Sin nombre',
+        value: board.owner._id,
+      });
+    }
+
+    // Agregar los members
+    if (board.members && Array.isArray(board.members)) {
+      board.members.forEach((member) => {
+        if (member && member._id) {
+          // Evitar duplicados (por si el owner también está en members)
+          const isDuplicate = users.some((u) => u.value === member._id);
+          if (!isDuplicate) {
+            users.push({
+              label: member?.name || member?.email || 'Sin nombre',
+              value: member._id,
+            });
+          }
+        }
+      });
+    }
+
+    return users;
   });
 
   public readonly tasksByStatus = computed(() => {
@@ -174,13 +209,13 @@ export class TasksPage implements OnInit {
   public readonly isBoardOwner = computed(() => {
     const board = this.selectedBoard();
     const userId = this.currentUserId();
-    return board ? board.owner._id === userId : false;
+    return board && board.owner ? board.owner._id === userId : false;
   });
 
   public readonly existingMemberIds = computed(() => {
     const board = this.invitingBoardFromList() || this.selectedBoard();
-    if (!board) return [];
-    return [board.owner._id, ...board.members.map((m) => m._id)];
+    if (!board || !board.owner) return [];
+    return [board.owner._id, ...(board.members || []).map((m) => m._id)];
   });
 
   public readonly pendingInvitations = signal<Board[]>([]);
@@ -232,7 +267,6 @@ export class TasksPage implements OnInit {
   ngOnInit(): void {
     this.loadBoards();
     this.loadPendingInvitations();
-    this.loadUsers();
 
     // Leer parámetros de ruta (boardId)
     this.route.params.subscribe((params) => {
@@ -240,7 +274,7 @@ export class TasksPage implements OnInit {
       if (boardId) {
         // Verificar primero si el tablero está en la lista local
         const boardInList = this.boardsService.boards().find((b) => b._id === boardId);
-        
+
         if (boardInList) {
           // Si está en la lista, usarlo directamente
           this.selectedBoard.set(boardInList);
@@ -388,9 +422,9 @@ export class TasksPage implements OnInit {
         // Verificar si el tablero seleccionado todavía está en la lista
         const selectedBoardId = this.selectedBoard()?._id;
         if (selectedBoardId) {
-          const boardStillExists = this.boardsService.boards().some(
-            (board) => board._id === selectedBoardId
-          );
+          const boardStillExists = this.boardsService
+            .boards()
+            .some((board) => board._id === selectedBoardId);
           // Si el tablero ya no está en la lista, significa que el usuario ya no tiene acceso
           if (!boardStillExists) {
             this.router.navigate(['/tasks']);
@@ -553,27 +587,6 @@ export class TasksPage implements OnInit {
           summary: 'Error',
           detail: 'No se pudieron cargar las tareas del tablero',
         });
-      },
-    });
-  }
-
-  /**
-   * Carga los usuarios disponibles para el filtro
-   */
-  private loadUsers(): void {
-    this.usersApiService.listWithFilters().subscribe({
-      next: (response) => {
-        const users = Array.isArray(response.users) ? response.users : [];
-        this.availableUsers.set(
-          users.map((user: User) => ({
-            label: user.name,
-            value: user.id,
-          }))
-        );
-      },
-      error: () => {
-        // Error silencioso
-        this.availableUsers.set([]);
       },
     });
   }
@@ -906,45 +919,49 @@ export class TasksPage implements OnInit {
       acceptLabel: 'Eliminar',
       rejectLabel: 'Cancelar',
       accept: () => {
-        this.boardsService.removeMember(event.board._id, event.memberId, this.currentUserId()).subscribe({
-          next: (updatedBoard) => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Éxito',
-              detail: 'Miembro eliminado correctamente',
-            });
-            
-            const currentUserId = this.currentUserId();
-            const isRemovedUserCurrentUser = event.memberId === currentUserId;
-            
-            // Si el usuario eliminado es el usuario actual, eliminar inmediatamente y redirigir
-            if (isRemovedUserCurrentUser) {
-              // Eliminar de la lista local inmediatamente
-              const currentBoards = this.boardsService.boards();
-              const filteredBoards = currentBoards.filter((board) => board._id !== event.board._id);
-              this.boardsService.boards.set(filteredBoards);
-              
-              // Redirigir y limpiar
-              this.router.navigate(['/tasks'], { replaceUrl: true });
-              this.selectedBoard.set(null);
-            } else {
-              // Si estamos viendo el tablero, actualizarlo
-              if (this.selectedBoard()?._id === event.board._id) {
-                this.selectedBoard.set(updatedBoard);
+        this.boardsService
+          .removeMember(event.board._id, event.memberId, this.currentUserId())
+          .subscribe({
+            next: (updatedBoard) => {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: 'Miembro eliminado correctamente',
+              });
+
+              const currentUserId = this.currentUserId();
+              const isRemovedUserCurrentUser = event.memberId === currentUserId;
+
+              // Si el usuario eliminado es el usuario actual, eliminar inmediatamente y redirigir
+              if (isRemovedUserCurrentUser) {
+                // Eliminar de la lista local inmediatamente
+                const currentBoards = this.boardsService.boards();
+                const filteredBoards = currentBoards.filter(
+                  (board) => board._id !== event.board._id
+                );
+                this.boardsService.boards.set(filteredBoards);
+
+                // Redirigir y limpiar
+                this.router.navigate(['/tasks'], { replaceUrl: true });
+                this.selectedBoard.set(null);
+              } else {
+                // Si estamos viendo el tablero, actualizarlo
+                if (this.selectedBoard()?._id === event.board._id) {
+                  this.selectedBoard.set(updatedBoard);
+                }
               }
-            }
-            
-            // Refrescar la lista de tableros desde el backend
-            this.refreshBoards();
-          },
-          error: (error) => {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: error?.error?.message || 'No se pudo eliminar el miembro',
-            });
-          },
-        });
+
+              // Refrescar la lista de tableros desde el backend
+              this.refreshBoards();
+            },
+            error: (error) => {
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: error?.error?.message || 'No se pudo eliminar el miembro',
+              });
+            },
+          });
       },
     });
   }
@@ -967,18 +984,18 @@ export class TasksPage implements OnInit {
               summary: 'Éxito',
               detail: 'Te has salido del tablero correctamente',
             });
-            
+
             // Eliminar de la lista local inmediatamente (ya se hace en el servicio, pero asegurémonos)
             const currentBoards = this.boardsService.boards();
             const filteredBoards = currentBoards.filter((b) => b._id !== board._id);
             this.boardsService.boards.set(filteredBoards);
-            
+
             // Si estamos viendo el tablero del que nos salimos, volver a la lista
             if (this.selectedBoard()?._id === board._id) {
               this.router.navigate(['/tasks'], { replaceUrl: true });
               this.selectedBoard.set(null);
             }
-            
+
             // Refrescar la lista de tableros desde el backend para asegurar consistencia
             this.refreshBoards();
           },

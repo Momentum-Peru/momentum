@@ -1,1 +1,158 @@
-<p>register works!</p>
+<div class="min-h-screen bg-black flex items-center justify-center p-4 register-container">
+  <!-- Toast para mensajes -->
+  <p-toast [life]="5000"></p-toast>
+
+  <!-- Contenedor principal -->
+  <div class="w-full max-w-md">
+    <!-- Logo y header -->
+    <div class="flex justify-center mb-8 w-full">
+      <img src="/images/logo_b.png" alt="Logo Momentum" class="h-16" />
+    </div>
+
+    <!-- Tarjeta del formulario -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 register-card w-full">
+      <!-- Título del formulario -->
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-black mb-2">Crear Cuenta</h2>
+        <p class="text-sm text-gray-600">Completa tus datos para comenzar</p>
+      </div>
+
+      <!-- Formulario -->
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-4">
+        <!-- Campo Nombre -->
+        <div class="space-y-2">
+          <label for="name" class="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <i class="pi pi-user text-gray-500"></i>
+            Nombre completo
+          </label>
+          <input
+            id="name"
+            pInputText
+            formControlName="name"
+            placeholder="Ingresa tu nombre completo"
+            class="w-full"
+            [class.p-invalid]="isFieldInvalid('name')"
+            autocomplete="name"
+          />
+          @if (isFieldInvalid('name')) {
+          <small class="text-red-500 text-xs flex items-center gap-1">
+            <i class="pi pi-exclamation-circle text-xs"></i>
+            {{ getFieldError('name') }}
+          </small>
+          }
+        </div>
+
+        <!-- Campo Email -->
+        <div class="space-y-2">
+          <label for="email" class="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <i class="pi pi-envelope text-gray-500"></i>
+            Correo electrónico
+          </label>
+          <input
+            id="email"
+            pInputText
+            formControlName="email"
+            placeholder="tu@correo.com"
+            class="w-full"
+            [class.p-invalid]="isFieldInvalid('email')"
+            autocomplete="email"
+            type="email"
+          />
+          @if (isFieldInvalid('email')) {
+          <small class="text-red-500 text-xs flex items-center gap-1">
+            <i class="pi pi-exclamation-circle text-xs"></i>
+            {{ getFieldError('email') }}
+          </small>
+          }
+        </div>
+
+        <!-- Campo Contraseña -->
+        <div class="space-y-2">
+          <label for="password" class="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <i class="pi pi-lock text-gray-500"></i>
+            Contraseña
+          </label>
+          <div class="relative">
+            <p-password
+              id="password"
+              formControlName="password"
+              placeholder="Mínimo 6 caracteres"
+              [toggleMask]="true"
+              [feedback]="false"
+              [class.p-invalid]="isFieldInvalid('password')"
+              styleClass="w-full"
+              inputStyleClass="w-full"
+              [inputStyle]="{ width: '100%' }"
+              autocomplete="new-password"
+            ></p-password>
+          </div>
+          @if (isFieldInvalid('password')) {
+          <small class="text-red-500 text-xs flex items-center gap-1">
+            <i class="pi pi-exclamation-circle text-xs"></i>
+            {{ getFieldError('password') }}
+          </small>
+          }
+        </div>
+
+        <!-- Campo Confirmar Contraseña -->
+        <div class="space-y-2">
+          <label
+            for="confirmPassword"
+            class="text-sm font-medium text-gray-700 flex items-center gap-2"
+          >
+            <i class="pi pi-lock text-gray-500"></i>
+            Confirmar contraseña
+          </label>
+          <div class="relative">
+            <p-password
+              id="confirmPassword"
+              formControlName="confirmPassword"
+              placeholder="Confirma tu contraseña"
+              [toggleMask]="true"
+              [feedback]="false"
+              [class.p-invalid]="isFieldInvalid('confirmPassword')"
+              styleClass="w-full"
+              inputStyleClass="w-full"
+              [inputStyle]="{ width: '100%' }"
+              autocomplete="new-password"
+            ></p-password>
+          </div>
+          @if (isFieldInvalid('confirmPassword')) {
+          <small class="text-red-500 text-xs flex items-center gap-1">
+            <i class="pi pi-exclamation-circle text-xs"></i>
+            {{ getFieldError('confirmPassword') }}
+          </small>
+          }
+        </div>
+
+        <!-- Botón de registro -->
+        <p-button
+          label="Registrarse"
+          type="submit"
+          [loading]="isLoading()"
+          styleClass="w-full mt-4"
+          [disabled]="registerForm.invalid"
+          icon="pi pi-user-plus"
+          [iconPos]="'left'"
+        ></p-button>
+
+        <!-- Enlace de login -->
+        <div class="text-center mt-6">
+          <span class="text-sm text-gray-600">¿Ya tienes una cuenta? </span>
+          <button
+            type="button"
+            (click)="goToLogin()"
+            class="text-sm font-medium text-black hover:underline bg-transparent border-none cursor-pointer p-0"
+          >
+            Inicia sesión aquí
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-8">
+      <p class="text-xs text-gray-500">Copyright &#64;Momentum 2024 | Política de Privacidad</p>
+    </div>
+  </div>
+</div>
