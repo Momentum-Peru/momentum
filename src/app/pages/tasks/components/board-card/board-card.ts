@@ -45,11 +45,11 @@ export class BoardCardComponent {
   showMembersDialog = signal(false);
 
   get pendingInvitationsCount(): number {
-    return this.board.invitations.filter((inv) => inv.status === 'pending').length;
+    return (this.board.invitations || []).filter((inv) => inv.status === 'pending').length;
   }
 
   getPendingInvitations() {
-    return this.board.invitations.filter((inv) => inv.status === 'pending');
+    return (this.board.invitations || []).filter((inv) => inv.status === 'pending');
   }
 
   onView(event: Event): void {
@@ -84,7 +84,7 @@ export class BoardCardComponent {
 
   isCurrentUserMember(): boolean {
     if (!this.currentUserId) return false;
-    return this.board.members.some((member) => member._id === this.currentUserId);
+    return (this.board.members || []).some((member) => member._id === this.currentUserId);
   }
 
   isCurrentUser(memberId: string): boolean {
