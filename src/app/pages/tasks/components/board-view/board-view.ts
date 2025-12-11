@@ -118,11 +118,11 @@ export class BoardViewComponent {
   }
 
   get pendingInvitations(): number {
-    return this.board.invitations.filter((inv) => inv.status === 'pending').length;
+    return (this.board.invitations || []).filter((inv) => inv.status === 'pending').length;
   }
 
   getPendingInvitations() {
-    return this.board.invitations.filter((inv) => inv.status === 'pending');
+    return (this.board.invitations || []).filter((inv) => inv.status === 'pending');
   }
 
   /**
@@ -153,7 +153,7 @@ export class BoardViewComponent {
     // Normalizar y agregar filtros de fecha
     const dateFrom = this.filterDateFrom();
     const dateTo = this.filterDateTo();
-    
+
     if (dateFrom !== undefined && dateFrom !== null) {
       const dateFromObj = dateFrom instanceof Date ? dateFrom : new Date(dateFrom);
       // Solo agregar si es una fecha válida
@@ -161,7 +161,7 @@ export class BoardViewComponent {
         filters.dueDateFrom = dateFromObj.toISOString();
       }
     }
-    
+
     if (dateTo !== undefined && dateTo !== null) {
       const dateToObj = dateTo instanceof Date ? dateTo : new Date(dateTo);
       // Solo agregar si es una fecha válida
@@ -194,13 +194,19 @@ export class BoardViewComponent {
   /**
    * Normaliza el valor de asignado a cuando cambia
    */
-  public onAssignedToChange(value: string | { value: string; label: string } | null | undefined): void {
+  public onAssignedToChange(
+    value: string | { value: string; label: string } | null | undefined
+  ): void {
     if (value === null || value === undefined || value === '') {
       this.filterAssignedTo.set(undefined);
     } else if (typeof value === 'object' && 'value' in value) {
       // Si PrimeNG devuelve el objeto completo, extraer el value
       const extractedValue = value.value;
-      this.filterAssignedTo.set(extractedValue === null || extractedValue === undefined || extractedValue === '' ? undefined : extractedValue);
+      this.filterAssignedTo.set(
+        extractedValue === null || extractedValue === undefined || extractedValue === ''
+          ? undefined
+          : extractedValue
+      );
     } else if (typeof value === 'string' && value.trim() !== '') {
       this.filterAssignedTo.set(value);
     } else {
@@ -215,7 +221,12 @@ export class BoardViewComponent {
    */
   public onDateFromChange(value: Date | null | undefined | string): void {
     // Manejar todos los casos: null, undefined, string vacío, o Date inválido
-    if (value === null || value === undefined || value === '' || (typeof value === 'string' && value.trim() === '')) {
+    if (
+      value === null ||
+      value === undefined ||
+      value === '' ||
+      (typeof value === 'string' && value.trim() === '')
+    ) {
       this.filterDateFrom.set(undefined);
     } else if (value instanceof Date) {
       // Solo establecer si es una fecha válida
@@ -236,7 +247,12 @@ export class BoardViewComponent {
    */
   public onDateToChange(value: Date | null | undefined | string): void {
     // Manejar todos los casos: null, undefined, string vacío, o Date inválido
-    if (value === null || value === undefined || value === '' || (typeof value === 'string' && value.trim() === '')) {
+    if (
+      value === null ||
+      value === undefined ||
+      value === '' ||
+      (typeof value === 'string' && value.trim() === '')
+    ) {
       this.filterDateTo.set(undefined);
     } else if (value instanceof Date) {
       // Solo establecer si es una fecha válida
@@ -307,7 +323,7 @@ export class BoardViewComponent {
 
   isCurrentUserMember(): boolean {
     if (!this.currentUserId) return false;
-    return this.board.members.some((member) => member._id === this.currentUserId);
+    return (this.board.members || []).some((member) => member._id === this.currentUserId);
   }
 
   isCurrentUser(memberId: string): boolean {

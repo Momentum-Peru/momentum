@@ -27,10 +27,10 @@
         <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <i class="pi pi-user"></i>
           <span class="font-medium">Propietario:</span>
-          <span>{{ board.owner.name }}</span>
+          <span>{{ board.owner?.name || board.owner?.email || 'Sin nombre' }}</span>
         </div>
 
-        @if (board.members.length > 0) {
+        @if (board.members && board.members.length > 0) {
         <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <i class="pi pi-users"></i>
           <span class="font-medium">Miembros:</span>
