@@ -8,7 +8,7 @@ import { CreateLeadRequest, Lead } from '../../../shared/interfaces/lead.interfa
  */
 export interface LeadFormData {
   name: string;
-  email: string;
+  email?: string;
   phone: string;
   address?: string;
   referredBy?: string;
@@ -47,7 +47,7 @@ export class LeadFormService {
       name: formData.name,
       contact: {
         name: formData.name,
-        email: formData.email,
+        email: formData.email || undefined,
         phone: formData.phone
       },
       company: formData.hasCompany
