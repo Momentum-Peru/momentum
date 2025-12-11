@@ -1084,6 +1084,45 @@
       </div>
       }
 
+      <!-- Fotos -->
+      @if (normalizeToArray(viewingLead()?.photos).length > 0) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-image text-pink-500"></i>
+          Fotos
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          @for (photo of normalizeToArray(viewingLead()?.photos); track $index) {
+          <div
+            class="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity border border-gray-200 dark:border-gray-600"
+            (click)="openPhotoModal(normalizeToArray(viewingLead()?.photos), $index)"
+            (keyup.enter)="openPhotoModal(normalizeToArray(viewingLead()?.photos), $index)"
+            (keyup.space)="openPhotoModal(normalizeToArray(viewingLead()?.photos), $index)"
+            tabindex="0"
+            role="button"
+            aria-label="Ver foto"
+          >
+            <img
+              [src]="photo"
+              class="w-full h-full object-cover"
+              alt="Foto del lead"
+              loading="lazy"
+            />
+            @if (normalizeToArray(viewingLead()?.photos).length > 1 && $index === 0) {
+            <div
+              class="absolute top-1 left-1 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
+            >
+              {{ normalizeToArray(viewingLead()?.photos).length }} fotos
+            </div>
+            }
+          </div>
+          }
+        </div>
+      </div>
+      }
+
       <!-- Seguimientos -->
       <div>
         <div class="flex items-center justify-between mb-4">
@@ -1292,6 +1331,68 @@
     <ng-template pTemplate="footer">
       <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()" aria-label="Cerrar estadísticas"></button>
     </ng-template>
+  </p-dialog>
+
+  <!-- Modal de fotos -->
+  <p-dialog
+    [(visible)]="showPhotoModal"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '80rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center justify-between w-full">
+        <span class="text-lg font-semibold">
+          Foto ({{ photoModalCurrentIndex() + 1 }} / {{ photoModalUrls().length }})
+        </span>
+        <button
+          pButton
+          icon="pi pi-times"
+          class="p-button-text p-button-rounded"
+          (click)="closePhotoModal()"
+          aria-label="Cerrar modal de fotos"
+        ></button>
+      </div>
+    </ng-template>
+
+    <div class="relative flex items-center justify-center min-h-[400px] max-h-[70vh]">
+      <!-- Botón anterior -->
+      @if (photoModalCurrentIndex() > 0) {
+      <button
+        pButton
+        icon="pi pi-chevron-left"
+        class="p-button-rounded p-button-text absolute left-2 z-10 bg-white bg-opacity-80 hover:bg-opacity-100"
+        (click)="previousPhoto()"
+        pTooltip="Anterior"
+        aria-label="Foto anterior"
+      ></button>
+      }
+
+      <!-- Foto actual -->
+      <div class="w-full h-full flex items-center justify-center">
+        @if (photoModalUrls()[photoModalCurrentIndex()]) {
+        <img
+          [src]="photoModalUrls()[photoModalCurrentIndex()]"
+          class="max-w-full max-h-[70vh] object-contain rounded"
+          alt="Foto del lead"
+        />
+        }
+      </div>
+
+      <!-- Botón siguiente -->
+      @if (photoModalCurrentIndex() < photoModalUrls().length - 1) {
+      <button
+        pButton
+        icon="pi pi-chevron-right"
+        class="p-button-rounded p-button-text absolute right-2 z-10 bg-white bg-opacity-80 hover:bg-opacity-100"
+        (click)="nextPhoto()"
+        pTooltip="Siguiente"
+        aria-label="Foto siguiente"
+      ></button>
+      }
+    </div>
   </p-dialog>
 
 </div>
