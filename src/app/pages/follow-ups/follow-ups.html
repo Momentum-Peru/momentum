@@ -4,18 +4,65 @@
 
   <!-- Header -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-    <h1 class="text-2xl font-bold text-gray-800">Gestión de Seguimientos</h1>
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Gestión de Seguimientos</h1>
     <button
       pButton
       type="button"
-      label="Nuevo Seguimiento"
       icon="pi pi-plus"
+      [disabled]="!selectedLeadId()"
       (click)="newItem()"
+      pTooltip="Selecciona un lead primero"
       aria-label="Crear nuevo seguimiento"
-    ></button>
+    >
+      Nuevo Seguimiento
+    </button>
   </div>
 
-  <!-- Filtros -->
+  <!-- Selector de Lead -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div class="space-y-2">
+        <label
+          for="leadSelector"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        >
+          <i class="pi pi-user mr-2"></i>
+          Seleccionar Lead *
+        </label>
+        <p-select
+          id="leadSelector"
+          [options]="leads()"
+          optionLabel="name"
+          optionValue="_id"
+          [ngModel]="selectedLeadId()"
+          (ngModelChange)="onLeadSelected($event)"
+          placeholder="Selecciona un lead para ver sus seguimientos"
+          [showClear]="true"
+          [appendTo]="'body'"
+          styleClass="w-full"
+          class="w-full"
+          [filter]="true"
+          filterBy="name"
+        >
+          <ng-template let-lead pTemplate="item">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-user text-gray-500"></i>
+              <span>{{ lead.name }}</span>
+            </div>
+          </ng-template>
+        </p-select>
+        @if (!selectedLeadId()) {
+        <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 mt-2">
+          <i class="pi pi-info-circle"></i>
+          Selecciona un lead para comenzar a gestionar sus seguimientos
+        </p>
+        }
+      </div>
+    </ng-template>
+  </p-card>
+
+  <!-- Filtros (solo visible cuando hay lead seleccionado) -->
+  @if (selectedLeadId()) {
   <p-card>
     <ng-template pTemplate="content">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -71,8 +118,10 @@
       </div>
     </ng-template>
   </p-card>
+  }
 
-  <!-- Vista Desktop: Tabla -->
+  <!-- Vista Desktop: Tabla (solo visible cuando hay lead seleccionado) -->
+  @if (selectedLeadId()) {
   <div class="hidden md:block">
     <p-table [value]="items()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
       <ng-template pTemplate="header">
@@ -81,7 +130,6 @@
           <th>Tipo</th>
           <th>Estado</th>
           <th>Fecha Programada</th>
-          <th>Asociado a</th>
           <th>Usuario</th>
           <th class="text-right">Acciones</th>
         </tr>
@@ -108,17 +156,6 @@
             <span class="text-sm text-gray-600 dark:text-gray-400">
               {{ row.scheduledDate | date : 'dd/MM/yyyy HH:mm' }}
             </span>
-          </td>
-          <td>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-              @if (row.leadId) {
-              <span>Lead: {{ getLeadName(row.leadId) }}</span>
-              } @else if (row.clientId) {
-              <span>Cliente: {{ getClientName(row.clientId) }}</span>
-              } @else {
-              <span>-</span>
-              }
-            </div>
           </td>
           <td>
             <span class="text-sm text-gray-600 dark:text-gray-400">
@@ -157,8 +194,10 @@
       </ng-template>
     </p-table>
   </div>
+  }
 
-  <!-- Vista Móvil -->
+  <!-- Vista Móvil (solo visible cuando hay lead seleccionado) -->
+  @if (selectedLeadId()) {
   <div class="md:hidden space-y-3">
     @for (row of items(); track row._id || $index) {
     <div
@@ -222,6 +261,22 @@
     </div>
     }
   </div>
+  } @else {
+  <!-- Mensaje cuando no hay lead seleccionado -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div class="flex flex-col items-center justify-center py-12 text-center">
+        <i class="pi pi-user text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          Selecciona un Lead
+        </h3>
+        <p class="text-gray-500 dark:text-gray-400 max-w-md">
+          Por favor, selecciona un lead del selector superior para ver y gestionar sus seguimientos.
+        </p>
+      </div>
+    </ng-template>
+  </p-card>
+  }
 
   <!-- Modal de creación/edición -->
   <p-dialog

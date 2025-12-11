@@ -71,6 +71,7 @@ export class FollowUpsPage implements OnInit {
   private readonly route = inject(ActivatedRoute); // Injected Route
 
   // Signals
+  selectedLeadId = signal<string | null>(null);
   items = signal<FollowUp[]>([]);
   query = signal<string>('');
   statusFilter = signal<FollowUpStatus | ''>('');
@@ -196,14 +197,18 @@ export class FollowUpsPage implements OnInit {
   private leadsLoaded = signal<boolean>(false);
 
   ngOnInit() {
-    this.load();
-    // Cargar usuarios inmediatamente ya que se usan en la tabla
+    // Cargar leads y usuarios inmediatamente
+    this.loadLeads();
     this.loadUsers();
 
-    // Verificar si hay parámetros de navegación para abrir modal automáticamente
+    // Verificar si hay parámetros de navegación para seleccionar lead automáticamente
     this.route.queryParams.subscribe((params) => {
-      if (params['leadId'] && params['action'] === 'new') {
-        this.newItem(params['leadId']);
+      if (params['leadId']) {
+        this.selectedLeadId.set(params['leadId']);
+        this.load();
+        if (params['action'] === 'new') {
+          this.newItem(params['leadId']);
+        }
       }
     });
   }
@@ -214,7 +219,15 @@ export class FollowUpsPage implements OnInit {
   }
 
   load() {
-    const params: FollowUpQueryParams = {};
+    const leadId = this.selectedLeadId();
+    if (!leadId) {
+      this.items.set([]);
+      return;
+    }
+
+    const params: FollowUpQueryParams = {
+      leadId: leadId,
+    };
     const status = this.statusFilter();
     if (status !== '') params.status = status;
     const type = this.typeFilter();
@@ -231,6 +244,12 @@ export class FollowUpsPage implements OnInit {
         });
       },
     });
+  }
+
+  onLeadSelected(leadId: string | null) {
+    this.selectedLeadId.set(leadId);
+    this.clearFilters();
+    this.load();
   }
 
   loadUsers() {
@@ -271,6 +290,16 @@ export class FollowUpsPage implements OnInit {
   }
 
   newItem(preselectedLeadId?: string) {
+    const leadId = preselectedLeadId || this.selectedLeadId();
+    if (!leadId) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'Debes seleccionar un lead primero',
+      });
+      return;
+    }
+
     // Cargar datos si no se han cargado antes
     if (!this.clientsLoaded()) {
       this.loadClients();
@@ -289,7 +318,7 @@ export class FollowUpsPage implements OnInit {
       status: 'SCHEDULED',
       scheduledDate: new Date().toISOString(),
       userId: '',
-      leadId: preselectedLeadId, // Preseleccionar lead si se provee
+      leadId: leadId,
     };
     this.editing.set(newEditing);
     this.showDialog.set(true);
