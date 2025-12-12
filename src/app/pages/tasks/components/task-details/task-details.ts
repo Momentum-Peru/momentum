@@ -687,7 +687,7 @@ import {
             (keydown.enter)="documentsInput.click()"
             (keydown.space)="documentsInput.click()"
             [attr.aria-label]="
-              'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos'
+              'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos o pega archivos con Ctrl+V'
             "
           >
             <div class="text-center">
@@ -707,7 +707,7 @@ import {
                 @if (isDragging()) {
                 <span>Suelta los archivos aquí</span>
                 } @else {
-                <span>Arrastra archivos aquí o haz clic para seleccionar</span>
+                <span>Arrastra archivos aquí, haz clic para seleccionar o pega con Ctrl+V</span>
                 }
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -1024,6 +1024,9 @@ export class TaskDetailsComponent {
   public readonly incompleteReasonError = signal<string | null>(null);
   public readonly savingIncompleteReason = signal<boolean>(false);
 
+  // Referencia al método onPaste para poder remover el listener
+  private pasteHandler = (event: ClipboardEvent) => this.onPaste(event);
+
   // Form
   public readonly commentForm: FormGroup;
 
@@ -1233,6 +1236,8 @@ export class TaskDetailsComponent {
    * Maneja el cierre del modal
    */
   public onClose(): void {
+    // Remover listener global de paste
+    document.removeEventListener('paste', this.pasteHandler);
     this.closeDialog.emit();
   }
 
@@ -1240,6 +1245,8 @@ export class TaskDetailsComponent {
    * Maneja cuando se abre el diálogo
    */
   public onDialogShow(): void {
+    // Agregar listener global de paste
+    document.addEventListener('paste', this.pasteHandler);
     if (this.task?._id) {
       this.loadLastModificationLog(this.task._id);
       // Inicializar el valor de la razón de no terminación
@@ -1558,6 +1565,43 @@ export class TaskDetailsComponent {
     if (!files || files.length === 0) return;
 
     this.processDroppedFiles(Array.from(files));
+  }
+
+  /**
+   * Maneja el evento paste (pegar archivos)
+   */
+  public onPaste(event: ClipboardEvent): void {
+    const items = event.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    // Verificar si hay archivos en el clipboard
+    const hasFiles = Array.from(items).some((item) => item.kind === 'file');
+    if (!hasFiles) {
+      // Si no hay archivos, permitir el comportamiento normal (pegar texto)
+      return;
+    }
+
+    // Si hay archivos, procesarlos y prevenir el comportamiento por defecto
+    if (hasFiles) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const files: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        // Solo procesar archivos (no texto)
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) {
+            files.push(file);
+          }
+        }
+      }
+
+      if (files.length > 0) {
+        this.processDroppedFiles(files);
+      }
+    }
   }
 
   /**

@@ -5,6 +5,7 @@ import {
   EventEmitter,
   OnInit,
   OnChanges,
+  OnDestroy,
   SimpleChanges,
   inject,
   signal,
@@ -449,6 +450,11 @@ export class TruncatePipe implements PipeTransform {
               (dragover)="onDragOver($event)"
               (dragleave)="onDragLeave($event)"
               (drop)="onDrop($event)"
+              tabindex="0"
+              role="button"
+              [attr.aria-label]="
+                'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos o pega archivos con Ctrl+V'
+              "
             >
               <div class="flex flex-col items-center justify-center pt-5 pb-6">
                 <svg
@@ -480,7 +486,8 @@ export class TruncatePipe implements PipeTransform {
                   <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta }
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  PNG, JPG, PDF, DOC, DOCX (MAX. 20MB). También puedes arrastrar desde WhatsApp
+                  PNG, JPG, PDF, DOC, DOCX (MAX. 20MB). También puedes arrastrar desde WhatsApp o
+                  pegar con Ctrl+V
                 </p>
               </div>
               <input
@@ -679,7 +686,7 @@ export class TruncatePipe implements PipeTransform {
     `,
   ],
 })
-export class NativeTaskFormComponent implements OnInit, OnChanges {
+export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly tasksApiService = inject(TasksApiService);
   private readonly usersApiService = inject(UsersApiService);
@@ -712,6 +719,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   public readonly isDragging = signal<boolean>(false);
 
   public readonly isEditing = signal<boolean>(false);
+
+  // Referencia al método onPaste para poder remover el listener
+  private pasteHandler = (event: ClipboardEvent) => this.onPaste(event);
 
   // Options for selects
   public readonly statusOptions = [
@@ -791,6 +801,13 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       this.loadBoard();
     }
     this.initializeForm();
+    // Agregar listener global de paste
+    document.addEventListener('paste', this.pasteHandler);
+  }
+
+  ngOnDestroy(): void {
+    // Remover listener global de paste
+    document.removeEventListener('paste', this.pasteHandler);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -1332,6 +1349,51 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     if (!files || files.length === 0) return;
 
     this.processDroppedFiles(Array.from(files));
+  }
+
+  /**
+   * Maneja el evento paste (pegar archivos)
+   */
+  public onPaste(event: ClipboardEvent): void {
+    const items = event.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    // Verificar si hay archivos en el clipboard
+    const hasFiles = Array.from(items).some((item) => item.kind === 'file');
+    if (!hasFiles) {
+      // Si no hay archivos, permitir el comportamiento normal (pegar texto)
+      return;
+    }
+
+    // Si el elemento activo es un input o textarea, verificar si tiene archivos
+    const activeElement = document.activeElement;
+    const isInputElement =
+      activeElement &&
+      (activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.getAttribute('contenteditable') === 'true');
+
+    // Si hay archivos, procesarlos y prevenir el comportamiento por defecto
+    if (hasFiles) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const files: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        // Solo procesar archivos (no texto)
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) {
+            files.push(file);
+          }
+        }
+      }
+
+      if (files.length > 0) {
+        this.processDroppedFiles(files);
+      }
+    }
   }
 
   /**
