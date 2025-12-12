@@ -194,29 +194,129 @@ import {
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
               Archivos Adjuntos
             </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div class="space-y-3">
               @for (attachment of task.attachments; track attachment._id || $index) {
               <div
-                class="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                class="bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden"
               >
-                <i class="pi pi-file text-gray-500 text-lg"></i>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {{ attachment.originalName }}
-                  </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    {{ formatFileSize(attachment.size) }}
-                  </p>
+                @if (attachment.mimeType && attachment.mimeType.startsWith('audio/')) {
+                <!-- Audio -->
+                <div class="p-3">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="pi pi-volume-up text-blue-500"></i>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ attachment.originalName }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      ({{ formatFileSize(attachment.size || 0) }})
+                    </span>
+                  </div>
+                  <audio [src]="attachment.url" controls class="w-full"></audio>
                 </div>
-                <a
-                  [href]="attachment.url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                  pTooltip="Abrir archivo"
-                >
-                  <i class="pi pi-external-link"></i>
-                </a>
+                } @else if (attachment.mimeType && attachment.mimeType.startsWith('video/')) {
+                <!-- Video -->
+                <div class="p-3">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="pi pi-video text-red-500"></i>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ attachment.originalName }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      ({{ formatFileSize(attachment.size || 0) }})
+                    </span>
+                  </div>
+                  <video [src]="attachment.url" controls class="w-full max-h-64 rounded"></video>
+                </div>
+                } @else if (attachment.mimeType && attachment.mimeType.startsWith('image/')) {
+                <!-- Imagen -->
+                <div class="p-3">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="pi pi-image text-green-500"></i>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ attachment.originalName }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      ({{ formatFileSize(attachment.size || 0) }})
+                    </span>
+                  </div>
+                  <img
+                    [src]="attachment.url"
+                    [alt]="attachment.originalName"
+                    class="w-full max-h-64 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity"
+                    (click)="openFileInNewTab(attachment.url)"
+                    (keydown.enter)="openFileInNewTab(attachment.url)"
+                    tabindex="0"
+                    role="button"
+                    [attr.aria-label]="'Abrir imagen ' + attachment.originalName"
+                  />
+                </div>
+                } @else if (attachment.mimeType === 'application/pdf') {
+                <!-- PDF -->
+                <div class="p-3">
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <div class="flex items-center gap-2">
+                      <i class="pi pi-file-pdf text-red-500"></i>
+                      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ attachment.originalName }}
+                      </span>
+                      <span class="text-xs text-gray-500 dark:text-gray-400">
+                        ({{ formatFileSize(attachment.size || 0) }})
+                      </span>
+                    </div>
+                  </div>
+                  <!-- Miniatura del PDF -->
+                  <div
+                    class="relative w-full border border-gray-200 dark:border-gray-600 rounded overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors group"
+                    (click)="openPdfModal(attachment.url, attachment.originalName)"
+                    (keydown.enter)="openPdfModal(attachment.url, attachment.originalName)"
+                    tabindex="0"
+                    role="button"
+                    [attr.aria-label]="'Ver PDF completo: ' + attachment.originalName"
+                  >
+                    <!-- Miniatura - Primera página del PDF -->
+                    <iframe
+                      [src]="getSafePdfUrl(attachment.url, 1)"
+                      class="w-full pointer-events-none"
+                      style="height: 200px; border: none;"
+                      title="Miniatura del PDF"
+                      loading="lazy"
+                    ></iframe>
+                    <!-- Overlay con información -->
+                    <div
+                      class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center"
+                    >
+                      <div
+                        class="opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-800 px-3 py-1.5 rounded-md shadow-lg flex items-center gap-2"
+                      >
+                        <i class="pi pi-eye text-blue-600 dark:text-blue-400"></i>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >Ver PDF completo</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                } @else {
+                <!-- Documento genérico -->
+                <div class="flex items-center gap-2 p-3">
+                  <i class="pi pi-file text-gray-500"></i>
+                  <span class="text-sm text-gray-700 dark:text-gray-300 flex-1">
+                    {{ attachment.originalName }}
+                  </span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    ({{ formatFileSize(attachment.size || 0) }})
+                  </span>
+                  <a
+                    [href]="attachment.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                    pTooltip="Abrir archivo"
+                  >
+                    <i class="pi pi-external-link"></i>
+                  </a>
+                </div>
+                }
               </div>
               }
             </div>
