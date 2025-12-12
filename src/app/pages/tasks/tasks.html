@@ -1,6 +1,4 @@
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 mt-4 lg:mt-0">
-  <!-- Vista de Lista de Tableros -->
-  @if (!selectedBoard()) {
   <!-- Header -->
   <div class="mb-6">
     <div class="flex items-center flex-wrap gap-4 justify-between">
@@ -48,51 +46,64 @@
     </div>
   </div>
 
-  <!-- Lista de Tableros -->
-  <app-board-list
-    [boards]="boardsService.boards()"
-    [loading]="boardsService.loading()"
-    [error]="boardsService.error()"
-    [currentUserId]="currentUserId()"
-    (createBoard)="openBoardForm()"
-    (viewBoard)="onViewBoard($event)"
-    (editBoard)="openBoardFormFromList($event)"
-    (inviteUser)="openBoardInviteFromList($event)"
-    (deleteBoard)="confirmDeleteBoard($event)"
-  ></app-board-list>
+  <!-- Lista de Tableros - Visible solo cuando NO hay un tablero seleccionado (ruta /tasks) -->
+  @if (!selectedBoard()) {
+  <div class="mb-6">
+    <app-board-list
+      [boards]="boardsService.boards()"
+      [loading]="boardsService.loading()"
+      [error]="boardsService.error()"
+      [currentUserId]="currentUserId()"
+      [selectedBoardId]="undefined"
+      (createBoard)="openBoardForm()"
+      (viewBoard)="onViewBoard($any($event))"
+      (editBoard)="openBoardFormFromList($any($event))"
+      (inviteUser)="openBoardInviteFromList($any($event))"
+      (deleteBoard)="confirmDeleteBoard($any($event))"
+    ></app-board-list>
+  </div>
   }
 
-  <!-- Vista de Tablero con Tareas -->
+  <!-- Vista de Tablero con Tareas - Visible solo cuando hay un tablero seleccionado (ruta /tasks/:boardId) -->
   @if (selectedBoard()) {
-  <app-board-view
-    [board]="selectedBoard()!"
-    [isOwner]="isBoardOwner()"
-    [tasksByStatus]="tasksByStatus()"
-    [taskStats]="taskStats()"
-    [loading]="tasksService.loading()"
-    (back)="onBackToBoards()"
-    (edit)="openBoardForm(selectedBoard()!)"
-    (invite)="openBoardInvite()"
-    (refresh)="onRefreshBoard()"
-    (taskStatusChanged)="onTaskStatusChanged($event)"
-    (editTask)="openTaskForm($event)"
-    (deleteTask)="confirmDeleteTask($event)"
-    (viewTask)="viewTaskDetails($event)"
-    (createTask)="openTaskForm()"
-  ></app-board-view>
+  <div data-board-view>
+    <app-board-view
+      [board]="selectedBoard()!"
+      [isOwner]="isBoardOwner()"
+      [tasksByStatus]="tasksByStatus()"
+      [taskStats]="taskStats()"
+      [loading]="tasksService.loading()"
+      [availableUsers]="availableUsers()"
+      [availableTags]="availableTags()"
+      [currentUserId]="currentUserId()"
+      (back)="onBackToBoards()"
+      (edit)="openBoardForm(selectedBoard()!)"
+      (invite)="openBoardInvite()"
+      (refresh)="onRefreshBoard()"
+      (taskStatusChanged)="onTaskStatusChanged($event)"
+      (editTask)="openTaskForm($event)"
+      (deleteTask)="confirmDeleteTask($event)"
+      (viewTask)="viewTaskDetails($event)"
+      (createTask)="openTaskForm()"
+      (filtersChanged)="onFiltersChanged($event)"
+      (removeMember)="onRemoveMember($event)"
+      (leaveBoard)="onLeaveBoard($event)"
+    ></app-board-view>
+  </div>
   }
 </div>
 
 <!-- Dialog: Formulario de Tablero -->
 <p-dialog
   [modal]="true"
-  [(visible)]="showBoardForm"
+  [visible]="showBoardForm()"
+  (visibleChange)="showBoardForm.set($event)"
   [style]="{ width: '600px' }"
   [closable]="true"
   [header]="isEditingBoard() ? 'Editar Tablero' : 'Nuevo Tablero'"
 >
   <app-board-form
-    [board]="isEditingBoard() ? (editingBoardFromList() || selectedBoard() || null) : null"
+    [board]="isEditingBoard() ? editingBoardFromList() || selectedBoard() || null : null"
     [loading]="boardFormLoading"
     [visible]="showBoardForm()"
     (save)="onBoardSave($event)"
@@ -103,7 +114,8 @@
 <!-- Dialog: Invitar Usuario -->
 <p-dialog
   [modal]="true"
-  [(visible)]="showBoardInvite"
+  [visible]="showBoardInvite()"
+  (visibleChange)="showBoardInvite.set($event)"
   [style]="{ width: '500px' }"
   [closable]="true"
   header="Invitar Usuario al Tablero"
@@ -122,7 +134,8 @@
 <!-- Dialog: Formulario de Tarea -->
 <p-dialog
   [modal]="true"
-  [(visible)]="showTaskForm"
+  [visible]="showTaskForm()"
+  (visibleChange)="showTaskForm.set($event)"
   [style]="{ width: '700px' }"
   [closable]="true"
   [header]="isEditingTask() ? 'Editar Tarea' : 'Nueva Tarea'"
@@ -144,14 +157,15 @@
 <!-- Dialog: Detalles de Tarea -->
 <app-task-details
   [task]="selectedTask()"
-  [visible]="showTaskDetails"
+  [visible]="showTaskDetails()"
   (closeDialog)="closeTaskDetails()"
 ></app-task-details>
 
 <!-- Dialog: Invitaciones Pendientes -->
 <p-dialog
   [modal]="true"
-  [(visible)]="showBoardInvitations"
+  [visible]="showBoardInvitations()"
+  (visibleChange)="showBoardInvitations.set($event)"
   [style]="{ width: '90vw', maxWidth: '1200px' }"
   [closable]="true"
   [maximizable]="true"
@@ -159,7 +173,7 @@
 >
   <app-board-invitations
     [visible]="showBoardInvitations()"
-    (invitationAccepted)="onInvitationAccepted($event)"
-    (invitationRejected)="onInvitationRejected($event)"
+    (invitationAccepted)="onInvitationAccepted($any($event))"
+    (invitationRejected)="onInvitationRejected($any($event))"
   ></app-board-invitations>
 </p-dialog>

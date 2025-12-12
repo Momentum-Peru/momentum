@@ -19,6 +19,7 @@
         />
       </div>
     </div>
+    @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -28,6 +29,7 @@
       class="p-button-primary w-full sm:w-auto"
       aria-label="Crear nueva cotización"
     ></button>
+    }
   </div>
 
   <!-- Vista Desktop: Tabla normal -->
@@ -134,6 +136,7 @@
                 aria-label="Cambiar estado de la cotización"
               ></button>
 
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -153,6 +156,7 @@
                 tooltipPosition="top"
                 aria-label="Eliminar cotización"
               ></button>
+              }
             </div>
           </td>
         </tr>
@@ -338,6 +342,7 @@
                 (click)="stateMenu.toggle($event)"
                 aria-label="Cambiar estado de la cotización"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -354,6 +359,7 @@
                 (click)="deleteQuote(quote)"
                 aria-label="Eliminar cotización"
               ></button>
+              }
             </div>
           </div>
         </div>
@@ -463,6 +469,38 @@
             </ng-template>
           </p-select>
         </div>
+
+        <div>
+          <label
+            for="requirementSelect"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+            >Requerimiento *</label
+          >
+          <p-select
+            id="requirementSelect"
+            [options]="requirements()"
+            optionLabel="codigo"
+            optionValue="_id"
+            formControlName="requirementId"
+            placeholder="Seleccionar requerimiento"
+            [showClear]="true"
+            [appendTo]="'body'"
+            [filter]="true"
+            filterPlaceholder="Buscar requerimiento..."
+            class="w-full"
+            styleClass="w-full"
+          >
+            <ng-template let-requirement pTemplate="item">
+              <div class="flex flex-col">
+                <span class="font-semibold">{{ requirement.codigo }}</span>
+                <span class="text-xs text-gray-500 truncate">{{ requirement.title }}</span>
+              </div>
+            </ng-template>
+            <ng-template let-requirement pTemplate="selectedItem">
+              <span>{{ requirement.codigo }}</span>
+            </ng-template>
+          </p-select>
+        </div>
       </div>
 
       <!-- Estado y fechas -->
@@ -551,8 +589,8 @@
           id="documentsUpload"
           mode="basic"
           name="files[]"
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-          [maxFileSize]="10000000"
+          accept="*/*"
+          [maxFileSize]="52428800"
           [multiple]="true"
           chooseLabel="Seleccionar archivos"
           (onSelect)="onFileSelect($event)"
@@ -560,7 +598,7 @@
           class="w-full"
         ></p-fileUpload>
         <small class="text-gray-500"
-          >Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG. Máximo 10MB por archivo.</small
+          >Se aceptan todos los tipos de archivo. Máximo 50MB por archivo.</small
         >
 
         <!-- Documentos existentes (solo al editar) -->

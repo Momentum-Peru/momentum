@@ -4,9 +4,9 @@ export interface BoardInvitation {
   _id: string;
   userId: {
     _id: string;
-    name: string;
-    email: string;
-  };
+    name?: string | null;
+    email?: string | null;
+  } | null;
   status: InvitationStatus;
   createdAt: Date | string;
   updatedAt: Date | string;
@@ -14,23 +14,23 @@ export interface BoardInvitation {
 
 export interface BoardMember {
   _id: string;
-  name: string;
-  email: string;
+  name?: string | null;
+  email?: string | null;
 }
 
 export interface BoardOwner {
   _id: string;
-  name: string;
-  email: string;
+  name?: string | null;
+  email?: string | null;
 }
 
 export interface Board {
   _id: string;
   title: string;
   description?: string;
-  owner: BoardOwner;
-  members: BoardMember[];
-  invitations: BoardInvitation[];
+  owner: BoardOwner | null;
+  members?: BoardMember[] | null;
+  invitations?: BoardInvitation[] | null;
   createdAt: Date | string;
   updatedAt: Date | string;
 }

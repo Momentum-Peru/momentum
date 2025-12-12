@@ -1,0 +1,834 @@
+<div class="p-4 space-y-4">
+  <p-toast [life]="5000"></p-toast>
+  <div class="flex flex-wrap xl:flex-nowrap items-center gap-2">
+    <input
+      pInputText
+      placeholder="Buscar por proyecto..."
+      [ngModel]="query()"
+      (ngModelChange)="query.set($event); applyFilters()"
+      class="w-full"
+    />
+    <button
+      pButton
+      type="button"
+      (click)="newItem()"
+      label="Nuevo"
+      icon="pi pi-plus"
+      aria-label="Crear nueva información de ingeniería"
+      class="w-full xl:w-auto"
+    ></button>
+  </div>
+
+  @if (loading()) {
+  <div class="text-center py-8">
+    <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
+    <p class="mt-2 text-gray-600">Cargando...</p>
+  </div>
+  } @else {
+  <!-- Vista Desktop: Tabla -->
+  <div class="hidden md:block">
+    <p-table
+      [value]="filteredItems()"
+      [paginator]="true"
+      [rows]="10"
+      styleClass="p-datatable-sm"
+      [tableStyle]="{ 'min-width': '50rem' }"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Proyecto</th>
+          <th>Código</th>
+          <th>Tipo</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ getProjectName(row) }}</td>
+          <td>
+            <span
+              class="font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
+              >{{ getProjectCode(row) }}</span
+            >
+          </td>
+          <td>
+            <span class="px-2 py-1 rounded text-sm bg-blue-100 text-blue-800">
+              {{ getTypeLabel(row.type) }}
+            </span>
+          </td>
+          <td class="text-right">
+            <button
+              pButton
+              icon="pi pi-eye"
+              class="p-button-text p-button-sm"
+              (click)="viewDetails(row)"
+              pTooltip="Ver detalles"
+              tooltipPosition="top"
+              aria-label="Ver detalles"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text p-button-sm"
+              (click)="editItem(row)"
+              pTooltip="Editar"
+              tooltipPosition="top"
+              aria-label="Editar"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Mobile: Acordeón -->
+  <div class="md:hidden space-y-3">
+    @for (row of filteredItems(); track row._id || getProjectCode(row)) {
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+    >
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ getProjectName(row) }}</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            {{ getProjectCode(row) }}
+          </p>
+        </div>
+        <span class="px-2 py-1 rounded text-sm bg-blue-100 text-blue-800">
+          {{ getTypeLabel(row.type) }}
+        </span>
+      </div>
+      <div class="flex gap-2">
+        <button
+          pButton
+          icon="pi pi-eye"
+          label="Ver"
+          class="p-button-text p-button-sm flex-1"
+          (click)="viewDetails(row)"
+          aria-label="Ver detalles"
+        ></button>
+        <button
+          pButton
+          icon="pi pi-pencil"
+          label="Editar"
+          class="p-button-text p-button-sm flex-1"
+          (click)="editItem(row)"
+          aria-label="Editar"
+        ></button>
+      </div>
+    </div>
+    }
+  </div>
+  } @if (filteredItems().length === 0 && !loading()) {
+  <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+    <i class="pi pi-inbox text-4xl mb-2"></i>
+    <p>No hay información de ingeniería disponible</p>
+  </div>
+  }
+
+  <!-- Modal de edición/creación -->
+  <p-dialog
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '60rem', maxWidth: '95vw' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      {{ editing()?._id ? 'Editar Ingeniería' : 'Nueva Ingeniería' }}
+    </ng-template>
+
+    <form [formGroup]="engineeringForm" class="space-y-4">
+      <div>
+        <label
+          for="projectSelect"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+          >Proyecto *</label
+        >
+        <p-select
+          id="projectSelect"
+          [options]="projects()"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="projectId"
+          placeholder="Seleccionar proyecto"
+          [showClear]="true"
+          [appendTo]="'body'"
+          [filter]="true"
+          filterPlaceholder="Buscar proyecto..."
+          class="w-full"
+        ></p-select>
+      </div>
+
+      <div>
+        <label for="typeSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+          >Tipo *</label
+        >
+        <p-select
+          id="typeSelect"
+          [options]="typeOptions"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="type"
+          placeholder="Seleccionar tipo"
+          [appendTo]="'body'"
+          class="w-full"
+        ></p-select>
+      </div>
+
+      <!-- Documentos Técnicos -->
+      <div class="border-t pt-4">
+        <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+          Documentos Técnicos
+        </h4>
+
+        <div class="space-y-4">
+          <!-- Cálculos Estructurales -->
+          <div>
+            <label
+              for="structuralCalculationsUpload"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+            >
+              Cálculos Estructurales
+            </label>
+            <p-fileUpload
+              id="structuralCalculationsUpload"
+              mode="basic"
+              accept="*/*"
+              [maxFileSize]="52428800"
+              [multiple]="true"
+              chooseLabel="Seleccionar archivos"
+              (onSelect)="onStructuralCalculationsSelect($event)"
+              (onError)="onFileUploadError($event)"
+              [showUploadButton]="false"
+              [showCancelButton]="false"
+              [auto]="false"
+              class="w-full"
+            ></p-fileUpload>
+            @if (structuralCalculationsFiles().length > 0) {
+            <div class="mt-2 space-y-2">
+              @for (file of structuralCalculationsFiles(); track $index) {
+              <div
+                class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded flex items-center justify-between"
+              >
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  {{ file.name }} ({{ formatFileSize(file.size) }})
+                </span>
+                <button
+                  pButton
+                  icon="pi pi-times"
+                  class="p-button-text p-button-sm p-button-danger"
+                  (click)="removeStructuralCalculationFile($index)"
+                  aria-label="Eliminar"
+                >
+                  <span class="sr-only">Eliminar</span>
+                </button>
+              </div>
+              }
+            </div>
+            }
+          </div>
+
+          <!-- Cronograma -->
+          <div>
+            <label
+              for="scheduleUpload"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+            >
+              Cronograma
+            </label>
+            <p-fileUpload
+              id="scheduleUpload"
+              mode="basic"
+              accept="*/*"
+              [maxFileSize]="52428800"
+              [multiple]="true"
+              chooseLabel="Seleccionar archivos"
+              (onSelect)="onScheduleSelect($event)"
+              (onError)="onFileUploadError($event)"
+              [showUploadButton]="false"
+              [showCancelButton]="false"
+              [auto]="false"
+              class="w-full"
+            ></p-fileUpload>
+            @if (scheduleFiles().length > 0) {
+            <div class="mt-2 space-y-2">
+              @for (file of scheduleFiles(); track $index) {
+              <div
+                class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded flex items-center justify-between"
+              >
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  {{ file.name }} ({{ formatFileSize(file.size) }})
+                </span>
+                <button
+                  pButton
+                  icon="pi pi-times"
+                  class="p-button-text p-button-sm p-button-danger"
+                  (click)="removeScheduleFile($index)"
+                  aria-label="Eliminar"
+                >
+                  <span class="sr-only">Eliminar</span>
+                </button>
+              </div>
+              }
+            </div>
+            }
+          </div>
+
+          <!-- Planos de Fabricación -->
+          <div>
+            <label
+              for="fabricationPlansUpload"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+            >
+              Planos de Fabricación
+            </label>
+            <p-fileUpload
+              id="fabricationPlansUpload"
+              mode="basic"
+              accept="*/*"
+              [maxFileSize]="52428800"
+              [multiple]="true"
+              chooseLabel="Seleccionar archivos"
+              (onSelect)="onFabricationPlansSelect($event)"
+              (onError)="onFileUploadError($event)"
+              [showUploadButton]="false"
+              [showCancelButton]="false"
+              [auto]="false"
+              class="w-full"
+            ></p-fileUpload>
+            @if (fabricationPlansFiles().length > 0) {
+            <div class="mt-2 space-y-2">
+              @for (file of fabricationPlansFiles(); track $index) {
+              <div
+                class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded flex items-center justify-between"
+              >
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  {{ file.name }} ({{ formatFileSize(file.size) }})
+                </span>
+                <button
+                  pButton
+                  icon="pi pi-times"
+                  class="p-button-text p-button-sm p-button-danger"
+                  (click)="removeFabricationPlanFile($index)"
+                  aria-label="Eliminar"
+                >
+                  <span class="sr-only">Eliminar</span>
+                </button>
+              </div>
+              }
+            </div>
+            }
+          </div>
+
+          <!-- Planos de Montaje -->
+          <div>
+            <label
+              for="assemblyPlansUpload"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+            >
+              Planos de Montaje
+            </label>
+            <p-fileUpload
+              id="assemblyPlansUpload"
+              mode="basic"
+              accept="*/*"
+              [maxFileSize]="52428800"
+              [multiple]="true"
+              chooseLabel="Seleccionar archivos"
+              (onSelect)="onAssemblyPlansSelect($event)"
+              (onError)="onFileUploadError($event)"
+              [showUploadButton]="false"
+              [showCancelButton]="false"
+              [auto]="false"
+              class="w-full"
+            ></p-fileUpload>
+            @if (assemblyPlansFiles().length > 0) {
+            <div class="mt-2 space-y-2">
+              @for (file of assemblyPlansFiles(); track $index) {
+              <div
+                class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded flex items-center justify-between"
+              >
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  {{ file.name }} ({{ formatFileSize(file.size) }})
+                </span>
+                <button
+                  pButton
+                  icon="pi pi-times"
+                  class="p-button-text p-button-sm p-button-danger"
+                  (click)="removeAssemblyPlanFile($index)"
+                  aria-label="Eliminar"
+                >
+                  <span class="sr-only">Eliminar</span>
+                </button>
+              </div>
+              }
+            </div>
+            }
+          </div>
+
+          <!-- Lista de Materiales (BOM) -->
+          <div>
+            <label
+              for="billOfMaterialsUpload"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+            >
+              Lista de Materiales (BOM)
+            </label>
+            <p-fileUpload
+              id="billOfMaterialsUpload"
+              mode="basic"
+              accept="*/*"
+              [maxFileSize]="52428800"
+              [multiple]="true"
+              chooseLabel="Seleccionar archivos"
+              (onSelect)="onBillOfMaterialsSelect($event)"
+              (onError)="onFileUploadError($event)"
+              [showUploadButton]="false"
+              [showCancelButton]="false"
+              [auto]="false"
+              class="w-full"
+            ></p-fileUpload>
+            @if (billOfMaterialsFiles().length > 0) {
+            <div class="mt-2 space-y-2">
+              @for (file of billOfMaterialsFiles(); track $index) {
+              <div
+                class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded flex items-center justify-between"
+              >
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  {{ file.name }} ({{ formatFileSize(file.size) }})
+                </span>
+                <button
+                  pButton
+                  icon="pi pi-times"
+                  class="p-button-text p-button-sm p-button-danger"
+                  (click)="removeBillOfMaterialFile($index)"
+                  aria-label="Eliminar"
+                >
+                  <span class="sr-only">Eliminar</span>
+                </button>
+              </div>
+              }
+            </div>
+            }
+          </div>
+
+          <!-- Otros Documentos -->
+          <div>
+            <label
+              for="otherDocumentsUpload"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+            >
+              Otros Documentos
+            </label>
+            <p-fileUpload
+              id="otherDocumentsUpload"
+              mode="basic"
+              accept="*/*"
+              [maxFileSize]="52428800"
+              [multiple]="true"
+              chooseLabel="Seleccionar archivos"
+              (onSelect)="onOtherDocumentsSelect($event)"
+              (onError)="onFileUploadError($event)"
+              [showUploadButton]="false"
+              [showCancelButton]="false"
+              [auto]="false"
+              class="w-full"
+            ></p-fileUpload>
+            @if (otherDocumentsFiles().length > 0) {
+            <div class="mt-2 space-y-2">
+              @for (file of otherDocumentsFiles(); track $index) {
+              <div
+                class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded flex items-center justify-between"
+              >
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  {{ file.name }} ({{ formatFileSize(file.size) }})
+                </span>
+                <button
+                  pButton
+                  icon="pi pi-times"
+                  class="p-button-text p-button-sm p-button-danger"
+                  (click)="removeOtherDocumentFile($index)"
+                  aria-label="Eliminar"
+                >
+                  <span class="sr-only">Eliminar</span>
+                </button>
+              </div>
+              }
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        [disabled]="uploading()"
+        aria-label="Cancelar"
+      ></button>
+      <button
+        pButton
+        [label]="uploading() ? 'Guardando...' : 'Guardar'"
+        [icon]="uploading() ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
+        (click)="save()"
+        [disabled]="engineeringForm.invalid || uploading()"
+        aria-label="Guardar"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de detalles -->
+  <p-dialog
+    [visible]="showDetailsDialog()"
+    (visibleChange)="showDetailsDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '60rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-info-circle text-blue-500"></i>
+        Detalles de Ingeniería — {{ getProjectCode(viewingEngineering()!) }}
+      </div>
+    </ng-template>
+
+    @if (viewingEngineering(); as engineering) {
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <span class="text-sm font-medium text-gray-500">Proyecto:</span>
+          <p class="text-gray-900 dark:text-gray-100">{{ getProjectName(engineering) }}</p>
+        </div>
+        <div>
+          <span class="text-sm font-medium text-gray-500">Código:</span>
+          <p class="text-gray-900 dark:text-gray-100">{{ getProjectCode(engineering) }}</p>
+        </div>
+        <div>
+          <span class="text-sm font-medium text-gray-500">Tipo:</span>
+          <p class="text-gray-900 dark:text-gray-100">
+            {{ getTypeLabel(engineering.type) }}
+          </p>
+        </div>
+      </div>
+
+      <div class="border-t pt-4">
+        <h4 class="font-semibold mb-3">Documentos Técnicos</h4>
+        <div class="space-y-4">
+          <!-- Cálculos Estructurales -->
+          @if (engineering.structuralCalculations && engineering.structuralCalculations.length > 0)
+          {
+          <div>
+            <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Cálculos Estructurales
+            </h5>
+            <div class="space-y-2">
+              @for (docUrl of engineering.structuralCalculations; track $index) {
+              <div
+                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+              >
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <i class="pi pi-file text-blue-500"></i>
+                  <span
+                    class="text-sm text-gray-700 dark:text-gray-300 truncate"
+                    [title]="getDocumentName(docUrl)"
+                  >
+                    {{ getDocumentName(docUrl) }}
+                  </span>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-download"
+                    class="p-button-text p-button-sm"
+                    (click)="downloadDocument(docUrl)"
+                    pTooltip="Descargar"
+                    aria-label="Descargar"
+                  >
+                    <span class="sr-only">Descargar</span>
+                  </button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-sm p-button-danger"
+                    (click)="deleteDocument(docUrl)"
+                    pTooltip="Eliminar"
+                    aria-label="Eliminar"
+                  >
+                    <span class="sr-only">Eliminar</span>
+                  </button>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- Cronogramas -->
+          @if (engineering.schedules && engineering.schedules.length > 0) {
+          <div>
+            <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cronogramas</h5>
+            <div class="space-y-2">
+              @for (docUrl of engineering.schedules; track $index) {
+              <div
+                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+              >
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <i class="pi pi-file text-green-500"></i>
+                  <span
+                    class="text-sm text-gray-700 dark:text-gray-300 truncate"
+                    [title]="getDocumentName(docUrl)"
+                  >
+                    {{ getDocumentName(docUrl) }}
+                  </span>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-download"
+                    class="p-button-text p-button-sm"
+                    (click)="downloadDocument(docUrl)"
+                    pTooltip="Descargar"
+                    aria-label="Descargar"
+                  >
+                    <span class="sr-only">Descargar</span>
+                  </button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-sm p-button-danger"
+                    (click)="deleteDocument(docUrl)"
+                    pTooltip="Eliminar"
+                    aria-label="Eliminar"
+                  >
+                    <span class="sr-only">Eliminar</span>
+                  </button>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- Planos de Fabricación -->
+          @if (engineering.fabricationPlans && engineering.fabricationPlans.length > 0) {
+          <div>
+            <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Planos de Fabricación
+            </h5>
+            <div class="space-y-2">
+              @for (docUrl of engineering.fabricationPlans; track $index) {
+              <div
+                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+              >
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <i class="pi pi-file text-purple-500"></i>
+                  <span
+                    class="text-sm text-gray-700 dark:text-gray-300 truncate"
+                    [title]="getDocumentName(docUrl)"
+                  >
+                    {{ getDocumentName(docUrl) }}
+                  </span>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-download"
+                    class="p-button-text p-button-sm"
+                    (click)="downloadDocument(docUrl)"
+                    pTooltip="Descargar"
+                    aria-label="Descargar"
+                  >
+                    <span class="sr-only">Descargar</span>
+                  </button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-sm p-button-danger"
+                    (click)="deleteDocument(docUrl)"
+                    pTooltip="Eliminar"
+                    aria-label="Eliminar"
+                  >
+                    <span class="sr-only">Eliminar</span>
+                  </button>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- Planos de Montaje -->
+          @if (engineering.assemblyPlans && engineering.assemblyPlans.length > 0) {
+          <div>
+            <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Planos de Montaje
+            </h5>
+            <div class="space-y-2">
+              @for (docUrl of engineering.assemblyPlans; track $index) {
+              <div
+                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+              >
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <i class="pi pi-file text-orange-500"></i>
+                  <span
+                    class="text-sm text-gray-700 dark:text-gray-300 truncate"
+                    [title]="getDocumentName(docUrl)"
+                  >
+                    {{ getDocumentName(docUrl) }}
+                  </span>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-download"
+                    class="p-button-text p-button-sm"
+                    (click)="downloadDocument(docUrl)"
+                    pTooltip="Descargar"
+                    aria-label="Descargar"
+                  >
+                    <span class="sr-only">Descargar</span>
+                  </button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-sm p-button-danger"
+                    (click)="deleteDocument(docUrl)"
+                    pTooltip="Eliminar"
+                    aria-label="Eliminar"
+                  >
+                    <span class="sr-only">Eliminar</span>
+                  </button>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- Lista de Materiales (BOM) -->
+          @if (engineering.billOfMaterials && engineering.billOfMaterials.length > 0) {
+          <div>
+            <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Lista de Materiales (BOM)
+            </h5>
+            <div class="space-y-2">
+              @for (docUrl of engineering.billOfMaterials; track $index) {
+              <div
+                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+              >
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <i class="pi pi-file text-red-500"></i>
+                  <span
+                    class="text-sm text-gray-700 dark:text-gray-300 truncate"
+                    [title]="getDocumentName(docUrl)"
+                  >
+                    {{ getDocumentName(docUrl) }}
+                  </span>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-download"
+                    class="p-button-text p-button-sm"
+                    (click)="downloadDocument(docUrl)"
+                    pTooltip="Descargar"
+                    aria-label="Descargar"
+                  >
+                    <span class="sr-only">Descargar</span>
+                  </button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-sm p-button-danger"
+                    (click)="deleteDocument(docUrl)"
+                    pTooltip="Eliminar"
+                    aria-label="Eliminar"
+                  >
+                    <span class="sr-only">Eliminar</span>
+                  </button>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- Otros Documentos -->
+          @if (engineering.otherDocuments && engineering.otherDocuments.length > 0) {
+          <div>
+            <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Otros Documentos
+            </h5>
+            <div class="space-y-2">
+              @for (docUrl of engineering.otherDocuments; track $index) {
+              <div
+                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+              >
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <i class="pi pi-file text-gray-500"></i>
+                  <span
+                    class="text-sm text-gray-700 dark:text-gray-300 truncate"
+                    [title]="getDocumentName(docUrl)"
+                  >
+                    {{ getDocumentName(docUrl) }}
+                  </span>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-download"
+                    class="p-button-text p-button-sm"
+                    (click)="downloadDocument(docUrl)"
+                    pTooltip="Descargar"
+                    aria-label="Descargar"
+                  >
+                    <span class="sr-only">Descargar</span>
+                  </button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-sm p-button-danger"
+                    (click)="deleteDocument(docUrl)"
+                    pTooltip="Eliminar"
+                    aria-label="Eliminar"
+                  >
+                    <span class="sr-only">Eliminar</span>
+                  </button>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeDetails()"
+        aria-label="Cerrar"
+      ></button>
+      <button
+        pButton
+        label="Editar"
+        icon="pi pi-pencil"
+        (click)="editItem(viewingEngineering()!); closeDetails()"
+        aria-label="Editar"
+      ></button>
+    </ng-template>
+  </p-dialog>
+</div>

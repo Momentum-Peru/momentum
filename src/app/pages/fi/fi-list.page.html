@@ -52,8 +52,8 @@
       <ng-template pTemplate="header">
         <tr class="text-sm">
           <th>Título</th>
+          <th>Descripción</th>
           <th>Atravesar</th>
-          <th>Plan</th>
           <th>Rango</th>
           <th>Activo</th>
           <th></th>
@@ -62,10 +62,10 @@
       <ng-template pTemplate="body" let-item>
         <tr class="hover:bg-gray-50 cursor-pointer transition-colors" (click)="goDetail(item)">
           <td class="font-medium">{{ item.titulo }}</td>
+          <td class="text-gray-600 truncate max-w-xs">{{ item.description }}</td>
           <td class="text-gray-600">{{ item.atravesar }}</td>
-          <td class="text-gray-600">{{ item.plan.descripcion }}</td>
           <td class="text-gray-600">
-            {{ formatDateRange(item.plan.fechaInicio, item.plan.fechaFin) }}
+            {{ formatDateRange(item.startDate, item.endDate) }}
           </td>
           <td>
             <span
@@ -115,9 +115,7 @@
               {{ item.isActive ? 'Activo' : 'Inactivo' }}
             </span>
             <span>•</span>
-            <span class="truncate">{{
-              formatDateRange(item.plan.fechaInicio, item.plan.fechaFin)
-            }}</span>
+            <span class="truncate">{{ formatDateRange(item.startDate, item.endDate) }}</span>
           </div>
         </div>
         <div class="flex-shrink-0 flex items-center gap-2">
@@ -141,6 +139,14 @@
         <div class="px-4 py-4 space-y-3">
           <div>
             <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Descripción
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+              {{ item.description || '-' }}
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
               Atravesar
             </div>
             <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
@@ -149,10 +155,10 @@
           </div>
           <div>
             <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Plan - Descripción
+              Plan
             </div>
             <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
-              {{ item.plan.descripcion || '-' }}
+              {{ item.plan || '-' }}
             </div>
           </div>
           <div>
@@ -160,7 +166,7 @@
               Rango
             </div>
             <div class="text-sm text-gray-900 dark:text-gray-100">
-              {{ formatDateRange(item.plan.fechaInicio, item.plan.fechaFin) }}
+              {{ formatDateRange(item.startDate, item.endDate) }}
             </div>
           </div>
           <div>
@@ -214,6 +220,17 @@
       />
     </div>
     <div>
+      <label for="description" class="text-sm text-gray-600 mb-1 block">Descripción</label>
+      <textarea
+        id="description"
+        pTextarea
+        [(ngModel)]="createForm.description"
+        name="description"
+        rows="2"
+        class="w-full"
+      ></textarea>
+    </div>
+    <div>
       <label for="atravesar" class="text-sm text-gray-600 mb-1 block">Atravesar</label>
       <textarea
         id="atravesar"
@@ -225,13 +242,11 @@
       ></textarea>
     </div>
     <div>
-      <label for="planDescripcion" class="text-sm text-gray-600 mb-1 block"
-        >Plan - Descripción</label
-      >
+      <label for="planDescripcion" class="text-sm text-gray-600 mb-1 block">Plan</label>
       <textarea
         id="planDescripcion"
         pTextarea
-        [(ngModel)]="createForm.plan.descripcion"
+        [(ngModel)]="createForm.plan"
         name="planDescripcion"
         rows="2"
         class="w-full"

@@ -1,0 +1,34 @@
+// Estilos específicos para el componente de perfil
+// Principio de Responsabilidad Única: Solo estilos relacionados con el componente de perfil
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+// Estilos para el FileUpload
+::ng-deep {
+  .p-fileupload-basic {
+    .p-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+// Animaciones
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-in-out;
+}
+

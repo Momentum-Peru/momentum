@@ -9,37 +9,77 @@ import {
   inject,
   signal,
   computed,
+  Pipe,
+  PipeTransform,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+  FormsModule,
+} from '@angular/forms';
 
 // PrimeNG Components
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { ButtonModule } from 'primeng/button';
 
 // Services
 import { TasksApiService } from '../../../../shared/services/tasks-api.service';
 import { UsersApiService } from '../../../../shared/services/users-api.service';
 import { AuthService } from '../../../login/services/auth.service';
 import { BoardsApiService } from '../../../../shared/services/boards-api.service';
+import { ProjectsApiService } from '../../../../shared/services/projects-api.service';
+import { ClientsApiService } from '../../../../shared/services/clients-api.service';
 
 // Interfaces
 import {
   Task,
   CreateTaskRequest,
   UpdateTaskRequest,
+  TaskSubtask,
+  TaskAttachment,
 } from '../../../../shared/interfaces/task.interface';
 import { User } from '../../../../shared/services/users-api.service';
 import { Board } from '../../../../shared/interfaces/board.interface';
+import { Project } from '../../../../shared/interfaces/project.interface';
 
 // PrimeNG Services
 import { MessageService } from 'primeng/api';
 import { take } from 'rxjs';
 
+@Pipe({
+  name: 'truncate',
+  standalone: true,
+})
+export class TruncatePipe implements PipeTransform {
+  transform(value: string | null | undefined, maxLength = 50): string {
+    if (!value) return '';
+    if (value.length <= maxLength) return value;
+    return value.substring(0, maxLength) + '...';
+  }
+}
+
 @Component({
   selector: 'app-native-task-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SelectModule, DatePickerModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    SelectModule,
+    DatePickerModule,
+    DialogModule,
+    InputTextModule,
+    TextareaModule,
+    ButtonModule,
+    TruncatePipe,
+  ],
   providers: [MessageService],
   template: `
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
@@ -182,16 +222,55 @@ import { take } from 'rxjs';
             </p>
           </div>
 
+          <!-- Project Field -->
+          <div class="space-y-2">
+            <label
+              for="projectId"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Proyecto
+            </label>
+            <p-select
+              id="projectId"
+              formControlName="projectId"
+              [options]="projectOptions()"
+              placeholder="Selecciona un proyecto"
+              [appendTo]="'body'"
+              styleClass="w-full"
+              [loading]="projectsLoading()"
+            >
+              <ng-template let-project pTemplate="selectedItem">
+                @if (project?.label) {
+                <span class="truncate block w-full" [title]="project.label">
+                  {{ project.label | truncate : 40 }}
+                </span>
+                } @else {
+                <span class="truncate block w-full">Selecciona un proyecto</span>
+                }
+              </ng-template>
+              <ng-template let-project pTemplate="item">
+                <span class="truncate block w-full" [title]="project.label">
+                  {{ project.label | truncate : 40 }}
+                </span>
+              </ng-template>
+            </p-select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Due Date Field -->
           <div class="space-y-2">
             <label for="dueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Fecha Límite
+              Fecha y Hora Límite
             </label>
             <p-datePicker
               id="dueDate"
               formControlName="dueDate"
-              placeholder="Selecciona una fecha"
+              placeholder="Selecciona fecha y hora"
               dateFormat="dd/mm/yy"
+              [showTime]="true"
+              [showSeconds]="false"
+              hourFormat="24"
               styleClass="w-full"
               [showIcon]="true"
               [showButtonBar]="true"
@@ -215,6 +294,224 @@ import { take } from 'rxjs';
           <p class="text-gray-500 dark:text-gray-400 text-sm">
             Separa múltiples etiquetas con comas
           </p>
+        </div>
+
+        <!-- Incomplete Reason Field -->
+        <div class="space-y-2">
+          <label
+            for="incompleteReason"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Razón por la que no se terminó la tarea
+          </label>
+          <textarea
+            id="incompleteReason"
+            formControlName="incompleteReason"
+            rows="3"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+            placeholder="Explica por qué no se pudo terminar la tarea (opcional)"
+          ></textarea>
+          <p class="text-gray-500 dark:text-gray-400 text-sm">
+            Este campo aparece en los detalles y en la tarjeta de la tarea
+          </p>
+        </div>
+
+        <!-- Subtasks Field -->
+        <div class="space-y-2">
+          <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Subtareas</div>
+          <div class="space-y-2">
+            <div
+              *ngFor="let subtask of subtasks(); let i = index; trackBy: trackBySubtaskIndex"
+              class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md"
+            >
+              <input
+                type="checkbox"
+                [checked]="subtask.completed"
+                (change)="toggleSubtask(i)"
+                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                [ngModel]="subtask.title"
+                (ngModelChange)="updateSubtaskTitle(i, $event)"
+                [ngModelOptions]="{ standalone: true }"
+                [class.line-through]="subtask.completed"
+                [class.text-gray-400]="subtask.completed"
+                class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Título de la subtarea"
+              />
+              <button
+                type="button"
+                (click)="removeSubtask(i)"
+                class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                title="Eliminar subtarea"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </button>
+            </div>
+            <button
+              type="button"
+              (click)="addSubtask()"
+              class="w-full px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              + Agregar Subtarea
+            </button>
+          </div>
+        </div>
+
+        <!-- Files/Attachments Field -->
+        <div class="space-y-2">
+          <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Archivos y Documentos
+          </div>
+          <div class="space-y-2">
+            <!-- Archivos existentes (solo en modo edición) -->
+            @if (isEditing() && existingAttachments().length > 0) {
+            <div class="mb-3">
+              <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                Archivos existentes
+              </div>
+              @for (attachment of existingAttachments(); track attachment._id || $index) {
+              <div
+                class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md mb-2"
+                [class.opacity-50]="attachmentsToDelete().includes(attachment._id || '')"
+              >
+                <i class="pi pi-file text-gray-500"></i>
+                <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                  {{ attachment.originalName }}
+                </span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ formatFileSize(attachment.size) }}
+                </span>
+                <button
+                  type="button"
+                  (click)="removeExistingAttachment(attachment._id || '')"
+                  class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                  [title]="
+                    attachmentsToDelete().includes(attachment._id || '')
+                      ? 'Restaurar archivo'
+                      : 'Eliminar archivo'
+                  "
+                >
+                  @if (attachmentsToDelete().includes(attachment._id || '')) {
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  } @else {
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                  }
+                </button>
+              </div>
+              }
+            </div>
+            }
+
+            <!-- Archivos nuevos seleccionados -->
+            @if (selectedFiles().length > 0) {
+            <div class="mb-3">
+              <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                Archivos nuevos
+              </div>
+              @for (file of selectedFiles(); track $index) {
+              <div class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md mb-2">
+                <i class="pi pi-file text-gray-500"></i>
+                <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                  {{ file.name }}
+                </span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ formatFileSize(file.size) }}
+                </span>
+                <button
+                  type="button"
+                  (click)="removeFile($index)"
+                  class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                  title="Eliminar archivo"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              </div>
+              }
+            </div>
+            }
+            <label
+              class="flex flex-col items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200"
+              [ngClass]="{
+                'border-blue-500 bg-blue-50 dragging-overlay': isDragging(),
+                'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600':
+                  !isDragging()
+              }"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)"
+              (drop)="onDrop($event)"
+            >
+              <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                <svg
+                  class="w-8 h-8 mb-4 transition-colors"
+                  [class.text-blue-500]="isDragging()"
+                  [class.text-gray-500]="!isDragging()"
+                  [class.dark:text-gray-400]="!isDragging()"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
+                </svg>
+                <p
+                  class="mb-2 text-sm transition-colors"
+                  [class.text-blue-700]="isDragging()"
+                  [class.dark:text-blue-300]="isDragging()"
+                  [class.text-gray-500]="!isDragging()"
+                  [class.dark:text-gray-400]="!isDragging()"
+                >
+                  @if (isDragging()) {
+                  <span class="font-semibold">Suelta los archivos aquí</span>
+                  } @else {
+                  <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta }
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  PNG, JPG, PDF, DOC, DOCX (MAX. 20MB). También puedes arrastrar desde WhatsApp
+                </p>
+              </div>
+              <input
+                type="file"
+                class="hidden"
+                multiple
+                accept="image/*,.pdf,.doc,.docx"
+                (change)="onFileSelected($event)"
+              />
+            </label>
+          </div>
         </div>
 
         <!-- Form Actions -->
@@ -243,11 +540,161 @@ import { take } from 'rxjs';
         </div>
       </form>
     </div>
+
+    <!-- Dialog: Crear Nuevo Proyecto -->
+    <p-dialog
+      [modal]="true"
+      [visible]="showProjectDialog()"
+      (visibleChange)="showProjectDialog.set($event)"
+      [style]="{ width: '600px' }"
+      [closable]="true"
+      header="Crear Nuevo Proyecto"
+      (onHide)="closeProjectDialog()"
+    >
+      <form [formGroup]="projectForm" (ngSubmit)="onCreateProject()" class="space-y-4">
+        <!-- Name -->
+        <div class="space-y-2">
+          <label
+            for="projectName"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Nombre <span class="text-red-500">*</span>
+          </label>
+          <input
+            pInputText
+            id="projectName"
+            formControlName="name"
+            placeholder="Nombre del proyecto"
+            class="w-full"
+            [class.p-invalid]="projectForm.get('name')?.invalid && projectForm.get('name')?.touched"
+          />
+          @if (projectForm.get('name')?.invalid && projectForm.get('name')?.touched) {
+          <small class="text-red-500">El nombre es requerido (2-100 caracteres)</small>
+          }
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-2">
+          <label
+            for="projectDescription"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Descripción
+          </label>
+          <textarea
+            pInputTextarea
+            id="projectDescription"
+            formControlName="description"
+            rows="4"
+            placeholder="Descripción del proyecto (opcional)"
+            class="w-full"
+            [class.p-invalid]="
+              projectForm.get('description')?.invalid && projectForm.get('description')?.touched
+            "
+          ></textarea>
+          @if (projectForm.get('description')?.invalid && projectForm.get('description')?.touched) {
+          <small class="text-red-500"
+            >Si proporcionas una descripción, debe tener entre 10 y 500 caracteres</small
+          >
+          }
+        </div>
+
+        <!-- Client -->
+        <div class="space-y-2">
+          <label
+            for="projectClient"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Cliente <span class="text-red-500">*</span>
+          </label>
+          <p-select
+            id="projectClient"
+            formControlName="clientId"
+            [options]="clientOptions()"
+            placeholder="Selecciona un cliente"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            [class.p-invalid]="
+              projectForm.get('clientId')?.invalid && projectForm.get('clientId')?.touched
+            "
+          ></p-select>
+          @if (projectForm.get('clientId')?.invalid && projectForm.get('clientId')?.touched) {
+          <small class="text-red-500">El cliente es requerido</small>
+          }
+        </div>
+
+        <!-- Start Date -->
+        <div class="space-y-2">
+          <label
+            for="projectStartDate"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Fecha de Inicio <span class="text-red-500">*</span>
+          </label>
+          <p-datePicker
+            id="projectStartDate"
+            formControlName="startDate"
+            placeholder="Selecciona fecha de inicio"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            [class.p-invalid]="
+              projectForm.get('startDate')?.invalid && projectForm.get('startDate')?.touched
+            "
+          ></p-datePicker>
+          @if (projectForm.get('startDate')?.invalid && projectForm.get('startDate')?.touched) {
+          <small class="text-red-500">La fecha de inicio es requerida</small>
+          }
+        </div>
+
+        <!-- End Date (Optional) -->
+        <div class="space-y-2">
+          <label
+            for="projectEndDate"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Fecha de Fin
+          </label>
+          <p-datePicker
+            id="projectEndDate"
+            formControlName="endDate"
+            placeholder="Selecciona fecha de fin (opcional)"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full"
+          ></p-datePicker>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-3 pt-4">
+          <p-button
+            label="Cancelar"
+            severity="secondary"
+            [text]="true"
+            (onClick)="closeProjectDialog()"
+            [disabled]="projectFormLoading()"
+          ></p-button>
+          <p-button
+            label="Crear Proyecto"
+            severity="primary"
+            [loading]="projectFormLoading()"
+            [disabled]="projectForm.invalid"
+            type="submit"
+          ></p-button>
+        </div>
+      </form>
+    </p-dialog>
   `,
   styles: [
     `
       :host {
         display: block;
+      }
+
+      :host-context(.dark) .dragging-overlay {
+        background-color: rgba(30, 58, 138, 0.2);
       }
     `,
   ],
@@ -257,19 +704,32 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   private readonly tasksApiService = inject(TasksApiService);
   private readonly usersApiService = inject(UsersApiService);
   private readonly boardsApiService = inject(BoardsApiService);
+  private readonly projectsApiService = inject(ProjectsApiService);
+  private readonly clientsApiService = inject(ClientsApiService);
   private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
 
   @Input() task: Task | undefined;
   @Input() boardId?: string;
-  @Output() save = new EventEmitter<CreateTaskRequest | UpdateTaskRequest>();
+  @Output() save = new EventEmitter<Task>();
   @Output() formCancel = new EventEmitter<void>();
 
   public taskForm: FormGroup = this.createForm();
+  public projectForm: FormGroup = this.createProjectForm();
   public readonly allUsers = signal<User[]>([]);
   public readonly board = signal<Board | null>(null);
+  public readonly projects = signal<Project[]>([]);
+  public readonly projectsLoading = signal<boolean>(false);
   public readonly usersLoading = signal<boolean>(false);
   public readonly loading = signal<boolean>(false);
+  public readonly showProjectDialog = signal<boolean>(false);
+  public readonly projectFormLoading = signal<boolean>(false);
+  public readonly clients = signal<{ _id: string; name: string }[]>([]);
+  public readonly subtasks = signal<TaskSubtask[]>([]);
+  public readonly selectedFiles = signal<File[]>([]);
+  public readonly existingAttachments = signal<TaskAttachment[]>([]);
+  public readonly attachmentsToDelete = signal<string[]>([]);
+  public readonly isDragging = signal<boolean>(false);
 
   public readonly isEditing = signal<boolean>(false);
 
@@ -336,8 +796,17 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     }));
   });
 
+  public readonly projectOptions = computed(() => {
+    return this.projects().map((project) => ({
+      label: `${project.code} - ${project.name}`,
+      value: project._id || '',
+    }));
+  });
+
   ngOnInit(): void {
     this.loadUsers();
+    this.loadProjects();
+    this.loadClients();
     if (this.boardId) {
       this.loadBoard();
     }
@@ -363,8 +832,115 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       status: ['Pendiente', [Validators.required]],
       priority: ['Media', [Validators.required]],
       assignedTo: [null, [Validators.required]],
+      projectId: [null],
       dueDate: [null],
       tags: [''],
+      incompleteReason: [''],
+    });
+  }
+
+  /**
+   * Crea el formulario de proyecto
+   */
+  private createProjectForm(): FormGroup {
+    return this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      description: ['', [Validators.minLength(10), Validators.maxLength(500)]],
+      clientId: ['', [Validators.required]],
+      startDate: [null, [Validators.required]],
+      endDate: [null],
+    });
+  }
+
+  /**
+   * Carga la lista de clientes
+   */
+  private loadClients(): void {
+    this.clientsApiService.list().subscribe({
+      next: (clients) => {
+        this.clients.set(clients);
+      },
+      error: (error) => {
+        console.error('Error loading clients:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar los clientes',
+        });
+      },
+    });
+  }
+
+  /**
+   * Opciones de clientes para el selector
+   */
+  public readonly clientOptions = computed(() => {
+    return this.clients().map((client) => ({
+      label: client.name,
+      value: client._id,
+    }));
+  });
+
+  /**
+   * Cierra el diálogo de proyecto
+   */
+  public closeProjectDialog(): void {
+    this.showProjectDialog.set(false);
+    this.projectForm.reset();
+    this.projectFormLoading.set(false);
+  }
+
+  /**
+   * Crea un nuevo proyecto
+   */
+  public onCreateProject(): void {
+    if (this.projectForm.invalid) {
+      this.projectForm.markAllAsTouched();
+      return;
+    }
+
+    this.projectFormLoading.set(true);
+
+    const formValue = this.projectForm.value;
+    const payload = {
+      name: formValue.name.trim(),
+      description: formValue.description?.trim() || '',
+      clientId: formValue.clientId,
+      startDate: formValue.startDate ? new Date(formValue.startDate).toISOString() : undefined,
+      endDate: formValue.endDate ? new Date(formValue.endDate).toISOString() : undefined,
+      status: 'PENDIENTE' as const,
+      isActive: true,
+    };
+
+    this.projectsApiService.create(payload).subscribe({
+      next: (newProject) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Proyecto creado correctamente',
+        });
+
+        // Recargar la lista de proyectos
+        this.loadProjects();
+
+        // Seleccionar el nuevo proyecto en el formulario de tarea
+        this.taskForm.patchValue({ projectId: newProject._id });
+
+        // Resetear el estado de carga antes de cerrar
+        this.projectFormLoading.set(false);
+
+        // Cerrar el diálogo
+        this.closeProjectDialog();
+      },
+      error: (error) => {
+        console.error('Error creating project:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error?.error?.message || 'No se pudo crear el proyecto',
+        });
+        this.projectFormLoading.set(false);
+      },
     });
   }
 
@@ -384,6 +960,12 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       // Resetear el formulario primero
       this.taskForm.reset();
 
+      // Extraer el ID del projectId si es un objeto
+      const projectId =
+        typeof this.task.projectId === 'object' && this.task.projectId !== null
+          ? (this.task.projectId as { _id?: string })._id
+          : this.task.projectId;
+
       // Llenar con los datos de la tarea
       this.taskForm.patchValue({
         title: this.task.title,
@@ -391,16 +973,60 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         status: this.task.status,
         priority: this.task.priority,
         assignedTo: assignedToId,
+        projectId: projectId || null,
         dueDate: this.task.dueDate ? new Date(this.task.dueDate) : null,
         tags: Array.isArray(this.task.tags) ? this.task.tags.join(', ') : this.task.tags || '',
+        incompleteReason: this.task.incompleteReason || '',
       });
+
+      // Inicializar subtareas
+      if (this.task.subtasks && Array.isArray(this.task.subtasks)) {
+        this.subtasks.set([...this.task.subtasks]);
+      } else {
+        this.subtasks.set([]);
+      }
+
+      // Inicializar archivos adjuntos existentes
+      if (this.task.attachments && Array.isArray(this.task.attachments)) {
+        this.existingAttachments.set([...this.task.attachments]);
+      } else {
+        this.existingAttachments.set([]);
+      }
     } else {
       this.isEditing.set(false);
       this.taskForm.reset();
       this.taskForm.patchValue({
         status: 'Pendiente',
       });
+      this.subtasks.set([]);
+      this.existingAttachments.set([]);
     }
+    this.selectedFiles.set([]);
+    this.attachmentsToDelete.set([]);
+  }
+
+  /**
+   * Carga la lista de proyectos
+   */
+  private loadProjects(): void {
+    this.projectsLoading.set(true);
+    this.projectsApiService
+      .list()
+      .pipe(take(1))
+      .subscribe({
+        next: (data) => {
+          this.projects.set(data);
+          this.projectsLoading.set(false);
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Advertencia',
+            detail: 'No se pudieron cargar los proyectos.',
+          });
+          this.projectsLoading.set(false);
+        },
+      });
   }
 
   /**
@@ -476,8 +1102,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       users.push({
         _id: board.owner._id,
         id: board.owner._id,
-        name: board.owner.name,
-        email: board.owner.email,
+        name: board.owner.name || board.owner.email || 'Sin nombre',
+        email: board.owner.email || '',
         role: 'user', // Valor por defecto, el board no incluye el rol
         isActive: true,
         createdAt: '',
@@ -492,8 +1118,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
           users.push({
             _id: member._id,
             id: member._id,
-            name: member.name,
-            email: member.email,
+            name: member.name || member.email || 'Sin nombre',
+            email: member.email || '',
             role: 'user', // Valor por defecto
             isActive: true,
             createdAt: '',
@@ -508,13 +1134,13 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       board.invitations.forEach((invitation) => {
         if (invitation.status === 'accepted' && invitation.userId?._id) {
           // Verificar que no esté ya en la lista
-          const exists = users.some((u) => u._id === invitation.userId._id);
-          if (!exists) {
+          const exists = users.some((u) => u._id === invitation.userId?._id);
+          if (!exists && invitation.userId) {
             users.push({
               _id: invitation.userId._id,
               id: invitation.userId._id,
-              name: invitation.userId.name,
-              email: invitation.userId.email,
+              name: invitation.userId.name || invitation.userId.email || 'Sin nombre',
+              email: invitation.userId.email || '',
               role: 'user', // Valor por defecto
               isActive: true,
               createdAt: '',
@@ -554,6 +1180,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         ...(this.isEditing() ? {} : { createdBy: currentUser.id }),
         // Agregar boardId si está disponible
         ...(this.boardId ? { boardId: this.boardId } : {}),
+        // Agregar projectId si está disponible
+        ...(formValue.projectId ? { projectId: formValue.projectId } : {}),
         dueDate: formValue.dueDate ? formValue.dueDate.toISOString() : undefined,
         tags: formValue.tags
           ? formValue.tags
@@ -561,6 +1189,14 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
               .map((tag: string) => tag.trim())
               .filter((tag: string) => tag.length > 0)
           : [],
+        incompleteReason: formValue.incompleteReason?.trim() || undefined,
+        subtasks: this.subtasks()
+          .map((st, index) => ({
+            title: st.title.trim(),
+            completed: st.completed || false,
+            order: index,
+          }))
+          .filter((st) => st.title.length > 0),
       };
 
       const task = this.task;
@@ -569,23 +1205,27 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         : this.tasksApiService.createTask(taskData as CreateTaskRequest);
 
       operation.pipe(take(1)).subscribe({
-        next: (res) => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: `Tarea ${this.isEditing() ? 'actualizada' : 'creada'} correctamente.`,
-          });
-          this.save.emit(res);
-
-          // Limpiar el formulario solo cuando se crea una nueva tarea
-          if (!this.isEditing()) {
-            this.taskForm.reset();
-            this.taskForm.patchValue({
-              status: 'Pendiente',
-            });
+        next: async (res) => {
+          // Si estamos editando y hay archivos para eliminar, eliminarlos primero
+          const attachmentsToDelete = this.attachmentsToDelete();
+          if (this.isEditing() && attachmentsToDelete.length > 0) {
+            await this.deleteAttachments(res._id, attachmentsToDelete);
+            // Después de eliminar, subir nuevos archivos si hay
+            const files = this.selectedFiles();
+            if (files.length > 0) {
+              await this.uploadFiles(res._id, files, currentUser.id);
+            } else {
+              this.finishTaskUpdate(res);
+            }
+          } else {
+            // Si hay archivos seleccionados, subirlos después de crear/actualizar la tarea
+            const files = this.selectedFiles();
+            if (files.length > 0) {
+              await this.uploadFiles(res._id, files, currentUser.id);
+            } else {
+              this.finishTaskUpdate(res);
+            }
           }
-
-          this.loading.set(false);
         },
         error: () => {
           this.messageService.add({
@@ -620,5 +1260,273 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
    */
   public trackByUserId(index: number, user: User): string {
     return user.id;
+  }
+
+  /**
+   * Agrega una nueva subtarea
+   */
+  public addSubtask(): void {
+    const newSubtask: TaskSubtask = {
+      title: '',
+      completed: false,
+      order: this.subtasks().length,
+    };
+    this.subtasks.set([...this.subtasks(), newSubtask]);
+  }
+
+  /**
+   * Elimina una subtarea
+   */
+  public removeSubtask(index: number): void {
+    const current = this.subtasks();
+    current.splice(index, 1);
+    this.subtasks.set([...current]);
+  }
+
+  /**
+   * TrackBy function para el ngFor de subtareas
+   */
+  public trackBySubtaskIndex(index: number): number {
+    return index;
+  }
+
+  /**
+   * Actualiza el título de una subtarea
+   */
+  public updateSubtaskTitle(index: number, value: string): void {
+    const current = this.subtasks();
+    const updated = [...current];
+    updated[index] = { ...updated[index], title: value };
+    this.subtasks.set(updated);
+  }
+
+  /**
+   * Toggle el estado completado de una subtarea
+   */
+  public toggleSubtask(index: number): void {
+    const current = this.subtasks();
+    current[index] = { ...current[index], completed: !current[index].completed };
+    this.subtasks.set([...current]);
+  }
+
+  /**
+   * Maneja la selección de archivos
+   */
+  public onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const newFiles = Array.from(input.files);
+      this.processDroppedFiles(newFiles);
+      // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
+      input.value = '';
+    }
+  }
+
+  /**
+   * Maneja el evento dragover
+   */
+  public onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  /**
+   * Maneja el evento dragleave
+   */
+  public onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  /**
+   * Maneja el evento drop
+   */
+  public onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+
+    const files = event.dataTransfer?.files;
+    if (!files || files.length === 0) return;
+
+    this.processDroppedFiles(Array.from(files));
+  }
+
+  /**
+   * Procesa los archivos arrastrados o seleccionados
+   */
+  private processDroppedFiles(files: File[]): void {
+    // Validar tamaño máximo (20MB)
+    const maxSize = 20 * 1024 * 1024; // 20MB en bytes
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    files.forEach((file) => {
+      if (file.size > maxSize) {
+        invalidFiles.push(file.name);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    // Mostrar error si hay archivos que exceden el tamaño
+    if (invalidFiles.length > 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Archivos muy grandes',
+        detail: `Los siguientes archivos exceden el tamaño máximo de 20MB: ${invalidFiles.join(
+          ', '
+        )}`,
+      });
+    }
+
+    // Agregar archivos válidos
+    if (validFiles.length > 0) {
+      const currentFiles = this.selectedFiles();
+      this.selectedFiles.set([...currentFiles, ...validFiles]);
+
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Archivos agregados',
+        detail: `${validFiles.length} archivo(s) agregado(s) correctamente`,
+      });
+    }
+  }
+
+  /**
+   * Elimina un archivo de la lista
+   */
+  public removeFile(index: number): void {
+    const current = this.selectedFiles();
+    current.splice(index, 1);
+    this.selectedFiles.set([...current]);
+  }
+
+  /**
+   * Formatea el tamaño del archivo
+   */
+  public formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  /**
+   * Elimina archivos adjuntos existentes
+   */
+  private async deleteAttachments(taskId: string, attachmentIds: string[]): Promise<void> {
+    const deletePromises = attachmentIds.map((attachmentId) =>
+      this.tasksApiService.deleteTaskAttachment(taskId, attachmentId).pipe(take(1)).toPromise()
+    );
+
+    try {
+      await Promise.all(deletePromises);
+    } catch (error) {
+      console.error('Error deleting attachments:', error);
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'Algunos archivos no se pudieron eliminar.',
+      });
+    }
+  }
+
+  /**
+   * Finaliza la actualización de la tarea
+   */
+  private finishTaskUpdate(res: Task): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: `Tarea ${this.isEditing() ? 'actualizada' : 'creada'} correctamente.`,
+    });
+    this.save.emit(res);
+
+    // Limpiar el formulario solo cuando se crea una nueva tarea
+    if (!this.isEditing()) {
+      this.taskForm.reset();
+      this.taskForm.patchValue({
+        status: 'Pendiente',
+      });
+      this.subtasks.set([]);
+      this.selectedFiles.set([]);
+      this.existingAttachments.set([]);
+      this.attachmentsToDelete.set([]);
+    } else {
+      // Limpiar solo los archivos nuevos y la lista de eliminación
+      this.selectedFiles.set([]);
+      this.attachmentsToDelete.set([]);
+    }
+
+    this.loading.set(false);
+  }
+
+  /**
+   * Sube los archivos a la tarea usando Presigned URLs
+   */
+  private async uploadFiles(taskId: string, files: File[], uploadedBy: string): Promise<void> {
+    try {
+      const res = await this.tasksApiService.uploadTaskAttachments(
+        taskId,
+        files,
+        uploadedBy,
+        undefined,
+        (progress) => {
+          // Opcional: mostrar progreso
+          console.log(`Progreso de subida: ${progress}%`);
+        }
+      );
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: `Tarea ${this.isEditing() ? 'actualizada' : 'creada'} con archivos correctamente.`,
+      });
+      this.save.emit(res);
+
+      // Limpiar el formulario solo cuando se crea una nueva tarea
+      if (!this.isEditing()) {
+        this.taskForm.reset();
+        this.taskForm.patchValue({
+          status: 'Pendiente',
+        });
+        this.subtasks.set([]);
+        this.selectedFiles.set([]);
+        this.existingAttachments.set([]);
+        this.attachmentsToDelete.set([]);
+      } else {
+        // Limpiar solo los archivos nuevos y la lista de eliminación
+        this.selectedFiles.set([]);
+        this.attachmentsToDelete.set([]);
+      }
+
+      this.loading.set(false);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'La tarea se creó pero hubo un error al subir los archivos.',
+      });
+      this.loading.set(false);
+    }
+  }
+
+  /**
+   * Elimina o restaura un archivo adjunto existente
+   */
+  public removeExistingAttachment(attachmentId: string): void {
+    const toDelete = this.attachmentsToDelete();
+    if (toDelete.includes(attachmentId)) {
+      // Restaurar el archivo
+      this.attachmentsToDelete.set(toDelete.filter((id) => id !== attachmentId));
+    } else {
+      // Marcar para eliminar
+      this.attachmentsToDelete.set([...toDelete, attachmentId]);
+    }
   }
 }

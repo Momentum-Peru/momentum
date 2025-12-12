@@ -21,6 +21,7 @@ import {
   TaskComment,
   CreateTaskCommentRequest,
   Task,
+  TaskAttachment,
 } from '../../../../shared/interfaces/task.interface';
 
 @Component({
@@ -75,7 +76,8 @@ import {
                   <div class="file-item flex items-center gap-2 p-2 bg-gray-50 rounded">
                     <i class="pi pi-paperclip text-gray-500"></i>
                     <span class="text-sm text-gray-700">{{ file.originalName }}</span>
-                    <span class="text-xs text-gray-500">({{ formatFileSize(file.fileSize) }})</span>
+                    <span class="text-xs text-gray-500">({{ formatFileSize(file.size || 0) }})</span>
+                    @if (file._id) {
                     <p-button
                       icon="pi pi-download"
                       size="small"
@@ -85,6 +87,17 @@ import {
                       pTooltip="Descargar archivo"
                     >
                     </p-button>
+                    } @else {
+                    <a
+                      [href]="file.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-blue-600 hover:text-blue-800"
+                      pTooltip="Abrir archivo"
+                    >
+                      <i class="pi pi-external-link"></i>
+                    </a>
+                    }
                   </div>
                   }
                 </div>
@@ -297,28 +310,49 @@ export class TaskCommentsComponent {
   }
 
   /**
-   * Sube los archivos del comentario
+   * Sube los archivos del comentario usando Presigned URLs
    */
-  private uploadFiles(commentId: string): void {
+  private async uploadFiles(commentId: string): Promise<void> {
     const files = this.selectedFiles();
-    let uploadCount = 0;
-    const totalFiles = files.length;
+    if (files.length === 0) {
+      this.commentAdded.emit();
+      this.resetForm();
+      return;
+    }
 
-    files.forEach((file) => {
-      this.commentsService.uploadCommentFile(this.taskId, commentId, file).subscribe({
-        next: () => {
-          uploadCount++;
-          if (uploadCount === totalFiles) {
-            this.commentAdded.emit();
-            this.resetForm();
-          }
-        },
-        error: () => {
-          this.errorMessage.set('Error al subir archivos');
-          this.loading.set(false);
-        },
-      });
-    });
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser?.id) {
+      this.errorMessage.set('No se pudo obtener la información del usuario');
+      this.loading.set(false);
+      return;
+    }
+
+    // Convertir el ID a string si es necesario
+    const infoId = typeof commentId === 'string' 
+      ? commentId 
+      : (commentId as any)?.toString?.() || String(commentId);
+
+    try {
+      // Subir todos los archivos usando Presigned URLs
+      await this.commentsService.uploadCommentFiles(
+        this.taskId,
+        infoId,
+        files,
+        currentUser.id,
+        (progress) => {
+          // Opcional: mostrar progreso
+          console.log(`Progreso de subida: ${progress}%`);
+        }
+      );
+
+      // Emitir el evento para actualizar la vista
+      this.commentAdded.emit();
+      this.resetForm();
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      this.errorMessage.set('Error al subir archivos');
+      this.loading.set(false);
+    }
   }
 
   /**
@@ -342,7 +376,15 @@ export class TaskCommentsComponent {
   /**
    * Descarga un archivo
    */
-  public downloadFile(file: { _id: string; originalName: string }): void {
+  public downloadFile(file: TaskAttachment): void {
+    if (!file._id) {
+      // Si no tiene _id, abrir directamente la URL
+      if (file.url) {
+        window.open(file.url, '_blank', 'noopener,noreferrer');
+      }
+      return;
+    }
+
     this.commentsService.downloadFile(this.taskId, file._id).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
@@ -353,7 +395,10 @@ export class TaskCommentsComponent {
         window.URL.revokeObjectURL(url);
       },
       error: () => {
-        // Error al descargar archivo
+        // Si falla la descarga, intentar abrir la URL directamente
+        if (file.url) {
+          window.open(file.url, '_blank', 'noopener,noreferrer');
+        }
       },
     });
   }

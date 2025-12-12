@@ -57,8 +57,9 @@ export class FiDetailPage implements OnInit {
   private readonly messageService = inject(MessageService);
 
   fi = signal<Fi | null>(null);
-  form: { titulo: string; atravesar: string; isActive: boolean } = {
+  form: { titulo: string; description: string; atravesar: string; isActive: boolean } = {
     titulo: '',
+    description: '',
     atravesar: '',
     isActive: true,
   };
@@ -95,10 +96,15 @@ export class FiDetailPage implements OnInit {
     if (!this.fiId) return;
     this.api.getById(this.fiId).subscribe((f) => {
       this.fi.set(f);
-      this.form = { titulo: f.titulo, atravesar: f.atravesar, isActive: f.isActive };
-      this.planDesc = f.plan.descripcion;
-      this.startDate = new Date(f.plan.fechaInicio);
-      this.endDate = new Date(f.plan.fechaFin);
+      this.form = {
+        titulo: f.titulo,
+        description: f.description,
+        atravesar: f.atravesar,
+        isActive: f.isActive,
+      };
+      this.planDesc = f.plan;
+      this.startDate = new Date(f.startDate);
+      this.endDate = new Date(f.endDate);
       this.dateRange = [this.startDate, this.endDate];
       // Inicializar el mes actual con la fecha de inicio
       this.currentMonth.set(new Date(this.startDate));
@@ -131,12 +137,11 @@ export class FiDetailPage implements OnInit {
   save(): void {
     const payload: UpdateFiRequest = {
       titulo: this.form.titulo,
+      description: this.form.description,
       atravesar: this.form.atravesar,
-      plan: {
-        descripcion: this.planDesc,
-        fechaInicio: this.toIsoDateOnly(this.startDate),
-        fechaFin: this.toIsoDateOnly(this.endDate),
-      },
+      plan: this.planDesc,
+      startDate: this.toIsoDateOnly(this.startDate),
+      endDate: this.toIsoDateOnly(this.endDate),
       isActive: this.form.isActive,
     };
     this.api.update(this.fiId, payload).subscribe({
@@ -289,6 +294,10 @@ export class FiDetailPage implements OnInit {
   getToggleIcon(): string {
     const editing = this.accionableEdit();
     return editing?.estado === 'cumplido' ? 'pi pi-refresh' : 'pi pi-check';
+  }
+
+  goToDayDetail(fecha: string): void {
+    this.router.navigate(['/fi', this.fiId, 'day', fecha]);
   }
 
   // Navegación del calendario por mes

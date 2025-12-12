@@ -3,6 +3,7 @@ import {
     Component,
     inject,
     signal,
+    computed,
     effect,
     OnInit,
 } from '@angular/core';
@@ -24,6 +25,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { TagModule } from 'primeng/tag';
 import { CompaniesApiService } from '../../shared/services/companies-api.service';
 import { AuthService } from '../../pages/login/services/auth.service';
+import { MenuService } from '../../shared/services/menu.service';
 import {
     Company,
     CreateCompanyRequest,
@@ -64,6 +66,10 @@ export class CompaniesCrmPage implements OnInit {
     private readonly messageService = inject(MessageService);
     private readonly confirmationService = inject(ConfirmationService);
     private readonly auth = inject(AuthService);
+    private readonly menuService = inject(MenuService);
+
+    // Verificar si el usuario tiene permiso de edición para este módulo
+    readonly canEdit = computed(() => this.menuService.canEdit('/companies-crm'));
 
     // Signals
     items = signal<Company[]>([]);

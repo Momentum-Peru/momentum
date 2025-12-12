@@ -351,6 +351,42 @@
   }
 }
 
+/* Estilos para asegurar scroll correcto */
+nav {
+  // Asegurar que el contenedor principal tenga altura limitada
+  max-height: 100vh;
+  overflow: hidden;
+
+  // Contenedor de items con scroll
+  > div.flex-1 {
+    // min-h-0 es crítico para que overflow funcione en flexbox
+    min-height: 0;
+    // Asegurar que el scroll sea visible cuando sea necesario
+    overflow-y: auto;
+    overflow-x: hidden;
+    // Estilo del scrollbar (opcional, para mejor UX)
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.5);
+      }
+    }
+  }
+}
+
 /* Responsive adjustments */
 @media (max-width: 767px) {
   .menu {
@@ -375,5 +411,10 @@
     transform: none;
     height: auto;
     width: auto;
+  }
+
+  // En desktop, el menú debe tener altura máxima basada en viewport
+  nav {
+    max-height: 100vh;
   }
 }

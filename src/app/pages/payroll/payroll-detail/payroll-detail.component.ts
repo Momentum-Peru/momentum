@@ -10,12 +10,14 @@ import { ToastModule } from 'primeng/toast';
 import { FileUploadModule } from 'primeng/fileupload';
 import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { PayrollService } from '../../../core/services/payroll.service';
 import { EmployeesApiService } from '../../../shared/services/employees-api.service';
+import { UploadService } from '../../../shared/services/upload.service';
 import { Payroll, PayrollDetail } from '../../../core/models/payroll.model';
 import { BcpGenerator, BcpHeaderConfig } from '../../../core/utils/bcp-generator';
 import { Employee } from '../../../shared/interfaces/employee.interface';
@@ -35,7 +37,8 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
     FileUploadModule,
     DialogModule,
     FormsModule,
-    TooltipModule
+    TooltipModule,
+    ConfirmDialogModule
   ],
   template: `
     @if (payroll(); as payrollData) {
@@ -80,6 +83,40 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
           <div class="text-2xl font-bold text-green-700">{{ payrollData.status }}</div>
         </div>
       </div>
+
+      @if (payrollData.type === 'PLANILLA') {
+      <div class="mb-6 p-4 border rounded-lg bg-white">
+        <div class="flex items-center justify-between">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Constancia General de Pago
+            </label>
+            @if (payrollData.paymentProof) {
+            <div class="flex items-center gap-2">
+              <a [href]="payrollData.paymentProof" target="_blank" class="text-blue-600 hover:underline flex items-center gap-2">
+                <i class="pi pi-check-circle text-green-500"></i>
+                <span>Ver constancia</span>
+              </a>
+            </div>
+            } @else {
+            <p class="text-sm text-gray-500 mb-2">No hay constancia subida</p>
+            }
+          </div>
+          <div class="ml-4">
+            <p-fileUpload
+              mode="basic"
+              chooseLabel="Subir Constancia"
+              [auto]="true"
+              (onUpload)="onGeneralProofUpload($event)"
+              [customUpload]="true"
+              (uploadHandler)="uploadGeneralProofHandler($event)"
+              accept=".pdf,.jpg,.jpeg,.png"
+              [maxFileSize]="5000000"
+            ></p-fileUpload>
+          </div>
+        </div>
+      </div>
+      }
 
       <p-table
         [value]="payrollData.details || []"
@@ -198,6 +235,18 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
                   class="p-button-rounded p-button-text p-button-danger"
                   aria-label="Cancelar"
                 ></button>
+                } @if (!editing) {
+                <button
+                  pButton
+                  pRipple
+                  type="button"
+                  icon="pi pi-trash"
+                  class="p-button-rounded p-button-text p-button-danger"
+                  (click)="onRowDelete(detail)"
+                  pTooltip="Eliminar fila"
+                  tooltipPosition="top"
+                  aria-label="Eliminar"
+                ></button>
                 }
               </div>
             </td>
@@ -311,18 +360,19 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
             <label for="bcpCompanyAccount" class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
               Cuenta de Cargo *
             </label>
-            <input
+            <p-select
               id="bcpCompanyAccount"
-              pInputText
+              [options]="bcpCompanyAccounts"
+              optionLabel="label"
+              optionValue="value"
               [(ngModel)]="bcpCompanyAccount"
               name="bcpCompanyAccount"
-              placeholder="1942056198075"
+              placeholder="Seleccionar cuenta"
               class="w-full"
-              maxlength="20"
-              required
-            />
+              [appendTo]="'body'"
+            ></p-select>
             <small class="text-gray-500 dark:text-gray-400">
-              Número de cuenta desde la que se realizará el cargo (máx. 20 caracteres)
+              Número de cuenta desde la que se realizará el cargo
             </small>
           </div>
 
@@ -332,16 +382,13 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
             </label>
             <input
               id="bcpProcessDate"
-              pInputText
+              type="date"
               [(ngModel)]="bcpProcessDate"
               name="bcpProcessDate"
-              placeholder="YYYYMMDD (ej: 20251120)"
-              class="w-full"
-              maxlength="8"
-              pattern="[0-9]{8}"
+              class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             />
             <small class="text-gray-500 dark:text-gray-400">
-              Fecha de proceso en formato YYYYMMDD. Si se deja vacío, se usará la fecha actual.
+              Fecha de proceso. Si se deja vacío, se usará la fecha actual.
             </small>
           </div>
         </div>
@@ -365,8 +412,86 @@ import { Employee } from '../../../shared/interfaces/employee.interface';
           pButton
           label="Generar TXT"
           (click)="generateTxtWithReference()"
-          [disabled]="!bcpReference() || bcpReference().trim().length === 0 || !bcpCompanyAccount() || bcpCompanyAccount().trim().length === 0"
+          [disabled]="!bcpReference() || bcpReference().trim().length === 0 || !bcpCompanyAccount()"
           aria-label="Generar archivo TXT"
+        ></button>
+      </ng-template>
+    </p-dialog>
+
+    <!-- Modal de error para datos bancarios incompletos -->
+    <p-dialog
+      [(visible)]="showBankDataErrorDialog"
+      [modal]="true"
+      [style]="{ width: '90vw', maxWidth: '700px' }"
+      [draggable]="false"
+      [resizable]="false"
+      [closable]="true"
+      appendTo="body"
+    >
+      <ng-template pTemplate="header">
+        <span class="font-semibold text-lg text-red-600">
+          <i class="pi pi-exclamation-triangle mr-2"></i>
+          Error: Datos Bancarios Incompletos
+        </span>
+      </ng-template>
+
+      <div class="space-y-4">
+        <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+          <p class="text-sm text-red-800 dark:text-red-200">
+            <strong>No se puede generar el archivo BCP.</strong> Los siguientes empleados no tienen datos bancarios completos:
+          </p>
+        </div>
+
+        <div class="max-h-96 overflow-auto">
+          <p-table
+            [value]="employeesWithoutBankData()"
+            styleClass="p-datatable-sm"
+            [scrollable]="true"
+            scrollHeight="300px"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Empleado</th>
+                <th>DNI</th>
+                <th>Campos Faltantes</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-employee>
+              <tr>
+                <td class="font-medium">{{ employee.name }}</td>
+                <td>{{ employee.dni }}</td>
+                <td>
+                  <div class="flex flex-wrap gap-1">
+                    @for (field of employee.missingFields; track field) {
+                    <span class="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded text-xs">
+                      {{ field }}
+                    </span>
+                    }
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+          <p class="text-xs text-blue-800 dark:text-blue-200">
+            <strong>Nota:</strong> Para generar el archivo BCP, todos los empleados deben tener:
+            <br />- Número de cuenta bancaria (accountNumber)
+            <br />- Tipo de cuenta bancaria (Ahorro o Corriente)
+            <br />
+            <br />Por favor, complete la información bancaria de los empleados antes de intentar generar el archivo nuevamente.
+          </p>
+        </div>
+      </div>
+
+      <ng-template pTemplate="footer">
+        <button
+          pButton
+          label="Cerrar"
+          class="p-button-primary"
+          (click)="showBankDataErrorDialog.set(false)"
+          aria-label="Cerrar"
         ></button>
       </ng-template>
     </p-dialog>
@@ -376,7 +501,9 @@ export class PayrollDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private payrollService = inject(PayrollService);
   private employeesApi = inject(EmployeesApiService);
+  private uploadService = inject(UploadService);
   private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
 
   // Main payroll signal
   payroll = signal<Payroll | undefined>(undefined);
@@ -388,7 +515,16 @@ export class PayrollDetailComponent implements OnInit {
   bcpAccountType = signal('C'); // C: Corriente, M: Maestra
   bcpCurrency = signal('0001'); // 0001: Soles, 1001: Dólares
   bcpCompanyAccount = signal('');
-  bcpProcessDate = signal('');
+  bcpProcessDate = signal<string>(''); // Formato YYYY-MM-DD para input date
+
+  // Constante de cuentas de cargo disponibles
+  readonly bcpCompanyAccounts = [
+    { label: '194-2056198-0-75', value: '1942056198075' }
+  ];
+
+  // Modal para errores de datos bancarios
+  showBankDataErrorDialog = signal(false);
+  employeesWithoutBankData = signal<Array<{ name: string; dni: string; missingFields: string[] }>>([]);
 
   // Computed values
   totalAmount = computed(() => {
@@ -408,7 +544,7 @@ export class PayrollDetailComponent implements OnInit {
     }
   }
 
-  private loadPayroll(id: string) {
+  loadPayroll(id: string) {
     this.payrollService.getPayrollById(id).subscribe({
       next: (data) => {
         this.payroll.set(data);
@@ -470,7 +606,7 @@ export class PayrollDetailComponent implements OnInit {
     this.bcpPayrollSubtype.set('Z');
     this.bcpAccountType.set('C');
     this.bcpCurrency.set('0001');
-    this.bcpCompanyAccount.set('');
+    this.bcpCompanyAccount.set('1942056198075'); // Valor por defecto
     this.bcpProcessDate.set('');
     this.showReferenceDialog.set(true);
   }
@@ -484,7 +620,7 @@ export class PayrollDetailComponent implements OnInit {
 
   generateTxtWithReference() {
     const reference = this.bcpReference().trim();
-    const companyAccount = this.bcpCompanyAccount().trim();
+    const companyAccount = this.bcpCompanyAccount();
     
     if (!reference || reference.length === 0) {
       this.messageService.add({
@@ -495,24 +631,24 @@ export class PayrollDetailComponent implements OnInit {
       return;
     }
 
-    if (!companyAccount || companyAccount.length === 0) {
+    if (!companyAccount) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Advertencia',
-        detail: 'Debe ingresar la cuenta de cargo para generar el archivo',
+        detail: 'Debe seleccionar la cuenta de cargo para generar el archivo',
       });
       return;
     }
 
-    // Validar formato de fecha si se proporciona
-    const processDate = this.bcpProcessDate().trim();
-    if (processDate && !/^\d{8}$/.test(processDate)) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'La fecha de proceso debe tener el formato YYYYMMDD (8 dígitos)',
-      });
-      return;
+    // Convertir fecha de YYYY-MM-DD a YYYYMMDD si se proporciona
+    let processDate: string | undefined;
+    const selectedDate = this.bcpProcessDate().trim();
+    if (selectedDate) {
+      // Convertir de YYYY-MM-DD a YYYYMMDD
+      const dateParts = selectedDate.split('-');
+      if (dateParts.length === 3) {
+        processDate = `${dateParts[0]}${dateParts[1]}${dateParts[2]}`;
+      }
     }
 
     this.closeReferenceDialog();
@@ -579,6 +715,68 @@ export class PayrollDetailComponent implements OnInit {
             employeeMap.set(employeeId, employee);
           }
         });
+
+        // Validar que todos los empleados tengan datos bancarios completos
+        const employeesWithoutBankData: Array<{ name: string; dni: string; missingFields: string[] }> = [];
+        
+        payrollData.details!.forEach((detail) => {
+          let employeeId: string;
+          const empId = detail.employeeId as string | { _id: string } | undefined;
+          if (typeof empId === 'string') {
+            employeeId = empId;
+          } else if (empId && typeof empId === 'object' && '_id' in empId) {
+            employeeId = empId._id;
+          } else {
+            // Si no hay employeeId, agregar a la lista de faltantes
+            employeesWithoutBankData.push({
+              name: `${detail.firstName} ${detail.lastName}`,
+              dni: detail.dni || 'N/A',
+              missingFields: ['Empleado no encontrado'],
+            });
+            return;
+          }
+
+          const employee = employeeMap.get(employeeId);
+          const missingFields: string[] = [];
+
+          // Verificar accountNumber: debe estar en el empleado o en el detalle
+          const hasAccountNumber = 
+            (employee?.accountNumber && employee.accountNumber.trim() !== '') ||
+            (detail.accountNumber && detail.accountNumber.trim() !== '');
+          
+          if (!hasAccountNumber) {
+            missingFields.push('Número de cuenta bancaria');
+          }
+          
+          // Verificar accountType: debe estar en el empleado o en el detalle
+          const hasAccountType = 
+            (employee?.accountType && (employee.accountType === 'Ahorro' || employee.accountType === 'Corriente')) ||
+            (detail.accountType && (detail.accountType === 'A' || detail.accountType === 'C'));
+          
+          if (!hasAccountType) {
+            missingFields.push('Tipo de cuenta bancaria');
+          }
+
+          // Si no se encontró el empleado y no hay datos en el detalle, es un problema
+          if (!employee && !hasAccountNumber && !hasAccountType) {
+            missingFields.push('Empleado no encontrado');
+          }
+
+          if (missingFields.length > 0) {
+            employeesWithoutBankData.push({
+              name: `${detail.firstName} ${detail.lastName}`,
+              dni: detail.dni || 'N/A',
+              missingFields,
+            });
+          }
+        });
+
+        // Si hay empleados sin datos bancarios, mostrar error y no generar el archivo
+        if (employeesWithoutBankData.length > 0) {
+          this.employeesWithoutBankData.set(employeesWithoutBankData);
+          this.showBankDataErrorDialog.set(true);
+          return;
+        }
 
         // Enriquecer los detalles con información bancaria del empleado
         const enrichedDetails = payrollData.details!.map((detail) => {
@@ -685,5 +883,87 @@ export class PayrollDetailComponent implements OnInit {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onProofUpload(_event: { files: File[] }, _detail: PayrollDetail) {
     // This is called by default upload, but we use customHandler
+  }
+
+  uploadGeneralProofHandler(event: { files: File[] }) {
+    const file = event.files[0];
+    if (!file) return;
+
+    const payrollData = this.payroll();
+    if (!payrollData) return;
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Subiendo',
+      detail: 'Subiendo constancia general...',
+    });
+
+    // Subir archivo usando el servicio de upload
+    this.uploadService.upload('payrolls', payrollData.id, file).subscribe({
+      next: (fileUrl: string) => {
+        // Actualizar la planilla con la URL del archivo
+        this.payrollService.updatePayroll(payrollData.id, { paymentProof: fileUrl }).subscribe({
+          next: (updatedPayroll) => {
+            this.payroll.set(updatedPayroll);
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Constancia general subida correctamente',
+            });
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Error al actualizar la planilla con la constancia',
+            });
+          },
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al subir el archivo',
+        });
+      },
+    });
+  }
+
+  onGeneralProofUpload(_event: { files: File[] }) {
+    // This is called by default upload, but we use customHandler
+  }
+
+  onRowDelete(detail: PayrollDetail) {
+    this.confirmationService.confirm({
+      message: `¿Está seguro de que desea eliminar el registro de ${detail.firstName} ${detail.lastName}?`,
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.payrollService.deletePayrollDetail(detail.id).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Eliminado',
+              detail: 'Registro eliminado correctamente',
+            });
+            // Recargar la planilla para actualizar los datos
+            const payrollData = this.payroll();
+            if (payrollData) {
+              this.loadPayroll(payrollData.id);
+            }
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo eliminar el registro',
+            });
+          },
+        });
+      },
+    });
   }
 }

@@ -1122,6 +1122,7 @@ Elimina un permiso de menú.
 - **user**: Usuario básico
 - **admin**: Administrador con acceso completo
 - **gerencia**: Gerencia con acceso a todas las empresas y módulos
+- **supervisor**: Supervisor con permisos intermedios
 
 ### Notas sobre el Rol de Gerencia
 

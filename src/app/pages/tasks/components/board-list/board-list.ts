@@ -23,6 +23,7 @@ export class BoardListComponent {
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly currentUserId = input('');
+  readonly selectedBoardId = input<string | undefined>(undefined);
 
   // Outputs usando signal-based outputs (Angular 20)
   readonly createBoard = output<void>();
@@ -33,6 +34,6 @@ export class BoardListComponent {
 
   // Método para verificar si un tablero pertenece al usuario actual
   isBoardOwner(board: Board): boolean {
-    return board.owner._id === this.currentUserId();
+    return board.owner?._id === this.currentUserId();
   }
 }

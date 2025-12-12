@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -16,6 +16,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { UploadService } from '../../shared/services/upload.service';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
+import { MenuService } from '../../shared/services/menu.service';
 
 interface Person {
   nombre: string;
@@ -33,8 +34,6 @@ interface RequirementItem {
   codigo: string;
   title: string;
   descripcion: string;
-  fechaEmision: string | Date;
-  centroCosto: string;
   fechaAprobacion?: string | Date;
   fechaRequerimiento: string | Date;
   estado: 'VIGENTE' | 'ANULADO' | 'ACTIVACIÓN';
@@ -73,6 +72,10 @@ export class RequirementsPage implements OnInit {
   private readonly baseUrl = environment.apiUrl;
   private readonly clientsApi = inject(ClientsApiService);
   private readonly messageService = inject(MessageService);
+  private readonly menuService = inject(MenuService);
+
+  // Verificar si el usuario tiene permiso de edición para este módulo
+  readonly canEdit = computed(() => this.menuService.canEdit('/requirements'));
 
   items = signal<RequirementItem[]>([]);
   clients = signal<ClientOption[]>([]);
@@ -85,6 +88,9 @@ export class RequirementsPage implements OnInit {
   viewingRequirement = signal<RequirementItem | null>(null);
   selectedFiles = signal<File[]>([]);
   expandedRows = signal<Set<string>>(new Set());
+  isDragging = signal<boolean>(false);
+  uploading = signal<boolean>(false);
+  uploadProgress = signal<Record<string, number>>({});
 
   // Opciones para dropdowns
   estados = [
@@ -160,8 +166,6 @@ export class RequirementsPage implements OnInit {
       codigo: '',
       title: '',
       descripcion: '',
-      fechaEmision: new Date().toISOString().split('T')[0],
-      centroCosto: '',
       fechaRequerimiento: new Date().toISOString().split('T')[0],
       estado: 'VIGENTE',
       documentos: [],
@@ -183,7 +187,6 @@ export class RequirementsPage implements OnInit {
     // Convertir las fechas de string a Date para el datepicker
     const editedItem = {
       ...item,
-      fechaEmision: item.fechaEmision ? new Date(item.fechaEmision) : new Date(),
       fechaAprobacion: item.fechaAprobacion ? new Date(item.fechaAprobacion) : undefined,
       fechaRequerimiento: item.fechaRequerimiento ? new Date(item.fechaRequerimiento) : new Date(),
     };
@@ -245,16 +248,18 @@ export class RequirementsPage implements OnInit {
     const cleanSolicitante = item.solicitante
       ? {
           nombre: item.solicitante.nombre?.trim() || '',
-          codigo: item.solicitante.codigo?.trim() || '',
+          ...(item.solicitante.codigo?.trim() && { codigo: item.solicitante.codigo.trim() }),
           cargo: item.solicitante.cargo?.trim() || '',
         }
       : undefined;
 
-    const cleanAprobador = item.aprobador
+    // El aprobador es completamente opcional, solo se incluye si tiene al menos un campo con valor
+    const cleanAprobador = item.aprobador &&
+      (item.aprobador.nombre?.trim() || item.aprobador.codigo?.trim() || item.aprobador.cargo?.trim())
       ? {
-          nombre: item.aprobador.nombre?.trim() || '',
-          codigo: item.aprobador.codigo?.trim() || '',
-          cargo: item.aprobador.cargo?.trim() || '',
+          ...(item.aprobador.nombre?.trim() && { nombre: item.aprobador.nombre.trim() }),
+          ...(item.aprobador.codigo?.trim() && { codigo: item.aprobador.codigo.trim() }),
+          ...(item.aprobador.cargo?.trim() && { cargo: item.aprobador.cargo.trim() }),
         }
       : undefined;
 
@@ -263,8 +268,6 @@ export class RequirementsPage implements OnInit {
       codigo: item.codigo?.trim(),
       title: item.title?.trim(),
       descripcion: item.descripcion?.trim(),
-      fechaEmision: formatDate(item.fechaEmision),
-      centroCosto: item.centroCosto?.trim(),
       fechaAprobacion: formatDate(item.fechaAprobacion),
       fechaRequerimiento: formatDate(item.fechaRequerimiento),
       estado: item.estado,
@@ -345,24 +348,73 @@ export class RequirementsPage implements OnInit {
   onFileInputChange(event: Event) {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files || []);
+    this.processFiles(files);
+    // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
+    input.value = '';
+  }
 
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+
+    const files = Array.from(event.dataTransfer?.files || []);
+    if (files.length > 0) {
+      this.processFiles(files);
+    }
+  }
+
+  private processFiles(files: File[]) {
     console.log('Archivos seleccionados:', files);
 
     // Validar tamaño de archivos (10MB máximo)
     const maxSize = 10 * 1024 * 1024; // 10MB en bytes
-    const validFiles = files.filter((file) => {
+    const validFiles: File[] = [];
+    const invalidFiles: File[] = [];
+
+    files.forEach((file) => {
       if (file.size > maxSize) {
+        invalidFiles.push(file);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    // Mostrar errores para archivos inválidos
+    if (invalidFiles.length > 0) {
+      invalidFiles.forEach((file) => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error de validación',
           detail: `El archivo ${file.name} es demasiado grande. Máximo 10MB.`,
         });
-        return false;
-      }
-      return true;
-    });
+      });
+    }
 
-    this.selectedFiles.set(validFiles);
+    // Agregar archivos válidos a la lista
+    if (validFiles.length > 0) {
+      const currentFiles = this.selectedFiles();
+      const updatedFiles = [...currentFiles, ...validFiles];
+      this.selectedFiles.set(updatedFiles);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Archivos agregados',
+        detail: `${validFiles.length} archivo(s) agregado(s) correctamente`,
+      });
+    }
   }
 
   formatFileSize(bytes: number): string {
@@ -373,9 +425,9 @@ export class RequirementsPage implements OnInit {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  removeSelectedFile(fileToRemove: File) {
+  removeSelectedFile(index: number) {
     const currentFiles = this.selectedFiles();
-    const updatedFiles = currentFiles.filter((file) => file !== fileToRemove);
+    const updatedFiles = currentFiles.filter((_, i) => i !== index);
     this.selectedFiles.set(updatedFiles);
   }
 
@@ -410,37 +462,59 @@ export class RequirementsPage implements OnInit {
       return;
     }
 
-    // Subir cada archivo individualmente usando el endpoint de la API
-    files.forEach((file: File, index: number) => {
-      console.log(`Subiendo archivo ${index + 1}:`, file.name);
-      const formData = new FormData();
-      formData.append('file', file);
+    this.uploading.set(true);
+    this.uploadProgress.set({});
 
-      this.http
-        .post(`${this.baseUrl}/requirements/${requirementId}/documents`, formData)
-        .subscribe({
-          next: (response) => {
-            console.log(`Documento ${file.name} subido exitosamente:`, response);
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Éxito',
-              detail: `Documento ${file.name} subido correctamente`,
-            });
-            this.load(); // Recargar para obtener documentos actualizados
-          },
-          error: (error) => {
-            console.error(`Error al subir documento ${file.name}:`, error);
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: `Error al subir ${file.name}: ${this.getErrorMessage(error)}`,
-            });
-          },
-        });
+    // Subir cada archivo individualmente usando el endpoint de la API
+    const uploadPromises = files.map((file: File, index: number) => {
+      return new Promise<void>((resolve, reject) => {
+        console.log(`Subiendo archivo ${index + 1}:`, file.name);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Inicializar progreso
+        this.uploadProgress.update((progress) => ({
+          ...progress,
+          [file.name]: 0,
+        }));
+
+        this.http
+          .post(`${this.baseUrl}/requirements/${requirementId}/documents`, formData)
+          .subscribe({
+            next: (response) => {
+              console.log(`Documento ${file.name} subido exitosamente:`, response);
+              // Marcar como completado
+              this.uploadProgress.update((progress) => ({
+                ...progress,
+                [file.name]: 100,
+              }));
+              resolve();
+            },
+            error: (error) => {
+              console.error(`Error al subir documento ${file.name}:`, error);
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: `Error al subir ${file.name}: ${this.getErrorMessage(error)}`,
+              });
+              reject(error);
+            },
+          });
+      });
     });
 
-    // Limpiar archivos seleccionados después de la subida
-    this.clearSelectedFiles();
+    // Esperar a que todos los archivos se suban
+    Promise.allSettled(uploadPromises).then(() => {
+      this.uploading.set(false);
+      this.uploadProgress.set({});
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: `${files.length} archivo(s) procesado(s)`,
+      });
+      this.clearSelectedFiles();
+      this.load(); // Recargar para obtener documentos actualizados
+    });
   }
 
   downloadDocument(url: string) {
@@ -587,16 +661,6 @@ export class RequirementsPage implements OnInit {
       errors.push('La descripción del requerimiento es requerida');
     }
 
-    // Validar centro de costo
-    if (!item.centroCosto || item.centroCosto.trim() === '') {
-      errors.push('El centro de costo es requerido');
-    }
-
-    // Validar fecha de emisión
-    if (!item.fechaEmision) {
-      errors.push('La fecha de emisión es requerida');
-    }
-
     // Validar fecha de requerimiento
     if (!item.fechaRequerimiento) {
       errors.push('La fecha de requerimiento es requerida');
@@ -609,32 +673,13 @@ export class RequirementsPage implements OnInit {
       if (!item.solicitante.nombre || item.solicitante.nombre.trim() === '') {
         errors.push('El nombre del solicitante es requerido');
       }
-      if (!item.solicitante.codigo || item.solicitante.codigo.trim() === '') {
-        errors.push('El código del solicitante es requerido');
-      }
+      // El código del solicitante ya no es obligatorio
       if (!item.solicitante.cargo || item.solicitante.cargo.trim() === '') {
         errors.push('El cargo del solicitante es requerido');
       }
     }
 
-    // Validar aprobador (opcional, pero si se proporciona debe estar completo)
-    if (item.aprobador) {
-      if (!item.aprobador.nombre || item.aprobador.nombre.trim() === '') {
-        errors.push(
-          'El nombre del aprobador es requerido si se proporciona información del aprobador'
-        );
-      }
-      if (!item.aprobador.codigo || item.aprobador.codigo.trim() === '') {
-        errors.push(
-          'El código del aprobador es requerido si se proporciona información del aprobador'
-        );
-      }
-      if (!item.aprobador.cargo || item.aprobador.cargo.trim() === '') {
-        errors.push(
-          'El cargo del aprobador es requerido si se proporciona información del aprobador'
-        );
-      }
-    }
+    // El aprobador es completamente opcional, no se valida
 
     return errors;
   }
@@ -659,12 +704,6 @@ export class RequirementsPage implements OnInit {
           if (message.includes('descripcion should not be empty')) {
             return 'La descripción del requerimiento es requerida';
           }
-          if (message.includes('centroCosto should not be empty')) {
-            return 'El centro de costo es requerido';
-          }
-          if (message.includes('fechaEmision should not be empty')) {
-            return 'La fecha de emisión es requerida';
-          }
           if (message.includes('fechaRequerimiento should not be empty')) {
             return 'La fecha de requerimiento es requerida';
           }
@@ -673,9 +712,6 @@ export class RequirementsPage implements OnInit {
           }
           if (message.includes('solicitante.nombre should not be empty')) {
             return 'El nombre del solicitante es requerido';
-          }
-          if (message.includes('solicitante.codigo should not be empty')) {
-            return 'El código del solicitante es requerido';
           }
           if (message.includes('solicitante.cargo should not be empty')) {
             return 'El cargo del solicitante es requerido';

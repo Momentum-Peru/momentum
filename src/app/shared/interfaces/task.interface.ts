@@ -13,6 +13,17 @@ export interface TaskFile {
   uploadedAt: Date | string;
 }
 
+export interface TaskAttachment {
+  _id?: string;
+  fileName: string;
+  originalName: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  uploadedBy: string;
+  description?: string;
+}
+
 export interface TaskComment {
   _id: string;
   taskId: string;
@@ -20,7 +31,14 @@ export interface TaskComment {
   createdBy: string; // ID del usuario que creó el comentario
   createdAt: Date | string;
   updatedAt: Date | string;
-  attachments?: TaskFile[];
+  attachments?: TaskAttachment[];
+}
+
+export interface TaskSubtask {
+  _id?: string;
+  title: string;
+  completed: boolean;
+  order?: number;
 }
 
 export interface Task {
@@ -29,15 +47,19 @@ export interface Task {
   description?: string;
   status: TaskStatus;
   priority: 'Baja' | 'Media' | 'Alta' | 'Crítica';
-  assignedTo: string; // User ID
+  assignedTo: string | { _id?: string; name?: string; email?: string }; // User ID o objeto poblado
   assignedToName?: string; // User name for display
-  createdBy: string; // User ID
+  createdBy: string | { _id?: string; name?: string; email?: string }; // User ID o objeto poblado
   createdByName?: string; // User name for display
   dueDate?: Date | string;
   tags: string[];
   boardId?: string; // Board ID (opcional)
+  projectId?: string | { _id?: string; name?: string; code?: string }; // Project ID o objeto poblado (opcional)
   info?: TaskComment[]; // Comentarios/información de la tarea
   files?: TaskFile[];
+  subtasks?: TaskSubtask[];
+  attachments?: TaskAttachment[];
+  incompleteReason?: string;
   createdAt: Date | string;
   updatedAt: Date | string;
   isActive: boolean;
@@ -53,6 +75,10 @@ export interface CreateTaskRequest {
   dueDate?: Date | string;
   tags?: string[];
   boardId?: string;
+  projectId?: string;
+  subtasks?: TaskSubtask[];
+  attachments?: TaskAttachment[];
+  incompleteReason?: string;
 }
 
 export interface UpdateTaskRequest {
@@ -64,6 +90,10 @@ export interface UpdateTaskRequest {
   dueDate?: Date | string;
   tags?: string[];
   boardId?: string;
+  projectId?: string;
+  subtasks?: TaskSubtask[];
+  attachments?: TaskAttachment[];
+  incompleteReason?: string;
   isActive?: boolean;
 }
 
@@ -99,6 +129,7 @@ export interface TasksSearchParams {
   dueDateTo?: Date | string;
   page?: number;
   limit?: number;
+  q?: string;
 }
 
 export interface TaskStats {

@@ -8,6 +8,7 @@
       (ngModelChange)="setQuery($event)"
       class="w-full"
     />
+    @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -17,6 +18,7 @@
       aria-label="Crear nuevo TDR"
       class="w-full xl:w-auto"
     ></button>
+    }
   </div>
 
   <!-- Vista Desktop: Tabla normal -->
@@ -79,6 +81,7 @@
                 [disabled]="row.approved"
                 aria-label="Aprobar TDR"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -96,6 +99,7 @@
                 (click)="remove(row)"
                 aria-label="Eliminar TDR"
               ></button>
+              }
             </div>
           </td>
         </tr>
@@ -255,6 +259,7 @@
                 [disabled]="row.approved"
                 aria-label="Aprobar TDR"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -271,6 +276,7 @@
                 (click)="remove(row)"
                 aria-label="Eliminar TDR"
               ></button>
+              }
             </div>
           </div>
         </div>
@@ -320,7 +326,7 @@
               type="file"
               #fileInput
               multiple
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg"
+              accept="*/*"
               (change)="onFileInputChange($event)"
               class="hidden"
             />
@@ -348,10 +354,9 @@
 
               <div class="text-xs text-gray-400 space-y-1">
                 <p>
-                  <strong>Formatos soportados:</strong> PDF, DOC, DOCX, XLS, XLSX, TXT, PNG, JPG,
-                  JPEG
+                  <strong>Formatos soportados:</strong> Todos los tipos de archivo
                 </p>
-                <p><strong>Tamaño máximo:</strong> 10MB por archivo</p>
+                <p><strong>Tamaño máximo:</strong> 50MB por archivo</p>
                 <p><strong>Múltiples archivos:</strong> Puedes seleccionar varios a la vez</p>
               </div>
             </div>

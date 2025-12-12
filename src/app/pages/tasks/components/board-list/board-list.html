@@ -12,15 +12,16 @@
 
 <!-- Boards Grid -->
 @if (!loading() && !error() && boards().length > 0) {
-<div class="grid grid-cols-1 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
   @for (board of boards(); track board._id) {
   <app-board-card
     [board]="board"
     [isOwner]="isBoardOwner(board)"
-    (view)="viewBoard.emit($event)"
-    (edit)="editBoard.emit($event)"
-    (invite)="inviteUser.emit($event)"
-    (delete)="deleteBoard.emit($event)"
+    [isSelected]="selectedBoardId() === board._id"
+    (view)="viewBoard.emit(board)"
+    (edit)="editBoard.emit(board)"
+    (invite)="inviteUser.emit(board)"
+    (delete)="deleteBoard.emit(board)"
   ></app-board-card>
   }
 </div>

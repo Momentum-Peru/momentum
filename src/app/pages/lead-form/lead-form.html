@@ -1,7 +1,7 @@
 <div class="min-h-screen bg-black flex items-center justify-center p-4 lead-form-container">
   <!-- Toast para mensajes -->
   <p-toast [life]="5000"></p-toast>
-  
+
   <!-- Contenedor principal -->
   <div class="w-full max-w-md">
     <!-- Logo y header -->
@@ -14,7 +14,9 @@
       <!-- Título del formulario -->
       <div class="text-center mb-6">
         <h2 class="text-2xl font-bold text-black mb-2">Solicitud de Contacto</h2>
-        <p class="text-sm text-gray-600">Completa el formulario y nos pondremos en contacto contigo</p>
+        <p class="text-sm text-gray-600">
+          Completa el formulario y nos pondremos en contacto contigo
+        </p>
       </div>
 
       <!-- Formulario -->
@@ -46,7 +48,7 @@
         <div class="space-y-2">
           <label for="leadEmail" class="text-sm font-medium text-gray-700 flex items-center gap-2">
             <i class="pi pi-envelope text-gray-500"></i>
-            Correo electrónico
+            Correo electrónico (opcional)
           </label>
           <div class="relative">
             <input
@@ -62,6 +64,29 @@
           @if (isFieldInvalid('email')) {
           <small class="text-red-500 text-xs">
             {{ getFieldError('email') }}
+          </small>
+          }
+        </div>
+
+        <!-- Campo DNI -->
+        <div class="space-y-2">
+          <label for="leadDni" class="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <i class="pi pi-id-card text-gray-500"></i>
+            DNI
+          </label>
+          <div class="relative">
+            <input
+              id="leadDni"
+              pInputText
+              formControlName="dni"
+              placeholder="12345678"
+              class="w-full"
+              [class.p-invalid]="isFieldInvalid('dni')"
+            />
+          </div>
+          @if (isFieldInvalid('dni')) {
+          <small class="text-red-500 text-xs">
+            {{ getFieldError('dni') }}
           </small>
           }
         </div>
@@ -90,9 +115,74 @@
           }
         </div>
 
-        <!-- Campo Empresa -->
+        <!-- Campo Dirección -->
         <div class="space-y-2">
-          <label for="leadCompany" class="text-sm font-medium text-gray-700 flex items-center gap-2">
+          <label
+            for="leadAddress"
+            class="text-sm font-medium text-gray-700 flex items-center gap-2"
+          >
+            <i class="pi pi-map-marker text-gray-500"></i>
+            Dirección
+          </label>
+          <div class="relative">
+            <input
+              id="leadAddress"
+              pInputText
+              formControlName="address"
+              placeholder="Dirección completa (opcional)"
+              class="w-full"
+              [class.p-invalid]="isFieldInvalid('address')"
+            />
+          </div>
+          @if (isFieldInvalid('address')) {
+          <small class="text-red-500 text-xs">
+            {{ getFieldError('address') }}
+          </small>
+          }
+        </div>
+
+        <!-- Campo Referido por -->
+        <div class="space-y-2">
+          <label
+            for="leadReferredBy"
+            class="text-sm font-medium text-gray-700 flex items-center gap-2"
+          >
+            <i class="pi pi-share-alt text-gray-500"></i>
+            Referido por (opcional)
+          </label>
+          <div class="relative">
+            <input
+              id="leadReferredBy"
+              pInputText
+              formControlName="referredBy"
+              placeholder="Nombre de la persona o empresa que te refirió"
+              class="w-full"
+              [class.p-invalid]="isFieldInvalid('referredBy')"
+            />
+          </div>
+          @if (isFieldInvalid('referredBy')) {
+          <small class="text-red-500 text-xs">
+            {{ getFieldError('referredBy') }}
+          </small>
+          }
+        </div>
+
+        <!-- Switch Tiene Empresa -->
+        <div class="flex items-center justify-between gap-4 py-2 border-t border-gray-100 mt-2">
+          <div class="flex flex-col">
+            <span class="text-sm font-medium text-gray-700">¿Tienes empresa?</span>
+            <span class="text-xs text-gray-500">Actívalo si deseas registrar datos de empresa</span>
+          </div>
+          <p-toggleSwitch formControlName="hasCompany"></p-toggleSwitch>
+        </div>
+
+        <!-- Campo Empresa -->
+        @if (leadForm.get('hasCompany')?.value) {
+        <div class="space-y-2">
+          <label
+            for="leadCompany"
+            class="text-sm font-medium text-gray-700 flex items-center gap-2"
+          >
             <i class="pi pi-building text-gray-500"></i>
             Empresa
           </label>
@@ -112,26 +202,111 @@
           </small>
           }
         </div>
+        }
 
-        <!-- Campo DNI/RUC -->
+        <!-- Campo RUC (solo si tiene empresa) -->
+        @if (leadForm.get('hasCompany')?.value) {
         <div class="space-y-2">
-          <label for="leadTaxId" class="text-sm font-medium text-gray-700 flex items-center gap-2">
-            <i class="pi pi-id-card text-gray-500"></i>
-            DNI o RUC
+          <label for="leadRuc" class="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <i class="pi pi-briefcase text-gray-500"></i>
+            RUC
           </label>
           <div class="relative">
             <input
-              id="leadTaxId"
+              id="leadRuc"
               pInputText
-              formControlName="taxId"
+              formControlName="ruc"
               placeholder="20123456789"
               class="w-full"
-              [class.p-invalid]="isFieldInvalid('taxId')"
+              [class.p-invalid]="isFieldInvalid('ruc')"
             />
           </div>
-          @if (isFieldInvalid('taxId')) {
+          @if (isFieldInvalid('ruc')) {
           <small class="text-red-500 text-xs">
-            {{ getFieldError('taxId') }}
+            {{ getFieldError('ruc') }}
+          </small>
+          }
+        </div>
+        }
+
+        <!-- Campo Fotos -->
+        <div class="space-y-2">
+          <label for="leadPhoto" class="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <i class="pi pi-image text-gray-500"></i>
+            Fotos (opcional)
+          </label>
+          <div class="flex flex-col gap-2">
+            <input
+              id="leadPhoto"
+              #photoInput
+              type="file"
+              accept="image/*"
+              capture="environment"
+              (change)="onPhotoSelected($event)"
+              class="hidden"
+            />
+            <p-button
+              type="button"
+              icon="pi pi-image"
+              label="Tomar o seleccionar foto"
+              (click)="photoInput.click()"
+              styleClass="w-full"
+              severity="secondary"
+              [outlined]="true"
+              aria-label="Seleccionar foto"
+            ></p-button>
+
+            @if (pendingPhoto().length > 0) {
+            <div class="grid grid-cols-2 gap-2 mt-2">
+              @for (photoUrl of pendingPhotoUrls(); track $index) {
+              <div class="relative group">
+                <img
+                  [src]="photoUrl"
+                  alt="Foto seleccionada"
+                  class="w-full h-32 object-cover rounded-lg border border-gray-200"
+                />
+                <button
+                  type="button"
+                  (click)="removePendingPhoto($index)"
+                  class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Eliminar foto"
+                >
+                  <i class="pi pi-times text-xs"></i>
+                </button>
+              </div>
+              }
+            </div>
+            <p class="text-xs text-gray-500">{{ pendingPhoto().length }} foto(s) seleccionada(s)</p>
+            }
+          </div>
+        </div>
+
+        <!-- Checkbox de Política de Privacidad -->
+        <div class="space-y-2 pt-2 border-t border-gray-100">
+          <div class="flex items-start gap-2">
+            <p-checkbox
+              formControlName="acceptPrivacyPolicy"
+              [binary]="true"
+              inputId="acceptPrivacyPolicy"
+              class="mt-1 flex-shrink-0"
+            ></p-checkbox>
+            <label
+              for="acceptPrivacyPolicy"
+              class="text-sm text-gray-700 cursor-pointer flex-1 leading-tight"
+            >
+              He leído y acepto la
+              <button
+                type="button"
+                (click)="openPrivacyModal()"
+                class="text-blue-600 hover:text-blue-800 underline font-medium"
+              >
+                Política de Privacidad y Protección de Datos Personales
+              </button>
+            </label>
+          </div>
+          @if (isFieldInvalid('acceptPrivacyPolicy')) {
+          <small class="text-red-500 text-xs block ml-6">
+            {{ getFieldError('acceptPrivacyPolicy') }}
           </small>
           }
         </div>
@@ -155,3 +330,175 @@
   </div>
 </div>
 
+<!-- Modal de Política de Privacidad -->
+<p-dialog
+  [visible]="privacyModalVisible()"
+  (visibleChange)="privacyModalVisible.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', maxWidth: '800px' }"
+  [appendTo]="'body'"
+  header="Política de Privacidad y Protección de Datos Personales"
+>
+  <div
+    class="privacy-policy-content space-y-4 text-sm text-gray-700 max-h-[70vh] overflow-y-auto pr-2"
+  >
+    <!-- Introducción -->
+    <section>
+      <h3 class="font-semibold text-gray-900 mb-2">1. Introducción</h3>
+      <p>
+        Momentum, en cumplimiento con la Ley N° 29733, Ley de Protección de Datos Personales del
+        Perú, su Reglamento (Decreto Supremo N° 003-2013-JUS) y demás normativas aplicables, se
+        compromete a proteger la privacidad y confidencialidad de los datos personales que usted nos
+        proporcione a través de este formulario de contacto.
+      </p>
+    </section>
+
+    <!-- Recopilación de Información -->
+    <section>
+      <h3 class="font-semibold text-gray-900 mb-2">2. Recopilación de Información</h3>
+      <p>Los datos personales que recopilamos a través de este formulario incluyen:</p>
+      <ul class="list-disc list-inside ml-4 space-y-1 mt-2">
+        <li>Nombre completo</li>
+        <li>Correo electrónico</li>
+        <li>Número de teléfono</li>
+        <li>Dirección (opcional)</li>
+        <li>Información de empresa (si aplica)</li>
+        <li>Documento Nacional de Identidad (DNI) o Registro Único de Contribuyente (RUC)</li>
+      </ul>
+      <p class="mt-2">
+        La recopilación de estos datos se realiza de manera voluntaria y con su consentimiento
+        expreso.
+      </p>
+    </section>
+
+    <!-- Finalidad del Tratamiento -->
+    <section>
+      <h3 class="font-semibold text-gray-900 mb-2">3. Finalidad del Tratamiento de Datos</h3>
+      <p>
+        Sus datos personales serán utilizados <strong>únicamente</strong> para las siguientes
+        finalidades:
+      </p>
+      <ul class="list-disc list-inside ml-4 space-y-1 mt-2">
+        <li>
+          <strong>Comunicación directa:</strong> Para contactarlo y responder a su solicitud de
+          información o contacto.
+        </li>
+        <li>
+          <strong>Medio de comunicación:</strong> Para establecer y mantener comunicación con usted,
+          enviarle información relevante sobre nuestros productos y servicios, y responder a sus
+          consultas.
+        </li>
+      </ul>
+      <p class="mt-2 font-semibold text-gray-900">
+        Nos comprometemos a NO compartir, vender, alquilar ni transferir sus datos personales a
+        terceros bajo ninguna circunstancia, salvo que sea requerido por ley o con su autorización
+        expresa.
+      </p>
+    </section>
+
+    <!-- Consentimiento -->
+    <section>
+      <h3 class="font-semibold text-gray-900 mb-2">4. Consentimiento</h3>
+      <p>
+        Al completar y enviar este formulario, usted otorga su consentimiento libre, previo, expreso
+        e informado para que Momentum realice el tratamiento de sus datos personales conforme a las
+        finalidades descritas en esta política.
+      </p>
+      <p class="mt-2">
+        Usted puede revocar su consentimiento en cualquier momento, sin que ello afecte la legalidad
+        del tratamiento realizado con anterioridad.
+      </p>
+    </section>
+
+    <!-- Seguridad de los Datos -->
+    <section>
+      <h3 class="font-semibold text-gray-900 mb-2">5. Seguridad de los Datos Personales</h3>
+      <p>
+        Implementamos medidas técnicas, organizativas y legales adecuadas para proteger sus datos
+        personales contra el acceso no autorizado, pérdida, destrucción, alteración o divulgación
+        indebida.
+      </p>
+    </section>
+
+    <!-- Derechos ARCO -->
+    <section>
+      <h3 class="font-semibold text-gray-900 mb-2">6. Derechos del Titular de los Datos</h3>
+      <p>
+        Usted tiene derecho a ejercer los siguientes derechos sobre sus datos personales (derechos
+        ARCO):
+      </p>
+      <ul class="list-disc list-inside ml-4 space-y-1 mt-2">
+        <li>
+          <strong>Acceso:</strong> Solicitar información sobre sus datos personales que tenemos en
+          nuestro poder.
+        </li>
+        <li>
+          <strong>Rectificación:</strong> Solicitar la corrección de datos inexactos o incompletos.
+        </li>
+        <li>
+          <strong>Cancelación:</strong> Solicitar la eliminación de sus datos personales cuando
+          considere que no están siendo utilizados conforme a los principios y deberes previstos en
+          la ley.
+        </li>
+        <li>
+          <strong>Oposición:</strong> Oponerse al tratamiento de sus datos personales por motivos
+          fundados y legítimos.
+        </li>
+      </ul>
+      <p class="mt-2">
+        Para ejercer estos derechos, puede contactarnos a través de los medios indicados en la
+        sección de contacto.
+      </p>
+    </section>
+
+    <!-- Conservación de Datos -->
+    <section>
+      <h3 class="font-semibold text-gray-900 mb-2">7. Conservación de Datos</h3>
+      <p>
+        Conservaremos sus datos personales durante el tiempo necesario para cumplir con las
+        finalidades para las que fueron recopilados, y mientras exista una relación comercial o de
+        comunicación con usted.
+      </p>
+    </section>
+
+    <!-- Modificaciones -->
+    <section>
+      <h3 class="font-semibold text-gray-900 mb-2">8. Modificaciones a la Política</h3>
+      <p>
+        Momentum se reserva el derecho de modificar esta Política de Privacidad en cualquier
+        momento. Cualquier cambio será publicado en nuestro sitio web y, de ser significativo, se le
+        notificará a través de los medios de contacto proporcionados.
+      </p>
+    </section>
+
+    <!-- Contacto -->
+    <section>
+      <h3 class="font-semibold text-gray-900 mb-2">9. Contacto</h3>
+      <p>
+        Para cualquier consulta, solicitud o ejercicio de sus derechos sobre sus datos personales,
+        puede contactarnos a través de los medios de comunicación proporcionados en nuestro sitio
+        web.
+      </p>
+    </section>
+
+    <!-- Fecha de vigencia -->
+    <section class="pt-2 border-t border-gray-200">
+      <p class="text-xs text-gray-500 italic">
+        Última actualización: Diciembre 2024. Esta política es de aplicación en el territorio
+        peruano y cumple con la normativa vigente de protección de datos personales.
+      </p>
+    </section>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end">
+      <p-button
+        label="Cerrar"
+        severity="secondary"
+        (onClick)="closePrivacyModal()"
+        icon="pi pi-times"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

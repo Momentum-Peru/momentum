@@ -8,6 +8,7 @@
       (ngModelChange)="setQuery($event)"
       class="w-full"
     />
+    @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -17,6 +18,7 @@
       aria-label="Crear nuevo proyecto"
       class="w-full xl:w-auto"
     ></button>
+    }
   </div>
 
   <!-- Vista Desktop: Tabla -->
@@ -83,6 +85,7 @@
               pTooltip="Ver detalles"
               aria-label="Ver detalles del proyecto"
             ></button>
+            @if (canEdit()) {
             <button
               pButton
               icon="pi pi-pencil"
@@ -99,6 +102,7 @@
               pTooltip="Eliminar proyecto"
               aria-label="Eliminar proyecto"
             ></button>
+            }
           </td>
         </tr>
       </ng-template>
@@ -212,6 +216,7 @@
                 (click)="viewDetails(row)"
                 aria-label="Ver detalles del proyecto"
               ></button>
+              @if (canEdit()) {
               <button
                 pButton
                 icon="pi pi-pencil"
@@ -228,6 +233,7 @@
                 (click)="remove(row)"
                 aria-label="Eliminar proyecto"
               ></button>
+              }
             </div>
           </div>
         </div>
@@ -244,7 +250,8 @@
 
   <!-- Modal de edición/creación -->
   <p-dialog
-    [(visible)]="showDialog"
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
     [modal]="true"
     [style]="{ width: '50rem' }"
     [draggable]="false"
@@ -447,6 +454,168 @@
           class="w-full text-gray-900 dark:text-gray-900"
         ></textarea>
       </div>
+
+      <!-- Archivos adjuntos -->
+      <div>
+        <div class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+          Archivos adjuntos (fotos, videos, audios)
+        </div>
+
+        <!-- Archivos existentes (solo en modo edición) -->
+        @if (editing()?._id && existingAttachments() && existingAttachments()!.length > 0) {
+        <div class="mb-3">
+          <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+            Archivos existentes
+          </div>
+          <div class="space-y-2">
+            @for (attachment of existingAttachments(); track attachment._id || $index) {
+            <div
+              class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md"
+              [class.opacity-50]="attachmentsToDelete().includes(attachment._id || '')"
+            >
+              <i [class]="getFileIcon(attachment.mimeType)" class="text-gray-500"></i>
+              <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                {{ attachment.originalName }}
+              </span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">
+                {{ formatFileSize(attachment.size) }}
+              </span>
+              <a
+                [href]="attachment.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-2 py-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                title="Ver archivo"
+                (click)="$event.stopPropagation()"
+              >
+                <i class="pi pi-external-link"></i>
+              </a>
+              <button
+                type="button"
+                (click)="removeExistingAttachment(attachment._id || '')"
+                class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                [title]="
+                  attachmentsToDelete().includes(attachment._id || '')
+                    ? 'Restaurar archivo'
+                    : 'Eliminar archivo'
+                "
+              >
+                @if (attachmentsToDelete().includes(attachment._id || '')) {
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                } @else {
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                }
+              </button>
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+        <!-- Archivos nuevos seleccionados -->
+        @if (selectedFiles().length > 0) {
+        <div class="mb-3">
+          <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+            Archivos nuevos
+          </div>
+          <div class="space-y-2">
+            @for (file of selectedFiles(); track $index) {
+            <div class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+              <i class="pi pi-file text-gray-500"></i>
+              <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                {{ file.name }}
+              </span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">
+                {{ formatFileSize(file.size) }}
+              </span>
+              <button
+                type="button"
+                (click)="removeFile($index)"
+                class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                title="Eliminar archivo"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </button>
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+        <label
+          class="flex flex-col items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200"
+          [ngClass]="{
+            'border-blue-500 bg-blue-50': isDragging(),
+            'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600':
+              !isDragging()
+          }"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+        >
+          <div class="flex flex-col items-center justify-center pt-5 pb-6">
+            <svg
+              class="w-8 h-8 mb-4 transition-colors"
+              [class.text-blue-500]="isDragging()"
+              [class.text-gray-500]="!isDragging()"
+              [class.dark:text-gray-400]="!isDragging()"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
+            </svg>
+            <p
+              class="mb-2 text-sm transition-colors"
+              [class.text-blue-700]="isDragging()"
+              [class.dark:text-blue-300]="isDragging()"
+              [class.text-gray-500]="!isDragging()"
+              [class.dark:text-gray-400]="!isDragging()"
+            >
+              @if (isDragging()) {
+              <span class="font-semibold">Suelta los archivos aquí</span>
+              } @else {
+              <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta }
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              PNG, JPG, PDF, DOC, DOCX, MP4, MP3. También puedes arrastrar desde WhatsApp
+            </p>
+          </div>
+          <input
+            type="file"
+            class="hidden"
+            multiple
+            accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+            (change)="onFileSelected($event)"
+          />
+        </label>
+      </div>
     </div>
 
     <ng-template pTemplate="footer">
@@ -455,15 +624,24 @@
         label="Cancelar"
         class="p-button-text"
         (click)="closeDialog()"
+        [disabled]="uploadingFiles()"
         aria-label="Cancelar"
       ></button>
-      <button pButton label="Guardar" (click)="save()" aria-label="Guardar proyecto"></button>
+      <button
+        pButton
+        [label]="uploadingFiles() ? 'Subiendo archivos...' : 'Guardar'"
+        (click)="save()"
+        [disabled]="uploadingFiles()"
+        [loading]="uploadingFiles()"
+        aria-label="Guardar proyecto"
+      ></button>
     </ng-template>
   </p-dialog>
 
   <!-- Modal de detalles del proyecto -->
   <p-dialog
-    [(visible)]="showDetailsDialog"
+    [visible]="showDetailsDialog()"
+    (visibleChange)="showDetailsDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '60rem' }"
     [draggable]="false"
@@ -592,7 +770,7 @@
 
       <!-- Notas -->
       @if (viewingProject()?.notes) {
-      <div>
+      <div class="mb-6">
         <h3
           class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
         >
@@ -603,6 +781,67 @@
           class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-white dark:bg-gray-700 p-4 rounded border"
         >
           {{ viewingProject()?.notes }}
+        </div>
+      </div>
+      }
+
+      <!-- Archivos adjuntos -->
+      @if (viewingProject()?.attachments && viewingProject()!.attachments!.length > 0) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-paperclip text-blue-500"></i>
+          Archivos Adjuntos
+        </h3>
+        <div class="space-y-2">
+          @for (attachment of viewingProject()!.attachments!; track attachment._id || $index) {
+          <div
+            class="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+          >
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <i
+                [class]="getFileIcon(attachment.mimeType)"
+                class="text-gray-600 dark:text-gray-400 text-lg"
+              ></i>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                  {{ attachment.originalName }}
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ formatFileSize(attachment.size) }} • {{ attachment.mimeType }}
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <a
+                [href]="attachment.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                title="Abrir archivo"
+              >
+                <i class="pi pi-external-link mr-1"></i>
+                <span class="text-sm">Abrir</span>
+              </a>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      } @else if (viewingProject()) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-paperclip text-blue-500"></i>
+          Archivos Adjuntos
+        </h3>
+        <div
+          class="text-center py-8 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+        >
+          <i class="pi pi-paperclip text-3xl mb-2"></i>
+          <p>No hay archivos adjuntos</p>
         </div>
       </div>
       }

@@ -5,26 +5,216 @@
       <img width="120" src="/images/logo_b.png" alt="Logo" />
     </div>
     <app-menu />
-    <div class="flex justify-center items-center p-4 mt-auto">
-      <p-button
-        label="Cerrar Sesión"
-        class="text-black"
-        severity="secondary"
-        (onClick)="confirmLogout()"
-      />
-    </div>
-    <div class="text-xs text-gray-400 text-center mb-5">© Momentum 2025</div>
+    <div class="text-xs text-gray-400 text-center mb-5 mt-auto">© Momentum 2025</div>
   </div>
 
   <!-- Contenido principal -->
-  <div class="flex-1 bg-white m-3 rounded-3xl p-5 flex flex-col relative min-w-0 overflow-hidden">
-    <!-- Barra superior: selector de empresa -->
-    <div class="flex items-center justify-end gap-2 mb-4 px-10">
-      <span class="text-sm text-gray-600">Empresa:</span>
-      <span class="px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">
-        {{ tenantName() || 'No seleccionada' }}
-      </span>
-      <p-button icon="pi pi-building" label="Cambiar" [text]="true" (onClick)="changeCompany()" />
+  <div
+    class="flex-1 bg-white m-2 sm:m-3 rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-5 flex flex-col relative min-w-0 overflow-hidden"
+  >
+    <!-- Barra superior: selector de empresa y perfil de usuario -->
+    <div
+      class="flex sm:flex-row items-stretch sm:items-center justify-between sm:justify-end gap-2 sm:gap-3 lg:gap-4 mb-3 sm:mb-4 px-2 sm:px-4 lg:px-6 xl:px-10 flex-wrap"
+    >
+      <!-- Selector de empresa -->
+      <div class="flex items-center gap-2 w-full sm:w-auto sm:order-1 mt-3 lg:mt-0">
+        <div class="flex items-center justify-end gap-2 flex-shrink-0 sm:hidden">
+          <!-- Campana de notificaciones (solo mobile) -->
+          <app-notifications-bell />
+          
+          <!-- Foto de perfil con menú desplegable (solo mobile) -->
+          <div class="relative">
+            <button
+              type="button"
+              data-user-menu-button
+              (click)="toggleUserMenu()"
+              class="focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 rounded-full transition-transform hover:scale-105 active:scale-95"
+              [attr.aria-label]="'Menú de usuario: ' + (userName() || 'Usuario')"
+              [attr.aria-expanded]="showUserMenu()"
+            >
+              @if (userProfilePicture()) {
+              <img
+                [src]="userProfilePicture()!"
+                [alt]="userName() || 'Usuario'"
+                class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full object-cover border-2 border-gray-300 shadow-md"
+              />
+              } @else {
+              <div
+                class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-gray-800 to-black flex items-center justify-center border-2 border-gray-300 shadow-md"
+              >
+                <i class="pi pi-user text-white text-sm sm:text-base md:text-lg"></i>
+              </div>
+              }
+            </button>
+
+            <!-- Menú desplegable -->
+            @if (showUserMenu()) {
+            <div
+              data-user-menu
+              class="absolute left-0 lg:right-0 mt-2 w-[calc(100vw-3rem)] sm:w-56 md:w-64 max-w-[280px] sm:max-w-none bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 animate-fade-in"
+            >
+              <!-- Información del usuario -->
+              <div
+                class="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-200 dark:border-gray-700"
+              >
+                <div class="flex items-center gap-2.5 sm:gap-3">
+                  @if (userProfilePicture()) {
+                  <img
+                    [src]="userProfilePicture()!"
+                    [alt]="userName() || 'Usuario'"
+                    class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full object-cover border-2 border-gray-300 flex-shrink-0"
+                  />
+                  } @else {
+                  <div
+                    class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-gray-800 to-black flex items-center justify-center border-2 border-gray-300 flex-shrink-0"
+                  >
+                    <i class="pi pi-user text-white text-lg sm:text-xl"></i>
+                  </div>
+                  }
+                  <div class="flex-1 min-w-0">
+                    <p
+                      class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate"
+                    >
+                      {{ userName() || 'Usuario' }}
+                    </p>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {{ userEmail() || '' }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Opciones del menú -->
+              <div class="py-1">
+                <button
+                  type="button"
+                  (click)="goToProfile()"
+                  class="w-full px-3 sm:px-4 py-2.5 sm:py-2.5 text-left text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors active:bg-gray-200 dark:active:bg-gray-600"
+                >
+                  <i class="pi pi-user-edit"></i>
+                  <span>Editar Perfil</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="confirmLogout()"
+                  class="w-full px-3 sm:px-4 py-2.5 sm:py-2.5 text-left text-xs sm:text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors active:bg-red-100 dark:active:bg-red-900/30"
+                >
+                  <i class="pi pi-sign-out"></i>
+                  <span>Cerrar Sesión</span>
+                </button>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+        <span class="hidden sm:inline text-xs sm:text-sm text-gray-600 whitespace-nowrap"
+          >Empresa:</span
+        >
+        <span
+          class="px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs sm:text-sm font-medium truncate max-w-[100px] sm:max-w-none"
+          [title]="tenantName() || 'No seleccionada'"
+        >
+          {{ tenantName() || 'No seleccionada' }}
+        </span>
+        <p-button
+          icon="pi pi-building"
+          label="Cambiar"
+          [text]="true"
+          (onClick)="changeCompany()"
+          class="text-xs sm:text-sm flex-shrink-0"
+          styleClass="m-0 p-0"
+        />
+      </div>
+
+      <!-- Notificaciones y Perfil de usuario (solo desktop) -->
+      <div class="hidden sm:flex items-center justify-end gap-3 flex-shrink-0 sm:order-2">
+        <!-- Campana de notificaciones -->
+        <app-notifications-bell />
+        
+        <!-- Perfil de usuario -->
+        <!-- Foto de perfil con menú desplegable -->
+        <div class="relative">
+          <button
+            type="button"
+            data-user-menu-button
+            (click)="toggleUserMenu()"
+            class="focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 rounded-full transition-transform hover:scale-105 active:scale-95"
+            [attr.aria-label]="'Menú de usuario: ' + (userName() || 'Usuario')"
+            [attr.aria-expanded]="showUserMenu()"
+          >
+            @if (userProfilePicture()) {
+            <img
+              [src]="userProfilePicture()!"
+              [alt]="userName() || 'Usuario'"
+              class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full object-cover border-2 border-gray-300 shadow-md"
+            />
+            } @else {
+            <div
+              class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-gray-800 to-black flex items-center justify-center border-2 border-gray-300 shadow-md"
+            >
+              <i class="pi pi-user text-white text-sm sm:text-base md:text-lg"></i>
+            </div>
+            }
+          </button>
+
+          <!-- Menú desplegable -->
+          @if (showUserMenu()) {
+          <div
+            data-user-menu
+            class="absolute right-0 mt-2 w-[calc(100vw-3rem)] sm:w-56 md:w-64 max-w-[280px] sm:max-w-none bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 animate-fade-in"
+          >
+            <!-- Información del usuario -->
+            <div class="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-200 dark:border-gray-700">
+              <div class="flex items-center gap-2.5 sm:gap-3">
+                @if (userProfilePicture()) {
+                <img
+                  [src]="userProfilePicture()!"
+                  [alt]="userName() || 'Usuario'"
+                  class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full object-cover border-2 border-gray-300 flex-shrink-0"
+                />
+                } @else {
+                <div
+                  class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-gray-800 to-black flex items-center justify-center border-2 border-gray-300 flex-shrink-0"
+                >
+                  <i class="pi pi-user text-white text-lg sm:text-xl"></i>
+                </div>
+                }
+                <div class="flex-1 min-w-0">
+                  <p
+                    class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate"
+                  >
+                    {{ userName() || 'Usuario' }}
+                  </p>
+                  <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
+                    {{ userEmail() || '' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Opciones del menú -->
+            <div class="py-1">
+              <button
+                type="button"
+                (click)="goToProfile()"
+                class="w-full px-3 sm:px-4 py-2.5 sm:py-2.5 text-left text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors active:bg-gray-200 dark:active:bg-gray-600"
+              >
+                <i class="pi pi-user-edit"></i>
+                <span>Editar Perfil</span>
+              </button>
+              <button
+                type="button"
+                (click)="confirmLogout()"
+                class="w-full px-3 sm:px-4 py-2.5 sm:py-2.5 text-left text-xs sm:text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors active:bg-red-100 dark:active:bg-red-900/30"
+              >
+                <i class="pi pi-sign-out"></i>
+                <span>Cerrar Sesión</span>
+              </button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
     </div>
     <!-- Contenido de la página -->
     <div class="pt-0 flex-1 overflow-y-auto overflow-x-hidden">

@@ -8,10 +8,14 @@ import { CreateLeadRequest, Lead } from '../../../shared/interfaces/lead.interfa
  */
 export interface LeadFormData {
   name: string;
-  email: string;
+  email?: string;
   phone: string;
-  company: string;
-  taxId: string;
+  address?: string;
+  referredBy?: string;
+  hasCompany?: boolean;
+  company?: string;
+  dni?: string;
+  ruc?: string;
 }
 
 /**
@@ -29,18 +33,36 @@ export class LeadFormService {
    * y envía el lead al servidor
    */
   submitLead(formData: LeadFormData): Observable<Lead> {
+    // Construir las notas con información adicional
+    const notesParts: string[] = [];
+    if (formData.dni) {
+      notesParts.push(`DNI: ${formData.dni}`);
+    }
+    if (formData.referredBy) {
+      notesParts.push(`Referido por: ${formData.referredBy}`);
+    }
+    const notes = notesParts.length > 0 ? notesParts.join(' | ') : undefined;
+
     const leadRequest: CreateLeadRequest = {
       name: formData.name,
       contact: {
         name: formData.name,
-        email: formData.email,
+        email: formData.email || undefined,
         phone: formData.phone
       },
-      company: {
-        name: formData.company,
-        taxId: formData.taxId
-      },
-      source: 'WEBSITE',
+      company: formData.hasCompany
+        ? {
+          name: formData.company,
+          taxId: formData.ruc
+        }
+        : undefined,
+      location: formData.address
+        ? {
+          direccion: formData.address
+        }
+        : undefined,
+      source: formData.referredBy ? 'REFERRAL' : 'WEBSITE',
+      notes: notes,
       status: 'NEW'
     };
 

@@ -17,6 +17,15 @@
       <div class="bg-white rounded-md border p-4 space-y-3">
         <label for="titulo" class="text-sm text-gray-600">Título</label>
         <input id="titulo" pInputText [(ngModel)]="form.titulo" name="titulo" class="w-full" />
+        <label for="description" class="text-sm text-gray-600">Descripción</label>
+        <textarea
+          id="description"
+          pTextarea
+          rows="2"
+          [(ngModel)]="form.description"
+          name="description"
+          class="w-full"
+        ></textarea>
         <label for="atravesar" class="text-sm text-gray-600">Atravesar</label>
         <textarea
           id="atravesar"
@@ -26,7 +35,7 @@
           name="atravesar"
           class="w-full"
         ></textarea>
-        <label for="planDesc" class="text-sm text-gray-600">Plan - Descripción</label>
+        <label for="planDesc" class="text-sm text-gray-600">Plan</label>
         <textarea
           id="planDesc"
           pTextarea
@@ -100,16 +109,12 @@
           @for (day of filteredCalendarDays(); track day.fecha) {
           <div
             class="border rounded-md p-3 hover:border-blue-400 transition-colors flex flex-col gap-2 cursor-pointer min-h-[100px]"
-            (click)="day.accionable ? openEdit(day.accionable) : openAdd(day.fecha)"
-            (keyup.enter)="day.accionable ? openEdit(day.accionable) : openAdd(day.fecha)"
-            (keyup.space)="day.accionable ? openEdit(day.accionable) : openAdd(day.fecha)"
+            (click)="goToDayDetail(day.fecha)"
+            (keyup.enter)="goToDayDetail(day.fecha)"
+            (keyup.space)="goToDayDetail(day.fecha)"
             tabindex="0"
             role="button"
-            [attr.aria-label]="
-              day.accionable
-                ? 'Editar accionable del día ' + getDayNumber(day.fecha)
-                : 'Agregar accionable al día ' + getDayNumber(day.fecha)
-            "
+            [attr.aria-label]="'Ver detalle del día ' + getDayNumber(day.fecha)"
           >
             <div class="text-lg font-semibold text-gray-700">{{ getDayNumber(day.fecha) }}</div>
             @if (day.accionable) {

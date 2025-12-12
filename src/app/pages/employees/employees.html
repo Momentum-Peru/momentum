@@ -10,12 +10,13 @@
   <div class="flex flex-wrap items-center gap-2">
     <input
       pInputText
-      placeholder="Buscar por nombre, apellido, DNI, correo o número de seguro social..."
+      placeholder="Buscar por nombre, apellido, DNI, correo o cargo..."
       [ngModel]="query()"
       (ngModelChange)="setQuery($event)"
       name="searchQuery"
       class="flex-1 min-w-[200px]"
     />
+    @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -25,6 +26,7 @@
       class="w-full xl:w-auto"
       aria-label="Crear nuevo empleado"
     ></button>
+    }
   </div>
 
   <!-- Vista Desktop: Tabla -->
@@ -54,7 +56,7 @@
           <td>{{ row.nombre }}</td>
           <td>{{ row.apellido }}</td>
           <td>{{ row.dni }}</td>
-          <td>{{ row.correo }}</td>
+          <td>{{ row.correo || '-' }}</td>
           <td>{{ row.telefono || '-' }}</td>
           <td>{{ row.cargo || '-' }}</td>
           <td>
@@ -81,6 +83,7 @@
               tooltipPosition="top"
               aria-label="Ver detalles del empleado"
             ></button>
+            @if (canEdit()) {
             <button
               pButton
               icon="pi pi-pencil"
@@ -99,6 +102,7 @@
               tooltipPosition="top"
               aria-label="Eliminar empleado"
             ></button>
+            }
           </td>
         </tr>
       </ng-template>
@@ -132,7 +136,7 @@
           </div>
           <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">DNI: {{ row.dni }}</div>
           <div class="text-sm text-gray-500 dark:text-gray-400">
-            {{ row.correo }}
+            {{ row.correo || '-' }}
           </div>
         </div>
         <div class="flex items-center gap-2 ml-2">
@@ -181,12 +185,6 @@
             </div>
           </div>
           }
-          <div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">N° Seguro Social</div>
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              {{ row.numeroSeguroSocial }}
-            </div>
-          </div>
           @if (row.accountNumber || row.bank || row.bankCode || row.accountType) {
           <div class="col-span-2 border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
             <div class="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Información Bancaria</div>
@@ -229,6 +227,7 @@
             (click)="viewItem(row)"
             aria-label="Ver detalles del empleado"
           ></button>
+          @if (canEdit()) {
           <button
             pButton
             icon="pi pi-pencil"
@@ -245,6 +244,7 @@
             (click)="remove(row)"
             aria-label="Eliminar empleado"
           ></button>
+          }
         </div>
       </div>
       }
@@ -323,7 +323,7 @@
         </div>
         <div>
           <label for="employeeCorreo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
-            Correo *
+            Correo
           </label>
           <input
             id="employeeCorreo"
@@ -334,7 +334,6 @@
             name="correo"
             placeholder="correo@example.com"
             class="w-full"
-            required
           />
         </div>
       </div>
@@ -383,24 +382,8 @@
       </div>
 
       <div>
-        <label for="employeeNumeroSeguroSocial" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
-          Número de Seguro Social *
-        </label>
-        <input
-          id="employeeNumeroSeguroSocial"
-          pInputText
-          [ngModel]="e.numeroSeguroSocial"
-          (ngModelChange)="onEditChange('numeroSeguroSocial', $event)"
-          name="numeroSeguroSocial"
-          placeholder="12345678901"
-          class="w-full"
-          required
-        />
-      </div>
-
-      <div>
         <label for="employeeUsuario" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
-          Usuario *
+          Usuario
         </label>
         <p-select
           id="employeeUsuario"
@@ -412,7 +395,6 @@
           name="userId"
           placeholder="Seleccionar usuario"
           class="w-full"
-          [disabled]="!!e._id"
           [appendTo]="'body'"
         >
           <ng-template let-user pTemplate="item">
@@ -564,7 +546,7 @@
         <div>
           <span class="block text-xs text-gray-500 dark:text-white mb-1">Correo</span>
           <div class="font-medium text-gray-700 dark:text-white break-words">
-            {{ v.correo }}
+            {{ v.correo || '-' }}
           </div>
         </div>
         <div>
@@ -600,12 +582,6 @@
           </div>
         </div>
         }
-        <div>
-          <span class="block text-xs text-gray-500 dark:text-white mb-1"
-            >Número de Seguro Social</span
-          >
-          <div class="font-medium text-gray-700 dark:text-white">{{ v.numeroSeguroSocial }}</div>
-        </div>
         @if (v.createdAt) {
         <div>
           <span class="block text-xs text-gray-500 dark:text-white mb-1">Fecha de creación</span>

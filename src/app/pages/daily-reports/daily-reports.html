@@ -71,6 +71,7 @@
       </ng-template>
     </p-select>
     }
+    @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -80,6 +81,7 @@
       class="w-full xl:w-auto"
       aria-label="Crear nuevo reporte diario"
     ></button>
+    }
   </div>
 
   <!-- Vista Desktop: Tabla -->
@@ -142,6 +144,7 @@
               (click)="viewItem(row)"
               aria-label="Ver detalles del reporte"
             ></button>
+            @if (canEdit()) {
             <button
               pButton
               icon="pi pi-pencil"
@@ -156,6 +159,7 @@
               (click)="remove(row)"
               aria-label="Eliminar reporte"
             ></button>
+            }
           </td>
         </tr>
       </ng-template>
@@ -228,6 +232,7 @@
               (click)="viewItem(row)"
               aria-label="Ver detalles del reporte"
             ></button>
+            @if (canEdit()) {
             <button
               pButton
               icon="pi pi-pencil"
@@ -244,6 +249,7 @@
               (click)="remove(row)"
               aria-label="Eliminar reporte"
             ></button>
+            }
           </div>
         </div>
       </div>
@@ -266,6 +272,34 @@
     <ng-template pTemplate="header">
       {{ editing()?._id ? 'Editar reporte' : 'Nuevo reporte' }}
     </ng-template>
+
+    <!-- Indicador de carga de archivos -->
+    @if (uploadingFiles()) {
+    <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+      <div class="flex items-center gap-3">
+        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+        <div class="flex-1">
+          <div class="text-sm font-medium text-blue-900 dark:text-blue-100">
+            Subiendo {{ uploadingFileType() === 'audio' ? 'audio' : uploadingFileType() === 'video' ? 'video' : uploadingFileType() === 'photo' ? 'foto' : 'documento' }}...
+          </div>
+          @if (uploadingFileName()) {
+          <div class="text-xs text-blue-700 dark:text-blue-300 mt-1">
+            {{ uploadingFileName() }}
+          </div>
+          }
+          <div class="mt-2 w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+            <div
+              class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              [style.width.%]="uploadProgress()"
+            ></div>
+          </div>
+          <div class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+            {{ uploadProgress().toFixed(0) }}%
+          </div>
+        </div>
+      </div>
+    </div>
+    }
 
     <div class="grid gap-4">
       <!-- Fecha y Hora -->

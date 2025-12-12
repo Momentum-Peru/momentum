@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 
 // PrimeNG Components
 import { ButtonModule } from 'primeng/button';
@@ -35,7 +36,7 @@ import {
   UpdateBoardRequest,
   InviteUserRequest,
 } from '../../shared/interfaces/board.interface';
-import { Task, DragDropEvent } from '../../shared/interfaces/task.interface';
+import { Task, DragDropEvent, TasksSearchParams } from '../../shared/interfaces/task.interface';
 
 /**
  * Componente principal de gestión de tareas con tableros
@@ -79,6 +80,8 @@ export class TasksPage implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   // Signals
   public readonly showBoardForm = signal<boolean>(false);
@@ -94,11 +97,52 @@ export class TasksPage implements OnInit {
   public readonly boardInviteLoading = signal<boolean>(false);
   public readonly editingBoardFromList = signal<Board | null>(null);
   public readonly invitingBoardFromList = signal<Board | null>(null);
+  public readonly taskFilters = signal<TasksSearchParams>({});
+  public readonly availableTags = signal<string[]>([]);
 
   // Computed
   public readonly currentUserId = computed(() => {
     const user = this.authService.getCurrentUser();
     return user?.id || '';
+  });
+
+  /**
+   * Usuarios disponibles para el filtro "asignado a"
+   * Solo incluye los usuarios que pertenecen al tablero actual (owner + members)
+   */
+  public readonly availableUsers = computed<{ label: string; value: string }[]>(() => {
+    const board = this.selectedBoard();
+    if (!board) {
+      return [];
+    }
+
+    const users: { label: string; value: string }[] = [];
+
+    // Agregar el owner
+    if (board.owner && board.owner._id) {
+      users.push({
+        label: board.owner?.name || board.owner?.email || 'Sin nombre',
+        value: board.owner._id,
+      });
+    }
+
+    // Agregar los members
+    if (board.members && Array.isArray(board.members)) {
+      board.members.forEach((member) => {
+        if (member && member._id) {
+          // Evitar duplicados (por si el owner también está en members)
+          const isDuplicate = users.some((u) => u.value === member._id);
+          if (!isDuplicate) {
+            users.push({
+              label: member?.name || member?.email || 'Sin nombre',
+              value: member._id,
+            });
+          }
+        }
+      });
+    }
+
+    return users;
   });
 
   public readonly tasksByStatus = computed(() => {
@@ -165,13 +209,13 @@ export class TasksPage implements OnInit {
   public readonly isBoardOwner = computed(() => {
     const board = this.selectedBoard();
     const userId = this.currentUserId();
-    return board ? board.owner._id === userId : false;
+    return board && board.owner ? board.owner._id === userId : false;
   });
 
   public readonly existingMemberIds = computed(() => {
     const board = this.invitingBoardFromList() || this.selectedBoard();
-    if (!board) return [];
-    return [board.owner._id, ...board.members.map((m) => m._id)];
+    if (!board || !board.owner) return [];
+    return [board.owner._id, ...(board.members || []).map((m) => m._id)];
   });
 
   public readonly pendingInvitations = signal<Board[]>([]);
@@ -195,11 +239,144 @@ export class TasksPage implements OnInit {
         this.isEditingTask.set(false);
       }
     });
+
+    // Efecto para cargar todas las etiquetas cuando se selecciona un tablero
+    effect(() => {
+      const board = this.selectedBoard();
+      if (board) {
+        // Cargar todas las etiquetas del tablero (sin filtros)
+        const allTagsParams: TasksSearchParams = { boardId: board._id };
+        this.tasksService.getTasks(allTagsParams).subscribe({
+          next: (response) => {
+            const tagsSet = new Set<string>();
+            (response.data || []).forEach((task) => {
+              if (task.tags && Array.isArray(task.tags)) {
+                task.tags.forEach((tag) => tagsSet.add(tag));
+              }
+            });
+            this.availableTags.set(Array.from(tagsSet).sort());
+          },
+          error: () => {
+            // Error silencioso
+          },
+        });
+      }
+    });
   }
 
   ngOnInit(): void {
     this.loadBoards();
     this.loadPendingInvitations();
+
+    // Leer parámetros de ruta (boardId)
+    this.route.params.subscribe((params) => {
+      const boardId = params['boardId'];
+      if (boardId) {
+        // Verificar primero si el tablero está en la lista local
+        const boardInList = this.boardsService.boards().find((b) => b._id === boardId);
+
+        if (boardInList) {
+          // Si está en la lista, usarlo directamente
+          this.selectedBoard.set(boardInList);
+          this.loadBoardTasks(boardId);
+        } else {
+          // Si no está en la lista, intentar cargarlo desde el backend
+          this.boardsService.getById(boardId).subscribe({
+            next: (board) => {
+              this.selectedBoard.set(board);
+              this.loadBoardTasks(boardId);
+            },
+            error: () => {
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No tienes acceso a este tablero o no existe',
+              });
+              // Si no se puede cargar, volver a la lista
+              this.router.navigate(['/tasks'], { replaceUrl: true });
+              this.selectedBoard.set(null);
+            },
+          });
+        }
+      } else {
+        // Si no hay boardId, limpiar el tablero seleccionado
+        this.selectedBoard.set(null);
+        this.tasksService.clearState();
+      }
+    });
+
+    // Leer query params para acciones desde notificaciones
+    this.route.queryParams.subscribe((params) => {
+      // Si viene showInvitations=true, abrir el modal de invitaciones
+      if (params['showInvitations'] === 'true') {
+        this.openBoardInvitations();
+        // NO intentar cargar el tablero directamente si es una invitación pendiente
+        // porque el usuario aún no tiene acceso hasta que acepte la invitación
+        // El modal de invitaciones mostrará todas las invitaciones pendientes
+        // Limpiar query params
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: {},
+          replaceUrl: true,
+        });
+      }
+
+      // Si viene taskId, cargar la tarea y mostrar su tablero
+      if (params['taskId']) {
+        this.tasksService.getTaskById(params['taskId']).subscribe({
+          next: (task) => {
+            // Obtener el boardId de la tarea
+            const boardId =
+              typeof task.boardId === 'string'
+                ? task.boardId
+                : typeof task.boardId === 'object' && task.boardId !== null && '_id' in task.boardId
+                ? String((task.boardId as { _id?: string })._id || task.boardId)
+                : task.boardId
+                ? String(task.boardId)
+                : undefined;
+
+            if (boardId) {
+              // Navegar al tablero y luego mostrar la tarea
+              this.router
+                .navigate(['/tasks', boardId], { queryParams: { taskId: params['taskId'] } })
+                .then(() => {
+                  // Cargar el tablero y luego mostrar la tarea
+                  this.boardsService.getById(boardId).subscribe({
+                    next: (board) => {
+                      this.selectedBoard.set(board);
+                      this.loadBoardTasks(boardId);
+                      // Mostrar la tarea después de cargar el tablero
+                      setTimeout(() => {
+                        this.viewTaskDetails(task);
+                      }, 100);
+                    },
+                    error: () => {
+                      // Si no se puede cargar el tablero, solo mostrar la tarea
+                      this.viewTaskDetails(task);
+                    },
+                  });
+                });
+            } else {
+              // Si la tarea no tiene tablero, solo mostrar la tarea
+              this.viewTaskDetails(task);
+            }
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo cargar la tarea',
+            });
+          },
+        });
+        // Limpiar query params
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: {},
+          replaceUrl: true,
+        });
+      }
+    });
   }
 
   /**
@@ -208,7 +385,8 @@ export class TasksPage implements OnInit {
   private loadBoards(): void {
     this.boardsService.getAll().subscribe({
       next: () => {
-        // Tableros cargados exitosamente
+        // Ya no seleccionamos automáticamente el primer tablero
+        // El usuario debe hacer clic para ver un tablero
       },
       error: () => {
         this.messageService.add({
@@ -239,7 +417,25 @@ export class TasksPage implements OnInit {
    * Refresca la lista de tableros
    */
   public refreshBoards(): void {
-    this.boardsService.refresh();
+    this.boardsService.getAll().subscribe({
+      next: () => {
+        // Verificar si el tablero seleccionado todavía está en la lista
+        const selectedBoardId = this.selectedBoard()?._id;
+        if (selectedBoardId) {
+          const boardStillExists = this.boardsService
+            .boards()
+            .some((board) => board._id === selectedBoardId);
+          // Si el tablero ya no está en la lista, significa que el usuario ya no tiene acceso
+          if (!boardStillExists) {
+            this.router.navigate(['/tasks']);
+            this.selectedBoard.set(null);
+          }
+        }
+      },
+      error: () => {
+        // Error silencioso, la lista ya está actualizada localmente
+      },
+    });
   }
 
   /**
@@ -299,16 +495,17 @@ export class TasksPage implements OnInit {
     // Determinar si estamos editando basándose en el flag de edición y si hay un board
     // Esto es más confiable que solo verificar si hay un board, ya que el estado puede estar desincronizado
     const isEditing = this.isEditingBoard();
-    const board = isEditing ? (this.editingBoardFromList() || this.selectedBoard()) : null;
+    const board = isEditing ? this.editingBoardFromList() || this.selectedBoard() : null;
     const wasEditing = !!board && isEditing;
     const boardId = board?._id;
 
-    const operation = wasEditing && board
-      ? this.boardsService.update(board._id, data as UpdateBoardRequest)
-      : this.boardsService.create(data as CreateBoardRequest);
+    const operation =
+      wasEditing && board
+        ? this.boardsService.update(board._id, data as UpdateBoardRequest)
+        : this.boardsService.create(data as CreateBoardRequest);
 
     operation.subscribe({
-      next: () => {
+      next: (savedBoard) => {
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
@@ -326,6 +523,9 @@ export class TasksPage implements OnInit {
               this.loadBoardTasks(boardId);
             },
           });
+        } else if (!wasEditing && savedBoard) {
+          // Si creamos un nuevo tablero, navegar a su vista
+          this.router.navigate(['/tasks', savedBoard._id]);
         }
 
         this.boardFormLoading.set(false);
@@ -345,15 +545,39 @@ export class TasksPage implements OnInit {
    * Maneja la visualización de un tablero
    */
   public onViewBoard(board: Board): void {
-    this.selectedBoard.set(board);
-    this.loadBoardTasks(board._id);
+    // Navegar a la ruta del tablero
+    this.router.navigate(['/tasks', board._id]);
   }
 
   /**
    * Carga las tareas de un tablero
    */
-  private loadBoardTasks(boardId: string): void {
-    this.tasksService.getTasks({ boardId }).subscribe({
+  private loadBoardTasks(boardId: string, filters?: TasksSearchParams): void {
+    const searchParams: TasksSearchParams = {
+      boardId,
+      ...filters,
+    };
+
+    // Cargar todas las tareas del tablero (sin filtros) para extraer todas las etiquetas
+    const allTagsParams: TasksSearchParams = { boardId };
+    this.tasksService.getTasks(allTagsParams).subscribe({
+      next: (allTagsResponse) => {
+        // Extraer todas las etiquetas de todas las tareas del tablero
+        const tagsSet = new Set<string>();
+        (allTagsResponse.data || []).forEach((task) => {
+          if (task.tags && Array.isArray(task.tags)) {
+            task.tags.forEach((tag) => tagsSet.add(tag));
+          }
+        });
+        this.availableTags.set(Array.from(tagsSet).sort());
+      },
+      error: () => {
+        // Error silencioso, no es crítico para la funcionalidad principal
+      },
+    });
+
+    // Cargar las tareas filtradas para mostrar
+    this.tasksService.getTasks(searchParams).subscribe({
       next: () => {
         // Tareas cargadas exitosamente
       },
@@ -368,6 +592,31 @@ export class TasksPage implements OnInit {
   }
 
   /**
+   * Extrae todas las etiquetas únicas de las tareas
+   */
+  private extractTags(): void {
+    const tasks = this.tasksService.tasks();
+    const tagsSet = new Set<string>();
+    tasks.forEach((task) => {
+      if (task.tags && Array.isArray(task.tags)) {
+        task.tags.forEach((tag) => tagsSet.add(tag));
+      }
+    });
+    this.availableTags.set(Array.from(tagsSet).sort());
+  }
+
+  /**
+   * Maneja los cambios en los filtros
+   */
+  public onFiltersChanged(filters: TasksSearchParams): void {
+    this.taskFilters.set(filters);
+    const board = this.selectedBoard();
+    if (board) {
+      this.loadBoardTasks(board._id, filters);
+    }
+  }
+
+  /**
    * Refresca el tablero actual y sus tareas
    */
   public onRefreshBoard(): void {
@@ -378,7 +627,8 @@ export class TasksPage implements OnInit {
     this.boardsService.getById(board._id).subscribe({
       next: (refreshedBoard) => {
         this.selectedBoard.set(refreshedBoard);
-        this.loadBoardTasks(board._id);
+        const filters = this.taskFilters();
+        this.loadBoardTasks(board._id, filters);
       },
       error: () => {
         this.messageService.add({
@@ -394,8 +644,7 @@ export class TasksPage implements OnInit {
    * Vuelve a la lista de tableros
    */
   public onBackToBoards(): void {
-    this.selectedBoard.set(null);
-    this.tasksService.clearState();
+    this.router.navigate(['/tasks']);
   }
 
   /**
@@ -485,7 +734,8 @@ export class TasksPage implements OnInit {
           detail: 'Tablero eliminado',
         });
         if (this.selectedBoard()?._id === boardId) {
-          this.onBackToBoards();
+          // Si eliminamos el tablero que estamos viendo, volver a la lista
+          this.router.navigate(['/tasks']);
         }
         this.refreshBoards();
       },
@@ -527,7 +777,8 @@ export class TasksPage implements OnInit {
     this.closeTaskForm();
     const board = this.selectedBoard();
     if (board) {
-      this.loadBoardTasks(board._id);
+      const filters = this.taskFilters();
+      this.loadBoardTasks(board._id, filters);
     }
   }
 
@@ -655,5 +906,108 @@ export class TasksPage implements OnInit {
     // Solo refrescar la lista de tableros
     this.refreshBoards();
     this.loadPendingInvitations();
+  }
+
+  /**
+   * Elimina un miembro del tablero
+   */
+  public onRemoveMember(event: { board: Board; memberId: string }): void {
+    this.confirmationService.confirm({
+      message: `¿Estás seguro de que quieres eliminar a este miembro del tablero "${event.board.title}"?`,
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.boardsService
+          .removeMember(event.board._id, event.memberId, this.currentUserId())
+          .subscribe({
+            next: (updatedBoard) => {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: 'Miembro eliminado correctamente',
+              });
+
+              const currentUserId = this.currentUserId();
+              const isRemovedUserCurrentUser = event.memberId === currentUserId;
+
+              // Si el usuario eliminado es el usuario actual, eliminar inmediatamente y redirigir
+              if (isRemovedUserCurrentUser) {
+                // Eliminar de la lista local inmediatamente
+                const currentBoards = this.boardsService.boards();
+                const filteredBoards = currentBoards.filter(
+                  (board) => board._id !== event.board._id
+                );
+                this.boardsService.boards.set(filteredBoards);
+
+                // Redirigir y limpiar
+                this.router.navigate(['/tasks'], { replaceUrl: true });
+                this.selectedBoard.set(null);
+              } else {
+                // Si estamos viendo el tablero, actualizarlo
+                if (this.selectedBoard()?._id === event.board._id) {
+                  this.selectedBoard.set(updatedBoard);
+                }
+              }
+
+              // Refrescar la lista de tableros desde el backend
+              this.refreshBoards();
+            },
+            error: (error) => {
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: error?.error?.message || 'No se pudo eliminar el miembro',
+              });
+            },
+          });
+      },
+    });
+  }
+
+  /**
+   * Maneja cuando un miembro se sale del tablero
+   */
+  public onLeaveBoard(board: Board): void {
+    this.confirmationService.confirm({
+      message: `¿Estás seguro de que quieres salirte del tablero "${board.title}"?`,
+      header: 'Confirmar Salida',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Salirse',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.boardsService.leaveBoard(board._id).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Te has salido del tablero correctamente',
+            });
+
+            // Eliminar de la lista local inmediatamente (ya se hace en el servicio, pero asegurémonos)
+            const currentBoards = this.boardsService.boards();
+            const filteredBoards = currentBoards.filter((b) => b._id !== board._id);
+            this.boardsService.boards.set(filteredBoards);
+
+            // Si estamos viendo el tablero del que nos salimos, volver a la lista
+            if (this.selectedBoard()?._id === board._id) {
+              this.router.navigate(['/tasks'], { replaceUrl: true });
+              this.selectedBoard.set(null);
+            }
+
+            // Refrescar la lista de tableros desde el backend para asegurar consistencia
+            this.refreshBoards();
+          },
+          error: (error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: error?.error?.message || 'No se pudo salir del tablero',
+            });
+          },
+        });
+      },
+    });
   }
 }

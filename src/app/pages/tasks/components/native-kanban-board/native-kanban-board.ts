@@ -27,9 +27,9 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
   standalone: true,
   imports: [CommonModule, DragDropModule, NativeTaskCardComponent],
   template: `
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
       <!-- Pending Column -->
-      <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+      <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-col h-full">
         <div class="flex items-center justify-between mb-4">
           <h3
             class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
@@ -50,10 +50,10 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
           [cdkDropListData]="pendingTasks()"
           [cdkDropListConnectedTo]="['in_progress', 'completed']"
           (cdkDropListDropped)="onTaskDrop($event)"
-          class="min-h-[200px] space-y-3"
+          class="flex-1 task-column"
         >
           @for (task of pendingTasks(); track task._id) {
-          <div cdkDrag class="cursor-move">
+          <div cdkDrag class="cursor-move h-full">
             <app-native-task-card
               [task]="task"
               (edit)="onEditTask($event)"
@@ -79,12 +79,33 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
             </svg>
             <p class="text-sm">No hay tareas pendientes</p>
           </div>
+          } @if (pendingTasks().length > 0) {
+          <button
+            type="button"
+            (click)="onCreateTask()"
+            class="w-full flex items-center justify-center gap-2 px-4 py-3 mt-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
+          >
+            <svg
+              class="w-5 h-5 text-gray-500 dark:text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4v16m8-8H4"
+              ></path>
+            </svg>
+            <span>Agregar tarea</span>
+          </button>
           }
         </div>
       </div>
 
       <!-- In Progress Column -->
-      <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+      <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 flex flex-col h-full">
         <div class="flex items-center justify-between mb-4">
           <h3
             class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
@@ -105,10 +126,10 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
           [cdkDropListData]="inProgressTasks()"
           [cdkDropListConnectedTo]="['pending', 'completed']"
           (cdkDropListDropped)="onTaskDrop($event)"
-          class="min-h-[200px] space-y-3"
+          class="flex-1 task-column"
         >
           @for (task of inProgressTasks(); track task._id) {
-          <div cdkDrag class="cursor-move">
+          <div cdkDrag class="cursor-move h-full">
             <app-native-task-card
               [task]="task"
               (edit)="onEditTask($event)"
@@ -139,7 +160,7 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
       </div>
 
       <!-- Completed Column -->
-      <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+      <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 flex flex-col h-full">
         <div class="flex items-center justify-between mb-4">
           <h3
             class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
@@ -160,10 +181,10 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
           [cdkDropListData]="completedTasks()"
           [cdkDropListConnectedTo]="['pending', 'in_progress']"
           (cdkDropListDropped)="onTaskDrop($event)"
-          class="min-h-[200px] space-y-3"
+          class="flex-1 task-column"
         >
           @for (task of completedTasks(); track task._id) {
-          <div cdkDrag class="cursor-move">
+          <div cdkDrag class="cursor-move h-full">
             <app-native-task-card
               [task]="task"
               (edit)="onEditTask($event)"
@@ -198,6 +219,7 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
     `
       :host {
         display: block;
+        height: 100%;
       }
 
       .cdk-drag-preview {
@@ -237,9 +259,24 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
         border-radius: 8px;
       }
 
+      .task-column {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        align-content: start;
+        min-height: 0;
+        overflow-y: auto;
+      }
+
       .cdk-drag {
         cursor: grab;
         transition: transform 200ms ease;
+        min-height: 120px;
+      }
+
+      .cdk-drag app-native-task-card {
+        height: 100%;
+        min-height: 120px;
       }
 
       .cdk-drag:hover {
@@ -266,6 +303,7 @@ export class NativeKanbanBoardComponent implements OnInit, OnChanges {
   @Output() editTask = new EventEmitter<Task>();
   @Output() deleteTask = new EventEmitter<Task>();
   @Output() viewTask = new EventEmitter<Task>();
+  @Output() createTask = new EventEmitter<void>();
 
   // Signals para las tareas
   public readonly pendingTasks = signal<Task[]>([]);
@@ -352,5 +390,12 @@ export class NativeKanbanBoardComponent implements OnInit, OnChanges {
    */
   public onViewTask(task: Task): void {
     this.viewTask.emit(task);
+  }
+
+  /**
+   * Maneja la creación de una nueva tarea
+   */
+  public onCreateTask(): void {
+    this.createTask.emit();
   }
 }

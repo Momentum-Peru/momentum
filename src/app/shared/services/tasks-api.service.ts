@@ -1,7 +1,8 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, BehaviorSubject, tap, firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { PresignedUploadService, PresignedUrlResponse } from './presigned-upload.service';
 import {
   Task,
   CreateTaskRequest,
@@ -15,6 +16,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class TasksApiService {
   private readonly http = inject(HttpClient);
+  private readonly presignedUpload = inject(PresignedUploadService);
   private readonly baseUrl = environment.apiUrl;
 
   // Signals para el estado reactivo
@@ -59,24 +61,33 @@ export class TasksApiService {
     this.setLoading(true);
     this.setError(null);
 
-    const httpParams: Record<string, string> = {};
+    let httpParams = new HttpParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          httpParams[key] = String(value);
+          if (Array.isArray(value)) {
+            // Para arrays (como tags), agregar cada elemento por separado
+            value.forEach((item) => {
+              httpParams = httpParams.append(key, item);
+            });
+          } else if (value instanceof Date) {
+            // Para fechas, convertir a ISO string
+            httpParams = httpParams.set(key, value.toISOString());
+          } else {
+            // Para otros valores, convertir a string
+            httpParams = httpParams.set(key, String(value));
+          }
         }
       });
     }
-    return this.http
-      .get<TasksListResponse>(`${this.baseUrl}/tasks`, { params: httpParams })
-      .pipe(
-        tap((response) => {
-          this.tasks.set(response.data || []);
-          this.tasksSubject.next(response.data);
-        }),
-        tap(() => this.setLoading(false)),
-        tap({ error: (err) => this.handleError(err) })
-      );
+    return this.http.get<TasksListResponse>(`${this.baseUrl}/tasks`, { params: httpParams }).pipe(
+      tap((response) => {
+        this.tasks.set(response.data || []);
+        this.tasksSubject.next(response.data);
+      }),
+      tap(() => this.setLoading(false)),
+      tap({ error: (err) => this.handleError(err) })
+    );
   }
 
   /**
@@ -222,6 +233,141 @@ export class TasksApiService {
   }
 
   /**
+   * Sube archivos a una tarea usando Presigned URLs
+   */
+  async uploadTaskAttachments(
+    taskId: string,
+    files: File[],
+    uploadedBy: string,
+    description?: string,
+    onProgress?: (progress: number) => void
+  ): Promise<Task> {
+    this.setLoading(true);
+    this.setError(null);
+
+    try {
+      // Paso 1: Generar Presigned URLs
+      const presignedResponses: PresignedUrlResponse[] = await firstValueFrom(
+        this.http.post<PresignedUrlResponse[]>(
+          `${this.baseUrl}/tasks/${taskId}/attachments/presigned-urls`,
+          {
+            files: files.map((f) => ({
+              fileName: f.name,
+              contentType: f.type || 'application/octet-stream',
+            })),
+            expirationTime: 300, // 5 minutos
+          }
+        )
+      );
+
+      // Paso 2: Subir archivos directamente a S3
+      const uploadPromises = presignedResponses.map(
+        (presignedResponse: PresignedUrlResponse, index: number) => {
+          const file = files[index];
+          return this.presignedUpload
+            .uploadFileToS3(
+              presignedResponse.presignedUrl,
+              file,
+              file.type || 'application/octet-stream',
+              onProgress
+            )
+            .then(() => presignedResponse);
+        }
+      );
+
+      await Promise.all(uploadPromises);
+
+      // Paso 3: Confirmar subida al backend
+      const attachments = presignedResponses.map(
+        (presignedResponse: PresignedUrlResponse, index: number) => {
+          const file = files[index];
+          return {
+            publicUrl: presignedResponse.publicUrl,
+            key: presignedResponse.key,
+            originalName: file.name,
+            mimeType: file.type || 'application/octet-stream',
+            size: file.size,
+            uploadedBy,
+            description,
+          };
+        }
+      );
+
+      const updatedTask = await firstValueFrom(
+        this.http.post<Task>(`${this.baseUrl}/tasks/${taskId}/attachments/confirm`, {
+          attachments,
+        })
+      );
+
+      // Actualizar el estado local
+      const currentTasks = this.tasks();
+      const index = currentTasks.findIndex((task) => task._id === taskId);
+      if (index !== -1) {
+        currentTasks[index] = updatedTask;
+        this.tasks.set([...currentTasks]);
+        this.tasksSubject.next([...currentTasks]);
+      }
+
+      this.setLoading(false);
+      return updatedTask;
+    } catch (error) {
+      this.handleError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Actualiza el estado de una subtarea
+   */
+  updateSubtaskStatus(taskId: string, subtaskId: string, completed: boolean): Observable<Task> {
+    this.setLoading(true);
+    this.setError(null);
+
+    return this.http
+      .patch<Task>(`${this.baseUrl}/tasks/${taskId}/subtasks/${subtaskId}`, { completed })
+      .pipe(
+        tap((updatedTask) => {
+          const currentTasks = this.tasks();
+          const index = currentTasks.findIndex((task) => task._id === taskId);
+          if (index !== -1) {
+            currentTasks[index] = updatedTask;
+            this.tasks.set([...currentTasks]);
+            this.tasksSubject.next([...currentTasks]);
+          }
+        }),
+        tap(() => this.setLoading(false)),
+        tap({ error: (err) => this.handleError(err) })
+      );
+  }
+
+  /**
+   * Elimina un archivo adjunto de una tarea
+   */
+  deleteTaskAttachment(taskId: string, attachmentId: string): Observable<void> {
+    this.setLoading(true);
+    this.setError(null);
+
+    return this.http
+      .delete<void>(`${this.baseUrl}/tasks/${taskId}/attachments/${attachmentId}`)
+      .pipe(
+        tap(() => {
+          // Actualizar la tarea localmente removiendo el attachment
+          const currentTasks = this.tasks();
+          const index = currentTasks.findIndex((task) => task._id === taskId);
+          if (index !== -1 && currentTasks[index].attachments) {
+            currentTasks[index].attachments = currentTasks[index].attachments?.filter(
+              (att) => att._id !== attachmentId
+            );
+            this.tasks.set([...currentTasks]);
+            this.tasksSubject.next([...currentTasks]);
+          }
+        }),
+        tap(() => this.setLoading(false)),
+        tap({ error: (err) => this.handleError(err) })
+      );
+  }
+
+  /**
    * Limpia el estado del servicio
    */
   clearState(): void {
@@ -245,7 +391,12 @@ export class TasksApiService {
   private handleError(error: unknown): void {
     let errorMessage = 'Error desconocido';
     if (error && typeof error === 'object') {
-      if ('error' in error && error.error && typeof error.error === 'object' && 'message' in error.error) {
+      if (
+        'error' in error &&
+        error.error &&
+        typeof error.error === 'object' &&
+        'message' in error.error
+      ) {
         errorMessage = String(error.error.message);
       } else if ('message' in error && typeof error.message === 'string') {
         errorMessage = error.message;

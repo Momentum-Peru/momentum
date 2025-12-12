@@ -5,6 +5,11 @@ import { requireTenantGuard } from './guards/tenant.guard';
 
 export const routes: Routes = [
   {
+    path: 'sergio-nolasco',
+    loadComponent: () =>
+      import('./pages/personal-card/personal-card.page').then((m) => m.PersonalCardPage),
+  },
+  {
     path: 'ingreso',
     loadComponent: () => import('./pages/login/login').then((m) => m.Login),
     canActivate: [publicGuard],
@@ -25,7 +30,8 @@ export const routes: Routes = [
   },
   {
     path: 'select-company',
-    loadComponent: () => import('./pages/select-company/select-company').then((m) => m.SelectCompanyPage),
+    loadComponent: () =>
+      import('./pages/select-company/select-company').then((m) => m.SelectCompanyPage),
     canActivate: [requireAuthGuard],
   },
   {
@@ -66,9 +72,30 @@ export const routes: Routes = [
       },
       {
         path: 'projects',
-        loadComponent: () => import('./pages/projects/projects').then((m) => m.ProjectsPage),
+        children: [
+          {
+            path: 'dashboard',
+            loadComponent: () =>
+              import('./pages/projects-dashboard/projects-dashboard').then(
+                (m) => m.ProjectsDashboardPage
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/projects/dashboard' },
+          },
+          {
+            path: '',
+            loadComponent: () => import('./pages/projects/projects').then((m) => m.ProjectsPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/projects' },
+          },
+        ],
+      },
+      {
+        path: 'engineering',
+        loadComponent: () =>
+          import('./pages/engineering/engineering').then((m) => m.EngineeringPage),
         canActivate: [MenuPermissionGuard],
-        data: { menuPermission: '/projects' },
+        data: { menuPermission: '/engineering' },
       },
       {
         path: 'daily-reports',
@@ -113,9 +140,20 @@ export const routes: Routes = [
       },
       {
         path: 'tasks',
-        loadComponent: () => import('./pages/tasks/tasks').then((m) => m.TasksPage),
-        canActivate: [MenuPermissionGuard],
-        data: { menuPermission: '/tasks' },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./pages/tasks/tasks').then((m) => m.TasksPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/tasks' },
+          },
+          {
+            path: ':boardId',
+            loadComponent: () => import('./pages/tasks/tasks').then((m) => m.TasksPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/tasks' },
+          },
+        ],
       },
       {
         path: 'documents',
@@ -160,6 +198,12 @@ export const routes: Routes = [
         data: { menuPermission: '/fi' },
       },
       {
+        path: 'fi/:id/day/:date',
+        loadComponent: () => import('./pages/fi/fi-day-detail.page').then((m) => m.FiDayDetailPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/fi' },
+      },
+      {
         path: 'follow-ups',
         loadComponent: () => import('./pages/follow-ups/follow-ups').then((m) => m.FollowUpsPage),
         canActivate: [MenuPermissionGuard],
@@ -182,23 +226,44 @@ export const routes: Routes = [
         data: { menuPermission: '/user-tenants-assignment' },
       },
       {
+        path: 'profile',
+        loadComponent: () => import('./pages/profile/profile').then((m) => m.ProfilePage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/profile' },
+      },
+      {
+        path: 'logs',
+        loadComponent: () => import('./pages/logs/logs').then((m) => m.LogsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/logs' },
+      },
+      {
         path: 'payroll',
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/payroll' },
         children: [
           {
             path: '',
-            loadComponent: () => import('./pages/payroll/payroll-list/payroll-list.component').then(m => m.PayrollListComponent)
+            loadComponent: () =>
+              import('./pages/payroll/payroll-list/payroll-list.component').then(
+                (m) => m.PayrollListComponent
+              ),
           },
           {
             path: 'upload',
-            loadComponent: () => import('./pages/payroll/payroll-upload/payroll-upload.component').then(m => m.PayrollUploadComponent)
+            loadComponent: () =>
+              import('./pages/payroll/payroll-upload/payroll-upload.component').then(
+                (m) => m.PayrollUploadComponent
+              ),
           },
           {
             path: 'detail/:id',
-            loadComponent: () => import('./pages/payroll/payroll-detail/payroll-detail.component').then(m => m.PayrollDetailComponent)
-          }
-        ]
+            loadComponent: () =>
+              import('./pages/payroll/payroll-detail/payroll-detail.component').then(
+                (m) => m.PayrollDetailComponent
+              ),
+          },
+        ],
       },
       {
         path: '**',
