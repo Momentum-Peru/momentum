@@ -5,6 +5,11 @@ import { requireTenantGuard } from './guards/tenant.guard';
 
 export const routes: Routes = [
   {
+    path: 'sergio-nolasco',
+    loadComponent: () =>
+      import('./pages/personal-card/personal-card.page').then((m) => m.PersonalCardPage),
+  },
+  {
     path: 'ingreso',
     loadComponent: () => import('./pages/login/login').then((m) => m.Login),
     canActivate: [publicGuard],
