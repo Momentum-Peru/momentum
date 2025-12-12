@@ -698,6 +698,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
 
   @Input() task: Task | undefined;
   @Input() boardId?: string;
+  @Input() visible?: boolean;
   @Output() save = new EventEmitter<Task>();
   @Output() formCancel = new EventEmitter<void>();
 
@@ -808,6 +809,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
   ngOnDestroy(): void {
     // Remover listener global de paste
     document.removeEventListener('paste', this.pasteHandler);
+    // Limpiar archivos seleccionados cuando el componente se destruye
+    this.selectedFiles.set([]);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -816,6 +819,15 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
     }
     if (changes['boardId'] && this.boardId) {
       this.loadBoard();
+    }
+    // Limpiar archivos cuando el dialog se cierra (visible cambia de true a false)
+    if (changes['visible'] && !changes['visible'].firstChange) {
+      const previousValue = changes['visible'].previousValue;
+      const currentValue = changes['visible'].currentValue;
+      if (previousValue === true && currentValue === false) {
+        // El dialog se cerró, limpiar archivos
+        this.selectedFiles.set([]);
+      }
     }
   }
 
@@ -1249,6 +1261,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
    * Maneja la cancelación del formulario
    */
   public onCancel(): void {
+    // Limpiar archivos seleccionados
+    this.selectedFiles.set([]);
     this.formCancel.emit();
   }
 
@@ -1365,22 +1379,13 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
 
-    // Si el elemento activo es un input o textarea, verificar si tiene archivos
-    const activeElement = document.activeElement;
-    const isInputElement =
-      activeElement &&
-      (activeElement.tagName === 'INPUT' ||
-        activeElement.tagName === 'TEXTAREA' ||
-        activeElement.getAttribute('contenteditable') === 'true');
-
     // Si hay archivos, procesarlos y prevenir el comportamiento por defecto
     if (hasFiles) {
       event.preventDefault();
       event.stopPropagation();
 
       const files: File[] = [];
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
+      for (const item of Array.from(items)) {
         // Solo procesar archivos (no texto)
         if (item.kind === 'file') {
           const file = item.getAsFile();

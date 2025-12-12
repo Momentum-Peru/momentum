@@ -133,7 +133,8 @@ import {
             <div class="space-y-2">
               <textarea
                 pInputTextarea
-                [(ngModel)]="incompleteReasonValue"
+                [ngModel]="incompleteReasonValue()"
+                (ngModelChange)="incompleteReasonValue.set($event)"
                 placeholder="Explica por qué no se pudo terminar la tarea..."
                 rows="3"
                 class="w-full"
@@ -1238,6 +1239,14 @@ export class TaskDetailsComponent {
   public onClose(): void {
     // Remover listener global de paste
     document.removeEventListener('paste', this.pasteHandler);
+    // Limpiar todos los archivos pendientes
+    this.pendingAudio.set([]);
+    this.pendingPhoto.set([]);
+    this.pendingVideo.set([]);
+    this.pendingDocuments.set([]);
+    // Limpiar el formulario de comentario
+    this.commentForm.reset();
+    this.commentError.set(null);
     this.closeDialog.emit();
   }
 
@@ -1587,8 +1596,7 @@ export class TaskDetailsComponent {
       event.stopPropagation();
 
       const files: File[] = [];
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
+      for (const item of Array.from(items)) {
         // Solo procesar archivos (no texto)
         if (item.kind === 'file') {
           const file = item.getAsFile();
@@ -1906,7 +1914,7 @@ export class TaskDetailsComponent {
     if (!this.task) return;
 
     const value = this.incompleteReasonValue().trim();
-    
+
     // Si el valor no cambió, no hacer nada
     const currentValue = this.task.incompleteReason || '';
     if (value === currentValue) {
