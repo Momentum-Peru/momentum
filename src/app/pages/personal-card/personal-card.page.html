@@ -1,39 +1,40 @@
-<section class="min-h-screen bg-black text-white flex items-center justify-center px-4 py-12">
+<section class="min-h-screen bg-gradient-to-b from-[#f8fafc] via-[#f9fbff] to-white text-[#2f3037] flex items-center justify-center px-4 py-12">
   <div
-    class="relative w-full max-w-5xl overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-white/5 via-white/0 to-white/5 shadow-[0_20px_80px_rgba(0,0,0,0.45)]"
+    class="relative w-full max-w-5xl overflow-hidden rounded-[28px] border border-[#e5e7eb] bg-white shadow-[0_24px_90px_rgba(47,48,55,0.12)]"
   >
+    <div class="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-[#f08f1d] via-[#f6b133] to-[#f08f1d]"></div>
     <div class="pointer-events-none absolute inset-0">
-      <div class="absolute -left-20 -top-24 h-64 w-64 rounded-full bg-[#76B82A]/15 blur-[110px]"></div>
-      <div class="absolute -right-10 bottom-0 h-56 w-56 rounded-full bg-[#76B82A]/10 blur-[110px]"></div>
+      <div class="absolute -left-24 top-10 h-72 w-72 rounded-full bg-[#f08f1d]/8 blur-[120px]"></div>
+      <div class="absolute -right-16 bottom-0 h-60 w-60 rounded-full bg-[#f6b133]/10 blur-[120px]"></div>
     </div>
 
     <div class="relative grid gap-10 p-8 md:grid-cols-[1.05fr_0.95fr] md:p-12 lg:p-16">
       <div class="flex flex-col gap-6">
         <div class="flex flex-wrap items-center gap-4">
           <img
-            ngSrc="/images/sergio.png"
+            ngSrc="/images/logo-base.png"
             width="320"
-            height="220"
-            alt="Firma de Sergio Nolasco"
-            class="h-20 w-auto md:h-24"
+            height="120"
+            alt="Logo Tecmeing"
+            class="h-16 w-auto md:h-18"
             priority
           />
           <span
-            class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.25em] text-white/70"
+            class="rounded-full border border-[#e5e7eb] bg-[#f8fafc] px-4 py-2 text-xs uppercase tracking-[0.25em] text-[#4b5563]"
             >Tarjeta personal</span
           >
         </div>
 
         <div class="space-y-3">
+          <p class="text-sm uppercase tracking-[0.32em] text-[#f08f1d]">{{ tagline }}</p>
           <h1 class="text-3xl font-semibold leading-tight md:text-4xl lg:text-5xl">
             {{ fullName }}
           </h1>
-          <p class="text-lg text-white/80 md:text-xl">
+          <p class="text-lg text-[#4b5563] md:text-xl">
             {{ role }}
           </p>
-          <p class="max-w-xl text-sm leading-relaxed text-white/65 md:text-base">
-            Conecto estrategia, ingeniería y equipos para que cada proyecto avance con claridad,
-            velocidad y precisión.
+          <p class="max-w-xl text-sm leading-relaxed text-[#6b7280] md:text-base">
+            {{ intro }}
           </p>
         </div>
 
@@ -42,20 +43,20 @@
             [href]="whatsappHref"
             target="_blank"
             rel="noopener noreferrer"
-            class="group inline-flex items-center gap-3 rounded-2xl border border-[#76B82A]/70 bg-[#76B82A]/15 px-5 py-4 text-base font-medium transition duration-200 hover:-translate-y-0.5 hover:bg-[#76B82A]/25 hover:shadow-[0_14px_45px_rgba(118,184,42,0.35)]"
+            class="group inline-flex items-center gap-3 rounded-2xl border border-transparent bg-gradient-to-r from-[#f08f1d] via-[#f6b133] to-[#f08f1d] px-5 py-4 text-base font-semibold text-white shadow-[0_16px_45px_rgba(240,143,29,0.35)] transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f08f1d]"
             aria-label="Abrir chat de WhatsApp"
           >
             <span
-              class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#76B82A] text-base font-semibold text-black"
+              class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-base font-semibold text-white backdrop-blur"
               aria-hidden="true"
               >WA</span
             >
             <div class="flex flex-col text-left leading-tight">
-              <span class="text-xs uppercase tracking-wide text-white/60">Contacto directo</span>
+              <span class="text-xs uppercase tracking-wide text-white/80">Contacto directo</span>
               <span class="text-lg font-semibold">{{ whatsappNumber }}</span>
             </div>
             <span
-              class="ml-auto text-sm text-[#76B82A] transition-transform duration-150 group-hover:translate-x-1"
+              class="ml-auto text-sm text-white transition-transform duration-150 group-hover:translate-x-1"
               aria-hidden="true"
               >→</span
             >
@@ -67,11 +68,11 @@
                 [href]="social.href"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="group flex items-center gap-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-medium text-white transition duration-200 hover:border-[#76B82A]/60 hover:bg-[#76B82A]/10 hover:text-[#76B82A]"
+                class="group flex items-center gap-3 rounded-2xl border border-[#e5e7eb] bg-[#f9fafb] px-4 py-3 text-sm font-medium text-[#2f3037] transition duration-200 hover:border-[#f08f1d]/60 hover:bg-[#fff7ed] hover:text-[#c2410c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f08f1d]"
                 [attr.aria-label]="'Abrir ' + social.label"
               >
                 <span
-                  class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white transition duration-200 group-hover:bg-[#76B82A]/20 group-hover:text-[#76B82A]"
+                  class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2f3037] transition duration-200 group-hover:bg-[#fff1e0] group-hover:text-[#c2410c]"
                   aria-hidden="true"
                 >
                   @switch (social.icon) {
@@ -107,7 +108,7 @@
             [href]="companyUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex w-fit items-center gap-2 rounded-2xl bg-[#76B82A] px-5 py-3 text-sm font-semibold text-black shadow-[0_12px_40px_rgba(118,184,42,0.35)] transition duration-200 hover:-translate-y-0.5"
+            class="inline-flex w-fit items-center gap-2 rounded-2xl border border-[#f08f1d]/70 bg-[#fff7ed] px-5 py-3 text-sm font-semibold text-[#c2410c] shadow-[0_12px_32px_rgba(240,143,29,0.2)] transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f08f1d]"
           >
             Visitar Tecmeing
             <span aria-hidden="true">↗</span>
@@ -116,22 +117,22 @@
       </div>
 
       <div
-        class="relative rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl md:p-8"
+        class="relative rounded-3xl border border-[#e5e7eb] bg-[#f9fafb] p-6 shadow-[0_18px_60px_rgba(47,48,55,0.12)] backdrop-blur md:p-8"
       >
-        <div class="absolute -right-5 -top-5 h-24 w-24 rounded-full bg-[#76B82A]/15 blur-3xl"></div>
+        <div class="absolute -right-5 -top-5 h-24 w-24 rounded-full bg-[#f08f1d]/12 blur-3xl"></div>
         <div class="flex items-center justify-between gap-3">
           <div class="space-y-1">
-            <p class="text-xs uppercase tracking-[0.2em] text-white/60">Escanea y guarda</p>
-            <p class="text-lg font-semibold text-[#76B82A]">Acceso directo</p>
+            <p class="text-xs uppercase tracking-[0.2em] text-[#6b7280]">Escanea y guarda</p>
+            <p class="text-lg font-semibold text-[#c2410c]">Acceso directo</p>
           </div>
           <span
-            class="rounded-full border border-[#76B82A]/60 bg-[#76B82A]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#76B82A]"
+            class="rounded-full border border-[#f08f1d]/60 bg-[#fff7ed] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#c2410c]"
             >QR</span
           >
         </div>
 
         <div class="mt-6 flex flex-col items-center gap-4">
-          <div class="rounded-2xl bg-white p-4 shadow-[0_18px_50px_rgba(0,0,0,0.45)]">
+          <div class="rounded-2xl bg-white p-4 shadow-[0_18px_50px_rgba(0,0,0,0.12)]">
             <img
               [src]="qrSrc()"
               alt="Código QR para {{ fullName }}"
@@ -139,11 +140,11 @@
               loading="lazy"
             />
           </div>
-          <div class="w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-sm">
-            <p class="font-semibold text-white">erpmomentum.com</p>
-            <p class="mt-1 break-all text-white/70">{{ cardUrl }}</p>
+          <div class="w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 text-sm text-[#2f3037]">
+            <p class="font-semibold text-[#111827]">erpmomentum.com</p>
+            <p class="mt-1 break-all text-[#4b5563]">{{ cardUrl }}</p>
           </div>
-          <p class="text-center text-xs text-white/60">
+          <p class="text-center text-xs text-[#6b7280]">
             Comparte el QR o el enlace para abrir la tarjeta en cualquier dispositivo.
           </p>
         </div>
