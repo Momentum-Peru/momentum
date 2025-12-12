@@ -1,0 +1,154 @@
+<section class="min-h-screen bg-black text-white flex items-center justify-center px-4 py-12">
+  <div
+    class="relative w-full max-w-5xl overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-white/5 via-white/0 to-white/5 shadow-[0_20px_80px_rgba(0,0,0,0.45)]"
+  >
+    <div class="pointer-events-none absolute inset-0">
+      <div class="absolute -left-20 -top-24 h-64 w-64 rounded-full bg-[#76B82A]/15 blur-[110px]"></div>
+      <div class="absolute -right-10 bottom-0 h-56 w-56 rounded-full bg-[#76B82A]/10 blur-[110px]"></div>
+    </div>
+
+    <div class="relative grid gap-10 p-8 md:grid-cols-[1.05fr_0.95fr] md:p-12 lg:p-16">
+      <div class="flex flex-col gap-6">
+        <div class="flex flex-wrap items-center gap-4">
+          <img
+            ngSrc="/images/sergio.png"
+            width="320"
+            height="220"
+            alt="Firma de Sergio Nolasco"
+            class="h-20 w-auto md:h-24"
+            priority
+          />
+          <span
+            class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.25em] text-white/70"
+            >Tarjeta personal</span
+          >
+        </div>
+
+        <div class="space-y-3">
+          <h1 class="text-3xl font-semibold leading-tight md:text-4xl lg:text-5xl">
+            {{ fullName }}
+          </h1>
+          <p class="text-lg text-white/80 md:text-xl">
+            {{ role }}
+          </p>
+          <p class="max-w-xl text-sm leading-relaxed text-white/65 md:text-base">
+            Conecto estrategia, ingeniería y equipos para que cada proyecto avance con claridad,
+            velocidad y precisión.
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-4">
+          <a
+            [href]="whatsappHref"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group inline-flex items-center gap-3 rounded-2xl border border-[#76B82A]/70 bg-[#76B82A]/15 px-5 py-4 text-base font-medium transition duration-200 hover:-translate-y-0.5 hover:bg-[#76B82A]/25 hover:shadow-[0_14px_45px_rgba(118,184,42,0.35)]"
+            aria-label="Abrir chat de WhatsApp"
+          >
+            <span
+              class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#76B82A] text-base font-semibold text-black"
+              aria-hidden="true"
+              >WA</span
+            >
+            <div class="flex flex-col text-left leading-tight">
+              <span class="text-xs uppercase tracking-wide text-white/60">Contacto directo</span>
+              <span class="text-lg font-semibold">{{ whatsappNumber }}</span>
+            </div>
+            <span
+              class="ml-auto text-sm text-[#76B82A] transition-transform duration-150 group-hover:translate-x-1"
+              aria-hidden="true"
+              >→</span
+            >
+          </a>
+
+          <div class="flex flex-wrap items-center gap-3">
+            @for (social of socials(); track trackSocial($index, social)) {
+              <a
+                [href]="social.href"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="group flex items-center gap-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-medium text-white transition duration-200 hover:border-[#76B82A]/60 hover:bg-[#76B82A]/10 hover:text-[#76B82A]"
+                [attr.aria-label]="'Abrir ' + social.label"
+              >
+                <span
+                  class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white transition duration-200 group-hover:bg-[#76B82A]/20 group-hover:text-[#76B82A]"
+                  aria-hidden="true"
+                >
+                  @switch (social.icon) {
+                    @case ('linkedin') {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                        <path
+                          d="M4.98 3.5C4.98 4.88 3.88 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5zM.2 8.32h4.56V24H.2V8.32zM8.46 8.32h4.37v2.13h.06c.61-1.16 2.1-2.38 4.33-2.38 4.62 0 5.47 3.04 5.47 6.99V24h-4.57v-7.28c0-1.74-.03-3.98-2.42-3.98-2.42 0-2.79 1.89-2.79 3.85V24H8.46V8.32z"
+                        />
+                      </svg>
+                    }
+                    @case ('instagram') {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                        <path
+                          d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7zm5 3.5A4.5 4.5 0 1 1 7.5 12 4.51 4.51 0 0 1 12 7.5zm0 2A2.5 2.5 0 1 0 14.5 12 2.5 2.5 0 0 0 12 9.5zM17.75 6a1.25 1.25 0 1 1-1.25 1.25A1.25 1.25 0 0 1 17.75 6z"
+                        />
+                      </svg>
+                    }
+                    @case ('web') {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                        <path
+                          d="M12 2a10 10 0 1 1-7.07 2.93A10 10 0 0 1 12 2Zm0 2a8 8 0 0 0-2 .26 14.4 14.4 0 0 1 1.65 3.32H14a12.2 12.2 0 0 0-.93-3.58A7.9 7.9 0 0 0 12 4Zm-3 .5a8 8 0 0 0-4.32 6.22H6.7a16.5 16.5 0 0 1 2.3-6.22ZM4.07 13A8 8 0 0 0 8.7 19.5a16.5 16.5 0 0 1-2.28-6.5Zm4.93 0a14.6 14.6 0 0 0 1.64 4.92A8 8 0 0 0 12 20a8 8 0 0 0 1.36-.12A12.6 12.6 0 0 1 12.91 13Zm6.3 0h-2.3a14.6 14.6 0 0 0 1.62 4.94 8.1 8.1 0 0 0 2.7-1.58 8 8 0 0 0 1.64-3.36h-3.66ZM17.3 8a16.5 16.5 0 0 1 2.29 6.22h1.09A8 8 0 0 0 17.3 8ZM13 9.58h2.21a16.4 16.4 0 0 0-1.63-3.34A12.6 12.6 0 0 1 13 9.58Z"
+                        />
+                      </svg>
+                    }
+                  }
+                </span>
+                <span>{{ social.label }}</span>
+              </a>
+            }
+          </div>
+
+          <a
+            [href]="companyUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex w-fit items-center gap-2 rounded-2xl bg-[#76B82A] px-5 py-3 text-sm font-semibold text-black shadow-[0_12px_40px_rgba(118,184,42,0.35)] transition duration-200 hover:-translate-y-0.5"
+          >
+            Visitar Tecmeing
+            <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </div>
+
+      <div
+        class="relative rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl md:p-8"
+      >
+        <div class="absolute -right-5 -top-5 h-24 w-24 rounded-full bg-[#76B82A]/15 blur-3xl"></div>
+        <div class="flex items-center justify-between gap-3">
+          <div class="space-y-1">
+            <p class="text-xs uppercase tracking-[0.2em] text-white/60">Escanea y guarda</p>
+            <p class="text-lg font-semibold text-[#76B82A]">Acceso directo</p>
+          </div>
+          <span
+            class="rounded-full border border-[#76B82A]/60 bg-[#76B82A]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#76B82A]"
+            >QR</span
+          >
+        </div>
+
+        <div class="mt-6 flex flex-col items-center gap-4">
+          <div class="rounded-2xl bg-white p-4 shadow-[0_18px_50px_rgba(0,0,0,0.45)]">
+            <img
+              [src]="qrSrc()"
+              alt="Código QR para {{ fullName }}"
+              class="h-60 w-60 rounded-xl object-contain"
+              loading="lazy"
+            />
+          </div>
+          <div class="w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-sm">
+            <p class="font-semibold text-white">erpmomentum.com</p>
+            <p class="mt-1 break-all text-white/70">{{ cardUrl }}</p>
+          </div>
+          <p class="text-center text-xs text-white/60">
+            Comparte el QR o el enlace para abrir la tarjeta en cualquier dispositivo.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
