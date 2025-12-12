@@ -126,6 +126,7 @@
     <p-table [value]="items()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
       <ng-template pTemplate="header">
         <tr>
+          <th>Seguimiento</th>
           <th>Título</th>
           <th>Tipo</th>
           <th>Estado</th>
@@ -136,6 +137,11 @@
       </ng-template>
       <ng-template pTemplate="body" let-row>
         <tr>
+          <td>
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Seguimiento {{ getFollowUpNumber(row) }}
+            </span>
+          </td>
           <td>
             <div class="font-semibold text-gray-900 dark:text-gray-100 break-words">
               {{ row.title }}
@@ -210,6 +216,9 @@
         [attr.aria-label]="'Expandir o contraer detalles del seguimiento: ' + row.title"
       >
         <div class="flex-1 text-left">
+          <div class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">
+            Seguimiento {{ getFollowUpNumber(row) }}
+          </div>
           <div class="font-semibold text-gray-900 dark:text-gray-100">{{ row.title }}</div>
           <div class="text-sm text-gray-500 dark:text-gray-400">
             {{ getTypeLabel(row.type) }} - {{ row.scheduledDate | date : 'dd/MM/yyyy' }}

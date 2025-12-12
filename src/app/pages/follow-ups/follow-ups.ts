@@ -234,7 +234,15 @@ export class FollowUpsPage implements OnInit {
     if (type !== '') params.type = type;
 
     this.followUpsApi.list(params).subscribe({
-      next: (followUps) => this.items.set(followUps),
+      next: (followUps) => {
+        // Ordenar de más nuevos a más antiguos por createdAt o scheduledDate
+        const sorted = followUps.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.scheduledDate).getTime();
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.scheduledDate).getTime();
+          return dateB - dateA; // Más reciente primero
+        });
+        this.items.set(sorted);
+      },
       error: (error) => {
         console.error('Error loading follow-ups:', error);
         this.messageService.add({
@@ -542,6 +550,16 @@ export class FollowUpsPage implements OnInit {
   isRowExpanded(rowId: string | undefined): boolean {
     if (!rowId) return false;
     return this.expandedRows().has(rowId);
+  }
+
+  /**
+   * Obtiene el número de seguimiento basado en su posición en la lista ordenada
+   * (1 = más reciente, 2 = segundo más reciente, etc.)
+   */
+  getFollowUpNumber(followUp: FollowUp): number {
+    const items = this.items();
+    const index = items.findIndex((item) => item._id === followUp._id);
+    return index !== -1 ? index + 1 : 0;
   }
 
   private validateForm(item: Partial<FollowUp>): string[] {
