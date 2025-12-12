@@ -24,6 +24,9 @@ export class PersonalCardPage {
   protected readonly whatsappHref = 'https://wa.me/51922926088';
   protected readonly companyUrl = 'https://tecmeing.com/';
   protected readonly cardUrl = 'https://erpmomentum.com/sergio-nolasco';
+  protected readonly tagline = 'Ingeniería y Metalmecánica';
+  protected readonly intro =
+    'Impulsamos proyectos industriales con ingeniería precisa, cronogramas claros y ejecución segura.';
 
   protected readonly socials = signal<SocialLink[]>([
     {
