@@ -126,5 +126,67 @@ export class LeadsApiService {
     getFollowUps(id: string): Observable<any[]> {
         return this.http.get<any[]>(`${this.baseUrl}/${id}/follow-ups`);
     }
+
+    /**
+     * Genera una Presigned URL para subir una foto
+     */
+    generatePhotoPresignedUrl(
+        leadId: string,
+        fileName: string,
+        contentType: string,
+        expirationTime?: number
+    ): Observable<PresignedUrlResponse> {
+        return this.http.post<PresignedUrlResponse>(
+            `${this.baseUrl}/${leadId}/photo/presigned-url`,
+            {
+                fileName,
+                contentType,
+                ...(expirationTime && { expirationTime }),
+            }
+        );
+    }
+
+    /**
+     * Genera múltiples Presigned URLs para subir varias fotos
+     */
+    generateMultiplePhotoPresignedUrls(
+        leadId: string,
+        files: PresignedUrlRequest[],
+        expirationTime?: number
+    ): Observable<PresignedUrlResponse[]> {
+        const body: {
+            files: PresignedUrlRequest[];
+            expirationTime?: number;
+        } = {
+            files: files.map((f) => ({
+                fileName: f.fileName,
+                contentType: f.contentType,
+            })),
+            ...(expirationTime && { expirationTime }),
+        };
+
+        return this.http.post<PresignedUrlResponse[]>(
+            `${this.baseUrl}/${leadId}/photo/presigned-urls`,
+            body
+        );
+    }
+
+    /**
+     * Confirma la subida de una foto y la agrega al lead
+     */
+    confirmPhotoUpload(leadId: string, photoUrl: string): Observable<Lead> {
+        return this.http.post<Lead>(`${this.baseUrl}/${leadId}/photo/confirm`, {
+            photoUrl,
+        });
+    }
+
+    /**
+     * Elimina una foto del lead
+     */
+    deletePhoto(leadId: string, photoUrl: string): Observable<Lead> {
+        return this.http.delete<Lead>(`${this.baseUrl}/${leadId}/photo`, {
+            params: { photoUrl },
+        });
+    }
 }
 
