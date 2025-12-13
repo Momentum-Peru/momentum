@@ -143,6 +143,7 @@
   <app-native-task-form
     [task]="selectedTask() || undefined"
     [boardId]="selectedBoard()?._id"
+    [visible]="showTaskForm()"
     (save)="onTaskSave()"
     (formCancel)="closeTaskForm()"
   ></app-native-task-form>
