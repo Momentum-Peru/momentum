@@ -73,6 +73,7 @@
           <label for="leadDni" class="text-sm font-medium text-gray-700 flex items-center gap-2">
             <i class="pi pi-id-card text-gray-500"></i>
             DNI
+            <span class="text-xs text-gray-500 font-normal">(se autocompleta automáticamente)</span>
           </label>
           <div class="relative">
             <input
@@ -82,6 +83,8 @@
               placeholder="12345678"
               class="w-full"
               [class.p-invalid]="isFieldInvalid('dni')"
+              maxlength="8"
+              (input)="onDniChange($event)"
             />
           </div>
           @if (isFieldInvalid('dni')) {
@@ -210,6 +213,7 @@
           <label for="leadRuc" class="text-sm font-medium text-gray-700 flex items-center gap-2">
             <i class="pi pi-briefcase text-gray-500"></i>
             RUC
+            <span class="text-xs text-gray-500 font-normal">(se autocompleta automáticamente)</span>
           </label>
           <div class="relative">
             <input
@@ -219,6 +223,8 @@
               placeholder="20123456789"
               class="w-full"
               [class.p-invalid]="isFieldInvalid('ruc')"
+              maxlength="11"
+              (input)="onRucChange($event)"
             />
           </div>
           @if (isFieldInvalid('ruc')) {
