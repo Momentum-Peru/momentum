@@ -10,8 +10,11 @@ import { MessageService } from 'primeng/api';
 import { LeadFormService } from './services/lead-form.service';
 import { LeadsApiService } from '../../shared/services/leads-api.service';
 import { PresignedUploadService } from '../../shared/services/presigned-upload.service';
+import { ApisPeruApiService } from '../../shared/services/apisperu-api.service';
 import { compressImage } from '../../shared/utils/image-compression.util';
 import { firstValueFrom } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
 
 /**
  * Componente del formulario de leads
@@ -30,6 +33,7 @@ export class LeadFormComponent {
   private readonly leadFormService = inject(LeadFormService);
   private readonly leadsApiService = inject(LeadsApiService);
   private readonly presignedUpload = inject(PresignedUploadService);
+  private readonly apisPeruService = inject(ApisPeruApiService);
 
   leadForm: FormGroup;
   isLoading = signal(false);
@@ -37,6 +41,10 @@ export class LeadFormComponent {
   privacyModalVisible = signal(false);
   pendingPhoto = signal<File[]>([]);
   private pendingPhotoUrlCache = new Map<File, string>();
+
+  // Subjects para manejar la autocompletación de DNI y RUC
+  private readonly dniSubject = new Subject<string>();
+  private readonly rucSubject = new Subject<string>();
 
   pendingPhotoUrls = computed(() => {
     const files = this.pendingPhoto();
@@ -63,6 +71,105 @@ export class LeadFormComponent {
       ruc: ['', [Validators.maxLength(20)]],
       acceptPrivacyPolicy: [false, [Validators.requiredTrue]],
     });
+
+    this.setupDniAutocomplete();
+    this.setupRucAutocomplete();
+  }
+
+  /**
+   * Configura la autocompletación cuando se ingresa un DNI
+   */
+  private setupDniAutocomplete(): void {
+    this.dniSubject
+      .pipe(
+        debounceTime(800),
+        distinctUntilChanged(),
+        switchMap((dni) => {
+          if (!dni || dni.length !== 8 || !/^\d{8}$/.test(dni)) {
+            return of(null);
+          }
+
+          return this.apisPeruService.consultDni(dni).pipe(
+            catchError((error) => {
+              console.warn('No se pudo autocompletar DNI desde APIsPERU:', error);
+              return of(null);
+            })
+          );
+        })
+      )
+      .subscribe((response) => {
+        if (!response) return;
+
+        // Construir nombre completo
+        const nombreCompleto = response.nombreCompleto || 
+          `${response.nombres} ${response.apellidoPaterno} ${response.apellidoMaterno}`.trim();
+
+        // Si ya tiene nombre, no sobrescribir
+        const currentName = this.leadForm.get('name')?.value;
+        if (currentName && currentName.trim() !== '') {
+          return;
+        }
+
+        // Autocompletar nombre con el nombre completo del DNI
+        this.leadForm.patchValue({
+          name: nombreCompleto,
+        });
+      });
+  }
+
+  /**
+   * Configura la autocompletación cuando se ingresa un RUC
+   */
+  private setupRucAutocomplete(): void {
+    this.rucSubject
+      .pipe(
+        debounceTime(800),
+        distinctUntilChanged(),
+        switchMap((ruc) => {
+          if (!ruc || ruc.length !== 11 || !/^\d{11}$/.test(ruc)) {
+            return of(null);
+          }
+
+          return this.apisPeruService.consultRuc(ruc).pipe(
+            catchError((error) => {
+              console.warn('No se pudo autocompletar RUC desde APIsPERU:', error);
+              return of(null);
+            })
+          );
+        })
+      )
+      .subscribe((response) => {
+        if (!response) return;
+
+        // Si ya tiene nombre de empresa, no sobrescribir
+        const currentCompany = this.leadForm.get('company')?.value;
+        if (currentCompany && currentCompany.trim() !== '') {
+          return;
+        }
+
+        // Construir dirección completa si hay información de ubicación
+        let direccionCompleta = this.leadForm.get('address')?.value;
+        if (!direccionCompleta && response.direccion) {
+          const partesDireccion = [
+            response.direccion,
+            response.distrito,
+            response.provincia,
+            response.departamento,
+          ].filter(Boolean);
+          direccionCompleta = partesDireccion.join(', ') || response.direccion;
+        }
+
+        // Autocompletar nombre de empresa con razón social y dirección si está disponible
+        const patchData: any = {
+          company: response.razonSocial || response.nombreComercial || currentCompany,
+        };
+
+        if (direccionCompleta) {
+          patchData.address = direccionCompleta;
+        }
+
+        this.leadForm.patchValue(patchData);
+      });
   }
 
   /**
@@ -259,6 +366,28 @@ export class LeadFormComponent {
     }
     const updated = current.filter((_, i) => i !== index);
     this.pendingPhoto.set(updated);
+  }
+
+  /**
+   * Maneja el cambio en el campo DNI
+   */
+  onDniChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const dni = input.value.trim();
+    if (dni.length === 8) {
+      this.dniSubject.next(dni);
+    }
+  }
+
+  /**
+   * Maneja el cambio en el campo RUC
+   */
+  onRucChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const ruc = input.value.trim();
+    if (ruc.length === 11) {
+      this.rucSubject.next(ruc);
+    }
   }
 
   /**
