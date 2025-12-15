@@ -81,7 +81,7 @@ import { Board, UpdateInvitationRequest } from '../../../../shared/interfaces/bo
         >
           <ng-template pTemplate="header">
             <div class="p-4 bg-gradient-to-r from-blue-500 to-purple-500">
-              <h3 class="text-white font-semibold text-lg">{{ board.title }}</h3>
+              <h3 class="text-white font-semibold text-lg uppercase">{{ board.title }}</h3>
             </div>
           </ng-template>
 
@@ -97,7 +97,8 @@ import { Board, UpdateInvitationRequest } from '../../../../shared/interfaces/bo
             <div class="flex items-center gap-2 text-sm">
               <i class="pi pi-user text-gray-500"></i>
               <span class="text-gray-700 dark:text-gray-300">
-                Propietario: <strong>{{ board.owner?.name || board.owner?.email || 'Sin nombre' }}</strong>
+                Propietario:
+                <strong>{{ board.owner?.name || board.owner?.email || 'Sin nombre' }}</strong>
               </span>
             </div>
 

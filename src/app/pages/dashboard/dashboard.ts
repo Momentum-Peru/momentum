@@ -13,6 +13,7 @@ import { AuthService } from '../login/services/auth.service';
 import { GeocodingService } from '../../shared/services/geocoding.service';
 import { signal } from '@angular/core';
 import { TableModule } from 'primeng/table';
+import { PanelModule } from 'primeng/panel';
 import {
   DashboardFiltersParams,
   DashboardKpi,
@@ -33,6 +34,7 @@ type TrackingLocation = NonNullable<TimeTrackingDetail['location']>;
     CommonModule,
     RouterModule,
     TableModule,
+    PanelModule,
     DashboardKpiCardComponent,
     DashboardChartComponent,
     DashboardTableComponent,
@@ -57,6 +59,19 @@ export class DashboardPage implements OnInit {
   protected readonly loadingTimeTracking = signal(false);
   protected readonly locationAddresses = signal<Record<string, string>>({});
   protected readonly locationLoading = signal<Record<string, boolean>>({});
+
+  // Computed para calcular totales de marcaciones
+  protected readonly totalIngresos = computed(() => {
+    return this.timeTrackingByUser().reduce((sum, user) => sum + (user.ingresos || 0), 0);
+  });
+
+  protected readonly totalSalidas = computed(() => {
+    return this.timeTrackingByUser().reduce((sum, user) => sum + (user.salidas || 0), 0);
+  });
+
+  protected readonly totalMarcaciones = computed(() => {
+    return this.timeTrackingByUser().reduce((sum, user) => sum + (user.totalMarcaciones || 0), 0);
+  });
 
   // Mapeo de KPIs a rutas del sistema para verificar permisos
   private readonly kpiRouteMap: Record<string, string> = {
@@ -150,9 +165,9 @@ export class DashboardPage implements OnInit {
     this.loadingTimeTracking.set(true);
     try {
       const [details, byUser] = await Promise.all([
-      this.dashboardApiService.getTimeTrackingDetails(filters).toPromise(),
-      this.dashboardApiService.getTimeTrackingByUser(filters).toPromise(),
-    ]);
+        this.dashboardApiService.getTimeTrackingDetails(filters).toPromise(),
+        this.dashboardApiService.getTimeTrackingByUser(filters).toPromise(),
+      ]);
       const parsedDetails = (details as unknown as TimeTrackingDetail[]) || [];
       this.timeTrackingDetails.set(parsedDetails);
       this.timeTrackingByUser.set((byUser as unknown as TimeTrackingByUser[]) || []);
