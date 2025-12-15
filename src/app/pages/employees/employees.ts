@@ -14,7 +14,10 @@ import { EmployeesApiService } from '../../shared/services/employees-api.service
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { AreasApiService } from '../../shared/services/areas-api.service';
 import { MenuService } from '../../shared/services/menu.service';
+import { ApisPeruApiService } from '../../shared/services/apisperu-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
 import {
   Employee,
   CreateEmployeeRequest,
@@ -50,6 +53,10 @@ export class EmployeesPage implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly menuService = inject(MenuService);
+  private readonly apisPeruService = inject(ApisPeruApiService);
+
+  // Subject para manejar la autocompletación de DNI
+  private readonly dniSubject = new Subject<string>();
 
   // Verificar si el usuario tiene permiso de edición para este módulo
   readonly canEdit = computed(() => this.menuService.canEdit('/employees'));
@@ -96,6 +103,7 @@ export class EmployeesPage implements OnInit {
     this.load();
     this.loadUsers();
     this.loadAreas();
+    this.setupDniAutocomplete();
   }
 
   load() {
@@ -220,6 +228,57 @@ export class EmployeesPage implements OnInit {
     if (current) {
       this.editing.set({ ...current, [field]: value });
     }
+
+    // Si se cambió el DNI, disparar la autocompletación
+    if (field === 'dni' && typeof value === 'string') {
+      this.dniSubject.next(value);
+    }
+  }
+
+  /**
+   * Configura la autocompletación cuando se ingresa un DNI
+   */
+  private setupDniAutocomplete(): void {
+    this.dniSubject
+      .pipe(
+        debounceTime(800),
+        distinctUntilChanged(),
+        switchMap((dni) => {
+          if (!dni || dni.length !== 8 || !/^\d{8}$/.test(dni)) {
+            return of(null);
+          }
+
+          return this.apisPeruService.consultDni(dni).pipe(
+            catchError((error) => {
+              console.warn('No se pudo autocompletar DNI desde APIsPERU:', error);
+              return of(null);
+            })
+          );
+        })
+      )
+      .subscribe((response) => {
+        if (!response) return;
+
+        const current = this.editing();
+        if (!current) return;
+
+        // Construir nombre completo
+        const nombreCompleto = response.nombreCompleto ||
+          `${response.nombres} ${response.apellidoPaterno} ${response.apellidoMaterno}`.trim();
+
+        // Separar nombre y apellido
+        const partesNombre = nombreCompleto.split(' ');
+        const nombre = response.nombres || partesNombre[0] || '';
+        const apellido = `${response.apellidoPaterno} ${response.apellidoMaterno}`.trim() ||
+          partesNombre.slice(1).join(' ') || '';
+
+        // Siempre rellenar con nueva consulta
+        this.editing.set({
+          ...current,
+          nombre,
+          apellido,
+        });
+      });
   }
 
   onBankChange(bankName: string) {
