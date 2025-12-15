@@ -26,12 +26,15 @@ import { TagModule } from 'primeng/tag';
 import { CompaniesApiService } from '../../shared/services/companies-api.service';
 import { AuthService } from '../../pages/login/services/auth.service';
 import { MenuService } from '../../shared/services/menu.service';
+import { ApisPeruApiService } from '../../shared/services/apisperu-api.service';
 import {
     Company,
     CreateCompanyRequest,
     UpdateCompanyRequest,
     CompanyQueryParams,
 } from '../../shared/interfaces/company.interface';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
 
 /**
  * Componente para la gestión de Empresas de Momentum
@@ -67,6 +70,10 @@ export class CompaniesCrmPage implements OnInit {
     private readonly confirmationService = inject(ConfirmationService);
     private readonly auth = inject(AuthService);
     private readonly menuService = inject(MenuService);
+    private readonly apisPeruService = inject(ApisPeruApiService);
+
+    // Subject para manejar la autocompletación de taxId
+    private readonly taxIdSubject = new Subject<string>();
 
     // Verificar si el usuario tiene permiso de edición para este módulo
     readonly canEdit = computed(() => this.menuService.canEdit('/companies-crm'));
@@ -83,6 +90,7 @@ export class CompaniesCrmPage implements OnInit {
 
     ngOnInit() {
         this.load();
+        this.setupTaxIdAutocomplete();
     }
 
     constructor() {
@@ -97,6 +105,94 @@ export class CompaniesCrmPage implements OnInit {
                 this.viewingCompany.set(null);
             }
         });
+    }
+
+    /**
+     * Configura la autocompletación cuando se ingresa un taxId
+     */
+    private setupTaxIdAutocomplete(): void {
+        this.taxIdSubject
+            .pipe(
+                debounceTime(800), // Esperar 800ms después de que el usuario deje de escribir
+                distinctUntilChanged(), // Solo procesar si el valor cambió
+                switchMap((taxId) => {
+                    if (!taxId || taxId.length < 8) {
+                        return of(null);
+                    }
+
+                    // Validar formato: 8 dígitos para DNI, 11 para RUC
+                    const isValidFormat = /^\d{8}$/.test(taxId) || /^\d{11}$/.test(taxId);
+                    if (!isValidFormat) {
+                        return of(null);
+                    }
+
+                    // Consultar APIsPERU
+                    return this.apisPeruService.consultDocument(taxId).pipe(
+                        catchError((error) => {
+                            // Si falla, no mostrar error (el backend también intentará autocompletar)
+                            console.warn('No se pudo autocompletar desde APIsPERU:', error);
+                            return of(null);
+                        })
+                    );
+                })
+            )
+            .subscribe((response) => {
+                if (!response) return;
+
+                const current = this.editing();
+                if (!current) return;
+
+                // Autocompletar según el tipo de respuesta (siempre rellenar con nueva consulta)
+                if ('nombreCompleto' in response || 'nombres' in response) {
+                    // Es DNI
+                    const dniResponse = response as any;
+                    const nombreCompleto = dniResponse.nombreCompleto || 
+                        `${dniResponse.nombres} ${dniResponse.apellidoPaterno} ${dniResponse.apellidoMaterno}`.trim();
+
+                    this.editing.set({
+                        ...current,
+                        name: nombreCompleto,
+                    });
+                } else if ('razonSocial' in response) {
+                    // Es RUC
+                    const rucResponse = response as any;
+                    
+                    // Construir dirección completa
+                    let direccionCompleta: string | undefined = undefined;
+                    if (rucResponse.direccion) {
+                        const partesDireccion = [
+                            rucResponse.direccion,
+                            rucResponse.distrito,
+                            rucResponse.provincia,
+                            rucResponse.departamento,
+                        ].filter(Boolean);
+                        direccionCompleta = partesDireccion.join(', ') || rucResponse.direccion;
+                    }
+
+                    // Obtener teléfono si está disponible
+                    const telefono = rucResponse.telefonos && rucResponse.telefonos.length > 0 
+                        ? rucResponse.telefonos[0] 
+                        : undefined;
+
+                    // Construir descripción con información adicional
+                    let descripcion: string | undefined = undefined;
+                    if (rucResponse.estado || rucResponse.condicion) {
+                        const partesDesc = [];
+                        if (rucResponse.estado) partesDesc.push(`Estado: ${rucResponse.estado}`);
+                        if (rucResponse.condicion) partesDesc.push(`Condición: ${rucResponse.condicion}`);
+                        if (rucResponse.tipo) partesDesc.push(`Tipo: ${rucResponse.tipo}`);
+                        descripcion = partesDesc.join(' | ');
+                    }
+
+                    this.editing.set({
+                        ...current,
+                        name: rucResponse.razonSocial || rucResponse.nombreComercial || current.name || '',
+                        address: direccionCompleta || current.address,
+                        phone: telefono || current.phone,
+                        description: descripcion || current.description,
+                    });
+                }
+            });
     }
 
     load() {
@@ -181,6 +277,11 @@ export class CompaniesCrmPage implements OnInit {
         const cur = this.editing();
         if (!cur) return;
         this.editing.set({ ...cur, [key]: value });
+
+        // Si se cambió el taxId, disparar la autocompletación
+        if (key === 'taxId' && typeof value === 'string') {
+            this.taxIdSubject.next(value);
+        }
     }
 
     save() {

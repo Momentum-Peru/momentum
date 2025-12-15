@@ -379,14 +379,16 @@
               class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               RUC/DNI
+              <span class="text-xs text-gray-500 ml-1">(se autocompleta automáticamente)</span>
             </label>
             <input
               id="companyTaxId"
               pInputText
-              placeholder="20123456789"
+              placeholder="20123456789 o 12345678"
               [ngModel]="editing()?.taxId"
               (ngModelChange)="onEditChange('taxId', $event)"
               class="w-full"
+              maxlength="11"
             />
           </div>
           <div class="md:col-span-2">
