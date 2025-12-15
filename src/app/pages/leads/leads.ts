@@ -471,11 +471,22 @@ export class LeadsPage implements OnInit {
         const company = current.company || {};
 
         // Autocompletar según el tipo de respuesta (siempre rellenar con nueva consulta)
+        // DNI y RUC son documentos peruanos, establecer país automáticamente
+        const peruCountry = this.countries().find((c) => c.codigo === 'PE');
+        if (peruCountry && !this.selectedCountry()) {
+          this.selectedCountry.set(peruCountry);
+          this.loadProvinces('PE');
+        }
+
         if ('nombreCompleto' in response || 'nombres' in response) {
           // Es DNI
           const dniResponse = response as any;
           const nombreCompleto = dniResponse.nombreCompleto ||
             `${dniResponse.nombres} ${dniResponse.apellidoPaterno} ${dniResponse.apellidoMaterno}`.trim();
+
+          // Actualizar ubicación con país Perú
+          const location = current.location || {};
+          location.paisCodigo = 'PE';
 
           this.editing.set({
             ...current,
@@ -483,6 +494,7 @@ export class LeadsPage implements OnInit {
               ...company,
               name: nombreCompleto,
             },
+            location,
           });
         } else if ('razonSocial' in response) {
           // Es RUC
@@ -510,6 +522,13 @@ export class LeadsPage implements OnInit {
             descripcion = partesDesc.join(' | ');
           }
 
+          // Actualizar ubicación con país Perú y dirección
+          const location = current.location || {};
+          location.paisCodigo = 'PE';
+          if (direccionCompleta) {
+            location.direccion = direccionCompleta;
+          }
+
           this.editing.set({
             ...current,
             company: {
@@ -517,10 +536,7 @@ export class LeadsPage implements OnInit {
               name: rucResponse.razonSocial || rucResponse.nombreComercial || company.name || '',
               website: rucResponse.website || company.website,
             },
-            location: direccionCompleta ? {
-              ...current.location,
-              direccion: direccionCompleta,
-            } : current.location,
+            location,
             notes: descripcion || current.notes,
           });
         }
