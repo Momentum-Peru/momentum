@@ -1951,6 +1951,8 @@ export class TaskDetailsComponent {
           summary: 'Éxito',
           detail: value ? 'Razón guardada correctamente' : 'Razón eliminada correctamente',
         });
+        // Cerrar el detalle después de guardar exitosamente
+        this.onClose();
       },
       error: (error) => {
         console.error('Error saving incomplete reason:', error);
