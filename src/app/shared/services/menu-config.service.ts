@@ -161,6 +161,12 @@ export class MenuConfigService {
             icon: 'pi pi-file',
             routerLink: '/documents',
           },
+        ],
+      },
+      {
+        label: 'RECURSOS HUMANOS',
+        icon: 'pi pi-users',
+        items: [
           {
             label: 'Empleados',
             icon: 'pi pi-user',
@@ -171,12 +177,6 @@ export class MenuConfigService {
             icon: 'pi pi-wallet',
             routerLink: '/payroll',
           },
-        ],
-      },
-      {
-        label: 'RECURSOS HUMANOS',
-        icon: 'pi pi-users',
-        items: [
           {
             label: 'Tareas',
             icon: 'pi pi-check-square',
