@@ -174,7 +174,7 @@ export class MenuConfigService {
         ],
       },
       {
-        label: 'TALENTO HUMANO',
+        label: 'RECURSOS HUMANOS',
         icon: 'pi pi-users',
         items: [
           {
