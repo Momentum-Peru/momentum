@@ -486,15 +486,15 @@ export class TruncatePipe implements PipeTransform {
                   <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta }
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  PNG, JPG, PDF, DOC, DOCX (MAX. 20MB). También puedes arrastrar desde WhatsApp o
-                  pegar con Ctrl+V
+                  PNG, JPG, PDF, DOC, DOCX, DWG, SKP (MAX. 20MB). También puedes arrastrar desde
+                  WhatsApp o pegar con Ctrl+V
                 </p>
               </div>
               <input
                 type="file"
                 class="hidden"
                 multiple
-                accept="image/*,.pdf,.doc,.docx"
+                accept="image/*,.pdf,.doc,.docx,.dwg,.skp"
                 (change)="onFileSelected($event)"
               />
             </label>

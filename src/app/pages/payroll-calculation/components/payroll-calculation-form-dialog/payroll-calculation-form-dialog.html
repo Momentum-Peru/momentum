@@ -1,0 +1,132 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [header]="isEditMode() ? 'Editar Registro' : 'Nuevo Registro'"
+  [style]="{ width: '90vw', maxWidth: '600px' }"
+  (onHide)="onClose()"
+>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
+    @if (!isEditMode()) {
+    <div class="flex flex-col gap-2">
+      <label for="employeeId" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        Empleado <span class="text-red-500">*</span>
+      </label>
+      <p-select
+        id="employeeId"
+        formControlName="employeeId"
+        [options]="employeeOptions()"
+        placeholder="Seleccionar empleado"
+        optionLabel="label"
+        optionValue="value"
+        class="w-full"
+        [class.ng-invalid]="form.get('employeeId')?.invalid && form.get('employeeId')?.touched"
+      ></p-select>
+      @if (form.get('employeeId')?.invalid && form.get('employeeId')?.touched) {
+      <small class="text-red-500">El empleado es requerido</small>
+      }
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="date" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        Fecha <span class="text-red-500">*</span>
+      </label>
+      <p-datepicker
+        id="date"
+        formControlName="date"
+        iconDisplay="input"
+        dateFormat="dd/mm/yy"
+        placeholder="Seleccionar fecha"
+        class="w-full"
+        [class.ng-invalid]="form.get('date')?.invalid && form.get('date')?.touched"
+      ></p-datepicker>
+      @if (form.get('date')?.invalid && form.get('date')?.touched) {
+      <small class="text-red-500">La fecha es requerida</small>
+      }
+    </div>
+    }
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="flex flex-col gap-2">
+        <label for="entryTime" class="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >Hora de Entrada</label
+        >
+        <p-datepicker
+          id="entryTime"
+          formControlName="entryTime"
+          iconDisplay="input"
+          [showTime]="true"
+          hourFormat="24"
+          dateFormat="dd/mm/yy"
+          placeholder="Seleccionar hora de entrada"
+          class="w-full"
+        ></p-datepicker>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="exitTime" class="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >Hora de Salida</label
+        >
+        <p-datepicker
+          id="exitTime"
+          formControlName="exitTime"
+          iconDisplay="input"
+          [showTime]="true"
+          hourFormat="24"
+          dateFormat="dd/mm/yy"
+          placeholder="Seleccionar hora de salida"
+          class="w-full"
+        ></p-datepicker>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="workedHours" class="text-sm font-medium text-gray-700 dark:text-gray-300"
+        >Horas Trabajadas</label
+      >
+      <p-inputnumber
+        id="workedHours"
+        formControlName="workedHours"
+        mode="decimal"
+        [minFractionDigits]="0"
+        [maxFractionDigits]="2"
+        placeholder="Ej: 8.5"
+        class="w-full"
+      ></p-inputnumber>
+      <small class="text-gray-500 dark:text-gray-400">
+        Si no se especifica, se calculará automáticamente basándose en entrada y salida
+      </small>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="notes" class="text-sm font-medium text-gray-700 dark:text-gray-300">Notas</label>
+      <textarea
+        id="notes"
+        pInputTextarea
+        formControlName="notes"
+        rows="3"
+        placeholder="Notas adicionales..."
+        class="w-full"
+      ></textarea>
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <div class="flex gap-2 justify-end">
+      <button pButton type="button" icon="pi pi-times" (click)="onClose()" severity="secondary">
+        Cancelar
+      </button>
+      <button
+        pButton
+        type="button"
+        [icon]="isEditMode() ? 'pi pi-check' : 'pi pi-plus'"
+        (click)="onSubmit()"
+        [disabled]="form.invalid"
+      >
+        {{ isEditMode() ? 'Actualizar' : 'Crear' }}
+      </button>
+    </div>
+  </ng-template>
+</p-dialog>

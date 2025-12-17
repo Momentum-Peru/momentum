@@ -70,8 +70,7 @@
         <span>Usuario</span>
       </ng-template>
     </p-select>
-    }
-    @if (canEdit()) {
+    } @if (canEdit()) {
     <button
       pButton
       type="button"
@@ -168,7 +167,8 @@
 
   <!-- Vista Móvil: Lista tipo tarjetas -->
   <div class="md:hidden space-y-3">
-    @for (row of filteredItems(); track row._id || $index; let i = $index) {
+    @for (row of filteredItems(); track row._id || (row.date + 'T' + (row.time || '00:00')); let i =
+    $index) {
     <div
       class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
     >
@@ -260,7 +260,8 @@
 
   <!-- Modal de edición/creación -->
   <p-dialog
-    [(visible)]="showDialog"
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '42rem' }"
     [draggable]="false"
@@ -275,12 +276,23 @@
 
     <!-- Indicador de carga de archivos -->
     @if (uploadingFiles()) {
-    <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+    <div
+      class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+    >
       <div class="flex items-center gap-3">
         <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
         <div class="flex-1">
           <div class="text-sm font-medium text-blue-900 dark:text-blue-100">
-            Subiendo {{ uploadingFileType() === 'audio' ? 'audio' : uploadingFileType() === 'video' ? 'video' : uploadingFileType() === 'photo' ? 'foto' : 'documento' }}...
+            Subiendo
+            {{
+              uploadingFileType() === 'audio'
+                ? 'audio'
+                : uploadingFileType() === 'video'
+                ? 'video'
+                : uploadingFileType() === 'photo'
+                ? 'foto'
+                : 'documento'
+            }}...
           </div>
           @if (uploadingFileName()) {
           <div class="text-xs text-blue-700 dark:text-blue-300 mt-1">
@@ -835,6 +847,7 @@
           id="reportDocuments"
           type="file"
           multiple
+          accept=".pdf,.doc,.docx,.dwg,.skp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/vnd.dwg,application/vnd.sketchup.skp"
           (change)="onDocumentsSelected($event)"
           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
         />
@@ -905,7 +918,8 @@
 
   <!-- Diálogo de visualización (solo lectura) -->
   <p-dialog
-    [(visible)]="showViewDialog"
+    [visible]="showViewDialog()"
+    (visibleChange)="showViewDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '42rem' }"
     [draggable]="false"
@@ -1084,7 +1098,8 @@
 
   <!-- Modal de visualización de medios -->
   <p-dialog
-    [(visible)]="showMediaModal"
+    [visible]="showMediaModal()"
+    (visibleChange)="showMediaModal.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '90vw', maxHeight: '90vh' }"
     [draggable]="false"
