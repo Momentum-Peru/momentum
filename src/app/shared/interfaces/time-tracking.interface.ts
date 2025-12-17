@@ -45,7 +45,7 @@ export interface CreateTimeTrackingRequest {
   type: TimeTrackingType; // INGRESO o SALIDA
   userId: string;
   projectId?: string;
-  attendanceRecordId: string; // requerido
+  attendanceRecordId?: string; // opcional - se creará automáticamente si no se proporciona (solo admin/supervisor)
   location?: Location; // opcional
 }
 
@@ -53,6 +53,7 @@ export interface UpdateTimeTrackingRequest {
   date?: string; // ISO datetime completo
   type?: TimeTrackingType;
   projectId?: string;
+  attendanceRecordId?: string; // opcional
   location?: Location;
 }
 
@@ -64,4 +65,3 @@ export interface TimeTrackingQueryParams {
   type?: TimeTrackingType;
   q?: string;
 }
-

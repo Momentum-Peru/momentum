@@ -46,6 +46,7 @@ export class MenuConfigService {
     { path: '/fi', label: 'Futuros Imposibles', icon: 'pi pi-bolt' },
     { path: '/logs', label: 'Logs del Sistema', icon: 'pi pi-list' },
     { path: '/payroll', label: 'Planillas y Pagos', icon: 'pi pi-wallet' },
+    { path: '/payroll-calculation', label: 'Cálculo de Planilla', icon: 'pi pi-calculator' },
     { path: '/profile', label: 'Mi Perfil', icon: 'pi pi-user-edit' },
   ];
 
@@ -176,6 +177,11 @@ export class MenuConfigService {
             label: 'Planillas y Pagos',
             icon: 'pi pi-wallet',
             routerLink: '/payroll',
+          },
+          {
+            label: 'Cálculo de Planilla',
+            icon: 'pi pi-calculator',
+            routerLink: '/payroll-calculation',
           },
           {
             label: 'Tareas',
