@@ -221,7 +221,7 @@ export class PayrollCalculationPage implements OnInit {
     let totalFaltas = 0;
     let totalHorasTrabajadas = 0;
 
-    groupedByDay.forEach((dayData, date) => {
+    groupedByDay.forEach((dayData) => {
       const hasIngreso = !!dayData.ingreso;
       const hasSalida = !!dayData.salida;
 
