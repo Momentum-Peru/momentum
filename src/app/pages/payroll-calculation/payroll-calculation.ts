@@ -73,7 +73,7 @@ export class PayrollCalculationPage implements OnInit {
 
   // Filtros
   searchQuery = signal('');
-  selectedMonth = signal<Date | null>(null);
+  dateRange = signal<Date[] | null>(null);
 
   // Diálogos
   showUserDetailsDialog = signal(false);
@@ -84,27 +84,30 @@ export class PayrollCalculationPage implements OnInit {
   private readonly TARDANZA_MINUTE = 0;
 
   ngOnInit(): void {
-    // Establecer mes por defecto (mes actual)
-    this.selectedMonth.set(new Date());
+    // Establecer rango por defecto (mes actual)
+    const today = new Date();
+    const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    this.dateRange.set([startDate, endDate]);
     this.loadAllUsersData();
   }
 
   /**
-   * Obtener fecha de inicio del mes seleccionado
+   * Obtener fecha de inicio del rango seleccionado
    */
   getStartDate(): Date | null {
-    if (!this.selectedMonth()) return null;
-    const month = this.selectedMonth()!;
-    return new Date(month.getFullYear(), month.getMonth(), 1);
+    const range = this.dateRange();
+    if (!range || !Array.isArray(range) || range.length === 0) return null;
+    return range[0] || null;
   }
 
   /**
-   * Obtener fecha de fin del mes seleccionado
+   * Obtener fecha de fin del rango seleccionado
    */
   getEndDate(): Date | null {
-    if (!this.selectedMonth()) return null;
-    const month = this.selectedMonth()!;
-    return new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    const range = this.dateRange();
+    if (!range || !Array.isArray(range) || range.length < 2) return null;
+    return range[1] || null;
   }
 
   /**
@@ -221,7 +224,7 @@ export class PayrollCalculationPage implements OnInit {
     let totalFaltas = 0;
     let totalHorasTrabajadas = 0;
 
-    groupedByDay.forEach((dayData, date) => {
+    groupedByDay.forEach((dayData) => {
       const hasIngreso = !!dayData.ingreso;
       const hasSalida = !!dayData.salida;
 
@@ -305,8 +308,22 @@ export class PayrollCalculationPage implements OnInit {
    */
   clearFilters(): void {
     this.searchQuery.set('');
-    this.selectedMonth.set(new Date());
+    // Establecer rango por defecto (mes actual)
+    const today = new Date();
+    const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    this.dateRange.set([startDate, endDate]);
     this.loadAllUsersData();
+  }
+
+  /**
+   * Manejar cambio del rango de fechas
+   */
+  onRangeChange(range: Date[] | null): void {
+    this.dateRange.set(Array.isArray(range) && range.length === 2 ? range : null);
+    if (this.dateRange()) {
+      this.applyFilters();
+    }
   }
 
   /**
