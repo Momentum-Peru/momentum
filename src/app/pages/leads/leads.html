@@ -45,7 +45,9 @@
     <ng-template pTemplate="content">
       <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div>
-          <label for="leadSearch" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label
+            for="leadSearch"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Buscar</label
           >
           <input
@@ -59,7 +61,9 @@
           />
         </div>
         <div>
-          <label for="leadStatusFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label
+            for="leadStatusFilter"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Estado</label
           >
           <p-select
@@ -76,7 +80,9 @@
           ></p-select>
         </div>
         <div>
-          <label for="leadSourceFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label
+            for="leadSourceFilter"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Origen</label
           >
           <p-select
@@ -93,7 +99,9 @@
           ></p-select>
         </div>
         <div>
-          <label for="leadCompanyFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label
+            for="leadCompanyFilter"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Empresa Momentum</label
           >
           <p-select
@@ -421,7 +429,8 @@
 
   <!-- Modal de creación/edición -->
   <p-dialog
-    [(visible)]="showDialog"
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '50rem' }"
     [draggable]="false"
@@ -437,7 +446,10 @@
         <h4 class="text-lg font-semibold mb-3">Información Básica</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label for="leadName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="leadName"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Nombre del Lead *
             </label>
             <input
@@ -451,7 +463,10 @@
             />
           </div>
           <div>
-            <label for="leadCompany" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="leadCompany"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Empresa Momentum *
             </label>
             <p-select
@@ -469,7 +484,10 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
           <div>
-            <label for="leadAssignedTo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="leadAssignedTo"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Asignado a *
             </label>
             <p-select
@@ -487,7 +505,10 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
           <div>
-            <label for="leadStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="leadStatus"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Estado
             </label>
             <p-select
@@ -502,7 +523,10 @@
             ></p-select>
           </div>
           <div>
-            <label for="leadSource" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="leadSource"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Origen
             </label>
             <p-select
@@ -518,7 +542,10 @@
           </div>
         </div>
         <div class="mt-3">
-          <label for="leadEstimatedValue" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label
+            for="leadEstimatedValue"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
             Valor Estimado
           </label>
           <p-inputNumber
@@ -534,10 +561,13 @@
           ></p-inputNumber>
         </div>
         <div class="mt-3">
-          <label for="leadDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label
+            for="leadDescription"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
             Descripción
           </label>
-        <textarea
+          <textarea
             id="leadDescription"
             name="leadDescription"
             pTextarea
@@ -555,7 +585,10 @@
         <h4 class="text-lg font-semibold mb-3">Información de Contacto *</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label for="contactName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="contactName"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Nombre del Contacto *
             </label>
             <input
@@ -569,7 +602,10 @@
             />
           </div>
           <div>
-            <label for="contactEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="contactEmail"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Email de Contacto *
             </label>
             <input
@@ -584,7 +620,10 @@
             />
           </div>
           <div>
-            <label for="contactPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="contactPhone"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Teléfono de Contacto
             </label>
             <input
@@ -598,7 +637,10 @@
             />
           </div>
           <div>
-            <label for="contactPosition" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="contactPosition"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Cargo de Contacto
             </label>
             <input
@@ -612,7 +654,10 @@
             />
           </div>
           <div>
-            <label for="contactDepartment" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="contactDepartment"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Departamento
             </label>
             <input
@@ -633,7 +678,10 @@
         <h4 class="text-lg font-semibold mb-3">Información de Empresa (Opcional)</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label for="companyName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="companyName"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Empresa del Lead
             </label>
             <input
@@ -647,21 +695,31 @@
             />
           </div>
           <div>
-            <label for="companyTaxId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="companyTaxId"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               RUC/DNI
+              <span class="text-xs text-gray-500 font-normal ml-1"
+                >(se autocompleta automáticamente)</span
+              >
             </label>
             <input
               id="companyTaxId"
               name="companyTaxId"
               pInputText
-              placeholder="20123456789"
+              placeholder="20123456789 o 12345678"
               [ngModel]="editing()?.company?.taxId"
               (ngModelChange)="onCompanyChange('taxId', $event)"
               class="w-full"
+              maxlength="11"
             />
           </div>
           <div>
-            <label for="companySector" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="companySector"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Industria
             </label>
             <input
@@ -675,7 +733,10 @@
             />
           </div>
           <div>
-            <label for="companySize" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="companySize"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Tamaño de Empresa
             </label>
             <input
@@ -689,7 +750,10 @@
             />
           </div>
           <div class="md:col-span-2">
-            <label for="companyWebsite" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="companyWebsite"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Sitio Web
             </label>
             <input
@@ -710,7 +774,10 @@
         <h4 class="text-lg font-semibold mb-3">Ubicación (Opcional)</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label for="locationCountry" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="locationCountry"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               País
             </label>
             <p-select
@@ -727,7 +794,10 @@
             ></p-select>
           </div>
           <div>
-            <label for="locationProvince" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="locationProvince"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Provincia/Estado
             </label>
             <p-select
@@ -745,7 +815,10 @@
             ></p-select>
           </div>
           <div>
-            <label for="locationDistrict" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="locationDistrict"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Distrito/Municipio
             </label>
             <p-select
@@ -763,7 +836,10 @@
             ></p-select>
           </div>
           <div>
-            <label for="locationAddress" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              for="locationAddress"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Dirección
             </label>
             <input
@@ -782,7 +858,10 @@
       <!-- Notas -->
       <div class="border-t pt-4">
         <h4 class="text-lg font-semibold mb-3">Notas</h4>
-        <label for="leadNotes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label
+          for="leadNotes"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
           Notas adicionales
         </label>
         <textarea
@@ -798,14 +877,21 @@
       </div>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
       <button pButton label="Guardar" (click)="save()" aria-label="Guardar lead"></button>
     </ng-template>
   </p-dialog>
 
   <!-- Modal de detalles -->
   <p-dialog
-    [(visible)]="showDetailsDialog"
+    [visible]="showDetailsDialog()"
+    (visibleChange)="showDetailsDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '60rem' }"
     [draggable]="false"
@@ -1084,6 +1170,45 @@
       </div>
       }
 
+      <!-- Fotos -->
+      @if (normalizeToArray(viewingLead()?.photos).length > 0) {
+      <div>
+        <h3
+          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+        >
+          <i class="pi pi-image text-pink-500"></i>
+          Fotos
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          @for (photo of normalizeToArray(viewingLead()?.photos); track $index) {
+          <div
+            class="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity border border-gray-200 dark:border-gray-600"
+            (click)="openPhotoModal(normalizeToArray(viewingLead()?.photos), $index)"
+            (keyup.enter)="openPhotoModal(normalizeToArray(viewingLead()?.photos), $index)"
+            (keyup.space)="openPhotoModal(normalizeToArray(viewingLead()?.photos), $index)"
+            tabindex="0"
+            role="button"
+            aria-label="Ver foto"
+          >
+            <img
+              [src]="photo"
+              class="w-full h-full object-cover"
+              alt="Foto del lead"
+              loading="lazy"
+            />
+            @if (normalizeToArray(viewingLead()?.photos).length > 1 && $index === 0) {
+            <div
+              class="absolute top-1 left-1 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
+            >
+              {{ normalizeToArray(viewingLead()?.photos).length }} fotos
+            </div>
+            }
+          </div>
+          }
+        </div>
+      </div>
+      }
+
       <!-- Seguimientos -->
       <div>
         <div class="flex items-center justify-between mb-4">
@@ -1110,11 +1235,15 @@
         } @else {
         <div class="space-y-3">
           @for (followUp of leadFollowUps(); track followUp._id || $index) {
-          <div class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+          <div
+            class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
+          >
             <div class="flex items-start justify-between">
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-2">
-                  <h4 class="font-semibold text-gray-900 dark:text-gray-100">{{ followUp.title }}</h4>
+                  <h4 class="font-semibold text-gray-900 dark:text-gray-100">
+                    {{ followUp.title }}
+                  </h4>
                   <p-tag
                     [value]="getFollowUpTypeLabel(followUp.type)"
                     severity="info"
@@ -1122,11 +1251,19 @@
                   ></p-tag>
                   <p-tag
                     [value]="getFollowUpStatusLabel(followUp.status)"
-                    [severity]="followUp.status === 'COMPLETED' ? 'success' : followUp.status === 'CANCELLED' ? 'danger' : 'warn'"
+                    [severity]="
+                      followUp.status === 'COMPLETED'
+                        ? 'success'
+                        : followUp.status === 'CANCELLED'
+                        ? 'danger'
+                        : 'warn'
+                    "
                     styleClass="text-xs"
                   ></p-tag>
                 </div>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ followUp.description }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  {{ followUp.description }}
+                </p>
                 <div class="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-500">
                   <span>
                     <i class="pi pi-calendar mr-1"></i>
@@ -1138,7 +1275,9 @@
                   </span>
                 </div>
                 @if (followUp.outcome) {
-                <div class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm text-gray-700 dark:text-gray-300">
+                <div
+                  class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm text-gray-700 dark:text-gray-300"
+                >
                   <strong>Resultado:</strong> {{ followUp.outcome }}
                 </div>
                 }
@@ -1162,14 +1301,21 @@
           [disabled]="!viewingLead()?._id"
           aria-label="Crear nuevo seguimiento"
         ></button>
-        <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
+        <button
+          pButton
+          label="Cerrar"
+          class="p-button-text"
+          (click)="closeDetails()"
+          aria-label="Cerrar"
+        ></button>
       </div>
     </ng-template>
   </p-dialog>
 
   <!-- Modal de convertir a cliente -->
   <p-dialog
-    [(visible)]="showConvertDialog"
+    [visible]="showConvertDialog()"
+    (visibleChange)="showConvertDialog.set($event)"
     [modal]="true"
     [style]="{ width: '90vw', maxWidth: '32rem' }"
     [draggable]="false"
@@ -1189,7 +1335,10 @@
         <strong>{{ convertingLead()?.name }}</strong>
       </p>
       <div>
-        <label for="convertClientSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label
+          for="convertClientSelect"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        >
           Cliente *
         </label>
         <p-select
@@ -1207,7 +1356,13 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeConvert()" aria-label="Cancelar"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeConvert()"
+        aria-label="Cancelar"
+      ></button>
       <button
         pButton
         label="Convertir"
@@ -1221,7 +1376,8 @@
 
   <!-- Modal de estadísticas -->
   <p-dialog
-    [(visible)]="showStatsDialog"
+    [visible]="showStatsDialog()"
+    (visibleChange)="showStatsDialog.set($event)"
     [modal]="true"
     [style]="{ width: '90vw', maxWidth: '40rem' }"
     [draggable]="false"
@@ -1290,8 +1446,76 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()" aria-label="Cerrar estadísticas"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeStats()"
+        aria-label="Cerrar estadísticas"
+      ></button>
     </ng-template>
   </p-dialog>
 
+  <!-- Modal de fotos -->
+  <p-dialog
+    [visible]="showPhotoModal()"
+    (visibleChange)="showPhotoModal.set($event)"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '80rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center justify-between w-full">
+        <span class="text-lg font-semibold">
+          Foto ({{ photoModalCurrentIndex() + 1 }} / {{ photoModalUrls().length }})
+        </span>
+        <button
+          pButton
+          icon="pi pi-times"
+          class="p-button-text p-button-rounded"
+          (click)="closePhotoModal()"
+          aria-label="Cerrar modal de fotos"
+        ></button>
+      </div>
+    </ng-template>
+
+    <div class="relative flex items-center justify-center min-h-[400px] max-h-[70vh]">
+      <!-- Botón anterior -->
+      @if (photoModalCurrentIndex() > 0) {
+      <button
+        pButton
+        icon="pi pi-chevron-left"
+        class="p-button-rounded p-button-text absolute left-2 z-10 bg-white bg-opacity-80 hover:bg-opacity-100"
+        (click)="previousPhoto()"
+        pTooltip="Anterior"
+        aria-label="Foto anterior"
+      ></button>
+      }
+
+      <!-- Foto actual -->
+      <div class="w-full h-full flex items-center justify-center">
+        @if (photoModalUrls()[photoModalCurrentIndex()]) {
+        <img
+          [src]="photoModalUrls()[photoModalCurrentIndex()]"
+          class="max-w-full max-h-[70vh] object-contain rounded"
+          alt="Foto del lead"
+        />
+        }
+      </div>
+
+      <!-- Botón siguiente -->
+      @if (photoModalCurrentIndex() < photoModalUrls().length - 1) {
+      <button
+        pButton
+        icon="pi pi-chevron-right"
+        class="p-button-rounded p-button-text absolute right-2 z-10 bg-white bg-opacity-80 hover:bg-opacity-100"
+        (click)="nextPhoto()"
+        pTooltip="Siguiente"
+        aria-label="Foto siguiente"
+      ></button>
+      }
+    </div>
+  </p-dialog>
 </div>

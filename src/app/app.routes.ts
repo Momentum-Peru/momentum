@@ -133,6 +133,15 @@ export const routes: Routes = [
         data: { menuPermission: '/time-tracking' },
       },
       {
+        path: 'payroll-calculation',
+        loadComponent: () =>
+          import('./pages/payroll-calculation/payroll-calculation').then(
+            (m) => m.PayrollCalculationPage
+          ),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/payroll-calculation' },
+      },
+      {
         path: 'users',
         loadComponent: () => import('./pages/users/users').then((m) => m.UsersPage),
         canActivate: [MenuPermissionGuard],

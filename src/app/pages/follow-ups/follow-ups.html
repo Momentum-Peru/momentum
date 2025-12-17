@@ -4,23 +4,72 @@
 
   <!-- Header -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-    <h1 class="text-2xl font-bold text-gray-800">Gestión de Seguimientos</h1>
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Gestión de Seguimientos</h1>
     <button
       pButton
       type="button"
-      label="Nuevo Seguimiento"
       icon="pi pi-plus"
+      [disabled]="!selectedLeadId()"
       (click)="newItem()"
+      pTooltip="Selecciona un lead primero"
       aria-label="Crear nuevo seguimiento"
-    ></button>
+    >
+      Nuevo Seguimiento
+    </button>
   </div>
 
-  <!-- Filtros -->
+  <!-- Selector de Lead -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div class="space-y-2">
+        <label
+          for="leadSelector"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        >
+          <i class="pi pi-user mr-2"></i>
+          Seleccionar Lead *
+        </label>
+        <p-select
+          id="leadSelector"
+          [options]="leads()"
+          optionLabel="name"
+          optionValue="_id"
+          [ngModel]="selectedLeadId()"
+          (ngModelChange)="onLeadSelected($event)"
+          placeholder="Selecciona un lead para ver sus seguimientos"
+          [showClear]="true"
+          [appendTo]="'body'"
+          styleClass="w-full"
+          class="w-full"
+          [filter]="true"
+          filterBy="name"
+        >
+          <ng-template let-lead pTemplate="item">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-user text-gray-500"></i>
+              <span>{{ lead.name }}</span>
+            </div>
+          </ng-template>
+        </p-select>
+        @if (!selectedLeadId()) {
+        <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 mt-2">
+          <i class="pi pi-info-circle"></i>
+          Selecciona un lead para comenzar a gestionar sus seguimientos
+        </p>
+        }
+      </div>
+    </ng-template>
+  </p-card>
+
+  <!-- Filtros (solo visible cuando hay lead seleccionado) -->
+  @if (selectedLeadId()) {
   <p-card>
     <ng-template pTemplate="content">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label for="followUpStatusFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label
+            for="followUpStatusFilter"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Estado</label
           >
           <p-select
@@ -37,7 +86,9 @@
           ></p-select>
         </div>
         <div>
-          <label for="followUpTypeFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <label
+            for="followUpTypeFilter"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >Tipo</label
           >
           <p-select
@@ -67,23 +118,30 @@
       </div>
     </ng-template>
   </p-card>
+  }
 
-  <!-- Vista Desktop: Tabla -->
+  <!-- Vista Desktop: Tabla (solo visible cuando hay lead seleccionado) -->
+  @if (selectedLeadId()) {
   <div class="hidden md:block">
     <p-table [value]="items()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
       <ng-template pTemplate="header">
         <tr>
+          <th>Seguimiento</th>
           <th>Título</th>
           <th>Tipo</th>
           <th>Estado</th>
           <th>Fecha Programada</th>
-          <th>Asociado a</th>
           <th>Usuario</th>
           <th class="text-right">Acciones</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
         <tr>
+          <td>
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Seguimiento {{ getFollowUpNumber(row) }}
+            </span>
+          </td>
           <td>
             <div class="font-semibold text-gray-900 dark:text-gray-100 break-words">
               {{ row.title }}
@@ -104,17 +162,6 @@
             <span class="text-sm text-gray-600 dark:text-gray-400">
               {{ row.scheduledDate | date : 'dd/MM/yyyy HH:mm' }}
             </span>
-          </td>
-          <td>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-              @if (row.leadId) {
-              <span>Lead: {{ getLeadName(row.leadId) }}</span>
-              } @else if (row.clientId) {
-              <span>Cliente: {{ getClientName(row.clientId) }}</span>
-              } @else {
-              <span>-</span>
-              }
-            </div>
           </td>
           <td>
             <span class="text-sm text-gray-600 dark:text-gray-400">
@@ -153,8 +200,10 @@
       </ng-template>
     </p-table>
   </div>
+  }
 
-  <!-- Vista Móvil -->
+  <!-- Vista Móvil (solo visible cuando hay lead seleccionado) -->
+  @if (selectedLeadId()) {
   <div class="md:hidden space-y-3">
     @for (row of items(); track row._id || $index) {
     <div
@@ -167,6 +216,9 @@
         [attr.aria-label]="'Expandir o contraer detalles del seguimiento: ' + row.title"
       >
         <div class="flex-1 text-left">
+          <div class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">
+            Seguimiento {{ getFollowUpNumber(row) }}
+          </div>
           <div class="font-semibold text-gray-900 dark:text-gray-100">{{ row.title }}</div>
           <div class="text-sm text-gray-500 dark:text-gray-400">
             {{ getTypeLabel(row.type) }} - {{ row.scheduledDate | date : 'dd/MM/yyyy' }}
@@ -218,6 +270,22 @@
     </div>
     }
   </div>
+  } @else {
+  <!-- Mensaje cuando no hay lead seleccionado -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div class="flex flex-col items-center justify-center py-12 text-center">
+        <i class="pi pi-user text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          Selecciona un Lead
+        </h3>
+        <p class="text-gray-500 dark:text-gray-400 max-w-md">
+          Por favor, selecciona un lead del selector superior para ver y gestionar sus seguimientos.
+        </p>
+      </div>
+    </ng-template>
+  </p-card>
+  }
 
   <!-- Modal de creación/edición -->
   <p-dialog
@@ -235,7 +303,11 @@
     <div class="space-y-4">
       <!-- Lead Selector -->
       <div>
-        <label for="followUpLead" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asociar a Lead *</label>
+        <label
+          for="followUpLead"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Asociar a Lead *</label
+        >
         <p-select
           id="followUpLead"
           [options]="leads()"
@@ -255,7 +327,11 @@
 
       <!-- User Selector -->
       <div>
-        <label for="followUpUser" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Usuario *</label>
+        <label
+          for="followUpUser"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Usuario *</label
+        >
         <p-select
           id="followUpUser"
           [options]="users()"
@@ -275,13 +351,18 @@
           pButton
           type="button"
           icon="pi pi-microphone"
-          label="Grabar con IA"
           class="w-full"
           (click)="openAudioAnalysisDialog()"
           pTooltip="Grabar audio para autocompletar"
-        ></button>
+        >
+          Grabar con IA
+        </button>
         <div>
-          <label for="followUpDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción *</label>
+          <label
+            for="followUpDescription"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Descripción *</label
+          >
           <textarea
             id="followUpDescription"
             pTextarea
@@ -297,7 +378,11 @@
       <!-- Type & Status -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="followUpType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo *</label>
+          <label
+            for="followUpType"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Tipo *</label
+          >
           <p-select
             id="followUpType"
             [options]="typeOptions"
@@ -311,7 +396,11 @@
           ></p-select>
         </div>
         <div>
-          <label for="followUpStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+          <label
+            for="followUpStatus"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Estado</label
+          >
           <p-select
             id="followUpStatus"
             [options]="statusOptions"
@@ -329,7 +418,11 @@
       <!-- Dates -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="followUpScheduledDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Programada *</label>
+          <label
+            for="followUpScheduledDate"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Fecha Programada *</label
+          >
           <p-datepicker
             id="followUpScheduledDate"
             [ngModel]="getScheduledDate()"
@@ -343,7 +436,11 @@
           ></p-datepicker>
         </div>
         <div>
-          <label for="followUpNextDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Próximo Seguimiento</label>
+          <label
+            for="followUpNextDate"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Próximo Seguimiento</label
+          >
           <p-datepicker
             id="followUpNextDate"
             [ngModel]="getNextFollowUpDate()"
@@ -360,7 +457,11 @@
 
       <!-- Outcome -->
       <div>
-        <label for="followUpOutcome" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Resultado</label>
+        <label
+          for="followUpOutcome"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Resultado</label
+        >
         <textarea
           id="followUpOutcome"
           pTextarea
@@ -373,7 +474,13 @@
       </div>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
       <button pButton label="Guardar" (click)="save()" aria-label="Guardar seguimiento"></button>
     </ng-template>
   </p-dialog>
@@ -413,13 +520,20 @@
     </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeDetails()"
+        aria-label="Cerrar"
+      ></button>
     </ng-template>
   </p-dialog>
 
   <!-- Modal de Grabación de Audio -->
   <p-dialog
-    [(visible)]="showAudioAnalysisDialog"
+    [visible]="showAudioAnalysisDialog()"
+    (visibleChange)="showAudioAnalysisDialog.set($event)"
     [modal]="true"
     [style]="{ width: '90vw', maxWidth: '400px' }"
     [draggable]="false"
@@ -429,43 +543,55 @@
     (onHide)="closeAudioAnalysisDialog()"
   >
     <div class="flex flex-col items-center justify-center p-6 space-y-6">
-        <div class="relative">
-            <div class="w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300"
-                [ngClass]="{
-                    'bg-red-100 animate-pulse': isRecording(),
-                    'bg-gray-100': !isRecording()
-                }">
-                <i class="pi text-4xl" [ngClass]="isRecording() ? 'pi-microphone text-red-600' : 'pi-microphone text-gray-400'"></i>
-            </div>
+      <div class="relative">
+        <div
+          class="w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300"
+          [ngClass]="{
+            'bg-red-100 animate-pulse': isRecording(),
+            'bg-gray-100': !isRecording()
+          }"
+        >
+          <i
+            class="pi text-4xl"
+            [ngClass]="isRecording() ? 'pi-microphone text-red-600' : 'pi-microphone text-gray-400'"
+          ></i>
         </div>
+      </div>
 
-        <div class="text-center space-y-2">
-            <h3 class="text-xl font-semibold text-gray-800 dark:text-white">
-                {{ isRecording() ? 'Grabando...' : 'Listo para grabar' }}
-            </h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ isRecording() ? 'Habla claramente para obtener un mejor análisis.' : 'Presiona el botón para comenzar.' }}
-            </p>
+      <div class="text-center space-y-2">
+        <h3 class="text-xl font-semibold text-gray-800 dark:text-white">
+          {{ isRecording() ? 'Grabando...' : 'Listo para grabar' }}
+        </h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          {{
+            isRecording()
+              ? 'Habla claramente para obtener un mejor análisis.'
+              : 'Presiona el botón para comenzar.'
+          }}
+        </p>
+      </div>
+
+      @if (uploadingAudio() || analyzingAudio()) {
+      <div class="w-full space-y-2">
+        <div class="flex items-center justify-center gap-2 text-blue-600">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span class="text-sm font-medium">{{
+            uploadingAudio() ? 'Subiendo audio...' : 'Analizando con IA...'
+          }}</span>
         </div>
+      </div>
+      }
 
-        @if (uploadingAudio() || analyzingAudio()) {
-            <div class="w-full space-y-2">
-                <div class="flex items-center justify-center gap-2 text-blue-600">
-                    <i class="pi pi-spin pi-spinner"></i>
-                    <span class="text-sm font-medium">{{ uploadingAudio() ? 'Subiendo audio...' : 'Analizando con IA...' }}</span>
-                </div>
-            </div>
-        }
-
-        <button
-            pButton
-            [label]="isRecording() ? 'Detener y Analizar' : 'Comenzar Grabación'"
-            [icon]="isRecording() ? 'pi pi-stop' : 'pi pi-circle-fill'"
-            [class]="isRecording() ? 'p-button-danger' : 'p-button-primary'"
-            class="w-full"
-            (click)="toggleRecording()"
-            [disabled]="uploadingAudio() || analyzingAudio()"
-        ></button>
+      <button
+        pButton
+        [icon]="isRecording() ? 'pi pi-stop' : 'pi pi-circle-fill'"
+        [class]="isRecording() ? 'p-button-danger' : 'p-button-primary'"
+        class="w-full"
+        (click)="toggleRecording()"
+        [disabled]="uploadingAudio() || analyzingAudio()"
+      >
+        {{ isRecording() ? 'Detener y Analizar' : 'Comenzar Grabación' }}
+      </button>
     </div>
   </p-dialog>
 </div>

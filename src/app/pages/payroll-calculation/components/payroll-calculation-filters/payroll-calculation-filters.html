@@ -1,0 +1,114 @@
+<p-card class="mb-4">
+  <form [formGroup]="filtersForm" class="flex flex-col gap-4">
+    <!-- Filtros básicos -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="flex flex-col gap-2">
+        <label for="employeeId" class="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >Usuario</label
+        >
+        <p-select
+          id="employeeId"
+          [options]="userOptions()"
+          formControlName="employeeId"
+          placeholder="Seleccionar usuario"
+          [loading]="loading"
+          optionLabel="label"
+          optionValue="value"
+          class="w-full"
+        ></p-select>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="startDate" class="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >Fecha Inicio</label
+        >
+        <p-datepicker
+          id="startDate"
+          formControlName="startDate"
+          iconDisplay="input"
+          dateFormat="dd/mm/yy"
+          placeholder="Seleccionar fecha"
+          class="w-full"
+        ></p-datepicker>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="endDate" class="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >Fecha Fin</label
+        >
+        <p-datepicker
+          id="endDate"
+          formControlName="endDate"
+          iconDisplay="input"
+          dateFormat="dd/mm/yy"
+          placeholder="Seleccionar fecha"
+          class="w-full"
+        ></p-datepicker>
+      </div>
+    </div>
+
+    <!-- Filtros avanzados -->
+    @if (showAdvancedFilters()) {
+    <div
+      class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+    >
+      <div class="flex flex-col gap-2">
+        <label for="isAbsent" class="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >Estado</label
+        >
+        <p-select
+          id="isAbsent"
+          formControlName="isAbsent"
+          [options]="[
+            { label: 'Todos', value: null },
+            { label: 'Con asistencia', value: false },
+            { label: 'Faltas', value: true }
+          ]"
+          placeholder="Seleccionar estado"
+          [loading]="loading"
+          optionLabel="label"
+          optionValue="value"
+          class="w-full"
+        ></p-select>
+      </div>
+    </div>
+    }
+
+    <!-- Botones de acción -->
+    <div class="flex flex-wrap gap-2">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-filter"
+        (click)="applyFilters()"
+        [loading]="loading"
+        class="w-full md:w-auto"
+      >
+        Aplicar Filtros
+      </button>
+      @if (hasActiveFilters()) {
+      <button
+        pButton
+        type="button"
+        icon="pi pi-times"
+        (click)="clearFilters()"
+        severity="secondary"
+        class="w-full md:w-auto"
+      >
+        Limpiar
+      </button>
+      }
+      <button
+        pButton
+        type="button"
+        [icon]="showAdvancedFilters() ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+        (click)="toggleAdvancedFilters()"
+        severity="secondary"
+        text
+        class="w-full md:w-auto"
+      >
+        {{ showAdvancedFilters() ? 'Ocultar Filtros' : 'Filtros Avanzados' }}
+      </button>
+    </div>
+  </form>
+</p-card>

@@ -413,9 +413,10 @@
       <input
         pInputText
         name="clientTaxId"
-        placeholder="RUC/DNI"
+        placeholder="RUC/DNI (se autocompleta automáticamente)"
         [ngModel]="editing()?.taxId"
         (ngModelChange)="onEditChange('taxId', $event)"
+        maxlength="11"
       />
 
       <!-- Sección de Ubicación -->

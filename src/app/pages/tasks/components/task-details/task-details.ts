@@ -133,7 +133,8 @@ import {
             <div class="space-y-2">
               <textarea
                 pInputTextarea
-                [(ngModel)]="incompleteReasonValue"
+                [ngModel]="incompleteReasonValue()"
+                (ngModelChange)="incompleteReasonValue.set($event)"
                 placeholder="Explica por qué no se pudo terminar la tarea..."
                 rows="3"
                 class="w-full"
@@ -194,29 +195,129 @@ import {
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
               Archivos Adjuntos
             </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div class="space-y-3">
               @for (attachment of task.attachments; track attachment._id || $index) {
               <div
-                class="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                class="bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden"
               >
-                <i class="pi pi-file text-gray-500 text-lg"></i>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {{ attachment.originalName }}
-                  </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    {{ formatFileSize(attachment.size) }}
-                  </p>
+                @if (attachment.mimeType && attachment.mimeType.startsWith('audio/')) {
+                <!-- Audio -->
+                <div class="p-3">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="pi pi-volume-up text-blue-500"></i>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ attachment.originalName }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      ({{ formatFileSize(attachment.size || 0) }})
+                    </span>
+                  </div>
+                  <audio [src]="attachment.url" controls class="w-full"></audio>
                 </div>
-                <a
-                  [href]="attachment.url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                  pTooltip="Abrir archivo"
-                >
-                  <i class="pi pi-external-link"></i>
-                </a>
+                } @else if (attachment.mimeType && attachment.mimeType.startsWith('video/')) {
+                <!-- Video -->
+                <div class="p-3">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="pi pi-video text-red-500"></i>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ attachment.originalName }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      ({{ formatFileSize(attachment.size || 0) }})
+                    </span>
+                  </div>
+                  <video [src]="attachment.url" controls class="w-full max-h-64 rounded"></video>
+                </div>
+                } @else if (attachment.mimeType && attachment.mimeType.startsWith('image/')) {
+                <!-- Imagen -->
+                <div class="p-3">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="pi pi-image text-green-500"></i>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ attachment.originalName }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      ({{ formatFileSize(attachment.size || 0) }})
+                    </span>
+                  </div>
+                  <img
+                    [src]="attachment.url"
+                    [alt]="attachment.originalName"
+                    class="w-full max-h-64 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity"
+                    (click)="openFileInNewTab(attachment.url)"
+                    (keydown.enter)="openFileInNewTab(attachment.url)"
+                    tabindex="0"
+                    role="button"
+                    [attr.aria-label]="'Abrir imagen ' + attachment.originalName"
+                  />
+                </div>
+                } @else if (attachment.mimeType === 'application/pdf') {
+                <!-- PDF -->
+                <div class="p-3">
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <div class="flex items-center gap-2">
+                      <i class="pi pi-file-pdf text-red-500"></i>
+                      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ attachment.originalName }}
+                      </span>
+                      <span class="text-xs text-gray-500 dark:text-gray-400">
+                        ({{ formatFileSize(attachment.size || 0) }})
+                      </span>
+                    </div>
+                  </div>
+                  <!-- Miniatura del PDF -->
+                  <div
+                    class="relative w-full border border-gray-200 dark:border-gray-600 rounded overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors group"
+                    (click)="openPdfModal(attachment.url, attachment.originalName)"
+                    (keydown.enter)="openPdfModal(attachment.url, attachment.originalName)"
+                    tabindex="0"
+                    role="button"
+                    [attr.aria-label]="'Ver PDF completo: ' + attachment.originalName"
+                  >
+                    <!-- Miniatura - Primera página del PDF -->
+                    <iframe
+                      [src]="getSafePdfUrl(attachment.url, 1)"
+                      class="w-full pointer-events-none"
+                      style="height: 200px; border: none;"
+                      title="Miniatura del PDF"
+                      loading="lazy"
+                    ></iframe>
+                    <!-- Overlay con información -->
+                    <div
+                      class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center"
+                    >
+                      <div
+                        class="opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-800 px-3 py-1.5 rounded-md shadow-lg flex items-center gap-2"
+                      >
+                        <i class="pi pi-eye text-blue-600 dark:text-blue-400"></i>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >Ver PDF completo</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                } @else {
+                <!-- Documento genérico -->
+                <div class="flex items-center gap-2 p-3">
+                  <i class="pi pi-file text-gray-500"></i>
+                  <span class="text-sm text-gray-700 dark:text-gray-300 flex-1">
+                    {{ attachment.originalName }}
+                  </span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    ({{ formatFileSize(attachment.size || 0) }})
+                  </span>
+                  <a
+                    [href]="attachment.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                    pTooltip="Abrir archivo"
+                  >
+                    <i class="pi pi-external-link"></i>
+                  </a>
+                </div>
+                }
               </div>
               }
             </div>
@@ -587,7 +688,7 @@ import {
             (keydown.enter)="documentsInput.click()"
             (keydown.space)="documentsInput.click()"
             [attr.aria-label]="
-              'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos'
+              'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos o pega archivos con Ctrl+V'
             "
           >
             <div class="text-center">
@@ -607,7 +708,7 @@ import {
                 @if (isDragging()) {
                 <span>Suelta los archivos aquí</span>
                 } @else {
-                <span>Arrastra archivos aquí o haz clic para seleccionar</span>
+                <span>Arrastra archivos aquí, haz clic para seleccionar o pega con Ctrl+V</span>
                 }
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -924,6 +1025,9 @@ export class TaskDetailsComponent {
   public readonly incompleteReasonError = signal<string | null>(null);
   public readonly savingIncompleteReason = signal<boolean>(false);
 
+  // Referencia al método onPaste para poder remover el listener
+  private pasteHandler = (event: ClipboardEvent) => this.onPaste(event);
+
   // Form
   public readonly commentForm: FormGroup;
 
@@ -1133,6 +1237,16 @@ export class TaskDetailsComponent {
    * Maneja el cierre del modal
    */
   public onClose(): void {
+    // Remover listener global de paste
+    document.removeEventListener('paste', this.pasteHandler);
+    // Limpiar todos los archivos pendientes
+    this.pendingAudio.set([]);
+    this.pendingPhoto.set([]);
+    this.pendingVideo.set([]);
+    this.pendingDocuments.set([]);
+    // Limpiar el formulario de comentario
+    this.commentForm.reset();
+    this.commentError.set(null);
     this.closeDialog.emit();
   }
 
@@ -1140,6 +1254,8 @@ export class TaskDetailsComponent {
    * Maneja cuando se abre el diálogo
    */
   public onDialogShow(): void {
+    // Agregar listener global de paste
+    document.addEventListener('paste', this.pasteHandler);
     if (this.task?._id) {
       this.loadLastModificationLog(this.task._id);
       // Inicializar el valor de la razón de no terminación
@@ -1461,6 +1577,42 @@ export class TaskDetailsComponent {
   }
 
   /**
+   * Maneja el evento paste (pegar archivos)
+   */
+  public onPaste(event: ClipboardEvent): void {
+    const items = event.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    // Verificar si hay archivos en el clipboard
+    const hasFiles = Array.from(items).some((item) => item.kind === 'file');
+    if (!hasFiles) {
+      // Si no hay archivos, permitir el comportamiento normal (pegar texto)
+      return;
+    }
+
+    // Si hay archivos, procesarlos y prevenir el comportamiento por defecto
+    if (hasFiles) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const files: File[] = [];
+      for (const item of Array.from(items)) {
+        // Solo procesar archivos (no texto)
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) {
+            files.push(file);
+          }
+        }
+      }
+
+      if (files.length > 0) {
+        this.processDroppedFiles(files);
+      }
+    }
+  }
+
+  /**
    * Procesa los archivos arrastrados y los clasifica según su tipo
    */
   private processDroppedFiles(files: File[]): void {
@@ -1762,7 +1914,7 @@ export class TaskDetailsComponent {
     if (!this.task) return;
 
     const value = this.incompleteReasonValue().trim();
-    
+
     // Si el valor no cambió, no hacer nada
     const currentValue = this.task.incompleteReason || '';
     if (value === currentValue) {
@@ -1799,6 +1951,8 @@ export class TaskDetailsComponent {
           summary: 'Éxito',
           detail: value ? 'Razón guardada correctamente' : 'Razón eliminada correctamente',
         });
+        // Cerrar el detalle después de guardar exitosamente
+        this.onClose();
       },
       error: (error) => {
         console.error('Error saving incomplete reason:', error);

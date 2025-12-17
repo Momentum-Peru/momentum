@@ -1,0 +1,144 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [focusOnShow]="false"
+  [header]="isEditMode() ? 'Editar Marcación' : 'Agregar Marcación'"
+  [style]="{ width: '90vw', maxWidth: '500px' }"
+  (onShow)="onDialogShow()"
+  (onHide)="onClose()"
+>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
+    <div class="flex flex-col gap-2">
+      <label for="date" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        Fecha y Hora <span class="text-red-500">*</span>
+      </label>
+      <p-datepicker
+        id="date"
+        formControlName="date"
+        iconDisplay="input"
+        [showTime]="true"
+        hourFormat="24"
+        dateFormat="dd/mm/yy"
+        placeholder="Seleccionar fecha y hora"
+        class="w-full"
+        [class.ng-invalid]="form.get('date')?.invalid && form.get('date')?.touched"
+      ></p-datepicker>
+      @if (form.get('date')?.invalid && form.get('date')?.touched) {
+      <small class="text-red-500">La fecha y hora son requeridas</small>
+      }
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="type" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        Tipo <span class="text-red-500">*</span>
+      </label>
+      <p-select
+        id="type"
+        formControlName="type"
+        [options]="typeOptions()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Seleccionar tipo"
+        class="w-full"
+        [class.ng-invalid]="form.get('type')?.invalid && form.get('type')?.touched"
+      ></p-select>
+      @if (form.get('type')?.invalid && form.get('type')?.touched) {
+      <small class="text-red-500">El tipo es requerido</small>
+      }
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-2">
+        <label for="latitude" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Latitud
+        </label>
+        <input
+          id="latitude"
+          pInputText
+          type="number"
+          formControlName="latitude"
+          step="any"
+          placeholder="Ej: -12.046374"
+          class="w-full"
+        />
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="longitude" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Longitud
+        </label>
+        <input
+          id="longitude"
+          pInputText
+          type="number"
+          formControlName="longitude"
+          step="any"
+          placeholder="Ej: -77.042793"
+          class="w-full"
+        />
+      </div>
+    </div>
+
+    @if (isEditMode()) {
+    <div class="flex flex-col gap-2">
+      <label for="attendanceRecordId" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        Registro de Asistencia
+      </label>
+      @if (loadingAttendanceRecords()) {
+      <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>Cargando registros...</span>
+      </div>
+      } @else {
+      <p-select
+        id="attendanceRecordId"
+        formControlName="attendanceRecordId"
+        [options]="attendanceRecordOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [appendTo]="'body'"
+        placeholder="Seleccionar registro de asistencia"
+        class="w-full"
+      ></p-select>
+      <small class="text-gray-500 dark:text-gray-400">
+        Seleccione un registro de asistencia diferente o mantenga el actual.
+      </small>
+      }
+    </div>
+    } @else {
+    <div
+      class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+    >
+      <div class="flex items-start gap-2">
+        <i class="pi pi-info-circle text-blue-500 mt-0.5"></i>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-blue-900 dark:text-blue-100">Registro de Asistencia</p>
+          <p class="text-xs text-blue-700 dark:text-blue-300 mt-1">
+            Se creará automáticamente un nuevo registro de asistencia al guardar esta marcación.
+          </p>
+        </div>
+      </div>
+    </div>
+    }
+  </form>
+
+  <ng-template pTemplate="footer">
+    <div class="flex gap-2 justify-end">
+      <button pButton type="button" icon="pi pi-times" (click)="onClose()" severity="secondary">
+        Cancelar
+      </button>
+      <button
+        pButton
+        type="button"
+        [icon]="isEditMode() ? 'pi pi-check' : 'pi pi-plus'"
+        (click)="onSubmit()"
+        [disabled]="form.invalid"
+      >
+        {{ isEditMode() ? 'Actualizar' : 'Crear' }}
+      </button>
+    </div>
+  </ng-template>
+</p-dialog>

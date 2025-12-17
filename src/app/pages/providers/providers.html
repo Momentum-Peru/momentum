@@ -875,8 +875,9 @@
               <label
                 for="providerTaxId"
                 class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-                >RUC/DNI</label
-              >
+                >RUC/DNI
+                <span class="text-xs text-gray-500 font-normal ml-1">(se autocompleta automáticamente)</span>
+              </label>
               <input
                 id="providerTaxId"
                 pInputText
@@ -884,6 +885,7 @@
                 [ngModel]="editing()?.taxId"
                 (ngModelChange)="onEditChange('taxId', $event)"
                 class="w-full"
+                maxlength="11"
               />
             </div>
             <div>

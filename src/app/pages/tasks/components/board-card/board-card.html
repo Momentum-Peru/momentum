@@ -1,14 +1,16 @@
 <p-card [style]="{ height: '100%' }" styleClass="h-full hover:shadow-lg transition-shadow">
   <ng-template pTemplate="header">
     <div class="p-4 bg-gradient-to-r from-blue-500 to-blue-600">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <i class="pi pi-th-large text-white text-xl"></i>
-          <h3 class="text-white font-semibold text-lg truncate">{{ board.title }}</h3>
+      <div class="flex items-center justify-between gap-2 min-w-0">
+        <div class="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+          <!-- <i class="pi pi-th-large text-white text-xl flex-shrink-0"></i> -->
+          <h3
+            class="text-white font-semibold text-lg break-words min-w-0 uppercase"
+            style="word-break: break-word; overflow-wrap: anywhere"
+          >
+            {{ board.title }}
+          </h3>
         </div>
-        @if (isOwner) {
-        <p-tag value="Propietario" severity="success" [rounded]="true"></p-tag>
-        }
       </div>
     </div>
   </ng-template>

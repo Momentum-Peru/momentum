@@ -1,0 +1,107 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  header="Calcular Planilla"
+  [style]="{ width: '90vw', maxWidth: '600px' }"
+  (onHide)="onClose()"
+>
+  <form [formGroup]="calculateForm" (ngSubmit)="onSubmit()" class="space-y-4">
+    <div class="flex flex-col gap-2">
+      <label for="startDate" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        Fecha de Inicio <span class="text-red-500">*</span>
+      </label>
+      <p-datepicker
+        id="startDate"
+        formControlName="startDate"
+        iconDisplay="input"
+        dateFormat="dd/mm/yy"
+        placeholder="Seleccionar fecha de inicio"
+        [appendTo]="'body'"
+        [required]="true"
+        class="w-full"
+        [class.ng-invalid]="
+          calculateForm.get('startDate')?.invalid && calculateForm.get('startDate')?.touched
+        "
+      ></p-datepicker>
+      @if (calculateForm.get('startDate')?.invalid && calculateForm.get('startDate')?.touched) {
+      <small class="text-red-500">La fecha de inicio es requerida</small>
+      }
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="endDate" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        Fecha de Fin <span class="text-red-500">*</span>
+      </label>
+      <p-datepicker
+        id="endDate"
+        formControlName="endDate"
+        iconDisplay="input"
+        dateFormat="dd/mm/yy"
+        placeholder="Seleccionar fecha de fin"
+        [appendTo]="'body'"
+        [required]="true"
+        class="w-full"
+        [class.ng-invalid]="
+          calculateForm.get('endDate')?.invalid && calculateForm.get('endDate')?.touched
+        "
+      ></p-datepicker>
+      @if (calculateForm.get('endDate')?.invalid && calculateForm.get('endDate')?.touched) {
+      <small class="text-red-500">La fecha de fin es requerida</small>
+      }
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="userId" class="text-sm font-medium text-gray-700 dark:text-gray-300"
+        >Usuario</label
+      >
+      <p-select
+        id="userId"
+        formControlName="userId"
+        [options]="userOptions()"
+        placeholder="Seleccionar usuario (opcional)"
+        optionLabel="label"
+        [appendTo]="'body'"
+        optionValue="value"
+        class="w-full"
+      ></p-select>
+      <small class="text-gray-500 dark:text-gray-400">
+        Si no se selecciona, se calculará para todos los usuarios con marcaciones
+      </small>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <p-checkbox formControlName="recalculate" inputId="recalculate"></p-checkbox>
+      <label for="recalculate" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+        Recalcular registros existentes
+      </label>
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <div class="flex gap-2 justify-end">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-times"
+        (click)="onClose()"
+        severity="secondary"
+        [disabled]="loading"
+      >
+        Cancelar
+      </button>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-calculator"
+        (click)="onSubmit()"
+        [loading]="loading"
+        [disabled]="calculateForm.invalid"
+      >
+        Calcular
+      </button>
+    </div>
+  </ng-template>
+</p-dialog>

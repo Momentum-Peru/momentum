@@ -1,6 +1,6 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 mt-4 lg:mt-0">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 sm:p-8 mt-4 lg:mt-0">
   <!-- Header -->
-  <div class="mb-6">
+  <div class="mb-8">
     <div class="flex items-center flex-wrap gap-4 justify-between">
       <div>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Tableros de Tareas</h1>
@@ -48,7 +48,7 @@
 
   <!-- Lista de Tableros - Visible solo cuando NO hay un tablero seleccionado (ruta /tasks) -->
   @if (!selectedBoard()) {
-  <div class="mb-6">
+  <div class="mb-8">
     <app-board-list
       [boards]="boardsService.boards()"
       [loading]="boardsService.loading()"
@@ -143,6 +143,7 @@
   <app-native-task-form
     [task]="selectedTask() || undefined"
     [boardId]="selectedBoard()?._id"
+    [visible]="showTaskForm()"
     (save)="onTaskSave()"
     (formCancel)="closeTaskForm()"
   ></app-native-task-form>

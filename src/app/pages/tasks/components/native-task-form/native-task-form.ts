@@ -5,6 +5,7 @@ import {
   EventEmitter,
   OnInit,
   OnChanges,
+  OnDestroy,
   SimpleChanges,
   inject,
   signal,
@@ -296,26 +297,6 @@ export class TruncatePipe implements PipeTransform {
           </p>
         </div>
 
-        <!-- Incomplete Reason Field -->
-        <div class="space-y-2">
-          <label
-            for="incompleteReason"
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Razón por la que no se terminó la tarea
-          </label>
-          <textarea
-            id="incompleteReason"
-            formControlName="incompleteReason"
-            rows="3"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-            placeholder="Explica por qué no se pudo terminar la tarea (opcional)"
-          ></textarea>
-          <p class="text-gray-500 dark:text-gray-400 text-sm">
-            Este campo aparece en los detalles y en la tarjeta de la tarea
-          </p>
-        </div>
-
         <!-- Subtasks Field -->
         <div class="space-y-2">
           <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Subtareas</div>
@@ -469,6 +450,11 @@ export class TruncatePipe implements PipeTransform {
               (dragover)="onDragOver($event)"
               (dragleave)="onDragLeave($event)"
               (drop)="onDrop($event)"
+              tabindex="0"
+              role="button"
+              [attr.aria-label]="
+                'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos o pega archivos con Ctrl+V'
+              "
             >
               <div class="flex flex-col items-center justify-center pt-5 pb-6">
                 <svg
@@ -500,14 +486,15 @@ export class TruncatePipe implements PipeTransform {
                   <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta }
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  PNG, JPG, PDF, DOC, DOCX (MAX. 20MB). También puedes arrastrar desde WhatsApp
+                  PNG, JPG, PDF, DOC, DOCX, DWG, SKP (MAX. 20MB). También puedes arrastrar desde
+                  WhatsApp o pegar con Ctrl+V
                 </p>
               </div>
               <input
                 type="file"
                 class="hidden"
                 multiple
-                accept="image/*,.pdf,.doc,.docx"
+                accept="image/*,.pdf,.doc,.docx,.dwg,.skp"
                 (change)="onFileSelected($event)"
               />
             </label>
@@ -699,7 +686,7 @@ export class TruncatePipe implements PipeTransform {
     `,
   ],
 })
-export class NativeTaskFormComponent implements OnInit, OnChanges {
+export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly tasksApiService = inject(TasksApiService);
   private readonly usersApiService = inject(UsersApiService);
@@ -711,6 +698,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
 
   @Input() task: Task | undefined;
   @Input() boardId?: string;
+  @Input() visible?: boolean;
   @Output() save = new EventEmitter<Task>();
   @Output() formCancel = new EventEmitter<void>();
 
@@ -732,6 +720,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   public readonly isDragging = signal<boolean>(false);
 
   public readonly isEditing = signal<boolean>(false);
+
+  // Referencia al método onPaste para poder remover el listener
+  private pasteHandler = (event: ClipboardEvent) => this.onPaste(event);
 
   // Options for selects
   public readonly statusOptions = [
@@ -811,6 +802,15 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       this.loadBoard();
     }
     this.initializeForm();
+    // Agregar listener global de paste
+    document.addEventListener('paste', this.pasteHandler);
+  }
+
+  ngOnDestroy(): void {
+    // Remover listener global de paste
+    document.removeEventListener('paste', this.pasteHandler);
+    // Limpiar archivos seleccionados cuando el componente se destruye
+    this.selectedFiles.set([]);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -819,6 +819,15 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     }
     if (changes['boardId'] && this.boardId) {
       this.loadBoard();
+    }
+    // Limpiar archivos cuando el dialog se cierra (visible cambia de true a false)
+    if (changes['visible'] && !changes['visible'].firstChange) {
+      const previousValue = changes['visible'].previousValue;
+      const currentValue = changes['visible'].currentValue;
+      if (previousValue === true && currentValue === false) {
+        // El dialog se cerró, limpiar archivos
+        this.selectedFiles.set([]);
+      }
     }
   }
 
@@ -1252,6 +1261,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
    * Maneja la cancelación del formulario
    */
   public onCancel(): void {
+    // Limpiar archivos seleccionados
+    this.selectedFiles.set([]);
     this.formCancel.emit();
   }
 
@@ -1352,6 +1363,42 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     if (!files || files.length === 0) return;
 
     this.processDroppedFiles(Array.from(files));
+  }
+
+  /**
+   * Maneja el evento paste (pegar archivos)
+   */
+  public onPaste(event: ClipboardEvent): void {
+    const items = event.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    // Verificar si hay archivos en el clipboard
+    const hasFiles = Array.from(items).some((item) => item.kind === 'file');
+    if (!hasFiles) {
+      // Si no hay archivos, permitir el comportamiento normal (pegar texto)
+      return;
+    }
+
+    // Si hay archivos, procesarlos y prevenir el comportamiento por defecto
+    if (hasFiles) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const files: File[] = [];
+      for (const item of Array.from(items)) {
+        // Solo procesar archivos (no texto)
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) {
+            files.push(file);
+          }
+        }
+      }
+
+      if (files.length > 0) {
+        this.processDroppedFiles(files);
+      }
+    }
   }
 
   /**

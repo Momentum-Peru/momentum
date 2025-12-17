@@ -46,6 +46,7 @@ export class MenuConfigService {
     { path: '/fi', label: 'Futuros Imposibles', icon: 'pi pi-bolt' },
     { path: '/logs', label: 'Logs del Sistema', icon: 'pi pi-list' },
     { path: '/payroll', label: 'Planillas y Pagos', icon: 'pi pi-wallet' },
+    { path: '/payroll-calculation', label: 'Cálculo de Planilla', icon: 'pi pi-calculator' },
     { path: '/profile', label: 'Mi Perfil', icon: 'pi pi-user-edit' },
   ];
 
@@ -161,6 +162,12 @@ export class MenuConfigService {
             icon: 'pi pi-file',
             routerLink: '/documents',
           },
+        ],
+      },
+      {
+        label: 'RECURSOS HUMANOS',
+        icon: 'pi pi-users',
+        items: [
           {
             label: 'Empleados',
             icon: 'pi pi-user',
@@ -171,12 +178,11 @@ export class MenuConfigService {
             icon: 'pi pi-wallet',
             routerLink: '/payroll',
           },
-        ],
-      },
-      {
-        label: 'TALENTO HUMANO',
-        icon: 'pi pi-users',
-        items: [
+          {
+            label: 'Cálculo de Planilla',
+            icon: 'pi pi-calculator',
+            routerLink: '/payroll-calculation',
+          },
           {
             label: 'Tareas',
             icon: 'pi pi-check-square',
