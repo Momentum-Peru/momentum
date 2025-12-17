@@ -10,6 +10,7 @@ import {
   computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -28,6 +29,7 @@ import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { AuthService } from '../../../../pages/login/services/auth.service';
 
 /**
  * Componente de Detalles de Usuario
@@ -64,6 +66,23 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
   private readonly timeTrackingApi = inject(TimeTrackingApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly authService = inject(AuthService);
+
+  // Usuario actual
+  currentUser = toSignal(this.authService.currentUser$, {
+    initialValue: this.authService.getCurrentUser(),
+  });
+
+  // Verificar si el usuario puede editar/agregar/eliminar marcaciones
+  // Solo gerencia, supervisor y admin pueden hacer estas operaciones
+  canEditTimeTracking = computed(() => {
+    const user = this.currentUser();
+    return (
+      user?.role === 'gerencia' ||
+      user?.role === 'supervisor' ||
+      user?.role === 'admin'
+    );
+  });
 
   timeTrackings = signal<TimeTracking[]>([]);
   loading = signal(false);

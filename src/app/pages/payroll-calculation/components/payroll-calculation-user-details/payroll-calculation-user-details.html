@@ -102,6 +102,7 @@
     </div>
 
     <!-- Botones de acción -->
+    @if (canEditTimeTracking()) {
     <div class="flex gap-2 justify-end">
       <button
         pButton
@@ -123,6 +124,7 @@
         Agregar Salida
       </button>
     </div>
+    }
 
     <!-- Tabla de asistencias -->
     <p-card styleClass="shadow-sm">
@@ -234,6 +236,7 @@
                 }
               </td>
               <td>
+                @if (canEditTimeTracking()) {
                 <div class="flex flex-col gap-2">
                   <!-- Acciones para Entrada -->
                   <div class="flex items-center gap-2">
@@ -318,6 +321,9 @@
                     </div>
                   </div>
                 </div>
+                } @else {
+                <span class="text-sm text-gray-500 dark:text-gray-400">Solo lectura</span>
+                }
               </td>
             </tr>
           </ng-template>
