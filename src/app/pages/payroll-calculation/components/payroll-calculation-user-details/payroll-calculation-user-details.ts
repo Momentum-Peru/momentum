@@ -30,6 +30,7 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AuthService } from '../../../../pages/login/services/auth.service';
+import { MenuService } from '../../../../shared/services/menu.service';
 
 /**
  * Componente de Detalles de Usuario
@@ -67,6 +68,7 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly authService = inject(AuthService);
+  private readonly menuService = inject(MenuService);
 
   // Usuario actual
   currentUser = toSignal(this.authService.currentUser$, {
@@ -74,14 +76,34 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
   });
 
   // Verificar si el usuario puede editar/agregar/eliminar marcaciones
-  // Solo gerencia, supervisor y admin pueden hacer estas operaciones
+  // Debe cumplir dos condiciones:
+  // 1. Tener rol de gerencia, supervisor o admin
+  // 2. Tener permiso de edición (edit) explícito en el módulo de cálculo de planilla (/payroll-calculation)
+  // NOTA: Incluso gerencia/supervisor necesitan tener permiso 'edit' configurado en menu-permissions
   canEditTimeTracking = computed(() => {
     const user = this.currentUser();
-    return (
+    const hasRolePermission =
       user?.role === 'gerencia' ||
       user?.role === 'supervisor' ||
-      user?.role === 'admin'
+      user?.role === 'admin';
+    
+    if (!hasRolePermission) {
+      return false;
+    }
+    
+    // Verificar directamente el tipo de permiso configurado en menu-permissions
+    // Buscar el permiso específico para /payroll-calculation
+    const userPermissions = this.menuService.getUserPermissions();
+    const payrollPermission = userPermissions.find(
+      (p) => p.route === '/payroll-calculation' && p.isActive
     );
+    
+    // Solo permitir edición si el permiso es explícitamente 'edit'
+    // Si es 'view' o no existe, no permitir edición
+    const hasMenuEditPermission = payrollPermission?.permissionType === 'edit';
+    
+    // Ambas condiciones deben cumplirse
+    return hasRolePermission && hasMenuEditPermission;
   });
 
   timeTrackings = signal<TimeTracking[]>([]);
@@ -147,6 +169,9 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    // Asegurar que los permisos de menú estén cargados
+    this.menuService.loadUserPermissions();
+    
     if (this.user) {
       this.loadUserTimeTrackings();
     }
