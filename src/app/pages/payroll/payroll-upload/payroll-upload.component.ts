@@ -235,11 +235,13 @@ interface ExcelEmployeeData {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="bg-gray-50 p-3 rounded-lg border">
             <span class="text-xs text-gray-500 block">Periodo Detectado</span>
-            <span class="font-bold">{{ result.summary.period || 'No detectado' }}</span>
+            <span class="font-bold text-gray-600">{{
+              result.summary.period || 'No detectado'
+            }}</span>
           </div>
           <div class="bg-gray-50 p-3 rounded-lg border">
             <span class="text-xs text-gray-500 block">Total Empleados</span>
-            <span class="font-bold">{{ result.summary.totalEmployees }}</span>
+            <span class="font-bold text-gray-600">{{ result.summary.totalEmployees }}</span>
           </div>
           <div class="bg-gray-50 p-3 rounded-lg border">
             <span class="text-xs text-gray-500 block">Monto Total a Pagar</span>
