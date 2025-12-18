@@ -102,8 +102,17 @@
     </div>
 
     <!-- Botones de acción -->
-    @if (canEditTimeTracking()) {
-    <div class="flex gap-2 justify-end">
+    <div class="flex flex-wrap gap-2 justify-end">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-file-excel"
+        label="Descargar Excel"
+        class="p-button-success p-button-sm"
+        (click)="downloadIndividualReport()"
+        [disabled]="loading()"
+      ></button>
+      @if (canEditTimeTracking()) {
       <button
         pButton
         type="button"
@@ -123,8 +132,8 @@
       >
         Agregar Salida
       </button>
+      }
     </div>
-    }
 
     <!-- Tabla de asistencias -->
     <p-card styleClass="shadow-sm">
