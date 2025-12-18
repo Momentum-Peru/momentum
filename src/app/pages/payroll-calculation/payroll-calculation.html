@@ -53,20 +53,31 @@
       styleClass="p-datatable-sm"
     >
       <ng-template pTemplate="caption">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <span class="text-lg font-semibold text-gray-800 dark:text-white">
             Resumen de Asistencias
           </span>
-          <span class="p-input-icon-left">
-            <input
-              pInputText
-              type="text"
-              (input)="searchQuery.set($any($event.target).value)"
-              [value]="searchQuery()"
-              placeholder="Buscar usuario..."
-              class="w-full"
-            />
-          </span>
+          <div class="flex flex-col md:flex-row gap-2">
+            <span class="p-input-icon-left w-full md:w-auto">
+              <input
+                pInputText
+                type="text"
+                (input)="searchQuery.set($any($event.target).value)"
+                [value]="searchQuery()"
+                placeholder="Buscar usuario..."
+                class="w-full"
+              />
+            </span>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-file-excel"
+              label="Descargar Excel"
+              class="p-button-success w-full md:w-auto"
+              (click)="downloadGeneralReport()"
+              [disabled]="loading()"
+            ></button>
+          </div>
         </div>
       </ng-template>
 

@@ -23,6 +23,7 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputTextModule } from 'primeng/inputtext';
+import * as XLSX from 'xlsx';
 
 interface UserSummary {
   user: User;
@@ -348,5 +349,44 @@ export class PayrollCalculationPage implements OnInit {
     if (h > 0 && m > 0) return `${h}h ${m}m`;
     if (h > 0 && m === 0) return `${h}h`;
     return '0h 0m';
+  }
+
+  /**
+   * Descargar reporte general en Excel
+   */
+  downloadGeneralReport(): void {
+    const data = this.userSummaryData();
+    if (data.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No hay datos para exportar',
+      });
+      return;
+    }
+
+    const reportData = data.map((item) => ({
+      Usuario: item.name,
+      Email: item.email,
+      'Total Asistencias': item.totalAsistencias,
+      'Total Tardanzas': item.totalTardanzas,
+      'Total Faltas': item.totalFaltas,
+      'Horas Trabajadas': this.formatWorkedHours(item.totalHorasTrabajadas),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(reportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Resumen Asistencias');
+
+    // Generar nombre de archivo con rango de fechas
+    const start = this.getStartDate();
+    const end = this.getEndDate();
+    let fileName = 'Reporte_General_Asistencias';
+    if (start && end) {
+      fileName += `_${start.toISOString().split('T')[0]}_a_${end.toISOString().split('T')[0]}`;
+    }
+    fileName += '.xlsx';
+
+    XLSX.writeFile(workbook, fileName);
   }
 }
