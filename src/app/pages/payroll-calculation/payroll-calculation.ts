@@ -225,38 +225,58 @@ export class PayrollCalculationPage implements OnInit {
     let totalFaltas = 0;
     let totalHorasTrabajadas = 0;
 
-    groupedByDay.forEach((dayData) => {
+    // Convertir a array ordenado por fecha para poder buscar el día siguiente
+    const sortedDays = Array.from(groupedByDay.entries()).sort((a, b) => {
+      return new Date(a[0]).getTime() - new Date(b[0]).getTime();
+    });
+
+    sortedDays.forEach(([, dayData]) => {
       const hasIngreso = !!dayData.ingreso;
       const hasSalida = !!dayData.salida;
 
-      // Calcular horas trabajadas
+      // Calcular horas trabajadas SOLO si hay entrada Y salida en el mismo día
       if (hasIngreso && hasSalida) {
-        const entryTime = new Date(dayData.ingreso!.date).getTime();
-        const exitTime = new Date(dayData.salida!.date).getTime();
-        if (exitTime > entryTime) {
-          const diffMs = exitTime - entryTime;
-          const diffHours = diffMs / (1000 * 60 * 60);
-          totalHorasTrabajadas += Math.round(diffHours * 100) / 100;
+        const entryTime = new Date(dayData.ingreso!.date);
+        const exitTime = new Date(dayData.salida!.date);
+
+        // Verificar que la salida sea del mismo día que la entrada
+        const entryDay = this.getLocalDateString(entryTime);
+        const exitDay = this.getLocalDateString(exitTime);
+
+        // Solo calcular si son del mismo día
+        if (exitDay === entryDay && exitTime.getTime() > entryTime.getTime()) {
+          const diffMs = exitTime.getTime() - entryTime.getTime();
+          const hoursToAdd = diffMs / (1000 * 60 * 60);
+          totalHorasTrabajadas += Math.round(hoursToAdd * 100) / 100;
         }
       }
 
-      // Asistencia: tiene entrada y salida
+      // Asistencia: tiene entrada Y salida en el mismo día
       if (hasIngreso && hasSalida) {
-        totalAsistencias++;
+        // Verificar que sean del mismo día
+        const entryDay = this.getLocalDateString(dayData.ingreso!.date);
+        const exitDay = this.getLocalDateString(dayData.salida!.date);
 
-        // Verificar tardanza: entrada después de la hora límite
-        const entryDate = new Date(dayData.ingreso!.date);
-        const entryHour = entryDate.getHours();
-        const entryMinute = entryDate.getMinutes();
+        if (exitDay === entryDay) {
+          totalAsistencias++;
 
-        if (
-          entryHour > this.TARDANZA_HOUR ||
-          (entryHour === this.TARDANZA_HOUR && entryMinute > this.TARDANZA_MINUTE)
-        ) {
-          totalTardanzas++;
+          // Verificar tardanza: entrada después de la hora límite
+          const entryDate = new Date(dayData.ingreso!.date);
+          const entryHour = entryDate.getHours();
+          const entryMinute = entryDate.getMinutes();
+
+          if (
+            entryHour > this.TARDANZA_HOUR ||
+            (entryHour === this.TARDANZA_HOUR && entryMinute > this.TARDANZA_MINUTE)
+          ) {
+            totalTardanzas++;
+          }
+        } else {
+          // Tiene entrada y salida pero de días diferentes = falta
+          totalFaltas++;
         }
       } else {
-        // Falta: no tiene entrada o no tiene salida
+        // Falta: no tiene entrada o no tiene salida en el mismo día
         totalFaltas++;
       }
     });

@@ -148,13 +148,21 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
     let diasCompletos = 0;
     let diasIncompletos = 0;
 
-    grouped.forEach((dayData) => {
-      const horas = this.calculateWorkedHours(dayData.ingreso, dayData.salida);
-      totalHoras += horas;
+    // Convertir a array ordenado por fecha para poder buscar el día siguiente
+    const sortedDays = Array.from(grouped).sort((a, b) => {
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
 
-      if (dayData.ingreso && dayData.salida) {
+    sortedDays.forEach((dayData) => {
+      const hasIngreso = !!dayData.ingreso;
+      const hasSalida = !!dayData.salida;
+
+      // Solo calcular horas si hay entrada Y salida en el mismo día
+      if (hasIngreso && hasSalida) {
+        const horas = this.calculateWorkedHours(dayData.ingreso, dayData.salida);
+        totalHoras += horas;
         diasCompletos++;
-      } else if (dayData.ingreso || dayData.salida) {
+      } else if (hasIngreso || dayData.salida) {
         diasIncompletos++;
       }
     });
@@ -263,13 +271,26 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
 
   /**
    * Calcular horas trabajadas del día
+   * Solo calcula si la entrada y salida son del mismo día
    */
   calculateWorkedHours(ingreso?: TimeTracking, salida?: TimeTracking): number {
     if (!ingreso || !salida) return 0;
-    const entryTime = new Date(ingreso.date).getTime();
-    const exitTime = new Date(salida.date).getTime();
-    if (exitTime <= entryTime) return 0;
-    const diffMs = exitTime - entryTime;
+
+    const entryTime = new Date(ingreso.date);
+    const exitTime = new Date(salida.date);
+
+    // Verificar que la salida sea del mismo día que la entrada
+    const entryDay = this.getLocalDateString(entryTime);
+    const exitDay = this.getLocalDateString(exitTime);
+
+    // Solo calcular si son del mismo día
+    if (exitDay !== entryDay) {
+      return 0; // Días diferentes = falta, no se calculan horas
+    }
+
+    // La salida es del mismo día, calcular normalmente
+    if (exitTime.getTime() <= entryTime.getTime()) return 0;
+    const diffMs = exitTime.getTime() - entryTime.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
     return Math.round(diffHours * 100) / 100;
   }
@@ -507,6 +528,49 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
     fileName += '.xlsx';
 
     XLSX.writeFile(workbook, fileName);
+  }
+
+  /**
+   * Obtener la salida para un día (solo del mismo día)
+   */
+  getExitForDay(dayData: {
+    date: string;
+    ingreso?: TimeTracking;
+    salida?: TimeTracking;
+  }): TimeTracking | undefined {
+    // Solo retornar salida si es del mismo día
+    return dayData.salida;
+  }
+
+  /**
+   * Verificar si tiene entrada y salida en el mismo día
+   */
+  hasCompleteAttendance(dayData: {
+    date: string;
+    ingreso?: TimeTracking;
+    salida?: TimeTracking;
+  }): boolean {
+    if (!dayData.ingreso || !dayData.salida) return false;
+
+    // Verificar que sean del mismo día
+    const entryDay = this.getLocalDateString(dayData.ingreso.date);
+    const exitDay = this.getLocalDateString(dayData.salida.date);
+
+    return entryDay === exitDay;
+  }
+
+  /**
+   * Calcular horas trabajadas para un día (puede usar salida del día siguiente)
+   */
+  getWorkedHoursForDay(dayData: {
+    date: string;
+    ingreso?: TimeTracking;
+    salida?: TimeTracking;
+  }): number {
+    if (!dayData.ingreso) return 0;
+    const exitTracking = this.getExitForDay(dayData);
+    if (!exitTracking) return 0;
+    return this.calculateWorkedHours(dayData.ingreso, exitTracking);
   }
 
   /**
