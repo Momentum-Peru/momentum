@@ -31,6 +31,7 @@ import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AuthService } from '../../../../pages/login/services/auth.service';
 import { MenuService } from '../../../../shared/services/menu.service';
+import * as XLSX from 'xlsx';
 
 /**
  * Componente de Detalles de Usuario
@@ -83,25 +84,23 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
   canEditTimeTracking = computed(() => {
     const user = this.currentUser();
     const hasRolePermission =
-      user?.role === 'gerencia' ||
-      user?.role === 'supervisor' ||
-      user?.role === 'admin';
-    
+      user?.role === 'gerencia' || user?.role === 'supervisor' || user?.role === 'admin';
+
     if (!hasRolePermission) {
       return false;
     }
-    
+
     // Verificar directamente el tipo de permiso configurado en menu-permissions
     // Buscar el permiso específico para /payroll-calculation
     const userPermissions = this.menuService.getUserPermissions();
     const payrollPermission = userPermissions.find(
       (p) => p.route === '/payroll-calculation' && p.isActive
     );
-    
+
     // Solo permitir edición si el permiso es explícitamente 'edit'
     // Si es 'view' o no existe, no permitir edición
     const hasMenuEditPermission = payrollPermission?.permissionType === 'edit';
-    
+
     // Ambas condiciones deben cumplirse
     return hasRolePermission && hasMenuEditPermission;
   });
@@ -171,7 +170,7 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
   ngOnInit(): void {
     // Asegurar que los permisos de menú estén cargados
     this.menuService.loadUserPermissions();
-    
+
     if (this.user) {
       this.loadUserTimeTrackings();
     }
@@ -466,5 +465,56 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
    */
   onClose(): void {
     this.closeDialog.emit();
+  }
+
+  /**
+   * Descargar reporte individual en Excel
+   */
+  downloadIndividualReport(): void {
+    const data = this.groupedTrackings();
+    if (data.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No hay datos para exportar',
+      });
+      return;
+    }
+
+    const reportData = data.map((day) => ({
+      Fecha: this.formatDate(day.date),
+      Día: this.getDayOfWeek(day.date),
+      Entrada: day.ingreso ? this.formatTime(day.ingreso.date) : '-',
+      Salida: day.salida ? this.formatTime(day.salida.date) : '-',
+      'Horas Trabajadas': this.formatWorkedHours(
+        this.calculateWorkedHours(day.ingreso, day.salida)
+      ),
+      Estado: this.getAttendanceStatus(day),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(reportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Asistencias');
+
+    // Generar nombre de archivo
+    const userName = (this.user?.name || 'Usuario').replace(/\s+/g, '_');
+    let fileName = `Reporte_Asistencias_${userName}`;
+    if (this.startDate && this.endDate) {
+      fileName += `_${this.startDate.toISOString().split('T')[0]}_a_${
+        this.endDate.toISOString().split('T')[0]
+      }`;
+    }
+    fileName += '.xlsx';
+
+    XLSX.writeFile(workbook, fileName);
+  }
+
+  /**
+   * Obtener estado de asistencia para el reporte
+   */
+  private getAttendanceStatus(dayData: { ingreso?: TimeTracking; salida?: TimeTracking }): string {
+    if (dayData.ingreso && dayData.salida) return 'Completo';
+    if (dayData.ingreso || dayData.salida) return 'Incompleto';
+    return 'Sin registro';
   }
 }
