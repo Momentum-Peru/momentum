@@ -26,6 +26,8 @@ export interface Employee {
   bank?: string;
   bankCode?: string;
   accountType?: 'Ahorro' | 'Corriente';
+  contratos?: string[];
+  antecedentesPoliciales?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -72,4 +74,3 @@ export interface UserOption {
   name: string;
   email: string;
 }
-
