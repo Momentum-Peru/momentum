@@ -9,6 +9,7 @@ import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
+import { FileUploadModule, FileSelectEvent } from 'primeng/fileupload';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { EmployeesApiService } from '../../shared/services/employees-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
@@ -41,6 +42,7 @@ import { BANKS, getBankCode } from '../../shared/constants/banks.constants';
     ToastModule,
     ConfirmDialogModule,
     TooltipModule,
+    FileUploadModule,
   ],
   templateUrl: './employees.html',
   styleUrl: './employees.scss',
@@ -70,6 +72,14 @@ export class EmployeesPage implements OnInit {
   editing = signal<Employee | null>(null);
   viewing = signal<Employee | null>(null);
   loading = signal(false);
+
+  // Archivos seleccionados para subir
+  selectedContratos = signal<File[]>([]);
+  selectedAntecedentes = signal<File[]>([]);
+
+  // Estados de drag and drop
+  isDraggingContratos = signal(false);
+  isDraggingAntecedentes = signal(false);
 
   // Constante de bancos reutilizable
   readonly banks = BANKS;
@@ -178,7 +188,11 @@ export class EmployeesPage implements OnInit {
       bank: '',
       bankCode: '',
       accountType: undefined,
+      contratos: [],
+      antecedentesPoliciales: [],
     });
+    this.selectedContratos.set([]);
+    this.selectedAntecedentes.set([]);
     this.showDialog.set(true);
   }
 
@@ -212,6 +226,10 @@ export class EmployeesPage implements OnInit {
   closeDialog() {
     this.showDialog.set(false);
     this.editing.set(null);
+    this.selectedContratos.set([]);
+    this.selectedAntecedentes.set([]);
+    this.isDraggingContratos.set(false);
+    this.isDraggingAntecedentes.set(false);
   }
 
   viewItem(item: Employee) {
@@ -263,14 +281,17 @@ export class EmployeesPage implements OnInit {
         if (!current) return;
 
         // Construir nombre completo
-        const nombreCompleto = response.nombreCompleto ||
+        const nombreCompleto =
+          response.nombreCompleto ||
           `${response.nombres} ${response.apellidoPaterno} ${response.apellidoMaterno}`.trim();
 
         // Separar nombre y apellido
         const partesNombre = nombreCompleto.split(' ');
         const nombre = response.nombres || partesNombre[0] || '';
-        const apellido = `${response.apellidoPaterno} ${response.apellidoMaterno}`.trim() ||
-          partesNombre.slice(1).join(' ') || '';
+        const apellido =
+          `${response.apellidoPaterno} ${response.apellidoMaterno}`.trim() ||
+          partesNombre.slice(1).join(' ') ||
+          '';
 
         // Siempre rellenar con nueva consulta
         this.editing.set({
@@ -358,7 +379,8 @@ export class EmployeesPage implements OnInit {
         telefono: item.telefono || undefined,
         direccion: item.direccion || undefined,
         cargo: item.cargo || undefined,
-        userId: typeof item.userId === 'string' && item.userId.trim() !== '' ? item.userId : undefined,
+        userId:
+          typeof item.userId === 'string' && item.userId.trim() !== '' ? item.userId : undefined,
         accountNumber: item.accountNumber || undefined,
         bank: item.bank || undefined,
         bankCode: item.bankCode || undefined,
@@ -381,11 +403,41 @@ export class EmployeesPage implements OnInit {
         updateData.areaId = '';
       }
 
-      this.employeesApi.update(item._id, updateData).subscribe({
+      const contratosFiles = this.selectedContratos();
+      const antecedentesFiles = this.selectedAntecedentes();
+      const hasFilesToUpload = contratosFiles.length > 0 || antecedentesFiles.length > 0;
+
+      if (!item._id) {
+        this.toastError('Error: No se pudo obtener el ID del empleado');
+        this.loading.set(false);
+        return;
+      }
+
+      const employeeId: string = item._id; // Guardar en una constante con tipo explícito
+
+      this.employeesApi.update(employeeId, updateData).subscribe({
         next: () => {
-          this.toastSuccess('Empleado actualizado exitosamente');
-          this.closeDialog();
-          this.load();
+          if (!hasFilesToUpload) {
+            this.toastSuccess('Empleado actualizado exitosamente');
+            this.loading.set(false);
+            this.closeDialog();
+            this.load();
+            return;
+          }
+
+          // Subir archivos de contratos si hay alguno seleccionado
+          if (contratosFiles.length > 0) {
+            this.uploadContratosFiles(employeeId, contratosFiles, antecedentesFiles.length === 0);
+          }
+
+          // Subir archivos de antecedentes si hay alguno seleccionado
+          if (antecedentesFiles.length > 0) {
+            this.uploadAntecedentesFiles(
+              employeeId,
+              antecedentesFiles,
+              contratosFiles.length === 0
+            );
+          }
         },
         error: (err) => {
           const message = err.error?.message || 'Error al actualizar el empleado';
@@ -411,11 +463,43 @@ export class EmployeesPage implements OnInit {
         accountType: item.accountType || undefined,
       };
 
+      const contratosFiles = this.selectedContratos();
+      const antecedentesFiles = this.selectedAntecedentes();
+      const hasFilesToUpload = contratosFiles.length > 0 || antecedentesFiles.length > 0;
+
       this.employeesApi.create(createData).subscribe({
-        next: () => {
-          this.toastSuccess('Empleado creado exitosamente');
-          this.closeDialog();
-          this.load();
+        next: (createdEmployee) => {
+          if (!createdEmployee._id) {
+            this.toastError('Error: No se pudo obtener el ID del empleado creado');
+            this.loading.set(false);
+            return;
+          }
+
+          if (!hasFilesToUpload) {
+            this.toastSuccess('Empleado creado exitosamente');
+            this.loading.set(false);
+            this.closeDialog();
+            this.load();
+            return;
+          }
+
+          // Subir archivos de contratos si hay alguno seleccionado
+          if (contratosFiles.length > 0) {
+            this.uploadContratosFiles(
+              createdEmployee._id,
+              contratosFiles,
+              antecedentesFiles.length === 0
+            );
+          }
+
+          // Subir archivos de antecedentes si hay alguno seleccionado
+          if (antecedentesFiles.length > 0) {
+            this.uploadAntecedentesFiles(
+              createdEmployee._id,
+              antecedentesFiles,
+              contratosFiles.length === 0
+            );
+          }
         },
         error: (err) => {
           const message = err.error?.message || 'Error al crear el empleado';
@@ -467,7 +551,11 @@ export class EmployeesPage implements OnInit {
       errors.push('El DNI debe tener exactamente 8 dígitos');
     }
 
-    if (item.correo && item.correo.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.correo)) {
+    if (
+      item.correo &&
+      item.correo.trim().length > 0 &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.correo)
+    ) {
       errors.push('El correo electrónico no es válido');
     }
 
@@ -488,5 +576,255 @@ export class EmployeesPage implements OnInit {
       summary: 'Error',
       detail: message,
     });
+  }
+
+  // Métodos para manejar archivos de contratos
+  onContratosSelect(event: FileSelectEvent) {
+    const files = Array.from(event.files || []) as File[];
+    this.selectedContratos.set([...this.selectedContratos(), ...files]);
+  }
+
+  removeContratoFile(file: File) {
+    const current = this.selectedContratos();
+    this.selectedContratos.set(current.filter((f) => f !== file));
+  }
+
+  uploadContratosFiles(employeeId: string, files: File[], isLastUpload = false) {
+    let uploadedCount = 0;
+    let errorCount = 0;
+    const totalFiles = files.length;
+
+    files.forEach((file) => {
+      this.employeesApi.uploadContrato(employeeId, file).subscribe({
+        next: () => {
+          uploadedCount++;
+          if (uploadedCount + errorCount === totalFiles) {
+            if (errorCount === 0) {
+              this.toastSuccess('Archivos de contratos subidos exitosamente');
+            }
+            this.selectedContratos.set([]);
+            this.load();
+            if (isLastUpload) {
+              this.loading.set(false);
+              this.closeDialog();
+            }
+          }
+        },
+        error: (err) => {
+          errorCount++;
+          const message = err.error?.message || `Error al subir ${file.name}`;
+          this.toastError(message);
+          if (uploadedCount + errorCount === totalFiles) {
+            if (isLastUpload) {
+              this.loading.set(false);
+              this.closeDialog();
+            }
+          }
+        },
+      });
+    });
+  }
+
+  // Métodos para manejar archivos de antecedentes policiales
+  onAntecedentesSelect(event: FileSelectEvent) {
+    const files = Array.from(event.files || []) as File[];
+    this.selectedAntecedentes.set([...this.selectedAntecedentes(), ...files]);
+  }
+
+  removeAntecedenteFile(file: File) {
+    const current = this.selectedAntecedentes();
+    this.selectedAntecedentes.set(current.filter((f) => f !== file));
+  }
+
+  uploadAntecedentesFiles(employeeId: string, files: File[], isLastUpload = false) {
+    let uploadedCount = 0;
+    let errorCount = 0;
+    const totalFiles = files.length;
+
+    files.forEach((file) => {
+      this.employeesApi.uploadAntecedentePolicial(employeeId, file).subscribe({
+        next: () => {
+          uploadedCount++;
+          if (uploadedCount + errorCount === totalFiles) {
+            if (errorCount === 0) {
+              this.toastSuccess('Archivos de antecedentes policiales subidos exitosamente');
+            }
+            this.selectedAntecedentes.set([]);
+            this.load();
+            if (isLastUpload) {
+              this.loading.set(false);
+              this.closeDialog();
+            }
+          }
+        },
+        error: (err) => {
+          errorCount++;
+          const message = err.error?.message || `Error al subir ${file.name}`;
+          this.toastError(message);
+          if (uploadedCount + errorCount === totalFiles) {
+            if (isLastUpload) {
+              this.loading.set(false);
+              this.closeDialog();
+            }
+          }
+        },
+      });
+    });
+  }
+
+  // Métodos para eliminar archivos existentes
+  removeContratoUrl(employeeId: string, url: string) {
+    this.confirmationService.confirm({
+      message: '¿Está seguro de que desea eliminar este archivo de contrato?',
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.employeesApi.removeContrato(employeeId, url).subscribe({
+          next: () => {
+            this.toastSuccess('Archivo de contrato eliminado exitosamente');
+            this.load();
+            // Actualizar el empleado en vista si está abierto
+            const current = this.viewing();
+            if (current && current._id === employeeId) {
+              this.employeesApi.getById(employeeId).subscribe({
+                next: (updated) => {
+                  this.viewing.set(updated);
+                },
+              });
+            }
+          },
+          error: (err) => {
+            const message = err.error?.message || 'Error al eliminar el archivo';
+            this.toastError(message);
+          },
+        });
+      },
+    });
+  }
+
+  removeAntecedenteUrl(employeeId: string, url: string) {
+    this.confirmationService.confirm({
+      message: '¿Está seguro de que desea eliminar este archivo de antecedentes policiales?',
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.employeesApi.removeAntecedentePolicial(employeeId, url).subscribe({
+          next: () => {
+            this.toastSuccess('Archivo de antecedentes policiales eliminado exitosamente');
+            this.load();
+            // Actualizar el empleado en vista si está abierto
+            const current = this.viewing();
+            if (current && current._id === employeeId) {
+              this.employeesApi.getById(employeeId).subscribe({
+                next: (updated) => {
+                  this.viewing.set(updated);
+                },
+              });
+            }
+          },
+          error: (err) => {
+            const message = err.error?.message || 'Error al eliminar el archivo';
+            this.toastError(message);
+          },
+        });
+      },
+    });
+  }
+
+  // Métodos auxiliares para formatear tamaño de archivo
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  // Método para descargar archivo
+  downloadFile(url: string) {
+    window.open(url, '_blank');
+  }
+
+  // Método para verificar si un archivo es una imagen
+  isImageFile(url: string): boolean {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const lowerUrl = url.toLowerCase();
+    return imageExtensions.some((ext) => lowerUrl.includes(ext));
+  }
+
+  // Métodos para drag and drop de contratos
+  onDragOverContratos(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingContratos.set(true);
+  }
+
+  onDragLeaveContratos(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingContratos.set(false);
+  }
+
+  onDropContratos(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingContratos.set(false);
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files) as File[];
+      // Filtrar solo archivos válidos según el accept
+      const validFiles = fileArray.filter((file) => {
+        const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+        return ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'].includes(extension);
+      });
+      if (validFiles.length > 0) {
+        this.selectedContratos.set([...this.selectedContratos(), ...validFiles]);
+      } else {
+        this.toastError(
+          'Tipo de archivo no válido. Solo se permiten: PDF, DOC, DOCX, JPG, JPEG, PNG'
+        );
+      }
+    }
+  }
+
+  // Métodos para drag and drop de antecedentes policiales
+  onDragOverAntecedentes(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingAntecedentes.set(true);
+  }
+
+  onDragLeaveAntecedentes(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingAntecedentes.set(false);
+  }
+
+  onDropAntecedentes(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingAntecedentes.set(false);
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files) as File[];
+      // Filtrar solo archivos válidos según el accept
+      const validFiles = fileArray.filter((file) => {
+        const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+        return ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'].includes(extension);
+      });
+      if (validFiles.length > 0) {
+        this.selectedAntecedentes.set([...this.selectedAntecedentes(), ...validFiles]);
+      } else {
+        this.toastError(
+          'Tipo de archivo no válido. Solo se permiten: PDF, DOC, DOCX, JPG, JPEG, PNG'
+        );
+      }
+    }
   }
 }
