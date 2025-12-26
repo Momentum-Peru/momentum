@@ -71,7 +71,7 @@
           </td>
           <td>
             <span class="font-semibold">{{
-              row.budget | currency : 'USD' : 'symbol' : '1.0-0'
+              row.budget | currency : 'USD' : 'symbol' : '1.0-2'
             }}</span>
           </td>
           <td>{{ row.startDate | date : 'dd/MM/yyyy' }}</td>
@@ -166,7 +166,7 @@
                 Presupuesto
               </div>
               <div class="text-gray-900 dark:text-gray-100 font-semibold">
-                {{ row.budget | currency : 'USD' : 'symbol' : '1.0-0' }}
+                {{ row.budget | currency : 'USD' : 'symbol' : '1.0-2' }}
               </div>
             </div>
             <div>
@@ -369,7 +369,9 @@
             pInputText
             name="projectBudget"
             type="number"
-            placeholder="50000"
+            step="0.01"
+            min="0"
+            placeholder="50000.00"
             [ngModel]="editing()?.budget"
             (ngModelChange)="onEditChange('budget', $event)"
             class="w-full"
@@ -709,7 +711,7 @@
               >Presupuesto</span
             >
             <div class="text-gray-900 dark:text-gray-100 font-semibold text-lg">
-              {{ viewingProject()?.budget | currency : 'USD' : 'symbol' : '1.0-0' }}
+              {{ viewingProject()?.budget | currency : 'USD' : 'symbol' : '1.0-2' }}
             </div>
           </div>
           <div>
