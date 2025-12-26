@@ -252,7 +252,6 @@
             </div>
           </div>
 
-
           <!-- Documentos -->
           <div>
             <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
@@ -317,7 +316,8 @@
 
   <!-- Modal de documentos -->
   <p-dialog
-    [(visible)]="showDocumentsDialog"
+    [visible]="showDocumentsDialog()"
+    (visibleChange)="showDocumentsDialog.set($event)"
     [modal]="true"
     [style]="{ width: '70rem' }"
     [draggable]="false"
@@ -333,14 +333,20 @@
 
     <div class="space-y-6">
       <!-- Upload de archivos -->
-      <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg p-6 shadow-sm">
+      <div
+        class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg p-6 shadow-sm"
+      >
         <div class="flex items-center justify-between mb-4">
-          <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+          <h4
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
+          >
             <i class="pi pi-cloud-upload text-blue-500"></i>
             Subir Nuevos Documentos
           </h4>
           @if (selectedFiles().length > 0) {
-          <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">
+          <span
+            class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium"
+          >
             {{ selectedFiles().length }} archivo(s) seleccionado(s)
           </span>
           }
@@ -355,7 +361,8 @@
             [class.bg-blue-50]="isDragging()"
             [class.dark:border-gray-600]="!isDragging()"
             [class.dark:border-blue-500]="isDragging()"
-            [class.dark:bg-blue-900/20]="isDragging()"
+            [class.dark:bg-blue-900]="isDragging()"
+            [class.dark:bg-opacity-20]="isDragging()"
             (dragover)="onDragOver($event)"
             (dragleave)="onDragLeave($event)"
             (drop)="onDrop($event)"
@@ -376,10 +383,7 @@
             />
 
             <div class="flex flex-col items-center justify-center py-6 pointer-events-none">
-              <div
-                class="mb-4 transition-transform duration-200"
-                [class.scale-110]="isDragging()"
-              >
+              <div class="mb-4 transition-transform duration-200" [class.scale-110]="isDragging()">
                 <i
                   class="pi text-6xl transition-colors duration-200"
                   [class.pi-cloud-upload]="!isDragging()"
@@ -408,14 +412,17 @@
                 aria-label="Seleccionar archivos para subir"
               ></button>
 
-              <div class="mt-6 text-xs text-gray-500 dark:text-gray-400 space-y-1 bg-white/50 dark:bg-gray-800/50 rounded-lg px-4 py-2">
+              <div
+                class="mt-6 text-xs text-gray-500 dark:text-gray-400 space-y-1 bg-white/50 dark:bg-gray-800/50 rounded-lg px-4 py-2"
+              >
                 <p>
                   <i class="pi pi-info-circle mr-1"></i>
-                  <strong>Formatos soportados:</strong> PDF, DOC, DOCX, XLS, XLSX, TXT, PNG, JPG, JPEG
+                  <strong>Formatos soportados:</strong> PDF, DOC, DOCX, XLS, XLSX, TXT, PNG, JPG,
+                  JPEG
                 </p>
                 <p>
                   <i class="pi pi-info-circle mr-1"></i>
-                  <strong>Tamaño máximo:</strong> 10MB por archivo
+                  <strong>Tamaño máximo:</strong> 200MB por archivo
                 </p>
               </div>
             </div>
@@ -423,7 +430,9 @@
 
           <!-- Lista de archivos seleccionados -->
           @if (selectedFiles().length > 0) {
-          <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+          <div
+            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3"
+          >
             <div class="flex items-center justify-between">
               <h5 class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                 <i class="pi pi-list text-blue-500"></i>
@@ -442,33 +451,36 @@
             </div>
 
             <div class="space-y-2 max-h-64 overflow-y-auto">
-              @for (file of selectedFiles(); track $index) {
+              @for (file of selectedFiles(); track file.name + file.size + file.lastModified) {
               <div
-                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+                class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
               >
-                <div class="flex items-center gap-3 flex-1 min-w-0">
-                  <div class="flex-shrink-0">
-                    <i class="pi pi-file text-2xl text-blue-500"></i>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" [title]="file.name">
-                      {{ file.name }}
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                      {{ formatFileSize(file.size) }}
-                    </p>
-                  </div>
+                <div class="flex-shrink-0">
+                  <i class="pi pi-file text-2xl text-blue-500"></i>
                 </div>
-                <button
-                  pButton
-                  icon="pi pi-times"
-                  class="p-button-text p-button-danger p-button-sm flex-shrink-0"
-                  (click)="removeSelectedFile($index)"
-                  [disabled]="uploading()"
-                  pTooltip="Eliminar archivo"
-                  tooltipPosition="left"
-                  aria-label="Eliminar archivo seleccionado"
-                ></button>
+                <div class="flex-1 min-w-0 overflow-hidden pr-2">
+                  <p
+                    class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
+                    [title]="file.name"
+                  >
+                    {{ file.name }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {{ formatFileSize(file.size) }}
+                  </p>
+                </div>
+                <div class="flex-shrink-0">
+                  <button
+                    pButton
+                    icon="pi pi-times"
+                    class="p-button-text p-button-danger p-button-sm"
+                    (click)="removeSelectedFile(file)"
+                    [disabled]="uploading()"
+                    pTooltip="Eliminar archivo"
+                    tooltipPosition="left"
+                    aria-label="Eliminar archivo seleccionado"
+                  ></button>
+                </div>
               </div>
               }
             </div>
@@ -478,7 +490,9 @@
               <button
                 pButton
                 type="button"
-                [label]="uploading() ? 'Subiendo...' : 'Subir ' + selectedFiles().length + ' Archivo(s)'"
+                [label]="
+                  uploading() ? 'Subiendo...' : 'Subir ' + selectedFiles().length + ' Archivo(s)'
+                "
                 [icon]="uploading() ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
                 (click)="uploadSelectedFiles()"
                 [disabled]="selectedFiles().length === 0 || uploading()"
@@ -576,7 +590,8 @@
 
   <!-- Modal de detalles del requerimiento -->
   <p-dialog
-    [(visible)]="showDetailsDialog"
+    [visible]="showDetailsDialog()"
+    (visibleChange)="showDetailsDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '60rem' }"
     [draggable]="false"
@@ -809,7 +824,8 @@
 
   <!-- Modal de edición/creación -->
   <p-dialog
-    [(visible)]="showDialog"
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
     [modal]="true"
     [style]="{ width: '50rem' }"
     [draggable]="false"
