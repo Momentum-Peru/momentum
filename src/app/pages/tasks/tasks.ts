@@ -99,6 +99,7 @@ export class TasksPage implements OnInit {
   public readonly invitingBoardFromList = signal<Board | null>(null);
   public readonly taskFilters = signal<TasksSearchParams>({});
   public readonly availableTags = signal<string[]>([]);
+  private readonly processedTaskId = signal<string | null>(null);
 
   // Computed
   public readonly currentUserId = computed(() => {
@@ -323,7 +324,24 @@ export class TasksPage implements OnInit {
 
       // Si viene taskId, cargar la tarea y mostrar su tablero
       if (params['taskId']) {
-        this.tasksService.getTaskById(params['taskId']).subscribe({
+        const taskId = params['taskId'];
+        
+        // Evitar procesar el mismo taskId múltiples veces (previene bucles)
+        if (this.processedTaskId() === taskId) {
+          return;
+        }
+        
+        // Marcar este taskId como procesado
+        this.processedTaskId.set(taskId);
+        
+        // Limpiar query params inmediatamente para evitar bucles
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: {},
+          replaceUrl: true,
+        });
+        
+        this.tasksService.getTaskById(taskId).subscribe({
           next: (task) => {
             // Obtener el boardId de la tarea
             const boardId =
@@ -336,26 +354,24 @@ export class TasksPage implements OnInit {
                 : undefined;
 
             if (boardId) {
-              // Navegar al tablero y luego mostrar la tarea
-              this.router
-                .navigate(['/tasks', boardId], { queryParams: { taskId: params['taskId'] } })
-                .then(() => {
-                  // Cargar el tablero y luego mostrar la tarea
-                  this.boardsService.getById(boardId).subscribe({
-                    next: (board) => {
-                      this.selectedBoard.set(board);
-                      this.loadBoardTasks(boardId);
-                      // Mostrar la tarea después de cargar el tablero
-                      setTimeout(() => {
-                        this.viewTaskDetails(task);
-                      }, 100);
-                    },
-                    error: () => {
-                      // Si no se puede cargar el tablero, solo mostrar la tarea
+              // Navegar al tablero sin query params para evitar bucles
+              this.router.navigate(['/tasks', boardId], { replaceUrl: true }).then(() => {
+                // Cargar el tablero y luego mostrar la tarea
+                this.boardsService.getById(boardId).subscribe({
+                  next: (board) => {
+                    this.selectedBoard.set(board);
+                    this.loadBoardTasks(boardId);
+                    // Mostrar la tarea después de cargar el tablero
+                    setTimeout(() => {
                       this.viewTaskDetails(task);
-                    },
-                  });
+                    }, 100);
+                  },
+                  error: () => {
+                    // Si no se puede cargar el tablero, solo mostrar la tarea
+                    this.viewTaskDetails(task);
+                  },
                 });
+              });
             } else {
               // Si la tarea no tiene tablero, solo mostrar la tarea
               this.viewTaskDetails(task);
@@ -367,13 +383,9 @@ export class TasksPage implements OnInit {
               summary: 'Error',
               detail: 'No se pudo cargar la tarea',
             });
+            // Limpiar el taskId procesado en caso de error para permitir reintentos
+            this.processedTaskId.set(null);
           },
-        });
-        // Limpiar query params
-        this.router.navigate([], {
-          relativeTo: this.route,
-          queryParams: {},
-          replaceUrl: true,
         });
       }
     });
@@ -864,6 +876,8 @@ export class TasksPage implements OnInit {
   public closeTaskDetails(): void {
     this.showTaskDetails.set(false);
     this.selectedTask.set(null);
+    // Limpiar el taskId procesado para permitir reabrir la misma tarea si es necesario
+    this.processedTaskId.set(null);
   }
 
   /**
