@@ -1,10 +1,20 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, signal } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  ChangeDetectionStrategy,
+  signal,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
+import { ColorPickerModule } from 'primeng/colorpicker';
 import { Board } from '../../../../shared/interfaces/board.interface';
 
 /**
@@ -14,7 +24,16 @@ import { Board } from '../../../../shared/interfaces/board.interface';
 @Component({
   selector: 'app-board-card',
   standalone: true,
-  imports: [CommonModule, CardModule, ButtonModule, TagModule, TooltipModule, DialogModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    CardModule,
+    ButtonModule,
+    TagModule,
+    TooltipModule,
+    DialogModule,
+    ColorPickerModule,
+  ],
   templateUrl: './board-card.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
@@ -26,6 +45,10 @@ import { Board } from '../../../../shared/interfaces/board.interface';
         :host ::ng-deep .responsive-button .p-button-label {
           display: inline-block;
         }
+      }
+      :host ::ng-deep .p-card {
+        border-radius: 0.75rem;
+        overflow: hidden;
       }
     `,
   ],
@@ -41,8 +64,25 @@ export class BoardCardComponent {
   @Output() delete = new EventEmitter<Board>();
   @Output() removeMember = new EventEmitter<{ board: Board; memberId: string }>();
   @Output() leaveBoard = new EventEmitter<Board>();
+  @Output() colorChange = new EventEmitter<{ board: Board; color: string }>();
 
   showMembersDialog = signal(false);
+  showColorPicker = signal(false);
+
+  // Color del tablero con valor por defecto
+  boardColor = computed(() => this.board.color || '#3b82f6');
+
+  // Color temporal para previsualización - se actualiza cuando cambia el board
+  previewColor = computed(() => {
+    // Si el color picker está abierto, mantener el color de previsualización
+    if (this.showColorPicker()) {
+      return this._previewColorValue();
+    }
+    // Si no está abierto, usar el color del board
+    return this.boardColor();
+  });
+
+  private _previewColorValue = signal<string>('#3b82f6');
 
   get pendingInvitationsCount(): number {
     return (this.board.invitations || []).filter((inv) => inv.status === 'pending').length;
@@ -87,7 +127,59 @@ export class BoardCardComponent {
     return (this.board.members || []).some((member) => member._id === this.currentUserId);
   }
 
+  /**
+   * Verifica si el usuario actual es miembro del tablero (propietario o miembro)
+   */
+  isBoardMember(): boolean {
+    if (!this.currentUserId) return false;
+    // Verificar si es propietario
+    if (this.isOwner || (this.board.owner && this.board.owner._id === this.currentUserId)) {
+      return true;
+    }
+    // Verificar si es miembro
+    return this.isCurrentUserMember();
+  }
+
   isCurrentUser(memberId: string): boolean {
     return this.currentUserId === memberId;
+  }
+
+  onColorChange(event: { value: string | object }): void {
+    // El evento puede tener value como string o object, extraer el string
+    let newColor = '#3b82f6';
+    if (typeof event.value === 'string') {
+      newColor = event.value;
+    } else if (event.value && typeof event.value === 'object' && 'hex' in event.value) {
+      newColor = (event.value as { hex: string }).hex;
+    }
+    this._previewColorValue.set(newColor);
+  }
+
+  onColorApply(event: Event): void {
+    event.stopPropagation();
+    const color = this._previewColorValue();
+    this.colorChange.emit({ board: this.board, color });
+    this.showColorPicker.set(false);
+  }
+
+  onColorCancel(event: Event): void {
+    event.stopPropagation();
+    this._previewColorValue.set(this.boardColor());
+    this.showColorPicker.set(false);
+  }
+
+  openColorPicker(event: Event): void {
+    event.stopPropagation();
+    this._previewColorValue.set(this.boardColor());
+    this.showColorPicker.set(true);
+  }
+
+  // Getter para acceder al valor de preview en el template
+  get previewColorValue(): string {
+    return this._previewColorValue();
+  }
+
+  set previewColorValue(value: string) {
+    this._previewColorValue.set(value);
   }
 }

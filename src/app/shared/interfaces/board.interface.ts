@@ -28,6 +28,7 @@ export interface Board {
   _id: string;
   title: string;
   description?: string;
+  color?: string;
   owner: BoardOwner | null;
   members?: BoardMember[] | null;
   invitations?: BoardInvitation[] | null;
@@ -38,11 +39,13 @@ export interface Board {
 export interface CreateBoardRequest {
   title: string;
   description?: string;
+  color?: string;
 }
 
 export interface UpdateBoardRequest {
   title?: string;
   description?: string;
+  color?: string;
 }
 
 export interface InviteUserRequest {
