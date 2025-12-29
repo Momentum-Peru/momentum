@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { map } from 'rxjs/operators';
 import {
   DashboardResponse,
   DashboardFiltersParams,
@@ -192,5 +193,27 @@ export class DashboardApiService {
         params,
       }
     );
+  }
+
+  /**
+   * Descarga un archivo Excel con todas las marcaciones (solo gerencia)
+   * @param filters Parámetros de filtrado opcionales
+   * @returns Observable con el blob del archivo Excel
+   */
+  exportTimeTrackingToExcel(filters?: DashboardFiltersParams): Observable<Blob> {
+    const params: Record<string, string> = {};
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params[key] = String(value);
+        }
+      });
+    }
+    return this.http
+      .get(`${this.baseUrl}/dashboard/time-tracking/export`, {
+        params,
+        responseType: 'blob',
+      })
+      .pipe(map((blob) => blob as Blob));
   }
 }
