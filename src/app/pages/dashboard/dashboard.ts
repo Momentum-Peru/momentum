@@ -176,16 +176,16 @@ export class DashboardPage implements OnInit {
           const url = window.URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          
+
           // Generar nombre de archivo con rango de fechas
           const now = new Date();
-          const startDate = this.currentFilters?.startDate 
+          const startDate = this.currentFilters?.startDate
             ? new Date(this.currentFilters.startDate).toISOString().split('T')[0]
             : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
           const endDate = this.currentFilters?.endDate
             ? new Date(this.currentFilters.endDate).toISOString().split('T')[0]
             : now.toISOString().split('T')[0];
-          
+
           link.download = `Marcaciones_${startDate}_a_${endDate}.xlsx`;
           document.body.appendChild(link);
           link.click();
