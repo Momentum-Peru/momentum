@@ -86,7 +86,7 @@ export class BoardViewComponent {
   @Output() filtersChanged = new EventEmitter<TasksSearchParams>();
 
   // Modo de vista
-  public readonly viewMode = signal<'kanban' | 'list'>('kanban');
+  public readonly viewMode = signal<'kanban' | 'list'>('list');
   public readonly showMembersDialog = signal(false);
 
   // Filtros
