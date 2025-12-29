@@ -27,6 +27,7 @@ import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { FaceRecognitionApiService } from '../../shared/services/face-recognition-api.service';
 import { AuthService } from '../login/services/auth.service';
 import { TenantService } from '../../core/services/tenant.service';
+import { GeocodingService } from '../../shared/services/geocoding.service';
 import {
   TimeTracking,
   TimeTrackingType,
@@ -75,6 +76,7 @@ export class TimeTrackingPage implements OnInit {
   private readonly tenantService = inject(TenantService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly geocodingService = inject(GeocodingService);
 
   items = signal<TimeTracking[]>([]);
   projects = signal<ProjectOption[]>([]);
@@ -86,6 +88,10 @@ export class TimeTrackingPage implements OnInit {
   editing = signal<TimeTracking | null>(null);
   viewing = signal<TimeTracking | null>(null);
   private expandedRowKeys = signal<Set<string>>(new Set());
+
+  // Signals para geocodificación de direcciones
+  private readonly locationAddresses = signal<Record<string, string>>({});
+  private readonly locationLoading = signal<Record<string, boolean>>({});
 
   // Convertir el observable del usuario a un signal para reactividad
   // Usar getCurrentUser() como valor inicial para asegurar que tenga el usuario desde localStorage
@@ -212,6 +218,8 @@ export class TimeTrackingPage implements OnInit {
     this.timeTrackingApi.list(filters).subscribe({
       next: (data) => {
         this.items.set(data);
+        // Pre-cargar direcciones para todas las ubicaciones
+        this.prefetchLocationAddresses(data);
       },
       error: () => {
         this.messageService.add({
@@ -377,11 +385,78 @@ export class TimeTrackingPage implements OnInit {
   }
 
   /**
-   * Formatea la ubicación GPS
+   * Formatea la ubicación GPS mostrando la dirección si está disponible
    */
   formatLocation(location?: Location): string {
     if (!location) return '-';
+    const key = this.buildLocationKey(location);
+    if (this.locationLoading()[key]) {
+      return 'Buscando dirección...';
+    }
+    return this.locationAddresses()[key] ?? this.formatCoordinates(location);
+  }
+
+  /**
+   * Formatea las coordenadas como fallback
+   */
+  private formatCoordinates(location: Location): string {
     return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+  }
+
+  /**
+   * Construye una clave única para una ubicación
+   */
+  private buildLocationKey(location: Location): string {
+    return `${location.latitude.toFixed(6)},${location.longitude.toFixed(6)}`;
+  }
+
+  /**
+   * Pre-carga las direcciones para todas las ubicaciones de los items
+   */
+  private prefetchLocationAddresses(items: TimeTracking[]): void {
+    items.forEach((item) => {
+      const location = item.location;
+      if (!location) {
+        return;
+      }
+      this.resolveLocationAddress(location);
+    });
+  }
+
+  /**
+   * Resuelve la dirección de una ubicación usando geocodificación
+   */
+  private resolveLocationAddress(location: Location): void {
+    const key = this.buildLocationKey(location);
+    if (this.locationAddresses()[key] || this.locationLoading()[key]) {
+      return;
+    }
+
+    this.locationLoading.update((state) => ({
+      ...state,
+      [key]: true,
+    }));
+
+    this.geocodingService
+      .getAddress(location.latitude, location.longitude)
+      .then((address) => {
+        this.locationAddresses.update((state) => ({
+          ...state,
+          [key]: address,
+        }));
+      })
+      .catch(() => {
+        this.locationAddresses.update((state) => ({
+          ...state,
+          [key]: this.formatCoordinates(location),
+        }));
+      })
+      .finally(() => {
+        this.locationLoading.update((state) => {
+          const { [key]: _, ...rest } = state;
+          return rest;
+        });
+      });
   }
 
   onDateChange(value: Date | Date[] | null) {
