@@ -31,6 +31,7 @@ export class BoardListComponent {
   readonly editBoard = output<Board>();
   readonly inviteUser = output<Board>();
   readonly deleteBoard = output<Board>();
+  readonly changeColor = output<{ board: Board; color: string }>();
 
   // Método para verificar si un tablero pertenece al usuario actual
   isBoardOwner(board: Board): boolean {

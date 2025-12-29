@@ -87,6 +87,8 @@
           (onClick)="onEdit($event)"
           pTooltip="Editar tablero"
         ></p-button>
+        }
+        @if (isBoardMember()) {
         <p-button
           icon="pi pi-user-plus"
           label="Invitar"
@@ -147,6 +149,8 @@
         pTooltip="Editar tablero"
         styleClass="flex-1 sm:flex-none"
       ></p-button>
+      }
+      @if (isBoardMember()) {
       <p-button
         icon="pi pi-user-plus"
         label="Invitar"

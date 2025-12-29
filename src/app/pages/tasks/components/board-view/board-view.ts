@@ -326,6 +326,19 @@ export class BoardViewComponent {
     return (this.board.members || []).some((member) => member._id === this.currentUserId);
   }
 
+  /**
+   * Verifica si el usuario actual es miembro del tablero (propietario o miembro)
+   */
+  isBoardMember(): boolean {
+    if (!this.currentUserId) return false;
+    // Verificar si es propietario
+    if (this.isOwner || (this.board.owner && this.board.owner._id === this.currentUserId)) {
+      return true;
+    }
+    // Verificar si es miembro
+    return this.isCurrentUserMember();
+  }
+
   isCurrentUser(memberId: string): boolean {
     return this.currentUserId === memberId;
   }
