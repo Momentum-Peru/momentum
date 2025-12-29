@@ -325,22 +325,22 @@ export class TasksPage implements OnInit {
       // Si viene taskId, cargar la tarea y mostrar su tablero
       if (params['taskId']) {
         const taskId = params['taskId'];
-        
+
         // Evitar procesar el mismo taskId múltiples veces (previene bucles)
         if (this.processedTaskId() === taskId) {
           return;
         }
-        
+
         // Marcar este taskId como procesado
         this.processedTaskId.set(taskId);
-        
+
         // Limpiar query params inmediatamente para evitar bucles
         this.router.navigate([], {
           relativeTo: this.route,
           queryParams: {},
           replaceUrl: true,
         });
-        
+
         this.tasksService.getTaskById(taskId).subscribe({
           next: (task) => {
             // Obtener el boardId de la tarea
@@ -730,6 +730,33 @@ export class TasksPage implements OnInit {
       rejectLabel: 'Cancelar',
       accept: () => {
         this.deleteBoard(board._id);
+      },
+    });
+  }
+
+  /**
+   * Maneja el cambio de color de un tablero
+   */
+  public onBoardColorChange(event: { board: Board; color: string }): void {
+    const { board, color } = event;
+    this.boardsService.update(board._id, { color }).subscribe({
+      next: (updatedBoard) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Color actualizado',
+          detail: 'El color del tablero se ha actualizado correctamente',
+        });
+        // Si el tablero actualizado es el seleccionado, actualizarlo también
+        if (this.selectedBoard()?._id === updatedBoard._id) {
+          this.selectedBoard.set(updatedBoard);
+        }
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar el color del tablero',
+        });
       },
     });
   }

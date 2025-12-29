@@ -80,28 +80,18 @@ export class MenuConfigService {
         routerLink: '/dashboard',
       },
       {
-        label: 'PROYECTOS',
+        label: 'VENTAS',
         icon: 'pi pi-folder',
         items: [
-          {
-            label: 'Dashboard',
-            icon: 'pi pi-chart-line',
-            routerLink: '/projects/dashboard',
-          },
           {
             label: 'Proyectos',
             icon: 'pi pi-folder',
             routerLink: '/projects',
           },
           {
-            label: 'Ingeniería',
-            icon: 'pi pi-cog',
-            routerLink: '/engineering',
-          },
-          {
-            label: 'Órdenes',
-            icon: 'pi pi-shopping-cart',
-            routerLink: '/orders',
+            label: 'Dashboard',
+            icon: 'pi pi-chart-line',
+            routerLink: '/projects/dashboard',
           },
           {
             label: 'Requerimientos',
@@ -109,14 +99,30 @@ export class MenuConfigService {
             routerLink: '/requirements',
           },
           {
+            label: 'Cotizaciones',
+            icon: 'pi pi-dollar',
+            routerLink: '/quotes',
+          },
+          {
             label: 'TDRs',
             icon: 'pi pi-file',
             routerLink: '/tdrs',
           },
           {
-            label: 'Cotizaciones',
-            icon: 'pi pi-dollar',
-            routerLink: '/quotes',
+            label: 'Órdenes',
+            icon: 'pi pi-shopping-cart',
+            routerLink: '/orders',
+          },
+        ],
+      },
+      {
+        label: 'INGENIERÍA',
+        icon: 'pi pi-cog',
+        items: [
+          {
+            label: 'Documentos de Ingeniería',
+            icon: 'pi pi-cog',
+            routerLink: '/engineering',
           },
         ],
       },

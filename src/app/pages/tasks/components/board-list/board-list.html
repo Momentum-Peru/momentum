@@ -18,10 +18,12 @@
     [board]="board"
     [isOwner]="isBoardOwner(board)"
     [isSelected]="selectedBoardId() === board._id"
+    [currentUserId]="currentUserId()"
     (view)="viewBoard.emit(board)"
     (edit)="editBoard.emit(board)"
     (invite)="inviteUser.emit(board)"
     (delete)="deleteBoard.emit(board)"
+    (colorChange)="changeColor.emit($event)"
   ></app-board-card>
   }
 </div>

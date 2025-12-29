@@ -14,6 +14,7 @@ import { GeocodingService } from '../../shared/services/geocoding.service';
 import { signal } from '@angular/core';
 import { TableModule } from 'primeng/table';
 import { PanelModule } from 'primeng/panel';
+import { ButtonModule } from 'primeng/button';
 import {
   DashboardFiltersParams,
   DashboardKpi,
@@ -35,6 +36,7 @@ type TrackingLocation = NonNullable<TimeTrackingDetail['location']>;
     RouterModule,
     TableModule,
     PanelModule,
+    ButtonModule,
     DashboardKpiCardComponent,
     DashboardChartComponent,
     DashboardTableComponent,
@@ -59,6 +61,9 @@ export class DashboardPage implements OnInit {
   protected readonly loadingTimeTracking = signal(false);
   protected readonly locationAddresses = signal<Record<string, string>>({});
   protected readonly locationLoading = signal<Record<string, boolean>>({});
+
+  // Guardar los filtros actuales para usar en la descarga
+  private currentFilters: DashboardFiltersParams = { period: '30d' };
 
   // Computed para calcular totales de marcaciones
   protected readonly totalIngresos = computed(() => {
@@ -148,10 +153,53 @@ export class DashboardPage implements OnInit {
    * @param filters Nuevos filtros aplicados
    */
   async onFiltersChanged(filters: DashboardFiltersParams): Promise<void> {
+    // Guardar los filtros actuales
+    this.currentFilters = filters;
     await this.dashboardService.loadDashboardData(filters);
     // Si es gerencia, cargar también los reportes de horas
     if (this.isGerencia()) {
       await this.loadTimeTrackingReports(filters);
+    }
+  }
+
+  /**
+   * Descarga todas las marcaciones en formato Excel
+   */
+  async downloadTimeTrackingExcel(): Promise<void> {
+    if (!this.isGerencia()) return;
+
+    try {
+      // Descargar el archivo Excel usando los filtros actuales
+      this.dashboardApiService.exportTimeTrackingToExcel(this.currentFilters).subscribe({
+        next: (blob: Blob) => {
+          // Crear un enlace temporal para descargar el archivo
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          
+          // Generar nombre de archivo con rango de fechas
+          const now = new Date();
+          const startDate = this.currentFilters?.startDate 
+            ? new Date(this.currentFilters.startDate).toISOString().split('T')[0]
+            : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const endDate = this.currentFilters?.endDate
+            ? new Date(this.currentFilters.endDate).toISOString().split('T')[0]
+            : now.toISOString().split('T')[0];
+          
+          link.download = `Marcaciones_${startDate}_a_${endDate}.xlsx`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        },
+        error: (error) => {
+          console.error('Error al descargar el archivo Excel:', error);
+          alert('Error al descargar el archivo Excel. Por favor, intente nuevamente.');
+        },
+      });
+    } catch (error) {
+      console.error('Error al descargar marcaciones:', error);
+      alert('Error al descargar las marcaciones. Por favor, intente nuevamente.');
     }
   }
 

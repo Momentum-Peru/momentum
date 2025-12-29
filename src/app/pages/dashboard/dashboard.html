@@ -194,9 +194,21 @@
       styleClass="shadow-md"
     >
       <ng-template pTemplate="header">
-        <div class="flex items-center gap-2">
-          <i class="pi pi-clock text-blue-600 text-xl"></i>
-          <span class="text-xl font-semibold">Panel de Marcaciones</span>
+        <div class="flex items-center justify-between w-full gap-4">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-clock text-blue-600 text-xl"></i>
+            <span class="text-xl font-semibold">Panel de Marcaciones</span>
+          </div>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-file-excel"
+            label="Descargar Excel"
+            class="p-button-success p-button-sm me-3"
+            (click)="downloadTimeTrackingExcel()"
+            [disabled]="loadingTimeTracking()"
+            title="Descargar todas las marcaciones en formato Excel"
+          ></button>
         </div>
       </ng-template>
 
