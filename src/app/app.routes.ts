@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { requireAuthGuard, publicGuard } from './guards/auth.guard';
 import { MenuPermissionGuard } from './guards/menu-permission.guard';
 import { requireTenantGuard } from './guards/tenant.guard';
+import { permissionsGuard } from './guards/permissions.guard';
 
 export const routes: Routes = [
   {
@@ -37,7 +38,7 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./layouts/main/main').then((m) => m.Main),
-    canActivate: [requireAuthGuard, requireTenantGuard],
+    canActivate: [requireAuthGuard, requireTenantGuard, permissionsGuard],
     children: [
       {
         path: 'clients',

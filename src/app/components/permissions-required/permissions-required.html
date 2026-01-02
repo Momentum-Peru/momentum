@@ -1,0 +1,116 @@
+<div class="permissions-overlay">
+  <div class="permissions-container">
+    <div class="permissions-content">
+      <!-- Icono principal -->
+      <div class="icon-container">
+        <i class="pi pi-lock text-6xl text-yellow-500 mb-4 block"></i>
+      </div>
+
+      <!-- Título -->
+      <h1 class="title">Permisos Requeridos</h1>
+      <p class="subtitle">
+        Para continuar usando la plataforma, necesitamos acceso a su ubicación y cámara.
+      </p>
+
+      <!-- Estado de permisos -->
+      @if (isChecking()) {
+      <div class="checking-container">
+        <div class="spinner"></div>
+        <p class="checking-text">Verificando permisos...</p>
+      </div>
+      } @else {
+      <div class="permissions-status">
+        <!-- Estado de Ubicación -->
+        <div class="permission-item" [class.granted]="permissionsStatus()?.location === 'granted'"
+          [class.denied]="permissionsStatus()?.location === 'denied'">
+          <div class="permission-icon">
+            @if (permissionsStatus()?.location === 'granted') {
+            <i class="pi pi-check-circle text-green-500"></i>
+            } @else if (permissionsStatus()?.location === 'denied') {
+            <i class="pi pi-times-circle text-red-500"></i>
+            } @else {
+            <i class="pi pi-exclamation-circle text-yellow-500"></i>
+            }
+          </div>
+          <div class="permission-info">
+            <h3 class="permission-title">Ubicación</h3>
+            <p class="permission-message">{{ getLocationMessage() }}</p>
+          </div>
+        </div>
+
+        <!-- Estado de Cámara -->
+        <div class="permission-item" [class.granted]="permissionsStatus()?.camera === 'granted'"
+          [class.denied]="permissionsStatus()?.camera === 'denied'">
+          <div class="permission-icon">
+            @if (permissionsStatus()?.camera === 'granted') {
+            <i class="pi pi-check-circle text-green-500"></i>
+            } @else if (permissionsStatus()?.camera === 'denied') {
+            <i class="pi pi-times-circle text-red-500"></i>
+            } @else {
+            <i class="pi pi-exclamation-circle text-yellow-500"></i>
+            }
+          </div>
+          <div class="permission-info">
+            <h3 class="permission-title">Cámara</h3>
+            <p class="permission-message">{{ getCameraMessage() }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mensaje de instrucciones -->
+      @if (hasDeniedPermissions()) {
+      <div class="instructions-container">
+        <div class="instructions-content">
+          <i class="pi pi-info-circle text-blue-500"></i>
+          <div class="instructions-text">
+            <p class="instructions-title">Permisos denegados</p>
+            <p class="instructions-description">
+              Algunos permisos fueron denegados. Debe habilitarlos manualmente en la configuración de su navegador:
+            </p>
+            <ul class="instructions-list">
+              <li><strong>Chrome/Edge:</strong> Configuración → Privacidad y seguridad → Configuración de sitios → Ubicación/Cámara</li>
+              <li><strong>Firefox:</strong> Opciones → Privacidad y seguridad → Permisos → Ubicación/Cámara</li>
+              <li><strong>Safari:</strong> Preferencias → Sitios web → Ubicación/Cámara</li>
+              <li><strong>Móvil:</strong> Configuración de la aplicación → Permisos → Ubicación/Cámara</li>
+            </ul>
+            <p class="instructions-note">
+              Después de habilitar los permisos, recargue la página.
+            </p>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Botones de acción -->
+      <div class="actions-container">
+        @if (canRequestAutomatically()) {
+        <p-button
+          label="Habilitar Permisos"
+          icon="pi pi-check"
+          (onClick)="requestPermissions()"
+          [loading]="isRequesting()"
+          [disabled]="isRequesting()"
+          class="w-full"
+        />
+        }
+        <p-button
+          label="Verificar Nuevamente"
+          icon="pi pi-refresh"
+          (onClick)="checkPermissions()"
+          [loading]="isChecking()"
+          [disabled]="isChecking()"
+          [outlined]="true"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Mensaje adicional -->
+      <div class="footer-message">
+        <p class="text-sm text-gray-500">
+          Si crees que esto es un error, contacta al administrador del sistema.
+        </p>
+      </div>
+      }
+    </div>
+  </div>
+</div>
