@@ -118,6 +118,12 @@ export const routes: Routes = [
         data: { menuPermission: '/areas' },
       },
       {
+        path: 'meetings',
+        loadComponent: () => import('./pages/meetings/meetings').then((m) => m.MeetingsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/meetings' },
+      },
+      {
         path: 'face-recognition-register',
         loadComponent: () =>
           import('./pages/face-recognition-register/face-recognition-register').then(

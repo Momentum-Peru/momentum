@@ -1,0 +1,649 @@
+<div class="p-4 space-y-4 mt-5 overflow-x-hidden">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Título y Estadísticas -->
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+    <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">Reuniones</h1>
+    <button
+      pButton
+      type="button"
+      (click)="loadStats()"
+      label="Ver Estadísticas"
+      icon="pi pi-chart-bar"
+      class="p-button-outlined"
+      aria-label="Ver estadísticas de reuniones"
+    ></button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="flex flex-wrap items-center gap-2 mb-4">
+    <input
+      pInputText
+      placeholder="Buscar por título, acuerdos o asistentes..."
+      [ngModel]="query()"
+      (ngModelChange)="setQuery($event)"
+      name="searchQuery"
+      class="flex-1 min-w-[200px]"
+    />
+
+    <p-datePicker
+      [(ngModel)]="startDate"
+      placeholder="Desde"
+      dateFormat="dd/mm/yy"
+      [showIcon]="true"
+      [iconDisplay]="'input'"
+      [appendTo]="'body'"
+      name="startDate"
+      class="w-full md:w-auto"
+    ></p-datePicker>
+
+    <p-datePicker
+      [(ngModel)]="endDate"
+      placeholder="Hasta"
+      dateFormat="dd/mm/yy"
+      [showIcon]="true"
+      [iconDisplay]="'input'"
+      [appendTo]="'body'"
+      name="endDate"
+      class="w-full md:w-auto"
+    ></p-datePicker>
+
+    <button
+      pButton
+      type="button"
+      (click)="applyDateFilter()"
+      label="Filtrar"
+      icon="pi pi-filter"
+      class="p-button-outlined"
+      aria-label="Aplicar filtro de fechas"
+    ></button>
+
+    <button
+      pButton
+      type="button"
+      (click)="clearDateFilter()"
+      label="Limpiar"
+      icon="pi pi-filter-slash"
+      class="p-button-text"
+      aria-label="Limpiar filtros"
+    ></button>
+
+    @if (canEdit()) {
+    <button
+      pButton
+      type="button"
+      (click)="newItem()"
+      label="Nueva Reunión"
+      icon="pi pi-plus"
+      class="w-full xl:w-auto"
+      aria-label="Crear nueva reunión"
+    ></button>
+    }
+  </div>
+
+  <!-- Vista Desktop: Tabla -->
+  <div class="hidden md:block">
+    <p-table
+      [value]="filteredItems()"
+      [scrollable]="true"
+      scrollHeight="60vh"
+      styleClass="p-datatable-sm"
+      [loading]="loading()"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Fecha</th>
+          <th>Título</th>
+          <th class="text-center">Videos</th>
+          <th class="text-center">Asistentes</th>
+          <th class="text-center">Acuerdos</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ formatDate(row.meetingDate) }}</td>
+          <td class="font-medium">{{ row.title }}</td>
+          <td class="text-center">
+            @if (getVideosCount(row) > 0) {
+            <p-tag severity="info" [value]="getVideosCount(row).toString()">
+              <i class="pi pi-video mr-1"></i>
+            </p-tag>
+            } @else {
+            <span class="text-gray-400">-</span>
+            }
+          </td>
+          <td class="text-center">
+            @if (getAttendeesCount(row) > 0) {
+            <p-tag severity="success" [value]="getAttendeesCount(row).toString()">
+              <i class="pi pi-users mr-1"></i>
+            </p-tag>
+            } @else {
+            <span class="text-gray-400">-</span>
+            }
+          </td>
+          <td class="text-center">
+            @if (hasAgreements(row)) {
+            <i class="pi pi-check-circle text-green-500"></i>
+            } @else {
+            <i class="pi pi-minus-circle text-gray-400"></i>
+            }
+          </td>
+          <td class="text-right flex gap-2 justify-end">
+            <button
+              pButton
+              icon="pi pi-eye"
+              class="p-button-text"
+              (click)="viewItem(row)"
+              pTooltip="Ver detalles"
+              tooltipPosition="top"
+              aria-label="Ver detalles de la reunión"
+            ></button>
+            @if (canEdit()) {
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text"
+              (click)="editItem(row)"
+              pTooltip="Editar"
+              tooltipPosition="top"
+              aria-label="Editar reunión"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-text p-button-danger"
+              (click)="remove(row)"
+              pTooltip="Eliminar"
+              tooltipPosition="top"
+              aria-label="Eliminar reunión"
+            ></button>
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center py-8 text-gray-500">No se encontraron reuniones</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil: Cards -->
+  <div class="md:hidden space-y-3">
+    @for (row of filteredItems(); track row._id || row.title; let i = $index) {
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="p-4 pb-0">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white text-lg mb-1">
+                {{ row.title }}
+              </h3>
+              <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <i class="pi pi-calendar"></i>
+                <span>{{ formatDate(row.meetingDate) }}</span>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2">
+              @if (getVideosCount(row) > 0) {
+              <p-tag severity="info" [value]="getVideosCount(row).toString()">
+                <i class="pi pi-video"></i>
+              </p-tag>
+              } @if (getAttendeesCount(row) > 0) {
+              <p-tag severity="success" [value]="getAttendeesCount(row).toString()">
+                <i class="pi pi-users"></i>
+              </p-tag>
+              }
+            </div>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="content">
+        <div class="space-y-2">
+          @if (row.description) {
+          <div>
+            <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Descripción:</span>
+            <p class="text-sm text-gray-700 dark:text-white mt-1">
+              {{ row.description }}
+            </p>
+          </div>
+          } @if (hasAgreements(row)) {
+          <div class="flex items-center gap-2 text-sm">
+            <i class="pi pi-check-circle text-green-500"></i>
+            <span class="text-gray-700 dark:text-white">Tiene acuerdos registrados</span>
+          </div>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="footer">
+        <div class="flex gap-2">
+          <button
+            pButton
+            icon="pi pi-eye"
+            label="Ver"
+            class="p-button-text flex-1"
+            (click)="viewItem(row)"
+            aria-label="Ver detalles de la reunión"
+          ></button>
+          @if (canEdit()) {
+          <button
+            pButton
+            icon="pi pi-pencil"
+            label="Editar"
+            class="p-button-text flex-1"
+            (click)="editItem(row)"
+            aria-label="Editar reunión"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-trash"
+            class="p-button-text p-button-danger"
+            (click)="remove(row)"
+            pTooltip="Eliminar"
+            aria-label="Eliminar reunión"
+          ></button>
+          }
+        </div>
+      </ng-template>
+    </p-card>
+    } @empty {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">No se encontraron reuniones</div>
+    }
+  </div>
+
+  <!-- Diálogo de creación/edición -->
+  <p-dialog
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '50rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      {{ editing()?._id ? 'Editar reunión' : 'Nueva reunión' }}
+    </ng-template>
+
+    <div class="grid gap-3" *ngIf="editing() as e">
+      <!-- Título -->
+      <input
+        pInputText
+        name="meetingTitle"
+        placeholder="Título de la reunión *"
+        [ngModel]="e.title"
+        (ngModelChange)="onEditChange('title', $event)"
+        required
+      />
+
+      <!-- Fecha de Reunión -->
+      <p-datePicker
+        [(ngModel)]="e.meetingDate"
+        (ngModelChange)="onEditChange('meetingDate', $event)"
+        [showTime]="true"
+        [showIcon]="true"
+        [iconDisplay]="'input'"
+        hourFormat="24"
+        dateFormat="dd/mm/yy"
+        placeholder="Fecha y hora de reunión *"
+        class="w-full"
+        [appendTo]="'body'"
+        required
+      ></p-datePicker>
+
+      <!-- Sección de Links de Videos -->
+      <div class="border-t pt-3">
+        <h4 class="text-lg font-semibold mb-3">Links de Videos</h4>
+        <input
+          pInputText
+          type="text"
+          #videoLinkInput
+          placeholder="Presiona Enter para agregar un link"
+          (keydown.enter)="
+            addToArray('videoLinks', videoLinkInput.value, $event); videoLinkInput.value = ''
+          "
+          class="w-full mb-2"
+        />
+        <div class="flex flex-wrap gap-2 mb-2">
+          @for (link of e.videoLinks; track $index) {
+          <span
+            class="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 rounded-full text-sm"
+          >
+            <i class="pi pi-video text-blue-500"></i>
+            <span>{{ link }}</span>
+            <button
+              type="button"
+              (click)="removeFromArray('videoLinks', $index)"
+              class="ml-1 text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100"
+              aria-label="Eliminar link"
+            >
+              <i class="pi pi-times text-xs"></i>
+            </button>
+          </span>
+          }
+        </div>
+      </div>
+
+      <!-- Sección de Asistentes -->
+      <div class="border-t pt-3">
+        <h4 class="text-lg font-semibold mb-3">Asistentes</h4>
+        <p-multiSelect
+          [(ngModel)]="e.attendees"
+          (ngModelChange)="onEditChange('attendees', $event)"
+          [options]="availableUsers()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccionar asistentes"
+          [display]="'chip'"
+          [filter]="true"
+          filterPlaceholder="Buscar usuario..."
+          [showClear]="true"
+          [loading]="loadingUsers()"
+          class="w-full"
+          appendTo="body"
+        ></p-multiSelect>
+      </div>
+
+      <!-- Sección de Acuerdos -->
+      <div class="border-t pt-3">
+        <h4 class="text-lg font-semibold mb-3">Acuerdos de la Reunión</h4>
+        <textarea
+          pTextarea
+          [ngModel]="e.agreements"
+          (ngModelChange)="onEditChange('agreements', $event)"
+          name="agreements"
+          placeholder="1. Acuerdo 1&#10;2. Acuerdo 2&#10;3. Acuerdo 3"
+          rows="5"
+          class="w-full"
+        ></textarea>
+      </div>
+
+      <!-- Sección de Descripción -->
+      <div class="border-t pt-3">
+        <h4 class="text-lg font-semibold mb-3">Descripción</h4>
+        <textarea
+          pTextarea
+          [ngModel]="e.description"
+          (ngModelChange)="onEditChange('description', $event)"
+          name="description"
+          placeholder="Descripción adicional de la reunión"
+          rows="3"
+          class="w-full"
+        ></textarea>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
+      <button pButton label="Guardar" (click)="save()" aria-label="Guardar reunión"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo de visualización (solo lectura) -->
+  <p-dialog
+    [visible]="showViewDialog()"
+    (visibleChange)="showViewDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '50rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    appendTo="body"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold flex items-center gap-2">
+        <i class="pi pi-eye"></i>
+        Detalles de la Reunión
+      </span>
+    </ng-template>
+
+    <div class="space-y-4" *ngIf="viewing() as v">
+      <!-- Título y Fecha -->
+      <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          {{ v.title }}
+        </h2>
+        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+          <i class="pi pi-calendar"></i>
+          <span>{{ formatDate(v.meetingDate) }}</span>
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      @if (v.description) {
+      <div>
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+          Descripción:
+        </span>
+        <p class="text-gray-700 dark:text-white bg-gray-50 dark:bg-gray-800 p-3 rounded">
+          {{ v.description }}
+        </p>
+      </div>
+      }
+
+      <!-- Videos -->
+      @if (v.videoLinks && v.videoLinks.length > 0) {
+      <div>
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+          <i class="pi pi-video mr-1"></i>
+          Links de Videos:
+        </span>
+        <div class="space-y-2">
+          @for (link of v.videoLinks; track link) {
+          <div class="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+            <i class="pi pi-link text-blue-500"></i>
+            <a
+              (click)="openLink(link)"
+              (keyup.enter)="openLink(link)"
+              (keyup.space)="openLink(link); $event.preventDefault()"
+              tabindex="0"
+              role="button"
+              class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex-1 truncate"
+              [title]="link"
+            >
+              {{ link }}
+            </a>
+            <button
+              pButton
+              icon="pi pi-external-link"
+              class="p-button-text p-button-sm"
+              (click)="openLink(link)"
+              pTooltip="Abrir en nueva ventana"
+              aria-label="Abrir link"
+            ></button>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Asistentes -->
+      @if (v.attendees && v.attendees.length > 0) {
+      <div>
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+          <i class="pi pi-users mr-1"></i>
+          Asistentes ({{ v.attendees.length }}):
+        </span>
+        <div class="flex flex-wrap gap-2">
+          @for (attendee of v.attendees; track $index) {
+          <p-tag severity="success" [value]="getAttendeeName(attendee)">
+            <i class="pi pi-user mr-1"></i>
+          </p-tag>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Acuerdos -->
+      @if (v.agreements) {
+      <div>
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+          <i class="pi pi-check-circle mr-1"></i>
+          Acuerdos:
+        </span>
+        <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded">
+          <pre class="whitespace-pre-wrap text-gray-700 dark:text-white font-sans">{{
+            v.agreements
+          }}</pre>
+        </div>
+      </div>
+      }
+
+      <!-- Metadatos -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span class="text-gray-500 dark:text-gray-400">Creado:</span>
+            <div class="font-medium text-gray-700 dark:text-white">
+              {{ formatDate(v.createdAt!) }}
+            </div>
+          </div>
+          <div>
+            <span class="text-gray-500 dark:text-gray-400">Actualizado:</span>
+            <div class="font-medium text-gray-700 dark:text-white">
+              {{ formatDate(v.updatedAt!) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cerrar"
+        icon="pi pi-times"
+        (click)="closeViewDialog()"
+        aria-label="Cerrar"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo de Estadísticas -->
+  <p-dialog
+    [visible]="showStatsDialog()"
+    (visibleChange)="showStatsDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '40rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    appendTo="body"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold flex items-center gap-2">
+        <i class="pi pi-chart-bar"></i>
+        Estadísticas de Reuniones
+      </span>
+    </ng-template>
+
+    <div *ngIf="stats() as s" class="space-y-4">
+      <!-- Cards de Estadísticas -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="p-4 pb-0">
+              <i class="pi pi-calendar text-3xl text-blue-500"></i>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                {{ s.totalMeetings }}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-300">Total Reuniones</div>
+            </div>
+          </ng-template>
+        </p-card>
+
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="p-4 pb-0">
+              <i class="pi pi-video text-3xl text-purple-500"></i>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                {{ s.meetingsWithVideos }}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-300">Con Videos</div>
+            </div>
+          </ng-template>
+        </p-card>
+
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="p-4 pb-0">
+              <i class="pi pi-check-circle text-3xl text-green-500"></i>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                {{ s.meetingsWithAgreements }}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-300">Con Acuerdos</div>
+            </div>
+          </ng-template>
+        </p-card>
+      </div>
+
+      <!-- Período -->
+      @if (s.period.startDate || s.period.endDate) {
+      <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded">
+        <div class="text-sm font-medium text-gray-700 dark:text-white mb-2">
+          Período Consultado:
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-300">
+          @if (s.period.startDate && s.period.endDate) {
+          <span
+            >Desde {{ formatDateOnly(s.period.startDate) }} hasta
+            {{ formatDateOnly(s.period.endDate) }}</span
+          >
+          } @else if (s.period.startDate) {
+          <span>Desde {{ formatDateOnly(s.period.startDate) }}</span>
+          } @else if (s.period.endDate) {
+          <span>Hasta {{ formatDateOnly(s.period.endDate) }}</span>
+          }
+        </div>
+      </div>
+      } @else {
+      <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded text-center">
+        <i class="pi pi-info-circle text-blue-500 mr-2"></i>
+        <span class="text-sm text-gray-700 dark:text-white">
+          Estadísticas de todas las reuniones registradas
+        </span>
+      </div>
+      }
+    </div>
+
+    <!-- Loading State -->
+    @if (loadingStats()) {
+    <div class="flex items-center justify-center py-8">
+      <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
+    </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cerrar"
+        icon="pi pi-times"
+        (click)="closeStatsDialog()"
+        aria-label="Cerrar estadísticas"
+      ></button>
+    </ng-template>
+  </p-dialog>
+</div>
