@@ -332,7 +332,7 @@
     </ng-template>
 
     @if (editing(); as e) {
-    <div class="grid gap-3">
+    <div class="grid gap-3" (paste)="onPaste($event)">
       <!-- Usuario que reporta -->
       <div>
         <label
@@ -428,12 +428,13 @@
           (dragover)="onDragOver($event)"
           (dragleave)="onDragLeave($event)"
           (drop)="onDrop($event)"
+          (paste)="onPaste($event)"
           (click)="fileInput.click()"
           (keyup.enter)="fileInput.click()"
           (keyup.space)="fileInput.click()"
           tabindex="0"
           role="button"
-          aria-label="Seleccionar archivos para subir"
+          aria-label="Seleccionar archivos para subir o pegar desde portapapeles"
         >
           <input
             type="file"
@@ -461,7 +462,9 @@
               <span>Arrastra y suelta archivos aquí</span>
               }
             </p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">o</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              o haz clic para seleccionar, o pega desde el portapapeles (Ctrl+V)
+            </p>
             <button
               pButton
               type="button"
@@ -850,7 +853,7 @@
       </span>
     </ng-template>
 
-    <div class="grid gap-3">
+    <div class="grid gap-3" (paste)="onPasteUpdate($event)">
       <!-- Usuario que actualiza -->
       <div>
         <label
@@ -909,12 +912,13 @@
           (dragover)="onDragOverUpdate($event)"
           (dragleave)="onDragLeaveUpdate($event)"
           (drop)="onDropUpdate($event)"
+          (paste)="onPasteUpdate($event)"
           (click)="updateFileInput.click()"
           (keyup.enter)="updateFileInput.click()"
           (keyup.space)="updateFileInput.click()"
           tabindex="0"
           role="button"
-          aria-label="Seleccionar archivos para subir"
+          aria-label="Seleccionar archivos para subir o pegar desde portapapeles"
         >
           <input
             type="file"
@@ -945,7 +949,9 @@
               <span>Arrastra y suelta archivos aquí</span>
               }
             </p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">o</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              o haz clic para seleccionar, o pega desde el portapapeles (Ctrl+V)
+            </p>
             <button
               pButton
               type="button"

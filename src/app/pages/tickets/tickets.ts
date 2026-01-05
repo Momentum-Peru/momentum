@@ -740,6 +740,32 @@ export class TicketsPage implements OnInit {
   }
 
   /**
+   * Maneja el evento paste (pegar desde portapapeles)
+   */
+  onPaste(event: ClipboardEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    const files: File[] = [];
+
+    for (const item of Array.from(items)) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) {
+          files.push(file);
+        }
+      }
+    }
+
+    if (files.length > 0) {
+      this.processFiles(files);
+    }
+  }
+
+  /**
    * Maneja el cambio del input de archivos
    */
   onFileInputChange(event: Event) {
@@ -1001,6 +1027,32 @@ export class TicketsPage implements OnInit {
     this.isDraggingUpdate.set(false);
 
     const files = Array.from(event.dataTransfer?.files || []);
+    if (files.length > 0) {
+      this.processUpdateFiles(files);
+    }
+  }
+
+  /**
+   * Maneja el evento paste para actualizaciones (pegar desde portapapeles)
+   */
+  onPasteUpdate(event: ClipboardEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    const files: File[] = [];
+
+    for (const item of Array.from(items)) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) {
+          files.push(file);
+        }
+      }
+    }
+
     if (files.length > 0) {
       this.processUpdateFiles(files);
     }
