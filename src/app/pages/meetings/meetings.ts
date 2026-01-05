@@ -427,7 +427,7 @@ export class MeetingsPage implements OnInit {
       this.meetingsApi.create(createData).subscribe({
         next: (createdMeeting) => {
           this.toastSuccess('Reunión creada exitosamente');
-          
+
           // Si hay archivos seleccionados, subirlos después de crear la reunión
           const files = this.selectedFiles();
           if (files.length > 0 && createdMeeting._id) {
@@ -635,6 +635,42 @@ export class MeetingsPage implements OnInit {
   }
 
   /**
+   * Maneja el evento paste (pegar desde portapapeles)
+   */
+  onPaste(event: ClipboardEvent) {
+    // Si el evento viene de un input, textarea o elemento editable, permitir el comportamiento por defecto
+    const target = event.target as HTMLElement;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target.isContentEditable
+    ) {
+      return; // Dejar que el paste normal funcione para texto
+    }
+
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    const files: File[] = [];
+
+    for (const item of Array.from(items)) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) {
+          files.push(file);
+        }
+      }
+    }
+
+    // Solo prevenir el comportamiento por defecto si hay archivos para procesar
+    if (files.length > 0) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.processFiles(files);
+    }
+  }
+
+  /**
    * Maneja el cambio del input de archivos
    */
   onFileInputChange(event: Event) {
@@ -689,7 +725,7 @@ export class MeetingsPage implements OnInit {
    */
   private createFilePreview(file: File) {
     const fileType = this.getFileType(file.name);
-    
+
     // Solo crear preview para imágenes y videos
     if (fileType !== 'image' && fileType !== 'video' && fileType !== 'audio') {
       return;
@@ -727,7 +763,7 @@ export class MeetingsPage implements OnInit {
     const currentFiles = this.selectedFiles();
     const updatedFiles = currentFiles.filter((file) => file !== fileToRemove);
     this.selectedFiles.set(updatedFiles);
-    
+
     // Eliminar preview
     const previews = new Map(this.filePreviews());
     previews.delete(fileToRemove.name);

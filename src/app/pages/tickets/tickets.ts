@@ -743,8 +743,15 @@ export class TicketsPage implements OnInit {
    * Maneja el evento paste (pegar desde portapapeles)
    */
   onPaste(event: ClipboardEvent) {
-    event.preventDefault();
-    event.stopPropagation();
+    // Si el evento viene de un input, textarea o elemento editable, permitir el comportamiento por defecto
+    const target = event.target as HTMLElement;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target.isContentEditable
+    ) {
+      return; // Dejar que el paste normal funcione para texto
+    }
 
     const items = event.clipboardData?.items;
     if (!items) return;
@@ -760,7 +767,10 @@ export class TicketsPage implements OnInit {
       }
     }
 
+    // Solo prevenir el comportamiento por defecto si hay archivos para procesar
     if (files.length > 0) {
+      event.preventDefault();
+      event.stopPropagation();
       this.processFiles(files);
     }
   }
@@ -1036,8 +1046,15 @@ export class TicketsPage implements OnInit {
    * Maneja el evento paste para actualizaciones (pegar desde portapapeles)
    */
   onPasteUpdate(event: ClipboardEvent) {
-    event.preventDefault();
-    event.stopPropagation();
+    // Si el evento viene de un input, textarea o elemento editable, permitir el comportamiento por defecto
+    const target = event.target as HTMLElement;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target.isContentEditable
+    ) {
+      return; // Dejar que el paste normal funcione para texto
+    }
 
     const items = event.clipboardData?.items;
     if (!items) return;
@@ -1053,7 +1070,10 @@ export class TicketsPage implements OnInit {
       }
     }
 
+    // Solo prevenir el comportamiento por defecto si hay archivos para procesar
     if (files.length > 0) {
+      event.preventDefault();
+      event.stopPropagation();
       this.processUpdateFiles(files);
     }
   }
