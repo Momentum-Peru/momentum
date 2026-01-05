@@ -1,0 +1,1653 @@
+<div class="p-4 space-y-4 mt-5 overflow-x-hidden">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Título y Estadísticas -->
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+    <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">Solicitudes de Materiales</h1>
+    <button
+      pButton
+      type="button"
+      (click)="loadStats()"
+      label="Ver Estadísticas"
+      icon="pi pi-chart-bar"
+      class="p-button-outlined"
+      aria-label="Ver estadísticas de solicitudes"
+    ></button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="flex flex-wrap items-center gap-2 mb-4">
+    <input
+      pInputText
+      placeholder="Buscar por título, descripción o actualizaciones..."
+      [ngModel]="query()"
+      (ngModelChange)="setQuery($event)"
+      name="searchQuery"
+      class="flex-1 min-w-[200px]"
+    />
+
+    <p-select
+      [(ngModel)]="statusFilter"
+      [options]="[
+        { label: 'Todos', value: null },
+        { label: 'Pendiente', value: 'pendiente' },
+        { label: 'Aprobado', value: 'aprobado' },
+        { label: 'Rechazado', value: 'rechazado' },
+        { label: 'En Compra', value: 'en_compra' },
+        { label: 'Completado', value: 'completado' }
+      ]"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Estado"
+      [showClear]="true"
+      class="w-full md:w-auto"
+      appendTo="body"
+    ></p-select>
+
+    <p-select
+      [(ngModel)]="priorityFilter"
+      [options]="[
+        { label: 'Todas', value: null },
+        { label: 'Baja', value: 'baja' },
+        { label: 'Media', value: 'media' },
+        { label: 'Alta', value: 'alta' },
+        { label: 'Urgente', value: 'urgente' }
+      ]"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Prioridad"
+      [showClear]="true"
+      class="w-full md:w-auto"
+      appendTo="body"
+    ></p-select>
+
+    <p-select
+      [(ngModel)]="requestedByFilter"
+      [options]="requestedByOptions()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Solicitado por"
+      [showClear]="true"
+      [loading]="loadingUsers()"
+      class="w-full md:w-auto"
+      appendTo="body"
+    ></p-select>
+
+    <p-select
+      [(ngModel)]="projectFilter"
+      [options]="projectOptions()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Proyecto"
+      [showClear]="true"
+      [loading]="loadingProjects()"
+      class="w-full md:w-auto"
+      appendTo="body"
+    ></p-select>
+
+    <button
+      pButton
+      type="button"
+      (click)="applyFilters()"
+      label="Filtrar"
+      icon="pi pi-filter"
+      class="p-button-outlined"
+      aria-label="Aplicar filtros"
+    ></button>
+
+    <button
+      pButton
+      type="button"
+      (click)="clearFilters()"
+      label="Limpiar"
+      icon="pi pi-filter-slash"
+      class="p-button-text"
+      aria-label="Limpiar filtros"
+    ></button>
+
+    @if (canEdit()) {
+    <button
+      pButton
+      type="button"
+      (click)="newItem()"
+      label="Nueva Solicitud"
+      icon="pi pi-plus"
+      class="w-full xl:w-auto"
+      aria-label="Crear nueva solicitud"
+    ></button>
+    }
+  </div>
+
+  <!-- Vista Desktop: Tabla -->
+  <div class="hidden md:block">
+    <p-table
+      [value]="filteredItems()"
+      [scrollable]="true"
+      scrollHeight="60vh"
+      styleClass="p-datatable-sm"
+      [loading]="loading()"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Fecha</th>
+          <th>Título</th>
+          <th>Solicitado por</th>
+          <th>Proyecto</th>
+          <th class="text-center">Estado</th>
+          <th class="text-center">Prioridad</th>
+          <th class="text-center">Items</th>
+          <th class="text-center">Actualizaciones</th>
+          <th class="text-center">Adjuntos</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ formatDate(row.createdAt) }}</td>
+          <td class="font-medium max-w-xs truncate" [title]="row.title">
+            {{ row.title }}
+          </td>
+          <td>{{ getRequestedByName(row) }}</td>
+          <td>{{ getProjectName(row) }}</td>
+          <td class="text-center">
+            <p-tag [severity]="getStatusSeverity(row.status)" [value]="row.status">
+              <i [class]="'pi ' + getStatusIcon(row.status)" class="mr-1"></i>
+            </p-tag>
+          </td>
+          <td class="text-center">
+            <p-tag [severity]="getPrioritySeverity(row.priority)" [value]="row.priority">
+              <i [class]="'pi ' + getPriorityIcon(row.priority)" class="mr-1"></i>
+            </p-tag>
+          </td>
+          <td class="text-center">
+            @if (getItemsCount(row) > 0) {
+            <p-tag severity="info" [value]="getItemsCount(row).toString()">
+              <i class="pi pi-list mr-1"></i>
+            </p-tag>
+            } @else {
+            <span class="text-gray-400">-</span>
+            }
+          </td>
+          <td class="text-center">
+            @if (getUpdatesCount(row) > 0) {
+            <p-tag severity="secondary" [value]="getUpdatesCount(row).toString()">
+              <i class="pi pi-comments mr-1"></i>
+            </p-tag>
+            } @else {
+            <span class="text-gray-400">-</span>
+            }
+          </td>
+          <td class="text-center">
+            @if (getAttachmentsCount(row) > 0) {
+            <p-tag severity="secondary" [value]="getAttachmentsCount(row).toString()">
+              <i class="pi pi-paperclip mr-1"></i>
+            </p-tag>
+            } @else {
+            <span class="text-gray-400">-</span>
+            }
+          </td>
+          <td class="text-right flex gap-2 justify-end">
+            <button
+              pButton
+              icon="pi pi-eye"
+              class="p-button-text"
+              (click)="viewItem(row)"
+              pTooltip="Ver detalles"
+              tooltipPosition="top"
+              aria-label="Ver detalles de la solicitud"
+            ></button>
+            @if (canEdit()) {
+            <button
+              pButton
+              icon="pi pi-comment"
+              class="p-button-text"
+              (click)="openUpdateDialog(row._id!)"
+              pTooltip="Agregar actualización"
+              tooltipPosition="top"
+              aria-label="Agregar actualización"
+            ></button>
+            @if (row.status === 'pendiente') {
+            <button
+              pButton
+              icon="pi pi-check"
+              class="p-button-text p-button-success"
+              (click)="openApproveDialog(row._id!)"
+              pTooltip="Aprobar solicitud"
+              tooltipPosition="top"
+              aria-label="Aprobar solicitud"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-times"
+              class="p-button-text p-button-danger"
+              (click)="openRejectDialog(row._id!)"
+              pTooltip="Rechazar solicitud"
+              tooltipPosition="top"
+              aria-label="Rechazar solicitud"
+            ></button>
+            }
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text"
+              (click)="editItem(row)"
+              pTooltip="Editar"
+              tooltipPosition="top"
+              aria-label="Editar solicitud"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-text p-button-danger"
+              (click)="remove(row)"
+              pTooltip="Eliminar"
+              tooltipPosition="top"
+              aria-label="Eliminar solicitud"
+            ></button>
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="10" class="text-center py-8 text-gray-500">No se encontraron solicitudes</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil: Cards -->
+  <div class="md:hidden space-y-3">
+    @for (row of filteredItems(); track row._id || row.title; let i = $index) {
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="p-4 pb-0">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white text-lg mb-1">
+                {{ row.title }}
+              </h3>
+              <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <i class="pi pi-calendar"></i>
+                <span>{{ formatDate(row.createdAt) }}</span>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2">
+              <p-tag [severity]="getStatusSeverity(row.status)" [value]="row.status">
+                <i [class]="'pi ' + getStatusIcon(row.status)"></i>
+              </p-tag>
+              <p-tag [severity]="getPrioritySeverity(row.priority)" [value]="row.priority">
+                <i [class]="'pi ' + getPriorityIcon(row.priority)"></i>
+              </p-tag>
+            </div>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="content">
+        <div class="space-y-2">
+          <div>
+            <span class="text-xs font-medium text-gray-600 dark:text-gray-300"
+              >Solicitado por:</span
+            >
+            <p class="text-sm text-gray-700 dark:text-white mt-1">
+              {{ getRequestedByName(row) }}
+            </p>
+          </div>
+          @if (row.projectId) {
+          <div>
+            <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Proyecto:</span>
+            <p class="text-sm text-gray-700 dark:text-white mt-1">
+              {{ getProjectName(row) }}
+            </p>
+          </div>
+          } @if (getItemsCount(row) > 0) {
+          <div class="flex items-center gap-2 text-sm">
+            <i class="pi pi-list text-blue-500"></i>
+            <span class="text-gray-700 dark:text-white"> {{ getItemsCount(row) }} item(s) </span>
+          </div>
+          } @if (getUpdatesCount(row) > 0) {
+          <div class="flex items-center gap-2 text-sm">
+            <i class="pi pi-comments text-blue-500"></i>
+            <span class="text-gray-700 dark:text-white">
+              {{ getUpdatesCount(row) }} actualización(es)
+            </span>
+          </div>
+          } @if (getAttachmentsCount(row) > 0) {
+          <div class="flex items-center gap-2 text-sm">
+            <i class="pi pi-paperclip text-gray-500"></i>
+            <span class="text-gray-700 dark:text-white">
+              {{ getAttachmentsCount(row) }} archivo(s) adjunto(s)
+            </span>
+          </div>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="footer">
+        <div class="flex gap-2">
+          <button
+            pButton
+            icon="pi pi-eye"
+            label="Ver"
+            class="p-button-text flex-1"
+            (click)="viewItem(row)"
+            aria-label="Ver detalles de la solicitud"
+          ></button>
+          @if (canEdit()) {
+          <button
+            pButton
+            icon="pi pi-comment"
+            label="Actualizar"
+            class="p-button-text flex-1"
+            (click)="openUpdateDialog(row._id!)"
+            aria-label="Agregar actualización"
+          ></button>
+          @if (row.status === 'pendiente') {
+          <button
+            pButton
+            icon="pi pi-check"
+            label="Aprobar"
+            class="p-button-text p-button-success flex-1"
+            (click)="openApproveDialog(row._id!)"
+            aria-label="Aprobar solicitud"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-times"
+            label="Rechazar"
+            class="p-button-text p-button-danger flex-1"
+            (click)="openRejectDialog(row._id!)"
+            aria-label="Rechazar solicitud"
+          ></button>
+          }
+          <button
+            pButton
+            icon="pi pi-pencil"
+            label="Editar"
+            class="p-button-text flex-1"
+            (click)="editItem(row)"
+            aria-label="Editar solicitud"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-trash"
+            class="p-button-text p-button-danger"
+            (click)="remove(row)"
+            pTooltip="Eliminar"
+            aria-label="Eliminar solicitud"
+          ></button>
+          }
+        </div>
+      </ng-template>
+    </p-card>
+    } @empty {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      No se encontraron solicitudes
+    </div>
+    }
+  </div>
+
+  <!-- Diálogo de creación/edición -->
+  <p-dialog
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '70rem', maxWidth: '95vw' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      {{ editing()?._id ? 'Editar solicitud' : 'Nueva solicitud' }}
+    </ng-template>
+
+    @if (editing(); as e) {
+    <div class="grid gap-3 max-h-[70vh] overflow-y-auto" (paste)="onPaste($event)">
+      <!-- Usuario que solicita -->
+      <div>
+        <label
+          for="requestedBy"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
+          Solicitado por *
+        </label>
+        @if (!e._id) {
+        <div
+          class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+        >
+          <i class="pi pi-user text-blue-500"></i>
+          <span class="text-gray-700 dark:text-gray-300">
+            {{ getCurrentUserName() }}
+          </span>
+        </div>
+        } @else {
+        <p-select
+          id="requestedBy"
+          [(ngModel)]="e.requestedBy"
+          (ngModelChange)="onEditChange('requestedBy', $event)"
+          [options]="availableUsers()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccionar usuario"
+          [loading]="loadingUsers()"
+          class="w-full"
+          appendTo="body"
+        ></p-select>
+        }
+      </div>
+
+      <!-- Título -->
+      <div>
+        <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Título *
+        </label>
+        <input
+          id="title"
+          pInputText
+          [ngModel]="e.title"
+          (ngModelChange)="onEditChange('title', $event)"
+          name="title"
+          placeholder="Ej: Solicitud de materiales para obra San Juan"
+          class="w-full"
+          required
+        />
+      </div>
+
+      <!-- Prioridad -->
+      <div>
+        <label
+          for="priority"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
+          Prioridad
+        </label>
+        <p-select
+          id="priority"
+          [(ngModel)]="e.priority"
+          (ngModelChange)="onEditChange('priority', $event)"
+          [options]="priorities"
+          optionLabel="label"
+          optionValue="value"
+          class="w-full"
+          appendTo="body"
+        ></p-select>
+      </div>
+
+      <!-- Proyecto -->
+      <div>
+        <label
+          for="projectId"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
+          Proyecto
+        </label>
+        <p-select
+          id="projectId"
+          [(ngModel)]="e.projectId"
+          (ngModelChange)="onEditChange('projectId', $event)"
+          [options]="projectOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccionar proyecto (opcional)"
+          [showClear]="true"
+          [loading]="loadingProjects()"
+          class="w-full"
+          appendTo="body"
+        ></p-select>
+      </div>
+
+      <!-- Estado (solo al editar) -->
+      @if (e._id) {
+      <div>
+        <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Estado
+        </label>
+        <p-select
+          id="status"
+          [(ngModel)]="e.status"
+          (ngModelChange)="onEditChange('status', $event)"
+          [options]="statuses"
+          optionLabel="label"
+          optionValue="value"
+          class="w-full"
+          appendTo="body"
+        ></p-select>
+      </div>
+      }
+
+      <!-- Gestión de Items -->
+      <div class="border-t pt-3">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-lg font-semibold">Items de la Solicitud *</h4>
+          <button
+            pButton
+            type="button"
+            label="Agregar Item"
+            icon="pi pi-plus"
+            (click)="openItemDialog()"
+            class="p-button-sm"
+            aria-label="Agregar item"
+          ></button>
+        </div>
+
+        @if (editingItems().length > 0) {
+        <div class="space-y-2">
+          @for (item of editingItems(); track item.description; let i = $index) {
+          <div
+            class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex-1">
+                <p class="font-medium text-gray-900 dark:text-white">{{ item.description }}</p>
+                <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <span>Cantidad: {{ item.quantity }} {{ item.unit }}</span>
+                </div>
+              </div>
+              <div class="flex gap-1">
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  class="p-button-text p-button-sm"
+                  (click)="openItemDialog(i)"
+                  pTooltip="Editar"
+                  aria-label="Editar item"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  class="p-button-text p-button-sm p-button-danger"
+                  (click)="removeItem(i)"
+                  pTooltip="Eliminar"
+                  aria-label="Eliminar item"
+                ></button>
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+        } @else {
+        <div
+          class="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+        >
+          <i class="pi pi-info-circle text-gray-400 text-2xl mb-2"></i>
+          <p class="text-sm text-gray-600 dark:text-gray-400">No hay items agregados</p>
+          <button
+            pButton
+            type="button"
+            label="Agregar Primer Item"
+            icon="pi pi-plus"
+            (click)="openItemDialog()"
+            class="mt-3"
+            aria-label="Agregar primer item"
+          ></button>
+        </div>
+        }
+      </div>
+
+      <!-- Sección de Archivos Adjuntos (similar a tickets) -->
+      <div class="border-t pt-3">
+        <h4 class="text-lg font-semibold mb-3">Archivos Adjuntos</h4>
+
+        <!-- Área de drag and drop -->
+        <div
+          class="border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 cursor-pointer group"
+          [class.border-gray-300]="!isDragging()"
+          [class.border-blue-400]="isDragging()"
+          [class.bg-blue-50]="isDragging()"
+          [class.dark:border-gray-600]="!isDragging()"
+          [class.dark:border-blue-500]="isDragging()"
+          [class.dark:bg-blue-900]="isDragging()"
+          [class.dark:bg-opacity-20]="isDragging()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+          (paste)="onPaste($event)"
+          (click)="fileInput.click()"
+          tabindex="0"
+          role="button"
+          aria-label="Seleccionar archivos para subir o pegar desde portapapeles"
+        >
+          <input
+            type="file"
+            #fileInput
+            multiple
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg,.gif,.webp,.mp4,.avi,.mov,.wmv,.flv,.webm,.mkv,.mp3,.wav,.ogg,.aac,.m4a,.flac"
+            (change)="onFileInputChange($event)"
+            class="hidden"
+          />
+
+          <div class="flex flex-col items-center justify-center py-6 pointer-events-none">
+            <div class="mb-4 transition-transform duration-200" [class.scale-110]="isDragging()">
+              <i
+                class="pi text-6xl transition-colors duration-200"
+                [class.pi-cloud-upload]="!isDragging()"
+                [class.pi-cloud]="isDragging()"
+                [class.text-gray-400]="!isDragging()"
+                [class.text-blue-500]="isDragging()"
+              ></i>
+            </div>
+            <p class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              @if (isDragging()) {
+              <span class="text-blue-600 dark:text-blue-400">Suelta los archivos aquí</span>
+              } @else {
+              <span>Arrastra y suelta archivos aquí</span>
+              }
+            </p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              o haz clic para seleccionar, o pega desde el portapapeles (Ctrl+V)
+            </p>
+            <button
+              pButton
+              type="button"
+              label="Seleccionar Archivos"
+              icon="pi pi-folder-open"
+              (click)="fileInput.click(); $event.stopPropagation()"
+              class="pointer-events-auto"
+              [class.p-button-outlined]="!isDragging()"
+              [class.p-button-primary]="isDragging()"
+              aria-label="Seleccionar archivos para subir"
+            ></button>
+          </div>
+        </div>
+
+        <!-- Lista de archivos seleccionados -->
+        @if (selectedFiles().length > 0) {
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3 mt-4"
+        >
+          <div class="flex items-center justify-between">
+            <h5 class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+              <i class="pi pi-list text-blue-500"></i>
+              Archivos Seleccionados ({{ selectedFiles().length }})
+            </h5>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-times"
+              label="Limpiar Todo"
+              class="p-button-text p-button-sm"
+              (click)="clearSelectedFiles()"
+              [disabled]="uploading()"
+              aria-label="Limpiar todos los archivos"
+            ></button>
+          </div>
+
+          <div class="space-y-2">
+            @for (file of selectedFiles(); track file.name) {
+            <div
+              class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+            >
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                @if (filePreviews().get(file.name)) { @if (getFileType(file.name) === 'image') {
+                <img
+                  [src]="filePreviews().get(file.name)"
+                  [alt]="file.name"
+                  class="w-12 h-12 object-cover rounded"
+                />
+                } @else {
+                <i [class]="getFileIcon(file.name)" class="text-2xl text-blue-500"></i>
+                } } @else {
+                <i [class]="getFileIcon(file.name)" class="text-2xl text-gray-400"></i>
+                }
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {{ file.name }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ formatFileSize(file.size) }}
+                  </p>
+                </div>
+              </div>
+              <button
+                pButton
+                icon="pi pi-times"
+                class="p-button-text p-button-sm p-button-danger"
+                (click)="removeSelectedFile(file)"
+                [disabled]="uploading()"
+                aria-label="Eliminar archivo"
+              ></button>
+            </div>
+            }
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <div class="flex gap-2 justify-end">
+        <button
+          pButton
+          label="Cancelar"
+          icon="pi pi-times"
+          (click)="closeDialog()"
+          [disabled]="loading() || uploading()"
+          class="p-button-text"
+          aria-label="Cancelar"
+        ></button>
+        <button
+          pButton
+          [label]="editing()?._id ? 'Actualizar' : 'Crear'"
+          [icon]="editing()?._id ? 'pi pi-check' : 'pi pi-plus'"
+          (click)="save()"
+          [loading]="loading() || uploading()"
+          aria-label="Guardar solicitud"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo de Item (para agregar/editar items) -->
+  <p-dialog
+    [visible]="showItemDialog()"
+    (visibleChange)="showItemDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '40rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      {{ editingItemIndex() !== null ? 'Editar Item' : 'Nuevo Item' }}
+    </ng-template>
+
+    @if (editingItem(); as item) {
+    <div class="grid gap-3">
+      <!-- Descripción -->
+      <div>
+        <label
+          for="itemDescription"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
+          Descripción *
+        </label>
+        <input
+          id="itemDescription"
+          pInputText
+          [(ngModel)]="item.description"
+          placeholder="Ej: Fierro 5/8 pulgadas"
+          class="w-full"
+          required
+        />
+      </div>
+
+      <!-- Cantidad y Unidad -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label
+            for="itemQuantity"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Cantidad *
+          </label>
+          <p-inputNumber
+            id="itemQuantity"
+            [(ngModel)]="item.quantity"
+            [min]="0"
+            [maxFractionDigits]="2"
+            [showButtons]="true"
+            class="w-full"
+          ></p-inputNumber>
+        </div>
+        <div>
+          <label
+            for="itemUnit"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Unidad *
+          </label>
+          <p-select
+            id="itemUnit"
+            [(ngModel)]="item.unit"
+            [options]="units"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            appendTo="body"
+          ></p-select>
+        </div>
+      </div>
+    </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <div class="flex gap-2 justify-end">
+        <button
+          pButton
+          label="Cancelar"
+          icon="pi pi-times"
+          (click)="closeItemDialog()"
+          class="p-button-text"
+          aria-label="Cancelar"
+        ></button>
+        <button
+          pButton
+          label="Guardar"
+          icon="pi pi-check"
+          (click)="saveItem()"
+          aria-label="Guardar item"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo de Visualización -->
+  <p-dialog
+    [visible]="showViewDialog()"
+    (visibleChange)="showViewDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '70rem', maxWidth: '95vw' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    appendTo="body"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold flex items-center gap-2">
+        <i class="pi pi-eye"></i>
+        Detalles de la Solicitud
+      </span>
+    </ng-template>
+
+    @if (viewing(); as v) {
+    <div class="space-y-4 max-h-[70vh] overflow-y-auto">
+      <!-- Información Principal -->
+      <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+        <div class="flex items-start justify-between mb-2">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex-1">
+            {{ v.title }}
+          </h2>
+          <div class="flex gap-2">
+            <p-tag [severity]="getStatusSeverity(v.status)" [value]="v.status">
+              <i [class]="'pi ' + getStatusIcon(v.status)" class="mr-1"></i>
+            </p-tag>
+            <p-tag [severity]="getPrioritySeverity(v.priority)" [value]="v.priority">
+              <i [class]="'pi ' + getPriorityIcon(v.priority)" class="mr-1"></i>
+            </p-tag>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300 mt-3">
+          <div class="flex items-center gap-1">
+            <i class="pi pi-user"></i>
+            <span>Solicitado por: {{ getRequestedByName(v) }}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <i class="pi pi-calendar"></i>
+            <span>{{ formatDate(v.createdAt) }}</span>
+          </div>
+        </div>
+        @if (v.projectId) {
+        <div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300 mt-2">
+          <i class="pi pi-briefcase"></i>
+          <span>Proyecto: {{ getProjectName(v) }}</span>
+        </div>
+        } @if (v.approvedBy) {
+        <div class="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 mt-2">
+          <i class="pi pi-check-circle"></i>
+          <span>Aprobado por: {{ getApprovedByName(v) }}</span>
+          @if (v.approvedAt) {
+          <span>el {{ formatDate(v.approvedAt) }}</span>
+          }
+        </div>
+        } @if (v.rejectedBy) {
+        <div class="flex items-center gap-1 text-sm text-red-600 dark:text-red-400 mt-2">
+          <i class="pi pi-times-circle"></i>
+          <span>Rechazado por: {{ getRejectedByName(v) }}</span>
+          @if (v.rejectedAt) {
+          <span>el {{ formatDate(v.rejectedAt) }}</span>
+          }
+        </div>
+        @if (v.rejectionReason) {
+        <p class="text-sm text-red-600 dark:text-red-400 mt-1 ml-6">
+          Razón: {{ v.rejectionReason }}
+        </p>
+        } }
+      </div>
+
+      <!-- Items -->
+      @if (v.items && v.items.length > 0) {
+      <div>
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+          <i class="pi pi-list mr-1"></i>
+          Items ({{ v.items.length }}):
+        </span>
+        <div class="space-y-2">
+          @for (item of v.items; track $index) {
+          <div
+            class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+          >
+            <p class="font-medium text-gray-900 dark:text-white">{{ item.description }}</p>
+            <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <span>Cantidad: {{ item.quantity }} {{ item.unit }}</span>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Archivos Adjuntos Iniciales -->
+      @if (v.attachments && v.attachments.length > 0) {
+      <div>
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+          <i class="pi pi-paperclip mr-1"></i>
+          Archivos Adjuntos Iniciales ({{ v.attachments.length }}):
+        </span>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          @for (attachment of v.attachments; track attachment) { @if (getFileType(attachment) ===
+          'image') {
+          <div
+            class="relative group cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors"
+            (click)="openPreviewModal(attachment, attachment)"
+            tabindex="0"
+            role="button"
+          >
+            <img
+              [src]="attachment"
+              [alt]="attachment.split('/').pop()"
+              class="w-full h-32 object-cover"
+              loading="lazy"
+            />
+            <div
+              class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center"
+            >
+              <i
+                class="pi pi-eye text-white opacity-0 group-hover:opacity-100 transition-opacity text-xl"
+              ></i>
+            </div>
+          </div>
+          } @else if (getFileType(attachment) === 'video') {
+          <div
+            class="relative group cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors"
+            (click)="openPreviewModal(attachment, attachment)"
+            tabindex="0"
+            role="button"
+          >
+            <video [src]="attachment" class="w-full h-32 object-cover"></video>
+            <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+              <i class="pi pi-play text-white text-3xl"></i>
+            </div>
+          </div>
+          } @else {
+          <div
+            class="flex flex-col items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer border-2 border-gray-200 dark:border-gray-700"
+            (click)="openAttachment(attachment)"
+            tabindex="0"
+            role="button"
+          >
+            <i [class]="getFileIcon(attachment)" class="text-blue-500 text-3xl"></i>
+            <span class="text-xs text-gray-700 dark:text-gray-300 truncate w-full text-center">{{
+              attachment.split('/').pop()
+            }}</span>
+            <i class="pi pi-external-link text-xs text-gray-500"></i>
+          </div>
+          } }
+        </div>
+      </div>
+      }
+
+      <!-- Actualizaciones (Timeline) -->
+      @if (v.updates && v.updates.length > 0) {
+      <div>
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-3">
+          <i class="pi pi-comments mr-1"></i>
+          Historial de Actualizaciones ({{ v.updates.length }}):
+        </span>
+        <p-timeline [value]="v.updates" align="left" styleClass="custom-timeline">
+          <ng-template pTemplate="marker" let-update>
+            <span
+              class="flex w-2rem h-2rem align-items-center justify-content-center text-white border-circle bg-blue-500"
+            >
+              <i class="pi pi-comment"></i>
+            </span>
+          </ng-template>
+          <ng-template pTemplate="content" let-update>
+            <p-card styleClass="mb-3">
+              <ng-template pTemplate="header">
+                <div class="flex items-center justify-between p-3">
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-user text-blue-500"></i>
+                    <span class="font-semibold text-gray-800 dark:text-white">
+                      {{ getUpdatedByName(update) }}
+                    </span>
+                  </div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ formatDate(update.createdAt) }}
+                  </span>
+                </div>
+              </ng-template>
+              <ng-template pTemplate="content">
+                <p class="text-gray-700 dark:text-white whitespace-pre-wrap mb-3">
+                  {{ update.message }}
+                </p>
+                @if (update.attachments && update.attachments.length > 0) {
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
+                  @for (attachment of update.attachments; track attachment) { @if
+                  (getFileType(attachment) === 'image') {
+                  <div
+                    class="relative group cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors"
+                    (click)="openPreviewModal(attachment, attachment)"
+                    tabindex="0"
+                    role="button"
+                  >
+                    <img
+                      [src]="attachment"
+                      [alt]="attachment.split('/').pop()"
+                      class="w-full h-24 object-cover"
+                      loading="lazy"
+                    />
+                    <div
+                      class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center"
+                    >
+                      <i
+                        class="pi pi-eye text-white opacity-0 group-hover:opacity-100 transition-opacity text-xl"
+                      ></i>
+                    </div>
+                  </div>
+                  } @else if (getFileType(attachment) === 'video') {
+                  <div
+                    class="relative group cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors"
+                    (click)="openPreviewModal(attachment, attachment)"
+                    tabindex="0"
+                    role="button"
+                  >
+                    <video [src]="attachment" class="w-full h-24 object-cover"></video>
+                    <div
+                      class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center"
+                    >
+                      <i class="pi pi-play text-white text-2xl"></i>
+                    </div>
+                  </div>
+                  } @else {
+                  <div
+                    class="flex flex-col items-center justify-center gap-1 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer border border-gray-200 dark:border-gray-600"
+                    (click)="openAttachment(attachment)"
+                    tabindex="0"
+                    role="button"
+                  >
+                    <i [class]="getFileIcon(attachment)" class="text-blue-500 text-xl"></i>
+                    <span
+                      class="text-xs text-gray-700 dark:text-gray-300 truncate w-full text-center"
+                      >{{ attachment.split('/').pop() }}</span
+                    >
+                  </div>
+                  } }
+                </div>
+                }
+              </ng-template>
+            </p-card>
+          </ng-template>
+        </p-timeline>
+      </div>
+      } @else {
+      <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded text-center">
+        <i class="pi pi-info-circle text-gray-400 text-2xl mb-2"></i>
+        <p class="text-sm text-gray-600 dark:text-gray-400">No hay actualizaciones registradas</p>
+      </div>
+      }
+
+      <!-- Botón para agregar actualización -->
+      @if (canEdit()) {
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <button
+          pButton
+          label="Agregar Actualización"
+          icon="pi pi-plus"
+          class="w-full"
+          (click)="openUpdateDialog(v._id!); closeViewDialog()"
+          aria-label="Agregar actualización"
+        ></button>
+      </div>
+      }
+    </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cerrar"
+        icon="pi pi-times"
+        (click)="closeViewDialog()"
+        aria-label="Cerrar"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo de Actualización -->
+  <p-dialog
+    [visible]="showUpdateDialog()"
+    (visibleChange)="showUpdateDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '50rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold flex items-center gap-2">
+        <i class="pi pi-comment"></i>
+        Agregar Actualización
+      </span>
+    </ng-template>
+
+    <div class="grid gap-3" (paste)="onPasteUpdate($event)">
+      <!-- Usuario que actualiza -->
+      <div>
+        <label
+          for="updateUpdatedBy"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
+          Actualizado por *
+        </label>
+        <p-select
+          id="updateUpdatedBy"
+          [(ngModel)]="updateUpdatedBy"
+          [options]="availableUsers()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccionar usuario"
+          [loading]="loadingUsers()"
+          class="w-full"
+          appendTo="body"
+        ></p-select>
+      </div>
+
+      <!-- Mensaje -->
+      <div>
+        <label
+          for="updateMessage"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
+          Mensaje *
+        </label>
+        <textarea
+          id="updateMessage"
+          pTextarea
+          [(ngModel)]="updateMessage"
+          name="updateMessage"
+          placeholder="Describe la actualización..."
+          rows="5"
+          class="w-full"
+          required
+        ></textarea>
+      </div>
+
+      <!-- Sección de Archivos Adjuntos para Actualización -->
+      <div class="border-t pt-3">
+        <h4 class="text-lg font-semibold mb-3">Archivos Adjuntos</h4>
+
+        <!-- Área de drag and drop -->
+        <div
+          class="border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 cursor-pointer group"
+          [class.border-gray-300]="!isDraggingUpdate()"
+          [class.border-blue-400]="isDraggingUpdate()"
+          [class.bg-blue-50]="isDraggingUpdate()"
+          [class.dark:border-gray-600]="!isDraggingUpdate()"
+          [class.dark:border-blue-500]="isDraggingUpdate()"
+          [class.dark:bg-blue-900]="isDraggingUpdate()"
+          [class.dark:bg-opacity-20]="isDraggingUpdate()"
+          (dragover)="onDragOverUpdate($event)"
+          (dragleave)="onDragLeaveUpdate($event)"
+          (drop)="onDropUpdate($event)"
+          (paste)="onPasteUpdate($event)"
+          (click)="updateFileInput.click()"
+          tabindex="0"
+          role="button"
+          aria-label="Seleccionar archivos para subir o pegar desde portapapeles"
+        >
+          <input
+            type="file"
+            #updateFileInput
+            multiple
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg,.gif,.webp,.mp4,.avi,.mov,.wmv,.flv,.webm,.mkv,.mp3,.wav,.ogg,.aac,.m4a,.flac"
+            (change)="onFileInputChangeUpdate($event)"
+            class="hidden"
+          />
+
+          <div class="flex flex-col items-center justify-center py-6 pointer-events-none">
+            <div
+              class="mb-4 transition-transform duration-200"
+              [class.scale-110]="isDraggingUpdate()"
+            >
+              <i
+                class="pi text-6xl transition-colors duration-200"
+                [class.pi-cloud-upload]="!isDraggingUpdate()"
+                [class.pi-cloud]="isDraggingUpdate()"
+                [class.text-gray-400]="!isDraggingUpdate()"
+                [class.text-blue-500]="isDraggingUpdate()"
+              ></i>
+            </div>
+            <p class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              @if (isDraggingUpdate()) {
+              <span class="text-blue-600 dark:text-blue-400">Suelta los archivos aquí</span>
+              } @else {
+              <span>Arrastra y suelta archivos aquí</span>
+              }
+            </p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              o haz clic para seleccionar, o pega desde el portapapeles (Ctrl+V)
+            </p>
+            <button
+              pButton
+              type="button"
+              label="Seleccionar Archivos"
+              icon="pi pi-folder-open"
+              (click)="updateFileInput.click(); $event.stopPropagation()"
+              class="pointer-events-auto"
+              [class.p-button-outlined]="!isDraggingUpdate()"
+              [class.p-button-primary]="isDraggingUpdate()"
+              aria-label="Seleccionar archivos para subir"
+            ></button>
+          </div>
+        </div>
+
+        <!-- Lista de archivos seleccionados -->
+        @if (selectedUpdateFiles().length > 0) {
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3 mt-4"
+        >
+          <div class="flex items-center justify-between">
+            <h5 class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+              <i class="pi pi-list text-blue-500"></i>
+              Archivos Seleccionados ({{ selectedUpdateFiles().length }})
+            </h5>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-times"
+              label="Limpiar Todo"
+              class="p-button-text p-button-sm"
+              (click)="clearSelectedUpdateFiles()"
+              [disabled]="uploading()"
+              aria-label="Limpiar todos los archivos"
+            ></button>
+          </div>
+
+          <div class="space-y-2">
+            @for (file of selectedUpdateFiles(); track file.name) {
+            <div
+              class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+            >
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                @if (updateFilePreviews().get(file.name)) { @if (getFileType(file.name) === 'image')
+                {
+                <img
+                  [src]="updateFilePreviews().get(file.name)"
+                  [alt]="file.name"
+                  class="w-12 h-12 object-cover rounded"
+                />
+                } @else {
+                <i [class]="getFileIcon(file.name)" class="text-2xl text-blue-500"></i>
+                } } @else {
+                <i [class]="getFileIcon(file.name)" class="text-2xl text-gray-400"></i>
+                }
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {{ file.name }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ formatFileSize(file.size) }}
+                  </p>
+                </div>
+              </div>
+              <button
+                pButton
+                icon="pi pi-times"
+                class="p-button-text p-button-sm p-button-danger"
+                (click)="removeSelectedUpdateFile(file)"
+                [disabled]="uploading()"
+                aria-label="Eliminar archivo"
+              ></button>
+            </div>
+            }
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex gap-2 justify-end">
+        <button
+          pButton
+          label="Cancelar"
+          icon="pi pi-times"
+          (click)="closeUpdateDialog()"
+          [disabled]="loading() || uploading()"
+          class="p-button-text"
+          aria-label="Cancelar"
+        ></button>
+        <button
+          pButton
+          label="Agregar"
+          icon="pi pi-check"
+          (click)="addUpdate()"
+          [loading]="loading() || uploading()"
+          aria-label="Agregar actualización"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo de Aprobación -->
+  <p-dialog
+    [visible]="showApproveDialog()"
+    (visibleChange)="showApproveDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '30rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold flex items-center gap-2">
+        <i class="pi pi-check-circle"></i>
+        Aprobar Solicitud
+      </span>
+    </ng-template>
+
+    <div class="space-y-3">
+      <p class="text-gray-700 dark:text-gray-300">
+        ¿Está seguro de que desea aprobar esta solicitud de compra de materiales?
+      </p>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        La solicitud pasará al estado "Aprobado" y estará lista para proceder con la compra.
+      </p>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex gap-2 justify-end">
+        <button
+          pButton
+          label="Cancelar"
+          icon="pi pi-times"
+          (click)="closeApproveDialog()"
+          [disabled]="loading()"
+          class="p-button-text"
+          aria-label="Cancelar"
+        ></button>
+        <button
+          pButton
+          label="Aprobar"
+          icon="pi pi-check"
+          (click)="approveRequest()"
+          [loading]="loading()"
+          class="p-button-success"
+          aria-label="Aprobar solicitud"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo de Rechazo -->
+  <p-dialog
+    [visible]="showRejectDialog()"
+    (visibleChange)="showRejectDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '30rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold flex items-center gap-2">
+        <i class="pi pi-times-circle"></i>
+        Rechazar Solicitud
+      </span>
+    </ng-template>
+
+    <div class="space-y-3">
+      <p class="text-gray-700 dark:text-gray-300">
+        ¿Está seguro de que desea rechazar esta solicitud de compra de materiales?
+      </p>
+      <div>
+        <label
+          for="rejectionReason"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
+          Razón del Rechazo (opcional)
+        </label>
+        <textarea
+          id="rejectionReason"
+          pTextarea
+          [(ngModel)]="rejectionReason"
+          name="rejectionReason"
+          placeholder="Explique la razón del rechazo..."
+          rows="3"
+          class="w-full"
+        ></textarea>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex gap-2 justify-end">
+        <button
+          pButton
+          label="Cancelar"
+          icon="pi pi-times"
+          (click)="closeRejectDialog()"
+          [disabled]="loading()"
+          class="p-button-text"
+          aria-label="Cancelar"
+        ></button>
+        <button
+          pButton
+          label="Rechazar"
+          icon="pi pi-times"
+          (click)="rejectRequest()"
+          [loading]="loading()"
+          class="p-button-danger"
+          aria-label="Rechazar solicitud"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo de Estadísticas -->
+  <p-dialog
+    [visible]="showStatsDialog()"
+    (visibleChange)="showStatsDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '50rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold flex items-center gap-2">
+        <i class="pi pi-chart-bar"></i>
+        Estadísticas de Solicitudes
+      </span>
+    </ng-template>
+
+    @if (stats(); as s) {
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="p-4 pb-0">
+              <i class="pi pi-list text-3xl text-blue-500"></i>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                {{ s.totalRequests }}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-300">Total</div>
+            </div>
+          </ng-template>
+        </p-card>
+
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="p-4 pb-0">
+              <i class="pi pi-clock text-3xl text-yellow-500"></i>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                {{ s.pendingRequests }}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-300">Pendientes</div>
+            </div>
+          </ng-template>
+        </p-card>
+
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="p-4 pb-0">
+              <i class="pi pi-check-circle text-3xl text-green-500"></i>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                {{ s.approvedRequests }}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-300">Aprobadas</div>
+            </div>
+          </ng-template>
+        </p-card>
+
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="p-4 pb-0">
+              <i class="pi pi-times-circle text-3xl text-red-500"></i>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                {{ s.rejectedRequests }}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-300">Rechazadas</div>
+            </div>
+          </ng-template>
+        </p-card>
+
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="p-4 pb-0">
+              <i class="pi pi-shopping-cart text-3xl text-blue-500"></i>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                {{ s.inPurchaseRequests }}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-300">En Compra</div>
+            </div>
+          </ng-template>
+        </p-card>
+
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="p-4 pb-0">
+              <i class="pi pi-check text-3xl text-green-500"></i>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                {{ s.completedRequests }}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-300">Completadas</div>
+            </div>
+          </ng-template>
+        </p-card>
+
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="p-4 pb-0">
+              <i class="pi pi-exclamation-triangle text-3xl text-orange-500"></i>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                {{ s.urgentRequests }}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-300">Urgentes</div>
+            </div>
+          </ng-template>
+        </p-card>
+      </div>
+    </div>
+    } @if (loadingStats()) {
+    <div class="flex items-center justify-center py-8">
+      <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
+    </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cerrar"
+        icon="pi pi-times"
+        (click)="closeStatsDialog()"
+        aria-label="Cerrar estadísticas"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de Previsualización -->
+  <p-dialog
+    [visible]="showPreviewModal()"
+    (visibleChange)="showPreviewModal.set($event)"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '90rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    appendTo="body"
+    class="preview-modal"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center justify-between w-full">
+        <span class="font-semibold">Previsualización</span>
+        <button
+          pButton
+          icon="pi pi-times"
+          class="p-button-text p-button-rounded"
+          (click)="closePreviewModal()"
+          aria-label="Cerrar previsualización"
+        ></button>
+      </div>
+    </ng-template>
+
+    <div class="flex items-center justify-center min-h-[400px] max-h-[80vh] p-4">
+      @if (previewModalType() === 'image') {
+      <img
+        [src]="previewModalUrl()"
+        alt="Preview"
+        class="max-w-full max-h-[80vh] object-contain rounded-lg"
+      />
+      } @else if (previewModalType() === 'video') {
+      <video [src]="previewModalUrl()" controls class="max-w-full max-h-[80vh] rounded-lg"></video>
+      } @else if (previewModalType() === 'audio') {
+      <audio [src]="previewModalUrl()" controls class="w-full max-w-2xl"></audio>
+      } @else {
+      <div class="text-center">
+        <i class="pi pi-file text-6xl text-gray-400 mb-4"></i>
+        <p class="text-gray-600 dark:text-gray-400">
+          Previsualización no disponible para este tipo de archivo
+        </p>
+        <button
+          pButton
+          icon="pi pi-external-link"
+          (click)="openAttachment(previewModalUrl())"
+          class="mt-4"
+        >
+          Abrir en nueva ventana
+        </button>
+      </div>
+      }
+    </div>
+  </p-dialog>
+</div>

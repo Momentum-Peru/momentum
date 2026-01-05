@@ -130,6 +130,15 @@ export const routes: Routes = [
         data: { menuPermission: '/tickets' },
       },
       {
+        path: 'material-requests',
+        loadComponent: () =>
+          import('./pages/material-requests/material-requests').then(
+            (m) => m.MaterialRequestsPage
+          ),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/material-requests' },
+      },
+      {
         path: 'face-recognition-register',
         loadComponent: () =>
           import('./pages/face-recognition-register/face-recognition-register').then(
