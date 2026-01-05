@@ -631,6 +631,23 @@ export class TicketsPage implements OnInit {
   }
 
   /**
+   * Obtiene el nombre del usuario actual
+   */
+  getCurrentUserName(): string {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      return 'Usuario desconocido';
+    }
+    // Buscar en la lista de usuarios disponibles
+    const user = this.availableUsers().find((u) => u.value === currentUser.id);
+    if (user) {
+      return user.label;
+    }
+    // Si no está en la lista, usar name o email del usuario actual
+    return currentUser.name || currentUser.email || 'Usuario actual';
+  }
+
+  /**
    * Obtiene el nombre del usuario que reportó
    */
   getReportedByName(ticket: Ticket): string {
