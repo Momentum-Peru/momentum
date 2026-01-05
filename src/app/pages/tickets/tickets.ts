@@ -631,6 +631,23 @@ export class TicketsPage implements OnInit {
   }
 
   /**
+   * Obtiene el nombre del usuario actual
+   */
+  getCurrentUserName(): string {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      return 'Usuario desconocido';
+    }
+    // Buscar en la lista de usuarios disponibles
+    const user = this.availableUsers().find((u) => u.value === currentUser.id);
+    if (user) {
+      return user.label;
+    }
+    // Si no está en la lista, usar name o email del usuario actual
+    return currentUser.name || currentUser.email || 'Usuario actual';
+  }
+
+  /**
    * Obtiene el nombre del usuario que reportó
    */
   getReportedByName(ticket: Ticket): string {
@@ -718,6 +735,42 @@ export class TicketsPage implements OnInit {
 
     const files = Array.from(event.dataTransfer?.files || []);
     if (files.length > 0) {
+      this.processFiles(files);
+    }
+  }
+
+  /**
+   * Maneja el evento paste (pegar desde portapapeles)
+   */
+  onPaste(event: ClipboardEvent) {
+    // Si el evento viene de un input, textarea o elemento editable, permitir el comportamiento por defecto
+    const target = event.target as HTMLElement;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target.isContentEditable
+    ) {
+      return; // Dejar que el paste normal funcione para texto
+    }
+
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    const files: File[] = [];
+
+    for (const item of Array.from(items)) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) {
+          files.push(file);
+        }
+      }
+    }
+
+    // Solo prevenir el comportamiento por defecto si hay archivos para procesar
+    if (files.length > 0) {
+      event.preventDefault();
+      event.stopPropagation();
       this.processFiles(files);
     }
   }
@@ -985,6 +1038,42 @@ export class TicketsPage implements OnInit {
 
     const files = Array.from(event.dataTransfer?.files || []);
     if (files.length > 0) {
+      this.processUpdateFiles(files);
+    }
+  }
+
+  /**
+   * Maneja el evento paste para actualizaciones (pegar desde portapapeles)
+   */
+  onPasteUpdate(event: ClipboardEvent) {
+    // Si el evento viene de un input, textarea o elemento editable, permitir el comportamiento por defecto
+    const target = event.target as HTMLElement;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target.isContentEditable
+    ) {
+      return; // Dejar que el paste normal funcione para texto
+    }
+
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    const files: File[] = [];
+
+    for (const item of Array.from(items)) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) {
+          files.push(file);
+        }
+      }
+    }
+
+    // Solo prevenir el comportamiento por defecto si hay archivos para procesar
+    if (files.length > 0) {
+      event.preventDefault();
+      event.stopPropagation();
       this.processUpdateFiles(files);
     }
   }

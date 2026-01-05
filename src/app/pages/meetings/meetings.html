@@ -270,7 +270,7 @@
       {{ editing()?._id ? 'Editar reunión' : 'Nueva reunión' }}
     </ng-template>
 
-    <div class="grid gap-3" *ngIf="editing() as e">
+    <div class="grid gap-3" *ngIf="editing() as e" (paste)="onPaste($event)">
       <!-- Título -->
       <input
         pInputText
@@ -394,12 +394,13 @@
           (dragover)="onDragOver($event)"
           (dragleave)="onDragLeave($event)"
           (drop)="onDrop($event)"
+          (paste)="onPaste($event)"
           (click)="fileInput.click()"
           (keyup.enter)="fileInput.click()"
           (keyup.space)="fileInput.click()"
           tabindex="0"
           role="button"
-          aria-label="Seleccionar archivos para subir"
+          aria-label="Seleccionar archivos para subir o pegar desde portapapeles"
         >
           <input
             type="file"
@@ -427,7 +428,9 @@
               <span>Arrastra y suelta archivos aquí</span>
               }
             </p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">o</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              o haz clic para seleccionar, o pega desde el portapapeles (Ctrl+V)
+            </p>
             <button
               pButton
               type="button"
