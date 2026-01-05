@@ -332,7 +332,7 @@
     </ng-template>
 
     @if (editing(); as e) {
-    <div class="grid gap-3">
+    <div class="grid gap-3" (paste)="onPaste($event)">
       <!-- Usuario que reporta -->
       <div>
         <label
@@ -341,6 +341,18 @@
         >
           Reportado por *
         </label>
+        @if (!e._id) {
+        <!-- Al crear: mostrar solo lectura con el usuario actual -->
+        <div
+          class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+        >
+          <i class="pi pi-user text-blue-500"></i>
+          <span class="text-gray-700 dark:text-gray-300">
+            {{ getCurrentUserName() }}
+          </span>
+        </div>
+        } @else {
+        <!-- Al editar: permitir cambiar el usuario -->
         <p-select
           id="reportedBy"
           [(ngModel)]="e.reportedBy"
@@ -352,8 +364,8 @@
           [loading]="loadingUsers()"
           class="w-full"
           appendTo="body"
-          [disabled]="!!e._id"
         ></p-select>
+        }
       </div>
 
       <!-- Problema -->
@@ -416,12 +428,13 @@
           (dragover)="onDragOver($event)"
           (dragleave)="onDragLeave($event)"
           (drop)="onDrop($event)"
+          (paste)="onPaste($event)"
           (click)="fileInput.click()"
           (keyup.enter)="fileInput.click()"
           (keyup.space)="fileInput.click()"
           tabindex="0"
           role="button"
-          aria-label="Seleccionar archivos para subir"
+          aria-label="Seleccionar archivos para subir o pegar desde portapapeles"
         >
           <input
             type="file"
@@ -449,7 +462,9 @@
               <span>Arrastra y suelta archivos aquí</span>
               }
             </p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">o</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              o haz clic para seleccionar, o pega desde el portapapeles (Ctrl+V)
+            </p>
             <button
               pButton
               type="button"
@@ -838,7 +853,7 @@
       </span>
     </ng-template>
 
-    <div class="grid gap-3">
+    <div class="grid gap-3" (paste)="onPasteUpdate($event)">
       <!-- Usuario que actualiza -->
       <div>
         <label
@@ -897,12 +912,13 @@
           (dragover)="onDragOverUpdate($event)"
           (dragleave)="onDragLeaveUpdate($event)"
           (drop)="onDropUpdate($event)"
+          (paste)="onPasteUpdate($event)"
           (click)="updateFileInput.click()"
           (keyup.enter)="updateFileInput.click()"
           (keyup.space)="updateFileInput.click()"
           tabindex="0"
           role="button"
-          aria-label="Seleccionar archivos para subir"
+          aria-label="Seleccionar archivos para subir o pegar desde portapapeles"
         >
           <input
             type="file"
@@ -933,7 +949,9 @@
               <span>Arrastra y suelta archivos aquí</span>
               }
             </p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">o</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              o haz clic para seleccionar, o pega desde el portapapeles (Ctrl+V)
+            </p>
             <button
               pButton
               type="button"
