@@ -124,6 +124,12 @@ export const routes: Routes = [
         data: { menuPermission: '/meetings' },
       },
       {
+        path: 'tickets',
+        loadComponent: () => import('./pages/tickets/tickets').then((m) => m.TicketsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/tickets' },
+      },
+      {
         path: 'face-recognition-register',
         loadComponent: () =>
           import('./pages/face-recognition-register/face-recognition-register').then(
