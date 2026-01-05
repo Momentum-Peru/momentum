@@ -20,6 +20,7 @@ export interface Meeting {
   agreements?: string;
   attendees?: string[] | AttendeeUser[]; // Puede ser IDs (string[]) o usuarios populados (AttendeeUser[])
   description?: string;
+  attachments?: string[]; // URLs de archivos adjuntos (fotos, videos, audios, documentos)
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }

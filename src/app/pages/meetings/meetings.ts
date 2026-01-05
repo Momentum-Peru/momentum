@@ -88,6 +88,18 @@ export class MeetingsPage implements OnInit {
   // Estado de expansión para vista móvil
   private expandedRowKeys = signal<Set<string>>(new Set());
 
+  // Estado para subida de archivos
+  selectedFiles = signal<File[]>([]);
+  filePreviews = signal<Map<string, string>>(new Map()); // Map<fileName, previewUrl>
+  isDragging = signal(false);
+  uploading = signal(false);
+  uploadProgress = signal<Record<string, number>>({});
+
+  // Estado para modal de previsualización
+  showPreviewModal = signal(false);
+  previewModalUrl = signal<string>('');
+  previewModalType = signal<'image' | 'video' | 'audio' | 'document'>('document');
+
   // Filtrado y ordenamiento
   filteredItems = computed(() => {
     const searchQuery = this.query().toLowerCase().trim();
@@ -251,8 +263,10 @@ export class MeetingsPage implements OnInit {
       agreements: '',
       attendees: [],
       description: '',
+      attachments: [],
     });
     this.showDialog.set(true);
+    this.clearSelectedFiles(); // Limpiar archivos seleccionados al crear nueva reunión
   }
 
   /**
@@ -278,6 +292,8 @@ export class MeetingsPage implements OnInit {
   closeDialog() {
     this.showDialog.set(false);
     this.editing.set(null);
+    this.clearSelectedFiles(); // Limpiar archivos seleccionados al cerrar
+    this.closePreviewModal(); // Cerrar modal de preview si está abierto
   }
 
   /**
@@ -409,11 +425,18 @@ export class MeetingsPage implements OnInit {
       };
 
       this.meetingsApi.create(createData).subscribe({
-        next: () => {
+        next: (createdMeeting) => {
           this.toastSuccess('Reunión creada exitosamente');
-          this.loading.set(false);
-          this.closeDialog();
-          this.load();
+          
+          // Si hay archivos seleccionados, subirlos después de crear la reunión
+          const files = this.selectedFiles();
+          if (files.length > 0 && createdMeeting._id) {
+            this.uploadFilesAfterCreate(createdMeeting._id, files);
+          } else {
+            this.loading.set(false);
+            this.closeDialog();
+            this.load();
+          }
         },
         error: (err) => {
           const message = err.error?.message || 'Error al crear la reunión';
@@ -577,5 +600,318 @@ export class MeetingsPage implements OnInit {
       summary: 'Error',
       detail: message,
     });
+  }
+
+  /**
+   * Maneja el evento dragover
+   */
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  /**
+   * Maneja el evento dragleave
+   */
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  /**
+   * Maneja el evento drop
+   */
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+
+    const files = Array.from(event.dataTransfer?.files || []);
+    if (files.length > 0) {
+      this.processFiles(files);
+    }
+  }
+
+  /**
+   * Maneja el cambio del input de archivos
+   */
+  onFileInputChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const files = Array.from(input.files);
+      this.processFiles(files);
+    }
+  }
+
+  /**
+   * Procesa los archivos seleccionados
+   */
+  private processFiles(files: File[]) {
+    // Validar tamaño de archivos (200MB máximo)
+    const maxSize = 200 * 1024 * 1024; // 200MB en bytes
+    const validFiles: File[] = [];
+    const invalidFiles: File[] = [];
+
+    files.forEach((file) => {
+      if (file.size > maxSize) {
+        invalidFiles.push(file);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    // Mostrar errores para archivos inválidos
+    if (invalidFiles.length > 0) {
+      invalidFiles.forEach((file) => {
+        this.toastError(`El archivo ${file.name} es demasiado grande. Máximo 200MB.`);
+      });
+    }
+
+    // Agregar archivos válidos a la lista y crear previews
+    if (validFiles.length > 0) {
+      const currentFiles = this.selectedFiles();
+      const updatedFiles = [...currentFiles, ...validFiles];
+      this.selectedFiles.set(updatedFiles);
+
+      // Crear previews para imágenes y videos
+      validFiles.forEach((file) => {
+        this.createFilePreview(file);
+      });
+
+      this.toastSuccess(`${validFiles.length} archivo(s) agregado(s) correctamente`);
+    }
+  }
+
+  /**
+   * Crea una previsualización para un archivo
+   */
+  private createFilePreview(file: File) {
+    const fileType = this.getFileType(file.name);
+    
+    // Solo crear preview para imágenes y videos
+    if (fileType !== 'image' && fileType !== 'video' && fileType !== 'audio') {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => {
+      console.error('Error al leer el archivo para preview:', file.name);
+    };
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      if (e.target?.result) {
+        const previews = new Map(this.filePreviews());
+        previews.set(file.name, e.target.result as string);
+        this.filePreviews.set(previews);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /**
+   * Formatea el tamaño del archivo
+   */
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Elimina un archivo de la lista seleccionada
+   */
+  removeSelectedFile(fileToRemove: File) {
+    const currentFiles = this.selectedFiles();
+    const updatedFiles = currentFiles.filter((file) => file !== fileToRemove);
+    this.selectedFiles.set(updatedFiles);
+    
+    // Eliminar preview
+    const previews = new Map(this.filePreviews());
+    previews.delete(fileToRemove.name);
+    this.filePreviews.set(previews);
+  }
+
+  /**
+   * Limpia todos los archivos seleccionados
+   */
+  clearSelectedFiles() {
+    this.selectedFiles.set([]);
+    this.filePreviews.set(new Map());
+  }
+
+  /**
+   * Sube los archivos seleccionados a la reunión
+   */
+  uploadSelectedFiles() {
+    const files = this.selectedFiles();
+    const meetingId = this.editing()?._id;
+
+    if (!meetingId) {
+      this.toastError('La reunión debe estar guardada antes de subir archivos');
+      return;
+    }
+
+    if (!files || !files.length) {
+      this.toastError('No hay archivos seleccionados para subir');
+      return;
+    }
+
+    this.uploadFilesToMeeting(meetingId, files);
+  }
+
+  /**
+   * Sube archivos después de crear una reunión
+   */
+  private uploadFilesAfterCreate(meetingId: string, files: File[]) {
+    this.uploading.set(true);
+    this.uploadFilesToMeeting(meetingId, files, () => {
+      // Después de subir, cerrar el diálogo y recargar
+      this.loading.set(false);
+      this.closeDialog();
+      this.load();
+    });
+  }
+
+  /**
+   * Método privado para subir archivos a una reunión
+   */
+  private uploadFilesToMeeting(meetingId: string, files: File[], onComplete?: () => void) {
+    this.uploading.set(true);
+    this.uploadProgress.set({});
+
+    // Subir cada archivo individualmente
+    const uploadPromises = files.map((file: File, index: number) => {
+      return new Promise<void>((resolve, reject) => {
+        // Inicializar progreso
+        this.uploadProgress.update((progress) => ({
+          ...progress,
+          [file.name]: 0,
+        }));
+
+        this.meetingsApi.uploadDocument(meetingId, file).subscribe({
+          next: (response) => {
+            // Marcar como completado
+            this.uploadProgress.update((progress) => ({
+              ...progress,
+              [file.name]: 100,
+            }));
+            resolve();
+          },
+          error: (error) => {
+            const errorMessage = error.error?.message || `Error al subir ${file.name}`;
+            this.toastError(errorMessage);
+            reject(error);
+          },
+        });
+      });
+    });
+
+    // Esperar a que todos los archivos se suban
+    Promise.allSettled(uploadPromises).then(() => {
+      this.uploading.set(false);
+      this.uploadProgress.set({});
+      this.toastSuccess(`${files.length} archivo(s) procesado(s)`);
+      this.clearSelectedFiles();
+
+      // Recargar la reunión para obtener los archivos actualizados
+      this.meetingsApi.getById(meetingId).subscribe({
+        next: (updatedMeeting) => {
+          this.editing.set(updatedMeeting);
+          this.load(); // Recargar la lista también
+          if (onComplete) {
+            onComplete();
+          }
+        },
+        error: (error) => {
+          console.error('Error al recargar la reunión:', error);
+          this.load(); // Al menos recargar la lista
+          if (onComplete) {
+            onComplete();
+          }
+        },
+      });
+    });
+  }
+
+  /**
+   * Obtiene el tipo de archivo basado en la extensión
+   */
+  getFileType(fileName: string): 'image' | 'video' | 'audio' | 'document' {
+    const extension = fileName.split('.').pop()?.toLowerCase() || '';
+    const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+    const videoTypes = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'];
+    const audioTypes = ['mp3', 'wav', 'ogg', 'aac', 'm4a', 'flac'];
+
+    if (imageTypes.includes(extension)) return 'image';
+    if (videoTypes.includes(extension)) return 'video';
+    if (audioTypes.includes(extension)) return 'audio';
+    return 'document';
+  }
+
+  /**
+   * Obtiene el icono según el tipo de archivo
+   */
+  getFileIcon(fileName: string): string {
+    const type = this.getFileType(fileName);
+    switch (type) {
+      case 'image':
+        return 'pi pi-image';
+      case 'video':
+        return 'pi pi-video';
+      case 'audio':
+        return 'pi pi-volume-up';
+      default:
+        return 'pi pi-file';
+    }
+  }
+
+  /**
+   * Obtiene el número de archivos adjuntos
+   */
+  getAttachmentsCount(meeting: Meeting): number {
+    return meeting.attachments?.length || 0;
+  }
+
+  /**
+   * Abre un archivo adjunto en una nueva ventana
+   */
+  openAttachment(url: string) {
+    window.open(url, '_blank');
+  }
+
+  /**
+   * Obtiene la URL de preview de un archivo
+   */
+  getFilePreview(fileName: string): string | null {
+    return this.filePreviews().get(fileName) || null;
+  }
+
+  /**
+   * Abre el modal de previsualización
+   */
+  openPreviewModal(url: string, fileName: string) {
+    const fileType = this.getFileType(fileName);
+    this.previewModalUrl.set(url);
+    this.previewModalType.set(fileType);
+    this.showPreviewModal.set(true);
+  }
+
+  /**
+   * Cierra el modal de previsualización
+   */
+  closePreviewModal() {
+    this.showPreviewModal.set(false);
+    this.previewModalUrl.set('');
+  }
+
+  /**
+   * Verifica si un archivo tiene preview
+   */
+  hasPreview(fileName: string): boolean {
+    const fileType = this.getFileType(fileName);
+    return fileType === 'image' || fileType === 'video' || fileType === 'audio';
   }
 }

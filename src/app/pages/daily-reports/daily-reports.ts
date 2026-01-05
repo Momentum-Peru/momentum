@@ -274,6 +274,48 @@ export class DailyExpensesPage implements OnInit {
     });
   }
 
+  /**
+   * Normaliza una fecha desde cualquier formato (ISO string con UTC o YYYY-MM-DD)
+   * a formato YYYY-MM-DD extrayendo directamente los componentes sin conversión de zona horaria
+   */
+  private normalizeDate(dateValue: string | Date | null | undefined): string {
+    if (!dateValue) return '';
+
+    // Si ya es formato YYYY-MM-DD, retornarlo tal cual
+    if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+      return dateValue;
+    }
+
+    // Si es un string ISO (con T y Z o T y offset), extraer directamente año, mes y día
+    if (typeof dateValue === 'string') {
+      // Formato ISO: "2026-01-05T00:00:00.000Z" o "2026-01-05T05:00:00.000Z"
+      const isoMatch = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) {
+        return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+      }
+    }
+
+    // Si es un objeto Date, usar los métodos get para obtener componentes locales
+    if (dateValue instanceof Date) {
+      const year = dateValue.getFullYear();
+      const month = (dateValue.getMonth() + 1).toString().padStart(2, '0');
+      const day = dateValue.getDate().toString().padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    return '';
+  }
+
+  /**
+   * Normaliza un objeto DailyReport completo, especialmente la fecha
+   */
+  private normalizeDailyReport(report: DailyReport): DailyReport {
+    return {
+      ...report,
+      date: this.normalizeDate(report.date),
+    };
+  }
+
   load() {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser?.id) {
@@ -319,7 +361,12 @@ export class DailyExpensesPage implements OnInit {
 
     this.dailyExpensesApi.listWithFilters(filters).subscribe({
       next: (data) => {
-        this.items.set(data);
+        // Normalizar fechas de todos los items para que se muestren correctamente
+        const normalizedData = data.map((item) => ({
+          ...item,
+          date: this.normalizeDate(item.date),
+        }));
+        this.items.set(normalizedData);
       },
       error: () => {
         this.messageService.add({
@@ -508,8 +555,15 @@ export class DailyExpensesPage implements OnInit {
 
   newItem() {
     const currentUser = this.authService.getCurrentUser();
+    // Obtener fecha local sin problemas de zona horaria
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const localDate = `${year}-${month}-${day}`;
+
     this.editing.set({
-      date: new Date().toISOString().split('T')[0],
+      date: localDate,
       time: new Date().toTimeString().slice(0, 5),
       description: '',
       audioDescription: null,
@@ -533,6 +587,9 @@ export class DailyExpensesPage implements OnInit {
   editItem(item: DailyReport) {
     // Crear una copia del item para editar
     const editedItem = { ...item };
+
+    // Normalizar la fecha para que se muestre correctamente en el datepicker
+    editedItem.date = this.normalizeDate(item.date);
 
     // Si projectId es un objeto (populado), extraer el _id
     if (
@@ -786,7 +843,12 @@ export class DailyExpensesPage implements OnInit {
   }
 
   viewItem(item: DailyReport) {
-    this.viewing.set(item);
+    // Normalizar la fecha para que se muestre correctamente
+    const normalizedItem = {
+      ...item,
+      date: this.normalizeDate(item.date),
+    };
+    this.viewing.set(normalizedItem);
     this.showViewDialog.set(true);
   }
 
@@ -871,7 +933,7 @@ export class DailyExpensesPage implements OnInit {
               this.dailyExpensesApi.confirmAudioUpload(reportId, presigned.publicUrl)
             );
 
-            this.editing.set(updated);
+            this.editing.set(this.normalizeDailyReport(updated));
 
             this.messageService.add({
               severity: 'success',
@@ -943,7 +1005,7 @@ export class DailyExpensesPage implements OnInit {
               this.dailyExpensesApi.confirmAudioUpload(reportId, presignedResponse.publicUrl)
             );
 
-            this.editing.set(updated);
+            this.editing.set(this.normalizeDailyReport(updated));
 
             this.messageService.add({
               severity: 'success',
@@ -1134,7 +1196,7 @@ export class DailyExpensesPage implements OnInit {
               this.dailyExpensesApi.confirmVideoUpload(reportId, presigned.publicUrl)
             );
 
-            this.editing.set(updated);
+            this.editing.set(this.normalizeDailyReport(updated));
 
             this.messageService.add({
               severity: 'success',
@@ -1175,7 +1237,7 @@ export class DailyExpensesPage implements OnInit {
           await this.uploadPhotoPromise(reportId, file);
           // Recargar el reporte para obtener la foto actualizada
           const updated = await firstValueFrom(this.dailyExpensesApi.getById(reportId));
-          this.editing.set(updated);
+          this.editing.set(this.normalizeDailyReport(updated));
         } catch {
           this.toastError(`No se pudo subir la foto: ${file.name}. Ver consola para más detalles.`);
         }
@@ -1200,7 +1262,7 @@ export class DailyExpensesPage implements OnInit {
         await this.uploadDocumentsPromise(reportId, files);
         // Recargar el reporte para obtener los documentos actualizados
         const updated = await firstValueFrom(this.dailyExpensesApi.getById(reportId));
-        this.editing.set(updated);
+        this.editing.set(this.normalizeDailyReport(updated));
         console.log('Documentos subidos exitosamente:', { count: files.length });
       } catch (error) {
         console.error('Error al subir documentos:', {
@@ -1237,7 +1299,7 @@ export class DailyExpensesPage implements OnInit {
         // Si el reporte ya existe en el servidor, eliminar el documento también
         if (current._id && documentToRemove) {
           this.dailyExpensesApi.deleteDocument(current._id, documentToRemove).subscribe({
-            next: (updated) => this.editing.set(updated),
+            next: (updated) => this.editing.set(this.normalizeDailyReport(updated)),
             error: () => {
               this.toastError('No se pudo eliminar el documento');
               // Revertir el cambio local si falla
@@ -1272,7 +1334,7 @@ export class DailyExpensesPage implements OnInit {
           next: (updated) => {
             // Actualizar con la respuesta del servidor
             const serverUrls = this.normalizeToArray(updated.audioDescription);
-            this.editing.set(updated);
+            this.editing.set(this.normalizeDailyReport(updated));
             // Actualizar modal con las URLs del servidor
             this.updateModalAfterDelete('audio', serverUrls);
           },
@@ -1323,7 +1385,7 @@ export class DailyExpensesPage implements OnInit {
           next: (updated) => {
             // Actualizar con la respuesta del servidor
             const serverUrls = this.normalizeToArray(updated.videoDescription);
-            this.editing.set(updated);
+            this.editing.set(this.normalizeDailyReport(updated));
             // Actualizar modal con las URLs del servidor
             this.updateModalAfterDelete('video', serverUrls);
           },
@@ -1374,7 +1436,7 @@ export class DailyExpensesPage implements OnInit {
           next: (updated) => {
             // Actualizar con la respuesta del servidor
             const serverUrls = this.normalizeToArray(updated.photoDescription);
-            this.editing.set(updated);
+            this.editing.set(this.normalizeDailyReport(updated));
             // Actualizar modal con las URLs del servidor
             this.updateModalAfterDelete('photo', serverUrls);
           },
