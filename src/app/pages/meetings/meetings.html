@@ -376,6 +376,300 @@
           class="w-full"
         ></textarea>
       </div>
+
+      <!-- Sección de Archivos Adjuntos -->
+      <div class="border-t pt-3">
+        <h4 class="text-lg font-semibold mb-3">Archivos Adjuntos</h4>
+
+        <!-- Área de drag and drop -->
+        <div
+          class="border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 cursor-pointer group"
+          [class.border-gray-300]="!isDragging()"
+          [class.border-blue-400]="isDragging()"
+          [class.bg-blue-50]="isDragging()"
+          [class.dark:border-gray-600]="!isDragging()"
+          [class.dark:border-blue-500]="isDragging()"
+          [class.dark:bg-blue-900]="isDragging()"
+          [class.dark:bg-opacity-20]="isDragging()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+          (click)="fileInput.click()"
+          (keyup.enter)="fileInput.click()"
+          (keyup.space)="fileInput.click()"
+          tabindex="0"
+          role="button"
+          aria-label="Seleccionar archivos para subir"
+        >
+          <input
+            type="file"
+            #fileInput
+            multiple
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg,.gif,.webp,.mp4,.avi,.mov,.wmv,.flv,.webm,.mkv,.mp3,.wav,.ogg,.aac,.m4a,.flac"
+            (change)="onFileInputChange($event)"
+            class="hidden"
+          />
+
+          <div class="flex flex-col items-center justify-center py-6 pointer-events-none">
+            <div class="mb-4 transition-transform duration-200" [class.scale-110]="isDragging()">
+              <i
+                class="pi text-6xl transition-colors duration-200"
+                [class.pi-cloud-upload]="!isDragging()"
+                [class.pi-cloud]="isDragging()"
+                [class.text-gray-400]="!isDragging()"
+                [class.text-blue-500]="isDragging()"
+              ></i>
+            </div>
+            <p class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              @if (isDragging()) {
+              <span class="text-blue-600 dark:text-blue-400">Suelta los archivos aquí</span>
+              } @else {
+              <span>Arrastra y suelta archivos aquí</span>
+              }
+            </p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">o</p>
+            <button
+              pButton
+              type="button"
+              label="Seleccionar Archivos"
+              icon="pi pi-folder-open"
+              (click)="fileInput.click(); $event.stopPropagation()"
+              class="pointer-events-auto"
+              [class.p-button-outlined]="!isDragging()"
+              [class.p-button-primary]="isDragging()"
+              aria-label="Seleccionar archivos para subir"
+            ></button>
+
+            <div
+              class="mt-6 text-xs text-gray-500 dark:text-gray-400 space-y-1 bg-white/50 dark:bg-gray-800/50 rounded-lg px-4 py-2"
+            >
+              <p>
+                <i class="pi pi-info-circle mr-1"></i>
+                <strong>Formatos soportados:</strong> PDF, DOC, DOCX, XLS, XLSX, TXT, PNG, JPG,
+                JPEG, GIF, WEBP, MP4, AVI, MOV, MP3, WAV, OGG, AAC
+              </p>
+              <p>
+                <i class="pi pi-info-circle mr-1"></i>
+                <strong>Tamaño máximo:</strong> 200MB por archivo
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de archivos seleccionados -->
+        @if (selectedFiles().length > 0) {
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3 mt-4"
+        >
+          <div class="flex items-center justify-between">
+            <h5 class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+              <i class="pi pi-list text-blue-500"></i>
+              Archivos Seleccionados ({{ selectedFiles().length }})
+            </h5>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-times"
+              label="Limpiar Todo"
+              class="p-button-text p-button-sm"
+              (click)="clearSelectedFiles()"
+              [disabled]="uploading()"
+              aria-label="Limpiar todos los archivos"
+            ></button>
+          </div>
+
+          <div class="space-y-2">
+            @for (file of selectedFiles(); track file.name) {
+            <div
+              class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+            >
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                @if (getFilePreview(file.name)) {
+                <!-- Preview de imagen -->
+                @if (getFileType(file.name) === 'image') {
+                <img
+                  [src]="getFilePreview(file.name)!"
+                  [alt]="file.name"
+                  class="w-16 h-16 object-cover rounded cursor-pointer"
+                  (click)="openPreviewModal(getFilePreview(file.name)!, file.name)"
+                  (keyup.enter)="openPreviewModal(getFilePreview(file.name)!, file.name)"
+                  tabindex="0"
+                  role="button"
+                />
+                } @else if (getFileType(file.name) === 'video') {
+                <!-- Preview de video -->
+                <div
+                  class="relative w-16 h-16 rounded overflow-hidden cursor-pointer"
+                  (click)="openPreviewModal(getFilePreview(file.name)!, file.name)"
+                  (keyup.enter)="openPreviewModal(getFilePreview(file.name)!, file.name)"
+                  tabindex="0"
+                  role="button"
+                >
+                  <video
+                    [src]="getFilePreview(file.name)!"
+                    class="w-full h-full object-cover"
+                  ></video>
+                  <div
+                    class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30"
+                  >
+                    <i class="pi pi-play text-white text-xl"></i>
+                  </div>
+                </div>
+                } @else if (getFileType(file.name) === 'audio') {
+                <!-- Preview de audio -->
+                <div
+                  class="w-16 h-16 rounded bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center"
+                >
+                  <i class="pi pi-volume-up text-blue-500 text-2xl"></i>
+                </div>
+                } } @else {
+                <i [class]="getFileIcon(file.name)" class="text-blue-500 text-xl"></i>
+                }
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                    {{ file.name }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ formatFileSize(file.size) }}
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                @if (hasPreview(file.name) && getFilePreview(file.name)) {
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-eye"
+                  class="p-button-text p-button-sm"
+                  (click)="openPreviewModal(getFilePreview(file.name)!, file.name)"
+                  [disabled]="uploading()"
+                  pTooltip="Ver previsualización"
+                  aria-label="Ver previsualización"
+                ></button>
+                }
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-times"
+                  class="p-button-text p-button-sm p-button-danger"
+                  (click)="removeSelectedFile(file)"
+                  [disabled]="uploading()"
+                  aria-label="Eliminar archivo"
+                ></button>
+              </div>
+            </div>
+            }
+          </div>
+
+          @if (e._id) {
+          <button
+            pButton
+            type="button"
+            label="Subir Archivos"
+            icon="pi pi-upload"
+            (click)="uploadSelectedFiles()"
+            [disabled]="uploading() || selectedFiles().length === 0"
+            [loading]="uploading()"
+            class="w-full"
+            aria-label="Subir archivos seleccionados"
+          ></button>
+          } @else {
+          <div
+            class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3"
+          >
+            <p class="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+              <i class="pi pi-info-circle"></i>
+              <span>Los archivos se subirán automáticamente al guardar la reunión</span>
+            </p>
+          </div>
+          }
+        </div>
+        }
+
+        <!-- Archivos ya subidos -->
+        @if (e.attachments && e.attachments.length > 0) {
+        <div class="mt-4 space-y-2">
+          <h5 class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-2">
+            <i class="pi pi-paperclip text-blue-500"></i>
+            Archivos Adjuntos ({{ e.attachments.length }})
+          </h5>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            @for (attachment of e.attachments; track attachment) { @if (getFileType(attachment) ===
+            'image') {
+            <!-- Preview de imagen -->
+            <div
+              class="relative group cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors"
+              (click)="openPreviewModal(attachment, attachment)"
+              (keyup.enter)="openPreviewModal(attachment, attachment)"
+              tabindex="0"
+              role="button"
+            >
+              <img
+                [src]="attachment"
+                [alt]="attachment.split('/').pop()"
+                class="w-full h-32 object-cover"
+                loading="lazy"
+              />
+              <div
+                class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center"
+              >
+                <i
+                  class="pi pi-eye text-white opacity-0 group-hover:opacity-100 transition-opacity text-xl"
+                ></i>
+              </div>
+              <div
+                class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2"
+              >
+                <p class="text-xs text-white truncate">{{ attachment.split('/').pop() }}</p>
+              </div>
+            </div>
+            } @else if (getFileType(attachment) === 'video') {
+            <!-- Preview de video -->
+            <div
+              class="relative group cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors"
+              (click)="openPreviewModal(attachment, attachment)"
+              (keyup.enter)="openPreviewModal(attachment, attachment)"
+              tabindex="0"
+              role="button"
+            >
+              <video [src]="attachment" class="w-full h-32 object-cover"></video>
+              <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                <i class="pi pi-play text-white text-3xl"></i>
+              </div>
+              <div
+                class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2"
+              >
+                <p class="text-xs text-white truncate">{{ attachment.split('/').pop() }}</p>
+              </div>
+            </div>
+            } @else {
+            <!-- Otros archivos -->
+            <div
+              class="flex flex-col items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer border-2 border-gray-200 dark:border-gray-700"
+              (click)="openAttachment(attachment)"
+              (keyup.enter)="openAttachment(attachment)"
+              tabindex="0"
+              role="button"
+            >
+              <i [class]="getFileIcon(attachment)" class="text-blue-500 text-3xl"></i>
+              <span class="text-xs text-gray-700 dark:text-gray-300 truncate w-full text-center">{{
+                attachment.split('/').pop()
+              }}</span>
+              <i class="pi pi-external-link text-xs text-gray-500"></i>
+            </div>
+            } }
+          </div>
+        </div>
+        }
+
+        <!-- Mensaje informativo -->
+        @if (!e._id && selectedFiles().length === 0 && (!e.attachments || e.attachments.length ===
+        0)) {
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          Puedes seleccionar archivos ahora. Se subirán automáticamente al guardar la reunión.
+        </p>
+        }
+      </div>
     </div>
 
     <ng-template pTemplate="footer">
@@ -464,6 +758,82 @@
             ></button>
           </div>
           }
+        </div>
+      </div>
+      }
+
+      <!-- Archivos Adjuntos -->
+      @if (v.attachments && v.attachments.length > 0) {
+      <div>
+        <span class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+          <i class="pi pi-paperclip mr-1"></i>
+          Archivos Adjuntos ({{ v.attachments.length }}):
+        </span>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          @for (attachment of v.attachments; track attachment) { @if (getFileType(attachment) ===
+          'image') {
+          <!-- Preview de imagen -->
+          <div
+            class="relative group cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors"
+            (click)="openPreviewModal(attachment, attachment)"
+            (keyup.enter)="openPreviewModal(attachment, attachment)"
+            tabindex="0"
+            role="button"
+          >
+            <img
+              [src]="attachment"
+              [alt]="attachment.split('/').pop()"
+              class="w-full h-32 object-cover"
+              loading="lazy"
+            />
+            <div
+              class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center"
+            >
+              <i
+                class="pi pi-eye text-white opacity-0 group-hover:opacity-100 transition-opacity text-xl"
+              ></i>
+            </div>
+            <div
+              class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2"
+            >
+              <p class="text-xs text-white truncate">{{ attachment.split('/').pop() }}</p>
+            </div>
+          </div>
+          } @else if (getFileType(attachment) === 'video') {
+          <!-- Preview de video -->
+          <div
+            class="relative group cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors"
+            (click)="openPreviewModal(attachment, attachment)"
+            (keyup.enter)="openPreviewModal(attachment, attachment)"
+            tabindex="0"
+            role="button"
+          >
+            <video [src]="attachment" class="w-full h-32 object-cover"></video>
+            <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+              <i class="pi pi-play text-white text-3xl"></i>
+            </div>
+            <div
+              class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2"
+            >
+              <p class="text-xs text-white truncate">{{ attachment.split('/').pop() }}</p>
+            </div>
+          </div>
+          } @else {
+          <!-- Otros archivos -->
+          <div
+            class="flex flex-col items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer border-2 border-gray-200 dark:border-gray-700"
+            (click)="openAttachment(attachment)"
+            (keyup.enter)="openAttachment(attachment)"
+            tabindex="0"
+            role="button"
+          >
+            <i [class]="getFileIcon(attachment)" class="text-blue-500 text-3xl"></i>
+            <span class="text-xs text-gray-700 dark:text-gray-300 truncate w-full text-center">{{
+              attachment.split('/').pop()
+            }}</span>
+            <i class="pi pi-external-link text-xs text-gray-500"></i>
+          </div>
+          } }
         </div>
       </div>
       }
@@ -645,5 +1015,60 @@
         aria-label="Cerrar estadísticas"
       ></button>
     </ng-template>
+  </p-dialog>
+
+  <!-- Modal de Previsualización -->
+  <p-dialog
+    [visible]="showPreviewModal()"
+    (visibleChange)="showPreviewModal.set($event)"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '90rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    appendTo="body"
+    class="preview-modal"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center justify-between w-full">
+        <span class="font-semibold">Previsualización</span>
+        <button
+          pButton
+          icon="pi pi-times"
+          class="p-button-text p-button-rounded"
+          (click)="closePreviewModal()"
+          aria-label="Cerrar previsualización"
+        ></button>
+      </div>
+    </ng-template>
+
+    <div class="flex items-center justify-center min-h-[400px] max-h-[80vh] p-4">
+      @if (previewModalType() === 'image') {
+      <img
+        [src]="previewModalUrl()"
+        alt="Preview"
+        class="max-w-full max-h-[80vh] object-contain rounded-lg"
+      />
+      } @else if (previewModalType() === 'video') {
+      <video [src]="previewModalUrl()" controls class="max-w-full max-h-[80vh] rounded-lg"></video>
+      } @else if (previewModalType() === 'audio') {
+      <audio [src]="previewModalUrl()" controls class="w-full max-w-2xl"></audio>
+      } @else {
+      <div class="text-center">
+        <i class="pi pi-file text-6xl text-gray-400 mb-4"></i>
+        <p class="text-gray-600 dark:text-gray-400">
+          Previsualización no disponible para este tipo de archivo
+        </p>
+        <button
+          pButton
+          icon="pi pi-external-link"
+          (click)="openAttachment(previewModalUrl())"
+          class="mt-4"
+        >
+          Abrir en nueva ventana
+        </button>
+      </div>
+      }
+    </div>
   </p-dialog>
 </div>
