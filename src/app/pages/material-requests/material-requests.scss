@@ -1,0 +1,22 @@
+// Estilos para el componente de Solicitudes de Materiales
+// Usando TailwindCSS principalmente, con estilos adicionales cuando sea necesario
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+// Estilos para el timeline de actualizaciones
+::ng-deep .custom-timeline {
+  .p-timeline-event-marker {
+    background-color: var(--p-primary-color);
+    border-color: var(--p-primary-color);
+  }
+}
+
+// Estilos para el modal de previsualización
+::ng-deep .preview-modal {
+  .p-dialog-content {
+    padding: 0;
+  }
+}
