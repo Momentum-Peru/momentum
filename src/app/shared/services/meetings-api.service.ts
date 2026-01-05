@@ -131,4 +131,16 @@ export class MeetingsApiService {
   delete(id: string): Observable<{ deleted: boolean; id: string }> {
     return this.http.delete<{ deleted: boolean; id: string }>(`${this.baseUrl}/${id}`);
   }
+
+  /**
+   * Sube un archivo adjunto a una reunión
+   * @param meetingId ID de la reunión
+   * @param file Archivo a subir
+   * @returns Observable con la reunión actualizada
+   */
+  uploadDocument(meetingId: string, file: File): Observable<Meeting> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<Meeting>(`${this.baseUrl}/${meetingId}/documents`, formData);
+  }
 }
