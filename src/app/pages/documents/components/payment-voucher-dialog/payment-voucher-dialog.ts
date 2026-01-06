@@ -34,6 +34,7 @@ import {
  */
 @Component({
   selector: 'app-payment-voucher-dialog',
+  standalone: true,
   imports: [
     CommonModule,
     FormsModule,

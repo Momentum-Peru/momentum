@@ -149,9 +149,14 @@ export class MenuConfigService {
             routerLink: '/providers',
           },
           {
-            label: 'Documentos Tributarios',
-            icon: 'pi pi-file',
-            routerLink: '/documents',
+            label: 'Ventas',
+            icon: 'pi pi-dollar',
+            routerLink: '/documents/ventas',
+          },
+          {
+            label: 'Compras',
+            icon: 'pi pi-shopping-cart',
+            routerLink: '/documents/compras',
           },
           {
             label: 'Solicitudes de Materiales',

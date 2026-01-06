@@ -125,7 +125,7 @@ export class DocumentsApiService {
      * @param proyectoId ID del proyecto (opcional)
      * @param autoCreate Si se debe crear el documento automáticamente después del escaneo
      */
-    scanInvoice(file: File, proyectoId?: string, autoCreate = true): Observable<ScanInvoiceResponse> {
+    scanInvoice(file: File, proyectoId?: string, autoCreate = true, tipo?: 'compra' | 'venta'): Observable<ScanInvoiceResponse> {
         const formData = new FormData();
         formData.append('file', file);
         
@@ -134,6 +134,10 @@ export class DocumentsApiService {
         }
         
         formData.append('autoCreate', autoCreate.toString());
+        
+        if (tipo) {
+            formData.append('tipo', tipo);
+        }
 
         // Calcular timeout basado en el tamaño del archivo
         // Para archivos grandes y conexiones móviles, usar timeout más generoso
