@@ -4,6 +4,7 @@ export interface Document {
     serie?: number;
     proyectoId: string | ProjectReference;
     categoria?: string;
+    tipo?: 'compra' | 'venta';
     fechaEmision?: Date | string;
     fechaVencimiento?: Date | string;
     documentoReferencia?: number;
@@ -28,6 +29,7 @@ export interface DocumentOption {
 export interface DocumentFilters {
     proyectoId?: string;
     categoria?: string;
+    tipo?: 'compra' | 'venta';
     numeroDocumento?: number;
     serie?: string;
     fechaEmisionDesde?: string;

@@ -9,7 +9,7 @@
       <ng-template pTemplate="left">
         <div class="flex items-center gap-3">
           <i class="pi pi-file text-2xl text-blue-600"></i>
-          <h1 class="text-2xl font-bold text-gray-800">Documentos Tributarios</h1>
+          <h1 class="text-2xl font-bold text-gray-800">{{ pageTitle() }}</h1>
         </div>
       </ng-template>
       <ng-template pTemplate="right">
@@ -65,7 +65,8 @@
 
   <!-- Diálogo de formulario -->
   <p-dialog
-    [(visible)]="showFormDialog"
+    [visible]="showFormDialog()"
+    (visibleChange)="showFormDialog.set($event)"
     [modal]="true"
     [closable]="true"
     [draggable]="false"
@@ -77,6 +78,7 @@
   >
     <app-document-form
       [document]="editingDocument()"
+      [tipo]="documentType()"
       (documentSaved)="onDocumentSaved($event)"
       (formCancel)="closeFormDialog()"
     >
@@ -85,7 +87,8 @@
 
   <!-- Modal de detalles del documento -->
   <p-dialog
-    [(visible)]="showDetailsDialog"
+    [visible]="showDetailsDialog()"
+    (visibleChange)="showDetailsDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '60rem' }"
     [draggable]="false"
@@ -296,7 +299,8 @@
 
   <!-- Modal de gestión de archivos -->
   <p-dialog
-    [(visible)]="showFilesDialog"
+    [visible]="showFilesDialog()"
+    (visibleChange)="showFilesDialog.set($event)"
     [modal]="true"
     [style]="{ width: '70rem' }"
     [draggable]="false"
@@ -485,7 +489,8 @@
   <!-- Diálogo de escaneo de documentos -->
   <app-document-scanner
     [visible]="showScannerDialog()"
-    (visibleChange)="showScannerDialog.set($event)"
+    [tipo]="documentType()"
+    (visibleChange)="onScannerVisibleChange($event)"
     (scanComplete)="onScanComplete($event)"
     (scanCancel)="closeScannerDialog()"
   ></app-document-scanner>
@@ -495,7 +500,7 @@
   <app-payment-voucher-dialog
     [visible]="showVoucherDialog()"
     [documentId]="scannedInvoiceId()!"
-    (visibleChange)="showVoucherDialog.set($event)"
+    (visibleChange)="onVoucherVisibleChange($event)"
     (voucherUploaded)="onVoucherUploaded($event)"
     (canceled)="closeVoucherDialog()"
   ></app-payment-voucher-dialog>

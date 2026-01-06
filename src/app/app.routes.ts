@@ -188,9 +188,25 @@ export const routes: Routes = [
       },
       {
         path: 'documents',
-        loadComponent: () => import('./pages/documents/documents').then((m) => m.DocumentsPage),
-        canActivate: [MenuPermissionGuard],
-        data: { menuPermission: '/documents' },
+        children: [
+          {
+            path: 'compras',
+            loadComponent: () => import('./pages/documents/documents').then((m) => m.DocumentsPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/documents', tipo: 'compra' },
+          },
+          {
+            path: 'ventas',
+            loadComponent: () => import('./pages/documents/documents').then((m) => m.DocumentsPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/documents', tipo: 'venta' },
+          },
+          {
+            path: '',
+            redirectTo: 'compras',
+            pathMatch: 'full',
+          },
+        ],
       },
       {
         path: 'dashboard',
