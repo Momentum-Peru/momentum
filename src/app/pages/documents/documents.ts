@@ -1,6 +1,14 @@
-import { Component, OnInit, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  signal,
+  inject,
+  computed,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -59,9 +67,20 @@ export class DocumentsPage implements OnInit {
   private readonly menuService = inject(MenuService);
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   // Verificar si el usuario tiene permiso de edición para este módulo
   readonly canEdit = computed(() => this.menuService.canEdit('/documents'));
+
+  // Tipo de documento desde la ruta (compra o venta)
+  readonly documentType = signal<'compra' | 'venta'>('compra');
+  readonly pageTitle = computed(() => {
+    const tipo = this.documentType();
+    return tipo === 'compra'
+      ? 'Documentos Tributarios - Compras'
+      : 'Documentos Tributarios - Ventas';
+  });
 
   // Estado de la página
   documents = signal<Document[]>([]);
@@ -88,6 +107,27 @@ export class DocumentsPage implements OnInit {
   first = signal(0);
 
   ngOnInit(): void {
+    // Detectar el tipo desde la ruta
+    const routeData = this.route.snapshot.data;
+    const tipoFromRoute = routeData['tipo'] as 'compra' | 'venta' | undefined;
+
+    // Si no hay tipo en la ruta, intentar obtenerlo de la URL
+    if (!tipoFromRoute) {
+      const urlSegments = this.router.url.split('/');
+      const documentsIndex = urlSegments.indexOf('documents');
+      if (documentsIndex !== -1 && documentsIndex < urlSegments.length - 1) {
+        const tipoFromUrl = urlSegments[documentsIndex + 1];
+        if (tipoFromUrl === 'compras' || tipoFromUrl === 'ventas') {
+          this.documentType.set(tipoFromUrl === 'compras' ? 'compra' : 'venta');
+        }
+      }
+    } else {
+      this.documentType.set(tipoFromRoute);
+    }
+
+    // Establecer el filtro de tipo en los filtros actuales
+    this.currentFilters.set({ ...this.currentFilters(), tipo: this.documentType() });
+
     this.loadDocuments();
   }
 
@@ -99,6 +139,7 @@ export class DocumentsPage implements OnInit {
 
     const filters: DocumentFilters = {
       ...this.currentFilters(),
+      tipo: this.documentType(), // Asegurar que siempre se filtre por tipo
       page: this.currentPage(),
       limit: this.pageSize(),
     };
@@ -125,7 +166,8 @@ export class DocumentsPage implements OnInit {
    * Manejar filtros aplicados
    */
   onFiltersApplied(filters: DocumentFilters): void {
-    this.currentFilters.set(filters);
+    // Asegurar que el tipo siempre se mantenga según la ruta
+    this.currentFilters.set({ ...filters, tipo: this.documentType() });
     this.currentPage.set(1);
     this.first.set(0);
     this.loadDocuments();
@@ -165,6 +207,14 @@ export class DocumentsPage implements OnInit {
   }
 
   /**
+   * Manejar cambio de visibilidad del diálogo de escaneo
+   */
+  onScannerVisibleChange(event: boolean | Event): void {
+    const visible = typeof event === 'boolean' ? event : false;
+    this.showScannerDialog.set(visible);
+  }
+
+  /**
    * Cerrar diálogo de voucher
    */
   closeVoucherDialog(): void {
@@ -173,9 +223,21 @@ export class DocumentsPage implements OnInit {
   }
 
   /**
+   * Manejar cambio de visibilidad del diálogo de voucher
+   */
+  onVoucherVisibleChange(event: boolean | Event): void {
+    const visible = typeof event === 'boolean' ? event : false;
+    this.showVoucherDialog.set(visible);
+  }
+
+  /**
    * Manejar voucher subido
    */
-  onVoucherUploaded(response: { voucher: PaymentVoucher; document: Document }): void {
+  onVoucherUploaded(event: { voucher: PaymentVoucher; document: Document } | Event): void {
+    if (!event || typeof event !== 'object' || 'voucher' in event === false) {
+      return;
+    }
+    const response = event as { voucher: PaymentVoucher; document: Document };
     this.closeVoucherDialog();
     this.loadDocuments(); // Recargar documentos para mostrar el voucher en los adjuntos
 
@@ -199,7 +261,11 @@ export class DocumentsPage implements OnInit {
   /**
    * Manejar escaneo completado
    */
-  onScanComplete(response: ScanInvoiceResponse): void {
+  onScanComplete(event: ScanInvoiceResponse | Event): void {
+    if (!event || typeof event !== 'object' || 'scannedData' in event === false) {
+      return;
+    }
+    const response = event as ScanInvoiceResponse;
     this.closeScannerDialog();
     this.loadDocuments();
 
@@ -283,14 +349,14 @@ export class DocumentsPage implements OnInit {
     const wasEditing = !!this.editingDocument();
     this.closeFormDialog();
     this.loadDocuments();
-    
+
     // Si se creó un nuevo documento (no edición) y es factura, boleta o recibo por honorarios, mostrar diálogo de voucher
     if (savedDocument && savedDocument._id && !wasEditing) {
       const categoria = savedDocument.categoria?.toLowerCase() || '';
       const isFactura = categoria.includes('factura');
       const isBoleta = categoria.includes('boleta');
       const isReciboHonorarios = categoria.includes('recibo') && categoria.includes('honorario');
-      
+
       if (isFactura || isBoleta || isReciboHonorarios) {
         this.scannedInvoiceId.set(savedDocument._id);
         this.showVoucherDialog.set(true);
@@ -404,12 +470,12 @@ export class DocumentsPage implements OnInit {
    */
   saveVoucherNumeroOperacion(voucherId: string): void {
     const numeroOperacion = this.editingVoucherNumeroOperacion()?.trim() || undefined;
-    
+
     this.documentsApi.updatePaymentVoucher(voucherId, numeroOperacion).subscribe({
       next: (updatedVoucher) => {
         // Actualizar el voucher en la lista
         const vouchers = this.paymentVouchers();
-        const index = vouchers.findIndex(v => v._id === voucherId);
+        const index = vouchers.findIndex((v) => v._id === voucherId);
         if (index !== -1) {
           vouchers[index] = updatedVoucher;
           this.paymentVouchers.set([...vouchers]);
@@ -448,7 +514,7 @@ export class DocumentsPage implements OnInit {
           next: () => {
             // Remover el voucher de la lista
             const vouchers = this.paymentVouchers();
-            this.paymentVouchers.set(vouchers.filter(v => v._id !== voucherId));
+            this.paymentVouchers.set(vouchers.filter((v) => v._id !== voucherId));
             this.messageService.add({
               severity: 'success',
               summary: 'Éxito',
