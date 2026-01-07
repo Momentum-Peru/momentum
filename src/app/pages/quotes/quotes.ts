@@ -114,7 +114,7 @@ export class QuotesPage implements OnInit {
   quoteForm = this.fb.group({
     clientId: ['', Validators.required],
     projectId: ['', Validators.required],
-    requirementId: ['', Validators.required],
+    requirementId: [''],
     state: ['Pendiente' as QuoteState],
     createDate: [new Date(), Validators.required],
     sendDate: [null as Date | null],
@@ -435,7 +435,7 @@ export class QuotesPage implements OnInit {
     const quoteData: Partial<Quote & { requirementId?: string }> = {
       clientId: formValue.clientId!,
       projectId: formValue.projectId!,
-      requirementId: formValue.requirementId!,
+      requirementId: formValue.requirementId || undefined,
       state: formValue.state!,
       createDate: formValue.createDate!.toISOString(),
       sendDate: formValue.sendDate?.toISOString(),
@@ -690,11 +690,11 @@ export class QuotesPage implements OnInit {
 
   onFileError(event: unknown) {
     console.error('Error en selección de archivos:', event);
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Error al seleccionar archivos. Verifique el formato y tamaño.',
-    });
+    // this.messageService.add({
+    //   severity: 'error',
+    //   summary: 'Error',
+    //   detail: 'Error al seleccionar archivos. Verifique el formato y tamaño.',
+    // });
   }
 
   removeSelectedFile(index: number) {
@@ -881,9 +881,9 @@ export class QuotesPage implements OnInit {
     }
 
     // Validar requerimiento
-    if (!form.get('requirementId')?.value) {
+    /* if (!form.get('requirementId')?.value) {
       errors.push('El requerimiento es requerido');
-    }
+    } */
 
     // Validar fecha de creación
     if (!form.get('createDate')?.value) {
