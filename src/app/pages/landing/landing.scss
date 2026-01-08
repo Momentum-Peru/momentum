@@ -1,0 +1,193 @@
+:host {
+    display: block;
+}
+
+// Background Gradients
+.landing-hero-gradient {
+    background: radial-gradient(circle at center, rgba(35, 35, 35, 0.4) 0%, rgba(0, 0, 0, 0) 60%),
+        linear-gradient(to bottom, transparent 80%, #000000 100%);
+}
+
+// Animations
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spinSlow {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes scan {
+
+    0%,
+    100% {
+        top: 0%;
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    50% {
+        top: 100%;
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 0;
+    }
+}
+
+@keyframes bounceSlow {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.animate-scan {
+    animation: scan 3s ease-in-out infinite;
+}
+
+.animate-bounce-slow {
+    animation: bounceSlow 3s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0; // Start hidden
+}
+
+.animate-spin-slow {
+    animation: spinSlow 20s linear infinite;
+}
+
+.delay-100 {
+    animation-delay: 0.1s;
+}
+
+.delay-200 {
+    animation-delay: 0.2s;
+}
+
+.delay-300 {
+    animation-delay: 0.3s;
+}
+
+.delay-500 {
+    animation-delay: 0.5s;
+}
+
+// Custom utilities
+.text-rendering-optimizeLegibility {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.dashed-border {
+    background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='100' ry='100' stroke='%23A855F74D' stroke-width='2' stroke-dasharray='10%2c 14' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+    border: none !important;
+}
+
+// 3D Perspective Utilities
+.perspective-1000 {
+    perspective: 1000px;
+}
+
+.rotate-y-2 {
+    transform: rotateY(2deg);
+}
+
+.rotate-y-0 {
+    transform: rotateY(0deg);
+}
+
+.preserve-3d {
+    transform-style: preserve-3d;
+}
+
+.ease-out-expo {
+    transition-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+// Accordion Customization
+::ng-deep .faq-accordion-wrapper {
+    .p-accordion {
+        background: transparent !important;
+    }
+
+    .p-accordion-panel {
+        background: transparent !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        margin-bottom: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .p-accordion-header {
+        background: transparent !important;
+        border: none !important;
+        color: #ffffff !important;
+
+        // Target the button or internal container
+        .p-accordion-header-action,
+        button {
+            background: transparent !important;
+            border: none !important;
+            color: #ffffff !important;
+            font-family: 'Playfair Display', serif !important;
+            font-size: 1.25rem !important;
+            padding: 1.5rem 0 !important;
+            transition: all 0.3s ease;
+            box-shadow: none !important;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            cursor: pointer;
+
+            &:hover {
+                color: #a0a0a0 !important;
+            }
+        }
+
+        .p-icon {
+            color: #ffffff !important;
+            order: 1;
+            margin-left: auto;
+        }
+    }
+
+    .p-accordion-content {
+        background: transparent !important;
+        border: none !important;
+        color: #9ca3af !important;
+        padding: 0 0 1.5rem 0 !important;
+    }
+
+    // Remove default active backgrounds
+    .p-accordion-panel-active {
+        background: transparent !important;
+    }
+}
