@@ -30,6 +30,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/lead-form/lead-form').then((m) => m.LeadFormComponent),
   },
   {
+    path: 'landing',
+    loadComponent: () => import('./pages/landing/landing').then((m) => m.LandingPage),
+  },
+  {
     path: 'select-company',
     loadComponent: () =>
       import('./pages/select-company/select-company').then((m) => m.SelectCompanyPage),

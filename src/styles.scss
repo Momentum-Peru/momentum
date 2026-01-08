@@ -142,6 +142,7 @@ nav.bg-black .p-panelmenu .p-panelmenu-header-link:hover,
 .bg-black .p-panelmenu .p-panelmenu-header-link:hover {
   background-color: #ffffff !important;
   color: #000000 !important;
+
   .p-panelmenu-header-text,
   .p-panelmenu-header-icon,
   span,
@@ -173,7 +174,7 @@ nav[class*='bg-black'] .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem
   // ÍCONOS - Selectores ultra específicos
   .p-menuitem-icon,
   .p-menuitem-icon.p-icon,
-  > .p-menuitem-icon,
+  >.p-menuitem-icon,
   i,
   i.pi,
   i[class*='pi-'],
@@ -191,7 +192,7 @@ nav[class*='bg-black'] .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem
   i[class*='pi-calendar'],
   i[class*='pi-users'],
   i[class*='pi-shield'],
-  > i {
+  >i {
     color: #000000 !important;
   }
 
@@ -200,8 +201,8 @@ nav[class*='bg-black'] .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem
   .p-menuitem-text.p-menuitem-text,
   span,
   span.p-menuitem-text,
-  > .p-menuitem-text,
-  > span {
+  >.p-menuitem-text,
+  >span {
     color: #000000 !important;
   }
 
@@ -214,25 +215,14 @@ nav[class*='bg-black'] .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem
 }
 
 // Item activo en submenús (solo cuando NO hay hover)
-nav.bg-black
-  .p-panelmenu
-  .p-panelmenu-content
-  .p-menuitem
-  .p-menuitem-link.p-menuitem-link-active:not(:hover),
-.bg-black
-  .p-panelmenu
-  .p-panelmenu-content
-  .p-menuitem
-  .p-menuitem-link[class*='active']:not(:hover),
-nav.bg-black
-  .p-panelmenu
-  .p-panelmenu-content
-  .p-menuitem
-  .p-menuitem-link[class*='router-link-active']:not(:hover) {
+nav.bg-black .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link.p-menuitem-link-active:not(:hover),
+.bg-black .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link[class*='active']:not(:hover),
+nav.bg-black .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link[class*='router-link-active']:not(:hover) {
   background-color: rgba(255, 255, 255, 0.2) !important;
   color: #ffffff !important;
   border-left: 4px solid #ffffff !important;
   padding-left: calc(1rem - 4px) !important;
+
   .p-menuitem-icon,
   .p-menuitem-text,
   i,
