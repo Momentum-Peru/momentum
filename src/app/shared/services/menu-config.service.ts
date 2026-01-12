@@ -21,6 +21,7 @@ export class MenuConfigService {
   // Configuración centralizada de todas las rutas del sistema
   private readonly routesConfig: RouteConfig[] = [
     { path: '/dashboard', label: 'Dashboard', icon: 'pi pi-chart-line' },
+    { path: '/dashboard-gerencia', label: 'Dashboard de Gerencia', icon: 'pi pi-chart-bar' },
     { path: '/projects/dashboard', label: 'Dashboard de Proyectos', icon: 'pi pi-chart-line' },
     { path: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
     { path: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
@@ -80,7 +81,18 @@ export class MenuConfigService {
       {
         label: 'DASHBOARD',
         icon: 'pi pi-chart-line',
-        routerLink: '/dashboard',
+        items: [
+          {
+            label: 'Dashboard',
+            icon: 'pi pi-chart-line',
+            routerLink: '/dashboard',
+          },
+          {
+            label: 'Dashboard de Gerencia',
+            icon: 'pi pi-chart-bar',
+            routerLink: '/dashboard-gerencia',
+          },
+        ],
       },
       {
         label: 'VENTAS',
