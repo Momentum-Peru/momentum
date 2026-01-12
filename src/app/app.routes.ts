@@ -218,6 +218,15 @@ export const routes: Routes = [
         data: { menuPermission: '/dashboard' },
       },
       {
+        path: 'dashboard-gerencia',
+        loadComponent: () =>
+          import('./pages/dashboard-gerencia/dashboard-gerencia').then(
+            (m) => m.DashboardGerenciaPage
+          ),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/dashboard-gerencia' },
+      },
+      {
         path: 'menu-permissions',
         loadComponent: () =>
           import('./pages/menu-permissions/menu-permissions').then((m) => m.MenuPermissionsPage),
