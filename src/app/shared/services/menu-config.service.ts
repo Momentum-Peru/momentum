@@ -21,6 +21,7 @@ export class MenuConfigService {
   // Configuración centralizada de todas las rutas del sistema
   private readonly routesConfig: RouteConfig[] = [
     { path: '/dashboard', label: 'Dashboard', icon: 'pi pi-chart-line' },
+    { path: '/dashboard-gerencia', label: 'Dashboard de Gerencia', icon: 'pi pi-chart-bar' },
     { path: '/projects/dashboard', label: 'Dashboard de Proyectos', icon: 'pi pi-chart-line' },
     { path: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
     { path: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
@@ -46,7 +47,6 @@ export class MenuConfigService {
     { path: '/leads', label: 'Leads', icon: 'pi pi-user-plus' },
     { path: '/follow-ups', label: 'Seguimientos', icon: 'pi pi-calendar-plus' },
     { path: '/companies-crm', label: 'Empresas Momentum', icon: 'pi pi-building' },
-    { path: '/fi', label: 'Futuros Imposibles', icon: 'pi pi-bolt' },
     { path: '/logs', label: 'Logs del Sistema', icon: 'pi pi-list' },
     { path: '/payroll', label: 'Planillas y Pagos', icon: 'pi pi-wallet' },
     { path: '/payroll-calculation', label: 'Cálculo de Planilla', icon: 'pi pi-calculator' },
@@ -80,7 +80,18 @@ export class MenuConfigService {
       {
         label: 'DASHBOARD',
         icon: 'pi pi-chart-line',
-        routerLink: '/dashboard',
+        items: [
+          {
+            label: 'Dashboard',
+            icon: 'pi pi-chart-line',
+            routerLink: '/dashboard',
+          },
+          {
+            label: 'Dashboard de Gerencia',
+            icon: 'pi pi-chart-bar',
+            routerLink: '/dashboard-gerencia',
+          },
+        ],
       },
       {
         label: 'VENTAS',
@@ -128,11 +139,6 @@ export class MenuConfigService {
             routerLink: '/engineering',
           },
         ],
-      },
-      {
-        label: 'FUTUROS IMPOSIBLES',
-        icon: 'pi pi-bolt',
-        routerLink: '/fi',
       },
       {
         label: 'ADMINISTRACIÓN',
