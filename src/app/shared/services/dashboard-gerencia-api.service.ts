@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core'
-import { HttpClient } from '@angular/common/http'
+import { HttpClient, HttpParams } from '@angular/common/http'
 import { Observable } from 'rxjs'
 import { environment } from '../../../environments/environment'
 import { GerenciaDashboardResponse, GerenciaDashboardQueryParams } from '../interfaces/dashboard-gerencia.interface'
@@ -35,6 +35,31 @@ export class DashboardGerenciaApiService {
 
     return this.http.get<GerenciaDashboardResponse>(`${this.baseUrl}/dashboard-gerencia`, {
       params: queryParams,
+    })
+  }
+
+  /**
+   * Descarga el PDF del dashboard de gerencia
+   * @param params Parámetros de consulta (startDate, endDate, tenantId opcional)
+   * @returns Observable con el blob del PDF
+   */
+  downloadPdf(params: GerenciaDashboardQueryParams): Observable<Blob> {
+    let httpParams = new HttpParams()
+      .set('startDate', params.startDate)
+      .set('endDate', params.endDate)
+
+    const tenantId = params['tenantId']
+    const companyId = params['companyId']
+
+    if (tenantId) {
+      httpParams = httpParams.set('tenantId', tenantId)
+    } else if (companyId) {
+      httpParams = httpParams.set('companyId', companyId)
+    }
+
+    return this.http.get(`${this.baseUrl}/dashboard-gerencia/pdf`, {
+      params: httpParams,
+      responseType: 'blob',
     })
   }
 }
