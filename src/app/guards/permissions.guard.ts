@@ -4,7 +4,9 @@ import { PermissionsService } from '../core/services/permissions.service';
 import { firstValueFrom } from 'rxjs';
 
 /**
- * Guard que verifica que el usuario tenga permisos de ubicación y cámara
+ * Guard que verifica que el usuario tenga los permisos necesarios
+ * - En desktop: solo requiere permiso de ubicación
+ * - En móvil: requiere permisos de ubicación y cámara
  * Este guard permite el acceso pero el componente App se encargará de mostrar
  * el modal de permisos cuando falten
  */
@@ -14,7 +16,8 @@ export const permissionsGuard: CanActivateFn = async () => {
   try {
     // Verificar permisos pero no bloquear el acceso
     // El componente App se encargará de mostrar el modal si faltan permisos
-    const status = await firstValueFrom(permissionsService.checkPermissions());
+    // La verificación puede tener efectos secundarios, así que la ejecutamos aunque no usemos el resultado
+    void await firstValueFrom(permissionsService.checkPermissions());
     
     // Siempre permitir acceso - el componente App manejará la UI
     return true;
