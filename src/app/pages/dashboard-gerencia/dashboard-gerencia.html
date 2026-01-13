@@ -106,14 +106,14 @@
 
       <div class="mb-4">
         <p class="text-sm text-gray-600 dark:text-gray-400">
-          Total de días registrados: {{ marcacionesAgrupadas().length }}
+          Total de días registrados: {{ groupedTimeTrackings().length }}
         </p>
       </div>
 
       <!-- Vista Desktop: Tabla -->
       <div class="hidden md:block overflow-x-auto">
         <p-table
-        [value]="marcacionesAgrupadas()"
+        [value]="groupedTimeTrackings()"
         [paginator]="true"
         [rows]="10"
         [rowsPerPageOptions]="[10, 25, 50]"
@@ -142,10 +142,10 @@
             <td>
               <div class="flex flex-col">
                 <span class="font-semibold text-gray-900 dark:text-white text-base">
-                  {{ formatDate(dayData.fecha) }}
+                  {{ formatDate(dayData.date) }}
                 </span>
                 <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {{ getDayOfWeek(dayData.fecha) }}
+                  {{ getDayOfWeek(dayData.date) }}
                 </span>
               </div>
             </td>
@@ -163,7 +163,7 @@
               </div>
             </td>
             <td class="text-center">
-              @if (dayData.ingreso) {
+              @if (dayData.entry) {
               <div class="flex flex-col items-center gap-2">
                 <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium">
                   Entrada
@@ -173,7 +173,7 @@
                 >
                   <i class="pi pi-clock text-green-600 dark:text-green-400 text-xs"></i>
                   <span class="text-sm font-medium text-green-700 dark:text-green-300">
-                    {{ dayData.ingreso.hora }}
+                    {{ dayData.entry.time }}
                   </span>
                 </div>
               </div>
@@ -185,7 +185,7 @@
               }
             </td>
             <td class="text-center">
-              @if (dayData.salida) {
+              @if (dayData.exit) {
               <div class="flex flex-col items-center gap-2">
                 <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
                   Salida
@@ -195,7 +195,7 @@
                 >
                   <i class="pi pi-clock text-blue-600 dark:text-blue-400 text-xs"></i>
                   <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
-                    {{ dayData.salida.hora }}
+                    {{ dayData.exit.time }}
                   </span>
                 </div>
               </div>
@@ -210,9 +210,9 @@
               @if (hasCompleteAttendance(dayData)) {
               <div class="flex flex-col items-center">
                 <span class="text-lg font-bold text-gray-900 dark:text-white">
-                  {{ formatWorkedHours(calculateWorkedHours(dayData.ingreso, dayData.salida)) }}
+                  {{ formatWorkedHours(calculateWorkedHours(dayData.entry, dayData.exit)) }}
                 </span>
-                @if (calculateWorkedHours(dayData.ingreso, dayData.salida) >= 8) {
+                @if (calculateWorkedHours(dayData.entry, dayData.exit) >= 8) {
                 <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium mt-1">
                   Completo
                 </span>
@@ -234,7 +234,7 @@
               >
                 Completo
               </span>
-              } @else if (dayData.ingreso || dayData.salida) {
+              } @else if (dayData.entry || dayData.exit) {
               <span
                 class="px-2 py-1 rounded-full text-xs font-medium"
                 [ngClass]="getAttendanceBadgeClass('Incompleto')"
@@ -265,7 +265,7 @@
 
       <!-- Vista Mobile: Cards -->
       <div class="md:hidden space-y-3">
-        @for (dayData of marcacionesAgrupadas(); track dayData.userId + dayData.fecha) {
+        @for (dayData of groupedTimeTrackings(); track dayData.userId + dayData.date) {
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
           <div class="p-4 space-y-3">
             <!-- Header -->
@@ -282,30 +282,30 @@
                 </div>
                 <div class="mt-2">
                   <span class="font-semibold text-gray-900 dark:text-white text-base">
-                    {{ formatDate(dayData.fecha) }}
+                    {{ formatDate(dayData.date) }}
                   </span>
                   <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                    {{ getDayOfWeek(dayData.fecha) }}
+                    {{ getDayOfWeek(dayData.date) }}
                   </span>
                 </div>
               </div>
               <span
                 class="px-2 py-1 rounded-full text-xs font-medium shrink-0"
-                [ngClass]="getAttendanceBadgeClass(hasCompleteAttendance(dayData) ? 'Completo' : (dayData.ingreso || dayData.salida) ? 'Incompleto' : 'Sin registro')"
+                [ngClass]="getAttendanceBadgeClass(hasCompleteAttendance(dayData) ? 'Completo' : (dayData.entry || dayData.exit) ? 'Incompleto' : 'Sin registro')"
               >
-                {{ hasCompleteAttendance(dayData) ? 'Completo' : (dayData.ingreso || dayData.salida) ? 'Incompleto' : 'Sin registro' }}
+                {{ hasCompleteAttendance(dayData) ? 'Completo' : (dayData.entry || dayData.exit) ? 'Incompleto' : 'Sin registro' }}
               </span>
             </div>
 
             <!-- Entrada -->
             <div class="flex items-start gap-2">
               <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[80px]">Entrada:</span>
-              @if (dayData.ingreso) {
+              @if (dayData.entry) {
               <div class="flex-1">
                 <div class="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-md">
                   <i class="pi pi-clock text-green-600 dark:text-green-400 text-xs"></i>
                   <span class="text-sm font-medium text-green-700 dark:text-green-300">
-                    {{ dayData.ingreso.hora }}
+                    {{ dayData.entry.time }}
                   </span>
                 </div>
               </div>
@@ -317,12 +317,12 @@
             <!-- Salida -->
             <div class="flex items-start gap-2">
               <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[80px]">Salida:</span>
-              @if (dayData.salida) {
+              @if (dayData.exit) {
               <div class="flex-1">
                 <div class="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-md">
                   <i class="pi pi-clock text-blue-600 dark:text-blue-400 text-xs"></i>
                   <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
-                    {{ dayData.salida.hora }}
+                    {{ dayData.exit.time }}
                   </span>
                 </div>
               </div>
@@ -337,9 +337,9 @@
               <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[80px]">Horas:</span>
               <div class="flex-1">
                 <span class="text-lg font-bold text-gray-900 dark:text-white">
-                  {{ formatWorkedHours(calculateWorkedHours(dayData.ingreso, dayData.salida)) }}
+                  {{ formatWorkedHours(calculateWorkedHours(dayData.entry, dayData.exit)) }}
                 </span>
-                @if (calculateWorkedHours(dayData.ingreso, dayData.salida) >= 8) {
+                @if (calculateWorkedHours(dayData.entry, dayData.exit) >= 8) {
                 <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium ml-2">
                   Completo
                 </span>
@@ -354,7 +354,7 @@
           </div>
         </div>
         }
-        @if (marcacionesAgrupadas().length === 0) {
+        @if (groupedTimeTrackings().length === 0) {
         <div class="text-center py-8 text-gray-500">
           <i class="pi pi-calendar-times text-4xl text-gray-400 mb-2"></i>
           <p class="text-gray-500 dark:text-gray-400">No hay marcaciones para el rango de fechas seleccionado</p>
@@ -374,14 +374,14 @@
 
       <div class="mb-4">
         <p class="text-sm text-gray-600 dark:text-gray-400">
-          Total de reportes: {{ reportesDiarios().length }}
+          Total de reportes: {{ dailyReports().length }}
         </p>
       </div>
 
       <!-- Vista Desktop: Tabla -->
       <div class="hidden md:block overflow-x-auto">
         <p-table
-          [value]="reportesDiarios()"
+          [value]="dailyReports()"
         [paginator]="true"
         [rows]="10"
         [rowsPerPageOptions]="[10, 25, 50]"
@@ -411,23 +411,23 @@
             </th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-reporte>
+        <ng-template pTemplate="body" let-report>
           <tr>
-            <td>{{ reporte.fecha }}</td>
-            <td>{{ reporte.hora }}</td>
+            <td>{{ report.fecha }}</td>
+            <td>{{ report.hora }}</td>
             <td>
               <div class="flex flex-col">
-                <span class="font-medium">{{ reporte.userName }}</span>
-                <span class="text-xs text-gray-500">{{ reporte.userEmail }}</span>
+                <span class="font-medium">{{ report.userName }}</span>
+                <span class="text-xs text-gray-500">{{ report.userEmail }}</span>
               </div>
             </td>
             <td>
-              <span class="line-clamp-2 max-w-xs">{{ reporte.descripcion }}</span>
+              <span class="line-clamp-2 max-w-xs">{{ report.descripcion }}</span>
             </td>
-            <td>{{ reporte.projectName || '-' }}</td>
+            <td>{{ report.projectName || '-' }}</td>
             <td>
               <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                {{ reporte.cantidadReportes }}
+                {{ report.cantidadReportes }}
               </span>
             </td>
           </tr>
@@ -444,7 +444,7 @@
 
       <!-- Vista Mobile: Cards -->
       <div class="md:hidden space-y-3">
-        @for (reporte of reportesDiarios(); track reporte.userId + reporte.fecha) {
+        @for (report of dailyReports(); track report.userId + report.fecha) {
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
           <div class="p-4 space-y-3">
             <!-- Header -->
@@ -452,40 +452,40 @@
               <div class="flex-1">
                 <div class="flex items-center gap-3 mb-2">
                   <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold shrink-0">
-                    {{ reporte.userName.charAt(0).toUpperCase() }}
+                    {{ report.userName.charAt(0).toUpperCase() }}
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-semibold text-gray-900 dark:text-white truncate">{{ reporte.userName }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ reporte.userEmail }}</p>
+                    <p class="font-semibold text-gray-900 dark:text-white truncate">{{ report.userName }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ report.userEmail }}</p>
                   </div>
                 </div>
                 <div class="mt-2">
-                  <span class="font-medium text-gray-900 dark:text-white">{{ reporte.fecha }}</span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">{{ reporte.hora }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ report.fecha }}</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">{{ report.hora }}</span>
                 </div>
               </div>
               <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium shrink-0">
-                {{ reporte.cantidadReportes }}
+                {{ report.cantidadReportes }}
               </span>
             </div>
 
             <!-- Descripción -->
             <div class="flex items-start gap-2">
               <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[100px]">Descripción:</span>
-              <p class="text-sm text-gray-700 dark:text-gray-300 flex-1">{{ reporte.descripcion }}</p>
+              <p class="text-sm text-gray-700 dark:text-gray-300 flex-1">{{ report.descripcion }}</p>
             </div>
 
             <!-- Proyecto -->
-            @if (reporte.projectName) {
+            @if (report.projectName) {
             <div class="flex items-start gap-2">
               <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[100px]">Proyecto:</span>
-              <p class="text-sm text-gray-700 dark:text-gray-300 flex-1">{{ reporte.projectName }}</p>
+              <p class="text-sm text-gray-700 dark:text-gray-300 flex-1">{{ report.projectName }}</p>
             </div>
             }
           </div>
         </div>
         }
-        @if (reportesDiarios().length === 0) {
+        @if (dailyReports().length === 0) {
         <div class="text-center py-8 text-gray-500">
           <i class="pi pi-file-edit text-4xl text-gray-400 mb-2"></i>
           <p class="text-gray-500 dark:text-gray-400">No hay reportes para el rango de fechas seleccionado</p>
@@ -504,20 +504,20 @@
       </ng-template>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        @for (factura of facturasIngresadas(); track factura.tipo) {
+        @for (invoice of invoices(); track invoice.tipo) {
         <p-card>
           <ng-template pTemplate="header">
             <div class="p-4 bg-gradient-to-r from-purple-500 to-purple-600">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <i class="pi pi-file text-white text-2xl"></i>
-                  <span class="text-white text-lg font-semibold uppercase">{{ factura.tipo }}</span>
+                  <span class="text-white text-lg font-semibold uppercase">{{ invoice.tipo }}</span>
                 </div>
                 <span
                   class="px-3 py-1 rounded-full text-sm font-medium"
-                  [ngClass]="getFacturaBadgeClass(factura.tipo)"
+                  [ngClass]="getInvoiceBadgeClass(invoice.tipo)"
                 >
-                  {{ factura.cantidad }} facturas
+                  {{ invoice.cantidad }} facturas
                 </span>
               </div>
             </div>
@@ -526,11 +526,11 @@
             <div class="space-y-3">
               <div class="flex justify-between items-center">
                 <span class="text-gray-600 dark:text-gray-400">Cantidad:</span>
-                <span class="font-semibold text-lg">{{ factura.cantidad }}</span>
+                <span class="font-semibold text-lg">{{ invoice.cantidad }}</span>
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-gray-600 dark:text-gray-400">Monto Total:</span>
-                <span class="font-bold text-xl text-green-600">{{ formatCurrency(factura.monto) }}</span>
+                <span class="font-bold text-xl text-green-600">{{ formatCurrency(invoice.monto) }}</span>
               </div>
             </div>
           </div>
@@ -552,7 +552,7 @@
       <div class="mb-6">
         <h3 class="text-base md:text-lg font-semibold text-gray-800 dark:text-white mb-4">Resumen por Estado</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          @for (ticket of ticketsPorEstado(); track ticket.estado) {
+          @for (ticket of ticketsByStatus(); track ticket.estado) {
           <p-card>
             <div class="p-6">
               <div class="flex items-center justify-between mb-4">
@@ -742,33 +742,33 @@
       </ng-template>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        @for (venta of ventas(); track venta.tipo) {
+        @for (sale of sales(); track sale.tipo) {
         <p-card>
           <div class="p-6 text-center">
             <div class="mb-4">
               <i
                 class="pi text-4xl mb-2"
                 [ngClass]="{
-                  'pi-list': venta.tipo === 'requerimiento',
-                  'pi-file': venta.tipo === 'cotizacion',
-                  'pi-book': venta.tipo === 'tdr'
+                  'pi-list': sale.tipo === 'requerimiento',
+                  'pi-file': sale.tipo === 'cotizacion',
+                  'pi-book': sale.tipo === 'tdr'
                 }"
                 [ngClass]="{
-                  'text-indigo-600': venta.tipo === 'requerimiento',
-                  'text-cyan-600': venta.tipo === 'cotizacion',
-                  'text-pink-600': venta.tipo === 'tdr'
+                  'text-indigo-600': sale.tipo === 'requerimiento',
+                  'text-cyan-600': sale.tipo === 'cotizacion',
+                  'text-pink-600': sale.tipo === 'tdr'
                 }"
               ></i>
             </div>
-            <h3 class="text-lg font-semibold mb-2 capitalize">{{ venta.tipo }}</h3>
+            <h3 class="text-lg font-semibold mb-2 capitalize">{{ sale.tipo }}</h3>
             <div class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              {{ venta.cantidad }}
+              {{ sale.cantidad }}
             </div>
             <span
               class="px-3 py-1 rounded-full text-xs font-medium inline-block"
-              [ngClass]="getVentaBadgeClass(venta.tipo)"
+              [ngClass]="getSaleBadgeClass(sale.tipo)"
             >
-              {{ venta.cantidad }} {{ venta.tipo === 'requerimiento' ? 'requerimientos' : venta.tipo === 'cotizacion' ? 'cotizaciones' : 'TDRs' }}
+              {{ sale.cantidad }} {{ sale.tipo === 'requerimiento' ? 'requerimientos' : sale.tipo === 'cotizacion' ? 'cotizaciones' : 'TDRs' }}
             </span>
           </div>
         </p-card>
