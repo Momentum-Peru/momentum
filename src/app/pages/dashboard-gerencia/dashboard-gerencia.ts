@@ -18,7 +18,7 @@ import { CardModule } from 'primeng/card'
 import { MessageService } from 'primeng/api'
 import { FormsModule } from '@angular/forms'
 import { DashboardGerenciaApiService } from '../../shared/services/dashboard-gerencia-api.service'
-import { GerenciaDashboardResponse } from '../../shared/interfaces/dashboard-gerencia.interface'
+import { GerenciaDashboardResponse, MarcacionDiaria } from '../../shared/interfaces/dashboard-gerencia.interface'
 import { AuthService } from '../login/services/auth.service'
 
 /**
@@ -71,70 +71,82 @@ export class DashboardGerenciaPage implements OnInit {
   public readonly isGerencia = computed(() => this.authService.isGerencia())
 
   // Computed para datos derivados
-  public readonly marcacionesDiarias = computed(() => this.dashboardData()?.marcacionesDiarias ?? [])
-  public readonly reportesDiarios = computed(() => this.dashboardData()?.reportesDiarios ?? [])
-  public readonly facturasIngresadas = computed(() => this.dashboardData()?.facturasIngresadas ?? [])
-  public readonly ticketsPorEstado = computed(() => this.dashboardData()?.ticketsPorEstado ?? [])
+  public readonly dailyTimeTrackings = computed(() => this.dashboardData()?.marcacionesDiarias ?? [])
+  public readonly dailyReports = computed(() => this.dashboardData()?.reportesDiarios ?? [])
+  public readonly invoices = computed(() => this.dashboardData()?.facturasIngresadas ?? [])
+  public readonly ticketsByStatus = computed(() => this.dashboardData()?.ticketsPorEstado ?? [])
   public readonly tickets = computed(() => this.dashboardData()?.tickets ?? [])
-  public readonly ventas = computed(() => this.dashboardData()?.ventas ?? [])
+  public readonly sales = computed(() => this.dashboardData()?.ventas ?? [])
 
   // Agrupar marcaciones por usuario y día (similar a payroll-calculation)
-  public readonly marcacionesAgrupadas = computed(() => {
-    const marcaciones = this.marcacionesDiarias()
+  public readonly groupedTimeTrackings = computed(() => {
+    const timeTrackings = this.dailyTimeTrackings()
     const grouped = new Map<string, {
       userId: string
       userName: string
       userEmail: string
-      fecha: string
-      ingreso?: { hora: string; date: string }
-      salida?: { hora: string; date: string }
+      date: string
+      entry?: { time: string; date: string }
+      exit?: { time: string; date: string }
     }>()
 
-    marcaciones.forEach((marcacion) => {
-      const key = `${marcacion.userId}_${marcacion.fecha}`
+    timeTrackings.forEach((timeTracking) => {
+      const key = `${timeTracking.userId}_${timeTracking.fecha}`
       if (!grouped.has(key)) {
         grouped.set(key, {
-          userId: marcacion.userId,
-          userName: marcacion.userName,
-          userEmail: marcacion.userEmail,
-          fecha: marcacion.fecha,
+          userId: timeTracking.userId,
+          userName: timeTracking.userName,
+          userEmail: timeTracking.userEmail,
+          date: timeTracking.fecha,
         })
       }
 
       const dayData = grouped.get(key)!
-      if (marcacion.tipo === 'INGRESO') {
+      // El campo puede venir como 'tipo' o 'type' desde el backend
+      const timeTrackingWithType = timeTracking as MarcacionDiaria & { type?: string }
+      const trackingType: string = timeTrackingWithType.tipo || timeTrackingWithType.type || ''
+      
+      // Debug: Log si no hay tipo
+      if (!trackingType) {
+        console.warn('Time tracking without type:', timeTracking)
+      }
+      
+      // Normalizar el tipo a mayúsculas para comparación
+      const normalizedType = trackingType.toUpperCase()
+      
+      if (normalizedType === 'INGRESO' || normalizedType === 'ENTRADA') {
         // Formatear hora para mostrar solo HH:mm
-        const horaFormateada = marcacion.hora.substring(0, 5)
-        dayData.ingreso = {
-          hora: horaFormateada,
-          date: `${marcacion.fecha}T${marcacion.hora}`,
+        const formattedTime = timeTracking.hora ? timeTracking.hora.substring(0, 5) : '00:00'
+        dayData.entry = {
+          time: formattedTime,
+          date: `${timeTracking.fecha}T${timeTracking.hora || '00:00:00'}`,
         }
-      } else if (marcacion.tipo === 'SALIDA') {
+      } else if (normalizedType === 'SALIDA' || normalizedType === 'EXIT') {
         // Formatear hora para mostrar solo HH:mm
-        const horaFormateada = marcacion.hora.substring(0, 5)
-        dayData.salida = {
-          hora: horaFormateada,
-          date: `${marcacion.fecha}T${marcacion.hora}`,
+        const formattedTime = timeTracking.hora ? timeTracking.hora.substring(0, 5) : '00:00'
+        dayData.exit = {
+          time: formattedTime,
+          date: `${timeTracking.fecha}T${timeTracking.hora || '00:00:00'}`,
         }
       }
     })
 
     return Array.from(grouped.values()).sort((a, b) => {
-      const dateCompare = b.fecha.localeCompare(a.fecha)
+      const dateCompare = b.date.localeCompare(a.date)
       if (dateCompare !== 0) return dateCompare
       return a.userName.localeCompare(b.userName)
     })
   })
 
-  // Columnas para tablas
-  public readonly marcacionesColumns = [
+  // Columnas para tablas (mantenidas para compatibilidad con el template)
+  public readonly timeTrackingColumns = [
     { field: 'fecha', header: 'Fecha', sortable: true },
     { field: 'hora', header: 'Hora', sortable: true },
     { field: 'userName', header: 'Usuario', sortable: true },
     { field: 'tipo', header: 'Tipo', sortable: true },
   ]
 
-  public readonly reportesColumns = [
+  public readonly reportColumns = [
     { field: 'fecha', header: 'Fecha', sortable: true },
     { field: 'hora', header: 'Hora', sortable: true },
     { field: 'userName', header: 'Usuario', sortable: true },
@@ -224,10 +236,10 @@ export class DashboardGerenciaPage implements OnInit {
   }
 
   /**
-   * Obtiene el badge class según el tipo de marcación
+   * Gets badge class based on time tracking type
    */
-  getMarcacionBadgeClass(tipo: string): string {
-    switch (tipo) {
+  getTimeTrackingBadgeClass(type: string): string {
+    switch (type) {
       case 'INGRESO':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
       case 'SALIDA':
@@ -238,10 +250,10 @@ export class DashboardGerenciaPage implements OnInit {
   }
 
   /**
-   * Obtiene el badge class según el estado del ticket
+   * Gets badge class based on ticket status
    */
-  getTicketBadgeClass(estado: string): string {
-    switch (estado) {
+  getTicketBadgeClass(status: string): string {
+    switch (status) {
       case 'abierto':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
       case 'cerrado':
@@ -252,10 +264,10 @@ export class DashboardGerenciaPage implements OnInit {
   }
 
   /**
-   * Obtiene el badge class según el tipo de factura
+   * Gets badge class based on invoice type
    */
-  getFacturaBadgeClass(tipo: string): string {
-    switch (tipo) {
+  getInvoiceBadgeClass(type: string): string {
+    switch (type) {
       case 'compra':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
       case 'venta':
@@ -266,10 +278,10 @@ export class DashboardGerenciaPage implements OnInit {
   }
 
   /**
-   * Obtiene el badge class según el tipo de venta
+   * Gets badge class based on sale type
    */
-  getVentaBadgeClass(tipo: string): string {
-    switch (tipo) {
+  getSaleBadgeClass(type: string): string {
+    switch (type) {
       case 'requerimiento':
         return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200'
       case 'cotizacion':
@@ -292,11 +304,11 @@ export class DashboardGerenciaPage implements OnInit {
   }
 
   /**
-   * Formatea fecha en formato legible
+   * Formats date in readable format
    */
-  formatDate(fecha: string): string {
+  formatDate(dateString: string): string {
     try {
-      const [year, month, day] = fecha.split('-').map(Number)
+      const [year, month, day] = dateString.split('-').map(Number)
       const date = new Date(year, month - 1, day)
       return date.toLocaleDateString('es-PE', {
         year: 'numeric',
@@ -304,16 +316,16 @@ export class DashboardGerenciaPage implements OnInit {
         day: '2-digit',
       })
     } catch {
-      return fecha
+      return dateString
     }
   }
 
   /**
-   * Obtiene el día de la semana
+   * Gets the day of the week
    */
-  getDayOfWeek(fecha: string): string {
+  getDayOfWeek(dateString: string): string {
     try {
-      const [year, month, day] = fecha.split('-').map(Number)
+      const [year, month, day] = dateString.split('-').map(Number)
       const date = new Date(year, month - 1, day)
       return date.toLocaleDateString('es-PE', { weekday: 'long' })
     } catch {
@@ -322,14 +334,14 @@ export class DashboardGerenciaPage implements OnInit {
   }
 
   /**
-   * Calcula horas trabajadas entre entrada y salida
+   * Calculates worked hours between entry and exit
    */
-  calculateWorkedHours(ingreso?: { hora: string; date: string }, salida?: { hora: string; date: string }): number {
-    if (!ingreso || !salida) return 0
+  calculateWorkedHours(entry?: { time: string; date: string }, exit?: { time: string; date: string }): number {
+    if (!entry || !exit) return 0
 
     try {
-      const entryTime = new Date(ingreso.date)
-      const exitTime = new Date(salida.date)
+      const entryTime = new Date(entry.date)
+      const exitTime = new Date(exit.date)
 
       if (exitTime.getTime() <= entryTime.getTime()) return 0
 
@@ -355,32 +367,32 @@ export class DashboardGerenciaPage implements OnInit {
   }
 
   /**
-   * Verifica si tiene asistencia completa
+   * Checks if has complete attendance
    */
   hasCompleteAttendance(dayData: {
-    ingreso?: { hora: string; date: string }
-    salida?: { hora: string; date: string }
+    entry?: { time: string; date: string }
+    exit?: { time: string; date: string }
   }): boolean {
-    return !!(dayData.ingreso && dayData.salida)
+    return !!(dayData.entry && dayData.exit)
   }
 
   /**
-   * Obtiene el estado de asistencia
+   * Gets attendance status
    */
   getAttendanceStatus(dayData: {
-    ingreso?: { hora: string; date: string }
-    salida?: { hora: string; date: string }
+    entry?: { time: string; date: string }
+    exit?: { time: string; date: string }
   }): string {
-    if (dayData.ingreso && dayData.salida) return 'Completo'
-    if (dayData.ingreso || dayData.salida) return 'Incompleto'
+    if (dayData.entry && dayData.exit) return 'Completo'
+    if (dayData.entry || dayData.exit) return 'Incompleto'
     return 'Sin registro'
   }
 
   /**
-   * Obtiene el badge class según el estado de asistencia
+   * Gets badge class based on attendance status
    */
-  getAttendanceBadgeClass(estado: string): string {
-    switch (estado) {
+  getAttendanceBadgeClass(status: string): string {
+    switch (status) {
       case 'Completo':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
       case 'Incompleto':
