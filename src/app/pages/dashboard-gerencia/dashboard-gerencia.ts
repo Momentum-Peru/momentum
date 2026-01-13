@@ -421,4 +421,78 @@ export class DashboardGerenciaPage implements OnInit {
       return dateString
     }
   }
+
+  /**
+   * Descarga el PDF del dashboard
+   */
+  async downloadPdf(): Promise<void> {
+    const start = this.startDateValue
+    const end = this.endDateValue
+
+    if (!start || !end) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Fechas requeridas',
+        detail: 'Por favor seleccione un rango de fechas',
+      })
+      return
+    }
+
+    if (start > end) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error de fechas',
+        detail: 'La fecha de inicio no puede ser mayor que la fecha de fin',
+      })
+      return
+    }
+
+    this.loading.set(true)
+
+    try {
+      const params = {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+      }
+
+      const blob = await this.apiService.downloadPdf(params).toPromise()
+      
+      if (!blob) {
+        throw new Error('No se pudo descargar el PDF')
+      }
+
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      
+      // Generar nombre del archivo
+      const startDateStr = start.toISOString().split('T')[0]
+      const endDateStr = end.toISOString().split('T')[0]
+      link.download = `dashboard-gerencia_${startDateStr}_${endDateStr}.pdf`
+      
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'PDF descargado',
+        detail: 'El PDF del dashboard se ha descargado exitosamente',
+      })
+    } catch (err: unknown) {
+      const errorMessage =
+        (err && typeof err === 'object' && 'error' in err
+          ? (err.error as { message?: string })?.message
+          : null) || 'Error al descargar el PDF'
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: errorMessage,
+      })
+    } finally {
+      this.loading.set(false)
+    }
+  }
 }

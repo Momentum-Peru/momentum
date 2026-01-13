@@ -73,6 +73,15 @@
           [disabled]="!startDateValue || !endDateValue"
           styleClass="w-full"
         ></p-button>
+        <p-button
+          label="Descargar PDF"
+          icon="pi pi-file-pdf"
+          (onClick)="downloadPdf()"
+          [loading]="loading()"
+          [disabled]="!startDateValue || !endDateValue"
+          styleClass="w-full"
+          severity="secondary"
+        ></p-button>
       </div>
     </div>
   </p-panel>
