@@ -29,6 +29,34 @@
         </div>
       </ng-template>
 
+    <!-- Botones de filtro rápido -->
+    <div class="mb-4 flex flex-wrap gap-2">
+      <p-button
+        label="Hoy"
+        icon="pi pi-calendar"
+        (onClick)="setDateRange('today')"
+        styleClass="p-button-sm"
+        severity="secondary"
+        [outlined]="true"
+      ></p-button>
+      <p-button
+        label="Una semana"
+        icon="pi pi-calendar"
+        (onClick)="setDateRange('week')"
+        styleClass="p-button-sm"
+        severity="secondary"
+        [outlined]="true"
+      ></p-button>
+      <p-button
+        label="Por mes"
+        icon="pi pi-calendar"
+        (onClick)="setDateRange('month')"
+        styleClass="p-button-sm"
+        severity="secondary"
+        [outlined]="true"
+      ></p-button>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
       <div class="flex flex-col">
         <label for="startDate" class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -66,7 +94,7 @@
 
       <div class="flex gap-2">
         <p-button
-          label="Cargar Dashboard"
+          label="Recargar"
           icon="pi pi-refresh"
           (onClick)="loadDashboard()"
           [loading]="loading()"
@@ -74,7 +102,7 @@
           styleClass="w-full"
         ></p-button>
         <p-button
-          label="Descargar PDF"
+          label="PDF"
           icon="pi pi-file-pdf"
           (onClick)="downloadPdf()"
           [loading]="loading()"

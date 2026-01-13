@@ -236,6 +236,43 @@ export class DashboardGerenciaPage implements OnInit {
   }
 
   /**
+   * Establece el rango de fechas según el filtro rápido seleccionado
+   */
+  setDateRange(range: 'today' | 'week' | 'month'): void {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    let startDate: Date
+    let endDate: Date = new Date(today)
+
+    switch (range) {
+      case 'today':
+        startDate = new Date(today)
+        endDate = new Date(today)
+        break
+      case 'week':
+        startDate = new Date(today)
+        startDate.setDate(startDate.getDate() - 7)
+        break
+      case 'month':
+        startDate = new Date(today)
+        startDate.setMonth(startDate.getMonth() - 1)
+        break
+      default:
+        return
+    }
+
+    // Establecer las fechas
+    this.startDateValue = startDate
+    this.endDateValue = endDate
+    this._startDate.set(startDate)
+    this._endDate.set(endDate)
+
+    // Cargar el dashboard automáticamente
+    this.loadDashboard()
+  }
+
+  /**
    * Gets badge class based on time tracking type
    */
   getTimeTrackingBadgeClass(type: string): string {
