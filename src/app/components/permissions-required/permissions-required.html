@@ -9,7 +9,11 @@
       <!-- Título -->
       <h1 class="title">Permisos Requeridos</h1>
       <p class="subtitle">
-        Para continuar usando la plataforma, necesitamos acceso a su ubicación y cámara.
+        @if (isDesktopDevice()) {
+          Para continuar usando la plataforma, necesitamos acceso a su ubicación.
+        } @else {
+          Para continuar usando la plataforma, necesitamos acceso a su ubicación y cámara.
+        }
       </p>
 
       <!-- Estado de permisos -->
@@ -38,7 +42,8 @@
           </div>
         </div>
 
-        <!-- Estado de Cámara -->
+        <!-- Estado de Cámara (solo en móvil) -->
+        @if (isMobileDevice()) {
         <div class="permission-item" [class.granted]="permissionsStatus()?.camera === 'granted'"
           [class.denied]="permissionsStatus()?.camera === 'denied'">
           <div class="permission-icon">
@@ -55,6 +60,7 @@
             <p class="permission-message">{{ getCameraMessage() }}</p>
           </div>
         </div>
+        }
       </div>
 
       <!-- Mensaje de instrucciones -->
@@ -68,10 +74,16 @@
               Algunos permisos fueron denegados. Debe habilitarlos manualmente en la configuración de su navegador:
             </p>
             <ul class="instructions-list">
-              <li><strong>Chrome/Edge:</strong> Configuración → Privacidad y seguridad → Configuración de sitios → Ubicación/Cámara</li>
-              <li><strong>Firefox:</strong> Opciones → Privacidad y seguridad → Permisos → Ubicación/Cámara</li>
-              <li><strong>Safari:</strong> Preferencias → Sitios web → Ubicación/Cámara</li>
-              <li><strong>Móvil:</strong> Configuración de la aplicación → Permisos → Ubicación/Cámara</li>
+              @if (isDesktopDevice()) {
+                <li><strong>Chrome/Edge:</strong> Configuración → Privacidad y seguridad → Configuración de sitios → Ubicación</li>
+                <li><strong>Firefox:</strong> Opciones → Privacidad y seguridad → Permisos → Ubicación</li>
+                <li><strong>Safari:</strong> Preferencias → Sitios web → Ubicación</li>
+              } @else {
+                <li><strong>Chrome/Edge:</strong> Configuración → Privacidad y seguridad → Configuración de sitios → Ubicación/Cámara</li>
+                <li><strong>Firefox:</strong> Opciones → Privacidad y seguridad → Permisos → Ubicación/Cámara</li>
+                <li><strong>Safari:</strong> Preferencias → Sitios web → Ubicación/Cámara</li>
+                <li><strong>Móvil:</strong> Configuración de la aplicación → Permisos → Ubicación/Cámara</li>
+              }
             </ul>
             <p class="instructions-note">
               Después de habilitar los permisos, recargue la página.

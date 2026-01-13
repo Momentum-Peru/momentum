@@ -19,6 +19,23 @@ export class PermissionsRequiredComponent implements OnInit, OnDestroy {
   isRequesting = signal<boolean>(false);
   private checkInterval?: any;
 
+  /**
+   * Detecta si el dispositivo es móvil
+   */
+  isMobileDevice(): boolean {
+    return (
+      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+      (window.innerWidth <= 768 && 'ontouchstart' in window)
+    );
+  }
+
+  /**
+   * Detecta si es desktop (opuesto a móvil)
+   */
+  isDesktopDevice(): boolean {
+    return !this.isMobileDevice();
+  }
+
   constructor() {
     // Efecto para verificar permisos cuando cambia el estado
     effect(() => {
@@ -141,6 +158,11 @@ export class PermissionsRequiredComponent implements OnInit, OnDestroy {
     const status = this.permissionsStatus();
     if (!status) return false;
 
+    const isDesktop = this.isDesktopDevice();
+    // En desktop, solo verificar ubicación. En móvil, verificar ambos
+    if (isDesktop) {
+      return status.location === 'prompt';
+    }
     // Solo se puede solicitar automáticamente si están en estado 'prompt'
     return status.location === 'prompt' || status.camera === 'prompt';
   }
@@ -152,6 +174,11 @@ export class PermissionsRequiredComponent implements OnInit, OnDestroy {
     const status = this.permissionsStatus();
     if (!status) return false;
 
+    const isDesktop = this.isDesktopDevice();
+    // En desktop, solo verificar ubicación. En móvil, verificar ambos
+    if (isDesktop) {
+      return status.location === 'denied';
+    }
     return status.location === 'denied' || status.camera === 'denied';
   }
 }

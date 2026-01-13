@@ -13,16 +13,36 @@ export interface PermissionsStatus {
 })
 export class PermissionsService {
   /**
-   * Verifica el estado actual de los permisos de ubicación y cámara
+   * Detecta si el dispositivo es móvil
+   */
+  private isMobileDevice(): boolean {
+    return (
+      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+      (window.innerWidth <= 768 && 'ontouchstart' in window)
+    );
+  }
+
+  /**
+   * Detecta si es desktop (opuesto a móvil)
+   */
+  private isDesktopDevice(): boolean {
+    return !this.isMobileDevice();
+  }
+
+  /**
+   * Verifica el estado actual de los permisos necesarios
+   * - En desktop: solo verifica ubicación
+   * - En móvil: verifica ubicación y cámara
    */
   checkPermissions(): Observable<PermissionsStatus> {
     return from(this.checkPermissionsAsync()).pipe(
       catchError((error) => {
         console.error('Error al verificar permisos:', error);
         // En caso de error, asumir que los permisos no están otorgados
+        const isDesktop = !this.isMobileDevice();
         const defaultStatus: PermissionsStatus = {
           location: 'prompt',
-          camera: 'prompt',
+          camera: isDesktop ? 'granted' : 'prompt', // En desktop, considerar cámara como granted
           allGranted: false,
         };
         return of(defaultStatus);
@@ -35,12 +55,20 @@ export class PermissionsService {
    */
   private async checkPermissionsAsync(): Promise<PermissionsStatus> {
     const locationStatus = await this.checkLocationPermission();
-    const cameraStatus = await this.checkCameraPermission();
+    const isDesktop = this.isDesktopDevice();
+    
+    // En desktop, no requerir permiso de cámara (considerarlo siempre como granted)
+    const cameraStatus = isDesktop ? 'granted' : await this.checkCameraPermission();
+
+    // En desktop, solo se requiere ubicación. En móvil, se requieren ambos
+    const allGranted = isDesktop 
+      ? locationStatus === 'granted'
+      : locationStatus === 'granted' && cameraStatus === 'granted';
 
     return {
       location: locationStatus,
       camera: cameraStatus,
-      allGranted: locationStatus === 'granted' && cameraStatus === 'granted',
+      allGranted,
     };
   }
 
@@ -186,12 +214,20 @@ export class PermissionsService {
    */
   async requestAllPermissions(): Promise<PermissionsStatus> {
     const locationStatus = await this.requestLocationPermission();
-    const cameraStatus = await this.requestCameraPermission();
+    const isDesktop = this.isDesktopDevice();
+    
+    // En desktop, no solicitar permiso de cámara (considerarlo siempre como granted)
+    const cameraStatus = isDesktop ? 'granted' : await this.requestCameraPermission();
+
+    // En desktop, solo se requiere ubicación. En móvil, se requieren ambos
+    const allGranted = isDesktop 
+      ? locationStatus === 'granted'
+      : locationStatus === 'granted' && cameraStatus === 'granted';
 
     return {
       location: locationStatus,
       camera: cameraStatus,
-      allGranted: locationStatus === 'granted' && cameraStatus === 'granted',
+      allGranted,
     };
   }
 
