@@ -422,13 +422,9 @@ export class DashboardGerenciaPage implements OnInit {
       const data = await this.apiService.getDashboardData(params).toPromise();
       this.dashboardData.set(data ?? null);
 
-      // Resolver direcciones de todas las ubicaciones
+      // Resolver direcciones de todas las ubicaciones únicas de forma optimizada
       if (data?.marcacionesDiarias) {
-        data.marcacionesDiarias.forEach((marcacion) => {
-          if (marcacion.location) {
-            this.resolveLocationAddress(marcacion.location);
-          }
-        });
+        this.resolveAllLocationAddresses(data.marcacionesDiarias);
       }
     } catch (err: unknown) {
       const errorMessage =
@@ -700,6 +696,34 @@ export class DashboardGerenciaPage implements OnInit {
    */
   private buildLocationKey(location: { latitude: number; longitude: number }): string {
     return `${location.latitude.toFixed(6)},${location.longitude.toFixed(6)}`;
+  }
+
+  /**
+   * Resuelve todas las direcciones de forma optimizada (agrupa únicas y hace peticiones con delay)
+   */
+  private resolveAllLocationAddresses(marcaciones: MarcacionDiaria[]): void {
+    // Obtener ubicaciones únicas que no estén ya en caché
+    const uniqueLocations = new Map<string, { latitude: number; longitude: number }>();
+    const addresses = this.locationAddresses();
+    const loading = this.locationLoading();
+
+    marcaciones.forEach((marcacion) => {
+      if (marcacion.location) {
+        const key = this.buildLocationKey(marcacion.location);
+        // Solo agregar si no está en caché ni cargando
+        if (!addresses[key] && !loading[key] && !uniqueLocations.has(key)) {
+          uniqueLocations.set(key, marcacion.location);
+        }
+      }
+    });
+
+    // Resolver direcciones con un pequeño delay entre peticiones para evitar rate limiting
+    // Nominatim tiene un límite de 1 petición por segundo, usamos 1.2s para estar seguros
+    Array.from(uniqueLocations.values()).forEach((location, index) => {
+      setTimeout(() => {
+        this.resolveLocationAddress(location);
+      }, index * 1200); // 1.2 segundos entre peticiones
+    });
   }
 
   /**
