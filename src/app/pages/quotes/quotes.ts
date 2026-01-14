@@ -788,6 +788,19 @@ export class QuotesPage implements OnInit {
     return project?.name || 'Proyecto no encontrado';
   }
 
+  /**
+   * Obtiene el número de cotización a mostrar
+   * Si existe number (ingresado por el usuario), lo devuelve
+   * Si no, devuelve el correlativeNumber formateado
+   */
+  getQuoteNumber(quote: Quote): string {
+    if (quote.number) {
+      return quote.number;
+    }
+    // Formatear correlativeNumber con padding de 6 dígitos
+    return String(quote.correlativeNumber || 0).padStart(6, '0');
+  }
+
   getStateSeverity(
     state: QuoteState
   ): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' | null | undefined {
