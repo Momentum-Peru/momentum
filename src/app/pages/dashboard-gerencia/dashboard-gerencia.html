@@ -29,6 +29,34 @@
         </div>
       </ng-template>
 
+    <!-- Botones de filtro rápido -->
+    <div class="mb-4 flex flex-wrap gap-2">
+      <p-button
+        label="Hoy"
+        icon="pi pi-calendar"
+        (onClick)="setDateRange('today')"
+        styleClass="p-button-sm"
+        severity="secondary"
+        [outlined]="true"
+      ></p-button>
+      <p-button
+        label="Una semana"
+        icon="pi pi-calendar"
+        (onClick)="setDateRange('week')"
+        styleClass="p-button-sm"
+        severity="secondary"
+        [outlined]="true"
+      ></p-button>
+      <p-button
+        label="Por mes"
+        icon="pi pi-calendar"
+        (onClick)="setDateRange('month')"
+        styleClass="p-button-sm"
+        severity="secondary"
+        [outlined]="true"
+      ></p-button>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
       <div class="flex flex-col">
         <label for="startDate" class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -66,7 +94,7 @@
 
       <div class="flex gap-2">
         <p-button
-          label="Cargar Dashboard"
+          label="Recargar"
           icon="pi pi-refresh"
           (onClick)="loadDashboard()"
           [loading]="loading()"
@@ -74,7 +102,7 @@
           styleClass="w-full"
         ></p-button>
         <p-button
-          label="Descargar PDF"
+          label="PDF"
           icon="pi pi-file-pdf"
           (onClick)="downloadPdf()"
           [loading]="loading()"
@@ -115,255 +143,502 @@
 
       <div class="mb-4">
         <p class="text-sm text-gray-600 dark:text-gray-400">
-          Total de días registrados: {{ groupedTimeTrackings().length }}
+          Total de personas: {{ groupedTimeTrackingsByUser().length }} | Total de días registrados: {{ groupedTimeTrackings().length }}
         </p>
       </div>
 
       <!-- Vista Desktop: Tabla -->
       <div class="hidden md:block overflow-x-auto">
         <p-table
-        [value]="groupedTimeTrackings()"
-        [paginator]="true"
-        [rows]="10"
-        [rowsPerPageOptions]="[10, 25, 50]"
-        [globalFilterFields]="['userName', 'userEmail', 'fecha']"
-        styleClass="p-datatable-sm"
-        [tableStyle]="{ 'min-width': '50rem' }"
-        [showCurrentPageReport]="true"
-        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-      >
-        <ng-template pTemplate="header">
-          <tr>
-            <th pSortableColumn="fecha" style="width: 200px">
-              Fecha <p-sortIcon field="fecha"></p-sortIcon>
-            </th>
-            <th pSortableColumn="userName" style="width: 250px">
-              Usuario <p-sortIcon field="userName"></p-sortIcon>
-            </th>
-            <th class="text-center" style="width: 180px">Entrada</th>
-            <th class="text-center" style="width: 180px">Salida</th>
-            <th class="text-center" style="width: 150px">Horas Trabajadas</th>
-            <th class="text-center" style="width: 120px">Estado</th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-dayData>
-          <tr>
-            <td>
-              <div class="flex flex-col">
-                <span class="font-semibold text-gray-900 dark:text-white text-base">
-                  {{ formatDate(dayData.date) }}
-                </span>
-                <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {{ getDayOfWeek(dayData.date) }}
-                </span>
-              </div>
-            </td>
-            <td>
-              <div class="flex items-center gap-3">
-                <div
-                  class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold shrink-0"
+          [value]="groupedTimeTrackingsByUser()"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[10, 25, 50]"
+          [globalFilterFields]="['userName', 'userEmail']"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '50rem' }"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} personas"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 50px"></th>
+              <th pSortableColumn="userName" style="width: 250px">
+                Usuario <p-sortIcon field="userName"></p-sortIcon>
+              </th>
+              <th class="text-center" style="width: 200px">Fecha</th>
+              <th class="text-center" style="width: 180px">Entrada</th>
+              <th class="text-center" style="width: 180px">Salida</th>
+              <th class="text-center" style="width: 150px">Horas</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-userData>
+            <!-- Fila principal: Resumen cuando hay múltiples días -->
+            @if (userData.totalDays > 1) {
+            <tr>
+              <td>
+                <button
+                  type="button"
+                  (click)="toggleUserExpansion(userData.userId)"
+                  class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  [attr.aria-expanded]="isUserExpanded(userData.userId)"
                 >
-                  {{ dayData.userName.charAt(0).toUpperCase() }}
+                  <i
+                    class="pi text-sm transition-transform"
+                    [ngClass]="isUserExpanded(userData.userId) ? 'pi-chevron-down' : 'pi-chevron-right'"
+                  ></i>
+                </button>
+              </td>
+              <td>
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold shrink-0"
+                  >
+                    {{ userData.userName.charAt(0).toUpperCase() }}
+                  </div>
+                  <div>
+                    <p class="font-medium text-gray-900 dark:text-white">{{ userData.userName }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ userData.userEmail }}</p>
+                  </div>
                 </div>
-                <div>
-                  <p class="font-medium text-gray-900 dark:text-white">{{ dayData.userName }}</p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">{{ dayData.userEmail }}</p>
-                </div>
-              </div>
-            </td>
-            <td class="text-center">
-              @if (dayData.entry) {
-              <div class="flex flex-col items-center gap-2">
-                <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium">
-                  Entrada
+              </td>
+              <td class="text-center">
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-sm font-semibold">
+                  {{ userData.totalDays }} días
                 </span>
-                <div
-                  class="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-md"
-                >
-                  <i class="pi pi-clock text-green-600 dark:text-green-400 text-xs"></i>
-                  <span class="text-sm font-medium text-green-700 dark:text-green-300">
-                    {{ dayData.entry.time }}
-                  </span>
-                </div>
-              </div>
-              } @else {
-              <div class="flex flex-col items-center">
-                <span class="text-gray-400 text-sm">-</span>
-                <span class="text-xs text-gray-400 italic">Sin registro</span>
-              </div>
-              }
-            </td>
-            <td class="text-center">
-              @if (dayData.exit) {
-              <div class="flex flex-col items-center gap-2">
-                <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
-                  Salida
+              </td>
+              <td class="text-center">
+                <span class="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm font-semibold">
+                  {{ getEntryCount(userData) }} entradas
                 </span>
-                <div
-                  class="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-md"
-                >
-                  <i class="pi pi-clock text-blue-600 dark:text-blue-400 text-xs"></i>
-                  <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
-                    {{ dayData.exit.time }}
-                  </span>
-                </div>
-              </div>
-              } @else {
-              <div class="flex flex-col items-center">
-                <span class="text-gray-400 text-sm">-</span>
-                <span class="text-xs text-gray-400 italic">Sin registro</span>
-              </div>
-              }
-            </td>
-            <td class="text-center">
-              @if (hasCompleteAttendance(dayData)) {
-              <div class="flex flex-col items-center">
+              </td>
+              <td class="text-center">
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-sm font-semibold">
+                  {{ getExitCount(userData) }} salidas
+                </span>
+              </td>
+              <td class="text-center">
                 <span class="text-lg font-bold text-gray-900 dark:text-white">
-                  {{ formatWorkedHours(calculateWorkedHours(dayData.entry, dayData.exit)) }}
+                  {{ formatWorkedHours(userData.totalHours) }}
                 </span>
-                @if (calculateWorkedHours(dayData.entry, dayData.exit) >= 8) {
-                <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium mt-1">
-                  Completo
-                </span>
-                } @else {
-                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-full text-xs font-medium mt-1">
-                  Parcial
-                </span>
-                }
-              </div>
-              } @else {
-              <span class="text-gray-400">-</span>
+              </td>
+            </tr>
+            <!-- Filas expandidas: Días individuales -->
+            @if (isUserExpanded(userData.userId)) {
+              @for (dayData of userData.days; track dayData.date) {
+              <tr class="bg-gray-50 dark:bg-gray-800/50">
+                <td></td>
+                <td>
+                  <div class="flex flex-col pl-4">
+                    <span class="font-semibold text-gray-900 dark:text-white text-sm">
+                      {{ formatDate(dayData.date) }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {{ getDayOfWeek(dayData.date) }}
+                    </span>
+                  </div>
+                </td>
+                <td class="text-center">
+                  @if (dayData.entry) {
+                  <div class="flex flex-col items-center gap-1">
+                    <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium">
+                      Entrada
+                    </span>
+                    <div class="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md">
+                      <i class="pi pi-clock text-green-600 dark:text-green-400 text-xs"></i>
+                      <span class="text-xs font-medium text-green-700 dark:text-green-300">
+                        {{ dayData.entry.time }}
+                      </span>
+                    </div>
+                    @if (dayData.entry.location) {
+                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <i class="pi pi-map-marker text-xs"></i> {{ formatLocation(dayData.entry.location) }}
+                    </span>
+                    }
+                  </div>
+                  } @else {
+                  <span class="text-gray-400 text-sm">-</span>
+                  }
+                </td>
+                <td class="text-center">
+                  @if (dayData.exit) {
+                  <div class="flex flex-col items-center gap-1">
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
+                      Salida
+                    </span>
+                    <div class="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md">
+                      <i class="pi pi-clock text-blue-600 dark:text-blue-400 text-xs"></i>
+                      <span class="text-xs font-medium text-blue-700 dark:text-blue-300">
+                        {{ dayData.exit.time }}
+                      </span>
+                    </div>
+                    @if (dayData.exit.location) {
+                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <i class="pi pi-map-marker text-xs"></i> {{ formatLocation(dayData.exit.location) }}
+                    </span>
+                    }
+                  </div>
+                  } @else {
+                  <span class="text-gray-400 text-sm">-</span>
+                  }
+                </td>
+                <td class="text-center">
+                  @if (hasCompleteAttendance(dayData)) {
+                  <div class="flex flex-col items-center">
+                    <span class="text-sm font-bold text-gray-900 dark:text-white">
+                      {{ formatWorkedHours(calculateWorkedHours(dayData.entry, dayData.exit)) }}
+                    </span>
+                    <span
+                      class="px-2 py-1 rounded-full text-xs font-medium mt-1"
+                      [ngClass]="getAttendanceBadgeClass('Completo')"
+                    >
+                      Completo
+                    </span>
+                  </div>
+                  } @else {
+                  <span
+                    class="px-2 py-1 rounded-full text-xs font-medium"
+                    [ngClass]="getAttendanceBadgeClass(dayData.entry || dayData.exit ? 'Incompleto' : 'Sin registro')"
+                  >
+                    {{ dayData.entry || dayData.exit ? 'Incompleto' : 'Sin registro' }}
+                  </span>
+                  }
+                </td>
+              </tr>
               }
-            </td>
-            <td class="text-center">
-              @if (hasCompleteAttendance(dayData)) {
-              <span
-                class="px-2 py-1 rounded-full text-xs font-medium"
-                [ngClass]="getAttendanceBadgeClass('Completo')"
-              >
-                Completo
-              </span>
-              } @else if (dayData.entry || dayData.exit) {
-              <span
-                class="px-2 py-1 rounded-full text-xs font-medium"
-                [ngClass]="getAttendanceBadgeClass('Incompleto')"
-              >
-                Incompleto
-              </span>
-              } @else {
-              <span
-                class="px-2 py-1 rounded-full text-xs font-medium"
-                [ngClass]="getAttendanceBadgeClass('Sin registro')"
-              >
-                Sin registro
-              </span>
-              }
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="6" class="text-center py-8 text-gray-500">
-              <i class="pi pi-calendar-times text-4xl text-gray-400 mb-2"></i>
-              <p class="text-gray-500 dark:text-gray-400">No hay marcaciones para el rango de fechas seleccionado</p>
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+            }
+            } @else {
+            <!-- Fila simple: Un solo día -->
+            @if (userData.days.length === 1) {
+              <tr>
+                <td></td>
+                <td>
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold shrink-0"
+                    >
+                      {{ userData.userName.charAt(0).toUpperCase() }}
+                    </div>
+                    <div>
+                      <p class="font-medium text-gray-900 dark:text-white">{{ userData.userName }}</p>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">{{ userData.userEmail }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="flex flex-col">
+                    <span class="font-semibold text-gray-900 dark:text-white text-base">
+                      {{ formatDate(userData.days[0].date) }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {{ getDayOfWeek(userData.days[0].date) }}
+                    </span>
+                  </div>
+                </td>
+                <td class="text-center">
+                  @if (userData.days[0].entry) {
+                  <div class="flex flex-col items-center gap-2">
+                    <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium">
+                      Entrada
+                    </span>
+                    <div class="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-md">
+                      <i class="pi pi-clock text-green-600 dark:text-green-400 text-xs"></i>
+                      <span class="text-sm font-medium text-green-700 dark:text-green-300">
+                        {{ userData.days[0].entry.time }}
+                      </span>
+                    </div>
+                    @if (userData.days[0].entry.location) {
+                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <i class="pi pi-map-marker text-xs"></i> {{ formatLocation(userData.days[0].entry.location) }}
+                    </span>
+                    }
+                  </div>
+                  } @else {
+                  <div class="flex flex-col items-center">
+                    <span class="text-gray-400 text-sm">-</span>
+                    <span class="text-xs text-gray-400 italic">Sin registro</span>
+                  </div>
+                  }
+                </td>
+                <td class="text-center">
+                  @if (userData.days[0].exit) {
+                  <div class="flex flex-col items-center gap-2">
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
+                      Salida
+                    </span>
+                    <div class="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-md">
+                      <i class="pi pi-clock text-blue-600 dark:text-blue-400 text-xs"></i>
+                      <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
+                        {{ userData.days[0].exit.time }}
+                      </span>
+                    </div>
+                    @if (userData.days[0].exit.location) {
+                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <i class="pi pi-map-marker text-xs"></i> {{ formatLocation(userData.days[0].exit.location) }}
+                    </span>
+                    }
+                  </div>
+                  } @else {
+                  <div class="flex flex-col items-center">
+                    <span class="text-gray-400 text-sm">-</span>
+                    <span class="text-xs text-gray-400 italic">Sin registro</span>
+                  </div>
+                  }
+                </td>
+                <td class="text-center">
+                  @if (hasCompleteAttendance(userData.days[0])) {
+                  <div class="flex flex-col items-center">
+                    <span class="text-lg font-bold text-gray-900 dark:text-white">
+                      {{ formatWorkedHours(calculateWorkedHours(userData.days[0].entry, userData.days[0].exit)) }}
+                    </span>
+                    <span
+                      class="px-2 py-1 rounded-full text-xs font-medium mt-1"
+                      [ngClass]="getAttendanceBadgeClass('Completo')"
+                    >
+                      Completo
+                    </span>
+                  </div>
+                  } @else {
+                  <span
+                    class="px-2 py-1 rounded-full text-xs font-medium"
+                    [ngClass]="getAttendanceBadgeClass(userData.days[0].entry || userData.days[0].exit ? 'Incompleto' : 'Sin registro')"
+                  >
+                    {{ userData.days[0].entry || userData.days[0].exit ? 'Incompleto' : 'Sin registro' }}
+                  </span>
+                  }
+                </td>
+              </tr>
+            }
+            }
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="text-center py-8 text-gray-500">
+                <i class="pi pi-calendar-times text-4xl text-gray-400 mb-2"></i>
+                <p class="text-gray-500 dark:text-gray-400">No hay marcaciones para el rango de fechas seleccionado</p>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
       </div>
 
       <!-- Vista Mobile: Cards -->
       <div class="md:hidden space-y-3">
-        @for (dayData of groupedTimeTrackings(); track dayData.userId + dayData.date) {
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
-          <div class="p-4 space-y-3">
-            <!-- Header -->
-            <div class="flex items-start justify-between border-b border-gray-200 dark:border-gray-700 pb-3">
-              <div class="flex-1">
-                <div class="flex items-center gap-3 mb-2">
-                  <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold shrink-0">
-                    {{ dayData.userName.charAt(0).toUpperCase() }}
+        @for (userData of groupedTimeTrackingsByUser(); track userData.userId) {
+          @if (userData.totalDays > 1) {
+          <!-- Card para múltiples días -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
+            <div class="p-4 space-y-3">
+              <!-- Header con botón de expandir -->
+              <div class="flex items-start justify-between border-b border-gray-200 dark:border-gray-700 pb-3">
+                <div class="flex-1">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold shrink-0">
+                      {{ userData.userName.charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="font-semibold text-gray-900 dark:text-white truncate">{{ userData.userName }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ userData.userEmail }}</p>
+                    </div>
                   </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="font-semibold text-gray-900 dark:text-white truncate">{{ dayData.userName }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ dayData.userEmail }}</p>
+                  <div class="mt-2 flex items-center gap-4">
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
+                      {{ userData.totalDays }} días
+                    </span>
+                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Total: {{ formatWorkedHours(userData.totalHours) }}
+                    </span>
                   </div>
                 </div>
-                <div class="mt-2">
-                  <span class="font-semibold text-gray-900 dark:text-white text-base">
-                    {{ formatDate(dayData.date) }}
-                  </span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                    {{ getDayOfWeek(dayData.date) }}
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  (click)="toggleUserExpansion(userData.userId)"
+                  class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                >
+                  <i
+                    class="pi text-lg transition-transform"
+                    [ngClass]="isUserExpanded(userData.userId) ? 'pi-chevron-down' : 'pi-chevron-right'"
+                  ></i>
+                </button>
               </div>
-              <span
-                class="px-2 py-1 rounded-full text-xs font-medium shrink-0"
-                [ngClass]="getAttendanceBadgeClass(hasCompleteAttendance(dayData) ? 'Completo' : (dayData.entry || dayData.exit) ? 'Incompleto' : 'Sin registro')"
-              >
-                {{ hasCompleteAttendance(dayData) ? 'Completo' : (dayData.entry || dayData.exit) ? 'Incompleto' : 'Sin registro' }}
-              </span>
-            </div>
 
-            <!-- Entrada -->
-            <div class="flex items-start gap-2">
-              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[80px]">Entrada:</span>
-              @if (dayData.entry) {
-              <div class="flex-1">
-                <div class="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-md">
-                  <i class="pi pi-clock text-green-600 dark:text-green-400 text-xs"></i>
-                  <span class="text-sm font-medium text-green-700 dark:text-green-300">
-                    {{ dayData.entry.time }}
-                  </span>
+              <!-- Días expandidos -->
+              @if (isUserExpanded(userData.userId)) {
+                @for (dayData of userData.days; track dayData.date) {
+                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-2 border border-gray-200 dark:border-gray-700">
+                  <div class="flex items-center justify-between">
+                    <span class="font-semibold text-gray-900 dark:text-white text-sm">
+                      {{ formatDate(dayData.date) }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ getDayOfWeek(dayData.date) }}
+                    </span>
+                  </div>
+
+                  <!-- Entrada -->
+                  <div class="flex items-start gap-2">
+                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[70px]">Entrada:</span>
+                    @if (dayData.entry) {
+                    <div class="flex-1">
+                      <div class="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md">
+                        <i class="pi pi-clock text-green-600 dark:text-green-400 text-xs"></i>
+                        <span class="text-xs font-medium text-green-700 dark:text-green-300">
+                          {{ dayData.entry.time }}
+                        </span>
+                      </div>
+                      @if (dayData.entry.location) {
+                      <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">
+                        <i class="pi pi-map-marker text-xs"></i> {{ formatLocation(dayData.entry.location) }}
+                      </span>
+                      }
+                    </div>
+                    } @else {
+                    <span class="text-gray-400 text-xs">Sin registro</span>
+                    }
+                  </div>
+
+                  <!-- Salida -->
+                  <div class="flex items-start gap-2">
+                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[70px]">Salida:</span>
+                    @if (dayData.exit) {
+                    <div class="flex-1">
+                      <div class="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md">
+                        <i class="pi pi-clock text-blue-600 dark:text-blue-400 text-xs"></i>
+                        <span class="text-xs font-medium text-blue-700 dark:text-blue-300">
+                          {{ dayData.exit.time }}
+                        </span>
+                      </div>
+                      @if (dayData.exit.location) {
+                      <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">
+                        <i class="pi pi-map-marker text-xs"></i> {{ formatLocation(dayData.exit.location) }}
+                      </span>
+                      }
+                    </div>
+                    } @else {
+                    <span class="text-gray-400 text-xs">Sin registro</span>
+                    }
+                  </div>
+
+                  <!-- Horas del día -->
+                  @if (hasCompleteAttendance(dayData)) {
+                  <div class="flex items-start gap-2">
+                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[70px]">Horas:</span>
+                    <div class="flex-1">
+                      <span class="text-sm font-bold text-gray-900 dark:text-white">
+                        {{ formatWorkedHours(calculateWorkedHours(dayData.entry, dayData.exit)) }}
+                      </span>
+                    </div>
+                  </div>
+                  }
                 </div>
-              </div>
-              } @else {
-              <span class="text-gray-400 text-sm">Sin registro</span>
+                }
               }
             </div>
-
-            <!-- Salida -->
-            <div class="flex items-start gap-2">
-              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[80px]">Salida:</span>
-              @if (dayData.exit) {
-              <div class="flex-1">
-                <div class="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-md">
-                  <i class="pi pi-clock text-blue-600 dark:text-blue-400 text-xs"></i>
-                  <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
-                    {{ dayData.exit.time }}
+          </div>
+          } @else {
+          <!-- Card para un solo día -->
+          @if (userData.days.length === 1) {
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
+              <div class="p-4 space-y-3">
+                <!-- Header -->
+                <div class="flex items-start justify-between border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                      <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold shrink-0">
+                        {{ userData.userName.charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-gray-900 dark:text-white truncate">{{ userData.userName }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ userData.userEmail }}</p>
+                      </div>
+                    </div>
+                    <div class="mt-2">
+                      <span class="font-semibold text-gray-900 dark:text-white text-base">
+                        {{ formatDate(userData.days[0].date) }}
+                      </span>
+                      <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                        {{ getDayOfWeek(userData.days[0].date) }}
+                      </span>
+                    </div>
+                  </div>
+                  <span
+                    class="px-2 py-1 rounded-full text-xs font-medium shrink-0"
+                    [ngClass]="getAttendanceBadgeClass(hasCompleteAttendance(userData.days[0]) ? 'Completo' : (userData.days[0].entry || userData.days[0].exit) ? 'Incompleto' : 'Sin registro')"
+                  >
+                    {{ hasCompleteAttendance(userData.days[0]) ? 'Completo' : (userData.days[0].entry || userData.days[0].exit) ? 'Incompleto' : 'Sin registro' }}
                   </span>
                 </div>
-              </div>
-              } @else {
-              <span class="text-gray-400 text-sm">Sin registro</span>
-              }
-            </div>
 
-            <!-- Horas Trabajadas -->
-            @if (hasCompleteAttendance(dayData)) {
-            <div class="flex items-start gap-2">
-              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[80px]">Horas:</span>
-              <div class="flex-1">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">
-                  {{ formatWorkedHours(calculateWorkedHours(dayData.entry, dayData.exit)) }}
-                </span>
-                @if (calculateWorkedHours(dayData.entry, dayData.exit) >= 8) {
-                <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium ml-2">
-                  Completo
-                </span>
-                } @else {
-                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-full text-xs font-medium ml-2">
-                  Parcial
-                </span>
+                <!-- Entrada -->
+                <div class="flex items-start gap-2">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[80px]">Entrada:</span>
+                  @if (userData.days[0].entry) {
+                  <div class="flex-1">
+                    <div class="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-md">
+                      <i class="pi pi-clock text-green-600 dark:text-green-400 text-xs"></i>
+                      <span class="text-sm font-medium text-green-700 dark:text-green-300">
+                        {{ userData.days[0].entry.time }}
+                      </span>
+                    </div>
+                    @if (userData.days[0].entry.location) {
+                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">
+                      <i class="pi pi-map-marker text-xs"></i> {{ formatLocation(userData.days[0].entry.location) }}
+                    </span>
+                    }
+                  </div>
+                  } @else {
+                  <span class="text-gray-400 text-sm">Sin registro</span>
+                  }
+                </div>
+
+                <!-- Salida -->
+                <div class="flex items-start gap-2">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[80px]">Salida:</span>
+                  @if (userData.days[0].exit) {
+                  <div class="flex-1">
+                    <div class="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-md">
+                      <i class="pi pi-clock text-blue-600 dark:text-blue-400 text-xs"></i>
+                      <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
+                        {{ userData.days[0].exit.time }}
+                      </span>
+                    </div>
+                    @if (userData.days[0].exit.location) {
+                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">
+                      <i class="pi pi-map-marker text-xs"></i> {{ formatLocation(userData.days[0].exit.location) }}
+                    </span>
+                    }
+                  </div>
+                  } @else {
+                  <span class="text-gray-400 text-sm">Sin registro</span>
+                  }
+                </div>
+
+                <!-- Horas Trabajadas -->
+                @if (hasCompleteAttendance(userData.days[0])) {
+                <div class="flex items-start gap-2">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[80px]">Horas:</span>
+                  <div class="flex-1">
+                    <span class="text-lg font-bold text-gray-900 dark:text-white">
+                      {{ formatWorkedHours(calculateWorkedHours(userData.days[0].entry, userData.days[0].exit)) }}
+                    </span>
+                    @if (calculateWorkedHours(userData.days[0].entry, userData.days[0].exit) >= 8) {
+                    <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium ml-2">
+                      Completo
+                    </span>
+                    } @else {
+                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-full text-xs font-medium ml-2">
+                      Parcial
+                    </span>
+                    }
+                  </div>
+                </div>
                 }
               </div>
             </div>
-            }
-          </div>
-        </div>
+          }
+          }
         }
-        @if (groupedTimeTrackings().length === 0) {
+        @if (groupedTimeTrackingsByUser().length === 0) {
         <div class="text-center py-8 text-gray-500">
           <i class="pi pi-calendar-times text-4xl text-gray-400 mb-2"></i>
           <p class="text-gray-500 dark:text-gray-400">No hay marcaciones para el rango de fechas seleccionado</p>
@@ -383,118 +658,307 @@
 
       <div class="mb-4">
         <p class="text-sm text-gray-600 dark:text-gray-400">
-          Total de reportes: {{ dailyReports().length }}
+          Total de personas: {{ groupedReportsByUser().length }} | Total de reportes: {{ dailyReports().length }}
         </p>
       </div>
 
       <!-- Vista Desktop: Tabla -->
       <div class="hidden md:block overflow-x-auto">
         <p-table
-          [value]="dailyReports()"
-        [paginator]="true"
-        [rows]="10"
-        [rowsPerPageOptions]="[10, 25, 50]"
-        [globalFilterFields]="['userName', 'descripcion', 'projectName']"
-        styleClass="p-datatable-sm"
-        [tableStyle]="{ 'min-width': '50rem' }"
-      >
-        <ng-template pTemplate="header">
-          <tr>
-            <th pSortableColumn="fecha">
-              Fecha <p-sortIcon field="fecha"></p-sortIcon>
-            </th>
-            <th pSortableColumn="hora">
-              Hora <p-sortIcon field="hora"></p-sortIcon>
-            </th>
-            <th pSortableColumn="userName">
-              Usuario <p-sortIcon field="userName"></p-sortIcon>
-            </th>
-            <th pSortableColumn="descripcion">
-              Descripción <p-sortIcon field="descripcion"></p-sortIcon>
-            </th>
-            <th pSortableColumn="projectName">
-              Proyecto <p-sortIcon field="projectName"></p-sortIcon>
-            </th>
-            <th pSortableColumn="cantidadReportes">
-              Cantidad <p-sortIcon field="cantidadReportes"></p-sortIcon>
-            </th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-report>
-          <tr>
-            <td>{{ report.fecha }}</td>
-            <td>{{ report.hora }}</td>
-            <td>
-              <div class="flex flex-col">
-                <span class="font-medium">{{ report.userName }}</span>
-                <span class="text-xs text-gray-500">{{ report.userEmail }}</span>
-              </div>
-            </td>
-            <td>
-              <span class="line-clamp-2 max-w-xs">{{ report.descripcion }}</span>
-            </td>
-            <td>{{ report.projectName || '-' }}</td>
-            <td>
-              <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                {{ report.cantidadReportes }}
-              </span>
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="6" class="text-center py-8 text-gray-500">
-              No hay reportes para el rango de fechas seleccionado
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+          [value]="groupedReportsByUser()"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[10, 25, 50]"
+          [globalFilterFields]="['userName', 'userEmail']"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '50rem' }"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} personas"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 50px"></th>
+              <th pSortableColumn="userName" style="width: 250px">
+                Usuario <p-sortIcon field="userName"></p-sortIcon>
+              </th>
+              <th class="text-center" style="width: 200px">Fecha</th>
+              <th class="text-center" style="width: 200px">Descripción</th>
+              <th class="text-center" style="width: 150px">Proyecto</th>
+              <th class="text-center" style="width: 120px">Cantidad</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-userData>
+            <!-- Fila principal: Resumen cuando hay múltiples días -->
+            @if (userData.totalDays > 1) {
+            <tr>
+              <td>
+                <button
+                  type="button"
+                  (click)="toggleReportUserExpansion(userData.userId)"
+                  class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  [attr.aria-expanded]="isReportUserExpanded(userData.userId)"
+                >
+                  <i
+                    class="pi text-sm transition-transform"
+                    [ngClass]="isReportUserExpanded(userData.userId) ? 'pi-chevron-down' : 'pi-chevron-right'"
+                  ></i>
+                </button>
+              </td>
+              <td>
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold shrink-0"
+                  >
+                    {{ userData.userName.charAt(0).toUpperCase() }}
+                  </div>
+                  <div>
+                    <p class="font-medium text-gray-900 dark:text-white">{{ userData.userName }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ userData.userEmail }}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="text-center">
+                <span class="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm font-semibold">
+                  {{ userData.totalDays }} días
+                </span>
+              </td>
+              <td class="text-center">
+                <span class="text-sm text-gray-600 dark:text-gray-400">
+                  Ver detalles
+                </span>
+              </td>
+              <td class="text-center">
+                <span class="text-sm text-gray-600 dark:text-gray-400">
+                  Ver detalles
+                </span>
+              </td>
+              <td class="text-center">
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-sm font-semibold">
+                  {{ userData.totalReports }} reportes
+                </span>
+              </td>
+            </tr>
+            <!-- Filas expandidas: Días individuales -->
+            @if (isReportUserExpanded(userData.userId)) {
+              @for (dayData of userData.days; track dayData.date) {
+                @for (report of dayData.reports; track report.userId + report.fecha + report.hora) {
+                <tr class="bg-gray-50 dark:bg-gray-800/50">
+                  <td></td>
+                  <td>
+                    <div class="flex flex-col pl-4">
+                      <span class="font-semibold text-gray-900 dark:text-white text-sm">
+                        {{ formatDate(dayData.date) }}
+                      </span>
+                      <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {{ getDayOfWeek(dayData.date) }}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <span class="text-xs text-gray-600 dark:text-gray-400">{{ report.hora }}</span>
+                  </td>
+                  <td>
+                    <span class="line-clamp-2 max-w-xs text-sm">{{ report.descripcion }}</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="text-xs text-gray-600 dark:text-gray-400">{{ report.projectName || '-' }}</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
+                      {{ report.cantidadReportes }}
+                    </span>
+                  </td>
+                </tr>
+                }
+              }
+            }
+            } @else {
+            <!-- Fila simple: Un solo día -->
+            @if (userData.days.length === 1) {
+              @for (report of userData.days[0].reports; track report.userId + report.fecha + report.hora) {
+              <tr>
+                <td></td>
+                <td>
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold shrink-0"
+                    >
+                      {{ userData.userName.charAt(0).toUpperCase() }}
+                    </div>
+                    <div>
+                      <p class="font-medium text-gray-900 dark:text-white">{{ userData.userName }}</p>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">{{ userData.userEmail }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="flex flex-col">
+                    <span class="font-semibold text-gray-900 dark:text-white text-base">
+                      {{ formatDate(userData.days[0].date) }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {{ getDayOfWeek(userData.days[0].date) }}
+                    </span>
+                    <span class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ report.hora }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="line-clamp-2 max-w-xs">{{ report.descripcion }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">{{ report.projectName || '-' }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
+                    {{ report.cantidadReportes }}
+                  </span>
+                </td>
+              </tr>
+              }
+            }
+            }
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="text-center py-8 text-gray-500">
+                <i class="pi pi-file-edit text-4xl text-gray-400 mb-2"></i>
+                <p class="text-gray-500 dark:text-gray-400">No hay reportes para el rango de fechas seleccionado</p>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
       </div>
 
       <!-- Vista Mobile: Cards -->
       <div class="md:hidden space-y-3">
-        @for (report of dailyReports(); track report.userId + report.fecha) {
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
-          <div class="p-4 space-y-3">
-            <!-- Header -->
-            <div class="flex items-start justify-between border-b border-gray-200 dark:border-gray-700 pb-3">
-              <div class="flex-1">
-                <div class="flex items-center gap-3 mb-2">
-                  <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold shrink-0">
-                    {{ report.userName.charAt(0).toUpperCase() }}
+        @for (userData of groupedReportsByUser(); track userData.userId) {
+          @if (userData.totalDays > 1) {
+          <!-- Card para múltiples días -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
+            <div class="p-4 space-y-3">
+              <!-- Header con botón de expandir -->
+              <div class="flex items-start justify-between border-b border-gray-200 dark:border-gray-700 pb-3">
+                <div class="flex-1">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold shrink-0">
+                      {{ userData.userName.charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="font-semibold text-gray-900 dark:text-white truncate">{{ userData.userName }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ userData.userEmail }}</p>
+                    </div>
                   </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="font-semibold text-gray-900 dark:text-white truncate">{{ report.userName }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ report.userEmail }}</p>
+                  <div class="mt-2 flex items-center gap-4">
+                    <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium">
+                      {{ userData.totalDays }} días
+                    </span>
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
+                      {{ userData.totalReports }} reportes
+                    </span>
                   </div>
                 </div>
-                <div class="mt-2">
-                  <span class="font-medium text-gray-900 dark:text-white">{{ report.fecha }}</span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">{{ report.hora }}</span>
-                </div>
+                <button
+                  type="button"
+                  (click)="toggleReportUserExpansion(userData.userId)"
+                  class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                >
+                  <i
+                    class="pi text-lg transition-transform"
+                    [ngClass]="isReportUserExpanded(userData.userId) ? 'pi-chevron-down' : 'pi-chevron-right'"
+                  ></i>
+                </button>
               </div>
-              <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium shrink-0">
-                {{ report.cantidadReportes }}
-              </span>
-            </div>
 
-            <!-- Descripción -->
-            <div class="flex items-start gap-2">
-              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[100px]">Descripción:</span>
-              <p class="text-sm text-gray-700 dark:text-gray-300 flex-1">{{ report.descripcion }}</p>
-            </div>
+              <!-- Días expandidos -->
+              @if (isReportUserExpanded(userData.userId)) {
+                @for (dayData of userData.days; track dayData.date) {
+                  @for (report of dayData.reports; track report.userId + report.fecha + report.hora) {
+                  <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-2 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                      <span class="font-semibold text-gray-900 dark:text-white text-sm">
+                        {{ formatDate(dayData.date) }}
+                      </span>
+                      <span class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ getDayOfWeek(dayData.date) }} - {{ report.hora }}
+                      </span>
+                    </div>
 
-            <!-- Proyecto -->
-            @if (report.projectName) {
-            <div class="flex items-start gap-2">
-              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[100px]">Proyecto:</span>
-              <p class="text-sm text-gray-700 dark:text-gray-300 flex-1">{{ report.projectName }}</p>
+                    <!-- Descripción -->
+                    <div class="flex items-start gap-2">
+                      <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[80px]">Descripción:</span>
+                      <p class="text-xs text-gray-700 dark:text-gray-300 flex-1">{{ report.descripcion }}</p>
+                    </div>
+
+                    <!-- Proyecto -->
+                    @if (report.projectName) {
+                    <div class="flex items-start gap-2">
+                      <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[80px]">Proyecto:</span>
+                      <p class="text-xs text-gray-700 dark:text-gray-300 flex-1">{{ report.projectName }}</p>
+                    </div>
+                    }
+
+                    <!-- Cantidad -->
+                    <div class="flex items-start gap-2">
+                      <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[80px]">Cantidad:</span>
+                      <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
+                        {{ report.cantidadReportes }}
+                      </span>
+                    </div>
+                  </div>
+                  }
+                }
+              }
+            </div>
+          </div>
+          } @else {
+          <!-- Card para un solo día -->
+          @if (userData.days.length === 1) {
+            @for (report of userData.days[0].reports; track report.userId + report.fecha + report.hora) {
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
+              <div class="p-4 space-y-3">
+                <!-- Header -->
+                <div class="flex items-start justify-between border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                      <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold shrink-0">
+                        {{ userData.userName.charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-gray-900 dark:text-white truncate">{{ userData.userName }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ userData.userEmail }}</p>
+                      </div>
+                    </div>
+                    <div class="mt-2">
+                      <span class="font-medium text-gray-900 dark:text-white">{{ formatDate(userData.days[0].date) }}</span>
+                      <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">{{ getDayOfWeek(userData.days[0].date) }}</span>
+                      <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">{{ report.hora }}</span>
+                    </div>
+                  </div>
+                  <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium shrink-0">
+                    {{ report.cantidadReportes }}
+                  </span>
+                </div>
+
+                <!-- Descripción -->
+                <div class="flex items-start gap-2">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[100px]">Descripción:</span>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 flex-1">{{ report.descripcion }}</p>
+                </div>
+
+                <!-- Proyecto -->
+                @if (report.projectName) {
+                <div class="flex items-start gap-2">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[100px]">Proyecto:</span>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 flex-1">{{ report.projectName }}</p>
+                </div>
+                }
+              </div>
             </div>
             }
-          </div>
-        </div>
+          }
+          }
         }
-        @if (dailyReports().length === 0) {
+        @if (groupedReportsByUser().length === 0) {
         <div class="text-center py-8 text-gray-500">
           <i class="pi pi-file-edit text-4xl text-gray-400 mb-2"></i>
           <p class="text-gray-500 dark:text-gray-400">No hay reportes para el rango de fechas seleccionado</p>
