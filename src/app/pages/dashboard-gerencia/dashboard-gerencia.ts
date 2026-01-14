@@ -102,9 +102,6 @@ export class DashboardGerenciaPage implements OnInit {
   // Signals para almacenar direcciones resueltas y estado de carga
   private readonly locationAddresses = signal<Record<string, string>>({});
   private readonly locationLoading = signal<Record<string, boolean>>({});
-  
-  // Set para trackear ubicaciones pendientes de resolución
-  private readonly pendingLocations = signal<Set<string>>(new Set());
 
   /**
    * Agrupa marcaciones primero por persona, luego por día
@@ -388,21 +385,14 @@ export class DashboardGerenciaPage implements OnInit {
     this._startDate.set(startDate);
     this._endDate.set(endDate);
 
-    // Effect para resolver ubicaciones pendientes de forma reactiva
+    // Effect para resolver ubicaciones automáticamente cuando cambian los datos
     // Usar runInInjectionContext porque effect() requiere un contexto de inyección
     runInInjectionContext(this.injector, () => {
       effect(() => {
-        const pending = this.pendingLocations();
-        if (pending.size > 0) {
-          // Resolver ubicaciones pendientes
-          pending.forEach((key) => {
-            const [lat, lon] = key.split(',').map(Number);
-            if (!isNaN(lat) && !isNaN(lon)) {
-              this.resolveLocationAddress({ latitude: lat, longitude: lon });
-            }
-          });
-          // Limpiar el set después de procesar
-          this.pendingLocations.set(new Set());
+        const data = this.dashboardData();
+        if (data?.marcacionesDiarias) {
+          // Resolver direcciones de todas las ubicaciones únicas
+          this.resolveAllLocationAddresses(data.marcacionesDiarias);
         }
       });
     });
@@ -447,11 +437,6 @@ export class DashboardGerenciaPage implements OnInit {
 
       const data = await this.apiService.getDashboardData(params).toPromise();
       this.dashboardData.set(data ?? null);
-
-      // Resolver direcciones de todas las ubicaciones únicas de forma optimizada
-      if (data?.marcacionesDiarias) {
-        this.resolveAllLocationAddresses(data.marcacionesDiarias);
-      }
     } catch (err: unknown) {
       const errorMessage =
         (err && typeof err === 'object' && 'error' in err
@@ -793,7 +778,8 @@ export class DashboardGerenciaPage implements OnInit {
 
   /**
    * Formatea la ubicación para mostrar (dirección o coordenadas)
-   * Accede a los signals para que Angular detecte los cambios automáticamente
+   * Método puro que solo lee signals, sin efectos secundarios
+   * Las ubicaciones se resuelven automáticamente mediante el effect
    */
   formatLocation(location?: { latitude: number; longitude: number }): string {
     if (!location) return 'N/A';
@@ -815,18 +801,8 @@ export class DashboardGerenciaPage implements OnInit {
       return address;
     }
 
-    // Agregar a ubicaciones pendientes para que el effect las resuelva
-    // Esto evita actualizar signals durante el renderizado
-    const currentPending = this.pendingLocations();
-    if (!currentPending.has(key)) {
-      this.pendingLocations.update((pending) => {
-        const newPending = new Set(pending);
-        newPending.add(key);
-        return newPending;
-      });
-    }
-
     // Retornar coordenadas mientras se carga
+    // La resolución se hace automáticamente mediante el effect
     return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
   }
 
