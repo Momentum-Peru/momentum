@@ -5,6 +5,9 @@ import {
   ChangeDetectionStrategy,
   signal,
   computed,
+  effect,
+  Injector,
+  runInInjectionContext,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -58,6 +61,7 @@ export class DashboardGerenciaPage implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly authService = inject(AuthService);
   private readonly geocodingService = inject(GeocodingService);
+  private readonly injector = inject(Injector);
 
   // Signals para el estado
   public readonly loading = signal<boolean>(false);
@@ -98,6 +102,9 @@ export class DashboardGerenciaPage implements OnInit {
   // Signals para almacenar direcciones resueltas y estado de carga
   private readonly locationAddresses = signal<Record<string, string>>({});
   private readonly locationLoading = signal<Record<string, boolean>>({});
+  
+  // Set para trackear ubicaciones pendientes de resolución
+  private readonly pendingLocations = signal<Set<string>>(new Set());
 
   /**
    * Agrupa marcaciones primero por persona, luego por día
@@ -380,6 +387,25 @@ export class DashboardGerenciaPage implements OnInit {
     this.endDateValue = endDate;
     this._startDate.set(startDate);
     this._endDate.set(endDate);
+
+    // Effect para resolver ubicaciones pendientes de forma reactiva
+    // Usar runInInjectionContext porque effect() requiere un contexto de inyección
+    runInInjectionContext(this.injector, () => {
+      effect(() => {
+        const pending = this.pendingLocations();
+        if (pending.size > 0) {
+          // Resolver ubicaciones pendientes
+          pending.forEach((key) => {
+            const [lat, lon] = key.split(',').map(Number);
+            if (!isNaN(lat) && !isNaN(lon)) {
+              this.resolveLocationAddress({ latitude: lat, longitude: lon });
+            }
+          });
+          // Limpiar el set después de procesar
+          this.pendingLocations.set(new Set());
+        }
+      });
+    });
 
     // Cargar datos iniciales
     this.loadDashboard();
@@ -789,8 +815,16 @@ export class DashboardGerenciaPage implements OnInit {
       return address;
     }
 
-    // Iniciar la resolución de la dirección (solo si no está cargando)
-    this.resolveLocationAddress(location);
+    // Agregar a ubicaciones pendientes para que el effect las resuelva
+    // Esto evita actualizar signals durante el renderizado
+    const currentPending = this.pendingLocations();
+    if (!currentPending.has(key)) {
+      this.pendingLocations.update((pending) => {
+        const newPending = new Set(pending);
+        newPending.add(key);
+        return newPending;
+      });
+    }
 
     // Retornar coordenadas mientras se carga
     return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
