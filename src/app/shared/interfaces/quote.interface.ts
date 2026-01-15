@@ -10,8 +10,7 @@ export interface Quote {
   state: QuoteState;
   projectId: string | { _id: string; name: string; code: string };
   requirementId?: string | { _id: string; codigo: string; title: string };
-  number?: string; // Número ingresado por el usuario (opcional)
-  correlativeNumber: number; // Número correlativo auto-incremental
+  number: string;
   createDate: string | Date;
   sendDate?: string | Date;
   expirationDate?: string | Date;
@@ -33,8 +32,7 @@ export type QuoteState =
 
 export interface QuoteOption {
   _id: string;
-  number?: string; // Número ingresado por el usuario (opcional)
-  correlativeNumber: number; // Número correlativo auto-incremental
+  number: string;
   clientName: string;
   total: number;
   state: QuoteState;
