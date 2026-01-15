@@ -57,6 +57,18 @@ export class LogsApiService {
   }
 
   /**
+   * Crea un nuevo log con tenantId específico en los headers
+   * Útil cuando se crea un log desde un interceptor y se necesita el tenantId de la petición original
+   */
+  createWithTenant(log: CreateLogRequest, tenantId: string): Observable<Log> {
+    return this.http.post<Log>(this.baseUrl, log, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    });
+  }
+
+  /**
    * Obtiene todos los logs con filtros opcionales
    */
   findAll(params?: LogQueryParams): Observable<LogsResponse> {

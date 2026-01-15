@@ -22,6 +22,7 @@ export class MenuConfigService {
   private readonly routesConfig: RouteConfig[] = [
     { path: '/dashboard', label: 'Dashboard', icon: 'pi pi-chart-line' },
     { path: '/dashboard-gerencia', label: 'Dashboard de Gerencia', icon: 'pi pi-chart-bar' },
+    { path: '/gerencia-boards', label: 'Tableros de Gerencia', icon: 'pi pi-th-large' },
     { path: '/projects/dashboard', label: 'Dashboard de Proyectos', icon: 'pi pi-chart-line' },
     { path: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
     { path: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
@@ -90,6 +91,17 @@ export class MenuConfigService {
             label: 'Dashboard de Gerencia',
             icon: 'pi pi-chart-bar',
             routerLink: '/dashboard-gerencia',
+          },
+        ],
+      },
+      {
+        label: 'GERENCIA',
+        icon: 'pi pi-briefcase',
+        items: [
+          {
+            label: 'Tableros de Tareas',
+            icon: 'pi pi-th-large',
+            routerLink: '/gerencia-boards',
           },
         ],
       },
