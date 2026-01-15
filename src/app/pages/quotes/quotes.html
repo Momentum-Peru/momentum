@@ -63,7 +63,7 @@
             <span
               class="font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
             >
-              {{ getQuoteNumber(quote) }}
+              {{ quote.number }}
             </span>
           </td>
           <td>
@@ -191,7 +191,7 @@
           <div
             class="font-mono text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded inline-block mb-1"
           >
-            {{ getQuoteNumber(quote) }}
+            {{ quote.number }}
           </div>
           <div class="font-semibold text-gray-900 dark:text-gray-100 truncate mt-2">
             {{ getClientName(quote.clientId) }}
@@ -228,7 +228,7 @@
             <div
               class="font-mono text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded inline-block"
             >
-              {{ getQuoteNumber(quote) }}
+              {{ quote.number }}
             </div>
           </div>
 
@@ -713,7 +713,7 @@
     <ng-template pTemplate="header">
       <div class="flex items-center gap-2">
         <i class="pi pi-eye text-blue-500"></i>
-        Detalles de la Cotización — {{ viewingQuote() ? getQuoteNumber(viewingQuote()!) : '' }}
+        Detalles de la Cotización — {{ viewingQuote()?.number }}
       </div>
     </ng-template>
     @if (viewingQuote()) {
@@ -734,7 +734,7 @@
             <div
               class="text-gray-900 dark:text-gray-100 font-mono font-medium bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
             >
-              {{ viewingQuote() ? getQuoteNumber(viewingQuote()!) : '' }}
+              {{ viewingQuote()?.number }}
             </div>
           </div>
           <div>
