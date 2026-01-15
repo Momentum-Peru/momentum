@@ -94,7 +94,7 @@
         styleClass="responsive-button"
       ></p-button>
       }
-      @if (isBoardMember()) {
+      @if (isBoardMember() || isGerencia) {
       <p-button
         icon="pi pi-user-plus"
         label="Invitar"

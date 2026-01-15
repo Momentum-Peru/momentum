@@ -265,6 +265,22 @@ export class BoardsApiService {
   }
 
   /**
+   * Obtiene todos los tableros del sistema (solo para gerencia)
+   */
+  getAllForGerencia(): Observable<Board[]> {
+    this.setLoading(true);
+    this.setError(null);
+
+    return this.http.get<Board[]>(`${this.baseUrl}/gerencia/all`).pipe(
+      tap((boards) => {
+        this.boards.set(boards);
+      }),
+      tap(() => this.setLoading(false)),
+      tap({ error: (err) => this.handleError(err) })
+    );
+  }
+
+  /**
    * Refresca la lista de tableros
    */
   refresh(): void {

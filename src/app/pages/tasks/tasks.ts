@@ -151,7 +151,7 @@ export class TasksPage implements OnInit {
     const boardId = this.selectedBoard()?._id;
 
     // Helper para obtener el ID del boardId (puede ser string o objeto populado)
-    const getBoardId = (boardIdValue: string | { _id: string } | undefined): string | undefined => {
+    const getBoardId = (boardIdValue: string | { _id?: string; title?: string } | undefined): string | undefined => {
       if (!boardIdValue) return undefined;
       if (typeof boardIdValue === 'string') return boardIdValue;
       if (typeof boardIdValue === 'object' && '_id' in boardIdValue) {
@@ -179,7 +179,7 @@ export class TasksPage implements OnInit {
     const boardId = this.selectedBoard()?._id;
 
     // Helper para obtener el ID del boardId (puede ser string o objeto populado)
-    const getBoardId = (boardIdValue: string | { _id: string } | undefined): string | undefined => {
+    const getBoardId = (boardIdValue: string | { _id?: string; title?: string } | undefined): string | undefined => {
       if (!boardIdValue) return undefined;
       if (typeof boardIdValue === 'string') return boardIdValue;
       if (typeof boardIdValue === 'object' && '_id' in boardIdValue) {
