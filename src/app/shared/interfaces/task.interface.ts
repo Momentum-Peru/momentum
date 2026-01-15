@@ -53,7 +53,7 @@ export interface Task {
   createdByName?: string; // User name for display
   dueDate?: Date | string;
   tags: string[];
-  boardId?: string; // Board ID (opcional)
+  boardId?: string | { _id?: string; title?: string }; // Board ID (opcional) o objeto poblado
   projectId?: string | { _id?: string; name?: string; code?: string }; // Project ID o objeto poblado (opcional)
   info?: TaskComment[]; // Comentarios/información de la tarea
   files?: TaskFile[];

@@ -35,7 +35,15 @@ export const tenantInterceptor: HttpInterceptorFn = (req, next) => {
 
   if (isGerencia) {
     // Gerencia puede consultar sin tenant seleccionado para obtener datos agregados.
-    // Si existe un tenant seleccionado, enviamos el header para respetar el aislamiento.
+    // Para rutas de boards, tasks y logs, gerencia puede ver todos los datos sin restricción de tenant
+    const isBoardsOrTasksOrLogsRoute = req.url.includes('/boards') || req.url.includes('/tasks') || req.url.includes('/logs');
+    
+    // Si es una ruta de boards, tasks o logs, no enviar el header para que gerencia vea todos los datos
+    if (isBoardsOrTasksOrLogsRoute) {
+      return next(req);
+    }
+    
+    // Para otras rutas, si existe un tenant seleccionado, enviamos el header para respetar el aislamiento.
     const hasValidTenant = tenantId && /^[a-fA-F0-9]{24}$/.test(tenantId);
     if (!hasValidTenant) {
       return next(req);

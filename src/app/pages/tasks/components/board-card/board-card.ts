@@ -58,6 +58,7 @@ export class BoardCardComponent {
   @Input() isOwner = false;
   @Input() isSelected = false;
   @Input() currentUserId = '';
+  @Input() isGerencia = false;
   @Output() view = new EventEmitter<Board>();
   @Output() edit = new EventEmitter<Board>();
   @Output() invite = new EventEmitter<Board>();
