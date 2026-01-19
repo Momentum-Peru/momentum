@@ -146,8 +146,8 @@ export class MenuConfigService {
         icon: 'pi pi-cog',
         items: [
           {
-            label: 'Documentos de Ingeniería',
-            icon: 'pi pi-cog',
+            label: 'Documentación',
+            icon: 'pi pi-file-edit',
             routerLink: '/engineering',
           },
         ],
