@@ -10,14 +10,21 @@ import { SelectModule } from 'primeng/select';
 import { FileUploadModule } from 'primeng/fileupload';
 import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
+import { AutoCompleteModule } from 'primeng/autocomplete';
 import { MessageService } from 'primeng/api';
 import { EngineeringApiService } from '../../shared/services/engineering-api.service';
 import { ProjectsApiService } from '../../shared/services/projects-api.service';
-import { Engineering, EngineeringType } from '../../shared/interfaces/engineering.interface';
+import { Engineering, DocumentCategory } from '../../shared/interfaces/engineering.interface';
 import { Project } from '../../shared/interfaces/project.interface';
 
 interface EngineeringWithProject extends Engineering {
   project?: Project;
+}
+
+interface FileWithCategory {
+  file: File;
+  categoryId?: string;
+  newCategoryName?: string;
 }
 
 @Component({
@@ -35,6 +42,7 @@ interface EngineeringWithProject extends Engineering {
     FileUploadModule,
     TooltipModule,
     ToastModule,
+    AutoCompleteModule,
   ],
   templateUrl: './engineering.html',
   styleUrl: './engineering.scss',
@@ -49,7 +57,9 @@ export class EngineeringPage implements OnInit {
 
   items = signal<EngineeringWithProject[]>([]);
   filteredItems = signal<EngineeringWithProject[]>([]);
-  projects = signal<Array<{ label: string; value: string }>>([]);
+  projects = signal<{ label: string; value: string }[]>([]);
+  categories = signal<DocumentCategory[]>([]);
+  filteredCategories = signal<DocumentCategory[]>([]);
   query = signal('');
   showDialog = signal(false);
   showDetailsDialog = signal(false);
@@ -58,24 +68,23 @@ export class EngineeringPage implements OnInit {
   loading = signal(false);
   uploading = signal(false);
 
-  // Archivos seleccionados para cada tipo de documento (arrays para permitir múltiples)
-  structuralCalculationsFiles = signal<File[]>([]);
-  scheduleFiles = signal<File[]>([]);
-  fabricationPlansFiles = signal<File[]>([]);
-  assemblyPlansFiles = signal<File[]>([]);
-  billOfMaterialsFiles = signal<File[]>([]);
-  otherDocumentsFiles = signal<File[]>([]);
+  // Archivos seleccionados con su categoría
+  selectedFiles = signal<FileWithCategory[]>([]);
 
-  typeOptions: Array<{ label: string; value: EngineeringType }> = [
-    { label: 'Mantenimiento', value: 'Mantenimiento' },
-    { label: 'Fabricación', value: 'Fabricación' },
-    { label: 'Montaje', value: 'Montaje' },
-    { label: 'Mixto', value: 'Mixto' },
-  ];
+  // Para el selector de categoría al agregar archivos
+  selectedCategory = signal<DocumentCategory | null>(null);
+  newCategoryName = signal('');
+  creatingCategory = signal(false);
+
+  // Para editar/eliminar categorías
+  showCategoryDialog = signal(false);
+  editingCategory = signal<DocumentCategory | null>(null);
+  editCategoryName = signal('');
+  savingCategory = signal(false);
+  deletingCategory = signal(false);
 
   engineeringForm = this.fb.group({
     projectId: ['', Validators.required],
-    type: ['Mantenimiento' as EngineeringType, Validators.required],
   });
 
   constructor() {
@@ -84,6 +93,8 @@ export class EngineeringPage implements OnInit {
         this.editing.set(null);
         this.engineeringForm.reset();
         this.clearAllFiles();
+        this.selectedCategory.set(null);
+        this.newCategoryName.set('');
       }
     });
 
@@ -97,48 +108,28 @@ export class EngineeringPage implements OnInit {
   ngOnInit() {
     this.load();
     this.loadProjects();
+    this.loadCategories();
   }
 
   load() {
     this.loading.set(true);
-    this.projectsApi.list().subscribe({
-      next: (projects) => {
-        const items: EngineeringWithProject[] = [];
-
-        // Para cada proyecto, intentar cargar su información de ingeniería
-        const loadPromises = projects
-          .filter((p) => p._id)
-          .map((project) => {
-            return new Promise<void>((resolve) => {
-              this.engineeringApi.getByProject(project._id!).subscribe({
-                next: (engineering) => {
-                  items.push({
-                    ...engineering,
-                    project,
-                    projectId: project._id!,
-                  });
-                  resolve();
-                },
-                error: () => {
-                  // Si no existe ingeniería, no agregar a la lista
-                  resolve();
-                },
-              });
-            });
-          });
-
-        Promise.all(loadPromises).then(() => {
-          this.items.set(items);
-          this.applyFilters();
-          this.loading.set(false);
-        });
+    this.engineeringApi.getAllWithDocuments().subscribe({
+      next: (engineeringProjects) => {
+        const items: EngineeringWithProject[] = engineeringProjects.map((eng) => ({
+          ...eng,
+          project:
+            typeof eng.projectId === 'object' ? (eng.projectId as unknown as Project) : undefined,
+        }));
+        this.items.set(items);
+        this.applyFilters();
+        this.loading.set(false);
       },
       error: (error) => {
-        console.error('Error loading projects:', error);
+        console.error('Error loading engineering projects:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Error al cargar los proyectos',
+          detail: 'Error al cargar los proyectos de ingeniería',
         });
         this.loading.set(false);
       },
@@ -161,15 +152,226 @@ export class EngineeringPage implements OnInit {
     });
   }
 
+  loadCategories() {
+    this.engineeringApi.getCategories().subscribe({
+      next: (categories) => {
+        this.categories.set(categories);
+        this.filteredCategories.set(categories);
+      },
+      error: (error) => {
+        console.error('Error loading categories:', error);
+      },
+    });
+  }
+
+  filterCategories(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    const filtered = this.categories().filter((cat) => cat.name.toLowerCase().includes(query));
+    this.filteredCategories.set(filtered);
+  }
+
+  // Crear nueva categoría en el backend
+  async createCategory() {
+    const name = this.newCategoryName().trim();
+    if (!name) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Atención',
+        detail: 'Ingrese un nombre para la categoría',
+      });
+      return;
+    }
+
+    // Verificar si ya existe
+    const exists = this.categories().find((c) => c.name.toLowerCase() === name.toLowerCase());
+    if (exists) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Categoría existente',
+        detail: 'Esta categoría ya existe, se ha seleccionado automáticamente',
+      });
+      this.selectedCategory.set(exists);
+      this.newCategoryName.set('');
+      return;
+    }
+
+    this.creatingCategory.set(true);
+    try {
+      const newCategory = await firstValueFrom(this.engineeringApi.createCategory({ name }));
+
+      // Agregar a la lista y seleccionar
+      this.categories.update((cats) => [...cats, newCategory]);
+      this.selectedCategory.set(newCategory);
+      this.newCategoryName.set('');
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Categoría creada',
+        detail: `"${name}" está lista para usar`,
+        life: 2000,
+      });
+    } catch (error) {
+      console.error('Error creating category:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: this.getErrorMessage(error),
+      });
+    } finally {
+      this.creatingCategory.set(false);
+    }
+  }
+
+  // Abrir diálogo para editar categoría
+  openEditCategoryDialog(category: DocumentCategory) {
+    this.editingCategory.set(category);
+    this.editCategoryName.set(category.name);
+    this.showCategoryDialog.set(true);
+  }
+
+  // Guardar cambios de categoría
+  async saveCategory() {
+    const category = this.editingCategory();
+    const newName = this.editCategoryName().trim();
+
+    if (!category || !newName) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Atención',
+        detail: 'Ingrese un nombre para la categoría',
+      });
+      return;
+    }
+
+    // Verificar si ya existe otra con el mismo nombre
+    const exists = this.categories().find(
+      (c) => c._id !== category._id && c.name.toLowerCase() === newName.toLowerCase()
+    );
+    if (exists) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Nombre duplicado',
+        detail: 'Ya existe otra categoría con ese nombre',
+      });
+      return;
+    }
+
+    this.savingCategory.set(true);
+    try {
+      const updated = await firstValueFrom(
+        this.engineeringApi.updateCategory(category._id, { name: newName })
+      );
+
+      // Actualizar en la lista de categorías
+      this.categories.update((cats) => cats.map((c) => (c._id === updated._id ? updated : c)));
+
+      // Si estaba seleccionada, actualizar también
+      if (this.selectedCategory()?._id === updated._id) {
+        this.selectedCategory.set(updated);
+      }
+
+      // Actualizar también en los items de la tabla (documentsByCategory)
+      this.items.update((items) =>
+        items.map((item) => ({
+          ...item,
+          documentsByCategory: item.documentsByCategory?.map((group) =>
+            group.category._id === updated._id
+              ? { ...group, category: { ...group.category, name: updated.name } }
+              : group
+          ),
+        }))
+      );
+      this.applyFilters();
+
+      this.showCategoryDialog.set(false);
+      this.editingCategory.set(null);
+      this.editCategoryName.set('');
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Categoría actualizada',
+        detail: `"${newName}" guardada correctamente`,
+        life: 2000,
+      });
+    } catch (error) {
+      console.error('Error updating category:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: this.getErrorMessage(error),
+      });
+    } finally {
+      this.savingCategory.set(false);
+    }
+  }
+
+  // Eliminar categoría
+  async deleteCategory(category: DocumentCategory) {
+    this.deletingCategory.set(true);
+    try {
+      await firstValueFrom(this.engineeringApi.deleteCategory(category._id));
+
+      // Quitar de la lista de categorías
+      this.categories.update((cats) => cats.filter((c) => c._id !== category._id));
+
+      // Si estaba seleccionada, deseleccionar
+      if (this.selectedCategory()?._id === category._id) {
+        this.selectedCategory.set(null);
+      }
+
+      // Actualizar también en los items de la tabla (quitar grupos de esa categoría)
+      this.items.update((items) =>
+        items.map((item) => ({
+          ...item,
+          documentsByCategory: item.documentsByCategory?.filter(
+            (group) => group.category._id !== category._id
+          ),
+        }))
+      );
+      this.applyFilters();
+
+      this.showCategoryDialog.set(false);
+      this.editingCategory.set(null);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Categoría eliminada',
+        detail: `"${category.name}" eliminada correctamente`,
+        life: 2000,
+      });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: this.getErrorMessage(error),
+      });
+    } finally {
+      this.deletingCategory.set(false);
+    }
+  }
+
+  // Cerrar diálogo de categoría
+  closeCategoryDialog() {
+    this.showCategoryDialog.set(false);
+    this.editingCategory.set(null);
+    this.editCategoryName.set('');
+  }
+
   applyFilters() {
     const q = this.query().toLowerCase();
     const filtered = this.items().filter((item) => {
-      const projectName = typeof item.projectId === 'object' ? item.projectId.name : item.project?.name || '';
-      const projectCode = typeof item.projectId === 'object' ? item.projectId.code : item.project?.code || '';
+      const projectName =
+        typeof item.projectId === 'object' ? item.projectId.name : item.project?.name || '';
+      const projectCode =
+        typeof item.projectId === 'object' ? item.projectId.code : item.project?.code || '';
+      // Buscar también en nombres de categorías
+      const categoryNames =
+        item.documentsByCategory?.map((g) => g.category.name.toLowerCase()).join(' ') || '';
       return (
         projectName.toLowerCase().includes(q) ||
         projectCode.toLowerCase().includes(q) ||
-        item.type.toLowerCase().includes(q)
+        categoryNames.includes(q)
       );
     });
     this.filteredItems.set(filtered);
@@ -182,7 +384,6 @@ export class EngineeringPage implements OnInit {
     });
     this.engineeringForm.reset({
       projectId: '',
-      type: 'Mantenimiento',
     });
     this.clearAllFiles();
     this.showDialog.set(true);
@@ -193,9 +394,22 @@ export class EngineeringPage implements OnInit {
     this.editing.set(item);
     this.engineeringForm.patchValue({
       projectId: projectId || '',
-      type: item.type || 'Mantenimiento',
     });
     this.clearAllFiles();
+
+    // Preseleccionar la primera categoría que tenga documentos, o la primera disponible
+    if (item.documentsByCategory && item.documentsByCategory.length > 0) {
+      const firstCategoryWithDocs = item.documentsByCategory[0].category;
+      // Buscar la categoría en la lista de categorías disponibles
+      const matchingCategory = this.categories().find((c) => c._id === firstCategoryWithDocs._id);
+      if (matchingCategory) {
+        this.selectedCategory.set(matchingCategory);
+      }
+    } else if (this.categories().length > 0) {
+      // Si no hay documentos, seleccionar la primera categoría disponible
+      this.selectedCategory.set(this.categories()[0]);
+    }
+
     this.showDialog.set(true);
   }
 
@@ -224,11 +438,11 @@ export class EngineeringPage implements OnInit {
     this.uploading.set(true);
 
     try {
-      // Primero crear o actualizar el registro de ingeniería (clasificación)
+      // Primero crear o actualizar el registro de ingeniería
       const editing = this.editing();
       const payload: Partial<Engineering> = {
         projectId,
-        type: formValue.type as EngineeringType,
+        type: 'Mixto', // Tipo por defecto, ya que ahora se organizan por categorías de documentos
       };
 
       // Crear o actualizar el registro básico
@@ -238,48 +452,19 @@ export class EngineeringPage implements OnInit {
         await firstValueFrom(this.engineeringApi.create(payload));
       }
 
-      // Luego subir los archivos usando el endpoint correcto
+      // Subir los archivos con sus categorías
       const uploadPromises: Promise<void>[] = [];
 
-      // Subir archivos de cálculos estructurales
-      for (const file of this.structuralCalculationsFiles()) {
+      for (const fileWithCategory of this.selectedFiles()) {
         uploadPromises.push(
-          firstValueFrom(this.engineeringApi.uploadFile(projectId, file, 'structural')).then(() => {})
-        );
-      }
-
-      // Subir archivos de cronograma
-      for (const file of this.scheduleFiles()) {
-        uploadPromises.push(
-          firstValueFrom(this.engineeringApi.uploadFile(projectId, file, 'schedule')).then(() => {})
-        );
-      }
-
-      // Subir archivos de planos de fabricación
-      for (const file of this.fabricationPlansFiles()) {
-        uploadPromises.push(
-          firstValueFrom(this.engineeringApi.uploadFile(projectId, file, 'fabrication')).then(() => {})
-        );
-      }
-
-      // Subir archivos de planos de montaje
-      for (const file of this.assemblyPlansFiles()) {
-        uploadPromises.push(
-          firstValueFrom(this.engineeringApi.uploadFile(projectId, file, 'assembly')).then(() => {})
-        );
-      }
-
-      // Subir archivos de lista de materiales
-      for (const file of this.billOfMaterialsFiles()) {
-        uploadPromises.push(
-          firstValueFrom(this.engineeringApi.uploadFile(projectId, file, 'bom')).then(() => {})
-        );
-      }
-
-      // Subir otros documentos
-      for (const file of this.otherDocumentsFiles()) {
-        uploadPromises.push(
-          firstValueFrom(this.engineeringApi.uploadFile(projectId, file, 'other')).then(() => {})
+          firstValueFrom(
+            this.engineeringApi.uploadDocument(
+              projectId,
+              fileWithCategory.file,
+              fileWithCategory.categoryId,
+              undefined
+            )
+          ).then(() => undefined)
         );
       }
 
@@ -292,6 +477,7 @@ export class EngineeringPage implements OnInit {
         detail: 'Información de ingeniería guardada correctamente',
       });
       this.load();
+      this.loadCategories(); // Recargar categorías por si se crearon nuevas
       this.closeDialog();
     } catch (error) {
       console.error('Error saving engineering:', error);
@@ -305,74 +491,88 @@ export class EngineeringPage implements OnInit {
     }
   }
 
-  // Handlers para file upload - ahora manejan arrays
-  onStructuralCalculationsSelect(event: { files: File[] }) {
-    if (event.files && event.files.length > 0) {
-      this.structuralCalculationsFiles.update((files) => [...files, ...event.files]);
+  // Handler para selección de archivos con categoría
+  onFilesSelect(event: { files: File[] | FileList; currentFiles?: File[] }) {
+    // PrimeNG puede pasar files como FileList o como array
+    const filesArray: File[] = event.currentFiles
+      ? Array.from(event.currentFiles)
+      : Array.isArray(event.files)
+      ? event.files
+      : Array.from(event.files);
+
+    if (filesArray && filesArray.length > 0) {
+      const category = this.selectedCategory();
+
+      if (!category) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Atención',
+          detail: 'Debe seleccionar o crear una categoría antes de agregar archivos',
+        });
+        return;
+      }
+
+      const newFiles: FileWithCategory[] = filesArray.map((file) => ({
+        file,
+        categoryId: category._id,
+      }));
+
+      this.selectedFiles.update((files) => [...files, ...newFiles]);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Archivos agregados',
+        detail: `${filesArray.length} archivo(s) en "${category.name}"`,
+        life: 2000,
+      });
     }
   }
 
-  onScheduleSelect(event: { files: File[] }) {
-    if (event.files && event.files.length > 0) {
-      this.scheduleFiles.update((files) => [...files, ...event.files]);
+  // Método para eliminar un archivo de la lista de seleccionados
+  removeSelectedFile(index: number) {
+    this.selectedFiles.update((files) => files.filter((_, i) => i !== index));
+  }
+
+  // Método para eliminar un documento existente del servidor (nuevo sistema con ID)
+  async deleteDocumentById(documentId: string) {
+    const viewing = this.viewingEngineering();
+    if (!viewing) return;
+
+    const projectId =
+      typeof viewing.projectId === 'object' ? viewing.projectId._id : viewing.projectId;
+    if (!projectId) return;
+
+    try {
+      await firstValueFrom(this.engineeringApi.deleteDocument(projectId, documentId));
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: 'Documento eliminado correctamente',
+      });
+      // Recargar los datos
+      this.load();
+      // Si estamos viendo detalles, recargar también
+      if (this.showDetailsDialog()) {
+        const updated = await firstValueFrom(this.engineeringApi.getByProjectFull(projectId));
+        this.viewingEngineering.set({ ...updated, project: viewing.project });
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Error al eliminar el documento',
+      });
     }
   }
 
-  onFabricationPlansSelect(event: { files: File[] }) {
-    if (event.files && event.files.length > 0) {
-      this.fabricationPlansFiles.update((files) => [...files, ...event.files]);
-    }
-  }
-
-  onAssemblyPlansSelect(event: { files: File[] }) {
-    if (event.files && event.files.length > 0) {
-      this.assemblyPlansFiles.update((files) => [...files, ...event.files]);
-    }
-  }
-
-  onBillOfMaterialsSelect(event: { files: File[] }) {
-    if (event.files && event.files.length > 0) {
-      this.billOfMaterialsFiles.update((files) => [...files, ...event.files]);
-    }
-  }
-
-  onOtherDocumentsSelect(event: { files: File[] }) {
-    if (event.files && event.files.length > 0) {
-      this.otherDocumentsFiles.update((files) => [...files, ...event.files]);
-    }
-  }
-
-  // Métodos para eliminar archivos seleccionados
-  removeStructuralCalculationFile(index: number) {
-    this.structuralCalculationsFiles.update((files) => files.filter((_, i) => i !== index));
-  }
-
-  removeScheduleFile(index: number) {
-    this.scheduleFiles.update((files) => files.filter((_, i) => i !== index));
-  }
-
-  removeFabricationPlanFile(index: number) {
-    this.fabricationPlansFiles.update((files) => files.filter((_, i) => i !== index));
-  }
-
-  removeAssemblyPlanFile(index: number) {
-    this.assemblyPlansFiles.update((files) => files.filter((_, i) => i !== index));
-  }
-
-  removeBillOfMaterialFile(index: number) {
-    this.billOfMaterialsFiles.update((files) => files.filter((_, i) => i !== index));
-  }
-
-  removeOtherDocumentFile(index: number) {
-    this.otherDocumentsFiles.update((files) => files.filter((_, i) => i !== index));
-  }
-
-  // Método para eliminar un documento existente del servidor
+  // DEPRECATED: Método legacy para eliminar documentos por URL
   async deleteDocument(url: string) {
     const viewing = this.viewingEngineering();
     if (!viewing) return;
 
-    const projectId = typeof viewing.projectId === 'object' ? viewing.projectId._id : viewing.projectId;
+    const projectId =
+      typeof viewing.projectId === 'object' ? viewing.projectId._id : viewing.projectId;
     if (!projectId) return;
 
     try {
@@ -386,7 +586,7 @@ export class EngineeringPage implements OnInit {
       this.load();
       // Si estamos viendo detalles, recargar también
       if (this.showDetailsDialog()) {
-        const updated = await firstValueFrom(this.engineeringApi.getByProject(projectId));
+        const updated = await firstValueFrom(this.engineeringApi.getByProjectFull(projectId));
         this.viewingEngineering.set({ ...updated, project: viewing.project });
       }
     } catch (error) {
@@ -400,12 +600,40 @@ export class EngineeringPage implements OnInit {
   }
 
   clearAllFiles() {
-    this.structuralCalculationsFiles.set([]);
-    this.scheduleFiles.set([]);
-    this.fabricationPlansFiles.set([]);
-    this.assemblyPlansFiles.set([]);
-    this.billOfMaterialsFiles.set([]);
-    this.otherDocumentsFiles.set([]);
+    this.selectedFiles.set([]);
+    this.selectedCategory.set(null);
+    this.newCategoryName.set('');
+  }
+
+  getCategoryName(fileWithCategory: FileWithCategory): string {
+    if (fileWithCategory.categoryId) {
+      const category = this.categories().find((c) => c._id === fileWithCategory.categoryId);
+      return category?.name || 'Sin categoría';
+    }
+    return 'Sin categoría';
+  }
+
+  getCategoryColor(categoryId: string): string {
+    const category = this.categories().find((c) => c._id === categoryId);
+    return category?.color || '#3B82F6';
+  }
+
+  // Agrupa los archivos seleccionados por categoría para mostrarlos
+  getSelectedFilesByCategory(): { categoryName: string; files: FileWithCategory[] }[] {
+    const grouped: Record<string, { categoryName: string; files: FileWithCategory[] }> = {};
+
+    for (const fileWithCat of this.selectedFiles()) {
+      const key = fileWithCat.categoryId || fileWithCat.newCategoryName || 'sin-categoria';
+      if (!grouped[key]) {
+        grouped[key] = {
+          categoryName: this.getCategoryName(fileWithCat),
+          files: [],
+        };
+      }
+      grouped[key].files.push(fileWithCat);
+    }
+
+    return Object.values(grouped);
   }
 
   formatFileSize(bytes: number): string {
@@ -443,10 +671,6 @@ export class EngineeringPage implements OnInit {
     return item.project?.code || 'N/A';
   }
 
-  getTypeLabel(type: EngineeringType): string {
-    return this.typeOptions.find((opt) => opt.value === type)?.label || type;
-  }
-
   downloadDocument(url: string) {
     window.open(url, '_blank');
   }
@@ -468,7 +692,7 @@ export class EngineeringPage implements OnInit {
     return 'Error desconocido';
   }
 
-  onFileUploadError(event: any) {
+  onFileUploadError(event: { error?: { message?: string } }) {
     console.error('File upload error:', event);
     // Si el error es sobre tipo de archivo, intentar procesar de todas formas
     if (event.error && event.error.message && event.error.message.includes('Invalid file type')) {
