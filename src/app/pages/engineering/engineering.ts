@@ -453,20 +453,22 @@ export class EngineeringPage implements OnInit {
         await firstValueFrom(this.engineeringApi.create(payload));
       }
 
-      // Subir los archivos con sus categorías
+      // Subir los archivos con sus categorías usando Presigned URLs
+      // Esto evita el límite de Nginx y sube directamente a S3
       const uploadPromises: Promise<void>[] = [];
 
       for (const fileWithCategory of this.selectedFiles()) {
-        uploadPromises.push(
-          firstValueFrom(
-            this.engineeringApi.uploadDocument(
-              projectId,
-              fileWithCategory.file,
-              fileWithCategory.categoryId,
-              undefined
-            )
-          ).then(() => undefined)
-        );
+        if (fileWithCategory.categoryId) {
+          uploadPromises.push(
+            this.engineeringApi
+              .uploadDocumentWithPresignedUrl(
+                projectId,
+                fileWithCategory.file,
+                fileWithCategory.categoryId
+              )
+              .then(() => undefined)
+          );
+        }
       }
 
       // Esperar a que se suban todos los archivos
