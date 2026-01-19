@@ -396,19 +396,9 @@ export class EngineeringPage implements OnInit {
       projectId: projectId || '',
     });
     this.clearAllFiles();
-
-    // Preseleccionar la primera categoría que tenga documentos, o la primera disponible
-    if (item.documentsByCategory && item.documentsByCategory.length > 0) {
-      const firstCategoryWithDocs = item.documentsByCategory[0].category;
-      // Buscar la categoría en la lista de categorías disponibles
-      const matchingCategory = this.categories().find((c) => c._id === firstCategoryWithDocs._id);
-      if (matchingCategory) {
-        this.selectedCategory.set(matchingCategory);
-      }
-    } else if (this.categories().length > 0) {
-      // Si no hay documentos, seleccionar la primera categoría disponible
-      this.selectedCategory.set(this.categories()[0]);
-    }
+    // No preseleccionar categoría ya que el proyecto puede tener múltiples categorías
+    this.selectedCategory.set(null);
+    this.newCategoryName.set('');
 
     this.showDialog.set(true);
   }
