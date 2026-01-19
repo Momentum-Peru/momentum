@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, effect, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -7,7 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
-import { FileUploadModule } from 'primeng/fileupload';
+import { FileUploadModule, FileUpload } from 'primeng/fileupload';
 import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
 import { AutoCompleteModule } from 'primeng/autocomplete';
@@ -82,6 +82,9 @@ export class EngineeringPage implements OnInit {
   editCategoryName = signal('');
   savingCategory = signal(false);
   deletingCategory = signal(false);
+
+  // Referencia al componente de file upload para poder limpiarlo
+  @ViewChild('fileUploader') fileUploader?: FileUpload;
 
   engineeringForm = this.fb.group({
     projectId: ['', Validators.required],
@@ -396,18 +399,16 @@ export class EngineeringPage implements OnInit {
       projectId: projectId || '',
     });
     this.clearAllFiles();
+    this.newCategoryName.set('');
 
-    // Preseleccionar la primera categoría que tenga documentos, o la primera disponible
-    if (item.documentsByCategory && item.documentsByCategory.length > 0) {
-      const firstCategoryWithDocs = item.documentsByCategory[0].category;
-      // Buscar la categoría en la lista de categorías disponibles
-      const matchingCategory = this.categories().find((c) => c._id === firstCategoryWithDocs._id);
-      if (matchingCategory) {
-        this.selectedCategory.set(matchingCategory);
-      }
-    } else if (this.categories().length > 0) {
-      // Si no hay documentos, seleccionar la primera categoría disponible
-      this.selectedCategory.set(this.categories()[0]);
+    // Pre-seleccionar la primera categoría que tenga documentos en el proyecto
+    const firstCategoryWithDocs = item.documentsByCategory?.[0]?.category;
+    if (firstCategoryWithDocs) {
+      // Buscar la categoría completa en la lista de categorías disponibles
+      const fullCategory = this.categories().find(c => c._id === firstCategoryWithDocs._id);
+      this.selectedCategory.set(fullCategory || firstCategoryWithDocs);
+    } else {
+      this.selectedCategory.set(null);
     }
 
     this.showDialog.set(true);
@@ -603,6 +604,10 @@ export class EngineeringPage implements OnInit {
     this.selectedFiles.set([]);
     this.selectedCategory.set(null);
     this.newCategoryName.set('');
+    // Limpiar el componente de file upload de PrimeNG
+    if (this.fileUploader) {
+      this.fileUploader.clear();
+    }
   }
 
   getCategoryName(fileWithCategory: FileWithCategory): string {
