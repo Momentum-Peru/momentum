@@ -494,10 +494,9 @@ export class EngineeringPage implements OnInit {
 
   // Handler para selección de archivos con categoría
   onFilesSelect(event: { files: File[] | FileList; currentFiles?: File[] }) {
-    // PrimeNG puede pasar files como FileList o como array
-    const filesArray: File[] = event.currentFiles
-      ? Array.from(event.currentFiles)
-      : Array.isArray(event.files)
+    // PrimeNG pasa los archivos recién seleccionados en event.files
+    // event.currentFiles incluye todos los archivos acumulados, lo cual causa duplicados
+    const filesArray: File[] = Array.isArray(event.files)
       ? event.files
       : Array.from(event.files);
 
@@ -513,7 +512,29 @@ export class EngineeringPage implements OnInit {
         return;
       }
 
-      const newFiles: FileWithCategory[] = filesArray.map((file) => ({
+      // Filtrar archivos que ya existen para evitar duplicados
+      const existingFiles = this.selectedFiles();
+      const uniqueNewFiles = filesArray.filter(
+        (newFile) =>
+          !existingFiles.some(
+            (existing) =>
+              existing.file.name === newFile.name &&
+              existing.file.size === newFile.size &&
+              existing.categoryId === category._id
+          )
+      );
+
+      if (uniqueNewFiles.length === 0) {
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Información',
+          detail: 'Los archivos seleccionados ya están en la lista',
+          life: 2000,
+        });
+        return;
+      }
+
+      const newFiles: FileWithCategory[] = uniqueNewFiles.map((file) => ({
         file,
         categoryId: category._id,
       }));
@@ -523,9 +544,15 @@ export class EngineeringPage implements OnInit {
       this.messageService.add({
         severity: 'success',
         summary: 'Archivos agregados',
-        detail: `${filesArray.length} archivo(s) en "${category.name}"`,
+        detail: `${uniqueNewFiles.length} archivo(s) en "${category.name}"`,
         life: 2000,
       });
+
+      // Limpiar el componente de file upload después de agregar los archivos
+      // para evitar acumulación interna de PrimeNG
+      if (this.fileUploader) {
+        this.fileUploader.clear();
+      }
     }
   }
 
