@@ -38,7 +38,7 @@
         <tr>
           <th>Proyecto</th>
           <th>Código</th>
-          <th>Tipo</th>
+          <th>Categorías</th>
           <th class="text-right">Acciones</th>
         </tr>
       </ng-template>
@@ -52,9 +52,21 @@
             >
           </td>
           <td>
-            <span class="px-2 py-1 rounded text-sm bg-blue-100 text-blue-800">
-              {{ getTypeLabel(row.type) }}
-            </span>
+            @if (row.documentsByCategory && row.documentsByCategory.length > 0) {
+            <div class="flex flex-wrap gap-1">
+              @for (group of row.documentsByCategory; track group.category._id) {
+              <span
+                class="px-2 py-1 rounded text-xs text-white"
+                [style.backgroundColor]="group.category.color || '#3B82F6'"
+                [title]="group.category.name + ': ' + group.documents.length + ' documento(s)'"
+              >
+                {{ group.category.name }} ({{ group.documents.length }})
+              </span>
+              }
+            </div>
+            } @else {
+            <span class="text-gray-400 text-sm">Sin documentos</span>
+            }
           </td>
           <td class="text-right">
             <button
@@ -94,9 +106,13 @@
             {{ getProjectCode(row) }}
           </p>
         </div>
+        @if (row.documentsByCategory && row.documentsByCategory.length > 0) {
         <span class="px-2 py-1 rounded text-sm bg-blue-100 text-blue-800">
-          {{ getTypeLabel(row.type) }}
+          {{ row.documentsByCategory.length }} categoría(s)
         </span>
+        } @else {
+        <span class="px-2 py-1 rounded text-sm bg-gray-100 text-gray-600"> Sin documentos </span>
+        }
       </div>
       <div class="flex gap-2">
         <button
@@ -137,7 +153,7 @@
     [closable]="true"
   >
     <ng-template pTemplate="header">
-      {{ editing()?._id ? 'Editar Ingeniería' : 'Nueva Ingeniería' }}
+      {{ editing()?._id ? 'Editar Documentación' : 'Nueva Documentación' }}
     </ng-template>
 
     <form [formGroup]="engineeringForm" class="space-y-4">
@@ -162,304 +178,180 @@
         ></p-select>
       </div>
 
-      <div>
-        <label for="typeSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-          >Tipo *</label
-        >
-        <p-select
-          id="typeSelect"
-          [options]="typeOptions"
-          optionLabel="label"
-          optionValue="value"
-          formControlName="type"
-          placeholder="Seleccionar tipo"
-          [appendTo]="'body'"
-          class="w-full"
-        ></p-select>
-      </div>
-
-      <!-- Documentos Técnicos -->
+      <!-- Documentación -->
       <div class="border-t pt-4">
         <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-          Documentos Técnicos
+          Agregar documentos
         </h4>
 
         <div class="space-y-4">
-          <!-- Cálculos Estructurales -->
-          <div>
-            <label
-              for="structuralCalculationsUpload"
-              class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-            >
-              Cálculos Estructurales
-            </label>
-            <p-fileUpload
-              id="structuralCalculationsUpload"
-              mode="basic"
-              accept="*/*"
-              [maxFileSize]="52428800"
-              [multiple]="true"
-              chooseLabel="Seleccionar archivos"
-              (onSelect)="onStructuralCalculationsSelect($event)"
-              (onError)="onFileUploadError($event)"
-              [showUploadButton]="false"
-              [showCancelButton]="false"
-              [auto]="false"
-              class="w-full"
-            ></p-fileUpload>
-            @if (structuralCalculationsFiles().length > 0) {
-            <div class="mt-2 space-y-2">
-              @for (file of structuralCalculationsFiles(); track $index) {
-              <div
-                class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded flex items-center justify-between"
+          <!-- Paso 1: Seleccionar o crear categoría -->
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div class="flex items-center gap-2 mb-3">
+              <span
+                class="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold"
+                >1</span
               >
-                <span class="text-sm text-gray-700 dark:text-gray-300">
-                  {{ file.name }} ({{ formatFileSize(file.size) }})
-                </span>
+              <span class="text-sm font-medium text-gray-700 dark:text-white">Categoría</span>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+              <!-- Selector de categoría existente -->
+              <div class="flex-1">
+                <p-select
+                  [options]="categories()"
+                  optionLabel="name"
+                  [(ngModel)]="selectedCategory"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="Seleccionar categoría..."
+                  [showClear]="true"
+                  [filter]="true"
+                  filterPlaceholder="Buscar..."
+                  [appendTo]="'body'"
+                  class="w-full"
+                  (onChange)="newCategoryName.set('')"
+                ></p-select>
+              </div>
+
+              <!-- Separador -->
+              <div class="flex items-center justify-center">
+                <span class="text-gray-400 text-xs uppercase">o crear</span>
+              </div>
+
+              <!-- Input para nueva categoría con botón + -->
+              <div class="flex gap-2 flex-1">
+                <input
+                  pInputText
+                  [(ngModel)]="newCategoryName"
+                  [ngModelOptions]="{ standalone: true }"
+                  (keydown.enter)="createCategory()"
+                  placeholder="Nueva categoría..."
+                  class="flex-1"
+                  [disabled]="creatingCategory()"
+                />
                 <button
                   pButton
-                  icon="pi pi-times"
-                  class="p-button-text p-button-sm p-button-danger"
-                  (click)="removeStructuralCalculationFile($index)"
-                  aria-label="Eliminar"
-                >
-                  <span class="sr-only">Eliminar</span>
-                </button>
+                  type="button"
+                  icon="pi pi-plus"
+                  class="p-button-success"
+                  (click)="createCategory()"
+                  [loading]="creatingCategory()"
+                  [disabled]="!newCategoryName() || creatingCategory()"
+                  pTooltip="Crear categoría"
+                  aria-label="Crear categoría"
+                ></button>
               </div>
-              }
+            </div>
+
+            <!-- Categoría seleccionada con opciones -->
+            @if (selectedCategory()) {
+            <div class="mt-3 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-check-circle text-green-500"></i>
+                <span class="text-sm text-gray-600 dark:text-gray-300">
+                  Categoría seleccionada: <strong>{{ selectedCategory()?.name }}</strong>
+                </span>
+              </div>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-pencil"
+                class="p-button-text p-button-sm p-button-secondary"
+                (click)="openEditCategoryDialog(selectedCategory()!)"
+                pTooltip="Editar categoría"
+                aria-label="Editar categoría"
+              ></button>
             </div>
             }
           </div>
 
-          <!-- Cronograma -->
-          <div>
-            <label
-              for="scheduleUpload"
-              class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-            >
-              Cronograma
-            </label>
+          <!-- Paso 2: Agregar archivos -->
+          <div
+            class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4"
+            [class.opacity-50]="!selectedCategory()"
+          >
+            <div class="flex items-center gap-2 mb-3">
+              <span
+                class="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
+                [class.bg-blue-500]="selectedCategory()"
+                [class.text-white]="selectedCategory()"
+                [class.bg-gray-300]="!selectedCategory()"
+                [class.text-gray-500]="!selectedCategory()"
+                >2</span
+              >
+              <span class="text-sm font-medium text-gray-700 dark:text-white"
+                >Agregar archivos</span
+              >
+            </div>
+
             <p-fileUpload
-              id="scheduleUpload"
               mode="basic"
-              accept="*/*"
-              [maxFileSize]="52428800"
+              [maxFileSize]="104857600"
               [multiple]="true"
-              chooseLabel="Seleccionar archivos"
-              (onSelect)="onScheduleSelect($event)"
+              [chooseLabel]="
+                selectedCategory() ? 'Seleccionar archivos' : 'Primero seleccione una categoría'
+              "
+              (onSelect)="onFilesSelect($event)"
               (onError)="onFileUploadError($event)"
               [showUploadButton]="false"
               [showCancelButton]="false"
               [auto]="false"
+              [disabled]="!selectedCategory()"
               class="w-full"
             ></p-fileUpload>
-            @if (scheduleFiles().length > 0) {
-            <div class="mt-2 space-y-2">
-              @for (file of scheduleFiles(); track $index) {
-              <div
-                class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded flex items-center justify-between"
-              >
-                <span class="text-sm text-gray-700 dark:text-gray-300">
-                  {{ file.name }} ({{ formatFileSize(file.size) }})
-                </span>
-                <button
-                  pButton
-                  icon="pi pi-times"
-                  class="p-button-text p-button-sm p-button-danger"
-                  (click)="removeScheduleFile($index)"
-                  aria-label="Eliminar"
-                >
-                  <span class="sr-only">Eliminar</span>
-                </button>
-              </div>
-              }
-            </div>
-            }
           </div>
 
-          <!-- Planos de Fabricación -->
-          <div>
-            <label
-              for="fabricationPlansUpload"
-              class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-            >
-              Planos de Fabricación
-            </label>
-            <p-fileUpload
-              id="fabricationPlansUpload"
-              mode="basic"
-              accept="*/*"
-              [maxFileSize]="52428800"
-              [multiple]="true"
-              chooseLabel="Seleccionar archivos"
-              (onSelect)="onFabricationPlansSelect($event)"
-              (onError)="onFileUploadError($event)"
-              [showUploadButton]="false"
-              [showCancelButton]="false"
-              [auto]="false"
-              class="w-full"
-            ></p-fileUpload>
-            @if (fabricationPlansFiles().length > 0) {
-            <div class="mt-2 space-y-2">
-              @for (file of fabricationPlansFiles(); track $index) {
-              <div
-                class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded flex items-center justify-between"
+          <!-- Archivos seleccionados agrupados por categoría -->
+          @if (selectedFiles().length > 0) {
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Archivos listos para subir
+              </h5>
+              <span
+                class="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded-full"
               >
-                <span class="text-sm text-gray-700 dark:text-gray-300">
-                  {{ file.name }} ({{ formatFileSize(file.size) }})
+                {{ selectedFiles().length }} archivo(s)
+              </span>
+            </div>
+            @for (group of getSelectedFilesByCategory(); track group.categoryName) {
+            <div class="mb-3 last:mb-0">
+              <div class="flex items-center gap-2 mb-2">
+                <i class="pi pi-folder text-blue-500"></i>
+                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {{ group.categoryName }}
                 </span>
-                <button
-                  pButton
-                  icon="pi pi-times"
-                  class="p-button-text p-button-sm p-button-danger"
-                  (click)="removeFabricationPlanFile($index)"
-                  aria-label="Eliminar"
-                >
-                  <span class="sr-only">Eliminar</span>
-                </button>
+                <span class="text-xs text-gray-400">({{ group.files.length }})</span>
               </div>
-              }
+              <div class="space-y-1 ml-6">
+                @for (fileWithCat of group.files; track fileWithCat.file.name; let i = $index) {
+                <div
+                  class="flex items-center justify-between py-1.5 px-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                >
+                  <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <i class="pi pi-file text-gray-400 text-sm"></i>
+                    <span class="text-sm text-gray-600 dark:text-gray-300 truncate">
+                      {{ fileWithCat.file.name }}
+                    </span>
+                    <span class="text-xs text-gray-400">{{
+                      formatFileSize(fileWithCat.file.size)
+                    }}</span>
+                  </div>
+                  <button
+                    pButton
+                    icon="pi pi-times"
+                    class="p-button-text p-button-sm p-button-rounded p-button-danger"
+                    (click)="removeSelectedFile(selectedFiles().indexOf(fileWithCat))"
+                    pTooltip="Quitar"
+                    aria-label="Quitar archivo"
+                  ></button>
+                </div>
+                }
+              </div>
             </div>
             }
           </div>
-
-          <!-- Planos de Montaje -->
-          <div>
-            <label
-              for="assemblyPlansUpload"
-              class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-            >
-              Planos de Montaje
-            </label>
-            <p-fileUpload
-              id="assemblyPlansUpload"
-              mode="basic"
-              accept="*/*"
-              [maxFileSize]="52428800"
-              [multiple]="true"
-              chooseLabel="Seleccionar archivos"
-              (onSelect)="onAssemblyPlansSelect($event)"
-              (onError)="onFileUploadError($event)"
-              [showUploadButton]="false"
-              [showCancelButton]="false"
-              [auto]="false"
-              class="w-full"
-            ></p-fileUpload>
-            @if (assemblyPlansFiles().length > 0) {
-            <div class="mt-2 space-y-2">
-              @for (file of assemblyPlansFiles(); track $index) {
-              <div
-                class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded flex items-center justify-between"
-              >
-                <span class="text-sm text-gray-700 dark:text-gray-300">
-                  {{ file.name }} ({{ formatFileSize(file.size) }})
-                </span>
-                <button
-                  pButton
-                  icon="pi pi-times"
-                  class="p-button-text p-button-sm p-button-danger"
-                  (click)="removeAssemblyPlanFile($index)"
-                  aria-label="Eliminar"
-                >
-                  <span class="sr-only">Eliminar</span>
-                </button>
-              </div>
-              }
-            </div>
-            }
-          </div>
-
-          <!-- Lista de Materiales (BOM) -->
-          <div>
-            <label
-              for="billOfMaterialsUpload"
-              class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-            >
-              Lista de Materiales (BOM)
-            </label>
-            <p-fileUpload
-              id="billOfMaterialsUpload"
-              mode="basic"
-              accept="*/*"
-              [maxFileSize]="52428800"
-              [multiple]="true"
-              chooseLabel="Seleccionar archivos"
-              (onSelect)="onBillOfMaterialsSelect($event)"
-              (onError)="onFileUploadError($event)"
-              [showUploadButton]="false"
-              [showCancelButton]="false"
-              [auto]="false"
-              class="w-full"
-            ></p-fileUpload>
-            @if (billOfMaterialsFiles().length > 0) {
-            <div class="mt-2 space-y-2">
-              @for (file of billOfMaterialsFiles(); track $index) {
-              <div
-                class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded flex items-center justify-between"
-              >
-                <span class="text-sm text-gray-700 dark:text-gray-300">
-                  {{ file.name }} ({{ formatFileSize(file.size) }})
-                </span>
-                <button
-                  pButton
-                  icon="pi pi-times"
-                  class="p-button-text p-button-sm p-button-danger"
-                  (click)="removeBillOfMaterialFile($index)"
-                  aria-label="Eliminar"
-                >
-                  <span class="sr-only">Eliminar</span>
-                </button>
-              </div>
-              }
-            </div>
-            }
-          </div>
-
-          <!-- Otros Documentos -->
-          <div>
-            <label
-              for="otherDocumentsUpload"
-              class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-            >
-              Otros Documentos
-            </label>
-            <p-fileUpload
-              id="otherDocumentsUpload"
-              mode="basic"
-              accept="*/*"
-              [maxFileSize]="52428800"
-              [multiple]="true"
-              chooseLabel="Seleccionar archivos"
-              (onSelect)="onOtherDocumentsSelect($event)"
-              (onError)="onFileUploadError($event)"
-              [showUploadButton]="false"
-              [showCancelButton]="false"
-              [auto]="false"
-              class="w-full"
-            ></p-fileUpload>
-            @if (otherDocumentsFiles().length > 0) {
-            <div class="mt-2 space-y-2">
-              @for (file of otherDocumentsFiles(); track $index) {
-              <div
-                class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded flex items-center justify-between"
-              >
-                <span class="text-sm text-gray-700 dark:text-gray-300">
-                  {{ file.name }} ({{ formatFileSize(file.size) }})
-                </span>
-                <button
-                  pButton
-                  icon="pi pi-times"
-                  class="p-button-text p-button-sm p-button-danger"
-                  (click)="removeOtherDocumentFile($index)"
-                  aria-label="Eliminar"
-                >
-                  <span class="sr-only">Eliminar</span>
-                </button>
-              </div>
-              }
-            </div>
-            }
-          </div>
+          }
         </div>
       </div>
     </form>
@@ -497,7 +389,7 @@
     <ng-template pTemplate="header">
       <div class="flex items-center gap-2">
         <i class="pi pi-info-circle text-blue-500"></i>
-        Detalles de Ingeniería — {{ getProjectCode(viewingEngineering()!) }}
+        Documentación — {{ getProjectCode(viewingEngineering()!) }}
       </div>
     </ng-template>
 
@@ -512,18 +404,70 @@
           <span class="text-sm font-medium text-gray-500">Código:</span>
           <p class="text-gray-900 dark:text-gray-100">{{ getProjectCode(engineering) }}</p>
         </div>
-        <div>
-          <span class="text-sm font-medium text-gray-500">Tipo:</span>
-          <p class="text-gray-900 dark:text-gray-100">
-            {{ getTypeLabel(engineering.type) }}
-          </p>
-        </div>
       </div>
 
       <div class="border-t pt-4">
-        <h4 class="font-semibold mb-3">Documentos Técnicos</h4>
+        <h4 class="font-semibold mb-3">Documentación</h4>
+
+        <!-- Documentos por categoría (nuevo sistema) -->
+        @if (engineering.documentsByCategory && engineering.documentsByCategory.length > 0) {
         <div class="space-y-4">
-          <!-- Cálculos Estructurales -->
+          @for (group of engineering.documentsByCategory; track group.category._id) {
+          <div class="border rounded-lg p-3">
+            <h5 class="text-sm font-medium mb-2 flex items-center gap-2">
+              <span
+                class="w-3 h-3 rounded-full"
+                [style.backgroundColor]="group.category.color || '#3B82F6'"
+              ></span>
+              {{ group.category.name }}
+              <span class="text-xs text-gray-500">({{ group.documents.length }})</span>
+            </h5>
+            <div class="space-y-2">
+              @for (doc of group.documents; track doc._id) {
+              <div
+                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+              >
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <i class="pi pi-file" [style.color]="group.category.color || '#3B82F6'"></i>
+                  <span
+                    class="text-sm text-gray-700 dark:text-gray-300 truncate"
+                    [title]="doc.name"
+                  >
+                    {{ doc.name }}
+                  </span>
+                  @if (doc.size) {
+                  <span class="text-xs text-gray-400">({{ formatFileSize(doc.size) }})</span>
+                  }
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-download"
+                    class="p-button-text p-button-sm"
+                    (click)="downloadDocument(doc.url)"
+                    pTooltip="Descargar"
+                    aria-label="Descargar"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-sm p-button-danger"
+                    (click)="deleteDocumentById(doc._id)"
+                    pTooltip="Eliminar"
+                    aria-label="Eliminar"
+                  ></button>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+        </div>
+        }
+
+        <!-- Documentos legacy (sistema antiguo) - mantener compatibilidad -->
+        @if (!engineering.documentsByCategory || engineering.documentsByCategory.length === 0) {
+        <div class="space-y-4">
           @if (engineering.structuralCalculations && engineering.structuralCalculations.length > 0)
           {
           <div>
@@ -551,29 +495,20 @@
                     class="p-button-text p-button-sm"
                     (click)="downloadDocument(docUrl)"
                     pTooltip="Descargar"
-                    aria-label="Descargar"
-                  >
-                    <span class="sr-only">Descargar</span>
-                  </button>
+                  ></button>
                   <button
                     pButton
                     icon="pi pi-trash"
                     class="p-button-text p-button-sm p-button-danger"
                     (click)="deleteDocument(docUrl)"
                     pTooltip="Eliminar"
-                    aria-label="Eliminar"
-                  >
-                    <span class="sr-only">Eliminar</span>
-                  </button>
+                  ></button>
                 </div>
               </div>
               }
             </div>
           </div>
-          }
-
-          <!-- Cronogramas -->
-          @if (engineering.schedules && engineering.schedules.length > 0) {
+          } @if (engineering.schedules && engineering.schedules.length > 0) {
           <div>
             <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cronogramas</h5>
             <div class="space-y-2">
@@ -597,29 +532,20 @@
                     class="p-button-text p-button-sm"
                     (click)="downloadDocument(docUrl)"
                     pTooltip="Descargar"
-                    aria-label="Descargar"
-                  >
-                    <span class="sr-only">Descargar</span>
-                  </button>
+                  ></button>
                   <button
                     pButton
                     icon="pi pi-trash"
                     class="p-button-text p-button-sm p-button-danger"
                     (click)="deleteDocument(docUrl)"
                     pTooltip="Eliminar"
-                    aria-label="Eliminar"
-                  >
-                    <span class="sr-only">Eliminar</span>
-                  </button>
+                  ></button>
                 </div>
               </div>
               }
             </div>
           </div>
-          }
-
-          <!-- Planos de Fabricación -->
-          @if (engineering.fabricationPlans && engineering.fabricationPlans.length > 0) {
+          } @if (engineering.fabricationPlans && engineering.fabricationPlans.length > 0) {
           <div>
             <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Planos de Fabricación
@@ -645,29 +571,20 @@
                     class="p-button-text p-button-sm"
                     (click)="downloadDocument(docUrl)"
                     pTooltip="Descargar"
-                    aria-label="Descargar"
-                  >
-                    <span class="sr-only">Descargar</span>
-                  </button>
+                  ></button>
                   <button
                     pButton
                     icon="pi pi-trash"
                     class="p-button-text p-button-sm p-button-danger"
                     (click)="deleteDocument(docUrl)"
                     pTooltip="Eliminar"
-                    aria-label="Eliminar"
-                  >
-                    <span class="sr-only">Eliminar</span>
-                  </button>
+                  ></button>
                 </div>
               </div>
               }
             </div>
           </div>
-          }
-
-          <!-- Planos de Montaje -->
-          @if (engineering.assemblyPlans && engineering.assemblyPlans.length > 0) {
+          } @if (engineering.assemblyPlans && engineering.assemblyPlans.length > 0) {
           <div>
             <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Planos de Montaje
@@ -693,29 +610,20 @@
                     class="p-button-text p-button-sm"
                     (click)="downloadDocument(docUrl)"
                     pTooltip="Descargar"
-                    aria-label="Descargar"
-                  >
-                    <span class="sr-only">Descargar</span>
-                  </button>
+                  ></button>
                   <button
                     pButton
                     icon="pi pi-trash"
                     class="p-button-text p-button-sm p-button-danger"
                     (click)="deleteDocument(docUrl)"
                     pTooltip="Eliminar"
-                    aria-label="Eliminar"
-                  >
-                    <span class="sr-only">Eliminar</span>
-                  </button>
+                  ></button>
                 </div>
               </div>
               }
             </div>
           </div>
-          }
-
-          <!-- Lista de Materiales (BOM) -->
-          @if (engineering.billOfMaterials && engineering.billOfMaterials.length > 0) {
+          } @if (engineering.billOfMaterials && engineering.billOfMaterials.length > 0) {
           <div>
             <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Lista de Materiales (BOM)
@@ -741,29 +649,20 @@
                     class="p-button-text p-button-sm"
                     (click)="downloadDocument(docUrl)"
                     pTooltip="Descargar"
-                    aria-label="Descargar"
-                  >
-                    <span class="sr-only">Descargar</span>
-                  </button>
+                  ></button>
                   <button
                     pButton
                     icon="pi pi-trash"
                     class="p-button-text p-button-sm p-button-danger"
                     (click)="deleteDocument(docUrl)"
                     pTooltip="Eliminar"
-                    aria-label="Eliminar"
-                  >
-                    <span class="sr-only">Eliminar</span>
-                  </button>
+                  ></button>
                 </div>
               </div>
               }
             </div>
           </div>
-          }
-
-          <!-- Otros Documentos -->
-          @if (engineering.otherDocuments && engineering.otherDocuments.length > 0) {
+          } @if (engineering.otherDocuments && engineering.otherDocuments.length > 0) {
           <div>
             <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Otros Documentos
@@ -789,27 +688,26 @@
                     class="p-button-text p-button-sm"
                     (click)="downloadDocument(docUrl)"
                     pTooltip="Descargar"
-                    aria-label="Descargar"
-                  >
-                    <span class="sr-only">Descargar</span>
-                  </button>
+                  ></button>
                   <button
                     pButton
                     icon="pi pi-trash"
                     class="p-button-text p-button-sm p-button-danger"
                     (click)="deleteDocument(docUrl)"
                     pTooltip="Eliminar"
-                    aria-label="Eliminar"
-                  >
-                    <span class="sr-only">Eliminar</span>
-                  </button>
+                  ></button>
                 </div>
               </div>
               }
             </div>
           </div>
+          } @if (!engineering.structuralCalculations?.length && !engineering.schedules?.length &&
+          !engineering.fabricationPlans?.length && !engineering.assemblyPlans?.length &&
+          !engineering.billOfMaterials?.length && !engineering.otherDocuments?.length) {
+          <p class="text-gray-500 text-sm text-center py-4">No hay documentos cargados</p>
           }
         </div>
+        }
       </div>
     </div>
     }
@@ -829,6 +727,85 @@
         (click)="editItem(viewingEngineering()!); closeDetails()"
         aria-label="Editar"
       ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo para editar/eliminar categoría -->
+  <p-dialog
+    header="Editar categoría"
+    [visible]="showCategoryDialog()"
+    (visibleChange)="showCategoryDialog.set($event)"
+    [modal]="true"
+    [closable]="true"
+    [style]="{ width: '400px' }"
+    [draggable]="false"
+    (onHide)="closeCategoryDialog()"
+  >
+    @if (editingCategory()) {
+    <div class="flex flex-col gap-4">
+      <div>
+        <label
+          for="editCategoryNameInput"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        >
+          Nombre de la categoría
+        </label>
+        <input
+          id="editCategoryNameInput"
+          pInputText
+          [(ngModel)]="editCategoryName"
+          class="w-full"
+          placeholder="Nombre de la categoría"
+          (keydown.enter)="saveCategory()"
+        />
+      </div>
+
+      <div
+        class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3"
+      >
+        <div class="flex items-start gap-2">
+          <i class="pi pi-exclamation-triangle text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+          <div class="text-sm text-yellow-800 dark:text-yellow-200">
+            <strong>Nota:</strong> Eliminar una categoría solo es posible si no tiene documentos
+            asociados.
+          </div>
+        </div>
+      </div>
+    </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-between w-full">
+        <button
+          pButton
+          label="Eliminar"
+          icon="pi pi-trash"
+          class="p-button-danger p-button-text"
+          (click)="deleteCategory(editingCategory()!)"
+          [loading]="deletingCategory()"
+          [disabled]="savingCategory() || deletingCategory()"
+          aria-label="Eliminar categoría"
+        ></button>
+        <div class="flex gap-2">
+          <button
+            pButton
+            label="Cancelar"
+            class="p-button-text"
+            (click)="closeCategoryDialog()"
+            [disabled]="savingCategory() || deletingCategory()"
+            aria-label="Cancelar"
+          ></button>
+          <button
+            pButton
+            label="Guardar"
+            icon="pi pi-check"
+            (click)="saveCategory()"
+            [loading]="savingCategory()"
+            [disabled]="!editCategoryName() || savingCategory() || deletingCategory()"
+            aria-label="Guardar categoría"
+          ></button>
+        </div>
+      </div>
     </ng-template>
   </p-dialog>
 </div>
