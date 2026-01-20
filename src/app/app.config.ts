@@ -31,6 +31,9 @@ export const appConfig: ApplicationConfig = {
     providePrimeNG({
       theme: {
         preset: MayaPreset,
+        options: {
+          darkModeSelector: false, // Desactivar modo dark completamente
+        }
       },
       ripple: false,
       inputStyle: 'outlined'
