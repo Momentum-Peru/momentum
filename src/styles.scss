@@ -97,6 +97,36 @@ body {
   -webkit-backface-visibility: visible !important;
 }
 
+/* Responsive: Limitar el ancho del overlay de p-select SOLO para ingeniería */
+@media (max-width: 640px) {
+  .engineering-select.p-select-overlay {
+    max-width: calc(100vw - 1rem) !important;
+    min-width: auto !important;
+    left: 0.5rem !important;
+    right: 0.5rem !important;
+    width: calc(100vw - 1rem) !important;
+    transform: none !important;
+  }
+
+  .engineering-select.p-select-overlay .p-select-list-container {
+    max-width: 100% !important;
+  }
+
+  .engineering-select.p-select-overlay .p-select-option {
+    white-space: normal !important;
+    word-break: break-word !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  .engineering-select.p-select-overlay .p-select-filter-container {
+    padding: 0.5rem !important;
+  }
+
+  .engineering-select.p-select-overlay .p-select-filter {
+    width: 100% !important;
+  }
+}
+
 /* Estilos globales para PanelMenu dentro de menú con fondo negro */
 nav.bg-black .p-panelmenu,
 .bg-black .p-panelmenu,
