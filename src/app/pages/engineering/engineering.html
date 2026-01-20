@@ -175,6 +175,7 @@
           [filter]="true"
           filterPlaceholder="Buscar proyecto..."
           class="w-full"
+          panelStyleClass="engineering-select"
         ></p-select>
       </div>
 
@@ -195,9 +196,9 @@
               <span class="text-sm font-medium text-gray-700 dark:text-white">Categoría</span>
             </div>
 
-            <div class="flex flex-col sm:flex-row gap-3">
+            <div class="flex flex-col gap-3">
               <!-- Selector de categoría existente -->
-              <div class="flex-1">
+              <div class="w-full">
                 <p-select
                   [options]="categories()"
                   optionLabel="name"
@@ -209,6 +210,7 @@
                   filterPlaceholder="Buscar..."
                   [appendTo]="'body'"
                   class="w-full"
+                  panelStyleClass="engineering-select"
                   (onChange)="newCategoryName.set('')"
                 ></p-select>
               </div>
@@ -219,21 +221,21 @@
               </div>
 
               <!-- Input para nueva categoría con botón + -->
-              <div class="flex gap-2 flex-1">
+              <div class="flex gap-2 w-full">
                 <input
                   pInputText
                   [(ngModel)]="newCategoryName"
                   [ngModelOptions]="{ standalone: true }"
                   (keydown.enter)="createCategory()"
                   placeholder="Nueva categoría..."
-                  class="flex-1"
+                  class="flex-1 min-w-0"
                   [disabled]="creatingCategory()"
                 />
                 <button
                   pButton
                   type="button"
                   icon="pi pi-plus"
-                  class="p-button-success"
+                  class="p-button-success flex-shrink-0"
                   (click)="createCategory()"
                   [loading]="creatingCategory()"
                   [disabled]="!newCategoryName() || creatingCategory()"
@@ -353,6 +355,73 @@
             }
           </div>
           }
+
+          <!-- Documentos existentes (solo en edición) -->
+          @if (editing()?._id && editing()?.documentsByCategory && editing()!.documentsByCategory!.length > 0) {
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Documentos guardados
+              </h5>
+              <span
+                class="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-2 py-1 rounded-full"
+              >
+                {{ getTotalExistingDocuments() }} archivo(s)
+              </span>
+            </div>
+            <div class="space-y-3 max-h-64 overflow-y-auto">
+              @for (group of editing()!.documentsByCategory; track group.category._id) {
+              <div class="mb-3 last:mb-0">
+                <div class="flex items-center gap-2 mb-2">
+                  <span
+                    class="w-3 h-3 rounded-full"
+                    [style.backgroundColor]="group.category.color || '#3B82F6'"
+                  ></span>
+                  <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {{ group.category.name }}
+                  </span>
+                  <span class="text-xs text-gray-400">({{ group.documents.length }})</span>
+                </div>
+                <div class="space-y-1 ml-6">
+                  @for (doc of group.documents; track doc._id) {
+                  <div
+                    class="flex items-center justify-between py-1.5 px-2 bg-gray-50 dark:bg-gray-700 rounded"
+                  >
+                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                      <i class="pi pi-file text-sm" [style.color]="group.category.color || '#3B82F6'"></i>
+                      <span class="text-sm text-gray-600 dark:text-gray-300 truncate" [title]="doc.name">
+                        {{ doc.name }}
+                      </span>
+                      @if (doc.size) {
+                      <span class="text-xs text-gray-400">({{ formatFileSize(doc.size) }})</span>
+                      }
+                    </div>
+                    <div class="flex gap-1">
+                      <button
+                        pButton
+                        icon="pi pi-download"
+                        class="p-button-text p-button-sm p-button-rounded"
+                        (click)="downloadDocument(doc.url)"
+                        pTooltip="Descargar"
+                        aria-label="Descargar"
+                      ></button>
+                      <button
+                        pButton
+                        icon="pi pi-trash"
+                        class="p-button-text p-button-sm p-button-rounded p-button-danger"
+                        (click)="deleteExistingDocument(doc._id)"
+                        pTooltip="Eliminar"
+                        aria-label="Eliminar"
+                      ></button>
+                    </div>
+                  </div>
+                  }
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
         </div>
       </div>
     </form>
@@ -382,7 +451,7 @@
     [visible]="showDetailsDialog()"
     (visibleChange)="showDetailsDialog.set($event)"
     [modal]="true"
-    [style]="{ width: '60rem' }"
+    [style]="{ width: '60rem', maxWidth: '95vw' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
@@ -396,10 +465,10 @@
 
     @if (viewingEngineering(); as engineering) {
     <div class="space-y-4">
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <span class="text-sm font-medium text-gray-500">Proyecto:</span>
-          <p class="text-gray-900 dark:text-gray-100">{{ getProjectName(engineering) }}</p>
+          <p class="text-gray-900 dark:text-gray-100 break-words">{{ getProjectName(engineering) }}</p>
         </div>
         <div>
           <span class="text-sm font-medium text-gray-500">Código:</span>
@@ -426,10 +495,10 @@
             <div class="space-y-2">
               @for (doc of group.documents; track doc._id) {
               <div
-                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-2"
               >
                 <div class="flex items-center gap-2 flex-1 min-w-0">
-                  <i class="pi pi-file" [style.color]="group.category.color || '#3B82F6'"></i>
+                  <i class="pi pi-file flex-shrink-0" [style.color]="group.category.color || '#3B82F6'"></i>
                   <span
                     class="text-sm text-gray-700 dark:text-gray-300 truncate"
                     [title]="doc.name"
@@ -437,10 +506,10 @@
                     {{ doc.name }}
                   </span>
                   @if (doc.size) {
-                  <span class="text-xs text-gray-400">({{ formatFileSize(doc.size) }})</span>
+                  <span class="text-xs text-gray-400 flex-shrink-0">({{ formatFileSize(doc.size) }})</span>
                   }
                 </div>
-                <div class="flex gap-2">
+                <div class="flex gap-2 flex-shrink-0 justify-end">
                   <button
                     pButton
                     icon="pi pi-download"
