@@ -46,9 +46,20 @@ export class EngineeringApiService {
   }
 
   /**
-   * Actualiza la información de ingeniería de un proyecto
+   * Actualiza la información de ingeniería por su ID (permite cambiar projectId)
    */
-  update(projectId: string, engineering: Partial<Engineering>): Observable<Engineering> {
+  update(id: string, engineering: Partial<Engineering>): Observable<Engineering> {
+    return this.http.patch<Engineering>(
+      `${this.baseUrl}/engineering/${id}`,
+      engineering
+    );
+  }
+
+  /**
+   * @deprecated Usar update() con el _id del registro en su lugar
+   * Actualiza la información de ingeniería buscando por projectId (legacy)
+   */
+  updateByProject(projectId: string, engineering: Partial<Engineering>): Observable<Engineering> {
     return this.http.patch<Engineering>(
       `${this.baseUrl}/engineering/project/${projectId}`,
       engineering

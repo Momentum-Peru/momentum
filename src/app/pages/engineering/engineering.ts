@@ -448,7 +448,8 @@ export class EngineeringPage implements OnInit {
 
       // Crear o actualizar el registro básico
       if (editing?._id) {
-        await firstValueFrom(this.engineeringApi.update(projectId, payload));
+        // Usar el _id del registro para actualizar (permite cambiar el projectId)
+        await firstValueFrom(this.engineeringApi.update(editing._id, payload));
       } else {
         await firstValueFrom(this.engineeringApi.create(payload));
       }
@@ -563,6 +564,50 @@ export class EngineeringPage implements OnInit {
     this.selectedFiles.update((files) => files.filter((_, i) => i !== index));
   }
 
+  // Método para eliminar un documento existente desde el diálogo de edición
+  async deleteExistingDocument(documentId: string) {
+    const editing = this.editing();
+    if (!editing) return;
+
+    const projectId =
+      typeof editing.projectId === 'object' ? editing.projectId._id : editing.projectId;
+    if (!projectId) return;
+
+    try {
+      await firstValueFrom(this.engineeringApi.deleteDocument(projectId, documentId));
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: 'Documento eliminado correctamente',
+      });
+      
+      // Actualizar el editing para reflejar el cambio en la UI
+      if (editing.documentsByCategory) {
+        const updatedDocsByCategory = editing.documentsByCategory
+          .map((group) => ({
+            ...group,
+            documents: group.documents.filter((doc) => doc._id !== documentId),
+          }))
+          .filter((group) => group.documents.length > 0);
+        
+        this.editing.set({
+          ...editing,
+          documentsByCategory: updatedDocsByCategory,
+        });
+      }
+      
+      // Recargar los datos de la tabla
+      this.load();
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Error al eliminar el documento',
+      });
+    }
+  }
+
   // Método para eliminar un documento existente del servidor (nuevo sistema con ID)
   async deleteDocumentById(documentId: string) {
     const viewing = this.viewingEngineering();
@@ -645,6 +690,12 @@ export class EngineeringPage implements OnInit {
       return category?.name || 'Sin categoría';
     }
     return 'Sin categoría';
+  }
+
+  getTotalExistingDocuments(): number {
+    const editing = this.editing();
+    if (!editing?.documentsByCategory) return 0;
+    return editing.documentsByCategory.reduce((total, group) => total + group.documents.length, 0);
   }
 
   getCategoryColor(categoryId: string): string {
