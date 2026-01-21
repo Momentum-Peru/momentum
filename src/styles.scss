@@ -1,7 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
 @use './styles/variables' as vars;
 
-@import url('https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 
 /* PrimeIcons */
 @import 'primeicons/primeicons.css';
@@ -42,7 +42,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   position: relative;
-  font-family: 'Alan Sans', sans-serif;
+  font-family: 'Montserrat', sans-serif;
 }
 
 /* Solo excepciones específicas para el menú lateral */
