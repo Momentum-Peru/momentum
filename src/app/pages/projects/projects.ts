@@ -476,6 +476,20 @@ export class ProjectsPage implements OnInit {
     return client?.name || 'Cliente no encontrado';
   }
 
+  getCreatorName(createdBy: string | { _id: string; name: string; email?: string } | undefined): string {
+    if (!createdBy) {
+      return 'No registrado';
+    }
+
+    // Si createdBy es un objeto con nombre, devolverlo directamente
+    if (typeof createdBy === 'object' && createdBy !== null && 'name' in createdBy) {
+      return createdBy.name;
+    }
+
+    // Si es un string (ID), mostrar mensaje genérico
+    return 'Usuario';
+  }
+
   // Método para validar el formulario
   private validateForm(item: Project): string[] {
     const errors: string[] = [];

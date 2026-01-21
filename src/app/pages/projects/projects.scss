@@ -17,4 +17,27 @@
   .p-button.p-button-text {
     @apply w-full justify-start;
   }
+
+  /* Alineación vertical para todas las celdas de la tabla */
+  :host ::ng-deep .p-datatable-tbody > tr > td {
+    vertical-align: middle;
+  }
+
+  /* Utilidad para limitar líneas de texto en nombre (máx 2 líneas) */
+  .name-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+  }
+
+  /* Utilidad para limitar líneas de texto en descripción (máx 1 línea) */
+  .description-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+  }
 }

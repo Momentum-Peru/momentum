@@ -52,9 +52,11 @@
             >
           </td>
           <td>
-            <div class="max-w-xs">
-              <p class="font-semibold truncate">{{ row.name }}</p>
-              <p class="text-sm text-gray-600 truncate">{{ row.description }}</p>
+            <div class="min-w-[200px] max-w-md">
+              <p class="font-semibold name-clamp" [pTooltip]="row.name" tooltipPosition="top">{{ row.name }}</p>
+              @if (row.description) {
+              <p class="text-sm text-gray-600 description-clamp" [pTooltip]="row.description" tooltipPosition="bottom">{{ row.description }}</p>
+              }
             </div>
           </td>
           <td>{{ getClientName(row.clientId) }}</td>
@@ -76,33 +78,35 @@
           </td>
           <td>{{ row.startDate | date : 'dd/MM/yyyy' }}</td>
           <td>{{ row.endDate | date : 'dd/MM/yyyy' }}</td>
-          <td class="text-right flex items-center gap-2">
-            <button
-              pButton
-              icon="pi pi-eye"
-              class="p-button-text p-button-sm"
-              (click)="viewDetails(row)"
-              pTooltip="Ver detalles"
-              aria-label="Ver detalles del proyecto"
-            ></button>
-            @if (canEdit()) {
-            <button
-              pButton
-              icon="pi pi-pencil"
-              class="p-button-text p-button-sm"
-              (click)="editItem(row)"
-              pTooltip="Editar proyecto"
-              aria-label="Editar proyecto"
-            ></button>
-            <button
-              pButton
-              icon="pi pi-trash"
-              class="p-button-text p-button-sm p-button-danger"
-              (click)="remove(row)"
-              pTooltip="Eliminar proyecto"
-              aria-label="Eliminar proyecto"
-            ></button>
-            }
+          <td class="text-right align-middle">
+            <div class="flex items-center justify-end gap-2">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm"
+                (click)="viewDetails(row)"
+                pTooltip="Ver detalles"
+                aria-label="Ver detalles del proyecto"
+              ></button>
+              @if (canEdit()) {
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text p-button-sm"
+                (click)="editItem(row)"
+                pTooltip="Editar proyecto"
+                aria-label="Editar proyecto"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-sm p-button-danger"
+                (click)="remove(row)"
+                pTooltip="Eliminar proyecto"
+                aria-label="Eliminar proyecto"
+              ></button>
+              }
+            </div>
           </td>
         </tr>
       </ng-template>
@@ -729,6 +733,15 @@
               >
                 {{ viewingProject()?.isActive ? 'Activo' : 'Inactivo' }}
               </span>
+            </div>
+          </div>
+          <div>
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Creado por</span
+            >
+            <div class="text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <i class="pi pi-user text-blue-500"></i>
+              <span class="font-medium">{{ getCreatorName(viewingProject()?.createdBy) }}</span>
             </div>
           </div>
           @if (viewingProject()?.startDate) {
