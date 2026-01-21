@@ -9,6 +9,12 @@ export interface ProjectAttachment {
   description?: string;
 }
 
+export interface ProjectCreator {
+  _id: string;
+  name: string;
+  email?: string;
+}
+
 export interface Project {
   _id?: string;
   name: string;
@@ -30,6 +36,7 @@ export interface Project {
   notes?: string;
   isActive?: boolean;
   attachments?: ProjectAttachment[];
+  createdBy?: string | ProjectCreator; // Usuario que creó el proyecto
   createdAt?: string;
   updatedAt?: string;
 }
