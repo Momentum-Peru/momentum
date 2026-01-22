@@ -20,8 +20,8 @@ export interface RouteConfig {
 export class MenuConfigService {
   // Configuración centralizada de todas las rutas del sistema
   private readonly routesConfig: RouteConfig[] = [
-    { path: '/dashboard', label: 'Dashboard', icon: 'pi pi-chart-line' },
-    { path: '/dashboard-gerencia', label: 'Dashboard de Gerencia', icon: 'pi pi-chart-bar' },
+    { path: '/dashboard', label: 'INICIO', icon: 'pi pi-home' },
+    { path: '/dashboard-gerencia', label: 'Panel', icon: 'pi pi-chart-bar' },
     { path: '/gerencia-boards', label: 'Tableros de Gerencia', icon: 'pi pi-th-large' },
     { path: '/projects/dashboard', label: 'Dashboard de Proyectos', icon: 'pi pi-chart-line' },
     { path: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
@@ -79,25 +79,19 @@ export class MenuConfigService {
   getMenuItemsWithSubmenus(): MenuItem[] {
     return [
       {
-        label: 'DASHBOARD',
-        icon: 'pi pi-chart-line',
-        items: [
-          {
-            label: 'Dashboard',
-            icon: 'pi pi-chart-line',
-            routerLink: '/dashboard',
-          },
-          {
-            label: 'Dashboard de Gerencia',
-            icon: 'pi pi-chart-bar',
-            routerLink: '/dashboard-gerencia',
-          },
-        ],
+        label: 'INICIO',
+        icon: 'pi pi-home',
+        routerLink: '/dashboard',
       },
       {
         label: 'GERENCIA',
         icon: 'pi pi-briefcase',
         items: [
+          {
+            label: 'Panel',
+            icon: 'pi pi-chart-bar',
+            routerLink: '/dashboard-gerencia',
+          },
           {
             label: 'Tableros de Tareas',
             icon: 'pi pi-th-large',
