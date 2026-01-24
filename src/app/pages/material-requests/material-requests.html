@@ -1,4 +1,4 @@
-<div class="p-4 space-y-4 mt-5 overflow-x-hidden">
+<div class="p-3 sm:p-4 space-y-4 mt-5 overflow-x-hidden min-w-0">
   <p-toast [life]="5000"></p-toast>
   <p-confirmDialog></p-confirmDialog>
 
@@ -326,12 +326,12 @@
       </ng-template>
 
       <ng-template pTemplate="footer">
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
           <button
             pButton
             icon="pi pi-eye"
             label="Ver"
-            class="p-button-text flex-1"
+            class="p-button-text p-button-sm flex-shrink-0"
             (click)="viewItem(row)"
             aria-label="Ver detalles de la solicitud"
           ></button>
@@ -340,7 +340,7 @@
             pButton
             icon="pi pi-comment"
             label="Actualizar"
-            class="p-button-text flex-1"
+            class="p-button-text p-button-sm flex-shrink-0"
             (click)="openUpdateDialog(row._id!)"
             aria-label="Agregar actualización"
           ></button>
@@ -349,7 +349,7 @@
             pButton
             icon="pi pi-check"
             label="Aprobar"
-            class="p-button-text p-button-success flex-1"
+            class="p-button-text p-button-success p-button-sm flex-shrink-0"
             (click)="openApproveDialog(row._id!)"
             aria-label="Aprobar solicitud"
           ></button>
@@ -357,7 +357,7 @@
             pButton
             icon="pi pi-times"
             label="Rechazar"
-            class="p-button-text p-button-danger flex-1"
+            class="p-button-text p-button-danger p-button-sm flex-shrink-0"
             (click)="openRejectDialog(row._id!)"
             aria-label="Rechazar solicitud"
           ></button>
@@ -366,14 +366,14 @@
             pButton
             icon="pi pi-pencil"
             label="Editar"
-            class="p-button-text flex-1"
+            class="p-button-text p-button-sm flex-shrink-0"
             (click)="editItem(row)"
             aria-label="Editar solicitud"
           ></button>
           <button
             pButton
             icon="pi pi-trash"
-            class="p-button-text p-button-danger"
+            class="p-button-text p-button-danger p-button-sm flex-shrink-0"
             (click)="remove(row)"
             pTooltip="Eliminar"
             aria-label="Eliminar solicitud"
@@ -404,7 +404,7 @@
     </ng-template>
 
     @if (editing(); as e) {
-    <div class="grid gap-3 max-h-[70vh] overflow-y-auto" (paste)="onPaste($event)">
+    <div class="grid gap-3 max-h-[70vh] overflow-y-auto min-w-0" (paste)="onPaste($event)">
       <!-- Usuario que solicita -->
       <div>
         <label
@@ -449,8 +449,8 @@
           [ngModel]="e.title"
           (ngModelChange)="onEditChange('title', $event)"
           name="title"
-          placeholder="Ej: Solicitud de materiales para obra San Juan"
-          class="w-full"
+          placeholder="Ej: Materiales para obra"
+          class="w-full min-w-0"
           required
         />
       </div>
@@ -519,7 +519,7 @@
 
       <!-- Gestión de Items -->
       <div class="border-t pt-3">
-        <div class="flex items-center justify-between mb-3">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <h4 class="text-lg font-semibold">Items de la Solicitud *</h4>
           <button
             pButton
@@ -527,7 +527,7 @@
             label="Agregar Item"
             icon="pi pi-plus"
             (click)="openItemDialog()"
-            class="p-button-sm"
+            class="p-button-sm flex-shrink-0"
             aria-label="Agregar item"
           ></button>
         </div>
@@ -657,7 +657,7 @@
         <div
           class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3 mt-4"
         >
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <h5 class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <i class="pi pi-list text-blue-500"></i>
               Archivos Seleccionados ({{ selectedFiles().length }})
@@ -667,7 +667,7 @@
               type="button"
               icon="pi pi-times"
               label="Limpiar Todo"
-              class="p-button-text p-button-sm"
+              class="p-button-text p-button-sm flex-shrink-0"
               (click)="clearSelectedFiles()"
               [disabled]="uploading()"
               aria-label="Limpiar todos los archivos"
@@ -745,7 +745,7 @@
     [visible]="showItemDialog()"
     (visibleChange)="showItemDialog.set($event)"
     [modal]="true"
-    [style]="{ width: '40rem' }"
+    [style]="{ width: '40rem', maxWidth: '95vw' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
@@ -775,7 +775,7 @@
       </div>
 
       <!-- Cantidad y Unidad -->
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label
             for="itemQuantity"
@@ -853,14 +853,14 @@
     </ng-template>
 
     @if (viewing(); as v) {
-    <div class="space-y-4 max-h-[70vh] overflow-y-auto">
+    <div class="space-y-4 max-h-[70vh] overflow-y-auto min-w-0">
       <!-- Información Principal -->
       <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-        <div class="flex items-start justify-between mb-2">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex-1">
+        <div class="flex flex-wrap gap-2 items-start mb-2">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex-1 min-w-0 break-words">
             {{ v.title }}
           </h2>
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2 flex-shrink-0">
             <p-tag [severity]="getStatusSeverity(v.status)" [value]="v.status">
               <i [class]="'pi ' + getStatusIcon(v.status)" class="mr-1"></i>
             </p-tag>
@@ -936,7 +936,7 @@
           <i class="pi pi-paperclip mr-1"></i>
           Archivos Adjuntos Iniciales ({{ v.attachments.length }}):
         </span>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           @for (attachment of v.attachments; track attachment) { @if (getFileType(attachment) ===
           'image') {
           <div
@@ -991,7 +991,7 @@
 
       <!-- Actualizaciones (Timeline) -->
       @if (v.updates && v.updates.length > 0) {
-      <div>
+      <div class="min-w-0 overflow-hidden">
         <span class="block text-sm font-medium text-gray-700 dark:text-white mb-3">
           <i class="pi pi-comments mr-1"></i>
           Historial de Actualizaciones ({{ v.updates.length }}):
@@ -1005,16 +1005,16 @@
             </span>
           </ng-template>
           <ng-template pTemplate="content" let-update>
-            <p-card styleClass="mb-3">
+            <p-card styleClass="mb-3 w-full max-w-full min-w-0">
               <ng-template pTemplate="header">
-                <div class="flex items-center justify-between p-3">
-                  <div class="flex items-center gap-2">
-                    <i class="pi pi-user text-blue-500"></i>
-                    <span class="font-semibold text-gray-800 dark:text-white">
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between p-3 min-w-0">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <i class="pi pi-user text-blue-500 flex-shrink-0"></i>
+                    <span class="font-semibold text-gray-800 dark:text-white break-words">
                       {{ getUpdatedByName(update) }}
                     </span>
                   </div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                  <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
                     {{ formatDate(update.createdAt) }}
                   </span>
                 </div>
@@ -1024,7 +1024,7 @@
                   {{ update.message }}
                 </p>
                 @if (update.attachments && update.attachments.length > 0) {
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-3">
                   @for (attachment of update.attachments; track attachment) { @if
                   (getFileType(attachment) === 'image') {
                   <div
@@ -1121,7 +1121,7 @@
     [visible]="showUpdateDialog()"
     (visibleChange)="showUpdateDialog.set($event)"
     [modal]="true"
-    [style]="{ width: '50rem' }"
+    [style]="{ width: '50rem', maxWidth: '95vw' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
@@ -1249,7 +1249,7 @@
         <div
           class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3 mt-4"
         >
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <h5 class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <i class="pi pi-list text-blue-500"></i>
               Archivos Seleccionados ({{ selectedUpdateFiles().length }})
@@ -1259,7 +1259,7 @@
               type="button"
               icon="pi pi-times"
               label="Limpiar Todo"
-              class="p-button-text p-button-sm"
+              class="p-button-text p-button-sm flex-shrink-0"
               (click)="clearSelectedUpdateFiles()"
               [disabled]="uploading()"
               aria-label="Limpiar todos los archivos"
@@ -1337,7 +1337,7 @@
     [visible]="showApproveDialog()"
     (visibleChange)="showApproveDialog.set($event)"
     [modal]="true"
-    [style]="{ width: '30rem' }"
+    [style]="{ width: '30rem', maxWidth: '95vw' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
@@ -1387,7 +1387,7 @@
     [visible]="showRejectDialog()"
     (visibleChange)="showRejectDialog.set($event)"
     [modal]="true"
-    [style]="{ width: '30rem' }"
+    [style]="{ width: '30rem', maxWidth: '95vw' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
@@ -1451,7 +1451,7 @@
     [visible]="showStatsDialog()"
     (visibleChange)="showStatsDialog.set($event)"
     [modal]="true"
-    [style]="{ width: '50rem' }"
+    [style]="{ width: '50rem', maxWidth: '95vw' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
