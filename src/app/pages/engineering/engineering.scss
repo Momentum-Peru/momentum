@@ -17,6 +17,7 @@
   @media (max-width: 640px) {
     .p-dialog {
       margin: 0.5rem;
+      max-width: calc(100vw - 1rem);
     }
 
     .p-dialog-header {
