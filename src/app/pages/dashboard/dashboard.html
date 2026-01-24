@@ -60,11 +60,11 @@
   @if (!dashboardService.loading() && !dashboardService.hasError() && dashboardService.kpis()) {
   <div class="space-y-6">
     <!-- Panel General -->
-    <p-panel header="Panel General" [toggleable]="true" [collapsed]="false" styleClass="shadow-md">
+    <p-panel [toggleable]="true" [collapsed]="false" styleClass="shadow-md">
       <ng-template pTemplate="header">
-        <div class="flex items-center gap-2">
-          <i class="pi pi-chart-bar text-blue-600 text-xl"></i>
-          <span class="text-xl font-semibold">Panel General</span>
+        <div class="flex items-center gap-2 min-w-0">
+          <i class="pi pi-chart-bar text-blue-600 text-xl flex-shrink-0"></i>
+          <span class="text-lg sm:text-xl font-semibold truncate">Panel General</span>
         </div>
       </ng-template>
 
@@ -188,23 +188,22 @@
     <!-- Panel de Marcaciones (Solo Gerencia) -->
     @if (isGerencia()) {
     <p-panel
-      header="Panel de Marcaciones"
       [toggleable]="true"
       [collapsed]="false"
       styleClass="shadow-md"
     >
       <ng-template pTemplate="header">
-        <div class="flex items-center justify-between w-full gap-4">
-          <div class="flex items-center gap-2">
-            <i class="pi pi-clock text-blue-600 text-xl"></i>
-            <span class="text-xl font-semibold">Panel de Marcaciones</span>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3 sm:gap-4">
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <i class="pi pi-clock text-blue-600 text-xl flex-shrink-0"></i>
+            <span class="text-lg sm:text-xl font-semibold truncate">Panel de Marcaciones</span>
           </div>
           <button
             pButton
             type="button"
             icon="pi pi-file-excel"
-            label="Descargar Excel"
-            class="p-button-success p-button-sm me-3"
+            [label]="'Descargar Excel'"
+            class="p-button-success p-button-sm w-full sm:w-auto flex-shrink-0"
             (click)="downloadTimeTrackingExcel()"
             [disabled]="loadingTimeTracking()"
             title="Descargar todas las marcaciones en formato Excel"

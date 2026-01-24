@@ -47,17 +47,17 @@ interface ExcelEmployeeData {
     FormsModule,
   ],
   template: `
-    <div class="card p-6 max-w-4xl mx-auto">
-      <div class="flex items-center gap-4 mb-6">
+    <div class="card p-4 sm:p-6 max-w-4xl mx-auto w-full overflow-hidden">
+      <div class="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
         <p-button icon="pi pi-arrow-left" styleClass="p-button-text" routerLink=".."></p-button>
-        <h1 class="text-2xl font-bold text-gray-800">Nueva Carga de Pagos</h1>
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-800 truncate">Nueva Carga de Pagos</h1>
       </div>
 
-      <div class="max-w-xl mx-auto">
+      <div class="max-w-xl mx-auto w-full min-w-0">
         <!-- Upload Section -->
-        <div class="border rounded-lg p-6 bg-white shadow-sm">
-          <h2 class="text-xl font-semibold mb-4">Subir Archivo de Pagos</h2>
-          <p class="mb-4 text-gray-600">
+        <div class="border rounded-lg p-4 sm:p-6 bg-white shadow-sm overflow-hidden">
+          <h2 class="text-lg sm:text-xl font-semibold mb-4">Subir Archivo de Pagos</h2>
+          <p class="mb-4 text-gray-600 text-sm sm:text-base">
             Sube el archivo Excel o PDF con los datos de la planilla o recibos por honorarios.
           </p>
 
@@ -76,6 +76,7 @@ interface ExcelEmployeeData {
             ></p-select>
           </div>
 
+          <div class="payroll-upload-filewrap min-w-0">
           <p-fileUpload
             mode="advanced"
             chooseLabel="Seleccionar Archivo"
@@ -138,6 +139,7 @@ interface ExcelEmployeeData {
               }
             </ng-template>
           </p-fileUpload>
+          </div>
         </div>
       </div>
     </div>
@@ -330,6 +332,23 @@ interface ExcelEmployeeData {
       </ng-template>
     </p-dialog>
   `,
+  styles: [
+    `
+      :host .payroll-upload-filewrap ::ng-deep .p-fileupload {
+        max-width: 100%;
+        min-width: 0;
+      }
+      :host .payroll-upload-filewrap ::ng-deep .p-fileupload-header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        min-width: 0;
+      }
+      :host .payroll-upload-filewrap ::ng-deep .p-fileupload-content {
+        min-width: 0;
+      }
+    `,
+  ],
 })
 export class PayrollUploadComponent {
   private payrollService = inject(PayrollService);

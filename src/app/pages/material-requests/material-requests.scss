@@ -12,11 +12,69 @@
     background-color: var(--p-primary-color);
     border-color: var(--p-primary-color);
   }
+
+  // Evitar que el historial se desborde a la derecha (responsive)
+  .p-timeline-event {
+    min-width: 0;
+  }
+
+  .p-timeline-event-opposite {
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+
+  .p-timeline-event-content {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .p-timeline-event-content .p-card {
+    max-width: 100%;
+  }
 }
 
 // Estilos para el modal de previsualización
 ::ng-deep .preview-modal {
   .p-dialog-content {
     padding: 0;
+  }
+}
+
+// Responsive para diálogos en móvil
+:host ::ng-deep {
+  .p-select {
+    max-width: 100%;
+  }
+
+  .p-dialog-content {
+    max-height: calc(100vh - 10rem);
+    overflow-y: auto;
+  }
+
+  @media (max-width: 640px) {
+    .p-dialog {
+      margin: 0.5rem;
+      max-width: calc(100vw - 1rem);
+    }
+
+    .p-dialog-header {
+      padding: 1rem;
+    }
+
+    .p-dialog-content {
+      padding: 1rem;
+    }
+
+    .p-dialog-footer {
+      padding: 0.75rem 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+
+      .p-button {
+        flex: 1;
+        min-width: 100px;
+      }
+    }
   }
 }
