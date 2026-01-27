@@ -111,13 +111,16 @@
           </div>
 
           <div>
-            <label for="dueDate" class="block text-sm font-medium mb-2">Fecha de vencimiento</label>
+            <label for="dueDate" class="block text-sm font-medium mb-2">Fecha y Hora de vencimiento</label>
             <p-datepicker
               id="dueDate"
               formControlName="dueDate"
               [iconDisplay]="'input'"
               dateFormat="dd/mm/yy"
-              placeholder="Seleccionar fecha"
+              [showTime]="true"
+              [showSeconds]="false"
+              hourFormat="24"
+              placeholder="Seleccionar fecha y hora"
               class="w-full"
               [appendTo]="'body'"
             ></p-datepicker>
@@ -194,6 +197,12 @@
                     <i class="pi pi-user mr-1"></i>
                     {{ getAssignedUserName(task) }}
                   </span>
+                  @if (task.dueDate) {
+                  <span>
+                    <i class="pi pi-calendar mr-1"></i>
+                    {{ formatDateTime(task.dueDate) }}
+                  </span>
+                  }
                   <p-tag [value]="task.status" [severity]="
                       task.status === 'Terminada'
                         ? 'success'

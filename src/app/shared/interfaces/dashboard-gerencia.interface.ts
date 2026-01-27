@@ -26,6 +26,10 @@ export interface ReporteDiario {
   projectId?: string;
   projectName?: string;
   cantidadReportes: number;
+  photoDescriptions?: string[];
+  videoDescriptions?: string[];
+  audioDescriptions?: string[];
+  documents?: string[];
 }
 
 export interface FacturaIngresada {

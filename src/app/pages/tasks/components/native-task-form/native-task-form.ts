@@ -983,7 +983,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
         priority: this.task.priority,
         assignedTo: assignedToId,
         projectId: projectId || null,
-        dueDate: this.task.dueDate ? new Date(this.task.dueDate) : null,
+        dueDate: this.task.dueDate ? this.convertUTCDateToLocalDate(new Date(this.task.dueDate)) : null,
         tags: Array.isArray(this.task.tags) ? this.task.tags.join(', ') : this.task.tags || '',
         incompleteReason: this.task.incompleteReason || '',
       });
@@ -1183,6 +1183,17 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
         return;
       }
 
+      // Normalizar la fecha a UTC preservando la hora seleccionada
+      // El datepicker devuelve fechas en hora local, necesitamos convertir correctamente a UTC
+      let normalizedDueDate: Date | undefined;
+      if (formValue.dueDate) {
+        const dueDate = formValue.dueDate instanceof Date ? formValue.dueDate : new Date(formValue.dueDate);
+        // El objeto Date ya tiene la información de zona horaria correcta
+        // Simplemente usamos toISOString() que convierte correctamente de hora local a UTC
+        // No necesitamos extraer componentes manualmente porque eso causaría problemas de zona horaria
+        normalizedDueDate = dueDate;
+      }
+
       const taskData = {
         ...formValue,
         // Solo agregar createdBy si es una nueva tarea
@@ -1191,7 +1202,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
         ...(this.boardId ? { boardId: this.boardId } : {}),
         // Agregar projectId si está disponible
         ...(formValue.projectId ? { projectId: formValue.projectId } : {}),
-        dueDate: formValue.dueDate ? formValue.dueDate.toISOString() : undefined,
+        dueDate: normalizedDueDate ? normalizedDueDate.toISOString() : undefined,
         tags: formValue.tags
           ? formValue.tags
               .split(',')
@@ -1575,5 +1586,29 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
       // Marcar para eliminar
       this.attachmentsToDelete.set([...toDelete, attachmentId]);
     }
+  }
+
+  /**
+   * Convierte una fecha UTC a una fecha local que representa el mismo día y hora
+   * Esto es necesario para que el datepicker muestre correctamente la fecha
+   * sin que se desplace un día debido a la zona horaria
+   */
+  private convertUTCDateToLocalDate(utcDate: Date): Date {
+    // Usar los componentes locales de la fecha para obtener el día calendario que el usuario ve
+    // Cuando una fecha UTC se convierte a hora local, getFullYear(), getMonth(), getDate()
+    // devuelven el día calendario local, no el día UTC
+    // Por ejemplo: 2026-01-27T01:01:00.000Z (UTC) = 26/01/2026 20:01 (hora local UTC-5)
+    // getFullYear() = 2026, getMonth() = 0, getDate() = 26 (día local)
+    const year = utcDate.getFullYear();
+    const month = utcDate.getMonth();
+    const day = utcDate.getDate();
+    const hours = utcDate.getHours();
+    const minutes = utcDate.getMinutes();
+    const seconds = utcDate.getSeconds();
+    const milliseconds = utcDate.getMilliseconds();
+
+    // Crear una nueva fecha local con esos componentes
+    // Esto asegura que el datepicker muestre el mismo día y hora que el usuario ve
+    return new Date(year, month, day, hours, minutes, seconds, milliseconds);
   }
 }

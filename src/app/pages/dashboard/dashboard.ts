@@ -1,9 +1,10 @@
-import { Component, inject, OnInit, ChangeDetectionStrategy, computed } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy, signal, computed, effect, Injector, runInInjectionContext } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
 import { DashboardDataService } from '../../shared/services/dashboard-data.service';
 import { DashboardApiService } from '../../shared/services/dashboard-api.service';
+import { DashboardGerenciaApiService } from '../../shared/services/dashboard-gerencia-api.service';
 import { DashboardKpiCardComponent } from '../../shared/components/dashboard-kpi-card/dashboard-kpi-card.component';
 import { DashboardChartComponent } from '../../shared/components/dashboard-chart/dashboard-chart.component';
 import { DashboardTableComponent } from '../../shared/components/dashboard-table/dashboard-table.component';
@@ -11,16 +12,31 @@ import { DashboardFiltersComponent } from '../../shared/components/dashboard-fil
 import { MenuService } from '../../shared/services/menu.service';
 import { AuthService } from '../login/services/auth.service';
 import { GeocodingService } from '../../shared/services/geocoding.service';
-import { signal } from '@angular/core';
+import { MessageService } from 'primeng/api';
 import { TableModule } from 'primeng/table';
 import { PanelModule } from 'primeng/panel';
 import { ButtonModule } from 'primeng/button';
+import { DatePickerModule } from 'primeng/datepicker';
+import { FormsModule } from '@angular/forms';
+import { ToastModule } from 'primeng/toast';
+import { CardModule } from 'primeng/card';
+import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
 import {
   DashboardFiltersParams,
   DashboardKpi,
   TimeTrackingByUser,
   TimeTrackingDetail,
 } from '../../shared/interfaces/dashboard.interface';
+import {
+  GerenciaDashboardResponse,
+  MarcacionDiaria,
+  DayTrackingData,
+  UserTrackingData,
+  DayReportData,
+  UserReportData,
+  ReporteDiario,
+} from '../../shared/interfaces/dashboard-gerencia.interface';
 
 type TrackingLocation = NonNullable<TimeTrackingDetail['location']>;
 
@@ -34,23 +50,33 @@ type TrackingLocation = NonNullable<TimeTrackingDetail['location']>;
   imports: [
     CommonModule,
     RouterModule,
+    FormsModule,
     TableModule,
     PanelModule,
     ButtonModule,
+    DatePickerModule,
+    ToastModule,
+    CardModule,
+    TooltipModule,
+    DialogModule,
     DashboardKpiCardComponent,
     DashboardChartComponent,
     DashboardTableComponent,
     DashboardFiltersComponent,
   ],
+  providers: [MessageService],
   templateUrl: './dashboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardPage implements OnInit {
   protected readonly dashboardService = inject(DashboardDataService);
   private readonly dashboardApiService = inject(DashboardApiService);
+  private readonly dashboardGerenciaApiService = inject(DashboardGerenciaApiService);
   private readonly menuService = inject(MenuService);
   private readonly authService = inject(AuthService);
   private readonly geocodingService = inject(GeocodingService);
+  private readonly messageService = inject(MessageService);
+  private readonly injector = inject(Injector);
 
   // Computed para verificar si el usuario es gerencia
   protected readonly isGerencia = computed(() => this.authService.isGerencia());
@@ -61,6 +87,38 @@ export class DashboardPage implements OnInit {
   protected readonly loadingTimeTracking = signal(false);
   protected readonly locationAddresses = signal<Record<string, string>>({});
   protected readonly locationLoading = signal<Record<string, boolean>>({});
+
+  // Signals para datos de gerencia (dashboard-gerencia)
+  protected readonly gerenciaDashboardData = signal<GerenciaDashboardResponse | null>(null);
+  protected readonly loadingGerencia = signal(false);
+  protected readonly gerenciaError = signal<string | null>(null);
+  protected readonly gerenciaStartDate = signal<Date | null>(null);
+  protected readonly gerenciaEndDate = signal<Date | null>(null);
+  public gerenciaStartDateValue: Date | null = null;
+  public gerenciaEndDateValue: Date | null = null;
+  private readonly expandedUsers = signal<Set<string>>(new Set());
+  private readonly expandedReportUsers = signal<Set<string>>(new Set());
+  
+  // Signals para el diálogo de archivos
+  protected readonly filesDialogVisible = signal(false);
+  protected readonly selectedReportFiles = signal<{
+    urls: string[];
+    type: 'photos' | 'videos' | 'audios' | 'documents' | 'all';
+    title: string;
+    files?: Array<{ url: string; type: 'photos' | 'videos' | 'audios' | 'documents'; label: string }>;
+  } | null>(null);
+  private readonly gerenciaLocationAddresses = signal<Record<string, string>>({});
+  private readonly gerenciaLocationLoading = signal<Record<string, boolean>>({});
+
+  // Computed para datos derivados de gerencia
+  protected readonly dailyTimeTrackings = computed(
+    () => this.gerenciaDashboardData()?.marcacionesDiarias ?? []
+  );
+  protected readonly dailyReportsGerencia = computed(() => this.gerenciaDashboardData()?.reportesDiarios ?? []);
+  protected readonly invoices = computed(() => this.gerenciaDashboardData()?.facturasIngresadas ?? []);
+  protected readonly ticketsByStatus = computed(() => this.gerenciaDashboardData()?.ticketsPorEstado ?? []);
+  protected readonly tickets = computed(() => this.gerenciaDashboardData()?.tickets ?? []);
+  protected readonly sales = computed(() => this.gerenciaDashboardData()?.ventas ?? []);
 
   // Guardar los filtros actuales para usar en la descarga
   private currentFilters: DashboardFiltersParams = { period: '30d' };
@@ -127,6 +185,30 @@ export class DashboardPage implements OnInit {
     // Cargar permisos del usuario antes de cargar el dashboard
     this.menuService.loadUserPermissions();
     this.loadDashboard();
+
+    // Si es gerencia, inicializar fechas para el dashboard de gerencia
+    if (this.isGerencia()) {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - 1);
+      this.gerenciaStartDateValue = startDate;
+      this.gerenciaEndDateValue = endDate;
+      this.gerenciaStartDate.set(startDate);
+      this.gerenciaEndDate.set(endDate);
+
+      // Effect para resolver ubicaciones automáticamente cuando cambian los datos
+      runInInjectionContext(this.injector, () => {
+        effect(() => {
+          const data = this.gerenciaDashboardData();
+          if (data?.marcacionesDiarias) {
+            this.resolveAllLocationAddresses(data.marcacionesDiarias);
+          }
+        });
+      });
+
+      // Cargar datos iniciales de gerencia
+      this.loadGerenciaDashboard();
+    }
   }
 
   /**
@@ -409,5 +491,851 @@ export class DashboardPage implements OnInit {
 
   private formatCoordinates(location: TrackingLocation): string {
     return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+  }
+
+  // ========== MÉTODOS PARA DASHBOARD DE GERENCIA ==========
+
+  /**
+   * Agrupa marcaciones primero por persona, luego por día
+   */
+  public readonly groupedTimeTrackingsByUser = computed(() => {
+    const timeTrackings = this.dailyTimeTrackings();
+
+    // Primero agrupar por usuario y día
+    const dayGrouped = new Map<string, DayTrackingData>();
+
+    timeTrackings.forEach((timeTracking: MarcacionDiaria) => {
+      const key = `${timeTracking.userId}_${timeTracking.fecha}`;
+
+      if (!dayGrouped.has(key)) {
+        dayGrouped.set(key, {
+          date: timeTracking.fecha,
+        });
+      }
+
+      const dayData = dayGrouped.get(key)!;
+      const timeTrackingWithType = timeTracking as MarcacionDiaria & { type?: string };
+      const trackingType: string = timeTrackingWithType.tipo || timeTrackingWithType.type || '';
+      const normalizedType = trackingType.toUpperCase();
+
+      if (normalizedType === 'INGRESO' || normalizedType === 'ENTRADA') {
+        const formattedTime = timeTracking.hora ? timeTracking.hora.substring(0, 5) : '00:00';
+        dayData.entry = {
+          time: formattedTime,
+          date: `${timeTracking.fecha}T${timeTracking.hora || '00:00:00'}`,
+          location: timeTracking.location,
+        };
+      } else if (normalizedType === 'SALIDA' || normalizedType === 'EXIT') {
+        const formattedTime = timeTracking.hora ? timeTracking.hora.substring(0, 5) : '00:00';
+        dayData.exit = {
+          time: formattedTime,
+          date: `${timeTracking.fecha}T${timeTracking.hora || '00:00:00'}`,
+          location: timeTracking.location,
+        };
+      }
+    });
+
+    // Ahora agrupar por usuario
+    const userGrouped = new Map<string, UserTrackingData>();
+
+    dayGrouped.forEach((dayData, key) => {
+      const [userId] = key.split('_');
+      const firstTracking = timeTrackings.find((t: MarcacionDiaria) => t.userId === userId);
+
+      if (!firstTracking) return;
+
+      if (!userGrouped.has(userId)) {
+        userGrouped.set(userId, {
+          userId,
+          userName: firstTracking.userName,
+          userEmail: firstTracking.userEmail,
+          days: [],
+          totalDays: 0,
+          totalHours: 0,
+        });
+      }
+
+      const userData = userGrouped.get(userId)!;
+      userData.days.push(dayData);
+    });
+
+    // Calcular totales y ordenar
+    const result: UserTrackingData[] = [];
+
+    userGrouped.forEach((userData) => {
+      // Ordenar días por fecha descendente
+      userData.days.sort((a, b) => b.date.localeCompare(a.date));
+
+      // Calcular totales
+      userData.totalDays = userData.days.length;
+
+      let totalHours = 0;
+      userData.days.forEach((day) => {
+        if (day.entry && day.exit) {
+          totalHours += this.calculateWorkedHours(day.entry, day.exit);
+        }
+      });
+      userData.totalHours = Math.round(totalHours * 100) / 100;
+
+      result.push(userData);
+    });
+
+    // Ordenar por nombre de usuario
+    result.sort((a, b) => a.userName.localeCompare(b.userName));
+
+    return result;
+  });
+
+  /**
+   * Agrupa reportes primero por persona, luego por día
+   */
+  public readonly groupedReportsByUser = computed(() => {
+    const reports = this.dailyReportsGerencia();
+
+    // Agrupar por usuario y día
+    const dayGrouped = new Map<string, DayReportData>();
+
+    reports.forEach((report: ReporteDiario) => {
+      const key = `${report.userId}_${report.fecha}`;
+
+      if (!dayGrouped.has(key)) {
+        dayGrouped.set(key, {
+          date: report.fecha,
+          reports: [],
+          totalReports: 0,
+        });
+      }
+
+      const dayData = dayGrouped.get(key)!;
+      dayData.reports.push(report);
+    });
+
+    // Calcular totales por día
+    dayGrouped.forEach((dayData) => {
+      dayData.totalReports = dayData.reports.reduce(
+        (sum, report) => sum + (report.cantidadReportes || 1),
+        0
+      );
+    });
+
+    // Ahora agrupar por usuario
+    const userGrouped = new Map<string, UserReportData>();
+
+    dayGrouped.forEach((dayData, key) => {
+      const [userId] = key.split('_');
+      const firstReport = reports.find((r: ReporteDiario) => r.userId === userId);
+
+      if (!firstReport) return;
+
+      if (!userGrouped.has(userId)) {
+        userGrouped.set(userId, {
+          userId,
+          userName: firstReport.userName,
+          userEmail: firstReport.userEmail,
+          days: [],
+          totalDays: 0,
+          totalReports: 0,
+        });
+      }
+
+      const userData = userGrouped.get(userId)!;
+      userData.days.push(dayData);
+    });
+
+    // Calcular totales y ordenar
+    const result: UserReportData[] = [];
+
+    userGrouped.forEach((userData) => {
+      // Ordenar días por fecha descendente
+      userData.days.sort((a, b) => b.date.localeCompare(a.date));
+
+      // Calcular totales
+      userData.totalDays = userData.days.length;
+      userData.totalReports = userData.days.reduce((sum, day) => sum + day.totalReports, 0);
+
+      result.push(userData);
+    });
+
+    // Ordenar por nombre de usuario
+    result.sort((a, b) => a.userName.localeCompare(b.userName));
+
+    return result;
+  });
+
+  /**
+   * Verifica si un usuario está expandido
+   */
+  isUserExpanded(userId: string): boolean {
+    return this.expandedUsers().has(userId);
+  }
+
+  /**
+   * Alterna el estado de expansión de un usuario
+   */
+  toggleUserExpansion(userId: string): void {
+    const current = new Set(this.expandedUsers());
+    if (current.has(userId)) {
+      current.delete(userId);
+    } else {
+      current.add(userId);
+    }
+    this.expandedUsers.set(current);
+  }
+
+  /**
+   * Calcula la cantidad de entradas para un usuario
+   */
+  getEntryCount(userData: UserTrackingData): number {
+    return userData.days.filter((day) => day.entry).length;
+  }
+
+  /**
+   * Calcula la cantidad de salidas para un usuario
+   */
+  getExitCount(userData: UserTrackingData): number {
+    return userData.days.filter((day) => day.exit).length;
+  }
+
+  /**
+   * Verifica si un usuario está expandido (reportes)
+   */
+  isReportUserExpanded(userId: string): boolean {
+    return this.expandedReportUsers().has(userId);
+  }
+
+  /**
+   * Alterna el estado de expansión de un usuario (reportes)
+   */
+  toggleReportUserExpansion(userId: string): void {
+    const current = new Set(this.expandedReportUsers());
+    if (current.has(userId)) {
+      current.delete(userId);
+    } else {
+      current.add(userId);
+    }
+    this.expandedReportUsers.set(current);
+  }
+
+  /**
+   * Carga los datos del dashboard de gerencia
+   */
+  async loadGerenciaDashboard(): Promise<void> {
+    const start = this.gerenciaStartDateValue;
+    const end = this.gerenciaEndDateValue;
+
+    if (!start || !end) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Fechas requeridas',
+        detail: 'Por favor seleccione un rango de fechas',
+      });
+      return;
+    }
+
+    if (start > end) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error de fechas',
+        detail: 'La fecha de inicio no puede ser mayor que la fecha de fin',
+      });
+      return;
+    }
+
+    this.loadingGerencia.set(true);
+    this.gerenciaError.set(null);
+
+    try {
+      const params = {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+      };
+
+      const data = await this.dashboardGerenciaApiService.getDashboardData(params).toPromise();
+      this.gerenciaDashboardData.set(data ?? null);
+    } catch (err: unknown) {
+      const errorMessage =
+        (err && typeof err === 'object' && 'error' in err
+          ? (err.error as { message?: string })?.message
+          : null) || 'Error al cargar los datos del dashboard';
+      this.gerenciaError.set(errorMessage);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: errorMessage,
+      });
+    } finally {
+      this.loadingGerencia.set(false);
+    }
+  }
+
+  /**
+   * Maneja el cambio de fecha de inicio
+   */
+  onGerenciaStartDateChange(): void {
+    this.gerenciaStartDate.set(this.gerenciaStartDateValue);
+  }
+
+  /**
+   * Maneja el cambio de fecha de fin
+   */
+  onGerenciaEndDateChange(): void {
+    this.gerenciaEndDate.set(this.gerenciaEndDateValue);
+  }
+
+  /**
+   * Establece el rango de fechas según el filtro rápido seleccionado
+   */
+  setGerenciaDateRange(range: 'today' | 'week' | 'month'): void {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let startDate: Date;
+    let endDate: Date;
+
+    switch (range) {
+      case 'today':
+        startDate = new Date(today);
+        endDate = new Date(today);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'week':
+        startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - 7);
+        endDate = new Date(today);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'month':
+        startDate = new Date(today);
+        startDate.setMonth(startDate.getMonth() - 1);
+        endDate = new Date(today);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      default:
+        return;
+    }
+
+    // Establecer las fechas
+    this.gerenciaStartDateValue = startDate;
+    this.gerenciaEndDateValue = endDate;
+    this.gerenciaStartDate.set(startDate);
+    this.gerenciaEndDate.set(endDate);
+
+    // Cargar el dashboard automáticamente
+    this.loadGerenciaDashboard();
+  }
+
+  /**
+   * Calculates worked hours between entry and exit
+   */
+  calculateWorkedHours(
+    entry?: { time: string; date: string },
+    exit?: { time: string; date: string }
+  ): number {
+    if (!entry || !exit) return 0;
+
+    try {
+      const entryTime = new Date(entry.date);
+      const exitTime = new Date(exit.date);
+
+      if (exitTime.getTime() <= entryTime.getTime()) return 0;
+
+      const diffMs = exitTime.getTime() - entryTime.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      return Math.round(diffHours * 100) / 100;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Formatea horas trabajadas
+   */
+  formatWorkedHours(hours: number): string {
+    if (hours <= 0) return '-';
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    if (h === 0 && m > 0) return `${m}m`;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0 && m === 0) return `${h}h`;
+    return '0h 0m';
+  }
+
+  /**
+   * Checks if has complete attendance
+   */
+  hasCompleteAttendance(dayData: {
+    entry?: { time: string; date: string };
+    exit?: { time: string; date: string };
+  }): boolean {
+    return !!(dayData.entry && dayData.exit);
+  }
+
+  /**
+   * Gets attendance status
+   */
+  getAttendanceStatus(dayData: {
+    entry?: { time: string; date: string };
+    exit?: { time: string; date: string };
+  }): string {
+    if (dayData.entry && dayData.exit) return 'Completo';
+    if (dayData.entry || dayData.exit) return 'Incompleto';
+    return 'Sin registro';
+  }
+
+  /**
+   * Gets badge class based on attendance status
+   */
+  getAttendanceBadgeClass(status: string): string {
+    switch (status) {
+      case 'Completo':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'Incompleto':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'Sin registro':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+  }
+
+  /**
+   * Gets badge class based on ticket status
+   */
+  getTicketBadgeClass(status: string): string {
+    switch (status) {
+      case 'abierto':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'cerrado':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+  }
+
+  /**
+   * Gets badge class based on invoice type
+   */
+  getInvoiceBadgeClass(type: string): string {
+    switch (type) {
+      case 'compra':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'venta':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+  }
+
+  /**
+   * Gets badge class based on sale type
+   */
+  getSaleBadgeClass(type: string): string {
+    switch (type) {
+      case 'requerimiento':
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
+      case 'cotizacion':
+        return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200';
+      case 'tdr':
+        return 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+  }
+
+  /**
+   * Formatea un número como moneda
+   */
+  formatCurrency(value: number): string {
+    return new Intl.NumberFormat('es-PE', {
+      style: 'currency',
+      currency: 'PEN',
+    }).format(value);
+  }
+
+  /**
+   * Formats date in readable format
+   */
+  formatGerenciaDate(dateString: string): string {
+    try {
+      const [year, month, day] = dateString.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      return date.toLocaleDateString('es-PE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+    } catch {
+      return dateString;
+    }
+  }
+
+  /**
+   * Gets the day of the week
+   */
+  getDayOfWeek(dateString: string): string {
+    try {
+      const [year, month, day] = dateString.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      return date.toLocaleDateString('es-PE', { weekday: 'long' });
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * Formatea fecha y hora para mostrar (versión gerencia)
+   */
+  formatGerenciaDateTime(dateString: string): string {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('es-PE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateString;
+    }
+  }
+
+  /**
+   * Resuelve todas las direcciones de forma optimizada (agrupa únicas y hace peticiones con delay)
+   */
+  private resolveAllLocationAddresses(marcaciones: MarcacionDiaria[]): void {
+    // Obtener ubicaciones únicas que no estén ya en caché
+    const uniqueLocations = new Map<string, { latitude: number; longitude: number }>();
+    const addresses = this.gerenciaLocationAddresses();
+    const loading = this.gerenciaLocationLoading();
+
+    marcaciones.forEach((marcacion) => {
+      if (marcacion.location) {
+        const key = this.buildGerenciaLocationKey(marcacion.location);
+        // Solo agregar si no está en caché ni cargando
+        if (!addresses[key] && !loading[key] && !uniqueLocations.has(key)) {
+          uniqueLocations.set(key, marcacion.location);
+        }
+      }
+    });
+
+    // Resolver direcciones con un pequeño delay entre peticiones para evitar rate limiting
+    Array.from(uniqueLocations.values()).forEach((location, index) => {
+      setTimeout(() => {
+        this.resolveGerenciaLocationAddress(location);
+      }, index * 1200); // 1.2 segundos entre peticiones
+    });
+  }
+
+  /**
+   * Resuelve la dirección de una ubicación usando geocodificación (versión gerencia)
+   */
+  private resolveGerenciaLocationAddress(location: { latitude: number; longitude: number }): void {
+    const key = this.buildGerenciaLocationKey(location);
+    if (this.gerenciaLocationAddresses()[key] || this.gerenciaLocationLoading()[key]) {
+      return;
+    }
+
+    this.gerenciaLocationLoading.update((state) => ({
+      ...state,
+      [key]: true,
+    }));
+
+    this.geocodingService
+      .getAddress(location.latitude, location.longitude)
+      .then((address) => {
+        this.gerenciaLocationAddresses.update((state) => ({
+          ...state,
+          [key]: address,
+        }));
+      })
+      .catch(() => {
+        // Fallback a coordenadas formateadas
+        const fallback = `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+        this.gerenciaLocationAddresses.update((state) => ({
+          ...state,
+          [key]: fallback,
+        }));
+      })
+      .finally(() => {
+        this.gerenciaLocationLoading.update((state) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { [key]: _, ...rest } = state;
+          return rest;
+        });
+      });
+  }
+
+  /**
+   * Construye una clave única para una ubicación (versión gerencia)
+   */
+  private buildGerenciaLocationKey(location: { latitude: number; longitude: number }): string {
+    return `${location.latitude.toFixed(6)},${location.longitude.toFixed(6)}`;
+  }
+
+  /**
+   * Formatea la ubicación para mostrar (dirección o coordenadas) - versión gerencia
+   */
+  formatGerenciaLocation(location?: { latitude: number; longitude: number }): string {
+    if (!location) return 'N/A';
+
+    const key = this.buildGerenciaLocationKey(location);
+
+    // Acceder a los signals para que Angular detecte los cambios
+    const addresses = this.gerenciaLocationAddresses();
+    const loading = this.gerenciaLocationLoading();
+
+    // Si está cargando, mostrar indicador
+    if (loading[key]) {
+      return 'Buscando dirección...';
+    }
+
+    // Si ya tenemos la dirección, retornarla
+    const address = addresses[key];
+    if (address) {
+      return address;
+    }
+
+    // Retornar coordenadas mientras se carga
+    return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+  }
+
+  /**
+   * Descarga el PDF del dashboard de gerencia
+   */
+  async downloadGerenciaPdf(): Promise<void> {
+    const start = this.gerenciaStartDateValue;
+    const end = this.gerenciaEndDateValue;
+
+    if (!start || !end) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Fechas requeridas',
+        detail: 'Por favor seleccione un rango de fechas',
+      });
+      return;
+    }
+
+    if (start > end) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error de fechas',
+        detail: 'La fecha de inicio no puede ser mayor que la fecha de fin',
+      });
+      return;
+    }
+
+    this.loadingGerencia.set(true);
+
+    try {
+      const params = {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+      };
+
+      const blob = await this.dashboardGerenciaApiService.downloadPdf(params).toPromise();
+
+      if (!blob) {
+        throw new Error('No se pudo descargar el PDF');
+      }
+
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      // Generar nombre del archivo
+      const startDateStr = start.toISOString().split('T')[0];
+      const endDateStr = end.toISOString().split('T')[0];
+      link.download = `dashboard-gerencia_${startDateStr}_${endDateStr}.pdf`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'PDF descargado',
+        detail: 'El PDF del dashboard se ha descargado exitosamente',
+      });
+    } catch (err: unknown) {
+      const errorMessage =
+        (err && typeof err === 'object' && 'error' in err
+          ? (err.error as { message?: string })?.message
+          : null) || 'Error al descargar el PDF';
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: errorMessage,
+      });
+    } finally {
+      this.loadingGerencia.set(false);
+    }
+  }
+
+  /**
+   * Obtiene las fotos de un reporte
+   */
+  getReportPhotos(report: ReporteDiario): string[] {
+    if (!report.photoDescriptions || !Array.isArray(report.photoDescriptions)) return [];
+    return report.photoDescriptions.filter((url: string | null | undefined): url is string => {
+      return typeof url === 'string' && url.trim() !== '';
+    });
+  }
+
+  /**
+   * Obtiene los videos de un reporte
+   */
+  getReportVideos(report: ReporteDiario): string[] {
+    if (!report.videoDescriptions || !Array.isArray(report.videoDescriptions)) return [];
+    return report.videoDescriptions.filter((url: string | null | undefined): url is string => {
+      return typeof url === 'string' && url.trim() !== '';
+    });
+  }
+
+  /**
+   * Obtiene los audios de un reporte
+   */
+  getReportAudios(report: ReporteDiario): string[] {
+    if (!report.audioDescriptions || !Array.isArray(report.audioDescriptions)) return [];
+    return report.audioDescriptions.filter((url: string | null | undefined): url is string => {
+      return typeof url === 'string' && url.trim() !== '';
+    });
+  }
+
+  /**
+   * Obtiene los documentos de un reporte
+   */
+  getReportDocuments(report: ReporteDiario): string[] {
+    if (!report.documents || !Array.isArray(report.documents)) return [];
+    return report.documents.filter((url: string | null | undefined): url is string => {
+      return typeof url === 'string' && url.trim() !== '';
+    });
+  }
+
+  /**
+   * Obtiene el total de archivos de un reporte
+   */
+  getReportFilesCount(report: ReporteDiario): number {
+    return this.getReportPhotos(report).length +
+           this.getReportVideos(report).length +
+           this.getReportAudios(report).length +
+           this.getReportDocuments(report).length;
+  }
+
+  /**
+   * Abre el diálogo para ver todos los archivos de un reporte
+   */
+  openAllFilesDialog(report: ReporteDiario): void {
+    const photos = this.getReportPhotos(report);
+    const videos = this.getReportVideos(report);
+    const audios = this.getReportAudios(report);
+    const documents = this.getReportDocuments(report);
+
+    const allFiles: Array<{ url: string; type: 'photos' | 'videos' | 'audios' | 'documents'; label: string }> = [];
+
+    photos.forEach(url => {
+      allFiles.push({ url, type: 'photos', label: 'Foto' });
+    });
+    videos.forEach(url => {
+      allFiles.push({ url, type: 'videos', label: 'Video' });
+    });
+    audios.forEach(url => {
+      allFiles.push({ url, type: 'audios', label: 'Audio' });
+    });
+    documents.forEach(url => {
+      allFiles.push({ url, type: 'documents', label: 'Documento' });
+    });
+
+    if (allFiles.length > 0) {
+      this.selectedReportFiles.set({
+        urls: allFiles.map(f => f.url),
+        type: 'all',
+        title: `Archivos del Reporte - ${report.userName} (${allFiles.length} archivos)`,
+        files: allFiles,
+      } as any);
+      this.filesDialogVisible.set(true);
+    }
+  }
+
+  /**
+   * Abre el diálogo para ver los archivos de un reporte (método legacy, mantenido por compatibilidad)
+   */
+  openFilesDialog(report: ReporteDiario, type: 'photos' | 'videos' | 'audios' | 'documents'): void {
+    let urls: string[] = [];
+    let title = '';
+
+    switch (type) {
+      case 'photos':
+        urls = this.getReportPhotos(report);
+        title = `Fotos del Reporte - ${report.userName}`;
+        break;
+      case 'videos':
+        urls = this.getReportVideos(report);
+        title = `Videos del Reporte - ${report.userName}`;
+        break;
+      case 'audios':
+        urls = this.getReportAudios(report);
+        title = `Audios del Reporte - ${report.userName}`;
+        break;
+      case 'documents':
+        urls = this.getReportDocuments(report);
+        title = `Documentos del Reporte - ${report.userName}`;
+        break;
+    }
+
+    if (urls.length > 0) {
+      this.selectedReportFiles.set({ urls, type, title });
+      this.filesDialogVisible.set(true);
+    }
+  }
+
+  /**
+   * Cierra el diálogo de archivos
+   */
+  closeFilesDialog(): void {
+    this.filesDialogVisible.set(false);
+    this.selectedReportFiles.set(null);
+  }
+
+  /**
+   * Abre un archivo en una nueva pestaña
+   */
+  openFile(url: string): void {
+    window.open(url, '_blank');
+  }
+
+  /**
+   * Obtiene el tipo de archivo basado en la extensión
+   */
+  protected getFileType(url: string): 'image' | 'video' | 'audio' | 'document' {
+    const extension = url.split('.').pop()?.toLowerCase() || '';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) {
+      return 'image';
+    }
+    if (['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(extension)) {
+      return 'video';
+    }
+    if (['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(extension)) {
+      return 'audio';
+    }
+    return 'document';
+  }
+
+  /**
+   * Obtiene los archivos filtrados por tipo
+   */
+  protected getFilesByType(type: 'photos' | 'videos' | 'audios' | 'documents'): Array<{ url: string; type: 'photos' | 'videos' | 'audios' | 'documents'; label: string }> {
+    const files = this.selectedReportFiles()?.files;
+    if (!files) return [];
+    return files.filter(f => f.type === type);
+  }
+
+  /**
+   * Verifica si hay archivos de un tipo específico
+   */
+  protected hasFilesOfType(type: 'photos' | 'videos' | 'audios' | 'documents'): boolean {
+    return this.getFilesByType(type).length > 0;
   }
 }
