@@ -11,10 +11,11 @@ import { FormsModule } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { UsersApiService, User } from '../../shared/services/users-api.service';
+import { UsersApiService, User, UserResponse } from '../../shared/services/users-api.service';
 import { TimeTrackingApiService } from '../../shared/services/time-tracking-api.service';
 import { EmployeesApiService } from '../../shared/services/employees-api.service';
 import { TimeTracking } from '../../shared/interfaces/time-tracking.interface';
+import { forkJoin } from 'rxjs';
 import { PayrollCalculationUserDetailsComponent } from './components/payroll-calculation-user-details/payroll-calculation-user-details';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -116,11 +117,23 @@ export class PayrollCalculationPage implements OnInit {
    */
   loadAllUsersData(): void {
     this.loading.set(true);
-    this.usersApi.listWithFilters({ isActive: true }).subscribe({
-      next: (response) => {
+    // Cargar todos los usuarios aumentando el límite para obtener todos de una vez
+    this.usersApi.listWithFilters({ isActive: true, limit: 1000 }).subscribe({
+      next: (response: UserResponse & { total?: number; totalPages?: number; page?: number }) => {
+        // La respuesta puede tener 'users' o 'data'
         const usersList = response.users || response.data || [];
-        this.users.set(usersList);
-        this.loadUsersTimeTrackings(usersList);
+        
+        // Verificar si hay más páginas y cargarlas si es necesario
+        const total = response.total;
+        const totalPages = response.totalPages;
+        
+        if (totalPages && totalPages > 1 && typeof total === 'number' && usersList.length < total) {
+          // Cargar todas las páginas restantes usando forkJoin
+          this.loadAllPagesUsers(totalPages, usersList);
+        } else {
+          this.users.set(usersList);
+          this.loadUsersTimeTrackings(usersList);
+        }
       },
       error: (error: unknown) => {
         console.error('Error al cargar usuarios:', error);
@@ -130,6 +143,40 @@ export class PayrollCalculationPage implements OnInit {
           detail: 'No se pudieron cargar los usuarios',
         });
         this.loading.set(false);
+      },
+    });
+  }
+
+  /**
+   * Cargar todas las páginas de usuarios usando forkJoin
+   */
+  private loadAllPagesUsers(totalPages: number, initialUsers: User[]): void {
+    const requests = [];
+    
+    // Crear requests para todas las páginas restantes
+    for (let page = 2; page <= totalPages; page++) {
+      requests.push(this.usersApi.listWithFilters({ isActive: true, page, limit: 1000 }));
+    }
+    
+    // Ejecutar todas las peticiones en paralelo
+    forkJoin(requests).subscribe({
+      next: (responses: (UserResponse & { total?: number; totalPages?: number; page?: number })[]) => {
+        let allUsers = [...initialUsers];
+        
+        // Combinar todos los usuarios de todas las páginas
+        responses.forEach((response) => {
+          const pageUsers = response.users || response.data || [];
+          allUsers = allUsers.concat(pageUsers);
+        });
+        
+        this.users.set(allUsers);
+        this.loadUsersTimeTrackings(allUsers);
+      },
+      error: (error: unknown) => {
+        console.error('Error al cargar todas las páginas:', error);
+        // Usar al menos los usuarios iniciales
+        this.users.set(initialUsers);
+        this.loadUsersTimeTrackings(initialUsers);
       },
     });
   }
