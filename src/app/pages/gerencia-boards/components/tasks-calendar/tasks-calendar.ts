@@ -75,8 +75,31 @@ export class TasksCalendarComponent implements OnInit, AfterViewInit {
 
     tasks.forEach((task) => {
       if (task.dueDate) {
-        const date = new Date(task.dueDate);
-        const dateKey = this.formatDateKey(date);
+        // Asegurar que la fecha se interprete correctamente
+        // Si es string, parsearlo como UTC; si es Date, usarlo directamente
+        let date: Date;
+        if (typeof task.dueDate === 'string') {
+          // Si el string no termina en 'Z', agregarlo para forzar UTC
+          const dateStr = task.dueDate.endsWith('Z') ? task.dueDate : task.dueDate + 'Z';
+          date = new Date(dateStr);
+        } else {
+          date = task.dueDate;
+        }
+        
+        // Usar los componentes locales de la fecha para obtener el día calendario que el usuario ve
+        // Cuando una fecha UTC se convierte a hora local, getFullYear(), getMonth(), getDate()
+        // devuelven el día calendario local, no el día UTC
+        // Por ejemplo: 2026-01-27T01:01:00.000Z (UTC) = 26/01/2026 20:01 (hora local UTC-5)
+        // getFullYear() = 2026, getMonth() = 0, getDate() = 26 (día local)
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const day = date.getDate();
+        
+        // Crear una fecha local con esos componentes para obtener la clave
+        const localDate = new Date(year, month, day, 12, 0, 0, 0);
+        
+        // Usar la fecha local para obtener la clave de fecha
+        const dateKey = this.formatDateKeyFromLocalDate(localDate);
         if (!grouped.has(dateKey)) {
           grouped.set(dateKey, []);
         }
@@ -180,8 +203,14 @@ export class TasksCalendarComponent implements OnInit, AfterViewInit {
       if (!dayText || isNaN(Number(dayText))) return;
 
       const day = Number(dayText);
-      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-      const dateKey = this.formatDateKey(date);
+      // Crear una fecha local para el día del calendario
+      const date = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth(),
+        day,
+        12, 0, 0, 0 // Usar mediodía para evitar problemas de zona horaria
+      );
+      const dateKey = this.formatDateKeyFromLocalDate(date);
 
       if (tasksByDate.has(dateKey)) {
         const taskCount = tasksByDate.get(dateKey)!.length;
@@ -246,6 +275,18 @@ export class TasksCalendarComponent implements OnInit, AfterViewInit {
   }
 
   /**
+   * Formatea una fecha local como clave (YYYY-MM-DD)
+   * Usa métodos locales para obtener el día calendario que el usuario ve
+   */
+  private formatDateKeyFromLocalDate(date: Date): string {
+    // Usar métodos locales para obtener el día calendario
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
    * Formatea una fecha como string ISO (YYYY-MM-DDTHH:mm:ss.sssZ)
    */
   private formatDateISO(date: Date): string {
@@ -258,7 +299,9 @@ export class TasksCalendarComponent implements OnInit, AfterViewInit {
   onDateSelect(event: Date): void {
     this.selectedDate.set(event);
 
-    const dateKey = this.formatDateKey(event);
+    // Usar formatDateKeyFromLocalDate para obtener la clave basada en el día calendario local
+    // Esto asegura que coincida con cómo se agrupan las tareas (por día calendario, no por día UTC)
+    const dateKey = this.formatDateKeyFromLocalDate(event);
     const tasks = this.tasksByDate().get(dateKey) || [];
 
     this.dateSelected.emit({ date: event, tasks });
@@ -282,7 +325,7 @@ export class TasksCalendarComponent implements OnInit, AfterViewInit {
    * Verifica si una fecha tiene tareas
    */
   hasTasks(date: Date): boolean {
-    const dateKey = this.formatDateKey(date);
+    const dateKey = this.formatDateKeyFromLocalDate(date);
     return this.tasksByDate().has(dateKey);
   }
 

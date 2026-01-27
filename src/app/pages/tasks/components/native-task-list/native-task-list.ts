@@ -651,6 +651,7 @@ export class NativeTaskListComponent {
 
   /**
    * Formatea la fecha de creación
+   * Usa métodos locales para mostrar el día calendario que el usuario ve
    */
   public formatDate(date: Date | string | undefined): string {
     if (!date) return '-';
@@ -658,6 +659,11 @@ export class NativeTaskListComponent {
       const dateObj = typeof date === 'string' ? new Date(date) : date;
       if (isNaN(dateObj.getTime())) return '-';
 
+      // Usar métodos locales para mostrar el día calendario que el usuario ve
+      // Cuando una fecha UTC se convierte a hora local, getFullYear(), getMonth(), getDate()
+      // devuelven el día calendario local, no el día UTC
+      // Por ejemplo: 2026-01-27T01:01:00.000Z (UTC) = 26/01/2026 20:01 (hora local UTC-5)
+      // getFullYear() = 2026, getMonth() = 0, getDate() = 26 (día local)
       const day = dateObj.getDate().toString().padStart(2, '0');
       const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
       const year = dateObj.getFullYear();

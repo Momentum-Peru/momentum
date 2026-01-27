@@ -176,17 +176,11 @@ export class DayTasksDialogComponent implements OnInit {
    */
   openCreateForm(): void {
     if (this.selectedDate) {
-      // Crear una nueva fecha normalizada a medianoche UTC para evitar problemas de zona horaria
-      const date = new Date(this.selectedDate);
-      // Si la fecha ya está en UTC (viene del padre normalizada), usar sus componentes UTC
-      // Si no, usar los componentes locales pero crear en UTC
-      const year = date.getUTCFullYear ? date.getUTCFullYear() : date.getFullYear();
-      const month = date.getUTCMonth !== undefined ? date.getUTCMonth() : date.getMonth();
-      const day = date.getUTCDate ? date.getUTCDate() : date.getDate();
-      const normalizedDate = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
-      
+      // selectedDate ya viene normalizado desde el padre como UTC (2026-01-26T00:00:00.000Z)
+      // Convertir a fecha local para que el datepicker la muestre correctamente
+      const localDate = this.convertUTCDateToLocalDate(new Date(this.selectedDate));
       this.taskForm.patchValue({
-        dueDate: normalizedDate,
+        dueDate: localDate,
       });
     }
     this.showCreateForm.set(true);
@@ -197,9 +191,10 @@ export class DayTasksDialogComponent implements OnInit {
    */
   closeCreateForm(): void {
     this.showCreateForm.set(false);
+    const localDate = this.selectedDate ? this.convertUTCDateToLocalDate(new Date(this.selectedDate)) : null;
     this.taskForm.reset({
       priority: 'Media',
-      dueDate: this.selectedDate,
+      dueDate: localDate,
     });
   }
 
@@ -235,12 +230,13 @@ export class DayTasksDialogComponent implements OnInit {
       dueDate = new Date(this.selectedDate);
     }
     
-    // Normalizar la fecha a medianoche UTC para evitar problemas de zona horaria
+    // Normalizar la fecha a UTC preservando la hora seleccionada
+    // El datepicker devuelve fechas en hora local, y toISOString() convierte correctamente a UTC
+    // No necesitamos extraer componentes manualmente porque eso causaría problemas de zona horaria
     if (dueDate) {
-      const year = dueDate.getFullYear();
-      const month = dueDate.getMonth();
-      const day = dueDate.getDate();
-      dueDate = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+      // El objeto Date ya tiene la información de zona horaria correcta
+      // Simplemente lo usamos directamente, y toISOString() lo convertirá correctamente a UTC
+      dueDate = dueDate instanceof Date ? dueDate : new Date(dueDate);
     }
     
     const taskData: CreateTaskRequest = {
@@ -250,7 +246,7 @@ export class DayTasksDialogComponent implements OnInit {
       createdBy: currentUser.id,
       boardId: formValue.boardId,
       priority: formValue.priority,
-      dueDate: dueDate,
+      dueDate: dueDate ? (dueDate instanceof Date ? dueDate.toISOString() : new Date(dueDate).toISOString()) : undefined,
       status: 'Pendiente',
     };
 
@@ -348,5 +344,45 @@ export class DayTasksDialogComponent implements OnInit {
     if (boardId) {
       window.open(`/tasks/${boardId}`, '_blank');
     }
+  }
+
+  /**
+   * Convierte una fecha UTC a una fecha local que representa el mismo día y hora
+   * Esto es necesario para que el datepicker muestre correctamente la fecha
+   * sin que se desplace un día debido a la zona horaria
+   */
+  private convertUTCDateToLocalDate(utcDate: Date): Date {
+    // Usar los componentes locales de la fecha para obtener el día calendario que el usuario ve
+    // Cuando una fecha UTC se convierte a hora local, getFullYear(), getMonth(), getDate()
+    // devuelven el día calendario local, no el día UTC
+    // Por ejemplo: 2026-01-27T01:01:00.000Z (UTC) = 26/01/2026 20:01 (hora local UTC-5)
+    // getFullYear() = 2026, getMonth() = 0, getDate() = 26 (día local)
+    const year = utcDate.getFullYear();
+    const month = utcDate.getMonth();
+    const day = utcDate.getDate();
+    const hours = utcDate.getHours();
+    const minutes = utcDate.getMinutes();
+    const seconds = utcDate.getSeconds();
+    const milliseconds = utcDate.getMilliseconds();
+
+    // Crear una nueva fecha local con esos componentes
+    // Esto asegura que el datepicker muestre el mismo día y hora que el usuario ve
+    return new Date(year, month, day, hours, minutes, seconds, milliseconds);
+  }
+
+  /**
+   * Formatea una fecha y hora
+   * Convierte de UTC (guardado en el servidor) a hora local del usuario
+   */
+  public formatDateTime(dateString: string | Date): string {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    // Usar métodos locales para mostrar la fecha y hora en la zona horaria del usuario
+    // El servidor guarda las fechas en UTC, pero queremos mostrarlas en hora local
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const hour = date.getHours().toString().padStart(2, '0');
+    const minute = date.getMinutes().toString().padStart(2, '0');
+    return `${day}/${month}/${year} ${hour}:${minute}`;
   }
 }
