@@ -24,12 +24,13 @@ import { Tooltip } from 'primeng/tooltip';
 import { Tag } from 'primeng/tag';
 import { Card } from 'primeng/card';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil, forkJoin } from 'rxjs';
 import {
   UsersApiService,
   User,
   UserCreateRequest,
   UserUpdateRequest,
+  UserResponse,
 } from '../../shared/services/users-api.service';
 import { AuthService } from '../login/services/auth.service';
 import { MenuService } from '../../shared/services/menu.service';
@@ -167,7 +168,7 @@ export class UsersPage implements OnInit, OnDestroy {
     this.loading.set(true);
 
     // Construir filtros solo con valores válidos
-    const filters: { search?: string; role?: string; isActive?: boolean } = {};
+    const filters: { search?: string; role?: string; isActive?: boolean; limit?: number } = {};
 
     const query = this.query().trim();
     if (query) {
@@ -186,35 +187,28 @@ export class UsersPage implements OnInit, OnDestroy {
     }
     // Si status es 'all' o está vacío, no enviar isActive para mostrar todos
 
+    // Aumentar el límite para obtener todos los usuarios de una vez
+    filters.limit = 1000;
+
     this.usersApi.listWithFilters(filters).subscribe({
-      next: (response) => {
+      next: (response: UserResponse & { total?: number; totalPages?: number; page?: number }) => {
         // Filtrado del lado del cliente como fallback
-        let filteredUsers = response?.users || [];
+        let filteredUsers = response?.users || response?.data || [];
 
-        // Aplicar filtro de estado si la API no lo procesó correctamente
-        // Solo filtrar si isActive está definido (no undefined)
-        if (filters.isActive !== undefined) {
-          filteredUsers = filteredUsers.filter((user: { isActive?: boolean }) => user.isActive === filters.isActive);
+        // Verificar si hay más páginas y cargarlas si es necesario
+        const total = response.total;
+        const totalPages = response.totalPages;
+
+        if (totalPages && totalPages > 1 && typeof total === 'number' && filteredUsers.length < total) {
+          // Cargar todas las páginas restantes usando forkJoin
+          this.loadAllPagesUsers(totalPages, filteredUsers, filters);
+        } else {
+          // Aplicar filtros del lado del cliente
+          filteredUsers = this.applyClientFilters(filteredUsers, filters);
+          this._users.set(Array.isArray(filteredUsers) ? filteredUsers : []);
+          this.loading.set(false);
+          this.loadStats();
         }
-        // Si isActive es undefined, mostrar todos (activos e inactivos)
-
-        // Aplicar filtro de rol si la API no lo procesó correctamente
-        if (filters.role) {
-          filteredUsers = filteredUsers.filter((user: { role?: string }) => user.role === filters.role);
-        }
-
-        // Aplicar filtro de búsqueda si la API no lo procesó correctamente
-        if (filters.search) {
-          const query = filters.search.toLowerCase();
-          filteredUsers = filteredUsers.filter(
-            (user: { name?: string; email?: string }) =>
-              user.name?.toLowerCase().includes(query) || user.email?.toLowerCase().includes(query)
-          );
-        }
-
-        this._users.set(Array.isArray(filteredUsers) ? filteredUsers : []);
-        this.loading.set(false);
-        this.loadStats();
       },
       error: (error) => {
         console.error('Error cargando usuarios:', error);
@@ -227,6 +221,80 @@ export class UsersPage implements OnInit, OnDestroy {
         this.loading.set(false);
       },
     });
+  }
+
+  /**
+   * Cargar todas las páginas de usuarios usando forkJoin
+   */
+  private loadAllPagesUsers(
+    totalPages: number,
+    initialUsers: User[],
+    filters: { search?: string; role?: string; isActive?: boolean; limit?: number }
+  ): void {
+    const requests = [];
+
+    // Crear requests para todas las páginas restantes
+    for (let page = 2; page <= totalPages; page++) {
+      requests.push(this.usersApi.listWithFilters({ ...filters, page, limit: 1000 }));
+    }
+
+    // Ejecutar todas las peticiones en paralelo
+    forkJoin(requests).subscribe({
+      next: (responses: (UserResponse & { total?: number; totalPages?: number; page?: number })[]) => {
+        let allUsers = [...initialUsers];
+
+        // Combinar todos los usuarios de todas las páginas
+        responses.forEach((response) => {
+          const pageUsers = response.users || response.data || [];
+          allUsers = allUsers.concat(pageUsers);
+        });
+
+        // Aplicar filtros del lado del cliente
+        const filteredUsers = this.applyClientFilters(allUsers, filters);
+        this._users.set(Array.isArray(filteredUsers) ? filteredUsers : []);
+        this.loading.set(false);
+        this.loadStats();
+      },
+      error: (error) => {
+        console.error('Error al cargar todas las páginas:', error);
+        // Usar al menos los usuarios iniciales con filtros aplicados
+        const filteredUsers = this.applyClientFilters(initialUsers, filters);
+        this._users.set(Array.isArray(filteredUsers) ? filteredUsers : []);
+        this.loading.set(false);
+        this.loadStats();
+      },
+    });
+  }
+
+  /**
+   * Aplicar filtros del lado del cliente
+   */
+  private applyClientFilters(
+    users: User[],
+    filters: { search?: string; role?: string; isActive?: boolean }
+  ): User[] {
+    let filteredUsers = [...users];
+
+    // Aplicar filtro de estado si la API no lo procesó correctamente
+    if (filters.isActive !== undefined) {
+      filteredUsers = filteredUsers.filter((user) => user.isActive === filters.isActive);
+    }
+
+    // Aplicar filtro de rol si la API no lo procesó correctamente
+    if (filters.role) {
+      filteredUsers = filteredUsers.filter((user) => user.role === filters.role);
+    }
+
+    // Aplicar filtro de búsqueda si la API no lo procesó correctamente
+    if (filters.search) {
+      const query = filters.search.toLowerCase();
+      filteredUsers = filteredUsers.filter(
+        (user) =>
+          user.name?.toLowerCase().includes(query) || user.email?.toLowerCase().includes(query)
+      );
+    }
+
+    return filteredUsers;
   }
 
   /**
@@ -641,16 +709,54 @@ export class UsersPage implements OnInit, OnDestroy {
    * Carga las estadísticas de usuarios
    */
   loadStats() {
-    this.usersApi.listWithFilters({}).subscribe({
-      next: (response) => {
-        const users = response?.users || [];
-        const stats: UserStats = {
-          total: users.length,
-          active: users.filter((user: { isActive?: boolean }) => user.isActive).length,
-          inactive: users.filter((user: { isActive?: boolean }) => !user.isActive).length,
-          admins: users.filter((user: { role?: string }) => user.role === 'admin').length,
-        };
-        this.stats.set(stats);
+    this.usersApi.listWithFilters({ limit: 1000 }).subscribe({
+      next: (response: UserResponse & { total?: number; totalPages?: number; page?: number }) => {
+        let users = response?.users || response?.data || [];
+        const total = response.total;
+        const totalPages = response.totalPages;
+
+        // Si hay más páginas, cargarlas todas para estadísticas precisas
+        if (totalPages && totalPages > 1 && typeof total === 'number' && users.length < total) {
+          const requests = [];
+          for (let page = 2; page <= totalPages; page++) {
+            requests.push(this.usersApi.listWithFilters({ page, limit: 1000 }));
+          }
+
+          forkJoin(requests).subscribe({
+            next: (responses: (UserResponse & { total?: number; totalPages?: number; page?: number })[]) => {
+              responses.forEach((pageResponse) => {
+                const pageUsers = pageResponse.users || pageResponse.data || [];
+                users = users.concat(pageUsers);
+              });
+
+              const stats: UserStats = {
+                total: users.length,
+                active: users.filter((user) => user.isActive).length,
+                inactive: users.filter((user) => !user.isActive).length,
+                admins: users.filter((user) => user.role === 'admin').length,
+              };
+              this.stats.set(stats);
+            },
+            error: () => {
+              // Si falla cargar todas las páginas, usar al menos las de la primera página
+              const stats: UserStats = {
+                total: users.length,
+                active: users.filter((user) => user.isActive).length,
+                inactive: users.filter((user) => !user.isActive).length,
+                admins: users.filter((user) => user.role === 'admin').length,
+              };
+              this.stats.set(stats);
+            },
+          });
+        } else {
+          const stats: UserStats = {
+            total: users.length,
+            active: users.filter((user) => user.isActive).length,
+            inactive: users.filter((user) => !user.isActive).length,
+            admins: users.filter((user) => user.role === 'admin').length,
+          };
+          this.stats.set(stats);
+        }
       },
       error: (error) => {
         console.error('Error cargando estadísticas:', error);
