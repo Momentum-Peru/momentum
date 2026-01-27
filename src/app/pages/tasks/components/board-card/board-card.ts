@@ -38,6 +38,11 @@ import { Board } from '../../../../shared/interfaces/board.interface';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
+      :host {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
       :host ::ng-deep .responsive-button .p-button-label {
         display: none;
       }
@@ -49,6 +54,34 @@ import { Board } from '../../../../shared/interfaces/board.interface';
       :host ::ng-deep .p-card {
         border-radius: 0.75rem;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      :host ::ng-deep .p-card-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      :host ::ng-deep .p-card-content {
+        flex: 1;
+        min-height: 0;
+      }
+      :host ::ng-deep .p-card-header {
+        display: flex;
+        align-items: stretch;
+        flex-shrink: 0;
+      }
+      :host ::ng-deep .p-card-header > div {
+        display: flex;
+        align-items: center;
+        width: 100%;
+      }
+      /* Asegurar que los footers estén siempre en la parte inferior */
+      :host ::ng-deep .p-card-footer {
+        flex-shrink: 0;
+        margin-top: auto;
       }
     `,
   ],

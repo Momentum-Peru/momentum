@@ -16,19 +16,36 @@
         </p>
       </div>
       <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400">Tarjetas</span>
-          <p-toggleButton
-            [ngModel]="viewMode() === 'calendar'"
-            (ngModelChange)="viewMode.set($event ? 'calendar' : 'cards')"
-            onLabel="Calendario"
-            offLabel="Tarjetas"
-            [onIcon]="'pi pi-calendar'"
-            [offIcon]="'pi pi-th-large'"
-            styleClass="w-32"
-          ></p-toggleButton>
-          <span class="text-sm text-gray-600 dark:text-gray-400">Calendario</span>
+        <!-- Selector de Vista -->
+        <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700">
+          <button
+            type="button"
+            (click)="viewMode.set('calendar')"
+            [class.bg-white]="viewMode() === 'calendar'"
+            [class.shadow-sm]="viewMode() === 'calendar'"
+            [class.text-blue-600]="viewMode() === 'calendar'"
+            [class.dark:bg-gray-700]="viewMode() === 'calendar'"
+            [class.dark:text-blue-400]="viewMode() === 'calendar'"
+            class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+          >
+            <i class="pi pi-calendar"></i>
+            <span>Calendario</span>
+          </button>
+          <button
+            type="button"
+            (click)="viewMode.set('cards')"
+            [class.bg-white]="viewMode() === 'cards'"
+            [class.shadow-sm]="viewMode() === 'cards'"
+            [class.text-blue-600]="viewMode() === 'cards'"
+            [class.dark:bg-gray-700]="viewMode() === 'cards'"
+            [class.dark:text-blue-400]="viewMode() === 'cards'"
+            class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+          >
+            <i class="pi pi-th-large"></i>
+            <span>Tarjetas</span>
+          </button>
         </div>
+        <!-- Botón de Actualizar -->
         <p-button
           icon="pi pi-refresh"
           [text]="true"
@@ -71,9 +88,9 @@
   <!-- Vista de Tarjetas -->
   @if (viewMode() === 'cards') {
   @if (!loading() && !error() && filteredBoards().length > 0) {
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" style="align-items: stretch;">
     @for (board of filteredBoards(); track board._id) {
-    <div class="transform transition-transform hover:scale-105">
+    <div class="transform transition-transform hover:scale-105 flex flex-col" style="height: 100%;">
       <app-board-card
         [board]="board"
         [isOwner]="isBoardOwner(board)"
@@ -81,7 +98,9 @@
         [currentUserId]="currentUserId()"
         [isGerencia]="isGerencia()"
         (view)="onViewBoard($any($event))"
+        (edit)="onEditBoard($any($event))"
         (invite)="openBoardInvite($any($event))"
+        (delete)="onDeleteBoard($any($event))"
       ></app-board-card>
     </div>
     }
@@ -91,11 +110,103 @@
 
   <!-- Vista de Calendario -->
   @if (viewMode() === 'calendar') {
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-    <app-tasks-calendar
-      #calendarRef
-      (dateSelected)="onDateSelected($event)"
-    ></app-tasks-calendar>
+  <div class="space-y-6">
+    <!-- Calendario -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <app-tasks-calendar
+        #calendarRef
+        (dateSelected)="onDateSelected($event)"
+      ></app-tasks-calendar>
+    </div>
+
+    <!-- Tareas de Hoy -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <i class="pi pi-calendar-check text-blue-600 dark:text-blue-400"></i>
+          Tareas de Hoy
+        </h2>
+        <p-button
+          icon="pi pi-refresh"
+          [text]="true"
+          severity="secondary"
+          [loading]="loadingTodayTasks()"
+          (onClick)="loadTodayTasks()"
+          pTooltip="Actualizar tareas de hoy"
+          styleClass="text-sm"
+        ></p-button>
+      </div>
+
+      <!-- Loading State -->
+      @if (loadingTodayTasks()) {
+      <div class="flex justify-center items-center py-8">
+        <p-progressSpinner styleClass="w-6 h-6" strokeWidth="4"></p-progressSpinner>
+      </div>
+      }
+
+      <!-- Tareas -->
+      @if (!loadingTodayTasks() && todayTasks().length > 0) {
+      <div class="space-y-3">
+        @for (task of todayTasks(); track task._id) {
+        <div
+          class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-gray-50 dark:bg-gray-700/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+          (click)="viewTask(task)"
+          role="button"
+          tabindex="0"
+          (keydown.enter)="viewTask(task)"
+          (keydown.space)="viewTask(task)"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-3 mb-2">
+                <h3 class="text-base font-semibold text-gray-900 dark:text-white truncate">
+                  {{ task.title }}
+                </h3>
+                <span
+                  class="px-2 py-1 rounded-full text-xs font-medium flex-shrink-0"
+                  [ngClass]="getTaskStatusBadgeClass(task.status)"
+                >
+                  {{ task.status }}
+                </span>
+              </div>
+              @if (task.description) {
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
+                {{ task.description }}
+              </p>
+              }
+              <div class="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                <div class="flex items-center gap-1">
+                  <i class="pi pi-th-large"></i>
+                  <span>{{ getBoardNameForTask(task) }}</span>
+                </div>
+                @if (task.dueDate) {
+                <div class="flex items-center gap-1">
+                  <i class="pi pi-clock"></i>
+                  <span>{{ formatTaskDate(task.dueDate) }}</span>
+                </div>
+                }
+                @if (task.priority) {
+                <div class="flex items-center gap-1">
+                  <i class="pi pi-flag"></i>
+                  <span class="capitalize">{{ task.priority }}</span>
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+      }
+
+      <!-- Empty State -->
+      @if (!loadingTodayTasks() && todayTasks().length === 0) {
+      <div class="text-center py-8">
+        <i class="pi pi-calendar-times text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+        <p class="text-gray-500 dark:text-gray-400">No hay tareas programadas para hoy</p>
+      </div>
+      }
+    </div>
   </div>
   }
 
@@ -122,6 +233,25 @@
   </div>
   }
 </div>
+
+<!-- Dialog: Formulario de Tablero -->
+<p-dialog
+  [modal]="true"
+  [visible]="showBoardForm()"
+  (visibleChange)="showBoardForm.set($event)"
+  [style]="{ width: '600px' }"
+  [closable]="true"
+  [header]="isEditingBoard() ? 'Editar Tablero' : 'Nuevo Tablero'"
+  (onHide)="closeBoardForm()"
+>
+  <app-board-form
+    [board]="editingBoard()"
+    [loading]="boardFormLoading"
+    [visible]="showBoardForm()"
+    (save)="onBoardSave($event)"
+    (cancelled)="closeBoardForm()"
+  ></app-board-form>
+</p-dialog>
 
 <!-- Dialog: Formulario de Invitación -->
 <p-dialog
@@ -155,4 +285,5 @@
   (refreshRequested)="onRefreshCalendar()"
 ></app-day-tasks-dialog>
 
+<p-confirmDialog></p-confirmDialog>
 <p-toast></p-toast>

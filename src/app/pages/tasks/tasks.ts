@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, AfterViewInit, inject, signal, computed, effect, ViewChildren, QueryList, ElementRef } from '@angular/core';
+import { BoardCardComponent } from './components/board-card/board-card';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -74,7 +75,7 @@ import { Task, DragDropEvent, TasksSearchParams } from '../../shared/interfaces/
     `,
   ],
 })
-export class TasksPage implements OnInit {
+export class TasksPage implements OnInit, AfterViewInit {
   public readonly boardsService = inject(BoardsApiService);
   public readonly tasksService = inject(TasksApiService);
   private readonly authService = inject(AuthService);
@@ -82,6 +83,7 @@ export class TasksPage implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly elementRef = inject(ElementRef);
 
   // Signals
   public readonly showBoardForm = signal<boolean>(false);
@@ -100,6 +102,8 @@ export class TasksPage implements OnInit {
   public readonly taskFilters = signal<TasksSearchParams>({});
   public readonly availableTags = signal<string[]>([]);
   private readonly processedTaskId = signal<string | null>(null);
+
+  @ViewChildren(BoardCardComponent) boardCards!: QueryList<BoardCardComponent>;
 
   // Computed
   public readonly currentUserId = computed(() => {
@@ -239,6 +243,17 @@ export class TasksPage implements OnInit {
         this.selectedTask.set(null);
         this.isEditingTask.set(false);
       }
+    });
+
+    // Efecto para igualar alturas de headers y footers cuando cambien los boards
+    effect(() => {
+      // Acceder a los boards para que el effect se ejecute cuando cambien
+      this.boardsService.boards();
+      // Usar requestAnimationFrame para asegurar que el DOM esté renderizado
+      requestAnimationFrame(() => {
+        this.equalizeHeaderHeights();
+        this.equalizeFooterHeights();
+      });
     });
 
     // Efecto para cargar todas las etiquetas cuando se selecciona un tablero
@@ -1050,5 +1065,215 @@ export class TasksPage implements OnInit {
         });
       },
     });
+  }
+
+  ngAfterViewInit(): void {
+    // Calcular altura máxima de headers y footers después de que la vista se inicialice
+    this.equalizeHeaderHeights();
+    this.equalizeFooterHeights();
+
+    // Escuchar cambios en los ViewChildren
+    if (this.boardCards) {
+      this.boardCards.changes.subscribe(() => {
+        this.equalizeHeaderHeights();
+        this.equalizeFooterHeights();
+      });
+    }
+  }
+
+  /**
+   * Iguala la altura de todos los encabezados de las tarjetas
+   * basándose en el encabezado más alto
+   */
+  equalizeHeaderHeights(): void {
+    // Solo aplicar cuando no hay un tablero seleccionado (vista de lista de tableros)
+    if (this.selectedBoard()) {
+      return;
+    }
+
+    // Intentar directamente primero
+    const tryEqualize = () => {
+      // Usar ViewChildren si está disponible, sino usar querySelector
+      const validHeaders: HTMLElement[] = [];
+
+      if (this.boardCards && this.boardCards.length > 0) {
+        // Usar ViewChildren para obtener referencias directas
+        this.boardCards.forEach((cardComponent) => {
+          // Intentar acceder al elemento del componente de diferentes maneras
+          // Usar una interfaz auxiliar para evitar 'any'
+          interface ComponentWithElementRef {
+            elementRef?: { nativeElement: HTMLElement };
+            _elementRef?: { nativeElement: HTMLElement };
+            hostElement?: HTMLElement;
+          }
+          const component = cardComponent as unknown as ComponentWithElementRef;
+          const cardElement = component.elementRef?.nativeElement ||
+                            component._elementRef?.nativeElement ||
+                            component.hostElement;
+
+          if (cardElement) {
+            // Buscar el header dentro del componente
+            const header = cardElement.querySelector('.p-card-header') as HTMLElement;
+            if (header) {
+              validHeaders.push(header);
+            } else {
+              // Si no encuentra directamente, buscar en el shadow root o en los hijos
+              const pCard = cardElement.querySelector('p-card') ||
+                           cardElement.querySelector('[class*="p-card"]') ||
+                           cardElement.querySelector('[class*="card"]');
+              if (pCard) {
+                const header = pCard.querySelector('.p-card-header') as HTMLElement;
+                if (header) {
+                  validHeaders.push(header);
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // Si ViewChildren no funcionó, usar querySelector como fallback
+      if (validHeaders.length === 0) {
+        const boardCards = this.elementRef.nativeElement.querySelectorAll('app-board-card');
+        boardCards.forEach((card: Element) => {
+          const pCard = card.querySelector('p-card') || card.querySelector('[class*="p-card"]');
+          if (pCard) {
+            const header = pCard.querySelector('.p-card-header') as HTMLElement;
+            if (header) {
+              validHeaders.push(header);
+            }
+          }
+        });
+      }
+
+      if (validHeaders.length === 0) {
+        // Si no encuentra elementos, intentar en el siguiente frame
+        requestAnimationFrame(tryEqualize);
+        return;
+      }
+
+      let maxHeight = 0;
+
+      // Calcular la altura máxima
+      validHeaders.forEach((header: HTMLElement) => {
+        // Resetear altura para obtener la altura natural
+        header.style.height = '';
+        header.style.minHeight = '';
+        // Forzar reflow
+        void header.offsetHeight;
+        const height = header.offsetHeight;
+        if (height > maxHeight) {
+          maxHeight = height;
+        }
+      });
+
+      // Aplicar la altura máxima a todos los headers
+      if (maxHeight > 0) {
+        validHeaders.forEach((header: HTMLElement) => {
+          header.style.height = `${maxHeight}px`;
+        });
+      }
+    };
+
+    // Intentar directamente
+    tryEqualize();
+  }
+
+  /**
+   * Iguala la altura de todos los footers de las tarjetas
+   * basándose en el footer más alto para mantenerlos en la misma posición
+   */
+  equalizeFooterHeights(): void {
+    // Solo aplicar cuando no hay un tablero seleccionado (vista de lista de tableros)
+    if (this.selectedBoard()) {
+      return;
+    }
+
+    // Intentar directamente primero
+    const tryEqualize = () => {
+      // Usar ViewChildren si está disponible, sino usar querySelector
+      const validFooters: HTMLElement[] = [];
+
+      if (this.boardCards && this.boardCards.length > 0) {
+        // Usar ViewChildren para obtener referencias directas
+        this.boardCards.forEach((cardComponent) => {
+          // Intentar acceder al elemento del componente de diferentes maneras
+          // Usar una interfaz auxiliar para evitar 'any'
+          interface ComponentWithElementRef {
+            elementRef?: { nativeElement: HTMLElement };
+            _elementRef?: { nativeElement: HTMLElement };
+            hostElement?: HTMLElement;
+          }
+          const component = cardComponent as unknown as ComponentWithElementRef;
+          const cardElement = component.elementRef?.nativeElement ||
+                            component._elementRef?.nativeElement ||
+                            component.hostElement;
+
+          if (cardElement) {
+            // Buscar el footer dentro del componente
+            const footer = cardElement.querySelector('.p-card-footer') as HTMLElement;
+            if (footer) {
+              validFooters.push(footer);
+            } else {
+              // Si no encuentra directamente, buscar en el shadow root o en los hijos
+              const pCard = cardElement.querySelector('p-card') ||
+                           cardElement.querySelector('[class*="p-card"]') ||
+                           cardElement.querySelector('[class*="card"]');
+              if (pCard) {
+                const footer = pCard.querySelector('.p-card-footer') as HTMLElement;
+                if (footer) {
+                  validFooters.push(footer);
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // Si ViewChildren no funcionó, usar querySelector como fallback
+      if (validFooters.length === 0) {
+        const boardCards = this.elementRef.nativeElement.querySelectorAll('app-board-card');
+        boardCards.forEach((card: Element) => {
+          const pCard = card.querySelector('p-card') || card.querySelector('[class*="p-card"]');
+          if (pCard) {
+            const footer = pCard.querySelector('.p-card-footer') as HTMLElement;
+            if (footer) {
+              validFooters.push(footer);
+            }
+          }
+        });
+      }
+
+      if (validFooters.length === 0) {
+        // Si no encuentra elementos, intentar en el siguiente frame
+        requestAnimationFrame(tryEqualize);
+        return;
+      }
+
+      let maxHeight = 0;
+
+      // Calcular la altura máxima
+      validFooters.forEach((footer: HTMLElement) => {
+        // Resetear altura para obtener la altura natural
+        footer.style.height = '';
+        footer.style.minHeight = '';
+        // Forzar reflow
+        void footer.offsetHeight;
+        const height = footer.offsetHeight;
+        if (height > maxHeight) {
+          maxHeight = height;
+        }
+      });
+
+      // Aplicar la altura máxima a todos los footers
+      if (maxHeight > 0) {
+        validFooters.forEach((footer: HTMLElement) => {
+          footer.style.height = `${maxHeight}px`;
+        });
+      }
+    };
+
+    // Intentar directamente
+    tryEqualize();
   }
 }
