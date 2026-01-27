@@ -1107,10 +1107,10 @@ export class TasksPage implements OnInit, AfterViewInit {
             hostElement?: HTMLElement;
           }
           const component = cardComponent as unknown as ComponentWithElementRef;
-          const cardElement = component.elementRef?.nativeElement || 
+          const cardElement = component.elementRef?.nativeElement ||
                             component._elementRef?.nativeElement ||
                             component.hostElement;
-          
+
           if (cardElement) {
             // Buscar el header dentro del componente
             const header = cardElement.querySelector('.p-card-header') as HTMLElement;
@@ -1118,7 +1118,7 @@ export class TasksPage implements OnInit, AfterViewInit {
               validHeaders.push(header);
             } else {
               // Si no encuentra directamente, buscar en el shadow root o en los hijos
-              const pCard = cardElement.querySelector('p-card') || 
+              const pCard = cardElement.querySelector('p-card') ||
                            cardElement.querySelector('[class*="p-card"]') ||
                            cardElement.querySelector('[class*="card"]');
               if (pCard) {
