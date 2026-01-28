@@ -29,6 +29,7 @@ export const routes: Routes = [
     path: 'solicitud-contacto',
     loadComponent: () => import('./pages/lead-form/lead-form').then((m) => m.LeadFormComponent),
   },
+  // Rutas públicas primero
   {
     path: 'landing',
     loadComponent: () => import('./pages/landing/landing').then((m) => m.LandingPage),
@@ -39,6 +40,13 @@ export const routes: Routes = [
       import('./pages/select-company/select-company').then((m) => m.SelectCompanyPage),
     canActivate: [requireAuthGuard],
   },
+  // Ruta raíz - redirige a landing (debe estar antes del layout principal)
+  {
+    path: '',
+    redirectTo: 'landing',
+    pathMatch: 'full',
+  },
+  // Rutas protegidas con layout principal
   {
     path: '',
     loadComponent: () => import('./layouts/main/main').then((m) => m.Main),
@@ -82,7 +90,7 @@ export const routes: Routes = [
             path: 'dashboard',
             loadComponent: () =>
               import('./pages/projects-dashboard/projects-dashboard').then(
-                (m) => m.ProjectsDashboardPage
+                (m) => m.ProjectsDashboardPage,
               ),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/projects/dashboard' },
@@ -136,9 +144,7 @@ export const routes: Routes = [
       {
         path: 'material-requests',
         loadComponent: () =>
-          import('./pages/material-requests/material-requests').then(
-            (m) => m.MaterialRequestsPage
-          ),
+          import('./pages/material-requests/material-requests').then((m) => m.MaterialRequestsPage),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/material-requests' },
       },
@@ -146,7 +152,7 @@ export const routes: Routes = [
         path: 'face-recognition-register',
         loadComponent: () =>
           import('./pages/face-recognition-register/face-recognition-register').then(
-            (m) => m.FaceRecognitionRegisterPage
+            (m) => m.FaceRecognitionRegisterPage,
           ),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/face-recognition-register' },
@@ -162,7 +168,7 @@ export const routes: Routes = [
         path: 'payroll-calculation',
         loadComponent: () =>
           import('./pages/payroll-calculation/payroll-calculation').then(
-            (m) => m.PayrollCalculationPage
+            (m) => m.PayrollCalculationPage,
           ),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/payroll-calculation' },
@@ -221,7 +227,7 @@ export const routes: Routes = [
         path: 'dashboard-gerencia',
         loadComponent: () =>
           import('./pages/dashboard-gerencia/dashboard-gerencia').then(
-            (m) => m.DashboardGerenciaPage
+            (m) => m.DashboardGerenciaPage,
           ),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/dashboard-gerencia' },
@@ -229,9 +235,7 @@ export const routes: Routes = [
       {
         path: 'gerencia-boards',
         loadComponent: () =>
-          import('./pages/gerencia-boards/gerencia-boards').then(
-            (m) => m.GerenciaBoardsPage
-          ),
+          import('./pages/gerencia-boards/gerencia-boards').then((m) => m.GerenciaBoardsPage),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/gerencia-boards' },
       },
@@ -289,7 +293,7 @@ export const routes: Routes = [
         path: 'user-tenants-assignment',
         loadComponent: () =>
           import('./pages/user-tenants-assignment/user-tenants-assignment').then(
-            (m) => m.UserTenantsAssignmentPage
+            (m) => m.UserTenantsAssignmentPage,
           ),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/user-tenants-assignment' },
@@ -315,21 +319,21 @@ export const routes: Routes = [
             path: '',
             loadComponent: () =>
               import('./pages/payroll/payroll-list/payroll-list.component').then(
-                (m) => m.PayrollListComponent
+                (m) => m.PayrollListComponent,
               ),
           },
           {
             path: 'upload',
             loadComponent: () =>
               import('./pages/payroll/payroll-upload/payroll-upload.component').then(
-                (m) => m.PayrollUploadComponent
+                (m) => m.PayrollUploadComponent,
               ),
           },
           {
             path: 'detail/:id',
             loadComponent: () =>
               import('./pages/payroll/payroll-detail/payroll-detail.component').then(
-                (m) => m.PayrollDetailComponent
+                (m) => m.PayrollDetailComponent,
               ),
           },
         ],
@@ -341,10 +345,10 @@ export const routes: Routes = [
       },
     ],
   },
-  // Ruta por defecto - redirigir según autenticación
+  // Ruta por defecto - redirigir a landing para rutas no encontradas
   {
     path: '**',
-    redirectTo: '',
+    redirectTo: 'landing',
     pathMatch: 'full',
   },
 ];
