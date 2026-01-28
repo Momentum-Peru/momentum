@@ -33,45 +33,210 @@
 
   <!-- Hero Section -->
   <section
-    class="relative pt-40 pb-24 md:pt-56 md:pb-32 overflow-hidden items-center flex flex-col justify-center min-h-[90vh]"
+    class="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden min-h-[95vh] flex items-center"
   >
+    <!-- Background Effects -->
     <div class="absolute inset-0 landing-hero-gradient pointer-events-none"></div>
-    <!-- Background Grid Effect -->
     <div
       class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-soft-light"
     ></div>
 
-    <div class="container mx-auto px-6 relative z-10 text-center">
-      <div
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm animate-fade-in-up"
-      >
-        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-        <span class="text-sm font-medium text-gray-300">v2.0 Disponible Ahora</span>
-      </div>
+    <!-- Decorative gradient orbs -->
+    <div
+      class="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"
+    ></div>
+    <div
+      class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl pointer-events-none"
+    ></div>
 
-      <h1
-        class="text-4xl md:text-6xl font-bold mb-6 !leading-tight text-white font-playfair animate-fade-in-up"
-      >
-        Software ERP Especializado en
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600"
-          >Construcción</span
+    <div class="container mx-auto px-6 relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start lg:items-center">
+        <!-- Left Column: Text Content -->
+        <div
+          class="text-center lg:text-left space-y-6 lg:space-y-8 animate-fade-in-up order-2 lg:order-1"
         >
-      </h1>
-      <p
-        class="text-xl md:text-2xl text-gray-400 mb-8 max-w-2xl mx-auto font-light animate-fade-in-up delay-100"
-      >
-        Controla tus obras, personal, finanzas y ventas en una plataforma centralizada.
-      </p>
+          <!-- Badge -->
+          <div
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm"
+          >
+            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            <span class="text-sm font-medium text-gray-300">v2.0 Disponible Ahora</span>
+          </div>
 
-      <div
-        class="flex flex-col md:flex-row gap-5 justify-center items-center animate-fade-in-up delay-300"
-      >
-        <p-button
-          label="Empezar Ahora"
-          size="large"
-          styleClass="!bg-white !text-black !px-10 !py-5 !font-bold !text-lg !border-white hover:!bg-gray-200 hover:!border-gray-200 transition-all shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] transform hover:-translate-y-1"
-          (onClick)="scrollToForm()"
-        ></p-button>
+          <!-- Main Heading -->
+          <div class="space-y-5">
+            <h1
+              class="text-4xl md:text-5xl lg:text-6xl font-bold !leading-tight text-white font-playfair"
+            >
+              El ERP que tu empresa de
+              <span
+                class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-purple-600 block mt-2"
+                >construcción necesita</span
+              >
+            </h1>
+            <p class="text-lg md:text-xl text-gray-300 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              Gestiona proyectos, controla personal con reconocimiento facial, administra finanzas y
+              potencia tus ventas. Todo en una sola plataforma.
+            </p>
+          </div>
+
+          <!-- Key Features List -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto lg:mx-0">
+            <div
+              class="flex items-start gap-3 text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+            >
+              <div
+                class="w-10 h-10 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0 mt-0.5"
+              >
+                <i class="pi pi-briefcase text-purple-400 text-lg"></i>
+              </div>
+              <div>
+                <div class="text-white font-semibold text-sm mb-1">Gestión de Proyectos</div>
+                <div class="text-gray-400 text-xs">Control total de obras</div>
+              </div>
+            </div>
+            <div
+              class="flex items-start gap-3 text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+            >
+              <div
+                class="w-10 h-10 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 mt-0.5"
+              >
+                <i class="pi pi-users text-blue-400 text-lg"></i>
+              </div>
+              <div>
+                <div class="text-white font-semibold text-sm mb-1">Personal Biométrico</div>
+                <div class="text-gray-400 text-xs">Asistencia con FaceID</div>
+              </div>
+            </div>
+            <div
+              class="flex items-start gap-3 text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+            >
+              <div
+                class="w-10 h-10 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center justify-center flex-shrink-0 mt-0.5"
+              >
+                <i class="pi pi-chart-line text-green-400 text-lg"></i>
+              </div>
+              <div>
+                <div class="text-white font-semibold text-sm mb-1">Finanzas Inteligentes</div>
+                <div class="text-gray-400 text-xs">Flujo de caja proyectado</div>
+              </div>
+            </div>
+            <div
+              class="flex items-start gap-3 text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+            >
+              <div
+                class="w-10 h-10 rounded-lg bg-orange-500/20 border border-orange-500/30 flex items-center justify-center flex-shrink-0 mt-0.5"
+              >
+                <i class="pi pi-heart text-orange-400 text-lg"></i>
+              </div>
+              <div>
+                <div class="text-white font-semibold text-sm mb-1">CRM Integrado</div>
+                <div class="text-gray-400 text-xs">Pipeline de ventas</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CTA Buttons -->
+          <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2">
+            <p-button
+              label="Solicitar Demo Gratis"
+              size="large"
+              styleClass="!bg-white !text-black !px-8 !py-4 !font-bold !text-base !border-white hover:!bg-gray-100 hover:!border-gray-100 transition-all shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] transform hover:-translate-y-1 !rounded-xl"
+              (onClick)="scrollToForm()"
+            ></p-button>
+            <p-button
+              label="Ver Cómo Funciona"
+              [outlined]="true"
+              size="large"
+              styleClass="!text-white !border-white/20 hover:!bg-white/10 !font-semibold !px-8 !py-4 !text-base !rounded-xl"
+              (onClick)="scrollToForm()"
+            ></p-button>
+          </div>
+        </div>
+
+        <!-- Right Column: Dashboard Image -->
+        <div
+          class="relative animate-fade-in-up delay-200 flex flex-col items-center lg:items-center order-1 lg:order-2"
+        >
+          <!-- Main Dashboard Image -->
+          <div class="relative group w-full max-w-md lg:max-w-lg">
+            <!-- Glow effect behind image -->
+            <div
+              class="absolute -inset-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500"
+            ></div>
+
+            <!-- Dashboard Image Container -->
+            <div
+              class="relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 backdrop-blur-sm shadow-2xl transform group-hover:scale-[1.02] transition-all duration-500"
+            >
+              <img
+                src="/images/dashboard-desktop.png"
+                alt="Dashboard de Momentum ERP"
+                class="w-full h-auto object-contain max-h-[450px] lg:max-h-[500px]"
+                onerror="this.style.display = 'none'"
+              />
+              <!-- Fallback if image doesn't load -->
+              <div
+                class="hidden w-full aspect-video bg-gradient-to-br from-gray-900 to-black flex items-center justify-center"
+              >
+                <div class="text-center space-y-4 p-8">
+                  <i class="pi pi-chart-line text-6xl text-purple-400"></i>
+                  <p class="text-white font-semibold text-lg">Dashboard Interactivo</p>
+                  <p class="text-gray-400 text-sm">Visualiza todas tus métricas en tiempo real</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Floating Stats Cards -->
+            <div
+              class="absolute -top-4 -left-4 bg-black/90 backdrop-blur-md border border-white/10 rounded-xl p-3 shadow-xl hidden md:block animate-bounce-slow"
+            >
+              <div class="flex items-center gap-2">
+                <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                  <i class="pi pi-arrow-up text-green-400 text-lg"></i>
+                </div>
+                <div>
+                  <div class="text-white font-bold text-base">+24%</div>
+                  <div class="text-gray-400 text-xs">Eficiencia</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="absolute -bottom-4 -right-4 bg-black/90 backdrop-blur-md border border-white/10 rounded-xl p-3 shadow-xl hidden md:block animate-bounce-slow delay-500"
+            >
+              <div class="flex items-center gap-2">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <i class="pi pi-check-circle text-blue-400 text-lg"></i>
+                </div>
+                <div>
+                  <div class="text-white font-bold text-base">150+</div>
+                  <div class="text-gray-400 text-xs">Proyectos</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trust Indicators - Below the image -->
+          <div
+            class="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-300 px-4"
+          >
+            <div class="flex items-center gap-2">
+              <i class="pi pi-shield-check text-green-400"></i>
+              <span class="font-medium">100% Seguro</span>
+            </div>
+            <span class="text-gray-500 hidden sm:inline">•</span>
+            <div class="flex items-center gap-2">
+              <i class="pi pi-cloud text-blue-400"></i>
+              <span class="font-medium">En la Nube</span>
+            </div>
+            <span class="text-gray-500 hidden sm:inline">•</span>
+            <div class="flex items-center gap-2">
+              <i class="pi pi-clock text-purple-400"></i>
+              <span class="font-medium">Configuración Rápida</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
