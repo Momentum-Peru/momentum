@@ -20,15 +20,15 @@
       </div>
     </div>
     @if (canEdit()) {
-    <button
-      pButton
-      type="button"
-      (click)="newQuote()"
-      label="Nueva Cotización"
-      icon="pi pi-plus"
-      class="p-button-primary w-full sm:w-auto"
-      aria-label="Crear nueva cotización"
-    ></button>
+      <button
+        pButton
+        type="button"
+        (click)="newQuote()"
+        label="Nueva Cotización"
+        icon="pi pi-plus"
+        class="w-full sm:w-auto"
+        aria-label="Crear nueva cotización"
+      ></button>
     }
   </div>
 
@@ -40,10 +40,11 @@
       [paginator]="true"
       [rows]="pagination().limit"
       [totalRecords]="pagination().total"
+      [rowsPerPageOptions]="[5, 10, 25]"
       [showCurrentPageReport]="true"
-      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} cotizaciones"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
       (onPage)="onPageChange($event)"
-      styleClass="p-datatable-striped"
+      styleClass="p-datatable-sm"
     >
       <ng-template pTemplate="header">
         <tr>
@@ -54,6 +55,17 @@
           <th class="text-left">Fecha Creación</th>
           <th class="text-left">Documentos</th>
           <th class="text-center">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="text-center p-8 text-gray-500">
+            <div class="flex flex-col items-center space-y-2">
+              <i class="pi pi-inbox text-2xl text-gray-400"></i>
+              <p>No hay datos disponibles</p>
+            </div>
+          </td>
         </tr>
       </ng-template>
 
@@ -85,7 +97,7 @@
           </td>
           <td>
             <span class="text-sm text-gray-600 dark:text-gray-300">
-              {{ quote.createDate | date : 'dd/MM/yyyy' }}
+              {{ quote.createDate | date: 'dd/MM/yyyy' }}
             </span>
           </td>
           <td>
@@ -98,7 +110,9 @@
               <button
                 pButton
                 icon="pi pi-file-pdf"
-                class="p-button-text p-button-sm"
+                [text]="true"
+                severity="info"
+                size="small"
                 (click)="openPdf(quote)"
                 pTooltip="Ver documento"
                 tooltipPosition="top"
@@ -119,7 +133,9 @@
               <button
                 pButton
                 icon="pi pi-eye"
-                class="p-button-text p-button-sm"
+                [text]="true"
+                severity="info"
+                size="small"
                 (click)="viewDetails(quote)"
                 pTooltip="Ver detalles"
                 tooltipPosition="top"
@@ -129,7 +145,9 @@
               <button
                 pButton
                 icon="pi pi-cog"
-                class="p-button-text p-button-sm"
+                [text]="true"
+                severity="secondary"
+                size="small"
                 (click)="stateMenu.toggle($event)"
                 pTooltip="Cambiar estado"
                 tooltipPosition="top"
@@ -137,25 +155,29 @@
               ></button>
 
               @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                class="p-button-text p-button-sm"
-                (click)="editQuote(quote)"
-                pTooltip="Editar cotización"
-                tooltipPosition="top"
-                aria-label="Editar cotización"
-              ></button>
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  severity="warn"
+                  size="small"
+                  (click)="editQuote(quote)"
+                  pTooltip="Editar cotización"
+                  tooltipPosition="top"
+                  aria-label="Editar cotización"
+                ></button>
 
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-text p-button-sm p-button-danger"
-                (click)="deleteQuote(quote)"
-                pTooltip="Eliminar cotización"
-                tooltipPosition="top"
-                aria-label="Eliminar cotización"
-              ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  [text]="true"
+                  severity="danger"
+                  size="small"
+                  (click)="deleteQuote(quote)"
+                  pTooltip="Eliminar cotización"
+                  tooltipPosition="top"
+                  aria-label="Eliminar cotización"
+                ></button>
               }
             </div>
           </td>
@@ -178,86 +200,28 @@
   <!-- Vista Móvil: Accordion desplegable -->
   <div class="md:hidden space-y-3">
     @for (quote of quotes(); track quote._id || $index) {
-    <div
-      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
-    >
-      <!-- Header del accordion (siempre visible) -->
-      <button
-        type="button"
-        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-        (click)="toggleRow(quote._id)"
+      <div
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
       >
-        <div class="flex-1 text-left min-w-0 pr-4">
-          <div
-            class="font-mono text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded inline-block mb-1"
-          >
-            {{ quote.number }}
-          </div>
-          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate mt-2">
-            {{ getClientName(quote.clientId) }}
-          </div>
-          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-            {{ getProjectName(quote.projectId) }}
-          </div>
-          <div class="mt-2">
-            <p-tag
-              [value]="quote.state"
-              [severity]="getStateSeverity(quote.state)"
-              [class]="getStateClass(quote.state)"
-            ></p-tag>
-          </div>
-        </div>
-        <div class="flex-shrink-0">
-          <i
-            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
-            [class.pi-chevron-down]="!isRowExpanded(quote._id)"
-            [class.pi-chevron-up]="isRowExpanded(quote._id)"
-          ></i>
-        </div>
-      </button>
-
-      <!-- Contenido del accordion (desplegable) -->
-      @if (isRowExpanded(quote._id)) {
-      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
-        <div class="px-4 py-4 space-y-4">
-          <!-- Número -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Número
-            </div>
+        <!-- Header del accordion (siempre visible) -->
+        <button
+          type="button"
+          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+          (click)="toggleRow(quote._id)"
+        >
+          <div class="flex-1 text-left min-w-0 pr-4">
             <div
-              class="font-mono text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded inline-block"
+              class="font-mono text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded inline-block mb-1"
             >
               {{ quote.number }}
             </div>
-          </div>
-
-          <!-- Cliente -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Cliente
-            </div>
-            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words">
+            <div class="font-semibold text-gray-900 dark:text-gray-100 truncate mt-2">
               {{ getClientName(quote.clientId) }}
             </div>
-          </div>
-
-          <!-- Proyecto -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Proyecto
-            </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+            <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
               {{ getProjectName(quote.projectId) }}
             </div>
-          </div>
-
-          <!-- Estado -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Estado
-            </div>
-            <div>
+            <div class="mt-2">
               <p-tag
                 [value]="quote.state"
                 [severity]="getStateSeverity(quote.state)"
@@ -265,138 +229,196 @@
               ></p-tag>
             </div>
           </div>
-
-          <!-- Fecha Creación -->
-          @if (quote.createDate) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Fecha Creación
-            </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100">
-              {{ quote.createDate | date : 'dd/MM/yyyy' }}
-            </div>
+          <div class="flex-shrink-0">
+            <i
+              class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+              [class.pi-chevron-down]="!isRowExpanded(quote._id)"
+              [class.pi-chevron-up]="isRowExpanded(quote._id)"
+            ></i>
           </div>
-          }
+        </button>
 
-          <!-- Fecha Envío -->
-          @if (quote.sendDate) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Fecha Envío
-            </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100">
-              {{ quote.sendDate | date : 'dd/MM/yyyy' }}
-            </div>
-          </div>
-          }
+        <!-- Contenido del accordion (desplegable) -->
+        @if (isRowExpanded(quote._id)) {
+          <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+            <div class="px-4 py-4 space-y-4">
+              <!-- Número -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Número
+                </div>
+                <div
+                  class="font-mono text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded inline-block"
+                >
+                  {{ quote.number }}
+                </div>
+              </div>
 
-          <!-- Total -->
-          @if (quote.total) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Total
-            </div>
-            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              ${{ quote.total | number : '1.2-2' }}
-            </div>
-          </div>
-          }
+              <!-- Cliente -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Cliente
+                </div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words">
+                  {{ getClientName(quote.clientId) }}
+                </div>
+              </div>
 
-          <!-- Documentos -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Documentos
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-              {{ quote.documents.length || 0 }} documentos
-            </div>
-          </div>
+              <!-- Proyecto -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Proyecto
+                </div>
+                <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+                  {{ getProjectName(quote.projectId) }}
+                </div>
+              </div>
 
-          <!-- Acciones -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Acciones
-            </div>
-            <div class="flex flex-col gap-2 items-start">
-              <button
-                pButton
-                icon="pi pi-file-pdf"
-                label="Ver documento"
-                class="p-button-text p-button-sm"
-                (click)="openPdf(quote)"
-                aria-label="Ver documento PDF"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-eye"
-                label="Ver detalles"
-                class="p-button-text p-button-sm"
-                (click)="viewDetails(quote)"
-                aria-label="Ver detalles de la cotización"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-cog"
-                label="Cambiar estado"
-                class="p-button-text p-button-sm"
-                (click)="stateMenu.toggle($event)"
-                aria-label="Cambiar estado de la cotización"
-              ></button>
-              @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                label="Editar"
-                class="p-button-text p-button-sm"
-                (click)="editQuote(quote)"
-                aria-label="Editar cotización"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                label="Eliminar"
-                class="p-button-text p-button-sm p-button-danger"
-                (click)="deleteQuote(quote)"
-                aria-label="Eliminar cotización"
-              ></button>
+              <!-- Estado -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Estado
+                </div>
+                <div>
+                  <p-tag
+                    [value]="quote.state"
+                    [severity]="getStateSeverity(quote.state)"
+                    [class]="getStateClass(quote.state)"
+                  ></p-tag>
+                </div>
+              </div>
+
+              <!-- Fecha Creación -->
+              @if (quote.createDate) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Fecha Creación
+                  </div>
+                  <div class="text-sm text-gray-900 dark:text-gray-100">
+                    {{ quote.createDate | date: 'dd/MM/yyyy' }}
+                  </div>
+                </div>
               }
+
+              <!-- Fecha Envío -->
+              @if (quote.sendDate) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Fecha Envío
+                  </div>
+                  <div class="text-sm text-gray-900 dark:text-gray-100">
+                    {{ quote.sendDate | date: 'dd/MM/yyyy' }}
+                  </div>
+                </div>
+              }
+
+              <!-- Total -->
+              @if (quote.total) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Total
+                  </div>
+                  <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    ${{ quote.total | number: '1.2-2' }}
+                  </div>
+                </div>
+              }
+
+              <!-- Documentos -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Documentos
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                  {{ quote.documents.length || 0 }} documentos
+                </div>
+              </div>
+
+              <!-- Acciones -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                  Acciones
+                </div>
+                <div class="flex flex-col gap-2 items-start">
+                  <button
+                    pButton
+                    icon="pi pi-file-pdf"
+                    label="Ver documento"
+                    class="p-button-text p-button-sm"
+                    (click)="openPdf(quote)"
+                    aria-label="Ver documento PDF"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    label="Ver detalles"
+                    class="p-button-text p-button-sm"
+                    (click)="viewDetails(quote)"
+                    aria-label="Ver detalles de la cotización"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-cog"
+                    label="Cambiar estado"
+                    class="p-button-text p-button-sm"
+                    (click)="stateMenu.toggle($event)"
+                    aria-label="Cambiar estado de la cotización"
+                  ></button>
+                  @if (canEdit()) {
+                    <button
+                      pButton
+                      icon="pi pi-pencil"
+                      label="Editar"
+                      class="p-button-text p-button-sm"
+                      (click)="editQuote(quote)"
+                      aria-label="Editar cotización"
+                    ></button>
+                    <button
+                      pButton
+                      icon="pi pi-trash"
+                      label="Eliminar"
+                      class="p-button-text p-button-sm p-button-danger"
+                      (click)="deleteQuote(quote)"
+                      aria-label="Eliminar cotización"
+                    ></button>
+                  }
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-      }
+        }
 
-      <!-- Menu de estado (oculto pero necesario para el botón) -->
-      <p-menu
-        #stateMenu
-        [model]="getStateMenuItems(quote)"
-        [popup]="true"
-        [appendTo]="'body'"
-        [baseZIndex]="1000"
-        [autoZIndex]="true"
-        [showTransitionOptions]="'0ms'"
-        [hideTransitionOptions]="'0ms'"
-        styleClass="p-menu-sm"
-      ></p-menu>
-    </div>
+        <!-- Menu de estado (oculto pero necesario para el botón) -->
+        <p-menu
+          #stateMenu
+          [model]="getStateMenuItems(quote)"
+          [popup]="true"
+          [appendTo]="'body'"
+          [baseZIndex]="1000"
+          [autoZIndex]="true"
+          [showTransitionOptions]="'0ms'"
+          [hideTransitionOptions]="'0ms'"
+          styleClass="p-menu-sm"
+        ></p-menu>
+      </div>
     }
 
     <!-- Estado vacío móvil -->
     @if (!loading() && quotes().length === 0) {
-    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-      <i class="pi pi-inbox text-4xl mb-2"></i>
-      <p>No se encontraron cotizaciones</p>
-    </div>
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <i class="pi pi-inbox text-4xl mb-2"></i>
+        <p>No se encontraron cotizaciones</p>
+      </div>
     }
 
     <!-- Estado de carga móvil -->
     @if (loading()) {
-    <div class="flex justify-center items-center py-12">
-      <div class="flex flex-col items-center space-y-2">
-        <i class="pi pi-spin pi-spinner text-4xl text-blue-600"></i>
-        <p class="text-gray-600">Cargando cotizaciones...</p>
+      <div class="flex justify-center items-center py-12">
+        <div class="flex flex-col items-center space-y-2">
+          <i class="pi pi-spin pi-spinner text-4xl text-blue-600"></i>
+          <p class="text-gray-600">Cargando cotizaciones...</p>
+        </div>
       </div>
-    </div>
     }
   </div>
 
@@ -464,7 +486,7 @@
           >
             <ng-template let-project pTemplate="item">
               <span class="truncate block max-w-full" [title]="project.name">
-                {{ project.name | truncate : 40 }}
+                {{ project.name | truncate: 40 }}
               </span>
             </ng-template>
           </p-select>
@@ -602,80 +624,81 @@
 
         <!-- Documentos existentes (solo al editar) -->
         @if (editing() && existingDocuments().length > 0) {
-        <div class="mt-3 space-y-2">
-          <p class="text-sm font-medium text-gray-700 dark:text-white">Documentos existentes:</p>
-          <div class="space-y-1">
-            @for (doc of existingDocuments(); track $index) {
-            <div
-              class="flex flex-col sm:flex-row sm:items-center justify-between bg-blue-50 px-3 py-2 rounded-md min-w-0 gap-2"
-            >
-              <div class="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
-                <i class="pi pi-file text-blue-500 flex-shrink-0"></i>
-                <span class="text-sm text-gray-700 break-words flex-1 min-w-0">{{
-                  getDocumentName(doc)
-                }}</span>
-                <span class="text-xs text-gray-500 dark:text-white whitespace-nowrap flex-shrink-0"
-                  >(Documento existente)</span
+          <div class="mt-3 space-y-2">
+            <p class="text-sm font-medium text-gray-700 dark:text-white">Documentos existentes:</p>
+            <div class="space-y-1">
+              @for (doc of existingDocuments(); track $index) {
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between bg-blue-50 px-3 py-2 rounded-md min-w-0 gap-2"
                 >
-              </div>
-              <div class="flex gap-1 flex-shrink-0 self-end sm:self-auto">
-                <button
-                  type="button"
-                  pButton
-                  icon="pi pi-eye"
-                  class="p-button-text p-button-sm"
-                  (click)="openDocument(doc)"
-                  pTooltip="Ver documento"
-                  tooltipPosition="top"
-                  aria-label="Ver documento"
-                ></button>
-                <button
-                  type="button"
-                  pButton
-                  icon="pi pi-times"
-                  class="p-button-text p-button-sm p-button-danger"
-                  (click)="removeExistingDocument($index)"
-                  pTooltip="Eliminar documento"
-                  tooltipPosition="top"
-                  aria-label="Eliminar documento"
-                ></button>
-              </div>
+                  <div class="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
+                    <i class="pi pi-file text-blue-500 flex-shrink-0"></i>
+                    <span class="text-sm text-gray-700 break-words flex-1 min-w-0">{{
+                      getDocumentName(doc)
+                    }}</span>
+                    <span
+                      class="text-xs text-gray-500 dark:text-white whitespace-nowrap flex-shrink-0"
+                      >(Documento existente)</span
+                    >
+                  </div>
+                  <div class="flex gap-1 flex-shrink-0 self-end sm:self-auto">
+                    <button
+                      type="button"
+                      pButton
+                      icon="pi pi-eye"
+                      class="p-button-text p-button-sm"
+                      (click)="openDocument(doc)"
+                      pTooltip="Ver documento"
+                      tooltipPosition="top"
+                      aria-label="Ver documento"
+                    ></button>
+                    <button
+                      type="button"
+                      pButton
+                      icon="pi pi-times"
+                      class="p-button-text p-button-sm p-button-danger"
+                      (click)="removeExistingDocument($index)"
+                      pTooltip="Eliminar documento"
+                      tooltipPosition="top"
+                      aria-label="Eliminar documento"
+                    ></button>
+                  </div>
+                </div>
+              }
             </div>
-            }
           </div>
-        </div>
         }
 
         <!-- Lista de archivos seleccionados -->
         @if (selectedFiles().length > 0) {
-        <div class="mt-3 space-y-2">
-          <p class="text-sm font-medium text-gray-700">Archivos seleccionados:</p>
-          <div class="space-y-1">
-            @for (file of selectedFiles(); track $index) {
-            <div
-              class="flex items-center justify-between flex-wrap bg-gray-50 px-3 py-2 rounded-md gap-2"
-            >
-              <div class="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
-                <i class="pi pi-file text-gray-500"></i>
-                <span class="text-sm text-gray-700">{{ file.name }}</span>
-                <span class="text-xs text-gray-500"
-                  >({{ (file.size / 1024 / 1024).toFixed(2) }} MB)</span
+          <div class="mt-3 space-y-2">
+            <p class="text-sm font-medium text-gray-700">Archivos seleccionados:</p>
+            <div class="space-y-1">
+              @for (file of selectedFiles(); track $index) {
+                <div
+                  class="flex items-center justify-between flex-wrap bg-gray-50 px-3 py-2 rounded-md gap-2"
                 >
-              </div>
-              <button
-                type="button"
-                pButton
-                icon="pi pi-times"
-                class="p-button-text p-button-sm p-button-danger flex-shrink-0 self-end sm:self-auto"
-                (click)="removeSelectedFile($index)"
-                pTooltip="Eliminar archivo"
-                tooltipPosition="top"
-                aria-label="Eliminar archivo"
-              ></button>
+                  <div class="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
+                    <i class="pi pi-file text-gray-500"></i>
+                    <span class="text-sm text-gray-700">{{ file.name }}</span>
+                    <span class="text-xs text-gray-500"
+                      >({{ (file.size / 1024 / 1024).toFixed(2) }} MB)</span
+                    >
+                  </div>
+                  <button
+                    type="button"
+                    pButton
+                    icon="pi pi-times"
+                    class="p-button-text p-button-sm p-button-danger flex-shrink-0 self-end sm:self-auto"
+                    (click)="removeSelectedFile($index)"
+                    pTooltip="Eliminar archivo"
+                    tooltipPosition="top"
+                    aria-label="Eliminar archivo"
+                  ></button>
+                </div>
+              }
             </div>
-            }
           </div>
-        </div>
         }
       </div>
     </form>
@@ -717,137 +740,138 @@
       </div>
     </ng-template>
     @if (viewingQuote()) {
-    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
-      <!-- Información básica -->
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-info-circle text-blue-500"></i>
-          Información Básica
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Número</span
+      <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+        <!-- Información básica -->
+        <div class="mb-6">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+          >
+            <i class="pi pi-info-circle text-blue-500"></i>
+            Información Básica
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Número</span
+              >
+              <div
+                class="text-gray-900 dark:text-gray-100 font-mono font-medium bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
+              >
+                {{ viewingQuote()?.number }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Estado</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                <p-tag
+                  [value]="viewingQuote()?.state"
+                  [severity]="getStateSeverity(viewingQuote()?.state ?? 'Pendiente')"
+                ></p-tag>
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Cliente</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 font-medium">
+                {{ getClientName(viewingQuote()?.clientId ?? '') }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Proyecto</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ getProjectName(viewingQuote()?.projectId ?? '') }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Fecha de Creación</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ viewingQuote()?.createDate | date: 'dd/MM/yyyy' }}
+              </div>
+            </div>
+            @if (viewingQuote()?.expirationDate) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Fecha de Vencimiento</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingQuote()?.expirationDate | date: 'dd/MM/yyyy' }}
+                </div>
+              </div>
+            }
+            @if (viewingQuote()?.total) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Total</span
+                >
+                <div class="text-gray-900 dark:text-gray-100 font-semibold text-lg">
+                  ${{ viewingQuote()?.total | number: '1.2-2' }}
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Notas -->
+        @if (viewingQuote()?.notes) {
+          <div class="mb-6">
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
             >
+              <i class="pi pi-file-edit text-green-500"></i>
+              Notas
+            </h3>
             <div
-              class="text-gray-900 dark:text-gray-100 font-mono font-medium bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
+              class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-white dark:bg-gray-700 p-4 rounded border"
             >
-              {{ viewingQuote()?.number }}
+              {{ viewingQuote()?.notes }}
             </div>
           </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              <p-tag
-                [value]="viewingQuote()?.state"
-                [severity]="getStateSeverity(viewingQuote()?.state ?? 'Pendiente')"
-              ></p-tag>
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cliente</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-medium">
-              {{ getClientName(viewingQuote()?.clientId ?? '') }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Proyecto</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ getProjectName(viewingQuote()?.projectId ?? '') }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Creación</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingQuote()?.createDate | date : 'dd/MM/yyyy' }}
-            </div>
-          </div>
-          @if (viewingQuote()?.expirationDate) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Vencimiento</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingQuote()?.expirationDate | date : 'dd/MM/yyyy' }}
-            </div>
-          </div>
-          } @if (viewingQuote()?.total) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Total</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-semibold text-lg">
-              ${{ viewingQuote()?.total | number : '1.2-2' }}
-            </div>
-          </div>
-          }
-        </div>
-      </div>
+        }
 
-      <!-- Notas -->
-      @if (viewingQuote()?.notes) {
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-file-edit text-green-500"></i>
-          Notas
-        </h3>
-        <div
-          class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-white dark:bg-gray-700 p-4 rounded border"
-        >
-          {{ viewingQuote()?.notes }}
-        </div>
-      </div>
-      }
-
-      <!-- Documentos -->
-      @if (viewingQuote()?.documents?.length) {
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-file text-indigo-500"></i>
-          Documentos Adjuntos ({{ viewingQuote()?.documents?.length }})
-        </h3>
-        <div class="space-y-2">
-          @for (document of viewingQuote()?.documents; track document) {
-          <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
-            <i class="pi pi-file text-gray-500"></i>
-            <a
-              [href]="document"
-              target="_blank"
-              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+        <!-- Documentos -->
+        @if (viewingQuote()?.documents?.length) {
+          <div>
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
             >
-              <i class="pi pi-external-link text-xs"></i>
-              Ver documento
-            </a>
+              <i class="pi pi-file text-indigo-500"></i>
+              Documentos Adjuntos ({{ viewingQuote()?.documents?.length }})
+            </h3>
+            <div class="space-y-2">
+              @for (document of viewingQuote()?.documents; track document) {
+                <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
+                  <i class="pi pi-file text-gray-500"></i>
+                  <a
+                    [href]="document"
+                    target="_blank"
+                    class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+                  >
+                    <i class="pi pi-external-link text-xs"></i>
+                    Ver documento
+                  </a>
+                </div>
+              }
+            </div>
           </div>
-          }
-        </div>
+        } @else {
+          <div>
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+            >
+              <i class="pi pi-file text-indigo-500"></i>
+              Documentos Adjuntos
+            </h3>
+            <div class="text-gray-500 dark:text-gray-400">No hay documentos adjuntos</div>
+          </div>
+        }
       </div>
-      } @else {
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-file text-indigo-500"></i>
-          Documentos Adjuntos
-        </h3>
-        <div class="text-gray-500 dark:text-gray-400">No hay documentos adjuntos</div>
-      </div>
-      }
-    </div>
     }
     <ng-template pTemplate="footer">
       <button

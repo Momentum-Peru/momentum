@@ -1,6 +1,6 @@
-/* Variables CSS mínimas - PrimeNG manejará la mayoría de estilos */
+/* Variables CSS para estandarización UI - Momentum ERP */
 :root {
-  /* Solo variables esenciales para el menú lateral */
+  /* Colores del menú lateral */
   --menu-bg-color: #000000;
   --menu-text-color: #ffffff;
 
@@ -20,4 +20,72 @@
   --p-button-secondary-hover-background: #f9fafb;
   --p-button-secondary-hover-border-color: #000000;
   --p-button-secondary-hover-color: #000000;
+
+  /* ============================================
+     ESTANDARIZACIÓN UI - VARIABLES DE DISEÑO
+     ============================================ */
+
+  /* Espaciado estándar */
+  --spacing-page: 1rem; /* p-4 */
+  --spacing-page-md: 1.5rem; /* p-6 */
+  --spacing-section: 1.5rem; /* space-y-6 */
+  --spacing-element: 1rem; /* space-y-4 */
+
+  /* Tablas - Estándar basado en dashboard-table */
+  --table-header-bg: #f9fafb;
+  --table-header-text: #374151;
+  --table-border-color: #e5e7eb;
+  --table-row-hover: #f9fafb;
+  --table-padding: 0.75rem; /* p-3 */
+  --table-font-size: 0.875rem; /* text-sm */
+
+  /* Paginación estándar */
+  --pagination-rows-per-page: 10;
+  --pagination-options: 5, 10, 25;
+  --pagination-message: "Mostrando {first} a {last} de {totalRecords} registros";
+
+  /* Botones estándar */
+  --button-padding-x: 0.75rem; /* px-3 */
+  --button-padding-y: 0.5rem; /* py-2 */
+  --button-padding-x-lg: 1rem; /* px-4 */
+  --button-padding-y-lg: 0.75rem; /* py-3 */
+  --button-border-radius: 0.5rem; /* rounded-lg */
+  --button-font-weight: 500; /* font-medium */
+
+  /* Inputs estándar */
+  --input-border-radius: 0.5rem; /* rounded-lg */
+  --input-border-color: #e5e7eb;
+  --input-border-color-focus: #000000;
+  --input-padding-x: 0.75rem; /* px-3 */
+  --input-padding-y: 0.5rem; /* py-2 */
+  --input-font-size: 0.875rem; /* text-sm */
+
+  /* Cards estándar */
+  --card-border-radius: 0.5rem; /* rounded-lg */
+  --card-padding: 1rem; /* p-4 */
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  --card-border: 1px solid #e5e7eb;
+
+  /* Estados vacíos y loading */
+  --empty-icon-size: 2rem; /* text-2xl */
+  --empty-text-color: #6b7280;
+  --loading-spinner-size: 1.25rem; /* text-lg */
+  --loading-text-color: #6b7280;
+
+  /* Tags/Badges estándar */
+  --tag-border-radius: 9999px; /* rounded-full */
+  --tag-padding-x: 0.5rem; /* px-2 */
+  --tag-padding-y: 0.25rem; /* py-1 */
+  --tag-font-size: 0.75rem; /* text-xs */
+
+  /* Diálogos estándar */
+  --dialog-border-radius: 0.75rem; /* rounded-xl */
+  --dialog-padding: 1.5rem; /* p-6 */
+  --dialog-width-sm: 90vw;
+  --dialog-width-md: 50rem;
+  --dialog-width-lg: 70rem;
+
+  /* Toast estándar */
+  --toast-life: 5000ms;
+  --toast-position: top-right;
 }
