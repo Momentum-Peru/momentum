@@ -260,3 +260,341 @@ nav.bg-black .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link[clas
     color: #ffffff !important;
   }
 }
+
+/* ============================================
+   ESTANDARIZACIÓN UI - ESTILOS GLOBALES
+   Basado en dashboard-table.component como referencia
+   ============================================ */
+
+/* TABLAS ESTÁNDAR - Basado en dashboard-table */
+.p-datatable {
+  &.p-datatable-sm {
+    font-size: var(--table-font-size);
+
+    .p-datatable-thead > tr > th {
+      background-color: var(--table-header-bg);
+      color: var(--table-header-text);
+      padding: var(--table-padding);
+      border-bottom: 1px solid var(--table-border-color);
+      font-weight: 600;
+      text-align: left;
+    }
+
+    .p-datatable-tbody > tr {
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: var(--table-row-hover);
+      }
+
+      > td {
+        padding: var(--table-padding);
+        border-bottom: 1px solid var(--table-border-color);
+      }
+    }
+  }
+
+  /* Paginación estándar */
+  .p-paginator {
+    padding: 0.75rem;
+    background-color: #ffffff;
+    border-top: 1px solid var(--table-border-color);
+  }
+
+  /* Estado vacío estándar */
+  .p-datatable-emptymessage td {
+    text-align: center;
+    padding: 2rem;
+    color: var(--empty-text-color);
+
+    i {
+      font-size: var(--empty-icon-size);
+      color: #9ca3af;
+      margin-bottom: 0.5rem;
+    }
+  }
+}
+
+/* BOTONES ESTÁNDAR */
+.p-button {
+  border-radius: var(--button-border-radius);
+  font-weight: var(--button-font-weight);
+  transition: all 0.2s ease;
+  padding: var(--button-padding-y) var(--button-padding-x);
+
+  &.p-button-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  &.p-button-lg {
+    padding: var(--button-padding-y-lg) var(--button-padding-x-lg);
+    font-size: 1rem;
+  }
+
+  /* Botones de acción en tablas */
+  &.p-button-text {
+    padding: 0.25rem;
+    min-width: auto;
+
+    &.p-button-sm {
+      padding: 0.25rem;
+    }
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+/* INPUTS ESTÁNDAR */
+.p-inputtext,
+.p-inputnumber-input,
+.p-dropdown-label,
+.p-calendar .p-inputtext {
+  border-radius: var(--input-border-radius);
+  border: 1px solid var(--input-border-color);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  font-size: var(--input-font-size);
+  transition: all 0.2s ease;
+  min-height: calc((var(--input-padding-y) * 2) + 1.5rem); /* Altura mínima consistente */
+
+  /* Eliminar shadow azul en hover - igual que selectores */
+  &:hover {
+    box-shadow: none !important;
+    border-color: var(--input-border-color);
+  }
+
+  &:focus {
+    border-color: #000000 !important; /* Borde negro como antes */
+    box-shadow: none !important; /* Sin shadow, solo cambio de borde */
+    outline: none;
+  }
+
+  &.p-invalid {
+    border-color: #ef4444;
+  }
+}
+
+.p-dropdown,
+.p-select {
+  border-radius: var(--input-border-radius);
+  min-height: calc((var(--input-padding-y) * 2) + 1.5rem); /* Misma altura que inputs */
+  border: 1px solid var(--input-border-color);
+  transition: all 0.2s ease;
+
+  .p-dropdown-label,
+  .p-select-label {
+    padding: var(--input-padding-y) var(--input-padding-x);
+    font-size: var(--input-font-size);
+    min-height: calc((var(--input-padding-y) * 2) + 1.5rem);
+    display: flex;
+    align-items: center;
+  }
+
+  /* Sin shadow en hover - igual que inputs */
+  &:hover {
+    box-shadow: none !important;
+    border-color: var(--input-border-color);
+  }
+
+  &:focus,
+  &:focus-within {
+    border-color: #000000 !important; /* Borde negro como antes */
+    box-shadow: none !important; /* Sin shadow, solo cambio de borde */
+    outline: none;
+  }
+
+  &.p-invalid {
+    border-color: #ef4444;
+  }
+}
+
+/* Calendario - Asegurar misma altura */
+.p-calendar {
+  border-radius: var(--input-border-radius);
+  min-height: calc((var(--input-padding-y) * 2) + 1.5rem);
+  border: 1px solid var(--input-border-color);
+  transition: all 0.2s ease;
+
+  .p-inputtext {
+    border: none;
+    padding: var(--input-padding-y) var(--input-padding-x);
+    min-height: calc((var(--input-padding-y) * 2) + 1.5rem);
+  }
+
+  /* Sin shadow en hover - igual que inputs y selectores */
+  &:hover {
+    box-shadow: none !important;
+    border-color: var(--input-border-color);
+  }
+
+  &:focus,
+  &:focus-within {
+    border-color: #000000 !important; /* Borde negro como antes */
+    box-shadow: none !important; /* Sin shadow, solo cambio de borde */
+    outline: none;
+  }
+
+  &.p-invalid {
+    border-color: #ef4444;
+  }
+}
+
+/* Input Number - Asegurar misma altura */
+.p-inputnumber {
+  border-radius: var(--input-border-radius);
+  min-height: calc((var(--input-padding-y) * 2) + 1.5rem);
+  border: 1px solid var(--input-border-color);
+  transition: all 0.2s ease;
+
+  .p-inputnumber-input {
+    border: none;
+    padding: var(--input-padding-y) var(--input-padding-x);
+    min-height: calc((var(--input-padding-y) * 2) + 1.5rem);
+  }
+
+  /* Sin shadow en hover - igual que inputs y selectores */
+  &:hover {
+    box-shadow: none !important;
+    border-color: var(--input-border-color);
+  }
+
+  &:focus,
+  &:focus-within {
+    border-color: #000000 !important; /* Borde negro como antes */
+    box-shadow: none !important; /* Sin shadow, solo cambio de borde */
+    outline: none;
+  }
+
+  &.p-invalid {
+    border-color: #ef4444;
+  }
+}
+
+/* CARDS ESTÁNDAR */
+.p-card {
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+
+  .p-card-body {
+    padding: var(--card-padding);
+  }
+
+  .p-card-header {
+    padding: var(--card-padding);
+    background-color: var(--table-header-bg);
+    border-bottom: 1px solid var(--table-border-color);
+    font-weight: 600;
+  }
+}
+
+/* TAGS/BADGES ESTÁNDAR */
+.p-tag {
+  border-radius: var(--tag-border-radius);
+  padding: var(--tag-padding-y) var(--tag-padding-x);
+  font-size: var(--tag-font-size);
+  font-weight: 500;
+}
+
+/* DIALOGS ESTÁNDAR */
+.p-dialog {
+  border-radius: var(--dialog-border-radius);
+
+  .p-dialog-header {
+    padding: var(--dialog-padding);
+    border-bottom: 1px solid var(--table-border-color);
+  }
+
+  .p-dialog-content {
+    padding: var(--dialog-padding);
+  }
+
+  .p-dialog-footer {
+    padding: var(--dialog-padding);
+    border-top: 1px solid var(--table-border-color);
+  }
+}
+
+/* TOAST ESTÁNDAR */
+.p-toast {
+  .p-toast-message {
+    border-radius: var(--button-border-radius);
+  }
+}
+
+/* ESTADOS VACÍOS Y LOADING ESTÁNDAR */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: var(--empty-text-color);
+
+  i {
+    font-size: var(--empty-icon-size);
+    color: #9ca3af;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    font-size: 0.875rem;
+    color: var(--empty-text-color);
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+
+  i {
+    font-size: var(--loading-spinner-size);
+    color: var(--loading-text-color);
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    font-size: 0.875rem;
+    color: var(--loading-text-color);
+  }
+}
+
+/* PÁGINAS ESTÁNDAR - Padding consistente */
+.page-container {
+  padding: var(--spacing-page);
+
+  @media (min-width: 768px) {
+    padding: var(--spacing-page-md);
+  }
+}
+
+/* SECCIONES ESTÁNDAR - Espaciado consistente */
+.page-section {
+  margin-bottom: var(--spacing-section);
+}
+
+/* ANIMACIONES ESTÁNDAR */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}

@@ -9,30 +9,48 @@
       class="w-full"
     />
     @if (canEdit()) {
-    <button
-      pButton
-      type="button"
-      (click)="newItem()"
-      label="Nuevo"
-      icon="pi pi-plus"
-      aria-label="Crear nuevo requerimiento"
-      class="w-full xl:w-auto"
-    ></button>
+      <button
+        pButton
+        type="button"
+        (click)="newItem()"
+        label="Nuevo"
+        icon="pi pi-plus"
+        aria-label="Crear nuevo requerimiento"
+        class="w-full xl:w-auto"
+      ></button>
     }
   </div>
 
   <!-- Vista Desktop: Tabla normal -->
   <div class="hidden md:block">
-    <p-table [value]="items()" styleClass="p-datatable-sm">
+    <p-table
+      [value]="items()"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[5, 10, 25]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+      styleClass="p-datatable-sm"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th>Código</th>
-          <th>Título</th>
-          <th>Solicitante</th>
-          <th>Cliente</th>
-          <th>Estado</th>
-          <th>Documentos</th>
+          <th class="text-left">Código</th>
+          <th class="text-left">Título</th>
+          <th class="text-left">Solicitante</th>
+          <th class="text-left">Cliente</th>
+          <th class="text-left">Estado</th>
+          <th class="text-left">Documentos</th>
           <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="text-center p-8 text-gray-500">
+            <div class="flex flex-col items-center space-y-2">
+              <i class="pi pi-inbox text-2xl text-gray-400"></i>
+              <p>No hay datos disponibles</p>
+            </div>
+          </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
@@ -60,7 +78,7 @@
               [class]="{
                 'bg-green-100 text-green-800': row.estado === 'VIGENTE',
                 'bg-red-100 text-red-800': row.estado === 'ANULADO',
-                'bg-blue-100 text-blue-800': row.estado === 'ACTIVACIÓN'
+                'bg-blue-100 text-blue-800': row.estado === 'ACTIVACIÓN',
               }"
             >
               {{ row.estado }}
@@ -74,7 +92,9 @@
                 type="button"
                 icon="pi pi-upload"
                 label="Documentos"
-                class="p-button-text p-button-sm"
+                [text]="true"
+                severity="info"
+                size="small"
                 (click)="openDocuments(row)"
                 pTooltip="Gestionar documentos"
                 tooltipPosition="top"
@@ -83,32 +103,36 @@
             </div>
           </td>
           <td class="text-right">
-            <div class="flex items-center justify-end gap-1">
+            <div class="flex items-center justify-end gap-2">
               <button
                 pButton
                 icon="pi pi-eye"
-                class="p-button-text p-button-sm"
+                [text]="true"
+                severity="info"
+                size="small"
                 pTooltip="Ver detalles"
                 (click)="viewDetails(row)"
                 aria-label="Ver detalles del requerimiento"
               ></button>
               @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                class="p-button-text p-button-sm"
-                pTooltip="Editar"
-                (click)="editItem(row)"
-                aria-label="Editar requerimiento"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-text p-button-sm p-button-danger"
-                pTooltip="Eliminar"
-                (click)="remove(row)"
-                aria-label="Eliminar requerimiento"
-              ></button>
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  severity="warn"
+                  size="small"
+                  pTooltip="Editar"
+                  (click)="editItem(row)"
+                  aria-label="Editar requerimiento"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  class="p-button-text p-button-sm p-button-danger"
+                  pTooltip="Eliminar"
+                  (click)="remove(row)"
+                  aria-label="Eliminar requerimiento"
+                ></button>
               }
             </div>
           </td>
@@ -120,122 +144,23 @@
   <!-- Vista Móvil: Accordion desplegable -->
   <div class="md:hidden space-y-3">
     @for (row of items(); track row._id || $index) {
-    <div
-      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
-    >
-      <!-- Header del accordion (siempre visible) -->
-      <button
-        type="button"
-        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-        (click)="toggleRow(row._id)"
+      <div
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
       >
-        <div class="flex-1 text-left min-w-0 pr-4">
-          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
-            {{ row.title }}
-          </div>
-          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1 font-mono">
-            {{ row.codigo }}
-          </div>
-          <div class="mt-1">
-            <span
-              class="px-2 py-1 rounded-full text-xs font-medium"
-              [class]="{
-                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
-                  row.estado === 'VIGENTE',
-                'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200':
-                  row.estado === 'ANULADO',
-                'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
-                  row.estado === 'ACTIVACIÓN'
-              }"
-            >
-              {{ row.estado }}
-            </span>
-          </div>
-        </div>
-        <div class="flex-shrink-0">
-          <i
-            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
-            [class.pi-chevron-down]="!isRowExpanded(row._id)"
-            [class.pi-chevron-up]="isRowExpanded(row._id)"
-          ></i>
-        </div>
-      </button>
-
-      <!-- Contenido del accordion (desplegable) -->
-      @if (isRowExpanded(row._id)) {
-      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
-        <div class="px-4 py-4 space-y-4">
-          <!-- Código -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Código
-            </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100 font-mono break-words">
-              {{ row.codigo }}
-            </div>
-          </div>
-
-          <!-- Título -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Título
-            </div>
-            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words">
+        <!-- Header del accordion (siempre visible) -->
+        <button
+          type="button"
+          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+          (click)="toggleRow(row._id)"
+        >
+          <div class="flex-1 text-left min-w-0 pr-4">
+            <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
               {{ row.title }}
             </div>
-          </div>
-
-          <!-- Descripción -->
-          @if (row.descripcion) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Descripción
+            <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1 font-mono">
+              {{ row.codigo }}
             </div>
-            <div class="text-sm text-gray-700 dark:text-gray-300 break-words">
-              {{ row.descripcion }}
-            </div>
-          </div>
-          }
-
-          <!-- Solicitante -->
-          @if (row.solicitante) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Solicitante
-            </div>
-            <div class="text-sm space-y-1">
-              <div class="font-medium text-gray-900 dark:text-gray-100">
-                {{ row.solicitante.nombre || '-' }}
-              </div>
-              @if (row.solicitante.cargo) {
-              <div class="text-xs text-gray-600 dark:text-gray-400">
-                {{ row.solicitante.cargo }}
-              </div>
-              } @if (row.solicitante.codigo) {
-              <div class="text-xs text-gray-500 dark:text-gray-500 font-mono">
-                {{ row.solicitante.codigo }}
-              </div>
-              }
-            </div>
-          </div>
-          }
-
-          <!-- Cliente -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Cliente
-            </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100">
-              {{ row.clientId?.name || '-' }}
-            </div>
-          </div>
-
-          <!-- Estado -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Estado
-            </div>
-            <div>
+            <div class="mt-1">
               <span
                 class="px-2 py-1 rounded-full text-xs font-medium"
                 [class]="{
@@ -244,73 +169,173 @@
                   'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200':
                     row.estado === 'ANULADO',
                   'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
-                    row.estado === 'ACTIVACIÓN'
+                    row.estado === 'ACTIVACIÓN',
                 }"
               >
                 {{ row.estado }}
               </span>
             </div>
           </div>
-
-          <!-- Documentos -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Documentos
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-600 dark:text-gray-400"
-                >{{ row.documentos?.length || 0 }} documentos</span
-              >
-              <button
-                pButton
-                type="button"
-                icon="pi pi-upload"
-                label="Gestionar"
-                class="p-button-text p-button-sm"
-                (click)="openDocuments(row)"
-                aria-label="Gestionar documentos"
-              ></button>
-            </div>
+          <div class="flex-shrink-0">
+            <i
+              class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+              [class.pi-chevron-down]="!isRowExpanded(row._id)"
+              [class.pi-chevron-up]="isRowExpanded(row._id)"
+            ></i>
           </div>
+        </button>
 
-          <!-- Acciones -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Acciones
-            </div>
-            <div class="flex flex-col gap-2">
-              <button
-                pButton
-                icon="pi pi-eye"
-                label="Ver detalles"
-                class="p-button-text p-button-sm w-full justify-start"
-                (click)="viewDetails(row)"
-                aria-label="Ver detalles del requerimiento"
-              ></button>
-              @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                label="Editar"
-                class="p-button-text p-button-sm w-full justify-start"
-                (click)="editItem(row)"
-                aria-label="Editar requerimiento"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                label="Eliminar"
-                class="p-button-text p-button-sm p-button-danger w-full justify-start"
-                (click)="remove(row)"
-                aria-label="Eliminar requerimiento"
-              ></button>
+        <!-- Contenido del accordion (desplegable) -->
+        @if (isRowExpanded(row._id)) {
+          <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+            <div class="px-4 py-4 space-y-4">
+              <!-- Código -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Código
+                </div>
+                <div class="text-sm text-gray-900 dark:text-gray-100 font-mono break-words">
+                  {{ row.codigo }}
+                </div>
+              </div>
+
+              <!-- Título -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Título
+                </div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words">
+                  {{ row.title }}
+                </div>
+              </div>
+
+              <!-- Descripción -->
+              @if (row.descripcion) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Descripción
+                  </div>
+                  <div class="text-sm text-gray-700 dark:text-gray-300 break-words">
+                    {{ row.descripcion }}
+                  </div>
+                </div>
               }
+
+              <!-- Solicitante -->
+              @if (row.solicitante) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Solicitante
+                  </div>
+                  <div class="text-sm space-y-1">
+                    <div class="font-medium text-gray-900 dark:text-gray-100">
+                      {{ row.solicitante.nombre || '-' }}
+                    </div>
+                    @if (row.solicitante.cargo) {
+                      <div class="text-xs text-gray-600 dark:text-gray-400">
+                        {{ row.solicitante.cargo }}
+                      </div>
+                    }
+                    @if (row.solicitante.codigo) {
+                      <div class="text-xs text-gray-500 dark:text-gray-500 font-mono">
+                        {{ row.solicitante.codigo }}
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Cliente -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Cliente
+                </div>
+                <div class="text-sm text-gray-900 dark:text-gray-100">
+                  {{ row.clientId?.name || '-' }}
+                </div>
+              </div>
+
+              <!-- Estado -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Estado
+                </div>
+                <div>
+                  <span
+                    class="px-2 py-1 rounded-full text-xs font-medium"
+                    [class]="{
+                      'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
+                        row.estado === 'VIGENTE',
+                      'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200':
+                        row.estado === 'ANULADO',
+                      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
+                        row.estado === 'ACTIVACIÓN',
+                    }"
+                  >
+                    {{ row.estado }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Documentos -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Documentos
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-gray-600 dark:text-gray-400"
+                    >{{ row.documentos?.length || 0 }} documentos</span
+                  >
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-upload"
+                    label="Gestionar"
+                    class="p-button-text p-button-sm"
+                    (click)="openDocuments(row)"
+                    aria-label="Gestionar documentos"
+                  ></button>
+                </div>
+              </div>
+
+              <!-- Acciones -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                  Acciones
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    label="Ver detalles"
+                    class="p-button-text p-button-sm w-full justify-start"
+                    (click)="viewDetails(row)"
+                    aria-label="Ver detalles del requerimiento"
+                  ></button>
+                  @if (canEdit()) {
+                    <button
+                      pButton
+                      icon="pi pi-pencil"
+                      label="Editar"
+                      class="p-button-text p-button-sm w-full justify-start"
+                      (click)="editItem(row)"
+                      aria-label="Editar requerimiento"
+                    ></button>
+                    <button
+                      pButton
+                      icon="pi pi-trash"
+                      label="Eliminar"
+                      class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                      (click)="remove(row)"
+                      aria-label="Eliminar requerimiento"
+                    ></button>
+                  }
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        }
       </div>
-      }
-    </div>
     }
   </div>
 
@@ -344,11 +369,11 @@
             Subir Nuevos Documentos
           </h4>
           @if (selectedFiles().length > 0) {
-          <span
-            class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium"
-          >
-            {{ selectedFiles().length }} archivo(s) seleccionado(s)
-          </span>
+            <span
+              class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium"
+            >
+              {{ selectedFiles().length }} archivo(s) seleccionado(s)
+            </span>
           }
         </div>
 
@@ -394,9 +419,9 @@
               </div>
               <p class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 @if (isDragging()) {
-                <span class="text-blue-600 dark:text-blue-400">Suelta los archivos aquí</span>
+                  <span class="text-blue-600 dark:text-blue-400">Suelta los archivos aquí</span>
                 } @else {
-                <span>Arrastra y suelta archivos aquí</span>
+                  <span>Arrastra y suelta archivos aquí</span>
                 }
               </p>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">o</p>
@@ -430,144 +455,144 @@
 
           <!-- Lista de archivos seleccionados -->
           @if (selectedFiles().length > 0) {
-          <div
-            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3"
-          >
-            <div class="flex items-center justify-between">
-              <h5 class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                <i class="pi pi-list text-blue-500"></i>
-                Archivos Seleccionados
-              </h5>
-              <button
-                pButton
-                type="button"
-                icon="pi pi-times"
-                label="Limpiar Todo"
-                class="p-button-text p-button-sm"
-                (click)="clearSelectedFiles()"
-                [disabled]="uploading()"
-                aria-label="Limpiar todos los archivos"
-              ></button>
-            </div>
-
-            <div class="space-y-2 max-h-64 overflow-y-auto">
-              @for (file of selectedFiles(); track file.name + file.size + file.lastModified) {
-              <div
-                class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
-              >
-                <div class="flex-shrink-0">
-                  <i class="pi pi-file text-2xl text-blue-500"></i>
-                </div>
-                <div class="flex-1 min-w-0 overflow-hidden pr-2">
-                  <p
-                    class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
-                    [title]="file.name"
-                  >
-                    {{ file.name }}
-                  </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {{ formatFileSize(file.size) }}
-                  </p>
-                </div>
-                <div class="flex-shrink-0">
-                  <button
-                    pButton
-                    icon="pi pi-times"
-                    class="p-button-text p-button-danger p-button-sm"
-                    (click)="removeSelectedFile(file)"
-                    [disabled]="uploading()"
-                    pTooltip="Eliminar archivo"
-                    tooltipPosition="left"
-                    aria-label="Eliminar archivo seleccionado"
-                  ></button>
-                </div>
+            <div
+              class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3"
+            >
+              <div class="flex items-center justify-between">
+                <h5 class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                  <i class="pi pi-list text-blue-500"></i>
+                  Archivos Seleccionados
+                </h5>
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-times"
+                  label="Limpiar Todo"
+                  class="p-button-text p-button-sm"
+                  (click)="clearSelectedFiles()"
+                  [disabled]="uploading()"
+                  aria-label="Limpiar todos los archivos"
+                ></button>
               </div>
-              }
-            </div>
 
-            <!-- Botón de subida -->
-            <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
-              <button
-                pButton
-                type="button"
-                [label]="
-                  uploading() ? 'Subiendo...' : 'Subir ' + selectedFiles().length + ' Archivo(s)'
-                "
-                [icon]="uploading() ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
-                (click)="uploadSelectedFiles()"
-                [disabled]="selectedFiles().length === 0 || uploading()"
-                class="w-full"
-                [class.p-button-primary]="!uploading()"
-                [class.p-button-loading]="uploading()"
-                aria-label="Subir archivos seleccionados"
-              ></button>
+              <div class="space-y-2 max-h-64 overflow-y-auto">
+                @for (file of selectedFiles(); track file.name + file.size + file.lastModified) {
+                  <div
+                    class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+                  >
+                    <div class="flex-shrink-0">
+                      <i class="pi pi-file text-2xl text-blue-500"></i>
+                    </div>
+                    <div class="flex-1 min-w-0 overflow-hidden pr-2">
+                      <p
+                        class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
+                        [title]="file.name"
+                      >
+                        {{ file.name }}
+                      </p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {{ formatFileSize(file.size) }}
+                      </p>
+                    </div>
+                    <div class="flex-shrink-0">
+                      <button
+                        pButton
+                        icon="pi pi-times"
+                        class="p-button-text p-button-danger p-button-sm"
+                        (click)="removeSelectedFile(file)"
+                        [disabled]="uploading()"
+                        pTooltip="Eliminar archivo"
+                        tooltipPosition="left"
+                        aria-label="Eliminar archivo seleccionado"
+                      ></button>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Botón de subida -->
+              <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  pButton
+                  type="button"
+                  [label]="
+                    uploading() ? 'Subiendo...' : 'Subir ' + selectedFiles().length + ' Archivo(s)'
+                  "
+                  [icon]="uploading() ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
+                  (click)="uploadSelectedFiles()"
+                  [disabled]="selectedFiles().length === 0 || uploading()"
+                  class="w-full"
+                  [class.p-button-primary]="!uploading()"
+                  [class.p-button-loading]="uploading()"
+                  aria-label="Subir archivos seleccionados"
+                ></button>
+              </div>
             </div>
-          </div>
           }
         </div>
       </div>
 
       <!-- Lista de documentos existentes -->
       @if (documentsViewing()?.documentos?.length) {
-      <div class="space-y-3">
-        <h4 class="text-lg font-semibold text-gray-800">
-          Documentos Adjuntos ({{ documentsViewing()?.documentos?.length }})
-        </h4>
-        <div class="grid gap-3">
-          @for (doc of documentsViewing()?.documentos; track $index) {
-          <div
-            class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors gap-3"
-          >
-            <div class="flex items-start sm:items-center gap-4 min-w-0 flex-1 w-full sm:w-auto">
-              <div class="flex-shrink-0">
-                <i [class]="getFileIcon(doc) + ' text-2xl ' + getFileTypeColor(doc)"></i>
+        <div class="space-y-3">
+          <h4 class="text-lg font-semibold text-gray-800">
+            Documentos Adjuntos ({{ documentsViewing()?.documentos?.length }})
+          </h4>
+          <div class="grid gap-3">
+            @for (doc of documentsViewing()?.documentos; track $index) {
+              <div
+                class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors gap-3"
+              >
+                <div class="flex items-start sm:items-center gap-4 min-w-0 flex-1 w-full sm:w-auto">
+                  <div class="flex-shrink-0">
+                    <i [class]="getFileIcon(doc) + ' text-2xl ' + getFileTypeColor(doc)"></i>
+                  </div>
+                  <div class="min-w-0 flex-1 w-full sm:w-auto">
+                    <p class="font-medium text-gray-900 break-all whitespace-normal">
+                      {{ doc.split('/').pop() }}
+                    </p>
+                    <p class="text-sm text-gray-500 break-all whitespace-normal">{{ doc }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    class="p-button-text p-button-sm"
+                    (click)="viewDocument(doc)"
+                    pTooltip="Ver documento"
+                    tooltipPosition="top"
+                    aria-label="Ver documento"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-download"
+                    class="p-button-text p-button-sm"
+                    (click)="downloadDocument(doc)"
+                    pTooltip="Descargar documento"
+                    tooltipPosition="top"
+                    aria-label="Descargar documento"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-danger p-button-sm"
+                    (click)="removeDocument(doc)"
+                    pTooltip="Eliminar documento"
+                    tooltipPosition="top"
+                    aria-label="Eliminar documento"
+                  ></button>
+                </div>
               </div>
-              <div class="min-w-0 flex-1 w-full sm:w-auto">
-                <p class="font-medium text-gray-900 break-all whitespace-normal">
-                  {{ doc.split('/').pop() }}
-                </p>
-                <p class="text-sm text-gray-500 break-all whitespace-normal">{{ doc }}</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button
-                pButton
-                icon="pi pi-eye"
-                class="p-button-text p-button-sm"
-                (click)="viewDocument(doc)"
-                pTooltip="Ver documento"
-                tooltipPosition="top"
-                aria-label="Ver documento"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-download"
-                class="p-button-text p-button-sm"
-                (click)="downloadDocument(doc)"
-                pTooltip="Descargar documento"
-                tooltipPosition="top"
-                aria-label="Descargar documento"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-text p-button-danger p-button-sm"
-                (click)="removeDocument(doc)"
-                pTooltip="Eliminar documento"
-                tooltipPosition="top"
-                aria-label="Eliminar documento"
-              ></button>
-            </div>
+            }
           </div>
-          }
         </div>
-      </div>
       } @else {
-      <div class="text-center py-12 bg-gray-50 rounded-lg">
-        <i class="pi pi-file text-4xl text-gray-400 mb-3"></i>
-        <p class="text-gray-600 font-medium">No hay documentos adjuntos</p>
-        <p class="text-sm text-gray-500 mt-1">Sube documentos usando el área de arriba</p>
-      </div>
+        <div class="text-center py-12 bg-gray-50 rounded-lg">
+          <i class="pi pi-file text-4xl text-gray-400 mb-3"></i>
+          <p class="text-gray-600 font-medium">No hay documentos adjuntos</p>
+          <p class="text-sm text-gray-500 mt-1">Sube documentos usando el área de arriba</p>
+        </div>
       }
     </div>
 
@@ -575,7 +600,8 @@
       <div class="flex justify-between items-center">
         <div class="text-sm text-gray-500 text-nowrap">
           @if (documentsViewing()?.documentos?.length) {
-          {{ documentsViewing()?.documentos?.length }} documento(s) adjunto(s) }
+            {{ documentsViewing()?.documentos?.length }} documento(s) adjunto(s)
+          }
         </div>
         <button
           pButton
@@ -605,211 +631,212 @@
       </div>
     </ng-template>
     @if (viewingRequirement()) {
-    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
-      <!-- Información básica -->
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-info-circle text-blue-500"></i>
-          Información Básica
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Código</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-mono font-medium">
-              {{ viewingRequirement()?.codigo }}
+      <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+        <!-- Información básica -->
+        <div class="mb-6">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+          >
+            <i class="pi pi-info-circle text-blue-500"></i>
+            Información Básica
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Código</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 font-mono font-medium">
+                {{ viewingRequirement()?.codigo }}
+              </div>
             </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</span
-            >
-            <span
-              class="px-2 py-1 rounded-full text-xs font-medium"
-              [class]="{
-                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
-                  viewingRequirement()?.estado === 'VIGENTE',
-                'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200':
-                  viewingRequirement()?.estado === 'ANULADO',
-                'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200':
-                  viewingRequirement()?.estado === 'ACTIVACIÓN'
-              }"
-            >
-              {{ viewingRequirement()?.estado }}
-            </span>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cliente</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingRequirement()?.clientId?.name || 'No especificado' }}
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Estado</span
+              >
+              <span
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                [class]="{
+                  'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
+                    viewingRequirement()?.estado === 'VIGENTE',
+                  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200':
+                    viewingRequirement()?.estado === 'ANULADO',
+                  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200':
+                    viewingRequirement()?.estado === 'ACTIVACIÓN',
+                }"
+              >
+                {{ viewingRequirement()?.estado }}
+              </span>
             </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Requerimiento</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingRequirement()?.fechaRequerimiento | date : 'dd/MM/yyyy' }}
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Cliente</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ viewingRequirement()?.clientId?.name || 'No especificado' }}
+              </div>
             </div>
-          </div>
-          @if (viewingRequirement()?.fechaAprobacion) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Aprobación</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingRequirement()?.fechaAprobacion | date : 'dd/MM/yyyy' }}
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Fecha de Requerimiento</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ viewingRequirement()?.fechaRequerimiento | date: 'dd/MM/yyyy' }}
+              </div>
             </div>
+            @if (viewingRequirement()?.fechaAprobacion) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Fecha de Aprobación</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingRequirement()?.fechaAprobacion | date: 'dd/MM/yyyy' }}
+                </div>
+              </div>
+            }
+            @if (viewingRequirement()?.createdAt) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Fecha de Creación</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingRequirement()?.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                </div>
+              </div>
+            }
           </div>
-          } @if (viewingRequirement()?.createdAt) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Creación</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingRequirement()?.createdAt | date : 'dd/MM/yyyy HH:mm' }}
-            </div>
-          </div>
-          }
         </div>
-      </div>
 
-      <!-- Título y Descripción -->
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-file-edit text-green-500"></i>
-          Contenido
-        </h3>
-        <div class="space-y-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Título</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-semibold">
-              {{ viewingRequirement()?.title }}
+        <!-- Título y Descripción -->
+        <div class="mb-6">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+          >
+            <i class="pi pi-file-edit text-green-500"></i>
+            Contenido
+          </h3>
+          <div class="space-y-4">
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Título</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 font-semibold">
+                {{ viewingRequirement()?.title }}
+              </div>
             </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Descripción</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
-              {{ viewingRequirement()?.descripcion }}
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Descripción</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                {{ viewingRequirement()?.descripcion }}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Solicitante -->
-      @if (viewingRequirement()?.solicitante) {
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-user text-purple-500"></i>
-          Solicitante
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</span
+        <!-- Solicitante -->
+        @if (viewingRequirement()?.solicitante) {
+          <div class="mb-6">
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
             >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingRequirement()?.solicitante?.nombre }}
+              <i class="pi pi-user text-purple-500"></i>
+              Solicitante
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Nombre</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingRequirement()?.solicitante?.nombre }}
+                </div>
+              </div>
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Código</span
+                >
+                <div class="text-gray-900 dark:text-gray-100 font-mono">
+                  {{ viewingRequirement()?.solicitante?.codigo }}
+                </div>
+              </div>
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Cargo</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingRequirement()?.solicitante?.cargo }}
+                </div>
+              </div>
             </div>
           </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Código</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-mono">
-              {{ viewingRequirement()?.solicitante?.codigo }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cargo</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingRequirement()?.solicitante?.cargo }}
-            </div>
-          </div>
-        </div>
-      </div>
-      }
+        }
 
-      <!-- Aprobador -->
-      @if (viewingRequirement()?.aprobador) {
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-user-check text-orange-500"></i>
-          Aprobador
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</span
+        <!-- Aprobador -->
+        @if (viewingRequirement()?.aprobador) {
+          <div class="mb-6">
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
             >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingRequirement()?.aprobador?.nombre }}
+              <i class="pi pi-user-check text-orange-500"></i>
+              Aprobador
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Nombre</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingRequirement()?.aprobador?.nombre }}
+                </div>
+              </div>
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Código</span
+                >
+                <div class="text-gray-900 dark:text-gray-100 font-mono">
+                  {{ viewingRequirement()?.aprobador?.codigo }}
+                </div>
+              </div>
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Cargo</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingRequirement()?.aprobador?.cargo }}
+                </div>
+              </div>
             </div>
           </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Código</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-mono">
-              {{ viewingRequirement()?.aprobador?.codigo }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cargo</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingRequirement()?.aprobador?.cargo }}
-            </div>
-          </div>
-        </div>
-      </div>
-      }
+        }
 
-      <!-- Documentos -->
-      @if (viewingRequirement()?.documentos?.length) {
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-file text-indigo-500"></i>
-          Documentos Adjuntos
-        </h3>
-        <div class="space-y-2">
-          @for (document of viewingRequirement()?.documentos; track document) {
-          <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
-            <i class="pi pi-file text-gray-500"></i>
-            <a
-              [href]="document"
-              target="_blank"
-              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+        <!-- Documentos -->
+        @if (viewingRequirement()?.documentos?.length) {
+          <div>
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
             >
-              <i class="pi pi-external-link text-xs"></i>
-              Ver documento
-            </a>
+              <i class="pi pi-file text-indigo-500"></i>
+              Documentos Adjuntos
+            </h3>
+            <div class="space-y-2">
+              @for (document of viewingRequirement()?.documentos; track document) {
+                <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
+                  <i class="pi pi-file text-gray-500"></i>
+                  <a
+                    [href]="document"
+                    target="_blank"
+                    class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+                  >
+                    <i class="pi pi-external-link text-xs"></i>
+                    Ver documento
+                  </a>
+                </div>
+              }
+            </div>
           </div>
-          }
-        </div>
+        }
       </div>
-      }
-    </div>
     }
     <ng-template pTemplate="footer">
       <button

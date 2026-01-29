@@ -9,15 +9,15 @@
       class="w-full"
     />
     @if (canEdit()) {
-    <button
-      pButton
-      type="button"
-      (click)="newItem()"
-      label="Nuevo"
-      icon="pi pi-plus"
-      aria-label="Crear nuevo proyecto"
-      class="w-full xl:w-auto"
-    ></button>
+      <button
+        pButton
+        type="button"
+        (click)="newItem()"
+        label="Nuevo"
+        icon="pi pi-plus"
+        aria-label="Crear nuevo proyecto"
+        class="w-full xl:w-auto"
+      ></button>
     }
   </div>
 
@@ -27,20 +27,33 @@
       [value]="filteredItems()"
       [paginator]="true"
       [rows]="10"
+      [rowsPerPageOptions]="[5, 10, 25]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
       styleClass="p-datatable-sm"
       [tableStyle]="{ 'min-width': '50rem' }"
     >
       <ng-template pTemplate="header">
         <tr>
-          <th>Código</th>
-          <th>Nombre</th>
-          <th>Cliente</th>
-          <th>Estado</th>
-          <th>Ubicación</th>
-          <th>Presupuesto</th>
-          <th>Fecha Inicio</th>
-          <th>Fecha Fin</th>
+          <th class="text-left">Código</th>
+          <th class="text-left">Nombre</th>
+          <th class="text-left">Cliente</th>
+          <th class="text-left">Estado</th>
+          <th class="text-left">Ubicación</th>
+          <th class="text-left">Presupuesto</th>
+          <th class="text-left">Fecha Inicio</th>
+          <th class="text-left">Fecha Fin</th>
           <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="text-center p-8 text-gray-500">
+            <div class="flex flex-col items-center space-y-2">
+              <i class="pi pi-inbox text-2xl text-gray-400"></i>
+              <p>No hay datos disponibles</p>
+            </div>
+          </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
@@ -53,9 +66,17 @@
           </td>
           <td>
             <div class="min-w-[200px] max-w-none md:max-w-md">
-              <p class="font-semibold name-clamp" [pTooltip]="row.name" tooltipPosition="top">{{ row.name }}</p>
+              <p class="font-semibold name-clamp" [pTooltip]="row.name" tooltipPosition="top">
+                {{ row.name }}
+              </p>
               @if (row.description) {
-              <p class="text-sm text-gray-600 description-clamp" [pTooltip]="row.description" tooltipPosition="bottom">{{ row.description }}</p>
+                <p
+                  class="text-sm text-gray-600 description-clamp"
+                  [pTooltip]="row.description"
+                  tooltipPosition="bottom"
+                >
+                  {{ row.description }}
+                </p>
               }
             </div>
           </td>
@@ -73,38 +94,44 @@
           </td>
           <td>
             <span class="font-semibold">{{
-              row.budget | currency : 'USD' : 'symbol' : '1.0-2'
+              row.budget | currency: 'USD' : 'symbol' : '1.0-2'
             }}</span>
           </td>
-          <td>{{ row.startDate | date : 'dd/MM/yyyy' }}</td>
-          <td>{{ row.endDate | date : 'dd/MM/yyyy' }}</td>
+          <td>{{ row.startDate | date: 'dd/MM/yyyy' }}</td>
+          <td>{{ row.endDate | date: 'dd/MM/yyyy' }}</td>
           <td class="text-right align-middle">
             <div class="flex items-center justify-end gap-2">
               <button
                 pButton
                 icon="pi pi-eye"
-                class="p-button-text p-button-sm"
+                [text]="true"
+                severity="info"
+                size="small"
                 (click)="viewDetails(row)"
                 pTooltip="Ver detalles"
                 aria-label="Ver detalles del proyecto"
               ></button>
               @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                class="p-button-text p-button-sm"
-                (click)="editItem(row)"
-                pTooltip="Editar proyecto"
-                aria-label="Editar proyecto"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-text p-button-sm p-button-danger"
-                (click)="remove(row)"
-                pTooltip="Eliminar proyecto"
-                aria-label="Eliminar proyecto"
-              ></button>
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  severity="warn"
+                  size="small"
+                  (click)="editItem(row)"
+                  pTooltip="Editar proyecto"
+                  aria-label="Editar proyecto"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  [text]="true"
+                  severity="danger"
+                  size="small"
+                  (click)="remove(row)"
+                  pTooltip="Eliminar proyecto"
+                  aria-label="Eliminar proyecto"
+                ></button>
               }
             </div>
           </td>
@@ -116,139 +143,158 @@
   <!-- Vista Móvil: Lista tipo accordion -->
   <div class="md:hidden space-y-3">
     @for (row of filteredItems(); track row._id || $index) {
-    <div
-      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
-    >
-      <button
-        type="button"
-        class="w-full px-4 py-3 flex items-start justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-        (click)="toggleRow(row._id)"
+      <div
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
       >
-        <div class="flex-1 text-left min-w-0 pr-3">
-          <div class="flex items-start gap-2 mb-2">
-            <span
-              class="font-mono text-xs bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded flex-shrink-0"
-              >{{ row.code }}</span
+        <button
+          type="button"
+          class="w-full px-4 py-3 flex items-start justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+          (click)="toggleRow(row._id)"
+        >
+          <div class="flex-1 text-left min-w-0 pr-3">
+            <div class="flex items-start gap-2 mb-2">
+              <span
+                class="font-mono text-xs bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded flex-shrink-0"
+                >{{ row.code }}</span
+              >
+              <span
+                class="px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0"
+                [class]="getStatusClass(row.status)"
+                >{{ getStatusLabel(row.status) }}</span
+              >
+            </div>
+            <h3
+              class="font-semibold text-gray-900 dark:text-gray-100 break-words text-base leading-tight mb-2"
             >
-            <span
-              class="px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0"
-              [class]="getStatusClass(row.status)"
-              >{{ getStatusLabel(row.status) }}</span
-            >
+              {{ row.name }}
+            </h3>
+            <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <span class="truncate">{{ getClientName(row.clientId) }}</span>
+            </div>
           </div>
-          <h3 class="font-semibold text-gray-900 dark:text-gray-100 break-words text-base leading-tight mb-2">
-            {{ row.name }}
-          </h3>
-          <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-            <span class="truncate">{{ getClientName(row.clientId) }}</span>
+          <div class="flex-shrink-0 pt-1">
+            <i
+              class="pi transition-transform duration-200 text-gray-400 dark:text-gray-500 text-lg"
+              [class.pi-chevron-down]="!isRowExpanded(row._id)"
+              [class.pi-chevron-up]="isRowExpanded(row._id)"
+            ></i>
           </div>
-        </div>
-        <div class="flex-shrink-0 pt-1">
-          <i
-            class="pi transition-transform duration-200 text-gray-400 dark:text-gray-500 text-lg"
-            [class.pi-chevron-down]="!isRowExpanded(row._id)"
-            [class.pi-chevron-up]="isRowExpanded(row._id)"
-          ></i>
-        </div>
-      </button>
+        </button>
 
-      @if (isRowExpanded(row._id)) {
-      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in bg-gray-50 dark:bg-gray-900/50">
-        <div class="px-4 py-4 space-y-4">
-          <div class="grid grid-cols-1 gap-4 text-sm">
-            <div>
-              <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-                Cliente
+        @if (isRowExpanded(row._id)) {
+          <div
+            class="border-t border-gray-200 dark:border-gray-700 animate-fade-in bg-gray-50 dark:bg-gray-900/50"
+          >
+            <div class="px-4 py-4 space-y-4">
+              <div class="grid grid-cols-1 gap-4 text-sm">
+                <div>
+                  <div
+                    class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5"
+                  >
+                    Cliente
+                  </div>
+                  <div class="text-gray-900 dark:text-gray-100 break-words font-medium">
+                    {{ getClientName(row.clientId) }}
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <div
+                      class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5"
+                    >
+                      Presupuesto
+                    </div>
+                    <div class="text-gray-900 dark:text-gray-100 font-semibold text-base">
+                      {{ row.budget | currency: 'USD' : 'symbol' : '1.0-2' }}
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5"
+                    >
+                      Ubicación
+                    </div>
+                    <div class="text-gray-900 dark:text-gray-100 break-words">
+                      {{ row.location || 'Sin ubicación' }}
+                    </div>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <div
+                      class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5"
+                    >
+                      Fecha Inicio
+                    </div>
+                    <div class="text-gray-900 dark:text-gray-100">
+                      {{ row.startDate | date: 'dd/MM/yyyy' }}
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5"
+                    >
+                      Fecha Fin
+                    </div>
+                    <div class="text-gray-900 dark:text-gray-100">
+                      {{ row.endDate | date: 'dd/MM/yyyy' }}
+                    </div>
+                  </div>
+                </div>
+                @if (row.description) {
+                  <div>
+                    <div
+                      class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5"
+                    >
+                      Descripción
+                    </div>
+                    <div class="text-gray-900 dark:text-gray-100 break-words leading-relaxed">
+                      {{ row.description }}
+                    </div>
+                  </div>
+                }
               </div>
-              <div class="text-gray-900 dark:text-gray-100 break-words font-medium">
-                {{ getClientName(row.clientId) }}
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-                  Presupuesto
-                </div>
-                <div class="text-gray-900 dark:text-gray-100 font-semibold text-base">
-                  {{ row.budget | currency : 'USD' : 'symbol' : '1.0-2' }}
-                </div>
-              </div>
-              <div>
-                <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-                  Ubicación
-                </div>
-                <div class="text-gray-900 dark:text-gray-100 break-words">
-                  {{ row.location || 'Sin ubicación' }}
-                </div>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-                  Fecha Inicio
-                </div>
-                <div class="text-gray-900 dark:text-gray-100">
-                  {{ row.startDate | date : 'dd/MM/yyyy' }}
-                </div>
-              </div>
-              <div>
-                <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-                  Fecha Fin
-                </div>
-                <div class="text-gray-900 dark:text-gray-100">
-                  {{ row.endDate | date : 'dd/MM/yyyy' }}
-                </div>
-              </div>
-            </div>
-            @if (row.description) {
-            <div>
-              <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-                Descripción
-              </div>
-              <div class="text-gray-900 dark:text-gray-100 break-words leading-relaxed">{{ row.description }}</div>
-            </div>
-            }
-          </div>
 
-          <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
-            <div class="flex gap-2">
-              <button
-                pButton
-                icon="pi pi-eye"
-                label="Ver"
-                class="p-button-text p-button-sm flex-1"
-                (click)="viewDetails(row)"
-                aria-label="Ver detalles del proyecto"
-              ></button>
-              @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                label="Editar"
-                class="p-button-text p-button-sm flex-1"
-                (click)="editItem(row)"
-                aria-label="Editar proyecto"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                label="Eliminar"
-                class="p-button-text p-button-sm p-button-danger flex-1"
-                (click)="remove(row)"
-                aria-label="Eliminar proyecto"
-              ></button>
-              }
+              <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    label="Ver"
+                    class="p-button-text p-button-sm flex-1"
+                    (click)="viewDetails(row)"
+                    aria-label="Ver detalles del proyecto"
+                  ></button>
+                  @if (canEdit()) {
+                    <button
+                      pButton
+                      icon="pi pi-pencil"
+                      label="Editar"
+                      class="p-button-text p-button-sm flex-1"
+                      (click)="editItem(row)"
+                      aria-label="Editar proyecto"
+                    ></button>
+                    <button
+                      pButton
+                      icon="pi pi-trash"
+                      label="Eliminar"
+                      class="p-button-text p-button-sm p-button-danger flex-1"
+                      (click)="remove(row)"
+                      aria-label="Eliminar proyecto"
+                    ></button>
+                  }
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        }
       </div>
-      }
-    </div>
-    } @if (filteredItems().length === 0) {
-    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-      <i class="pi pi-inbox text-4xl mb-2"></i>
-      <p>No hay proyectos disponibles</p>
-    </div>
+    }
+    @if (filteredItems().length === 0) {
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <i class="pi pi-inbox text-4xl mb-2"></i>
+        <p>No hay proyectos disponibles</p>
+      </div>
     }
   </div>
 
@@ -273,15 +319,15 @@
           <span class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Código</span>
           <div class="w-full">
             @if (editing()?._id) {
-            <span
-              class="inline-block font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
-              >{{ editing()?.code }}</span
-            >
+              <span
+                class="inline-block font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
+                >{{ editing()?.code }}</span
+              >
             } @else {
-            <span
-              class="inline-block font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
-              >{{ nextCode() ?? 1 }}</span
-            >
+              <span
+                class="inline-block font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
+                >{{ nextCode() ?? 1 }}</span
+              >
             }
           </div>
         </div>
@@ -469,104 +515,104 @@
 
         <!-- Archivos existentes (solo en modo edición) -->
         @if (editing()?._id && existingAttachments() && existingAttachments()!.length > 0) {
-        <div class="mb-3">
-          <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-            Archivos existentes
-          </div>
-          <div class="space-y-2">
-            @for (attachment of existingAttachments(); track attachment._id || $index) {
-            <div
-              class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md"
-              [class.opacity-50]="attachmentsToDelete().includes(attachment._id || '')"
-            >
-              <i [class]="getFileIcon(attachment.mimeType)" class="text-gray-500"></i>
-              <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
-                {{ attachment.originalName }}
-              </span>
-              <span class="text-xs text-gray-500 dark:text-gray-400">
-                {{ formatFileSize(attachment.size) }}
-              </span>
-              <a
-                [href]="attachment.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="px-2 py-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                title="Ver archivo"
-                (click)="$event.stopPropagation()"
-              >
-                <i class="pi pi-external-link"></i>
-              </a>
-              <button
-                type="button"
-                (click)="removeExistingAttachment(attachment._id || '')"
-                class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                [title]="
-                  attachmentsToDelete().includes(attachment._id || '')
-                    ? 'Restaurar archivo'
-                    : 'Eliminar archivo'
-                "
-              >
-                @if (attachmentsToDelete().includes(attachment._id || '')) {
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                } @else {
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-                }
-              </button>
+          <div class="mb-3">
+            <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+              Archivos existentes
             </div>
-            }
+            <div class="space-y-2">
+              @for (attachment of existingAttachments(); track attachment._id || $index) {
+                <div
+                  class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md"
+                  [class.opacity-50]="attachmentsToDelete().includes(attachment._id || '')"
+                >
+                  <i [class]="getFileIcon(attachment.mimeType)" class="text-gray-500"></i>
+                  <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                    {{ attachment.originalName }}
+                  </span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ formatFileSize(attachment.size) }}
+                  </span>
+                  <a
+                    [href]="attachment.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="px-2 py-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                    title="Ver archivo"
+                    (click)="$event.stopPropagation()"
+                  >
+                    <i class="pi pi-external-link"></i>
+                  </a>
+                  <button
+                    type="button"
+                    (click)="removeExistingAttachment(attachment._id || '')"
+                    class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                    [title]="
+                      attachmentsToDelete().includes(attachment._id || '')
+                        ? 'Restaurar archivo'
+                        : 'Eliminar archivo'
+                    "
+                  >
+                    @if (attachmentsToDelete().includes(attachment._id || '')) {
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                    } @else {
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    }
+                  </button>
+                </div>
+              }
+            </div>
           </div>
-        </div>
         }
 
         <!-- Archivos nuevos seleccionados -->
         @if (selectedFiles().length > 0) {
-        <div class="mb-3">
-          <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-            Archivos nuevos
-          </div>
-          <div class="space-y-2">
-            @for (file of selectedFiles(); track $index) {
-            <div class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
-              <i class="pi pi-file text-gray-500"></i>
-              <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
-                {{ file.name }}
-              </span>
-              <span class="text-xs text-gray-500 dark:text-gray-400">
-                {{ formatFileSize(file.size) }}
-              </span>
-              <button
-                type="button"
-                (click)="removeFile($index)"
-                class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                title="Eliminar archivo"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-              </button>
+          <div class="mb-3">
+            <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+              Archivos nuevos
             </div>
-            }
+            <div class="space-y-2">
+              @for (file of selectedFiles(); track $index) {
+                <div class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <i class="pi pi-file text-gray-500"></i>
+                  <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                    {{ file.name }}
+                  </span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ formatFileSize(file.size) }}
+                  </span>
+                  <button
+                    type="button"
+                    (click)="removeFile($index)"
+                    class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                    title="Eliminar archivo"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
           </div>
-        </div>
         }
 
         <label
@@ -574,7 +620,7 @@
           [ngClass]="{
             'border-blue-500 bg-blue-50': isDragging(),
             'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600':
-              !isDragging()
+              !isDragging(),
           }"
           (dragover)="onDragOver($event)"
           (dragleave)="onDragLeave($event)"
@@ -605,9 +651,10 @@
               [class.dark:text-gray-400]="!isDragging()"
             >
               @if (isDragging()) {
-              <span class="font-semibold">Suelta los archivos aquí</span>
+                <span class="font-semibold">Suelta los archivos aquí</span>
               } @else {
-              <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta }
+                <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta
+              }
             </p>
             <p class="text-xs text-gray-500 dark:text-gray-400">
               PNG, JPG, PDF, DOC, DOCX, MP4, MP3. También puedes arrastrar desde WhatsApp
@@ -661,206 +708,207 @@
       </div>
     </ng-template>
     @if (viewingProject()) {
-    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
-      <!-- Información básica -->
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-info-circle text-blue-500"></i>
-          Información Básica
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Código</span
-            >
-            <div
-              class="text-gray-900 dark:text-gray-100 font-mono font-medium bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
-            >
-              {{ viewingProject()?.code }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              <span
-                class="px-2 py-1 rounded-full text-xs font-medium"
-                [class]="getStatusClass(viewingProject()?.status ?? '')"
-              >
-                {{ getStatusLabel(viewingProject()?.status ?? '') }}
-              </span>
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cliente</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-medium">
-              {{ getClientName(viewingProject()?.clientId ?? '') }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Ubicación</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingProject()?.location || 'Sin ubicación' }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Presupuesto</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-semibold text-lg">
-              {{ viewingProject()?.budget | currency : 'USD' : 'symbol' : '1.0-2' }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado Activo</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              <span
-                class="px-2 py-1 rounded-full text-xs font-medium"
-                [class]="
-                  viewingProject()?.isActive
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                "
-              >
-                {{ viewingProject()?.isActive ? 'Activo' : 'Inactivo' }}
-              </span>
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Creado por</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <i class="pi pi-user text-blue-500"></i>
-              <span class="font-medium">{{ getCreatorName(viewingProject()?.createdBy) }}</span>
-            </div>
-          </div>
-          @if (viewingProject()?.startDate) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Inicio</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingProject()?.startDate | date : 'dd/MM/yyyy' }}
-            </div>
-          </div>
-          } @if (viewingProject()?.endDate) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Fin</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingProject()?.endDate | date : 'dd/MM/yyyy' }}
-            </div>
-          </div>
-          }
-        </div>
-      </div>
-
-      <!-- Descripción -->
-      @if (viewingProject()?.description) {
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-file-edit text-green-500"></i>
-          Descripción
-        </h3>
-        <div
-          class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-white dark:bg-gray-700 p-4 rounded border"
-        >
-          {{ viewingProject()?.description }}
-        </div>
-      </div>
-      }
-
-      <!-- Notas -->
-      @if (viewingProject()?.notes) {
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-sticky-note text-yellow-500"></i>
-          Notas
-        </h3>
-        <div
-          class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-white dark:bg-gray-700 p-4 rounded border"
-        >
-          {{ viewingProject()?.notes }}
-        </div>
-      </div>
-      }
-
-      <!-- Archivos adjuntos -->
-      @if (viewingProject()?.attachments && viewingProject()!.attachments!.length > 0) {
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-paperclip text-blue-500"></i>
-          Archivos Adjuntos
-        </h3>
-        <div class="space-y-2">
-          @for (attachment of viewingProject()!.attachments!; track attachment._id || $index) {
-          <div
-            class="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+      <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+        <!-- Información básica -->
+        <div class="mb-6">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
           >
-            <div class="flex items-center gap-3 flex-1 min-w-0">
-              <i
-                [class]="getFileIcon(attachment.mimeType)"
-                class="text-gray-600 dark:text-gray-400 text-lg"
-              ></i>
-              <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                  {{ attachment.originalName }}
-                </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ formatFileSize(attachment.size) }} • {{ attachment.mimeType }}
-                </div>
+            <i class="pi pi-info-circle text-blue-500"></i>
+            Información Básica
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Código</span
+              >
+              <div
+                class="text-gray-900 dark:text-gray-100 font-mono font-medium bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
+              >
+                {{ viewingProject()?.code }}
               </div>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
-              <a
-                [href]="attachment.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="px-3 py-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                title="Abrir archivo"
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Estado</span
               >
-                <i class="pi pi-external-link mr-1"></i>
-                <span class="text-sm">Abrir</span>
-              </a>
+              <div class="text-gray-900 dark:text-gray-100">
+                <span
+                  class="px-2 py-1 rounded-full text-xs font-medium"
+                  [class]="getStatusClass(viewingProject()?.status ?? '')"
+                >
+                  {{ getStatusLabel(viewingProject()?.status ?? '') }}
+                </span>
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Cliente</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 font-medium">
+                {{ getClientName(viewingProject()?.clientId ?? '') }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Ubicación</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ viewingProject()?.location || 'Sin ubicación' }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Presupuesto</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 font-semibold text-lg">
+                {{ viewingProject()?.budget | currency: 'USD' : 'symbol' : '1.0-2' }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Estado Activo</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                <span
+                  class="px-2 py-1 rounded-full text-xs font-medium"
+                  [class]="
+                    viewingProject()?.isActive
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  "
+                >
+                  {{ viewingProject()?.isActive ? 'Activo' : 'Inactivo' }}
+                </span>
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Creado por</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <i class="pi pi-user text-blue-500"></i>
+                <span class="font-medium">{{ getCreatorName(viewingProject()?.createdBy) }}</span>
+              </div>
+            </div>
+            @if (viewingProject()?.startDate) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Fecha de Inicio</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingProject()?.startDate | date: 'dd/MM/yyyy' }}
+                </div>
+              </div>
+            }
+            @if (viewingProject()?.endDate) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Fecha de Fin</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingProject()?.endDate | date: 'dd/MM/yyyy' }}
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        @if (viewingProject()?.description) {
+          <div class="mb-6">
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+            >
+              <i class="pi pi-file-edit text-green-500"></i>
+              Descripción
+            </h3>
+            <div
+              class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-white dark:bg-gray-700 p-4 rounded border"
+            >
+              {{ viewingProject()?.description }}
             </div>
           </div>
-          }
-        </div>
+        }
+
+        <!-- Notas -->
+        @if (viewingProject()?.notes) {
+          <div class="mb-6">
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+            >
+              <i class="pi pi-sticky-note text-yellow-500"></i>
+              Notas
+            </h3>
+            <div
+              class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-white dark:bg-gray-700 p-4 rounded border"
+            >
+              {{ viewingProject()?.notes }}
+            </div>
+          </div>
+        }
+
+        <!-- Archivos adjuntos -->
+        @if (viewingProject()?.attachments && viewingProject()!.attachments!.length > 0) {
+          <div>
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+            >
+              <i class="pi pi-paperclip text-blue-500"></i>
+              Archivos Adjuntos
+            </h3>
+            <div class="space-y-2">
+              @for (attachment of viewingProject()!.attachments!; track attachment._id || $index) {
+                <div
+                  class="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+                >
+                  <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <i
+                      [class]="getFileIcon(attachment.mimeType)"
+                      class="text-gray-600 dark:text-gray-400 text-lg"
+                    ></i>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {{ attachment.originalName }}
+                      </div>
+                      <div class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ formatFileSize(attachment.size) }} • {{ attachment.mimeType }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <a
+                      [href]="attachment.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="px-3 py-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                      title="Abrir archivo"
+                    >
+                      <i class="pi pi-external-link mr-1"></i>
+                      <span class="text-sm">Abrir</span>
+                    </a>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        } @else if (viewingProject()) {
+          <div>
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+            >
+              <i class="pi pi-paperclip text-blue-500"></i>
+              Archivos Adjuntos
+            </h3>
+            <div
+              class="text-center py-8 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+            >
+              <i class="pi pi-paperclip text-3xl mb-2"></i>
+              <p>No hay archivos adjuntos</p>
+            </div>
+          </div>
+        }
       </div>
-      } @else if (viewingProject()) {
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-paperclip text-blue-500"></i>
-          Archivos Adjuntos
-        </h3>
-        <div
-          class="text-center py-8 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
-        >
-          <i class="pi pi-paperclip text-3xl mb-2"></i>
-          <p>No hay archivos adjuntos</p>
-        </div>
-      </div>
-      }
-    </div>
     }
     <ng-template pTemplate="footer">
       <button
