@@ -149,6 +149,12 @@ export const routes: Routes = [
         data: { menuPermission: '/material-requests' },
       },
       {
+        path: 'petty-cash',
+        loadComponent: () => import('./pages/petty-cash/petty-cash').then((m) => m.PettyCashPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/petty-cash' },
+      },
+      {
         path: 'face-recognition-register',
         loadComponent: () =>
           import('./pages/face-recognition-register/face-recognition-register').then(

@@ -31,6 +31,9 @@ import {
 } from '../../shared/interfaces/dashboard-gerencia.interface';
 import { AuthService } from '../login/services/auth.service';
 import { GeocodingService } from '../../shared/services/geocoding.service';
+import { CompaniesApiService } from '../../shared/services/companies-api.service';
+import { CompanyOption } from '../../shared/interfaces/company.interface';
+import { SelectModule } from 'primeng/select';
 
 /**
  * Componente principal del Dashboard de Gerencia
@@ -50,6 +53,7 @@ import { GeocodingService } from '../../shared/services/geocoding.service';
     ToastModule,
     TableModule,
     CardModule,
+    SelectModule,
   ],
   providers: [MessageService],
   templateUrl: './dashboard-gerencia.html',
@@ -61,6 +65,7 @@ export class DashboardGerenciaPage implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly authService = inject(AuthService);
   private readonly geocodingService = inject(GeocodingService);
+  private readonly companiesApiService = inject(CompaniesApiService);
   private readonly injector = inject(Injector);
 
   // Signals para el estado
@@ -68,9 +73,14 @@ export class DashboardGerenciaPage implements OnInit {
   public readonly error = signal<string | null>(null);
   public readonly dashboardData = signal<GerenciaDashboardResponse | null>(null);
 
-  // Propiedades para two-way binding con Calendar
+  // Signals para empresas
+  public readonly companies = signal<CompanyOption[]>([]);
+  public readonly loadingCompanies = signal<boolean>(false);
+
+  // Propiedades para two-way binding con Calendar y Select
   public startDateValue: Date | null = null;
   public endDateValue: Date | null = null;
+  public selectedCompanyId: string | null = null;
 
   // Signals para fechas
   private readonly _startDate = signal<Date | null>(null);
@@ -85,7 +95,7 @@ export class DashboardGerenciaPage implements OnInit {
 
   // Computed para datos derivados
   public readonly dailyTimeTrackings = computed(
-    () => this.dashboardData()?.marcacionesDiarias ?? []
+    () => this.dashboardData()?.marcacionesDiarias ?? [],
   );
   public readonly dailyReports = computed(() => this.dashboardData()?.reportesDiarios ?? []);
   public readonly invoices = computed(() => this.dashboardData()?.facturasIngresadas ?? []);
@@ -290,7 +300,7 @@ export class DashboardGerenciaPage implements OnInit {
     dayGrouped.forEach((dayData) => {
       dayData.totalReports = dayData.reports.reduce(
         (sum, report) => sum + (report.cantidadReportes || 1),
-        0
+        0,
       );
     });
 
@@ -385,6 +395,9 @@ export class DashboardGerenciaPage implements OnInit {
     this._startDate.set(startDate);
     this._endDate.set(endDate);
 
+    // Cargar empresas disponibles
+    this.loadCompanies();
+
     // Effect para resolver ubicaciones automáticamente cuando cambian los datos
     // Usar runInInjectionContext porque effect() requiere un contexto de inyección
     runInInjectionContext(this.injector, () => {
@@ -399,6 +412,26 @@ export class DashboardGerenciaPage implements OnInit {
 
     // Cargar datos iniciales
     this.loadDashboard();
+  }
+
+  /**
+   * Carga las empresas disponibles
+   */
+  async loadCompanies(): Promise<void> {
+    this.loadingCompanies.set(true);
+    try {
+      const companies = await this.companiesApiService.listActiveAsOptions().toPromise();
+      this.companies.set(companies ?? []);
+    } catch (err: unknown) {
+      console.error('Error al cargar empresas:', err);
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No se pudieron cargar las empresas',
+      });
+    } finally {
+      this.loadingCompanies.set(false);
+    }
   }
 
   /**
@@ -430,10 +463,15 @@ export class DashboardGerenciaPage implements OnInit {
     this.error.set(null);
 
     try {
-      const params = {
+      const params: any = {
         startDate: start.toISOString(),
         endDate: end.toISOString(),
       };
+
+      // Agregar filtro de empresa si está seleccionado
+      if (this.selectedCompanyId) {
+        params.companyId = this.selectedCompanyId;
+      }
 
       const data = await this.apiService.getDashboardData(params).toPromise();
       this.dashboardData.set(data ?? null);
@@ -465,6 +503,16 @@ export class DashboardGerenciaPage implements OnInit {
    */
   onEndDateChange(): void {
     this._endDate.set(this.endDateValue);
+  }
+
+  /**
+   * Maneja el cambio de empresa seleccionada
+   */
+  onCompanyChange(): void {
+    // Recargar automáticamente cuando cambia la empresa
+    if (this.startDateValue && this.endDateValue) {
+      this.loadDashboard();
+    }
   }
 
   /**
@@ -615,7 +663,7 @@ export class DashboardGerenciaPage implements OnInit {
    */
   calculateWorkedHours(
     entry?: { time: string; date: string },
-    exit?: { time: string; date: string }
+    exit?: { time: string; date: string },
   ): number {
     if (!entry || !exit) return 0;
 
@@ -834,10 +882,15 @@ export class DashboardGerenciaPage implements OnInit {
     this.loading.set(true);
 
     try {
-      const params = {
+      const params: any = {
         startDate: start.toISOString(),
         endDate: end.toISOString(),
       };
+
+      // Agregar filtro de empresa si está seleccionado
+      if (this.selectedCompanyId) {
+        params.companyId = this.selectedCompanyId;
+      }
 
       const blob = await this.apiService.downloadPdf(params).toPromise();
 
@@ -853,7 +906,10 @@ export class DashboardGerenciaPage implements OnInit {
       // Generar nombre del archivo
       const startDateStr = start.toISOString().split('T')[0];
       const endDateStr = end.toISOString().split('T')[0];
-      link.download = `dashboard-gerencia_${startDateStr}_${endDateStr}.pdf`;
+      const companyName = this.selectedCompanyId
+        ? `_${this.companies().find((c) => c._id === this.selectedCompanyId)?.name || 'empresa'}`
+        : '';
+      link.download = `dashboard-gerencia_${startDateStr}_${endDateStr}${companyName}.pdf`;
 
       document.body.appendChild(link);
       link.click();

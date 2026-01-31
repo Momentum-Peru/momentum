@@ -1,0 +1,641 @@
+:host {
+  display: block;
+}
+
+.petty-cash-page {
+  padding: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  @media (min-width: 768px) {
+    padding: 1.5rem 2rem;
+  }
+
+  @media (min-width: 1024px) {
+    padding: 2rem;
+  }
+}
+
+.page-header {
+  margin-bottom: 1.5rem;
+
+  @media (min-width: 768px) {
+    margin-bottom: 2rem;
+  }
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+
+  @media (min-width: 768px) {
+    font-size: 1.75rem;
+  }
+}
+
+// Secciones
+.section {
+  margin-bottom: 2rem;
+
+  @media (min-width: 768px) {
+    margin-bottom: 2.5rem;
+  }
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+
+  i {
+    font-size: 1.25rem;
+    opacity: 0.9;
+  }
+
+  @media (min-width: 768px) {
+    font-size: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+}
+
+.section-desc,
+.card-subtitle {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+
+  i {
+    opacity: 0.9;
+  }
+}
+
+.card {
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+  @media (min-width: 768px) {
+    padding: 1.25rem;
+    border-radius: 14px;
+  }
+}
+
+// Dashboard: saldo + acciones
+.dashboard-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 1024px) {
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+}
+
+.balance-card {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: linear-gradient(135deg, var(--p-primary-color) 0%, var(--p-primary-600) 100%);
+  border: none;
+  color: var(--p-primary-contrast-color);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+
+  .balance-label,
+  .balance-value {
+    color: inherit;
+  }
+}
+
+.balance-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.balance-icon {
+  font-size: 2rem;
+  opacity: 0.95;
+
+  @media (min-width: 768px) {
+    font-size: 2.5rem;
+  }
+}
+
+.balance-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.balance-label {
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.balance-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+
+  &.balance-loading {
+    opacity: 0.8;
+  }
+
+  @media (min-width: 768px) {
+    font-size: 1.75rem;
+  }
+}
+
+.actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  flex-shrink: 0;
+
+  @media (min-width: 640px) {
+    width: 280px;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 1024px) {
+    width: 320px;
+  }
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 10px;
+  font-weight: 500;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  i {
+    font-size: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    padding: 1.25rem;
+  }
+}
+
+.action-expense {
+  border-color: var(--p-red-200);
+  background: var(--p-content-background);
+  color: var(--p-red-600);
+
+  &:hover {
+    background: var(--p-red-50);
+    border-color: var(--p-red-300);
+  }
+}
+
+.action-recharge {
+  border-color: var(--p-green-200);
+  background: var(--p-content-background);
+  color: var(--p-green-600);
+
+  &:hover {
+    background: var(--p-green-50);
+    border-color: var(--p-green-300);
+  }
+}
+
+// Lista resumen movimientos
+.movements-preview-card {
+  margin-bottom: 1.5rem;
+
+  @media (min-width: 768px) {
+    margin-bottom: 2rem;
+  }
+}
+
+.movements-preview-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.movement-preview-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--p-content-border-color);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  @media (min-width: 768px) {
+    padding: 0.875rem 0;
+  }
+}
+
+.movement-icon {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 1rem;
+
+  &.ingreso {
+    background: var(--p-green-100);
+    color: var(--p-green-700);
+  }
+
+  &.egreso {
+    background: var(--p-red-100);
+    color: var(--p-red-700);
+  }
+}
+
+.movement-detail {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.movement-desc {
+  display: block;
+  font-weight: 500;
+  color: var(--p-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.movement-meta {
+  font-size: 0.8125rem;
+  color: var(--p-text-muted-color);
+}
+
+.movement-amount {
+  font-weight: 600;
+  flex-shrink: 0;
+
+  &.ingreso {
+    color: var(--p-green-600);
+  }
+
+  &.egreso {
+    color: var(--p-red-600);
+  }
+}
+
+.loading-block {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  color: var(--p-primary-color);
+
+  i {
+    font-size: 2rem;
+  }
+}
+
+.empty-message {
+  margin: 0;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--p-text-muted-color);
+  font-size: 0.9375rem;
+}
+
+// Auditoría: filtros + tabla
+.audit-card {
+  margin-bottom: 2rem;
+}
+
+.filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/* Contenedor de los dos datepickers: siempre en fila, uno al lado del otro */
+.filters-dates {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.filter-input {
+  min-width: 0;
+
+  &.filter-q {
+    flex: 1 1 180px;
+    max-width: 100%;
+  }
+
+  &.filter-date {
+    flex: 0 0 160px;
+    width: 160px;
+    max-width: 100%;
+  }
+}
+
+/* Evitar que el datepicker interno se estire y mantenga ancho coherente */
+::ng-deep .filters-row .filter-date-picker,
+::ng-deep .filters-row .p-datepicker {
+  width: 100%;
+  max-width: 160px;
+}
+
+::ng-deep .filter-date-picker .p-inputtext {
+  min-width: 0;
+  width: 100%;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -0.25rem;
+
+  ::ng-deep .p-datatable .p-datatable-thead > tr > th,
+  ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+    padding: 0.625rem 0.75rem;
+  }
+
+  ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+    vertical-align: middle;
+  }
+}
+
+.text-muted {
+  color: var(--p-text-muted-color);
+}
+
+.text-xs {
+  font-size: 0.75rem;
+}
+
+.amount-cell.ingreso {
+  color: var(--p-green-600);
+  font-weight: 500;
+}
+
+.amount-cell.egreso {
+  color: var(--p-red-600);
+  font-weight: 500;
+}
+
+.empty-row {
+  padding: 2rem !important;
+  color: var(--p-text-muted-color);
+}
+
+.col-doc {
+  width: 6rem;
+  min-width: 5.5rem;
+}
+
+.col-doc-cell {
+  white-space: nowrap;
+}
+
+.link-ver-archivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  color: var(--p-primary-color);
+  text-decoration: none;
+  font-weight: 500;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  i {
+    font-size: 0.875rem;
+    opacity: 0.9;
+  }
+}
+
+.sin-archivo {
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
+.col-actions {
+  width: 5rem;
+  min-width: 4.5rem;
+}
+
+.col-actions-cell {
+  white-space: nowrap;
+}
+
+// Vista Contador (layout como en el ejemplo: izquierda Gastos + Filtros, derecha Detalle de Movimientos)
+.section-contador .section-title {
+  margin-bottom: 0.5rem;
+}
+
+.contador-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.contador-audit-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+
+  i {
+    opacity: 0.9;
+  }
+}
+
+.section-contador .section-desc {
+  margin-bottom: 0;
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+.btn-export {
+  flex-shrink: 0;
+}
+
+.contador-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: 300px 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.contador-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.contador-filters {
+  .mb-2 {
+    margin-bottom: 0.5rem;
+  }
+  .mt-2 {
+    margin-top: 0.5rem;
+  }
+}
+
+.contador-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.contador-dates .filter-date {
+  width: 100%;
+  max-width: none;
+}
+
+.contador-table-card {
+  min-width: 0;
+}
+
+.contador-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.contador-registros {
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+.stats-card {
+  order: 1;
+}
+
+.stats-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stats-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--p-content-border-color);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.stats-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--p-primary-color);
+}
+
+.stats-dot-transporte {
+  background: #3b82f6;
+}
+.stats-dot-útiles,
+.stats-dot-utiles {
+  background: #8b5cf6;
+}
+.stats-dot-alimentación,
+.stats-dot-alimentacion {
+  background: #10b981;
+}
+.stats-dot-otros {
+  background: var(--p-text-muted-color);
+}
+
+.stats-category {
+  flex: 1;
+  font-size: 0.9375rem;
+  color: var(--p-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats-total {
+  font-weight: 600;
+  color: var(--p-text-color);
+  flex-shrink: 0;
+}
+
+.filters-card {
+  order: 2;
+}
+
+.w-full {
+  width: 100%;
+}
