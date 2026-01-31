@@ -125,12 +125,20 @@
         </h3>
         <p class="section-desc">Revisión de movimientos y comprobantes</p>
       </div>
+      <p-menu
+        #exportMenu
+        [model]="exportMenuItems"
+        [popup]="true"
+        [appendTo]="'body'"
+        styleClass="p-menu-sm"
+      ></p-menu>
       <button
         pButton
         label="Exportar reporte"
         icon="pi pi-download"
         severity="success"
-        (click)="exportReport()"
+        (click)="exportMenu.toggle($event)"
+        [disabled]="exportingReport()"
         aria-label="Exportar reporte"
         class="btn-export"
       ></button>
@@ -232,7 +240,9 @@
           <h3 class="card-title">Detalle de Movimientos</h3>
           <span class="contador-registros">{{ totalMovements() }} registros</span>
         </div>
-        <div class="table-wrapper">
+
+        <!-- Vista Desktop: Tabla -->
+        <div class="table-wrapper hidden md:block">
           <p-table
             [value]="movements()"
             [loading]="loadingMovements()"
@@ -246,6 +256,7 @@
             [showCurrentPageReport]="true"
             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
             [rowsPerPageOptions]="[10, 20, 50]"
+            [paginatorDropdownAppendTo]="'body'"
             responsiveLayout="scroll"
           >
             <ng-template pTemplate="header">
@@ -320,6 +331,199 @@
               </tr>
             </ng-template>
           </p-table>
+        </div>
+
+        <!-- Vista Móvil: Tarjetas desplegables -->
+        <div class="md:hidden space-y-3 p-4">
+          @if (loadingMovements()) {
+            <div class="text-center py-8">
+              <i class="pi pi-spin pi-spinner text-2xl text-gray-400"></i>
+              <p class="text-sm text-gray-500 mt-2">Cargando movimientos...</p>
+            </div>
+          } @else if (movements().length === 0) {
+            <div class="text-center py-8 text-gray-500">
+              <i class="pi pi-inbox text-2xl text-gray-400"></i>
+              <p class="text-sm mt-2">Sin registros</p>
+            </div>
+          } @else {
+            @for (row of movements(); track row._id || $index) {
+              <div
+                class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+              >
+                <!-- Header del accordion (siempre visible) -->
+                <button
+                  type="button"
+                  class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                  (click)="toggleRow(row._id)"
+                >
+                  <div class="flex-1 text-left min-w-0 pr-3">
+                    <div class="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm">
+                      {{ row.description }}
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                      <span
+                        class="text-xs font-medium"
+                        [class.text-green-600]="row.type === 'ingreso'"
+                        [class.text-red-600]="row.type === 'egreso'"
+                      >
+                        {{ formatAmount(row.type, row.amount) }}
+                      </span>
+                      @if (row.category) {
+                        <p-tag
+                          [value]="row.category"
+                          severity="secondary"
+                          styleClass="text-xs"
+                        ></p-tag>
+                      }
+                    </div>
+                  </div>
+                  <div class="flex-shrink-0">
+                    <i
+                      class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+                      [class.pi-chevron-down]="!isRowExpanded(row._id)"
+                      [class.pi-chevron-up]="isRowExpanded(row._id)"
+                    ></i>
+                  </div>
+                </button>
+
+                <!-- Contenido del accordion (desplegable) -->
+                @if (isRowExpanded(row._id)) {
+                  <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+                    <div class="px-4 py-3 space-y-3">
+                      <!-- Fecha -->
+                      <div>
+                        <div
+                          class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1"
+                        >
+                          Fecha
+                        </div>
+                        <div class="text-sm text-gray-900 dark:text-gray-100">
+                          {{ formatDate(row.createdAt) }}
+                        </div>
+                      </div>
+
+                      <!-- Creado por -->
+                      <div>
+                        <div
+                          class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1"
+                        >
+                          Creado por
+                        </div>
+                        <div class="text-sm text-gray-900 dark:text-gray-100">
+                          {{ createdByName(row) }}
+                        </div>
+                      </div>
+
+                      <!-- Monto -->
+                      <div>
+                        <div
+                          class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1"
+                        >
+                          Monto
+                        </div>
+                        <div
+                          class="text-sm font-semibold"
+                          [class.text-green-600]="row.type === 'ingreso'"
+                          [class.text-red-600]="row.type === 'egreso'"
+                        >
+                          {{ formatAmount(row.type, row.amount) }}
+                        </div>
+                      </div>
+
+                      <!-- Categoría -->
+                      @if (row.category) {
+                        <div>
+                          <div
+                            class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1"
+                          >
+                            Categoría
+                          </div>
+                          <p-tag [value]="row.category" severity="secondary"></p-tag>
+                        </div>
+                      }
+
+                      <!-- Archivo -->
+                      <div>
+                        <div
+                          class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1"
+                        >
+                          Archivo
+                        </div>
+                        @if (row.receiptAttachmentUrl) {
+                          <a
+                            [href]="row.receiptAttachmentUrl"
+                            target="_blank"
+                            rel="noopener"
+                            class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            <i class="pi pi-file text-xs"></i>
+                            <span>Ver archivo</span>
+                          </a>
+                        } @else {
+                          <span class="text-sm text-gray-400">Sin archivo</span>
+                        }
+                      </div>
+
+                      <!-- Acción -->
+                      <div>
+                        <div
+                          class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2"
+                        >
+                          Acción
+                        </div>
+                        @if (row.status === 'active') {
+                          <button
+                            pButton
+                            label="Anular"
+                            icon="pi pi-times"
+                            class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                            (click)="confirmVoid(row)"
+                          ></button>
+                        } @else {
+                          <span class="text-sm text-gray-500">Anulado</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          }
+
+          <!-- Paginación móvil -->
+          @if (movements().length > 0) {
+            <div
+              class="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700"
+            >
+              <button
+                pButton
+                icon="pi pi-chevron-left"
+                class="p-button-text p-button-sm"
+                [disabled]="movementsPage() === 1"
+                (click)="
+                  onMovementsPageChange({
+                    first: (movementsPage() - 2) * movementsLimit(),
+                    rows: movementsLimit(),
+                  })
+                "
+              ></button>
+              <span class="text-sm text-gray-600 dark:text-gray-400">
+                Página {{ movementsPage() }} de {{ Math.ceil(totalMovements() / movementsLimit()) }}
+              </span>
+              <button
+                pButton
+                icon="pi pi-chevron-right"
+                class="p-button-text p-button-sm"
+                [disabled]="movementsPage() >= Math.ceil(totalMovements() / movementsLimit())"
+                (click)="
+                  onMovementsPageChange({
+                    first: movementsPage() * movementsLimit(),
+                    rows: movementsLimit(),
+                  })
+                "
+              ></button>
+            </div>
+          }
         </div>
       </div>
     </div>
