@@ -77,6 +77,25 @@ export class PettyCashApiService {
     });
   }
 
+  getMovementsPdf(params?: MovementQueryParams): Observable<Blob> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.q) httpParams = httpParams.set('q', params.q);
+      if (params.type) httpParams = httpParams.set('type', params.type);
+      if (params.category) httpParams = httpParams.set('category', params.category);
+      if (params.dateFrom) httpParams = httpParams.set('dateFrom', params.dateFrom);
+      if (params.dateTo) httpParams = httpParams.set('dateTo', params.dateTo);
+      if (params.includeVoided !== undefined)
+        httpParams = httpParams.set('includeVoided', String(params.includeVoided));
+      if (params.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
+      if (params.sortOrder) httpParams = httpParams.set('sortOrder', params.sortOrder);
+    }
+    return this.http.get(`${this.baseUrl}/movements/pdf`, {
+      params: httpParams,
+      responseType: 'blob',
+    });
+  }
+
   getStatsByCategory(dateFrom?: string, dateTo?: string): Observable<PettyCashCategoryStat[]> {
     let httpParams = new HttpParams();
     if (dateFrom) httpParams = httpParams.set('dateFrom', dateFrom);

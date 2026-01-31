@@ -11,7 +11,10 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { MenuModule } from 'primeng/menu';
+import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
+import { firstValueFrom } from 'rxjs';
+import * as XLSX from 'xlsx';
 import { PettyCashApiService } from '../../shared/services/petty-cash-api.service';
 import { AuthService } from '../login/services/auth.service';
 import {
@@ -47,6 +50,7 @@ import { RechargeDialogComponent } from './components/recharge-dialog/recharge-d
     TooltipModule,
     SelectModule,
     DatePickerModule,
+    MenuModule,
     ExpenseDialogComponent,
     RechargeDialogComponent,
   ],
@@ -78,12 +82,18 @@ export class PettyCashPage implements OnInit {
   filterIncludeVoided = signal(false);
   movementsPage = signal(1);
   movementsLimit = signal(20);
+  exportingReport = signal(false);
+
+  private readonly EXPORT_PAGE_SIZE = 100;
 
   private filterQDebounceId: ReturnType<typeof setTimeout> | null = null;
   private readonly FILTER_DEBOUNCE_MS = 400;
 
   movements = computed(() => this.movementsResult()?.data ?? []);
   totalMovements = computed(() => this.movementsResult()?.total ?? 0);
+
+  /** Para acordeón móvil: filas expandidas */
+  expandedRows = signal<Set<string>>(new Set());
 
   /** Valor Date para el datepicker "desde" (derivado del string) */
   filterDateFromDate = computed(() => this.stringToDate(this.filterDateFrom()));
@@ -99,6 +109,26 @@ export class PettyCashPage implements OnInit {
   readonly categoryFilterOptions = [
     { label: 'Todas las categorías', value: null },
     ...EXPENSE_CATEGORIES.map((c) => ({ label: c, value: c })),
+  ];
+
+  /** Math para template móvil */
+  readonly Math = Math;
+
+  readonly exportMenuItems: MenuItem[] = [
+    {
+      label: 'Excel',
+      icon: 'pi pi-file-excel',
+      command: () => {
+        void this.exportReport('excel');
+      },
+    },
+    {
+      label: 'PDF',
+      icon: 'pi pi-file-pdf',
+      command: () => {
+        void this.exportReport('pdf');
+      },
+    },
   ];
 
   ngOnInit(): void {
@@ -127,20 +157,7 @@ export class PettyCashPage implements OnInit {
 
   loadMovements(): void {
     this.loadingMovements.set(true);
-    const params: MovementQueryParams = {
-      page: this.movementsPage(),
-      limit: this.movementsLimit(),
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    };
-    if (this.filterQ()) params.q = this.filterQ();
-    if (this.filterType()) params.type = this.filterType()!;
-    if (this.filterCategory()) params.category = this.filterCategory()!;
-    if (this.filterDateFrom()) params.dateFrom = this.filterDateFrom()!;
-    if (this.filterDateTo()) params.dateTo = this.filterDateTo()!;
-    if (this.filterIncludeVoided()) params.includeVoided = true;
-
-    this.api.getMovements(params).subscribe({
+    this.api.getMovements(this.buildMovementQueryParams()).subscribe({
       next: (res) => {
         this.movementsResult.set(res);
         this.loadingMovements.set(false);
@@ -313,12 +330,48 @@ export class PettyCashPage implements OnInit {
     this.loadCategoryStats();
   }
 
-  exportReport(): void {
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Exportar',
-      detail: 'Funcionalidad de exporte en desarrollo',
-    });
+  async exportReport(format: 'excel' | 'pdf' = 'excel'): Promise<void> {
+    if (this.exportingReport()) return;
+    this.exportingReport.set(true);
+    try {
+      if (format === 'excel') {
+        const movements = await this.fetchAllMovementsForExport();
+        if (movements.length === 0) {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Sin datos',
+            detail: 'No hay movimientos para exportar con los filtros actuales',
+          });
+          return;
+        }
+        this.exportMovementsToExcel(movements);
+      } else {
+        if (this.totalMovements() === 0) {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Sin datos',
+            detail: 'No hay movimientos para exportar con los filtros actuales',
+          });
+          return;
+        }
+        await this.downloadMovementsPdf();
+      }
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Reporte generado',
+        detail: `El reporte se descargó en formato ${format.toUpperCase()}`,
+      });
+    } catch (error) {
+      console.error('Error al exportar reporte:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo exportar el reporte. Intente nuevamente.',
+      });
+    } finally {
+      this.exportingReport.set(false);
+    }
   }
 
   formatDate(d: string | undefined): string {
@@ -352,6 +405,106 @@ export class PettyCashPage implements OnInit {
     const m = String(value.getMonth() + 1).padStart(2, '0');
     const d = String(value.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
+  }
+
+  private buildMovementQueryParams(
+    overrides: Partial<MovementQueryParams> = {},
+  ): MovementQueryParams {
+    const params: MovementQueryParams = {
+      page: this.movementsPage(),
+      limit: this.movementsLimit(),
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      ...overrides,
+    };
+    if (this.filterQ()) params.q = this.filterQ();
+    if (this.filterType()) params.type = this.filterType()!;
+    if (this.filterCategory()) params.category = this.filterCategory()!;
+    if (this.filterDateFrom()) params.dateFrom = this.filterDateFrom()!;
+    if (this.filterDateTo()) params.dateTo = this.filterDateTo()!;
+    if (this.filterIncludeVoided()) params.includeVoided = true;
+    return params;
+  }
+
+  private buildExportQueryParams(): MovementQueryParams {
+    const params: MovementQueryParams = {
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    };
+    if (this.filterQ()) params.q = this.filterQ();
+    if (this.filterType()) params.type = this.filterType()!;
+    if (this.filterCategory()) params.category = this.filterCategory()!;
+    if (this.filterDateFrom()) params.dateFrom = this.filterDateFrom()!;
+    if (this.filterDateTo()) params.dateTo = this.filterDateTo()!;
+    if (this.filterIncludeVoided()) params.includeVoided = true;
+    return params;
+  }
+
+  private async fetchAllMovementsForExport(): Promise<PettyCashMovement[]> {
+    const firstPage = await firstValueFrom(
+      this.api.getMovements(
+        this.buildMovementQueryParams({ page: 1, limit: this.EXPORT_PAGE_SIZE }),
+      ),
+    );
+    const total = firstPage.total ?? firstPage.data.length;
+    const totalPages = Math.max(1, Math.ceil(total / this.EXPORT_PAGE_SIZE));
+    const allMovements: PettyCashMovement[] = [...(firstPage.data ?? [])];
+
+    for (let page = 2; page <= totalPages; page += 1) {
+      const res = await firstValueFrom(
+        this.api.getMovements(
+          this.buildMovementQueryParams({ page, limit: this.EXPORT_PAGE_SIZE }),
+        ),
+      );
+      allMovements.push(...(res?.data ?? []));
+    }
+
+    return allMovements;
+  }
+
+  private exportMovementsToExcel(movements: PettyCashMovement[]): void {
+    const rows = movements.map((movement) => ({
+      Fecha: this.formatDate(movement.createdAt),
+      Descripcion: movement.description,
+      Tipo: movement.type === 'ingreso' ? 'Ingreso' : 'Egreso',
+      Categoria: movement.category ?? '',
+      Monto: movement.amount,
+      Estado: movement.status === 'active' ? 'Activo' : 'Anulado',
+      CreadoPor: this.createdByName(movement),
+      Archivo: movement.receiptAttachmentUrl ?? '',
+    }));
+
+    const worksheet = (
+      XLSX.utils as { json_to_sheet: (data: unknown[]) => XLSX.WorkSheet }
+    ).json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Movimientos');
+
+    const fileName = this.buildReportFileName('xlsx');
+    XLSX.writeFile(workbook, fileName);
+  }
+
+  private async downloadMovementsPdf(): Promise<void> {
+    const params = this.buildExportQueryParams();
+    const blob = await firstValueFrom(this.api.getMovementsPdf(params));
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = this.buildReportFileName('pdf');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }
+
+  private buildReportFileName(extension: 'xlsx' | 'pdf'): string {
+    const from = this.filterDateFrom() ?? '';
+    const to = this.filterDateTo() ?? '';
+    const suffix =
+      from || to
+        ? `_${from || 'inicio'}_a_${to || 'hoy'}`
+        : `_${this.dateToLocalISOString(new Date())}`;
+    return `caja-chica_movimientos${suffix}.${extension}`;
   }
 
   onFilterDateFromChange(value: Date | null): void {
@@ -399,6 +552,22 @@ export class PettyCashPage implements OnInit {
     if (n === 'alimentacion') return 'alimentacion';
     if (n === 'otros') return 'otros';
     return 'otros';
+  }
+
+  toggleRow(rowId: string | undefined): void {
+    if (!rowId) return;
+    const expanded = new Set(this.expandedRows());
+    if (expanded.has(rowId)) {
+      expanded.delete(rowId);
+    } else {
+      expanded.add(rowId);
+    }
+    this.expandedRows.set(expanded);
+  }
+
+  isRowExpanded(rowId: string | undefined): boolean {
+    if (!rowId) return false;
+    return this.expandedRows().has(rowId);
   }
 
   onMovementsPageChange(event: TablePageEvent): void {
