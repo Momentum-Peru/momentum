@@ -79,6 +79,7 @@ export interface GerenciaDashboardQueryParams {
   endDate: string;
   tenantId?: string;
   companyId?: string;
+  userId?: string;
 }
 
 /**

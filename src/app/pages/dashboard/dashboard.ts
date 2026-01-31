@@ -35,6 +35,7 @@ import { CardModule } from 'primeng/card';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
+import * as XLSX from 'xlsx';
 import {
   DashboardFiltersParams,
   DashboardKpi,
@@ -112,6 +113,7 @@ export class DashboardPage implements OnInit {
   public gerenciaStartDateValue: Date | null = null;
   public gerenciaEndDateValue: Date | null = null;
   public gerenciaSelectedCompanyId: string | null = null;
+  public gerenciaSelectedUserId: string | null = null;
   private readonly expandedUsers = signal<Set<string>>(new Set());
   private readonly expandedReportUsers = signal<Set<string>>(new Set());
 
@@ -119,17 +121,25 @@ export class DashboardPage implements OnInit {
   protected readonly gerenciaCompanies = signal<CompanyOption[]>([]);
   protected readonly loadingGerenciaCompanies = signal<boolean>(false);
 
+  // Signal para almacenar todos los usuarios disponibles (sin filtrar)
+  protected readonly allGerenciaUsers = signal<
+    { userId: string; userName: string; userEmail: string }[]
+  >([]);
+
+  // Exportaciones (gerencia)
+  protected readonly exportingGerenciaExcel = signal<boolean>(false);
+
   // Signals para el diálogo de archivos
   protected readonly filesDialogVisible = signal(false);
   protected readonly selectedReportFiles = signal<{
     urls: string[];
     type: 'photos' | 'videos' | 'audios' | 'documents' | 'all';
     title: string;
-    files?: Array<{
+    files?: {
       url: string;
       type: 'photos' | 'videos' | 'audios' | 'documents';
       label: string;
-    }>;
+    }[];
   } | null>(null);
   private readonly gerenciaLocationAddresses = signal<Record<string, string>>({});
   private readonly gerenciaLocationLoading = signal<Record<string, boolean>>({});
@@ -149,6 +159,44 @@ export class DashboardPage implements OnInit {
   );
   protected readonly tickets = computed(() => this.gerenciaDashboardData()?.tickets ?? []);
   protected readonly sales = computed(() => this.gerenciaDashboardData()?.ventas ?? []);
+
+  // Computed para obtener lista única de usuarios de marcaciones y reportes
+  protected readonly gerenciaUsers = computed(() => {
+    // Si ya tenemos usuarios almacenados, usarlos
+    const storedUsers = this.allGerenciaUsers();
+    if (storedUsers.length > 0) {
+      return storedUsers;
+    }
+
+    // Si no, generar desde los datos actuales
+    const marcaciones = this.dailyTimeTrackings();
+    const reportes = this.dailyReportsGerencia();
+    const userMap = new Map<string, { userId: string; userName: string; userEmail: string }>();
+
+    // Agregar usuarios de marcaciones
+    marcaciones.forEach((marcacion) => {
+      if (!userMap.has(marcacion.userId)) {
+        userMap.set(marcacion.userId, {
+          userId: marcacion.userId,
+          userName: marcacion.userName,
+          userEmail: marcacion.userEmail,
+        });
+      }
+    });
+
+    // Agregar usuarios de reportes
+    reportes.forEach((reporte) => {
+      if (!userMap.has(reporte.userId)) {
+        userMap.set(reporte.userId, {
+          userId: reporte.userId,
+          userName: reporte.userName,
+          userEmail: reporte.userEmail,
+        });
+      }
+    });
+
+    return Array.from(userMap.values()).sort((a, b) => a.userName.localeCompare(b.userName));
+  });
 
   // Guardar los filtros actuales para usar en la descarga
   private currentFilters: DashboardFiltersParams = { period: '30d' };
@@ -808,8 +856,45 @@ export class DashboardPage implements OnInit {
         params.companyId = this.gerenciaSelectedCompanyId;
       }
 
+      // Agregar filtro de usuario si está seleccionado
+      if (this.gerenciaSelectedUserId) {
+        params.userId = this.gerenciaSelectedUserId;
+      }
+
       const data = await this.dashboardGerenciaApiService.getDashboardData(params).toPromise();
       this.gerenciaDashboardData.set(data ?? null);
+
+      // Si no hay filtro de usuario, almacenar la lista completa de usuarios
+      if (!this.gerenciaSelectedUserId && data) {
+        const userMap = new Map<string, { userId: string; userName: string; userEmail: string }>();
+
+        // Agregar usuarios de marcaciones
+        data.marcacionesDiarias?.forEach((marcacion) => {
+          if (!userMap.has(marcacion.userId)) {
+            userMap.set(marcacion.userId, {
+              userId: marcacion.userId,
+              userName: marcacion.userName,
+              userEmail: marcacion.userEmail,
+            });
+          }
+        });
+
+        // Agregar usuarios de reportes
+        data.reportesDiarios?.forEach((reporte) => {
+          if (!userMap.has(reporte.userId)) {
+            userMap.set(reporte.userId, {
+              userId: reporte.userId,
+              userName: reporte.userName,
+              userEmail: reporte.userEmail,
+            });
+          }
+        });
+
+        const allUsers = Array.from(userMap.values()).sort((a, b) =>
+          a.userName.localeCompare(b.userName),
+        );
+        this.allGerenciaUsers.set(allUsers);
+      }
     } catch (err: unknown) {
       const errorMessage =
         (err && typeof err === 'object' && 'error' in err
@@ -831,6 +916,9 @@ export class DashboardPage implements OnInit {
    */
   onGerenciaStartDateChange(): void {
     this.gerenciaStartDate.set(this.gerenciaStartDateValue);
+    // Limpiar filtro de usuario y lista cuando cambian las fechas
+    this.gerenciaSelectedUserId = null;
+    this.allGerenciaUsers.set([]);
   }
 
   /**
@@ -838,13 +926,30 @@ export class DashboardPage implements OnInit {
    */
   onGerenciaEndDateChange(): void {
     this.gerenciaEndDate.set(this.gerenciaEndDateValue);
+    // Limpiar filtro de usuario y lista cuando cambian las fechas
+    this.gerenciaSelectedUserId = null;
+    this.allGerenciaUsers.set([]);
   }
 
   /**
    * Maneja el cambio de empresa seleccionada en el dashboard de gerencia
    */
   onGerenciaCompanyChange(): void {
+    // Limpiar filtro de usuario y lista de usuarios al cambiar empresa
+    this.gerenciaSelectedUserId = null;
+    this.allGerenciaUsers.set([]);
+
     // Recargar automáticamente cuando cambia la empresa
+    if (this.gerenciaStartDateValue && this.gerenciaEndDateValue) {
+      this.loadGerenciaDashboard();
+    }
+  }
+
+  /**
+   * Maneja el cambio de usuario seleccionado en el dashboard de gerencia
+   */
+  onGerenciaUserChange(): void {
+    // Recargar automáticamente cuando cambia el usuario
     if (this.gerenciaStartDateValue && this.gerenciaEndDateValue) {
       this.loadGerenciaDashboard();
     }
@@ -887,6 +992,10 @@ export class DashboardPage implements OnInit {
     this.gerenciaEndDateValue = endDate;
     this.gerenciaStartDate.set(startDate);
     this.gerenciaEndDate.set(endDate);
+
+    // Limpiar filtro de usuario y lista
+    this.gerenciaSelectedUserId = null;
+    this.allGerenciaUsers.set([]);
 
     // Cargar el dashboard automáticamente
     this.loadGerenciaDashboard();
@@ -1206,6 +1315,11 @@ export class DashboardPage implements OnInit {
         params.companyId = this.gerenciaSelectedCompanyId;
       }
 
+      // Agregar filtro de usuario si está seleccionado
+      if (this.gerenciaSelectedUserId) {
+        params.userId = this.gerenciaSelectedUserId;
+      }
+
       const blob = await this.dashboardGerenciaApiService.downloadPdf(params).toPromise();
 
       if (!blob) {
@@ -1223,7 +1337,10 @@ export class DashboardPage implements OnInit {
       const companyName = this.gerenciaSelectedCompanyId
         ? `_${this.gerenciaCompanies().find((c) => c._id === this.gerenciaSelectedCompanyId)?.name || 'empresa'}`
         : '';
-      link.download = `dashboard-gerencia_${startDateStr}_${endDateStr}${companyName}.pdf`;
+      const userName = this.gerenciaSelectedUserId
+        ? `_${this.gerenciaUsers().find((u) => u.userId === this.gerenciaSelectedUserId)?.userName || 'usuario'}`
+        : '';
+      link.download = `dashboard-gerencia_${startDateStr}_${endDateStr}${companyName}${userName}.pdf`;
 
       document.body.appendChild(link);
       link.click();
@@ -1248,6 +1365,232 @@ export class DashboardPage implements OnInit {
     } finally {
       this.loadingGerencia.set(false);
     }
+  }
+
+  /**
+   * Descarga Excel de marcaciones (gerencia) con filtros actuales:
+   * fecha + empresa + persona. Incluye entrada/salida y dirección.
+   */
+  async downloadGerenciaExcel(): Promise<void> {
+    const start = this.gerenciaStartDateValue;
+    const end = this.gerenciaEndDateValue;
+
+    if (!start || !end) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Fechas requeridas',
+        detail: 'Por favor seleccione un rango de fechas',
+      });
+      return;
+    }
+
+    if (start > end) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error de fechas',
+        detail: 'La fecha de inicio no puede ser mayor que la fecha de fin',
+      });
+      return;
+    }
+
+    this.exportingGerenciaExcel.set(true);
+    try {
+      // Asegurar que tengamos data cargada (y filtrada) antes de exportar
+      if (!this.gerenciaDashboardData()) {
+        await this.loadGerenciaDashboard();
+      }
+
+      const marcaciones = this.dailyTimeTrackings();
+
+      // Resolver direcciones para las ubicaciones que falten (sin delays largos)
+      await this.resolveGerenciaAddressesForExcel(marcaciones);
+
+      interface DayRow {
+        userId: string;
+        userName: string;
+        userEmail: string;
+        fechaIso: string;
+        entradaHora?: string;
+        entradaDireccion?: string;
+        salidaHora?: string;
+        salidaDireccion?: string;
+        horasTrabajadas?: string;
+      }
+
+      const getAddress = (loc?: { latitude: number; longitude: number }): string => {
+        if (!loc) return '';
+        let address = this.formatGerenciaLocation(loc);
+        if (!address || address === 'Buscando dirección...') {
+          address = `${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`;
+        }
+        return address;
+      };
+
+      const normalizeTipo = (m: MarcacionDiaria): 'INGRESO' | 'SALIDA' | 'OTRO' => {
+        const raw = ((m as any).tipo || (m as any).type || '').toString().toUpperCase();
+        if (raw === 'INGRESO' || raw === 'ENTRADA') return 'INGRESO';
+        if (raw === 'SALIDA' || raw === 'EXIT') return 'SALIDA';
+        return 'OTRO';
+      };
+
+      // Agrupar por persona + día y poner entrada/salida en la misma fila
+      const grouped = new Map<string, DayRow>();
+
+      marcaciones.forEach((m) => {
+        const key = `${m.userId}__${m.fecha}`;
+        if (!grouped.has(key)) {
+          grouped.set(key, {
+            userId: m.userId,
+            userName: m.userName || '',
+            userEmail: m.userEmail || '',
+            fechaIso: m.fecha,
+          });
+        }
+
+        const row = grouped.get(key)!;
+        const tipo = normalizeTipo(m);
+        const hora = (m.hora || '').toString();
+
+        if (tipo === 'INGRESO') {
+          // Si hay múltiples ingresos en el día, conservar el más temprano
+          if (!row.entradaHora || hora < row.entradaHora) {
+            row.entradaHora = hora;
+            row.entradaDireccion = getAddress(m.location);
+          }
+        } else if (tipo === 'SALIDA') {
+          // Si hay múltiples salidas en el día, conservar la más tardía
+          if (!row.salidaHora || hora > row.salidaHora) {
+            row.salidaHora = hora;
+            row.salidaDireccion = getAddress(m.location);
+          }
+        }
+      });
+
+      const dayRows = Array.from(grouped.values())
+        .sort(
+          (a, b) => a.userName.localeCompare(b.userName) || b.fechaIso.localeCompare(a.fechaIso),
+        )
+        .map((r) => {
+          // Calcular horas trabajadas si hay entrada y salida
+          if (r.entradaHora && r.salidaHora) {
+            const entry = {
+              time: r.entradaHora.substring(0, 5),
+              date: `${r.fechaIso}T${r.entradaHora}`,
+            };
+            const exit = {
+              time: r.salidaHora.substring(0, 5),
+              date: `${r.fechaIso}T${r.salidaHora}`,
+            };
+            const hours = this.calculateWorkedHours(entry as any, exit as any);
+            r.horasTrabajadas = this.formatWorkedHours(hours);
+          } else {
+            r.horasTrabajadas = '-';
+          }
+
+          return {
+            Usuario: r.userName,
+            Email: r.userEmail,
+            Fecha: this.formatGerenciaDate(r.fechaIso),
+            'Entrada (hora)': r.entradaHora || '-',
+            'Entrada (dirección)': r.entradaDireccion || '-',
+            'Salida (hora)': r.salidaHora || '-',
+            'Salida (dirección)': r.salidaDireccion || '-',
+            'Horas trabajadas': r.horasTrabajadas || '-',
+          };
+        });
+
+      const ws = XLSX.utils.json_to_sheet(dayRows);
+      // Mejoras de presentación
+      ws['!freeze'] = { xSplit: 0, ySplit: 1 }; // congelar encabezado
+      ws['!autofilter'] = { ref: ws['!ref'] as string }; // filtros en encabezado
+      ws['!cols'] = [
+        { wch: 24 }, // Usuario
+        { wch: 28 }, // Email
+        { wch: 12 }, // Fecha
+        { wch: 14 }, // Entrada hora
+        { wch: 42 }, // Entrada dirección
+        { wch: 14 }, // Salida hora
+        { wch: 42 }, // Salida dirección
+        { wch: 16 }, // Horas trabajadas
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Marcaciones');
+
+      const startDateStr = start.toISOString().split('T')[0];
+      const endDateStr = end.toISOString().split('T')[0];
+      const companyName = this.gerenciaSelectedCompanyId
+        ? `_${this.gerenciaCompanies().find((c) => c._id === this.gerenciaSelectedCompanyId)?.name || 'empresa'}`
+        : '';
+      const userName = this.gerenciaSelectedUserId
+        ? `_${this.gerenciaUsers().find((u) => u.userId === this.gerenciaSelectedUserId)?.userName || 'usuario'}`
+        : '';
+
+      XLSX.writeFile(wb, `marcaciones_${startDateStr}_${endDateStr}${companyName}${userName}.xlsx`);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Excel descargado',
+        detail: 'El Excel de marcaciones se ha descargado exitosamente',
+      });
+    } catch (err) {
+      console.error('Error al descargar Excel de gerencia:', err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Error al descargar el Excel',
+      });
+    } finally {
+      this.exportingGerenciaExcel.set(false);
+    }
+  }
+
+  private async resolveGerenciaAddressesForExcel(marcaciones: MarcacionDiaria[]): Promise<void> {
+    const unique = new Map<string, { latitude: number; longitude: number }>();
+    const addresses = this.gerenciaLocationAddresses();
+
+    marcaciones.forEach((m) => {
+      if (!m.location) return;
+      const key = this.buildGerenciaLocationKey(m.location);
+      if (!addresses[key] && !unique.has(key)) {
+        unique.set(key, m.location);
+      }
+    });
+
+    const locations = Array.from(unique.values());
+    if (locations.length === 0) return;
+
+    // Concurrencia simple para evitar saturar el geocoder
+    const CONCURRENCY = 5;
+    let idx = 0;
+
+    const worker = async (): Promise<void> => {
+      while (idx < locations.length) {
+        const current = locations[idx++];
+        const key = this.buildGerenciaLocationKey(current);
+        if (this.gerenciaLocationAddresses()[key]) continue;
+
+        try {
+          const address = await this.geocodingService.getAddress(
+            current.latitude,
+            current.longitude,
+          );
+          this.gerenciaLocationAddresses.update((state) => ({
+            ...state,
+            [key]: address,
+          }));
+        } catch {
+          const fallback = `${current.latitude.toFixed(4)}, ${current.longitude.toFixed(4)}`;
+          this.gerenciaLocationAddresses.update((state) => ({
+            ...state,
+            [key]: fallback,
+          }));
+        }
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, locations.length) }, () => worker()),
+    );
   }
 
   /**
@@ -1311,11 +1654,11 @@ export class DashboardPage implements OnInit {
     const audios = this.getReportAudios(report);
     const documents = this.getReportDocuments(report);
 
-    const allFiles: Array<{
+    const allFiles: {
       url: string;
       type: 'photos' | 'videos' | 'audios' | 'documents';
       label: string;
-    }> = [];
+    }[] = [];
 
     photos.forEach((url) => {
       allFiles.push({ url, type: 'photos', label: 'Foto' });
@@ -1410,7 +1753,7 @@ export class DashboardPage implements OnInit {
    */
   protected getFilesByType(
     type: 'photos' | 'videos' | 'audios' | 'documents',
-  ): Array<{ url: string; type: 'photos' | 'videos' | 'audios' | 'documents'; label: string }> {
+  ): { url: string; type: 'photos' | 'videos' | 'audios' | 'documents'; label: string }[] {
     const files = this.selectedReportFiles()?.files;
     if (!files) return [];
     return files.filter((f) => f.type === type);
