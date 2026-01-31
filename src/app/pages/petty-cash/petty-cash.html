@@ -1,0 +1,338 @@
+<div class="petty-cash-page">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <header class="page-header">
+    <h1 class="page-title">Registro de Caja Chica</h1>
+  </header>
+
+  <!-- Vista Administrador -->
+  <section class="section section-admin">
+    <h2 class="section-title">
+      <i class="pi pi-user-edit" aria-hidden="true"></i>
+      Vista Administrador
+    </h2>
+
+    <!-- Dashboard: Saldo + Acciones -->
+    <div class="dashboard-row">
+      <div class="card balance-card">
+        <div class="balance-content">
+          <i class="pi pi-wallet balance-icon" aria-hidden="true"></i>
+          <div class="balance-info">
+            <span class="balance-label">Saldo disponible</span>
+            @if (loadingBalance()) {
+              <span class="balance-value balance-loading">...</span>
+            } @else {
+              <span class="balance-value">S/ {{ balance()?.balance?.toFixed(2) ?? '0.00' }}</span>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="actions-row">
+        <button
+          pButton
+          type="button"
+          class="action-btn action-expense"
+          (click)="openExpenseDialog()"
+          aria-label="Registrar gasto"
+        >
+          <i class="pi pi-arrow-down-right" aria-hidden="true"></i>
+          <span>Registrar Gasto</span>
+        </button>
+        <button
+          pButton
+          type="button"
+          class="action-btn action-recharge"
+          (click)="openRechargeDialog()"
+          aria-label="Recargar caja"
+        >
+          <i class="pi pi-plus-circle" aria-hidden="true"></i>
+          <span>Recargar Caja</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Últimos movimientos (resumen) -->
+    <div class="card movements-preview-card">
+      <h3 class="card-title">
+        <i class="pi pi-list" aria-hidden="true"></i>
+        Últimos movimientos
+      </h3>
+      @if (loadingMovements()) {
+        <div class="loading-block">
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        </div>
+      } @else if (movements().length === 0) {
+        <p class="empty-message">No hay movimientos</p>
+      } @else {
+        <ul class="movements-preview-list">
+          @for (m of movements(); track m._id) {
+            <li class="movement-preview-item">
+              <span
+                class="movement-icon"
+                [class.ingreso]="m.type === 'ingreso'"
+                [class.egreso]="m.type === 'egreso'"
+              >
+                <i
+                  [class]="m.type === 'ingreso' ? 'pi pi-arrow-up-right' : 'pi pi-arrow-down-right'"
+                  aria-hidden="true"
+                ></i>
+              </span>
+              <div class="movement-detail">
+                <span class="movement-desc">{{ m.description }}</span>
+                <span class="movement-meta"
+                  >{{ formatDate(m.createdAt) }}
+                  @if (m.category) {
+                    · <p-tag [value]="m.category" severity="secondary" styleClass="text-xs"></p-tag>
+                  }
+                </span>
+              </div>
+              <span
+                class="movement-amount"
+                [class.ingreso]="m.type === 'ingreso'"
+                [class.egreso]="m.type === 'egreso'"
+              >
+                {{ formatAmount(m.type, m.amount) }}
+              </span>
+              @if (m.status === 'active') {
+                <button
+                  pButton
+                  label="Anular"
+                  class="p-button-text p-button-sm p-button-danger"
+                  (click)="confirmVoid(m)"
+                  [pTooltip]="m.type === 'ingreso' ? 'Anular recarga' : 'Anular gasto'"
+                  tooltipPosition="top"
+                ></button>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </section>
+
+  <!-- Vista Contador: Auditoría de Caja (única vez) — izquierda Gastos + Filtros, derecha Detalle de Movimientos -->
+  <section class="section section-contador">
+    <h2 class="section-title">
+      <i class="pi pi-chart-bar" aria-hidden="true"></i>
+      Vista Contador
+    </h2>
+    <div class="contador-header">
+      <div>
+        <h3 class="contador-audit-title">
+          <i class="pi pi-file-edit" aria-hidden="true"></i>
+          Auditoría de Caja
+        </h3>
+        <p class="section-desc">Revisión de movimientos y comprobantes</p>
+      </div>
+      <button
+        pButton
+        label="Exportar reporte"
+        icon="pi pi-download"
+        severity="success"
+        (click)="exportReport()"
+        aria-label="Exportar reporte"
+        class="btn-export"
+      ></button>
+    </div>
+    <div class="contador-grid">
+      <!-- Columna izquierda: Gastos por categoría + Filtros -->
+      <div class="contador-left">
+        <div class="card stats-card">
+          <h3 class="card-title">
+            <i class="pi pi-chart-bar" aria-hidden="true"></i>
+            Gastos por categoría
+          </h3>
+          @if (loadingStats()) {
+            <div class="loading-block">
+              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+            </div>
+          } @else if (categoryStats().length === 0) {
+            <p class="empty-message">Sin datos en el rango seleccionado</p>
+          } @else {
+            <ul class="stats-list">
+              @for (stat of categoryStats(); track stat.category) {
+                <li class="stats-item">
+                  <span
+                    class="stats-dot"
+                    [class]="'stats-dot-' + getStatDotClass(stat.category)"
+                  ></span>
+                  <span class="stats-category">{{ stat.category }}</span>
+                  <span class="stats-total">S/ {{ stat.total.toFixed(2) }}</span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+        <div class="card filters-card">
+          <h3 class="card-title">
+            <i class="pi pi-filter" aria-hidden="true"></i>
+            Filtros
+          </h3>
+          <div class="contador-filters">
+            <input
+              pInputText
+              [ngModel]="filterQ()"
+              (ngModelChange)="filterQ.set($event); onFilterQChange()"
+              placeholder="Proveedor, concepto..."
+              class="w-full mb-2"
+            />
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 mt-2"
+              >Categoría</label
+            >
+            <p-select
+              [ngModel]="filterCategory()"
+              (ngModelChange)="filterCategory.set($event); applyFilters()"
+              [options]="categoryFilterOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Todas las categorías"
+              [showClear]="true"
+              class="w-full mb-2"
+              styleClass="w-full"
+              appendTo="body"
+              inputId="filterCategory"
+            />
+            <div class="filters-dates contador-dates">
+              <p-datepicker
+                [ngModel]="filterDateFromDate()"
+                (ngModelChange)="onFilterDateFromChange($event)"
+                placeholder="Fecha desde"
+                [showIcon]="true"
+                dateFormat="dd/mm/yy"
+                [appendTo]="'body'"
+                styleClass="w-full"
+                class="w-full filter-date"
+              ></p-datepicker>
+              <p-datepicker
+                [ngModel]="filterDateToDate()"
+                (ngModelChange)="onFilterDateToChange($event)"
+                placeholder="Fecha hasta"
+                [showIcon]="true"
+                dateFormat="dd/mm/yy"
+                [appendTo]="'body'"
+                styleClass="w-full"
+                class="w-full filter-date"
+              ></p-datepicker>
+            </div>
+            <button
+              pButton
+              label="Limpiar filtros"
+              icon="pi pi-times"
+              class="p-button-text p-button-sm w-full mt-2"
+              (click)="clearFilters()"
+              aria-label="Limpiar filtros"
+            ></button>
+          </div>
+        </div>
+      </div>
+      <!-- Columna derecha: Detalle de Movimientos -->
+      <div class="card contador-table-card">
+        <div class="contador-table-header">
+          <h3 class="card-title">Detalle de Movimientos</h3>
+          <span class="contador-registros">{{ totalMovements() }} registros</span>
+        </div>
+        <div class="table-wrapper">
+          <p-table
+            [value]="movements()"
+            [loading]="loadingMovements()"
+            styleClass="p-datatable-sm p-datatable-striped"
+            [tableStyle]="{ 'min-width': '50rem' }"
+            [paginator]="true"
+            [first]="(movementsPage() - 1) * movementsLimit()"
+            [rows]="movementsLimit()"
+            [totalRecords]="totalMovements()"
+            (onPage)="onMovementsPageChange($event)"
+            [showCurrentPageReport]="true"
+            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+            [rowsPerPageOptions]="[10, 20, 50]"
+            responsiveLayout="scroll"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>FECHA</th>
+                <th>DESCRIPCIÓN</th>
+                <th>CATEGORÍA</th>
+                <th class="text-right">MONTO</th>
+                <th class="col-doc">ARCHIVO</th>
+                <th class="col-actions"></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-row>
+              <tr>
+                <td>{{ formatDate(row.createdAt) }}</td>
+                <td>
+                  <span class="font-medium">{{ row.description }}</span>
+                  <p class="text-muted text-xs">{{ createdByName(row) }}</p>
+                </td>
+                <td>
+                  @if (row.category) {
+                    <p-tag [value]="row.category" severity="secondary"></p-tag>
+                  } @else {
+                    —
+                  }
+                </td>
+                <td class="text-right">
+                  <span
+                    class="amount-cell"
+                    [class.ingreso]="row.type === 'ingreso'"
+                    [class.egreso]="row.type === 'egreso'"
+                  >
+                    {{ formatAmount(row.type, row.amount) }}
+                  </span>
+                </td>
+                <td class="col-doc-cell">
+                  @if (row.receiptAttachmentUrl) {
+                    <a
+                      [href]="row.receiptAttachmentUrl"
+                      target="_blank"
+                      rel="noopener"
+                      class="link-ver-archivo"
+                      aria-label="Ver archivo"
+                    >
+                      <i class="pi pi-file" aria-hidden="true"></i>
+                      <span>Ver archivo</span>
+                    </a>
+                  } @else {
+                    <span class="sin-archivo">—</span>
+                  }
+                </td>
+                <td class="col-actions-cell">
+                  @if (row.status === 'active') {
+                    <button
+                      pButton
+                      label="Anular"
+                      class="p-button-text p-button-sm p-button-danger"
+                      (click)="confirmVoid(row)"
+                      [pTooltip]="row.type === 'ingreso' ? 'Anular recarga' : 'Anular gasto'"
+                      tooltipPosition="top"
+                      aria-label="Anular movimiento"
+                    ></button>
+                  } @else {
+                    <span class="text-muted text-xs">Anulado</span>
+                  }
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="6" class="text-center empty-row">Sin registros</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <app-expense-dialog
+    [visible]="showExpenseDialog()"
+    (closeDialog)="closeExpenseDialog()"
+    (expenseSubmitted)="onExpenseSubmit($any($event))"
+  />
+  <app-recharge-dialog
+    [visible]="showRechargeDialog()"
+    (closeDialog)="closeRechargeDialog()"
+    (rechargeSubmitted)="onRechargeSubmit($any($event))"
+  />
+</div>

@@ -1,4 +1,14 @@
-import { Component, inject, OnInit, ChangeDetectionStrategy, signal, computed, effect, Injector, runInInjectionContext } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+  signal,
+  computed,
+  effect,
+  Injector,
+  runInInjectionContext,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
@@ -12,6 +22,8 @@ import { DashboardFiltersComponent } from '../../shared/components/dashboard-fil
 import { MenuService } from '../../shared/services/menu.service';
 import { AuthService } from '../login/services/auth.service';
 import { GeocodingService } from '../../shared/services/geocoding.service';
+import { CompaniesApiService } from '../../shared/services/companies-api.service';
+import { CompanyOption } from '../../shared/interfaces/company.interface';
 import { MessageService } from 'primeng/api';
 import { TableModule } from 'primeng/table';
 import { PanelModule } from 'primeng/panel';
@@ -22,6 +34,7 @@ import { ToastModule } from 'primeng/toast';
 import { CardModule } from 'primeng/card';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
+import { SelectModule } from 'primeng/select';
 import {
   DashboardFiltersParams,
   DashboardKpi,
@@ -59,6 +72,7 @@ type TrackingLocation = NonNullable<TimeTrackingDetail['location']>;
     CardModule,
     TooltipModule,
     DialogModule,
+    SelectModule,
     DashboardKpiCardComponent,
     DashboardChartComponent,
     DashboardTableComponent,
@@ -75,6 +89,7 @@ export class DashboardPage implements OnInit {
   private readonly menuService = inject(MenuService);
   private readonly authService = inject(AuthService);
   private readonly geocodingService = inject(GeocodingService);
+  private readonly companiesApiService = inject(CompaniesApiService);
   private readonly messageService = inject(MessageService);
   private readonly injector = inject(Injector);
 
@@ -96,27 +111,42 @@ export class DashboardPage implements OnInit {
   protected readonly gerenciaEndDate = signal<Date | null>(null);
   public gerenciaStartDateValue: Date | null = null;
   public gerenciaEndDateValue: Date | null = null;
+  public gerenciaSelectedCompanyId: string | null = null;
   private readonly expandedUsers = signal<Set<string>>(new Set());
   private readonly expandedReportUsers = signal<Set<string>>(new Set());
-  
+
+  // Signals para empresas (gerencia)
+  protected readonly gerenciaCompanies = signal<CompanyOption[]>([]);
+  protected readonly loadingGerenciaCompanies = signal<boolean>(false);
+
   // Signals para el diálogo de archivos
   protected readonly filesDialogVisible = signal(false);
   protected readonly selectedReportFiles = signal<{
     urls: string[];
     type: 'photos' | 'videos' | 'audios' | 'documents' | 'all';
     title: string;
-    files?: Array<{ url: string; type: 'photos' | 'videos' | 'audios' | 'documents'; label: string }>;
+    files?: Array<{
+      url: string;
+      type: 'photos' | 'videos' | 'audios' | 'documents';
+      label: string;
+    }>;
   } | null>(null);
   private readonly gerenciaLocationAddresses = signal<Record<string, string>>({});
   private readonly gerenciaLocationLoading = signal<Record<string, boolean>>({});
 
   // Computed para datos derivados de gerencia
   protected readonly dailyTimeTrackings = computed(
-    () => this.gerenciaDashboardData()?.marcacionesDiarias ?? []
+    () => this.gerenciaDashboardData()?.marcacionesDiarias ?? [],
   );
-  protected readonly dailyReportsGerencia = computed(() => this.gerenciaDashboardData()?.reportesDiarios ?? []);
-  protected readonly invoices = computed(() => this.gerenciaDashboardData()?.facturasIngresadas ?? []);
-  protected readonly ticketsByStatus = computed(() => this.gerenciaDashboardData()?.ticketsPorEstado ?? []);
+  protected readonly dailyReportsGerencia = computed(
+    () => this.gerenciaDashboardData()?.reportesDiarios ?? [],
+  );
+  protected readonly invoices = computed(
+    () => this.gerenciaDashboardData()?.facturasIngresadas ?? [],
+  );
+  protected readonly ticketsByStatus = computed(
+    () => this.gerenciaDashboardData()?.ticketsPorEstado ?? [],
+  );
   protected readonly tickets = computed(() => this.gerenciaDashboardData()?.tickets ?? []);
   protected readonly sales = computed(() => this.gerenciaDashboardData()?.ventas ?? []);
 
@@ -196,6 +226,9 @@ export class DashboardPage implements OnInit {
       this.gerenciaStartDate.set(startDate);
       this.gerenciaEndDate.set(endDate);
 
+      // Cargar empresas disponibles
+      this.loadGerenciaCompanies();
+
       // Effect para resolver ubicaciones automáticamente cuando cambian los datos
       runInInjectionContext(this.injector, () => {
         effect(() => {
@@ -208,6 +241,26 @@ export class DashboardPage implements OnInit {
 
       // Cargar datos iniciales de gerencia
       this.loadGerenciaDashboard();
+    }
+  }
+
+  /**
+   * Carga las empresas disponibles para el filtro de gerencia
+   */
+  async loadGerenciaCompanies(): Promise<void> {
+    this.loadingGerenciaCompanies.set(true);
+    try {
+      const companies = await this.companiesApiService.listActiveAsOptions().toPromise();
+      this.gerenciaCompanies.set(companies ?? []);
+    } catch (err: unknown) {
+      console.error('Error al cargar empresas:', err);
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No se pudieron cargar las empresas',
+      });
+    } finally {
+      this.loadingGerenciaCompanies.set(false);
     }
   }
 
@@ -614,7 +667,7 @@ export class DashboardPage implements OnInit {
     dayGrouped.forEach((dayData) => {
       dayData.totalReports = dayData.reports.reduce(
         (sum, report) => sum + (report.cantidadReportes || 1),
-        0
+        0,
       );
     });
 
@@ -745,10 +798,15 @@ export class DashboardPage implements OnInit {
     this.gerenciaError.set(null);
 
     try {
-      const params = {
+      const params: any = {
         startDate: start.toISOString(),
         endDate: end.toISOString(),
       };
+
+      // Agregar filtro de empresa si está seleccionado
+      if (this.gerenciaSelectedCompanyId) {
+        params.companyId = this.gerenciaSelectedCompanyId;
+      }
 
       const data = await this.dashboardGerenciaApiService.getDashboardData(params).toPromise();
       this.gerenciaDashboardData.set(data ?? null);
@@ -780,6 +838,16 @@ export class DashboardPage implements OnInit {
    */
   onGerenciaEndDateChange(): void {
     this.gerenciaEndDate.set(this.gerenciaEndDateValue);
+  }
+
+  /**
+   * Maneja el cambio de empresa seleccionada en el dashboard de gerencia
+   */
+  onGerenciaCompanyChange(): void {
+    // Recargar automáticamente cuando cambia la empresa
+    if (this.gerenciaStartDateValue && this.gerenciaEndDateValue) {
+      this.loadGerenciaDashboard();
+    }
   }
 
   /**
@@ -829,7 +897,7 @@ export class DashboardPage implements OnInit {
    */
   calculateWorkedHours(
     entry?: { time: string; date: string },
-    exit?: { time: string; date: string }
+    exit?: { time: string; date: string },
   ): number {
     if (!entry || !exit) return 0;
 
@@ -1128,10 +1196,15 @@ export class DashboardPage implements OnInit {
     this.loadingGerencia.set(true);
 
     try {
-      const params = {
+      const params: any = {
         startDate: start.toISOString(),
         endDate: end.toISOString(),
       };
+
+      // Agregar filtro de empresa si está seleccionado
+      if (this.gerenciaSelectedCompanyId) {
+        params.companyId = this.gerenciaSelectedCompanyId;
+      }
 
       const blob = await this.dashboardGerenciaApiService.downloadPdf(params).toPromise();
 
@@ -1147,7 +1220,10 @@ export class DashboardPage implements OnInit {
       // Generar nombre del archivo
       const startDateStr = start.toISOString().split('T')[0];
       const endDateStr = end.toISOString().split('T')[0];
-      link.download = `dashboard-gerencia_${startDateStr}_${endDateStr}.pdf`;
+      const companyName = this.gerenciaSelectedCompanyId
+        ? `_${this.gerenciaCompanies().find((c) => c._id === this.gerenciaSelectedCompanyId)?.name || 'empresa'}`
+        : '';
+      link.download = `dashboard-gerencia_${startDateStr}_${endDateStr}${companyName}.pdf`;
 
       document.body.appendChild(link);
       link.click();
@@ -1218,10 +1294,12 @@ export class DashboardPage implements OnInit {
    * Obtiene el total de archivos de un reporte
    */
   getReportFilesCount(report: ReporteDiario): number {
-    return this.getReportPhotos(report).length +
-           this.getReportVideos(report).length +
-           this.getReportAudios(report).length +
-           this.getReportDocuments(report).length;
+    return (
+      this.getReportPhotos(report).length +
+      this.getReportVideos(report).length +
+      this.getReportAudios(report).length +
+      this.getReportDocuments(report).length
+    );
   }
 
   /**
@@ -1233,24 +1311,28 @@ export class DashboardPage implements OnInit {
     const audios = this.getReportAudios(report);
     const documents = this.getReportDocuments(report);
 
-    const allFiles: Array<{ url: string; type: 'photos' | 'videos' | 'audios' | 'documents'; label: string }> = [];
+    const allFiles: Array<{
+      url: string;
+      type: 'photos' | 'videos' | 'audios' | 'documents';
+      label: string;
+    }> = [];
 
-    photos.forEach(url => {
+    photos.forEach((url) => {
       allFiles.push({ url, type: 'photos', label: 'Foto' });
     });
-    videos.forEach(url => {
+    videos.forEach((url) => {
       allFiles.push({ url, type: 'videos', label: 'Video' });
     });
-    audios.forEach(url => {
+    audios.forEach((url) => {
       allFiles.push({ url, type: 'audios', label: 'Audio' });
     });
-    documents.forEach(url => {
+    documents.forEach((url) => {
       allFiles.push({ url, type: 'documents', label: 'Documento' });
     });
 
     if (allFiles.length > 0) {
       this.selectedReportFiles.set({
-        urls: allFiles.map(f => f.url),
+        urls: allFiles.map((f) => f.url),
         type: 'all',
         title: `Archivos del Reporte - ${report.userName} (${allFiles.length} archivos)`,
         files: allFiles,
@@ -1326,10 +1408,12 @@ export class DashboardPage implements OnInit {
   /**
    * Obtiene los archivos filtrados por tipo
    */
-  protected getFilesByType(type: 'photos' | 'videos' | 'audios' | 'documents'): Array<{ url: string; type: 'photos' | 'videos' | 'audios' | 'documents'; label: string }> {
+  protected getFilesByType(
+    type: 'photos' | 'videos' | 'audios' | 'documents',
+  ): Array<{ url: string; type: 'photos' | 'videos' | 'audios' | 'documents'; label: string }> {
     const files = this.selectedReportFiles()?.files;
     if (!files) return [];
-    return files.filter(f => f.type === type);
+    return files.filter((f) => f.type === type);
   }
 
   /**
