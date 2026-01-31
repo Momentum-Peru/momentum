@@ -94,7 +94,7 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
     // Buscar el permiso específico para /payroll-calculation
     const userPermissions = this.menuService.getUserPermissions();
     const payrollPermission = userPermissions.find(
-      (p) => p.route === '/payroll-calculation' && p.isActive
+      (p) => p.route === '/payroll-calculation' && p.isActive,
     );
 
     // Solo permitir edición si el permiso es explícitamente 'edit'
@@ -320,8 +320,8 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
             return new Date(year, month - 1, day);
           })()
         : typeof date === 'string'
-        ? new Date(date)
-        : date;
+          ? new Date(date)
+          : date;
     return d.toLocaleDateString('es-PE', { weekday: 'long' });
   }
 
@@ -508,12 +508,14 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
       Entrada: day.ingreso ? this.formatTime(day.ingreso.date) : '-',
       Salida: day.salida ? this.formatTime(day.salida.date) : '-',
       'Horas Trabajadas': this.formatWorkedHours(
-        this.calculateWorkedHours(day.ingreso, day.salida)
+        this.calculateWorkedHours(day.ingreso, day.salida),
       ),
       Estado: this.getAttendanceStatus(day),
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(reportData);
+    const worksheet = (
+      XLSX.utils as { json_to_sheet: (data: unknown[]) => XLSX.WorkSheet }
+    ).json_to_sheet(reportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Asistencias');
 

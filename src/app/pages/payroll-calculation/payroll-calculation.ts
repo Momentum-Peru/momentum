@@ -122,11 +122,11 @@ export class PayrollCalculationPage implements OnInit {
       next: (response: UserResponse & { total?: number; totalPages?: number; page?: number }) => {
         // La respuesta puede tener 'users' o 'data'
         const usersList = response.users || response.data || [];
-        
+
         // Verificar si hay más páginas y cargarlas si es necesario
         const total = response.total;
         const totalPages = response.totalPages;
-        
+
         if (totalPages && totalPages > 1 && typeof total === 'number' && usersList.length < total) {
           // Cargar todas las páginas restantes usando forkJoin
           this.loadAllPagesUsers(totalPages, usersList);
@@ -152,23 +152,25 @@ export class PayrollCalculationPage implements OnInit {
    */
   private loadAllPagesUsers(totalPages: number, initialUsers: User[]): void {
     const requests = [];
-    
+
     // Crear requests para todas las páginas restantes
     for (let page = 2; page <= totalPages; page++) {
       requests.push(this.usersApi.listWithFilters({ isActive: true, page, limit: 1000 }));
     }
-    
+
     // Ejecutar todas las peticiones en paralelo
     forkJoin(requests).subscribe({
-      next: (responses: (UserResponse & { total?: number; totalPages?: number; page?: number })[]) => {
+      next: (
+        responses: (UserResponse & { total?: number; totalPages?: number; page?: number })[],
+      ) => {
         let allUsers = [...initialUsers];
-        
+
         // Combinar todos los usuarios de todas las páginas
         responses.forEach((response) => {
           const pageUsers = response.users || response.data || [];
           allUsers = allUsers.concat(pageUsers);
         });
-        
+
         this.users.set(allUsers);
         this.loadUsersTimeTrackings(allUsers);
       },
@@ -211,7 +213,7 @@ export class PayrollCalculationPage implements OnInit {
         next: (trackings) => {
           // Filtrar registros legacy
           const validTrackings = trackings.filter(
-            (t) => t.type === 'INGRESO' || t.type === 'SALIDA'
+            (t) => t.type === 'INGRESO' || t.type === 'SALIDA',
           );
           trackingsMap.set(userId, validTrackings);
           loadedCount++;
@@ -357,7 +359,7 @@ export class PayrollCalculationPage implements OnInit {
     const query = this.searchQuery().toLowerCase();
     if (query) {
       return summaries.filter(
-        (s) => s.name.toLowerCase().includes(query) || s.email.toLowerCase().includes(query)
+        (s) => s.name.toLowerCase().includes(query) || s.email.toLowerCase().includes(query),
       );
     }
 
@@ -441,7 +443,9 @@ export class PayrollCalculationPage implements OnInit {
       'Horas Trabajadas': this.formatWorkedHours(item.totalHorasTrabajadas),
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(reportData);
+    const worksheet = (
+      XLSX.utils as { json_to_sheet: (data: unknown[]) => XLSX.WorkSheet }
+    ).json_to_sheet(reportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Resumen Asistencias');
 

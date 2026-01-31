@@ -77,68 +77,72 @@ interface ExcelEmployeeData {
           </div>
 
           <div class="payroll-upload-filewrap min-w-0">
-          <p-fileUpload
-            mode="advanced"
-            chooseLabel="Seleccionar Archivo"
-            uploadLabel="Procesar"
-            cancelLabel="Cancelar"
-            [customUpload]="true"
-            (uploadHandler)="onUpload($event)"
-            accept=".xlsx,.xls,.pdf"
-            [maxFileSize]="10000000"
-            styleClass="w-full"
-            [disabled]="analyzingPdf()"
-          >
-            <ng-template pTemplate="content" let-files>
-              @if (analyzingPdf()) {
-              <div class="flex flex-col items-center justify-center p-8 text-center">
-                <p-progressSpinner styleClass="w-16 h-16 mb-4" strokeWidth="4"></p-progressSpinner>
-                <p class="text-gray-600 font-medium">Analizando PDF con IA...</p>
-                <p class="text-xs text-gray-400 mt-2">Esto puede tomar unos segundos</p>
-              </div>
-              } @else if (files.length > 0) {
-              <div class="p-4">
-                @for (file of files; track file.name) {
-                <div
-                  class="flex items-center justify-between p-3 border rounded-lg bg-gray-50 mb-2"
-                >
-                  <div class="flex items-center gap-3">
-                    <i
-                      [class]="
-                        file.name.toLowerCase().endsWith('.pdf')
-                          ? 'pi pi-file-pdf text-red-600 text-xl'
-                          : 'pi pi-file-excel text-green-600 text-xl'
-                      "
-                    ></i>
-                    <div class="flex flex-col">
-                      <span class="font-medium text-gray-800">{{ file.name }}</span>
-                      <span class="text-xs text-gray-500"
-                        >{{ file.size / 1024 | number : '1.0-2' }} KB</span
-                      >
-                    </div>
+            <p-fileUpload
+              mode="advanced"
+              chooseLabel="Seleccionar Archivo"
+              uploadLabel="Procesar"
+              cancelLabel="Cancelar"
+              [customUpload]="true"
+              (uploadHandler)="onUpload($event)"
+              accept=".xlsx,.xls,.pdf"
+              [maxFileSize]="10000000"
+              styleClass="w-full"
+              [disabled]="analyzingPdf()"
+            >
+              <ng-template pTemplate="content" let-files>
+                @if (analyzingPdf()) {
+                  <div class="flex flex-col items-center justify-center p-8 text-center">
+                    <p-progressSpinner
+                      styleClass="w-16 h-16 mb-4"
+                      strokeWidth="4"
+                    ></p-progressSpinner>
+                    <p class="text-gray-600 font-medium">Analizando PDF con IA...</p>
+                    <p class="text-xs text-gray-400 mt-2">Esto puede tomar unos segundos</p>
                   </div>
-                </div>
+                } @else if (files.length > 0) {
+                  <div class="p-4">
+                    @for (file of files; track file.name) {
+                      <div
+                        class="flex items-center justify-between p-3 border rounded-lg bg-gray-50 mb-2"
+                      >
+                        <div class="flex items-center gap-3">
+                          <i
+                            [class]="
+                              file.name.toLowerCase().endsWith('.pdf')
+                                ? 'pi pi-file-pdf text-red-600 text-xl'
+                                : 'pi pi-file-excel text-green-600 text-xl'
+                            "
+                          ></i>
+                          <div class="flex flex-col">
+                            <span class="font-medium text-gray-800">{{ file.name }}</span>
+                            <span class="text-xs text-gray-500"
+                              >{{ file.size / 1024 | number: '1.0-2' }} KB</span
+                            >
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div
+                    class="flex flex-col items-center justify-center p-8 text-center cursor-pointer"
+                    (click)="fileInput.click()"
+                    (keydown.enter)="fileInput.click()"
+                    (keydown.space)="$event.preventDefault(); fileInput.click()"
+                    tabindex="0"
+                    role="button"
+                    aria-label="Seleccionar archivo Excel o PDF"
+                  >
+                    <i class="pi pi-cloud-upload text-4xl text-gray-400 mb-2"></i>
+                    <p class="text-sm text-gray-500">
+                      Arrastra y suelta el archivo Excel o PDF aquí o haz clic en "Seleccionar
+                      Archivo"
+                    </p>
+                    <input #fileInput type="file" class="hidden" accept=".xlsx,.xls,.pdf" />
+                  </div>
                 }
-              </div>
-              } @else {
-              <div
-                class="flex flex-col items-center justify-center p-8 text-center cursor-pointer"
-                (click)="fileInput.click()"
-                (keydown.enter)="fileInput.click()"
-                (keydown.space)="$event.preventDefault(); fileInput.click()"
-                tabindex="0"
-                role="button"
-                aria-label="Seleccionar archivo Excel o PDF"
-              >
-                <i class="pi pi-cloud-upload text-4xl text-gray-400 mb-2"></i>
-                <p class="text-sm text-gray-500">
-                  Arrastra y suelta el archivo Excel o PDF aquí o haz clic en "Seleccionar Archivo"
-                </p>
-                <input #fileInput type="file" class="hidden" accept=".xlsx,.xls,.pdf" />
-              </div>
-              }
-            </ng-template>
-          </p-fileUpload>
+              </ng-template>
+            </p-fileUpload>
           </div>
         </div>
       </div>
@@ -234,74 +238,75 @@ interface ExcelEmployeeData {
 
       <div class="space-y-4">
         @if (pdfAnalysisResult(); as result) {
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-gray-50 p-3 rounded-lg border">
-            <span class="text-xs text-gray-500 block">Periodo Detectado</span>
-            <span class="font-bold text-gray-600">{{
-              result.summary.period || 'No detectado'
-            }}</span>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-gray-50 p-3 rounded-lg border">
+              <span class="text-xs text-gray-500 block">Periodo Detectado</span>
+              <span class="font-bold text-gray-600">{{
+                result.summary.period || 'No detectado'
+              }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg border">
+              <span class="text-xs text-gray-500 block">Total Empleados</span>
+              <span class="font-bold text-gray-600">{{ result.summary.totalEmployees }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg border">
+              <span class="text-xs text-gray-500 block">Monto Total a Pagar</span>
+              <span class="font-bold text-green-600">{{
+                result.summary.totalAmount | currency: 'PEN' : 'S/ '
+              }}</span>
+            </div>
           </div>
-          <div class="bg-gray-50 p-3 rounded-lg border">
-            <span class="text-xs text-gray-500 block">Total Empleados</span>
-            <span class="font-bold text-gray-600">{{ result.summary.totalEmployees }}</span>
-          </div>
-          <div class="bg-gray-50 p-3 rounded-lg border">
-            <span class="text-xs text-gray-500 block">Monto Total a Pagar</span>
-            <span class="font-bold text-green-600">{{
-              result.summary.totalAmount | currency : 'PEN' : 'S/ '
-            }}</span>
-          </div>
-        </div>
 
-        @if (result.missingEmployees.length > 0) {
-        <div class="bg-red-50 p-4 rounded-lg border border-red-200">
-          <p class="text-sm text-red-800 font-medium">
-            <i class="pi pi-times-circle mr-2"></i>
-            Se detectaron <strong>{{ result.missingEmployees.length }}</strong> empleados nuevos.
-          </p>
-          <p class="text-xs text-red-600 mt-1">
-            Por favor, registre a estos empleados en el sistema antes de continuar.
-          </p>
-        </div>
-        }
+          @if (result.missingEmployees.length > 0) {
+            <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+              <p class="text-sm text-red-800 font-medium">
+                <i class="pi pi-times-circle mr-2"></i>
+                Se detectaron <strong>{{ result.missingEmployees.length }}</strong> empleados
+                nuevos.
+              </p>
+              <p class="text-xs text-red-600 mt-1">
+                Por favor, registre a estos empleados en el sistema antes de continuar.
+              </p>
+            </div>
+          }
 
-        <div class="border rounded-lg overflow-hidden">
-          <p-table
-            [value]="result.details"
-            styleClass="p-datatable-sm p-datatable-striped"
-            [scrollable]="true"
-            scrollHeight="400px"
-          >
-            <ng-template pTemplate="header">
-              <tr>
-                <th>DNI</th>
-                <th>Empleado</th>
-                <th>Cargo</th>
-                <th class="text-right">Sueldo Base</th>
-                <th class="text-right">Ingreso Bruto</th>
-                <th class="text-right font-bold">Neto a Pagar</th>
-                <th>Estado</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-detail>
-              <tr>
-                <td>{{ detail.dni }}</td>
-                <td>{{ detail.firstName }} {{ detail.lastName }}</td>
-                <td>{{ detail.cargo }}</td>
-                <td class="text-right">{{ detail.basicSalary | number : '1.2-2' }}</td>
-                <td class="text-right">{{ detail.totalIncome | number : '1.2-2' }}</td>
-                <td class="text-right font-bold">{{ detail.totalToPay | number : '1.2-2' }}</td>
-                <td>
-                  @if (detail.isNew) {
-                  <p-tag severity="warn" value="Nuevo" [rounded]="true"></p-tag>
-                  } @else {
-                  <p-tag severity="success" value="Registrado" [rounded]="true"></p-tag>
-                  }
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
-        </div>
+          <div class="border rounded-lg overflow-hidden">
+            <p-table
+              [value]="result.details"
+              styleClass="p-datatable-sm p-datatable-striped"
+              [scrollable]="true"
+              scrollHeight="400px"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>DNI</th>
+                  <th>Empleado</th>
+                  <th>Cargo</th>
+                  <th class="text-right">Sueldo Base</th>
+                  <th class="text-right">Ingreso Bruto</th>
+                  <th class="text-right font-bold">Neto a Pagar</th>
+                  <th>Estado</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-detail>
+                <tr>
+                  <td>{{ detail.dni }}</td>
+                  <td>{{ detail.firstName }} {{ detail.lastName }}</td>
+                  <td>{{ detail.cargo }}</td>
+                  <td class="text-right">{{ detail.basicSalary | number: '1.2-2' }}</td>
+                  <td class="text-right">{{ detail.totalIncome | number: '1.2-2' }}</td>
+                  <td class="text-right font-bold">{{ detail.totalToPay | number: '1.2-2' }}</td>
+                  <td>
+                    @if (detail.isNew) {
+                      <p-tag severity="warn" value="Nuevo" [rounded]="true"></p-tag>
+                    } @else {
+                      <p-tag severity="success" value="Registrado" [rounded]="true"></p-tag>
+                    }
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
         }
       </div>
 
@@ -315,19 +320,19 @@ interface ExcelEmployeeData {
           Cancelar
         </button>
         @if (pdfAnalysisResult(); as result) {
-        <button
-          pButton
-          label="Confirmar y Guardar"
-          icon="pi pi-check"
-          (click)="confirmAndSavePdfData()"
-          [loading]="confirmingPdf()"
-          [disabled]="result.missingEmployees.length > 0"
-          [title]="
-            result.missingEmployees.length > 0
-              ? 'Debe registrar a todos los empleados antes de continuar'
-              : ''
-          "
-        ></button>
+          <button
+            pButton
+            label="Confirmar y Guardar"
+            icon="pi pi-check"
+            (click)="confirmAndSavePdfData()"
+            [loading]="confirmingPdf()"
+            [disabled]="result.missingEmployees.length > 0"
+            [title]="
+              result.missingEmployees.length > 0
+                ? 'Debe registrar a todos los empleados antes de continuar'
+                : ''
+            "
+          ></button>
         }
       </ng-template>
     </p-dialog>
@@ -492,7 +497,10 @@ export class PayrollUploadComponent {
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as unknown[][];
+      const data = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+        defval: '',
+      } as unknown as XLSX.Sheet2JSONOpts) as unknown[][];
 
       if (!data || data.length < 2) {
         this.messageService.add({
@@ -929,8 +937,8 @@ export class PayrollUploadComponent {
         catchError(() => {
           // Si no se encuentra, retornar null
           return of(null);
-        })
-      )
+        }),
+      ),
     );
 
     forkJoin(checkRequests).subscribe({
@@ -1023,7 +1031,7 @@ export class PayrollUploadComponent {
             catchError((err) => {
               console.error(`Error al crear empleado ${emp.dni}:`, err);
               return of(null);
-            })
+            }),
           );
         });
 
