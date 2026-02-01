@@ -14,6 +14,8 @@ export interface MarcacionDiaria {
     latitude: number;
     longitude: number;
   };
+  /** Dirección obtenida por geocodificación al registrar la marcación */
+  address?: string;
 }
 
 export interface ReporteDiario {
@@ -87,8 +89,8 @@ export interface GerenciaDashboardQueryParams {
  */
 export interface DayTrackingData {
   date: string;
-  entry?: { time: string; date: string; location?: { latitude: number; longitude: number } };
-  exit?: { time: string; date: string; location?: { latitude: number; longitude: number } };
+  entry?: { time: string; date: string; location?: { latitude: number; longitude: number }; address?: string };
+  exit?: { time: string; date: string; location?: { latitude: number; longitude: number }; address?: string };
 }
 
 /**

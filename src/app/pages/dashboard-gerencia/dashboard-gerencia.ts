@@ -142,6 +142,7 @@ export class DashboardGerenciaPage implements OnInit {
           time: formattedTime,
           date: `${timeTracking.fecha}T${timeTracking.hora || '00:00:00'}`,
           location: timeTracking.location,
+          address: timeTracking.address,
         };
       } else if (normalizedType === 'SALIDA' || normalizedType === 'EXIT') {
         const formattedTime = timeTracking.hora ? timeTracking.hora.substring(0, 5) : '00:00';
@@ -149,6 +150,7 @@ export class DashboardGerenciaPage implements OnInit {
           time: formattedTime,
           date: `${timeTracking.fecha}T${timeTracking.hora || '00:00:00'}`,
           location: timeTracking.location,
+          address: timeTracking.address,
         };
       }
     });
@@ -825,32 +827,27 @@ export class DashboardGerenciaPage implements OnInit {
   }
 
   /**
-   * Formatea la ubicación para mostrar (dirección o coordenadas)
-   * Método puro que solo lee signals, sin efectos secundarios
-   * Las ubicaciones se resuelven automáticamente mediante el effect
+   * Formatea la ubicación: usa la dirección guardada si existe, sino geocodifica o muestra coordenadas.
    */
-  formatLocation(location?: { latitude: number; longitude: number }): string {
+  formatLocation(entry?: { location?: { latitude: number; longitude: number }; address?: string }): string {
+    if (!entry) return 'N/A';
+    if (entry.address && entry.address.trim()) {
+      return entry.address.trim();
+    }
+    const location = entry.location;
     if (!location) return 'N/A';
 
     const key = this.buildLocationKey(location);
-
-    // Acceder a los signals para que Angular detecte los cambios
     const addresses = this.locationAddresses();
     const loading = this.locationLoading();
 
-    // Si está cargando, mostrar indicador
     if (loading[key]) {
       return 'Buscando dirección...';
     }
-
-    // Si ya tenemos la dirección, retornarla
     const address = addresses[key];
     if (address) {
       return address;
     }
-
-    // Retornar coordenadas mientras se carga
-    // La resolución se hace automáticamente mediante el effect
     return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
   }
 

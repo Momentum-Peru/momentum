@@ -31,6 +31,7 @@ export class TimeTrackingApiService {
     if (params?.endDate) httpParams = httpParams.set('endDate', params.endDate);
     if (params?.type) httpParams = httpParams.set('type', params.type);
     if (params?.q) httpParams = httpParams.set('q', params.q);
+    if (params?.tenantId) httpParams = httpParams.set('tenantId', params.tenantId);
 
     return this.http.get<TimeTracking[]>(this.baseUrl, { params: httpParams });
   }
