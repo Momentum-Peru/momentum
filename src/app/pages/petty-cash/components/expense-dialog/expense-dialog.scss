@@ -1,0 +1,113 @@
+:host {
+  display: block;
+}
+
+.hidden-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.expense-dialog-content {
+  position: relative;
+  outline: none;
+  transition: background-color 0.15s ease;
+
+  &.is-dragging {
+    background-color: var(--p-primary-50);
+  }
+}
+
+.drop-zone {
+  border: 2px dashed var(--p-content-border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--p-primary-color);
+    background-color: var(--p-primary-50);
+  }
+
+  &.dragging {
+    border-color: var(--p-primary-color);
+    background-color: var(--p-primary-50);
+  }
+
+  .drop-icon {
+    font-size: 2rem;
+    color: var(--p-text-muted-color);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .drop-title {
+    font-weight: 600;
+    color: var(--p-text-color);
+    margin: 0 0 0.25rem;
+    font-size: 0.9375rem;
+  }
+
+  .drop-hint {
+    font-size: 0.8125rem;
+    color: var(--p-text-muted-color);
+    margin: 0;
+  }
+}
+
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  background: var(--p-content-background);
+
+  .file-preview-img {
+    width: 3rem;
+    height: 3rem;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .file-preview-icon {
+    font-size: 2rem;
+    color: var(--p-primary-color);
+    flex-shrink: 0;
+  }
+
+  .file-preview-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .file-preview-name {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--p-text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-preview-size {
+    font-size: 0.75rem;
+    color: var(--p-text-muted-color);
+  }
+}
+
+.upload-progress {
+  margin-top: 0.25rem;
+}
+
+::ng-deep .p-dialog .p-dialog-content {
+  padding-bottom: 1rem;
+}

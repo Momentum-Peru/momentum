@@ -1201,25 +1201,28 @@ export class TaskDetailsComponent {
    */
   public formatDate(dateString: string | Date): string {
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
+    // Usar métodos UTC para evitar problemas de zona horaria
+    // Las fechas se guardan como UTC medianoche, así que debemos leerlas como UTC
+    const day = date.getUTCDate().toString().padStart(2, '0');
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    const year = date.getUTCFullYear();
+    return `${day}/${month}/${year}`;
   }
 
   /**
    * Formatea una fecha y hora
+   * Convierte de UTC (guardado en el servidor) a hora local del usuario
    */
   public formatDateTime(dateString: string | Date): string {
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    return date.toLocaleString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    // Usar métodos locales para mostrar la fecha y hora en la zona horaria del usuario
+    // El servidor guarda las fechas en UTC, pero queremos mostrarlas en hora local
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const hour = date.getHours().toString().padStart(2, '0');
+    const minute = date.getMinutes().toString().padStart(2, '0');
+    return `${day}/${month}/${year} ${hour}:${minute}`;
   }
 
   /**

@@ -1,0 +1,16 @@
+<div class="w-full">
+  <p-datepicker
+    [ngModel]="selectedDate()"
+    (ngModelChange)="selectedDate.set($event)"
+    (onSelect)="onDateSelect($event)"
+    (onMonthChange)="onMonthChange($event)"
+    [inline]="true"
+    [showOtherMonths]="false"
+    [selectOtherMonths]="false"
+    dateFormat="dd/mm/yy"
+    [showButtonBar]="true"
+    [showWeek]="true"
+    [firstDayOfWeek]="1"
+    class="w-full tasks-calendar"
+  ></p-datepicker>
+</div>

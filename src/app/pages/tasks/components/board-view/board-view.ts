@@ -86,7 +86,7 @@ export class BoardViewComponent {
   @Output() filtersChanged = new EventEmitter<TasksSearchParams>();
 
   // Modo de vista
-  public readonly viewMode = signal<'kanban' | 'list'>('kanban');
+  public readonly viewMode = signal<'kanban' | 'list'>('list');
   public readonly showMembersDialog = signal(false);
 
   // Filtros
@@ -324,6 +324,19 @@ export class BoardViewComponent {
   isCurrentUserMember(): boolean {
     if (!this.currentUserId) return false;
     return (this.board.members || []).some((member) => member._id === this.currentUserId);
+  }
+
+  /**
+   * Verifica si el usuario actual es miembro del tablero (propietario o miembro)
+   */
+  isBoardMember(): boolean {
+    if (!this.currentUserId) return false;
+    // Verificar si es propietario
+    if (this.isOwner || (this.board.owner && this.board.owner._id === this.currentUserId)) {
+      return true;
+    }
+    // Verificar si es miembro
+    return this.isCurrentUserMember();
   }
 
   isCurrentUser(memberId: string): boolean {

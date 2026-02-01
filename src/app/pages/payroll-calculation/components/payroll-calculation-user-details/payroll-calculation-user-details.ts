@@ -10,6 +10,7 @@ import {
   computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -28,6 +29,9 @@ import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { AuthService } from '../../../../pages/login/services/auth.service';
+import { MenuService } from '../../../../shared/services/menu.service';
+import * as XLSX from 'xlsx';
 
 /**
  * Componente de Detalles de Usuario
@@ -64,6 +68,42 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
   private readonly timeTrackingApi = inject(TimeTrackingApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly authService = inject(AuthService);
+  private readonly menuService = inject(MenuService);
+
+  // Usuario actual
+  currentUser = toSignal(this.authService.currentUser$, {
+    initialValue: this.authService.getCurrentUser(),
+  });
+
+  // Verificar si el usuario puede editar/agregar/eliminar marcaciones
+  // Debe cumplir dos condiciones:
+  // 1. Tener rol de gerencia, supervisor o admin
+  // 2. Tener permiso de edición (edit) explícito en el módulo de cálculo de planilla (/payroll-calculation)
+  // NOTA: Incluso gerencia/supervisor necesitan tener permiso 'edit' configurado en menu-permissions
+  canEditTimeTracking = computed(() => {
+    const user = this.currentUser();
+    const hasRolePermission =
+      user?.role === 'gerencia' || user?.role === 'supervisor' || user?.role === 'admin';
+
+    if (!hasRolePermission) {
+      return false;
+    }
+
+    // Verificar directamente el tipo de permiso configurado en menu-permissions
+    // Buscar el permiso específico para /payroll-calculation
+    const userPermissions = this.menuService.getUserPermissions();
+    const payrollPermission = userPermissions.find(
+      (p) => p.route === '/payroll-calculation' && p.isActive,
+    );
+
+    // Solo permitir edición si el permiso es explícitamente 'edit'
+    // Si es 'view' o no existe, no permitir edición
+    const hasMenuEditPermission = payrollPermission?.permissionType === 'edit';
+
+    // Ambas condiciones deben cumplirse
+    return hasRolePermission && hasMenuEditPermission;
+  });
 
   timeTrackings = signal<TimeTracking[]>([]);
   loading = signal(false);
@@ -108,13 +148,21 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
     let diasCompletos = 0;
     let diasIncompletos = 0;
 
-    grouped.forEach((dayData) => {
-      const horas = this.calculateWorkedHours(dayData.ingreso, dayData.salida);
-      totalHoras += horas;
+    // Convertir a array ordenado por fecha para poder buscar el día siguiente
+    const sortedDays = Array.from(grouped).sort((a, b) => {
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
 
-      if (dayData.ingreso && dayData.salida) {
+    sortedDays.forEach((dayData) => {
+      const hasIngreso = !!dayData.ingreso;
+      const hasSalida = !!dayData.salida;
+
+      // Solo calcular horas si hay entrada Y salida en el mismo día
+      if (hasIngreso && hasSalida) {
+        const horas = this.calculateWorkedHours(dayData.ingreso, dayData.salida);
+        totalHoras += horas;
         diasCompletos++;
-      } else if (dayData.ingreso || dayData.salida) {
+      } else if (hasIngreso || dayData.salida) {
         diasIncompletos++;
       }
     });
@@ -128,6 +176,9 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    // Asegurar que los permisos de menú estén cargados
+    this.menuService.loadUserPermissions();
+
     if (this.user) {
       this.loadUserTimeTrackings();
     }
@@ -220,13 +271,26 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
 
   /**
    * Calcular horas trabajadas del día
+   * Solo calcula si la entrada y salida son del mismo día
    */
   calculateWorkedHours(ingreso?: TimeTracking, salida?: TimeTracking): number {
     if (!ingreso || !salida) return 0;
-    const entryTime = new Date(ingreso.date).getTime();
-    const exitTime = new Date(salida.date).getTime();
-    if (exitTime <= entryTime) return 0;
-    const diffMs = exitTime - entryTime;
+
+    const entryTime = new Date(ingreso.date);
+    const exitTime = new Date(salida.date);
+
+    // Verificar que la salida sea del mismo día que la entrada
+    const entryDay = this.getLocalDateString(entryTime);
+    const exitDay = this.getLocalDateString(exitTime);
+
+    // Solo calcular si son del mismo día
+    if (exitDay !== entryDay) {
+      return 0; // Días diferentes = falta, no se calculan horas
+    }
+
+    // La salida es del mismo día, calcular normalmente
+    if (exitTime.getTime() <= entryTime.getTime()) return 0;
+    const diffMs = exitTime.getTime() - entryTime.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
     return Math.round(diffHours * 100) / 100;
   }
@@ -256,8 +320,8 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
             return new Date(year, month - 1, day);
           })()
         : typeof date === 'string'
-        ? new Date(date)
-        : date;
+          ? new Date(date)
+          : date;
     return d.toLocaleDateString('es-PE', { weekday: 'long' });
   }
 
@@ -422,5 +486,101 @@ export class PayrollCalculationUserDetailsComponent implements OnInit {
    */
   onClose(): void {
     this.closeDialog.emit();
+  }
+
+  /**
+   * Descargar reporte individual en Excel
+   */
+  downloadIndividualReport(): void {
+    const data = this.groupedTrackings();
+    if (data.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No hay datos para exportar',
+      });
+      return;
+    }
+
+    const reportData = data.map((day) => ({
+      Fecha: this.formatDate(day.date),
+      Día: this.getDayOfWeek(day.date),
+      Entrada: day.ingreso ? this.formatTime(day.ingreso.date) : '-',
+      Salida: day.salida ? this.formatTime(day.salida.date) : '-',
+      'Horas Trabajadas': this.formatWorkedHours(
+        this.calculateWorkedHours(day.ingreso, day.salida),
+      ),
+      Estado: this.getAttendanceStatus(day),
+    }));
+
+    const worksheet = (
+      XLSX.utils as { json_to_sheet: (data: unknown[]) => XLSX.WorkSheet }
+    ).json_to_sheet(reportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Asistencias');
+
+    // Generar nombre de archivo
+    const userName = (this.user?.name || 'Usuario').replace(/\s+/g, '_');
+    let fileName = `Reporte_Asistencias_${userName}`;
+    if (this.startDate && this.endDate) {
+      fileName += `_${this.startDate.toISOString().split('T')[0]}_a_${
+        this.endDate.toISOString().split('T')[0]
+      }`;
+    }
+    fileName += '.xlsx';
+
+    XLSX.writeFile(workbook, fileName);
+  }
+
+  /**
+   * Obtener la salida para un día (solo del mismo día)
+   */
+  getExitForDay(dayData: {
+    date: string;
+    ingreso?: TimeTracking;
+    salida?: TimeTracking;
+  }): TimeTracking | undefined {
+    // Solo retornar salida si es del mismo día
+    return dayData.salida;
+  }
+
+  /**
+   * Verificar si tiene entrada y salida en el mismo día
+   */
+  hasCompleteAttendance(dayData: {
+    date: string;
+    ingreso?: TimeTracking;
+    salida?: TimeTracking;
+  }): boolean {
+    if (!dayData.ingreso || !dayData.salida) return false;
+
+    // Verificar que sean del mismo día
+    const entryDay = this.getLocalDateString(dayData.ingreso.date);
+    const exitDay = this.getLocalDateString(dayData.salida.date);
+
+    return entryDay === exitDay;
+  }
+
+  /**
+   * Calcular horas trabajadas para un día (puede usar salida del día siguiente)
+   */
+  getWorkedHoursForDay(dayData: {
+    date: string;
+    ingreso?: TimeTracking;
+    salida?: TimeTracking;
+  }): number {
+    if (!dayData.ingreso) return 0;
+    const exitTracking = this.getExitForDay(dayData);
+    if (!exitTracking) return 0;
+    return this.calculateWorkedHours(dayData.ingreso, exitTracking);
+  }
+
+  /**
+   * Obtener estado de asistencia para el reporte
+   */
+  private getAttendanceStatus(dayData: { ingreso?: TimeTracking; salida?: TimeTracking }): string {
+    if (dayData.ingreso && dayData.salida) return 'Completo';
+    if (dayData.ingreso || dayData.salida) return 'Incompleto';
+    return 'Sin registro';
   }
 }

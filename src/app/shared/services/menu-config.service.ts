@@ -20,7 +20,8 @@ export interface RouteConfig {
 export class MenuConfigService {
   // Configuración centralizada de todas las rutas del sistema
   private readonly routesConfig: RouteConfig[] = [
-    { path: '/dashboard', label: 'Dashboard', icon: 'pi pi-chart-line' },
+    { path: '/dashboard', label: 'INICIO', icon: 'pi pi-home' },
+    { path: '/gerencia-boards', label: 'Tableros de Gerencia', icon: 'pi pi-th-large' },
     { path: '/projects/dashboard', label: 'Dashboard de Proyectos', icon: 'pi pi-chart-line' },
     { path: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
     { path: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
@@ -36,6 +37,10 @@ export class MenuConfigService {
     { path: '/time-tracking', label: 'Marcación de Hora', icon: 'pi pi-clock' },
     { path: '/employees', label: 'Empleados', icon: 'pi pi-user' },
     { path: '/areas', label: 'Áreas', icon: 'pi pi-sitemap' },
+    { path: '/meetings', label: 'Reuniones', icon: 'pi pi-video' },
+    { path: '/tickets', label: 'Tickets', icon: 'pi pi-ticket' },
+    { path: '/material-requests', label: 'Solicitudes de Materiales', icon: 'pi pi-shopping-bag' },
+    { path: '/petty-cash', label: 'Caja Chica', icon: 'pi pi-wallet' },
     { path: '/face-recognition-register', label: 'Registro Facial', icon: 'pi pi-id-card' },
     { path: '/users', label: 'Usuarios', icon: 'pi pi-users' },
     { path: '/menu-permissions', label: 'Permisos', icon: 'pi pi-shield' },
@@ -43,7 +48,6 @@ export class MenuConfigService {
     { path: '/leads', label: 'Leads', icon: 'pi pi-user-plus' },
     { path: '/follow-ups', label: 'Seguimientos', icon: 'pi pi-calendar-plus' },
     { path: '/companies-crm', label: 'Empresas Momentum', icon: 'pi pi-building' },
-    { path: '/fi', label: 'Futuros Imposibles', icon: 'pi pi-bolt' },
     { path: '/logs', label: 'Logs del Sistema', icon: 'pi pi-list' },
     { path: '/payroll', label: 'Planillas y Pagos', icon: 'pi pi-wallet' },
     { path: '/payroll-calculation', label: 'Cálculo de Planilla', icon: 'pi pi-calculator' },
@@ -75,73 +79,67 @@ export class MenuConfigService {
   getMenuItemsWithSubmenus(): MenuItem[] {
     return [
       {
-        label: 'DASHBOARD',
-        icon: 'pi pi-chart-line',
+        label: 'INICIO',
+        icon: 'pi pi-home',
         routerLink: '/dashboard',
       },
       {
-        label: 'PROYECTOS',
-        icon: 'pi pi-folder',
+        label: 'GERENCIA',
+        icon: 'pi pi-briefcase',
         items: [
           {
-            label: 'RQ Requerimiento',
-            icon: 'pi pi-inbox',
-            routerLink: '/requirements',
-          },
-          {
-            label: 'TDR Cliente',
-            icon: 'pi pi-file',
-            routerLink: '/tdrs',
-            queryParams: { type: 'client' },
-          },
-          {
-            label: 'TDR Tecmeing',
-            icon: 'pi pi-file',
-            routerLink: '/tdrs',
-            queryParams: { type: 'tecmeing' },
-          },
-          {
-            label: 'Proyecto Cotización',
-            icon: 'pi pi-dollar',
-            routerLink: '/projects',
-            queryParams: { status: 'EN_COTIZACION' },
-          },
-          {
-            label: 'Proyecto Aprobado',
-            icon: 'pi pi-check-circle',
-            routerLink: '/projects',
-            queryParams: { status: 'APROBADO' },
-          },
-          {
-            label: 'Proyecto en Ejecución',
-            icon: 'pi pi-cog',
-            routerLink: '/projects',
-            queryParams: { status: 'EN_EJECUCION' },
-          },
-          {
-            label: 'Proyecto en Observación',
-            icon: 'pi pi-exclamation-triangle',
-            routerLink: '/projects',
-            queryParams: { status: 'EN_OBSERVACION' },
-          },
-          {
-            label: 'Proyecto Culminado al 100%',
-            icon: 'pi pi-check',
-            routerLink: '/projects',
-            queryParams: { status: 'TERMINADO' },
-          },
-          {
-            label: 'Proyecto Archivados',
-            icon: 'pi pi-folder',
-            routerLink: '/projects',
-            queryParams: { isActive: 'false' },
+            label: 'Tableros de Tareas',
+            icon: 'pi pi-th-large',
+            routerLink: '/gerencia-boards',
           },
         ],
       },
       {
-        label: 'FUTUROS IMPOSIBLES',
-        icon: 'pi pi-bolt',
-        routerLink: '/fi',
+        label: 'VENTAS',
+        icon: 'pi pi-folder',
+        items: [
+          {
+            label: 'Proyectos',
+            icon: 'pi pi-folder',
+            routerLink: '/projects',
+          },
+          {
+            label: 'Dashboard',
+            icon: 'pi pi-chart-line',
+            routerLink: '/projects/dashboard',
+          },
+          {
+            label: 'Requerimientos',
+            icon: 'pi pi-inbox',
+            routerLink: '/requirements',
+          },
+          {
+            label: 'Cotizaciones',
+            icon: 'pi pi-dollar',
+            routerLink: '/quotes',
+          },
+          {
+            label: 'TDRs',
+            icon: 'pi pi-file',
+            routerLink: '/tdrs',
+          },
+          {
+            label: 'Órdenes',
+            icon: 'pi pi-shopping-cart',
+            routerLink: '/orders',
+          },
+        ],
+      },
+      {
+        label: 'INGENIERÍA',
+        icon: 'pi pi-cog',
+        items: [
+          {
+            label: 'Documentación',
+            icon: 'pi pi-file-edit',
+            routerLink: '/engineering',
+          },
+        ],
       },
       {
         label: 'ADMINISTRACIÓN',
@@ -158,9 +156,24 @@ export class MenuConfigService {
             routerLink: '/providers',
           },
           {
-            label: 'Documentos Tributarios',
-            icon: 'pi pi-file',
-            routerLink: '/documents',
+            label: 'Ventas',
+            icon: 'pi pi-dollar',
+            routerLink: '/documents/ventas',
+          },
+          {
+            label: 'Compras',
+            icon: 'pi pi-shopping-cart',
+            routerLink: '/documents/compras',
+          },
+          {
+            label: 'Solicitudes de Materiales',
+            icon: 'pi pi-shopping-bag',
+            routerLink: '/material-requests',
+          },
+          {
+            label: 'Caja Chica',
+            icon: 'pi pi-wallet',
+            routerLink: '/petty-cash',
           },
         ],
       },
@@ -197,6 +210,16 @@ export class MenuConfigService {
             label: 'Marcación de Hora',
             icon: 'pi pi-clock',
             routerLink: '/time-tracking',
+          },
+          {
+            label: 'Reuniones',
+            icon: 'pi pi-video',
+            routerLink: '/meetings',
+          },
+          {
+            label: 'Tickets',
+            icon: 'pi pi-ticket',
+            routerLink: '/tickets',
           },
         ],
       },

@@ -116,19 +116,20 @@
 
   <!-- Vista Móvil: Lista tipo tarjetas -->
   <div class="md:hidden space-y-3">
-    @for (row of filteredItems(); track row._id || $index; let i = $index) { @let key =
-    buildRowKey(row, i);
+    @for (row of filteredItems(); track row._id || row.dni; let i = $index) {
     <div
       class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"
     >
       <div
         class="p-4 flex items-center justify-between cursor-pointer"
-        (click)="toggleRowByKey(key)"
-        (keyup.enter)="toggleRowByKey(key)"
-        (keyup.space)="toggleRowByKey(key)"
+        (click)="toggleRowByKey(buildRowKey(row, i))"
+        (keyup.enter)="toggleRowByKey(buildRowKey(row, i))"
+        (keyup.space)="toggleRowByKey(buildRowKey(row, i))"
         tabindex="0"
         role="button"
-        [attr.aria-label]="'Expandir o contraer detalles del empleado: ' + row.nombre + ' ' + row.apellido"
+        [attr.aria-label]="
+          'Expandir o contraer detalles del empleado: ' + row.nombre + ' ' + row.apellido
+        "
       >
         <div class="flex-1 min-w-0">
           <div class="font-semibold text-gray-900 dark:text-white">
@@ -142,7 +143,7 @@
         <div class="flex items-center gap-2 ml-2">
           <i
             [class]="
-              isRowExpandedByKey(key)
+              isRowExpandedByKey(buildRowKey(row, i))
                 ? 'pi pi-chevron-up text-gray-500'
                 : 'pi pi-chevron-down text-gray-500'
             "
@@ -150,7 +151,7 @@
         </div>
       </div>
 
-      @if (isRowExpandedByKey(key)) {
+      @if (isRowExpandedByKey(buildRowKey(row, i))) {
       <div class="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-700">
         <div class="grid grid-cols-2 gap-2 pt-3">
           <div>
@@ -184,33 +185,37 @@
               {{ row.direccion }}
             </div>
           </div>
-          }
-          @if (row.accountNumber || row.bank || row.bankCode || row.accountType) {
+          } @if (row.accountNumber || row.bank || row.bankCode || row.accountType) {
           <div class="col-span-2 border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-            <div class="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Información Bancaria</div>
+            <div class="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">
+              Información Bancaria
+            </div>
             <div class="grid grid-cols-2 gap-2">
               @if (row.accountNumber) {
               <div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">N° Cuenta</div>
-                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ row.accountNumber }}</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ row.accountNumber }}
+                </div>
               </div>
-              }
-              @if (row.bank) {
+              } @if (row.bank) {
               <div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">Banco</div>
                 <div class="text-sm font-medium text-gray-900 dark:text-white">{{ row.bank }}</div>
               </div>
-              }
-              @if (row.bankCode) {
+              } @if (row.bankCode) {
               <div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">Código</div>
-                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ row.bankCode }}</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ row.bankCode }}
+                </div>
               </div>
-              }
-              @if (row.accountType) {
+              } @if (row.accountType) {
               <div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">Tipo</div>
-                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ row.accountType }}</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ row.accountType }}
+                </div>
               </div>
               }
             </div>
@@ -256,7 +261,8 @@
 
   <!-- Diálogo de creación/edición -->
   <p-dialog
-    [(visible)]="showDialog"
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '42rem' }"
     [draggable]="false"
@@ -273,7 +279,10 @@
     <div class="space-y-4" *ngIf="editing() as e">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="employeeNombre" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          <label
+            for="employeeNombre"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >
             Nombre *
           </label>
           <input
@@ -288,7 +297,10 @@
           />
         </div>
         <div>
-          <label for="employeeApellido" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          <label
+            for="employeeApellido"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >
             Apellido *
           </label>
           <input
@@ -306,9 +318,14 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="employeeDni" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          <label
+            for="employeeDni"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >
             DNI *
-            <span class="text-xs text-gray-500 font-normal ml-1">(se autocompleta automáticamente)</span>
+            <span class="text-xs text-gray-500 font-normal ml-1"
+              >(se autocompleta automáticamente)</span
+            >
           </label>
           <input
             id="employeeDni"
@@ -323,7 +340,10 @@
           />
         </div>
         <div>
-          <label for="employeeCorreo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          <label
+            for="employeeCorreo"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >
             Correo
           </label>
           <input
@@ -340,7 +360,10 @@
       </div>
 
       <div>
-        <label for="employeeTelefono" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+        <label
+          for="employeeTelefono"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        >
           Teléfono
         </label>
         <input
@@ -355,7 +378,10 @@
       </div>
 
       <div>
-        <label for="employeeDireccion" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+        <label
+          for="employeeDireccion"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        >
           Dirección
         </label>
         <input
@@ -370,7 +396,12 @@
       </div>
 
       <div>
-        <label for="employeeCargo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"> Cargo </label>
+        <label
+          for="employeeCargo"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        >
+          Cargo
+        </label>
         <input
           id="employeeCargo"
           pInputText
@@ -383,7 +414,10 @@
       </div>
 
       <div>
-        <label for="employeeUsuario" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+        <label
+          for="employeeUsuario"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        >
           Usuario
         </label>
         <p-select
@@ -408,7 +442,12 @@
       </div>
 
       <div>
-        <label for="employeeArea" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"> Área </label>
+        <label
+          for="employeeArea"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        >
+          Área
+        </label>
         <p-select
           id="employeeArea"
           [options]="areas()"
@@ -430,12 +469,223 @@
         </p-select>
       </div>
 
+      <!-- Contratos -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Contratos</h3>
+        <div
+          [class]="
+            'mb-3 transition-colors ' +
+            (isDraggingContratos()
+              ? 'border border-blue-400 bg-blue-50/30 dark:bg-blue-900/5 rounded'
+              : '')
+          "
+          (dragover)="onDragOverContratos($event)"
+          (dragleave)="onDragLeaveContratos($event)"
+          (drop)="onDropContratos($event)"
+        >
+          <p-fileUpload
+            mode="basic"
+            name="contratos[]"
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            maxFileSize="50000000"
+            [multiple]="true"
+            [auto]="false"
+            (onSelect)="onContratosSelect($event)"
+            chooseLabel="Seleccionar Archivos"
+            class="w-full"
+          >
+          </p-fileUpload>
+        </div>
+
+        <!-- Lista de archivos seleccionados para subir -->
+        @if (selectedContratos().length > 0) {
+        <div class="mb-3">
+          <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+            Archivos Seleccionados:
+          </div>
+          <div class="space-y-2">
+            @for (file of selectedContratos(); track file.name) {
+            <div
+              class="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded border"
+            >
+              <div class="flex items-center gap-2">
+                <i class="pi pi-file text-blue-600"></i>
+                <span class="text-sm text-gray-700 dark:text-white">{{ file.name }}</span>
+                <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
+              </div>
+              <button
+                pButton
+                icon="pi pi-times"
+                severity="danger"
+                size="small"
+                [text]="true"
+                (click)="removeContratoFile(file)"
+                pTooltip="Quitar archivo"
+                aria-label="Quitar archivo"
+              ></button>
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+        <!-- Lista de archivos ya subidos -->
+        @if (e.contratos && e.contratos.length > 0) {
+        <div>
+          <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+            Archivos Subidos:
+          </div>
+          <div class="space-y-2">
+            @for (url of e.contratos; track url) {
+            <div
+              class="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded border"
+            >
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <i class="pi pi-file text-green-600"></i>
+                <a
+                  (click)="downloadFile(url)"
+                  (keyup.enter)="downloadFile(url)"
+                  (keyup.space)="downloadFile(url); $event.preventDefault()"
+                  tabindex="0"
+                  role="button"
+                  class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate"
+                  [title]="url"
+                >
+                  {{ url.split('/').pop() }}
+                </a>
+              </div>
+              <button
+                pButton
+                icon="pi pi-trash"
+                severity="danger"
+                size="small"
+                [text]="true"
+                (click)="removeContratoUrl(e._id!, url)"
+                pTooltip="Eliminar archivo"
+                aria-label="Eliminar archivo"
+              ></button>
+            </div>
+            }
+          </div>
+        </div>
+        }
+      </div>
+
+      <!-- Antecedentes Policiales -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+          Antecedentes Policiales
+        </h3>
+        <div
+          [class]="
+            'mb-3 transition-colors ' +
+            (isDraggingAntecedentes()
+              ? 'border border-blue-400 bg-blue-50/30 dark:bg-blue-900/5 rounded'
+              : '')
+          "
+          (dragover)="onDragOverAntecedentes($event)"
+          (dragleave)="onDragLeaveAntecedentes($event)"
+          (drop)="onDropAntecedentes($event)"
+        >
+          <p-fileUpload
+            mode="basic"
+            name="antecedentes[]"
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            maxFileSize="50000000"
+            [multiple]="true"
+            [auto]="false"
+            (onSelect)="onAntecedentesSelect($event)"
+            chooseLabel="Seleccionar Archivos"
+            class="w-full"
+          >
+          </p-fileUpload>
+        </div>
+
+        <!-- Lista de archivos seleccionados para subir -->
+        @if (selectedAntecedentes().length > 0) {
+        <div class="mb-3">
+          <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+            Archivos Seleccionados:
+          </div>
+          <div class="space-y-2">
+            @for (file of selectedAntecedentes(); track file.name) {
+            <div
+              class="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded border"
+            >
+              <div class="flex items-center gap-2">
+                <i class="pi pi-file text-blue-600"></i>
+                <span class="text-sm text-gray-700 dark:text-white">{{ file.name }}</span>
+                <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
+              </div>
+              <button
+                pButton
+                icon="pi pi-times"
+                severity="danger"
+                size="small"
+                [text]="true"
+                (click)="removeAntecedenteFile(file)"
+                pTooltip="Quitar archivo"
+                aria-label="Quitar archivo"
+              ></button>
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+        <!-- Lista de archivos ya subidos -->
+        @if (e.antecedentesPoliciales && e.antecedentesPoliciales.length > 0) {
+        <div>
+          <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+            Archivos Subidos:
+          </div>
+          <div class="space-y-2">
+            @for (url of e.antecedentesPoliciales; track url) {
+            <div
+              class="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded border"
+            >
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <i class="pi pi-file text-green-600"></i>
+                <a
+                  (click)="downloadFile(url)"
+                  (keyup.enter)="downloadFile(url)"
+                  (keyup.space)="downloadFile(url); $event.preventDefault()"
+                  tabindex="0"
+                  role="button"
+                  class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate"
+                  [title]="url"
+                >
+                  {{ url.split('/').pop() }}
+                </a>
+              </div>
+              <button
+                pButton
+                icon="pi pi-trash"
+                severity="danger"
+                size="small"
+                [text]="true"
+                (click)="removeAntecedenteUrl(e._id!, url)"
+                pTooltip="Eliminar archivo"
+                aria-label="Eliminar archivo"
+              ></button>
+            </div>
+            }
+          </div>
+        </div>
+        }
+      </div>
+
       <!-- Información Bancaria -->
       <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Información Bancaria</h3>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+          Información Bancaria
+        </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label for="employeeAccountNumber" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+            <label
+              for="employeeAccountNumber"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >
               Número de Cuenta
             </label>
             <input
@@ -449,7 +699,10 @@
             />
           </div>
           <div>
-            <label for="employeeBank" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+            <label
+              for="employeeBank"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >
               Banco
             </label>
             <p-select
@@ -473,7 +726,10 @@
             </p-select>
           </div>
           <div>
-            <label for="employeeBankCode" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+            <label
+              for="employeeBankCode"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >
               Código de Banco
             </label>
             <input
@@ -487,7 +743,10 @@
             />
           </div>
           <div>
-            <label for="employeeAccountType" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+            <label
+              for="employeeAccountType"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >
               Tipo de Cuenta
             </label>
             <p-select
@@ -511,14 +770,27 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
-      <button pButton label="Guardar" (click)="save()" [disabled]="loading()" aria-label="Guardar empleado"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
+      <button
+        pButton
+        label="Guardar"
+        (click)="save()"
+        [disabled]="loading()"
+        aria-label="Guardar empleado"
+      ></button>
     </ng-template>
   </p-dialog>
 
   <!-- Diálogo de visualización (solo lectura) -->
   <p-dialog
-    [(visible)]="showViewDialog"
+    [visible]="showViewDialog()"
+    (visibleChange)="showViewDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '42rem' }"
     [draggable]="false"
@@ -582,8 +854,7 @@
             {{ v.direccion }}
           </div>
         </div>
-        }
-        @if (v.createdAt) {
+        } @if (v.createdAt) {
         <div>
           <span class="block text-xs text-gray-500 dark:text-white mb-1">Fecha de creación</span>
           <div class="font-medium text-gray-700 dark:text-white">
@@ -593,30 +864,201 @@
         }
       </div>
 
+      <!-- Contratos -->
+      @if (v.contratos && v.contratos.length > 0) {
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Contratos</h3>
+        <div class="space-y-3">
+          @for (url of v.contratos; track url) {
+          <div class="bg-gray-50 dark:bg-gray-800 rounded border p-3">
+            @if (isImageFile(url)) {
+            <!-- Previsualización de imagen -->
+            <div class="flex flex-col gap-2">
+              <div
+                class="w-32 h-32 rounded border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer"
+              >
+                <img
+                  [src]="url"
+                  [alt]="url.split('/').pop()"
+                  class="w-full h-full object-cover"
+                  (click)="downloadFile(url)"
+                  (keyup.enter)="downloadFile(url)"
+                  (keyup.space)="downloadFile(url); $event.preventDefault()"
+                  tabindex="0"
+                  role="button"
+                  [title]="'Click para abrir: ' + url.split('/').pop()"
+                />
+              </div>
+              <div class="flex items-center justify-between">
+                <a
+                  (click)="downloadFile(url)"
+                  (keyup.enter)="downloadFile(url)"
+                  (keyup.space)="downloadFile(url); $event.preventDefault()"
+                  tabindex="0"
+                  role="button"
+                  class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate flex-1"
+                  [title]="url"
+                >
+                  {{ url.split('/').pop() }}
+                </a>
+                <button
+                  pButton
+                  icon="pi pi-download"
+                  class="p-button-text p-button-sm ml-2"
+                  (click)="downloadFile(url)"
+                  pTooltip="Descargar archivo"
+                  aria-label="Descargar archivo"
+                ></button>
+              </div>
+            </div>
+            } @else {
+            <!-- Vista de documento -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <i class="pi pi-file text-blue-600 text-xl"></i>
+                <div class="flex-1 min-w-0">
+                  <a
+                    (click)="downloadFile(url)"
+                    (keyup.enter)="downloadFile(url)"
+                    (keyup.space)="downloadFile(url); $event.preventDefault()"
+                    tabindex="0"
+                    role="button"
+                    class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block truncate"
+                    [title]="url"
+                  >
+                    {{ url.split('/').pop() }}
+                  </a>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                    {{ url }}
+                  </div>
+                </div>
+              </div>
+              <button
+                pButton
+                icon="pi pi-download"
+                class="p-button-text p-button-sm"
+                (click)="downloadFile(url)"
+                pTooltip="Descargar archivo"
+                aria-label="Descargar archivo"
+              ></button>
+            </div>
+            }
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Antecedentes Policiales -->
+      @if (v.antecedentesPoliciales && v.antecedentesPoliciales.length > 0) {
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+          Antecedentes Policiales
+        </h3>
+        <div class="space-y-3">
+          @for (url of v.antecedentesPoliciales; track url) {
+          <div class="bg-gray-50 dark:bg-gray-800 rounded border p-3">
+            @if (isImageFile(url)) {
+            <!-- Previsualización de imagen -->
+            <div class="flex flex-col gap-2">
+              <div
+                class="w-32 h-32 rounded border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer"
+              >
+                <img
+                  [src]="url"
+                  [alt]="url.split('/').pop()"
+                  class="w-full h-full object-cover"
+                  (click)="downloadFile(url)"
+                  (keyup.enter)="downloadFile(url)"
+                  (keyup.space)="downloadFile(url); $event.preventDefault()"
+                  tabindex="0"
+                  role="button"
+                  [title]="'Click para abrir: ' + url.split('/').pop()"
+                />
+              </div>
+              <div class="flex items-center justify-between">
+                <a
+                  (click)="downloadFile(url)"
+                  (keyup.enter)="downloadFile(url)"
+                  (keyup.space)="downloadFile(url); $event.preventDefault()"
+                  tabindex="0"
+                  role="button"
+                  class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate flex-1"
+                  [title]="url"
+                >
+                  {{ url.split('/').pop() }}
+                </a>
+                <button
+                  pButton
+                  icon="pi pi-download"
+                  class="p-button-text p-button-sm ml-2"
+                  (click)="downloadFile(url)"
+                  pTooltip="Descargar archivo"
+                  aria-label="Descargar archivo"
+                ></button>
+              </div>
+            </div>
+            } @else {
+            <!-- Vista de documento -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <i class="pi pi-file text-green-600 text-xl"></i>
+                <div class="flex-1 min-w-0">
+                  <a
+                    (click)="downloadFile(url)"
+                    (keyup.enter)="downloadFile(url)"
+                    (keyup.space)="downloadFile(url); $event.preventDefault()"
+                    tabindex="0"
+                    role="button"
+                    class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block truncate"
+                    [title]="url"
+                  >
+                    {{ url.split('/').pop() }}
+                  </a>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                    {{ url }}
+                  </div>
+                </div>
+              </div>
+              <button
+                pButton
+                icon="pi pi-download"
+                class="p-button-text p-button-sm"
+                (click)="downloadFile(url)"
+                pTooltip="Descargar archivo"
+                aria-label="Descargar archivo"
+              ></button>
+            </div>
+            }
+          </div>
+          }
+        </div>
+      </div>
+      }
+
       <!-- Información Bancaria -->
       @if (v.accountNumber || v.bank || v.bankCode || v.accountType) {
       <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Información Bancaria</h3>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+          Información Bancaria
+        </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           @if (v.accountNumber) {
           <div>
             <span class="block text-xs text-gray-500 dark:text-white mb-1">Número de Cuenta</span>
             <div class="font-medium text-gray-700 dark:text-white">{{ v.accountNumber }}</div>
           </div>
-          }
-          @if (v.bank) {
+          } @if (v.bank) {
           <div>
             <span class="block text-xs text-gray-500 dark:text-white mb-1">Banco</span>
             <div class="font-medium text-gray-700 dark:text-white">{{ v.bank }}</div>
           </div>
-          }
-          @if (v.bankCode) {
+          } @if (v.bankCode) {
           <div>
             <span class="block text-xs text-gray-500 dark:text-white mb-1">Código de Banco</span>
             <div class="font-medium text-gray-700 dark:text-white">{{ v.bankCode }}</div>
           </div>
-          }
-          @if (v.accountType) {
+          } @if (v.accountType) {
           <div>
             <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo de Cuenta</span>
             <div class="font-medium text-gray-700 dark:text-white">{{ v.accountType }}</div>

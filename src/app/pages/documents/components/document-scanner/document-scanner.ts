@@ -34,6 +34,7 @@ import {
  */
 @Component({
   selector: 'app-document-scanner',
+  standalone: true,
   imports: [
     CommonModule,
     FormsModule,
@@ -62,11 +63,18 @@ export class DocumentScannerComponent implements AfterViewInit {
   };
   private readonly compressionThresholdBytes = 1 * 1024 * 1024; // Comprimir archivos mayores a 1MB
 
-  @ViewChild('fileUpload') fileUpload!: { fileInput?: { nativeElement?: HTMLInputElement }; input?: { nativeElement?: HTMLInputElement }; el?: { nativeElement?: HTMLElement } } | undefined;
+  @ViewChild('fileUpload') fileUpload!:
+    | {
+        fileInput?: { nativeElement?: HTMLInputElement };
+        input?: { nativeElement?: HTMLInputElement };
+        el?: { nativeElement?: HTMLElement };
+      }
+    | undefined;
 
   // Inputs
   visible = input.required<boolean>();
   proyectoId = input<string | undefined>(undefined);
+  tipo = input<'compra' | 'venta'>('compra'); // Tipo de documento
 
   // Outputs
   scanComplete = output<ScanInvoiceResponse>();
@@ -210,22 +218,49 @@ export class DocumentScannerComponent implements AfterViewInit {
         isMobile: this.isMobileDevice(),
       });
 
-    // Validar tipo de archivo (imágenes y PDFs)
-    // Nota: En móviles, el tipo MIME puede estar vacío, así que validamos también por extensión
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
-    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+      // Validar tipo de archivo (imágenes y PDFs)
+      // Nota: En móviles, el tipo MIME puede estar vacío, así que validamos también por extensión
+      const allowedTypes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp',
+        'application/pdf',
+      ];
+      const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
 
-    // Obtener extensión del archivo
-    const fileName = file.name.toLowerCase();
-    const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+      // Obtener extensión del archivo
+      const fileName = file.name.toLowerCase();
+      const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
 
-    // Validar por tipo MIME o por extensión (para casos donde el tipo MIME está vacío)
-    const isValidType = file.type && allowedTypes.includes(file.type);
-    const isValidExtension = allowedExtensions.includes(fileExtension);
+      // Validar por tipo MIME o por extensión (para casos donde el tipo MIME está vacío)
+      const isValidType = file.type && allowedTypes.includes(file.type);
+      const isValidExtension = allowedExtensions.includes(fileExtension);
 
-    // Si el tipo MIME está vacío (común en fotos tomadas desde móvil), validar por extensión
-    if (!file.type || file.type === '') {
-      if (!isValidExtension) {
+      // Si el tipo MIME está vacío (común en fotos tomadas desde móvil), validar por extensión
+      if (!file.type || file.type === '') {
+        if (!isValidExtension) {
+          console.error('Formato de archivo no soportado:', {
+            fileName: file.name,
+            fileType: file.type,
+            fileExtension: fileExtension,
+            fileSize: file.size,
+          });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `Formato de archivo no soportado (${fileExtension}). Use JPEG, PNG, WebP o PDF`,
+          });
+          return;
+        }
+        // Si la extensión es válida pero el tipo MIME está vacío, intentar corregirlo
+        // Esto es común en fotos tomadas directamente desde el celular
+        console.warn('Archivo con tipo MIME vacío detectado:', {
+          fileName: file.name,
+          fileExtension: fileExtension,
+          fileSize: file.size,
+        });
+      } else if (!isValidType && !isValidExtension) {
         console.error('Formato de archivo no soportado:', {
           fileName: file.name,
           fileType: file.type,
@@ -235,67 +270,47 @@ export class DocumentScannerComponent implements AfterViewInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: `Formato de archivo no soportado (${fileExtension}). Use JPEG, PNG, WebP o PDF`,
+          detail: `Formato de archivo no soportado (${
+            file.type || fileExtension
+          }). Use JPEG, PNG, WebP o PDF`,
         });
         return;
       }
-      // Si la extensión es válida pero el tipo MIME está vacío, intentar corregirlo
-      // Esto es común en fotos tomadas directamente desde el celular
-      console.warn('Archivo con tipo MIME vacío detectado:', {
-        fileName: file.name,
-        fileExtension: fileExtension,
-        fileSize: file.size,
-      });
-    } else if (!isValidType && !isValidExtension) {
-      console.error('Formato de archivo no soportado:', {
-        fileName: file.name,
-        fileType: file.type,
-        fileExtension: fileExtension,
-        fileSize: file.size,
-      });
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: `Formato de archivo no soportado (${
-          file.type || fileExtension
-        }). Use JPEG, PNG, WebP o PDF`,
-      });
-      return;
-    }
 
-    // Si es PDF, mostrar advertencia
-    if (file.type === 'application/pdf' || fileExtension === '.pdf') {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'Los PDFs pueden tener menor precisión en el escaneo. Se recomienda usar imágenes.',
-      });
-    }
+      // Si es PDF, mostrar advertencia
+      if (file.type === 'application/pdf' || fileExtension === '.pdf') {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Advertencia',
+          detail:
+            'Los PDFs pueden tener menor precisión en el escaneo. Se recomienda usar imágenes.',
+        });
+      }
 
-    // Validar tamaño (10MB máximo)
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'El archivo es demasiado grande. Máximo 10MB',
-      });
-      return;
-    }
+      // Validar tamaño (10MB máximo)
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'El archivo es demasiado grande. Máximo 10MB',
+        });
+        return;
+      }
 
-    // Validar que el archivo no esté vacío
-    if (file.size === 0) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'El archivo está vacío. Por favor, seleccione otro archivo.',
-      });
-      return;
-    }
+      // Validar que el archivo no esté vacío
+      if (file.size === 0) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'El archivo está vacío. Por favor, seleccione otro archivo.',
+        });
+        return;
+      }
 
-    // Normalizar el archivo si el tipo MIME está vacío (común en fotos desde móvil)
-    const normalizedFile = this.normalizeFileType(file, fileExtension);
-    this.selectedFile.set(normalizedFile);
+      // Normalizar el archivo si el tipo MIME está vacío (común en fotos desde móvil)
+      const normalizedFile = this.normalizeFileType(file, fileExtension);
+      this.selectedFile.set(normalizedFile);
 
       // Crear preview con manejo de errores usando el archivo normalizado
       const reader = new FileReader();
@@ -339,7 +354,9 @@ export class DocumentScannerComponent implements AfterViewInit {
     } catch (error: unknown) {
       // Capturar cualquier error no manejado en el proceso
       const errorInfo = this.extractErrorInfo(error);
-      const errorMsg = `Error inesperado al procesar el archivo: ${errorInfo.message || 'Error desconocido'}`;
+      const errorMsg = `Error inesperado al procesar el archivo: ${
+        errorInfo.message || 'Error desconocido'
+      }`;
       const details: Record<string, unknown> = {
         isMobile: this.isMobileDevice(),
       };
@@ -399,7 +416,7 @@ export class DocumentScannerComponent implements AfterViewInit {
           type: mimeType,
           lastModified: file.lastModified,
         });
-        
+
         console.log('Archivo normalizado:', {
           originalName: file.name,
           originalType: file.type,
@@ -407,17 +424,20 @@ export class DocumentScannerComponent implements AfterViewInit {
           extension: normalizedExtension,
           size: normalizedFile.size,
         });
-        
+
         return normalizedFile;
       }
 
       // Si no encontramos el tipo MIME, intentar inferirlo del contenido
       // Para imágenes desde móvil, asumir JPEG si no hay extensión clara
       if (this.isMobileDevice() && !mimeType) {
-        console.warn('No se pudo determinar el tipo MIME, usando image/jpeg por defecto para móvil:', {
-          fileName: file.name,
-          extension: normalizedExtension,
-        });
+        console.warn(
+          'No se pudo determinar el tipo MIME, usando image/jpeg por defecto para móvil:',
+          {
+            fileName: file.name,
+            extension: normalizedExtension,
+          }
+        );
         return new File([file], file.name, {
           type: 'image/jpeg',
           lastModified: file.lastModified,
@@ -604,7 +624,7 @@ export class DocumentScannerComponent implements AfterViewInit {
       }
     }, 500);
 
-    this.documentsApi.scanInvoice(finalFile, this.proyectoId(), true).subscribe({
+    this.documentsApi.scanInvoice(finalFile, this.proyectoId(), true, this.tipo()).subscribe({
       next: (response: ScanInvoiceResponse) => {
         clearInterval(progressInterval);
         this.progress.set(100);
@@ -648,9 +668,10 @@ export class DocumentScannerComponent implements AfterViewInit {
         if (errorInfo.stack) {
           errorDetails['errorStack'] = errorInfo.stack;
         }
-        const errorPayload = (error && typeof error === 'object' && 'error' in (error as Record<string, unknown>))
-          ? (error as { error?: unknown }).error
-          : undefined;
+        const errorPayload =
+          error && typeof error === 'object' && 'error' in (error as Record<string, unknown>)
+            ? (error as { error?: unknown }).error
+            : undefined;
         const serializedPayload = this.safeStringify(errorPayload);
         if (serializedPayload) {
           errorDetails['errorResponse'] = serializedPayload;
@@ -749,7 +770,9 @@ export class DocumentScannerComponent implements AfterViewInit {
     const serverError = errorObject.error;
     const serverMessage = this.extractErrorInfo(serverError).message;
     const serverNestedError =
-      serverError && typeof serverError === 'object' && 'error' in (serverError as Record<string, unknown>)
+      serverError &&
+      typeof serverError === 'object' &&
+      'error' in (serverError as Record<string, unknown>)
         ? (serverError as { error?: unknown }).error
         : undefined;
 

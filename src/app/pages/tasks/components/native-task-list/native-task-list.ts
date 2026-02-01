@@ -1,19 +1,11 @@
-import {
-  Component,
-  Input,
-  Output,
-  EventEmitter,
-  signal,
-  computed,
-} from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 // PrimeNG Components
 import { SelectModule } from 'primeng/select';
-
-// Components
-import { NativeTaskCardComponent } from '../native-task-card/native-task-card';
+import { ButtonModule } from 'primeng/button';
+import { TooltipModule } from 'primeng/tooltip';
 
 // Interfaces
 import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/task.interface';
@@ -21,39 +13,9 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
 @Component({
   selector: 'app-native-task-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, NativeTaskCardComponent, SelectModule],
+  imports: [CommonModule, FormsModule, SelectModule, ButtonModule, TooltipModule],
   template: `
     <div class="space-y-4">
-      <!-- Header con estadísticas -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-4">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ allTasks().length }}
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">Total</div>
-          </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-              {{ pendingTasks().length }}
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">Pendientes</div>
-          </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {{ inProgressTasks().length }}
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">En curso</div>
-          </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-green-600 dark:text-green-400">
-              {{ completedTasks().length }}
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">Terminadas</div>
-          </div>
-        </div>
-      </div>
-
       <!-- Filtros de estado -->
       <div class="flex flex-wrap gap-2 mb-4">
         <button
@@ -102,55 +64,324 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
         </button>
       </div>
 
-      <!-- Lista de tareas -->
+      <!-- Tabla de tareas - Desktop -->
       @if (filteredTasks().length > 0) {
-      <div class="space-y-3">
-        @for (task of filteredTasks(); track task._id) {
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow">
-          <!-- Selector de estado -->
-          <div class="px-3 pt-3 pb-2 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between gap-2">
-              <label class="text-xs font-medium text-gray-600 dark:text-gray-400">
-                Estado:
-              </label>
-              <p-select
-                [ngModel]="task.status"
-                (ngModelChange)="onStatusChange(task, $event)"
-                [options]="statusOptions"
-                optionLabel="label"
-                optionValue="value"
-                [appendTo]="'body'"
-                styleClass="w-32 text-xs"
-                [showClear]="false"
-              >
-                <ng-template let-status pTemplate="item">
-                  <div class="flex items-center gap-2">
-                    <div
-                      class="w-2 h-2 rounded-full"
-                      [class]="getStatusColorClass(status.value)"
-                    ></div>
-                    <span>{{ status.label }}</span>
+      <div class="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                <th
+                  class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600"
+                >
+                  ITEM
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600"
+                >
+                  ENTREGABLES
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600"
+                >
+                  RESPONSABLE QUE SE EJECUTE
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600"
+                >
+                  PROVEEDOR RESPONSABLE
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600"
+                >
+                  ESTATUS
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600"
+                >
+                  FECHA DE INICIO
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600"
+                >
+                  FECHA DE ENTREGABLE
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600"
+                >
+                  PUNTOS IMPORTANTES
+                </th>
+                <th
+                  class="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+                >
+                  ACCIONES
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              @for (task of filteredTasks(); track task._id; let i = $index) {
+              <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <td
+                  class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-600 font-medium"
+                >
+                  {{ i + 1 }}
+                </td>
+                <td
+                  class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-600"
+                >
+                  <div class="font-medium">{{ task.title }}</div>
+                </td>
+                <td
+                  class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600"
+                >
+                  {{ getAssignedToName(task) }}
+                </td>
+                <td
+                  class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600"
+                >
+                  {{ getProviderName(task) }}
+                </td>
+                <td class="px-4 py-3 text-sm border-r border-gray-200 dark:border-gray-600">
+                  <p-select
+                    [ngModel]="task.status"
+                    (ngModelChange)="onStatusChange(task, $event)"
+                    [options]="statusOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    [appendTo]="'body'"
+                    styleClass="w-full text-xs"
+                    [showClear]="false"
+                  >
+                    <ng-template let-status pTemplate="item">
+                      <div class="flex items-center gap-2">
+                        <div
+                          class="w-2 h-2 rounded-full"
+                          [class]="getStatusColorClass(status.value)"
+                        ></div>
+                        <span>{{ status.label }}</span>
+                      </div>
+                    </ng-template>
+                    <ng-template let-status pTemplate="selectedItem">
+                      <div class="flex items-center gap-2">
+                        <div
+                          class="w-2 h-2 rounded-full"
+                          [class]="getStatusColorClass(status.value)"
+                        ></div>
+                        <span class="text-xs">{{ status.label }}</span>
+                      </div>
+                    </ng-template>
+                  </p-select>
+                </td>
+                <td
+                  class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600"
+                >
+                  {{ formatDate(task.createdAt) }}
+                </td>
+                <td
+                  class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600"
+                >
+                  {{ formatDate(task.dueDate) }}
+                </td>
+                <td
+                  class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600"
+                >
+                  <div class="max-w-xs">
+                    {{ task.description || '-' }}
                   </div>
-                </ng-template>
-                <ng-template let-status pTemplate="selectedItem">
-                  <div class="flex items-center gap-2">
-                    <div
-                      class="w-2 h-2 rounded-full"
-                      [class]="getStatusColorClass(status.value)"
-                    ></div>
-                    <span class="text-xs">{{ status.label }}</span>
+                </td>
+                <td class="px-4 py-3 text-sm">
+                  <div class="flex items-center justify-center gap-2">
+                    <p-button
+                      icon="pi pi-eye"
+                      [text]="true"
+                      severity="info"
+                      size="small"
+                      (onClick)="onViewTask(task)"
+                      pTooltip="Ver detalles"
+                      styleClass="p-1"
+                    ></p-button>
+                    <p-button
+                      icon="pi pi-pencil"
+                      [text]="true"
+                      severity="warn"
+                      size="small"
+                      (onClick)="onEditTask(task)"
+                      pTooltip="Editar tarea"
+                      styleClass="p-1"
+                    ></p-button>
+                    <p-button
+                      icon="pi pi-trash"
+                      [text]="true"
+                      severity="danger"
+                      size="small"
+                      (onClick)="onDeleteTask(task)"
+                      pTooltip="Eliminar tarea"
+                      styleClass="p-1"
+                    ></p-button>
                   </div>
-                </ng-template>
-              </p-select>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Vista móvil - Cards -->
+      <div class="md:hidden space-y-3">
+        @for (task of filteredTasks(); track task._id; let i = $index) {
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+        >
+          <!-- Header del card (siempre visible) -->
+          <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400"
+                    >#{{ i + 1 }}</span
+                  >
+                  <div
+                    class="w-2 h-2 rounded-full"
+                    [class]="getStatusColorClass(task.status)"
+                  ></div>
+                  <span class="text-xs font-medium text-gray-600 dark:text-gray-400">{{
+                    task.status
+                  }}</span>
+                </div>
+                <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1 line-clamp-2">
+                  {{ task.title }}
+                </h3>
+                @if (task.description) {
+                <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-1">
+                  {{ task.description }}
+                </p>
+                }
+              </div>
+              <div class="flex-shrink-0 flex items-center gap-1">
+                <p-button
+                  icon="pi pi-eye"
+                  [text]="true"
+                  severity="info"
+                  size="small"
+                  (onClick)="onViewTask(task)"
+                  pTooltip="Ver detalles"
+                  styleClass="p-1"
+                ></p-button>
+                <p-button
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  severity="warn"
+                  size="small"
+                  (onClick)="onEditTask(task)"
+                  pTooltip="Editar"
+                  styleClass="p-1"
+                ></p-button>
+                <p-button
+                  icon="pi pi-trash"
+                  [text]="true"
+                  severity="danger"
+                  size="small"
+                  (onClick)="onDeleteTask(task)"
+                  pTooltip="Eliminar"
+                  styleClass="p-1"
+                ></p-button>
+              </div>
             </div>
           </div>
-          <!-- Tarjeta de tarea -->
-          <app-native-task-card
-            [task]="task"
-            (edit)="onEditTask($event)"
-            (delete)="onDeleteTask($event)"
-            (view)="onViewTask($event)"
-          ></app-native-task-card>
+
+          <!-- Contenido expandible -->
+          <div class="px-4 py-3 space-y-3">
+            <!-- Responsable -->
+            <div class="flex items-start gap-2">
+              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[120px]">
+                Responsable:
+              </span>
+              <span class="text-sm text-gray-900 dark:text-gray-100 flex-1">
+                {{ getAssignedToName(task) }}
+              </span>
+            </div>
+
+            <!-- Proveedor -->
+            <div class="flex items-start gap-2">
+              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[120px]">
+                Proveedor:
+              </span>
+              <span class="text-sm text-gray-900 dark:text-gray-100 flex-1">
+                {{ getProviderName(task) }}
+              </span>
+            </div>
+
+            <!-- Estado -->
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[120px]">
+                Estado:
+              </span>
+              <div class="flex-1">
+                <p-select
+                  [ngModel]="task.status"
+                  (ngModelChange)="onStatusChange(task, $event)"
+                  [options]="statusOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [appendTo]="'body'"
+                  styleClass="w-full text-xs"
+                  [showClear]="false"
+                >
+                  <ng-template let-status pTemplate="item">
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-2 h-2 rounded-full"
+                        [class]="getStatusColorClass(status.value)"
+                      ></div>
+                      <span>{{ status.label }}</span>
+                    </div>
+                  </ng-template>
+                  <ng-template let-status pTemplate="selectedItem">
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-2 h-2 rounded-full"
+                        [class]="getStatusColorClass(status.value)"
+                      ></div>
+                      <span class="text-xs">{{ status.label }}</span>
+                    </div>
+                  </ng-template>
+                </p-select>
+              </div>
+            </div>
+
+            <!-- Fecha de inicio -->
+            <div class="flex items-start gap-2">
+              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[120px]">
+                Fecha inicio:
+              </span>
+              <span class="text-sm text-gray-900 dark:text-gray-100 flex-1">
+                {{ formatDate(task.createdAt) }}
+              </span>
+            </div>
+
+            <!-- Fecha de entregable -->
+            <div class="flex items-start gap-2">
+              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[120px]">
+                Fecha entregable:
+              </span>
+              <span class="text-sm text-gray-900 dark:text-gray-100 flex-1">
+                {{ formatDate(task.dueDate) }}
+              </span>
+            </div>
+
+            <!-- Puntos importantes -->
+            @if (task.description) {
+            <div class="flex items-start gap-2">
+              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[120px]">
+                Puntos importantes:
+              </span>
+              <span class="text-sm text-gray-900 dark:text-gray-100 flex-1">
+                {{ task.description }}
+              </span>
+            </div>
+            }
+          </div>
         </div>
         }
       </div>
@@ -170,8 +401,7 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
           ></path>
         </svg>
         <p class="text-gray-500 dark:text-gray-400 text-lg font-medium">
-          No hay tareas
-          @if (selectedStatus() !== 'all') {
+          No hay tareas @if (selectedStatus() !== 'all') {
           <span>con estado "{{ selectedStatus() }}"</span>
           }
         </p>
@@ -187,12 +417,7 @@ import { Task, TaskStatus, DragDropEvent } from '../../../../shared/interfaces/t
           (click)="onCreateTask()"
           class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
         >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -256,11 +481,7 @@ export class NativeTaskListComponent {
   // Computed para todas las tareas usando la copia local
   public readonly allTasks = computed(() => {
     const local = this.localTasksByStatus();
-    return [
-      ...local.pending,
-      ...local.inProgress,
-      ...local.completed,
-    ];
+    return [...local.pending, ...local.inProgress, ...local.completed];
   });
 
   public readonly pendingTasks = computed(() => this.localTasksByStatus().pending);
@@ -270,8 +491,9 @@ export class NativeTaskListComponent {
   // Tareas filtradas según el estado seleccionado y ordenadas
   public readonly filteredTasks = computed(() => {
     const status = this.selectedStatus();
-    let tasks = status === 'all' ? this.allTasks() : this.allTasks().filter((task) => task.status === status);
-    
+    const tasks =
+      status === 'all' ? this.allTasks() : this.allTasks().filter((task) => task.status === status);
+
     // Ordenar tareas: primero las vencidas, luego por prioridad, luego por fecha de creación
     return tasks.sort((a, b) => {
       // 1. Tareas vencidas primero
@@ -279,13 +501,13 @@ export class NativeTaskListComponent {
       const bOverdue = b.dueDate && new Date(b.dueDate) < new Date() && b.status !== 'Terminada';
       if (aOverdue && !bOverdue) return -1;
       if (!aOverdue && bOverdue) return 1;
-      
+
       // 2. Ordenar por prioridad (Crítica > Alta > Media > Baja)
-      const priorityOrder: Record<string, number> = { 'Crítica': 4, 'Alta': 3, 'Media': 2, 'Baja': 1 };
+      const priorityOrder: Record<string, number> = { Crítica: 4, Alta: 3, Media: 2, Baja: 1 };
       const aPriority = priorityOrder[a.priority] || 0;
       const bPriority = priorityOrder[b.priority] || 0;
       if (aPriority !== bPriority) return bPriority - aPriority;
-      
+
       // 3. Ordenar por fecha de creación (más recientes primero)
       const aDate = new Date(a.createdAt).getTime();
       const bDate = new Date(b.createdAt).getTime();
@@ -395,5 +617,60 @@ export class NativeTaskListComponent {
         return 'bg-gray-500';
     }
   }
-}
 
+  /**
+   * Obtiene el nombre del responsable asignado
+   */
+  public getAssignedToName(task: Task): string {
+    if (task.assignedToName) {
+      return task.assignedToName;
+    }
+    if (typeof task.assignedTo === 'object' && task.assignedTo !== null) {
+      return task.assignedTo.name || task.assignedTo.email || 'Sin asignar';
+    }
+    return 'Sin asignar';
+  }
+
+  /**
+   * Obtiene el nombre del proveedor responsable (tablero o proyecto)
+   */
+  public getProviderName(task: Task): string {
+    // Intentar obtener el nombre del proyecto primero
+    if (task.projectId) {
+      if (typeof task.projectId === 'object' && task.projectId !== null) {
+        return task.projectId.name || task.projectId.code || 'Proyecto';
+      }
+      return 'Proyecto';
+    }
+    // Si no hay proyecto, usar el tablero
+    if (task.boardId) {
+      return 'Sin proyecto';
+    }
+    return '-';
+  }
+
+  /**
+   * Formatea la fecha de creación
+   * Usa métodos locales para mostrar el día calendario que el usuario ve
+   */
+  public formatDate(date: Date | string | undefined): string {
+    if (!date) return '-';
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) return '-';
+
+      // Usar métodos locales para mostrar el día calendario que el usuario ve
+      // Cuando una fecha UTC se convierte a hora local, getFullYear(), getMonth(), getDate()
+      // devuelven el día calendario local, no el día UTC
+      // Por ejemplo: 2026-01-27T01:01:00.000Z (UTC) = 26/01/2026 20:01 (hora local UTC-5)
+      // getFullYear() = 2026, getMonth() = 0, getDate() = 26 (día local)
+      const day = dateObj.getDate().toString().padStart(2, '0');
+      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+      const year = dateObj.getFullYear();
+
+      return `${day}/${month}/${year}`;
+    } catch {
+      return '-';
+    }
+  }
+}

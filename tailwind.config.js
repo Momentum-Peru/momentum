@@ -3,6 +3,7 @@
 import PrimeUI from 'tailwindcss-primeui';
 
 module.exports = {
+  darkMode: 'class', // El modo dark solo se activa con la clase 'dark' en <html>
   content: ['./src/**/*.{html,ts,scss}'],
   theme: {
     extend: {

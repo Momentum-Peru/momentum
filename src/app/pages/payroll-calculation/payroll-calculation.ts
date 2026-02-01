@@ -11,10 +11,11 @@ import { FormsModule } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { UsersApiService, User } from '../../shared/services/users-api.service';
+import { UsersApiService, User, UserResponse } from '../../shared/services/users-api.service';
 import { TimeTrackingApiService } from '../../shared/services/time-tracking-api.service';
 import { EmployeesApiService } from '../../shared/services/employees-api.service';
 import { TimeTracking } from '../../shared/interfaces/time-tracking.interface';
+import { forkJoin } from 'rxjs';
 import { PayrollCalculationUserDetailsComponent } from './components/payroll-calculation-user-details/payroll-calculation-user-details';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -23,6 +24,7 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputTextModule } from 'primeng/inputtext';
+import * as XLSX from 'xlsx';
 
 interface UserSummary {
   user: User;
@@ -73,7 +75,7 @@ export class PayrollCalculationPage implements OnInit {
 
   // Filtros
   searchQuery = signal('');
-  selectedMonth = signal<Date | null>(null);
+  dateRange = signal<Date[] | null>(null);
 
   // Diálogos
   showUserDetailsDialog = signal(false);
@@ -84,27 +86,30 @@ export class PayrollCalculationPage implements OnInit {
   private readonly TARDANZA_MINUTE = 0;
 
   ngOnInit(): void {
-    // Establecer mes por defecto (mes actual)
-    this.selectedMonth.set(new Date());
+    // Establecer rango por defecto (mes actual)
+    const today = new Date();
+    const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    this.dateRange.set([startDate, endDate]);
     this.loadAllUsersData();
   }
 
   /**
-   * Obtener fecha de inicio del mes seleccionado
+   * Obtener fecha de inicio del rango seleccionado
    */
   getStartDate(): Date | null {
-    if (!this.selectedMonth()) return null;
-    const month = this.selectedMonth()!;
-    return new Date(month.getFullYear(), month.getMonth(), 1);
+    const range = this.dateRange();
+    if (!range || !Array.isArray(range) || range.length === 0) return null;
+    return range[0] || null;
   }
 
   /**
-   * Obtener fecha de fin del mes seleccionado
+   * Obtener fecha de fin del rango seleccionado
    */
   getEndDate(): Date | null {
-    if (!this.selectedMonth()) return null;
-    const month = this.selectedMonth()!;
-    return new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    const range = this.dateRange();
+    if (!range || !Array.isArray(range) || range.length < 2) return null;
+    return range[1] || null;
   }
 
   /**
@@ -112,11 +117,23 @@ export class PayrollCalculationPage implements OnInit {
    */
   loadAllUsersData(): void {
     this.loading.set(true);
-    this.usersApi.listWithFilters({ isActive: true }).subscribe({
-      next: (response) => {
+    // Cargar todos los usuarios aumentando el límite para obtener todos de una vez
+    this.usersApi.listWithFilters({ isActive: true, limit: 1000 }).subscribe({
+      next: (response: UserResponse & { total?: number; totalPages?: number; page?: number }) => {
+        // La respuesta puede tener 'users' o 'data'
         const usersList = response.users || response.data || [];
-        this.users.set(usersList);
-        this.loadUsersTimeTrackings(usersList);
+
+        // Verificar si hay más páginas y cargarlas si es necesario
+        const total = response.total;
+        const totalPages = response.totalPages;
+
+        if (totalPages && totalPages > 1 && typeof total === 'number' && usersList.length < total) {
+          // Cargar todas las páginas restantes usando forkJoin
+          this.loadAllPagesUsers(totalPages, usersList);
+        } else {
+          this.users.set(usersList);
+          this.loadUsersTimeTrackings(usersList);
+        }
       },
       error: (error: unknown) => {
         console.error('Error al cargar usuarios:', error);
@@ -126,6 +143,42 @@ export class PayrollCalculationPage implements OnInit {
           detail: 'No se pudieron cargar los usuarios',
         });
         this.loading.set(false);
+      },
+    });
+  }
+
+  /**
+   * Cargar todas las páginas de usuarios usando forkJoin
+   */
+  private loadAllPagesUsers(totalPages: number, initialUsers: User[]): void {
+    const requests = [];
+
+    // Crear requests para todas las páginas restantes
+    for (let page = 2; page <= totalPages; page++) {
+      requests.push(this.usersApi.listWithFilters({ isActive: true, page, limit: 1000 }));
+    }
+
+    // Ejecutar todas las peticiones en paralelo
+    forkJoin(requests).subscribe({
+      next: (
+        responses: (UserResponse & { total?: number; totalPages?: number; page?: number })[],
+      ) => {
+        let allUsers = [...initialUsers];
+
+        // Combinar todos los usuarios de todas las páginas
+        responses.forEach((response) => {
+          const pageUsers = response.users || response.data || [];
+          allUsers = allUsers.concat(pageUsers);
+        });
+
+        this.users.set(allUsers);
+        this.loadUsersTimeTrackings(allUsers);
+      },
+      error: (error: unknown) => {
+        console.error('Error al cargar todas las páginas:', error);
+        // Usar al menos los usuarios iniciales
+        this.users.set(initialUsers);
+        this.loadUsersTimeTrackings(initialUsers);
       },
     });
   }
@@ -160,7 +213,7 @@ export class PayrollCalculationPage implements OnInit {
         next: (trackings) => {
           // Filtrar registros legacy
           const validTrackings = trackings.filter(
-            (t) => t.type === 'INGRESO' || t.type === 'SALIDA'
+            (t) => t.type === 'INGRESO' || t.type === 'SALIDA',
           );
           trackingsMap.set(userId, validTrackings);
           loadedCount++;
@@ -221,38 +274,58 @@ export class PayrollCalculationPage implements OnInit {
     let totalFaltas = 0;
     let totalHorasTrabajadas = 0;
 
-    groupedByDay.forEach((dayData, date) => {
+    // Convertir a array ordenado por fecha para poder buscar el día siguiente
+    const sortedDays = Array.from(groupedByDay.entries()).sort((a, b) => {
+      return new Date(a[0]).getTime() - new Date(b[0]).getTime();
+    });
+
+    sortedDays.forEach(([, dayData]) => {
       const hasIngreso = !!dayData.ingreso;
       const hasSalida = !!dayData.salida;
 
-      // Calcular horas trabajadas
+      // Calcular horas trabajadas SOLO si hay entrada Y salida en el mismo día
       if (hasIngreso && hasSalida) {
-        const entryTime = new Date(dayData.ingreso!.date).getTime();
-        const exitTime = new Date(dayData.salida!.date).getTime();
-        if (exitTime > entryTime) {
-          const diffMs = exitTime - entryTime;
-          const diffHours = diffMs / (1000 * 60 * 60);
-          totalHorasTrabajadas += Math.round(diffHours * 100) / 100;
+        const entryTime = new Date(dayData.ingreso!.date);
+        const exitTime = new Date(dayData.salida!.date);
+
+        // Verificar que la salida sea del mismo día que la entrada
+        const entryDay = this.getLocalDateString(entryTime);
+        const exitDay = this.getLocalDateString(exitTime);
+
+        // Solo calcular si son del mismo día
+        if (exitDay === entryDay && exitTime.getTime() > entryTime.getTime()) {
+          const diffMs = exitTime.getTime() - entryTime.getTime();
+          const hoursToAdd = diffMs / (1000 * 60 * 60);
+          totalHorasTrabajadas += Math.round(hoursToAdd * 100) / 100;
         }
       }
 
-      // Asistencia: tiene entrada y salida
+      // Asistencia: tiene entrada Y salida en el mismo día
       if (hasIngreso && hasSalida) {
-        totalAsistencias++;
+        // Verificar que sean del mismo día
+        const entryDay = this.getLocalDateString(dayData.ingreso!.date);
+        const exitDay = this.getLocalDateString(dayData.salida!.date);
 
-        // Verificar tardanza: entrada después de la hora límite
-        const entryDate = new Date(dayData.ingreso!.date);
-        const entryHour = entryDate.getHours();
-        const entryMinute = entryDate.getMinutes();
+        if (exitDay === entryDay) {
+          totalAsistencias++;
 
-        if (
-          entryHour > this.TARDANZA_HOUR ||
-          (entryHour === this.TARDANZA_HOUR && entryMinute > this.TARDANZA_MINUTE)
-        ) {
-          totalTardanzas++;
+          // Verificar tardanza: entrada después de la hora límite
+          const entryDate = new Date(dayData.ingreso!.date);
+          const entryHour = entryDate.getHours();
+          const entryMinute = entryDate.getMinutes();
+
+          if (
+            entryHour > this.TARDANZA_HOUR ||
+            (entryHour === this.TARDANZA_HOUR && entryMinute > this.TARDANZA_MINUTE)
+          ) {
+            totalTardanzas++;
+          }
+        } else {
+          // Tiene entrada y salida pero de días diferentes = falta
+          totalFaltas++;
         }
       } else {
-        // Falta: no tiene entrada o no tiene salida
+        // Falta: no tiene entrada o no tiene salida en el mismo día
         totalFaltas++;
       }
     });
@@ -286,7 +359,7 @@ export class PayrollCalculationPage implements OnInit {
     const query = this.searchQuery().toLowerCase();
     if (query) {
       return summaries.filter(
-        (s) => s.name.toLowerCase().includes(query) || s.email.toLowerCase().includes(query)
+        (s) => s.name.toLowerCase().includes(query) || s.email.toLowerCase().includes(query),
       );
     }
 
@@ -305,8 +378,22 @@ export class PayrollCalculationPage implements OnInit {
    */
   clearFilters(): void {
     this.searchQuery.set('');
-    this.selectedMonth.set(new Date());
+    // Establecer rango por defecto (mes actual)
+    const today = new Date();
+    const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    this.dateRange.set([startDate, endDate]);
     this.loadAllUsersData();
+  }
+
+  /**
+   * Manejar cambio del rango de fechas
+   */
+  onRangeChange(range: Date[] | null): void {
+    this.dateRange.set(Array.isArray(range) && range.length === 2 ? range : null);
+    if (this.dateRange()) {
+      this.applyFilters();
+    }
   }
 
   /**
@@ -331,5 +418,46 @@ export class PayrollCalculationPage implements OnInit {
     if (h > 0 && m > 0) return `${h}h ${m}m`;
     if (h > 0 && m === 0) return `${h}h`;
     return '0h 0m';
+  }
+
+  /**
+   * Descargar reporte general en Excel
+   */
+  downloadGeneralReport(): void {
+    const data = this.userSummaryData();
+    if (data.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'No hay datos para exportar',
+      });
+      return;
+    }
+
+    const reportData = data.map((item) => ({
+      Usuario: item.name,
+      Email: item.email,
+      'Total Asistencias': item.totalAsistencias,
+      'Total Tardanzas': item.totalTardanzas,
+      'Total Faltas': item.totalFaltas,
+      'Horas Trabajadas': this.formatWorkedHours(item.totalHorasTrabajadas),
+    }));
+
+    const worksheet = (
+      XLSX.utils as { json_to_sheet: (data: unknown[]) => XLSX.WorkSheet }
+    ).json_to_sheet(reportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Resumen Asistencias');
+
+    // Generar nombre de archivo con rango de fechas
+    const start = this.getStartDate();
+    const end = this.getEndDate();
+    let fileName = 'Reporte_General_Asistencias';
+    if (start && end) {
+      fileName += `_${start.toISOString().split('T')[0]}_a_${end.toISOString().split('T')[0]}`;
+    }
+    fileName += '.xlsx';
+
+    XLSX.writeFile(workbook, fileName);
   }
 }

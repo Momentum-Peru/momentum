@@ -1,0 +1,250 @@
+<p-dialog
+  [modal]="true"
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [style]="{ width: '90vw', maxWidth: '900px' }"
+  [closable]="true"
+  [header]="'Tareas del ' + formattedDate()"
+  (onHide)="onClose()"
+>
+  <div class="space-y-6">
+    <!-- Botón para crear nueva tarea -->
+    <div class="flex justify-end">
+      <p-button
+        icon="pi pi-plus"
+        label="Nueva Tarea"
+        severity="primary"
+        (onClick)="openCreateForm()"
+        [disabled]="!selectedDate"
+      ></p-button>
+    </div>
+
+    <!-- Formulario para crear nueva tarea -->
+    @if (showCreateForm()) {
+    <p-card>
+      <ng-template pTemplate="header">
+        <h3 class="text-lg font-semibold p-4">Crear Nueva Tarea</h3>
+      </ng-template>
+      <form [formGroup]="taskForm" (ngSubmit)="onCreateTask()" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label for="title" class="block text-sm font-medium mb-2">
+              Título <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="title"
+              type="text"
+              pInputText
+              formControlName="title"
+              placeholder="Título de la tarea"
+              class="w-full"
+              [class.ng-invalid]="taskForm.get('title')?.invalid && taskForm.get('title')?.touched"
+            />
+            @if (taskForm.get('title')?.invalid && taskForm.get('title')?.touched) {
+            <small class="text-red-500">El título es requerido</small>
+            }
+          </div>
+
+          <div>
+            <label for="assignedTo" class="block text-sm font-medium mb-2">
+              Asignar a <span class="text-red-500">*</span>
+            </label>
+            <p-select
+              id="assignedTo"
+              formControlName="assignedTo"
+              [options]="users()"
+              optionLabel="name"
+              optionValue="_id"
+              placeholder="Seleccionar usuario"
+              [loading]="loadingUsers()"
+              [filter]="true"
+              filterPlaceholder="Buscar usuario..."
+              class="w-full"
+              [appendTo]="'body'"
+            >
+              <ng-template let-user pTemplate="item">
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-user"></i>
+                  <div>
+                    <div class="font-medium">{{ user.name }}</div>
+                    <div class="text-sm text-gray-500">{{ user.email }}</div>
+                  </div>
+                </div>
+              </ng-template>
+            </p-select>
+            @if (taskForm.get('assignedTo')?.invalid && taskForm.get('assignedTo')?.touched) {
+            <small class="text-red-500">Debe seleccionar un usuario</small>
+            }
+          </div>
+
+          <div>
+            <label for="boardId" class="block text-sm font-medium mb-2">
+              Tablero <span class="text-red-500">*</span>
+            </label>
+            <p-select
+              id="boardId"
+              formControlName="boardId"
+              [options]="boards"
+              optionLabel="title"
+              optionValue="_id"
+              placeholder="Seleccionar tablero"
+              [filter]="true"
+              filterPlaceholder="Buscar tablero..."
+              class="w-full"
+              [appendTo]="'body'"
+            >
+            </p-select>
+            @if (taskForm.get('boardId')?.invalid && taskForm.get('boardId')?.touched) {
+            <small class="text-red-500">Debe seleccionar un tablero</small>
+            }
+          </div>
+
+          <div>
+            <label for="priority" class="block text-sm font-medium mb-2">Prioridad</label>
+            <p-select
+              id="priority"
+              formControlName="priority"
+              [options]="['Baja', 'Media', 'Alta', 'Crítica']"
+              placeholder="Seleccionar prioridad"
+              class="w-full"
+            ></p-select>
+          </div>
+
+          <div>
+            <label for="dueDate" class="block text-sm font-medium mb-2">Fecha y Hora de vencimiento</label>
+            <p-datepicker
+              id="dueDate"
+              formControlName="dueDate"
+              [iconDisplay]="'input'"
+              dateFormat="dd/mm/yy"
+              [showTime]="true"
+              [showSeconds]="false"
+              hourFormat="24"
+              placeholder="Seleccionar fecha y hora"
+              class="w-full"
+              [appendTo]="'body'"
+            ></p-datepicker>
+          </div>
+
+          <div class="md:col-span-2">
+            <label for="description" class="block text-sm font-medium mb-2">Descripción</label>
+            <textarea
+              id="description"
+              pInputTextarea
+              formControlName="description"
+              placeholder="Descripción de la tarea"
+              [rows]="3"
+              class="w-full"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="flex gap-2 justify-end">
+          <p-button
+            label="Cancelar"
+            [text]="true"
+            severity="secondary"
+            (onClick)="closeCreateForm()"
+            [disabled]="loading()"
+          ></p-button>
+          <p-button
+            label="Crear Tarea"
+            severity="primary"
+            (onClick)="onCreateTask()"
+            [loading]="loading()"
+            [disabled]="taskForm.invalid"
+          ></p-button>
+        </div>
+      </form>
+    </p-card>
+    }
+
+    <!-- Lista de tareas agrupadas por tablero -->
+    @if (tasksGroupedByBoard().length > 0) {
+    <div class="space-y-4">
+      @for (group of tasksGroupedByBoard(); track group.boardId) {
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="flex items-center justify-between p-4">
+            <h3 class="text-lg font-semibold">
+              {{ group.board?.title || 'Sin Tablero' }}
+            </h3>
+            @if (group.board) {
+            <p-button
+              icon="pi pi-external-link"
+              [text]="true"
+              severity="secondary"
+              (onClick)="viewBoard(group.board!._id)"
+              pTooltip="Ver tablero"
+            ></p-button>
+            }
+          </div>
+        </ng-template>
+        <div class="space-y-3">
+          @for (task of group.tasks; track task._id) {
+          <div class="border-l-4 pl-4 py-2" [class.border-blue-500]="task.priority === 'Baja'"
+            [class.border-yellow-500]="task.priority === 'Media'"
+            [class.border-orange-500]="task.priority === 'Alta'"
+            [class.border-red-500]="task.priority === 'Crítica'">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1">
+                <h4 class="font-semibold text-gray-900 dark:text-white">{{ task.title }}</h4>
+                @if (task.description) {
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ task.description }}</p>
+                }
+                <div class="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-500">
+                  <span>
+                    <i class="pi pi-user mr-1"></i>
+                    {{ getAssignedUserName(task) }}
+                  </span>
+                  @if (task.dueDate) {
+                  <span>
+                    <i class="pi pi-calendar mr-1"></i>
+                    {{ formatDateTime(task.dueDate) }}
+                  </span>
+                  }
+                  <p-tag [value]="task.status" [severity]="
+                      task.status === 'Terminada'
+                        ? 'success'
+                        : task.status === 'En curso'
+                        ? 'info'
+                        : 'warn'
+                    "></p-tag>
+                  <p-tag [value]="task.priority" [severity]="
+                      task.priority === 'Crítica'
+                        ? 'danger'
+                        : task.priority === 'Alta'
+                        ? 'warn'
+                        : task.priority === 'Media'
+                        ? 'info'
+                        : 'secondary'
+                    "></p-tag>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <p-button
+                  icon="pi pi-eye"
+                  [text]="true"
+                  severity="secondary"
+                  (onClick)="viewTask(task)"
+                  pTooltip="Ver detalles de la tarea"
+                  [rounded]="true"
+                ></p-button>
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+      </p-card>
+      }
+    </div>
+    } @else {
+    <div class="text-center py-8">
+      <i class="pi pi-calendar-times text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+      <p class="text-gray-500 dark:text-gray-400">No hay tareas asignadas para este día</p>
+    </div>
+    }
+  </div>
+</p-dialog>
+
+<p-toast></p-toast>

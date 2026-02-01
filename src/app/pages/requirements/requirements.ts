@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+  computed,
+  effect,
+  OnInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -254,14 +262,17 @@ export class RequirementsPage implements OnInit {
       : undefined;
 
     // El aprobador es completamente opcional, solo se incluye si tiene al menos un campo con valor
-    const cleanAprobador = item.aprobador &&
-      (item.aprobador.nombre?.trim() || item.aprobador.codigo?.trim() || item.aprobador.cargo?.trim())
-      ? {
-          ...(item.aprobador.nombre?.trim() && { nombre: item.aprobador.nombre.trim() }),
-          ...(item.aprobador.codigo?.trim() && { codigo: item.aprobador.codigo.trim() }),
-          ...(item.aprobador.cargo?.trim() && { cargo: item.aprobador.cargo.trim() }),
-        }
-      : undefined;
+    const cleanAprobador =
+      item.aprobador &&
+      (item.aprobador.nombre?.trim() ||
+        item.aprobador.codigo?.trim() ||
+        item.aprobador.cargo?.trim())
+        ? {
+            ...(item.aprobador.nombre?.trim() && { nombre: item.aprobador.nombre.trim() }),
+            ...(item.aprobador.codigo?.trim() && { codigo: item.aprobador.codigo.trim() }),
+            ...(item.aprobador.cargo?.trim() && { cargo: item.aprobador.cargo.trim() }),
+          }
+        : undefined;
 
     // Construir payload limpio sin campos de solo lectura
     const payload = {
@@ -379,8 +390,8 @@ export class RequirementsPage implements OnInit {
   private processFiles(files: File[]) {
     console.log('Archivos seleccionados:', files);
 
-    // Validar tamaño de archivos (10MB máximo)
-    const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+    // Validar tamaño de archivos (200MB máximo)
+    const maxSize = 200 * 1024 * 1024; // 200MB en bytes
     const validFiles: File[] = [];
     const invalidFiles: File[] = [];
 
@@ -398,7 +409,7 @@ export class RequirementsPage implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Error de validación',
-          detail: `El archivo ${file.name} es demasiado grande. Máximo 10MB.`,
+          detail: `El archivo ${file.name} es demasiado grande. Máximo 200MB.`,
         });
       });
     }
@@ -425,9 +436,9 @@ export class RequirementsPage implements OnInit {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  removeSelectedFile(index: number) {
+  removeSelectedFile(fileToRemove: File) {
     const currentFiles = this.selectedFiles();
-    const updatedFiles = currentFiles.filter((_, i) => i !== index);
+    const updatedFiles = currentFiles.filter((file) => file !== fileToRemove);
     this.selectedFiles.set(updatedFiles);
   }
 
@@ -513,7 +524,27 @@ export class RequirementsPage implements OnInit {
         detail: `${files.length} archivo(s) procesado(s)`,
       });
       this.clearSelectedFiles();
-      this.load(); // Recargar para obtener documentos actualizados
+      
+      // Recargar el requerimiento específico para obtener los documentos actualizados
+      if (requirementId) {
+        this.http.get<RequirementItem>(`${this.baseUrl}/requirements/${requirementId}`).subscribe({
+          next: (updatedRequirement) => {
+            // Actualizar el requerimiento en la lista
+            this.items.update((items) =>
+              items.map((item) => (item._id === requirementId ? updatedRequirement : item))
+            );
+            // Actualizar el requerimiento que se está viendo en el modal
+            this.documentsViewing.set(updatedRequirement);
+          },
+          error: (error) => {
+            console.error('Error al recargar el requerimiento:', error);
+            // Si falla, al menos recargar la lista completa
+            this.load();
+          },
+        });
+      } else {
+        this.load(); // Recargar para obtener documentos actualizados
+      }
     });
   }
 
@@ -719,11 +750,21 @@ export class RequirementsPage implements OnInit {
           return message;
         }
       }
-      if (httpError.error && typeof httpError.error === 'object' && 'error' in httpError.error && typeof httpError.error.error === 'string') {
+      if (
+        httpError.error &&
+        typeof httpError.error === 'object' &&
+        'error' in httpError.error &&
+        typeof httpError.error.error === 'string'
+      ) {
         return httpError.error.error;
       }
     }
-    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
       return error.message;
     }
     return 'Ha ocurrido un error inesperado';
