@@ -38,8 +38,18 @@
     }
   </div>
 
-  <!-- Rango de fechas, filtro de usuario (gerencia) y búsqueda -->
+  <!-- Rango de fechas, período por mes, filtro de usuario (gerencia) y búsqueda -->
   <div class="flex flex-wrap items-center gap-2">
+    <p-select
+      [options]="monthPeriodOptions()"
+      [ngModel]="getSelectedMonthPeriod()"
+      (ngModelChange)="onMonthPeriodChange($event)"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Período por mes"
+      styleClass="w-full sm:w-auto min-w-[180px]"
+      [showClear]="true"
+    ></p-select>
     <p-datepicker
       (ngModelChange)="onStartDateChange($event)"
       [ngModel]="getStartDateValue()"
@@ -48,6 +58,7 @@
       appendTo="body"
       iconDisplay="input"
       selectionMode="single"
+      locale="es-PE"
       class="w-full sm:w-auto"
     ></p-datepicker>
     <p-datepicker
@@ -58,6 +69,7 @@
       appendTo="body"
       iconDisplay="input"
       selectionMode="single"
+      locale="es-PE"
       class="w-full sm:w-auto"
     ></p-datepicker>
     @if (canViewAllUsers()) {
@@ -70,6 +82,10 @@
         placeholder="Filtrar por usuario"
         styleClass="w-full sm:w-auto min-w-[220px]"
         [showClear]="true"
+        [filter]="true"
+        filterBy="label"
+        filterPlaceholder="Buscar por nombre..."
+        [filterMatchMode]="'contains'"
       ></p-select>
     }
     @if (!canViewAllUsers()) {
@@ -144,6 +160,11 @@
                 <div class="font-medium text-gray-900 dark:text-white truncate">
                   {{ user.userName }}
                 </div>
+                @if (user.cargo) {
+                  <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
+                    {{ user.cargo }}
+                  </div>
+                }
                 <div class="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
                   <span class="inline-flex items-center gap-1">
                     <i class="pi pi-calendar text-green-600 dark:text-green-400"></i>

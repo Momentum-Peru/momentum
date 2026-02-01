@@ -51,6 +51,22 @@ import {
   TimeTrackingReportMark,
 } from '../../shared/services/time-tracking-pdf.service';
 
+/** Cargos en duro por nombre completo (Nombre Apellido) normalizado a minúsculas. */
+const CARGO_POR_NOMBRE: Record<string, string> = {
+  'petter marcel torres angulo': 'OPERARIO',
+  'jordan polosefer mendoza anton': 'SSOMA',
+  'jose luis tello ostos': 'CHOFER-ALMACENERO',
+  'elder jasinto lucas andrade': 'OFICIAL MONTAJISTA',
+  'hugo benigno casimiro huaman': 'INGENIERO RESIDENTE',
+  'yerlin torres estela': 'OFICIAL MONTAJISTA',
+  'aldo torres estela': 'AYUDANTE',
+  'rosa chipana llacchua': 'LOGISTICA',
+  'david angel cueva rosales': 'ARQUITECTO',
+  'beltran torres estela': 'JEFE DE PRODUCCION',
+  'nilda nicole nolasco chipana': 'ASIST. ADMINISTRATIVO',
+  'sergio nolasco estela': 'GERENTE GENERAL',
+};
+
 /**
  * Componente de Marcación de Hora
  * Principio de Responsabilidad Única: Gestiona la UI y estado de los registros de tiempo
@@ -172,14 +188,16 @@ export class TimeTrackingPage implements OnInit {
     });
   });
 
-  /** Opciones para el selector de usuario (gerencia) */
+  /** Opciones para el selector de usuario (gerencia): orden alfabético por nombre, sin correo. */
   userFilterOptions = computed(() => {
-    const list = this.users();
+    const list = [...this.users()].sort((a, b) =>
+      (a.name ?? '').localeCompare(b.name ?? '', 'es')
+    );
     const options: { label: string; value: string | null }[] = [
       { label: 'Todos los usuarios', value: null },
     ];
     list.forEach((u) => {
-      options.push({ label: `${u.name} (${u.email})`, value: u._id });
+      options.push({ label: u.name ?? '', value: u._id });
     });
     return options;
   });
@@ -306,6 +324,7 @@ export class TimeTrackingPage implements OnInit {
     const result: {
       userId: string;
       userName: string;
+      cargo: string;
       totalMarcaciones: number;
       asistencias: number;
       faltas: number;
@@ -335,9 +354,11 @@ export class TimeTrackingPage implements OnInit {
       const itemsByDay = Array.from(dayMap.entries())
         .sort((a, b) => b[0].localeCompare(a[0]))
         .map(([date, dayItems]) => ({ date, items: dayItems }));
+      const cargo = CARGO_POR_NOMBRE[this.normalizeName(row.userName)] ?? '';
       result.push({
         userId,
         userName: row.userName,
+        cargo,
         totalMarcaciones: items.length,
         asistencias,
         faltas,
@@ -451,6 +472,54 @@ export class TimeTrackingPage implements OnInit {
     });
   }
 
+  /** Opciones para selector de período por mes (desde Enero 2026 hasta el mes actual). */
+  monthPeriodOptions = computed(() => {
+    const options: { label: string; value: string }[] = [];
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+    ];
+    const startYear = 2026;
+    const startMonth = 0; // Enero
+    const now = new Date();
+    const endYear = now.getFullYear();
+    const endMonth = now.getMonth();
+    for (let y = startYear; y <= endYear; y++) {
+      const mStart = y === startYear ? startMonth : 0;
+      const mEnd = y === endYear ? endMonth : 11;
+      for (let m = mStart; m <= mEnd; m++) {
+        const value = `${y}-${(m + 1).toString().padStart(2, '0')}`;
+        options.push({ label: `Período ${monthNames[m]} ${y}`, value });
+      }
+    }
+    return options;
+  });
+
+  /** Devuelve "YYYY-MM" si el rango actual es un mes completo; si no, null. */
+  getSelectedMonthPeriod(): string | null {
+    const start = this.startDate();
+    const end = this.endDate();
+    if (!start || !end || start.length < 7 || end.length < 7) return null;
+    const [sy, sm] = [start.slice(0, 4), start.slice(5, 7)];
+    if (start !== `${sy}-${sm}-01`) return null;
+    const lastDay = new Date(parseInt(sy, 10), parseInt(sm, 10), 0);
+    const lastStr = this.formatDateYMD(lastDay);
+    return end === lastStr ? `${sy}-${sm}` : null;
+  }
+
+  /** Aplica el rango del mes seleccionado (valor "YYYY-MM") y recarga. */
+  onMonthPeriodChange(value: string | null): void {
+    if (!value || value.length < 7) return;
+    const [y, m] = [value.slice(0, 4), value.slice(5, 7)];
+    const year = parseInt(y, 10);
+    const month = parseInt(m, 10);
+    const first = new Date(year, month - 1, 1);
+    const last = new Date(year, month, 0);
+    this.startDate.set(this.formatDateYMD(first));
+    this.endDate.set(this.formatDateYMD(last));
+    this.load();
+  }
+
   onStartDateChange(value: Date | null) {
     this.startDate.set(value ? this.formatDateYMD(value) : null);
     this.load();
@@ -475,11 +544,23 @@ export class TimeTrackingPage implements OnInit {
     }
   }
 
+  /** Normaliza el nombre para búsqueda en CARGO_POR_NOMBRE (minúsculas, sin espacios extra). */
+  private normalizeName(name: string): string {
+    return (name ?? '').trim().toLowerCase();
+  }
+
+  /** Carga todos los usuarios del tenant (todas las páginas) para el filtro de gerencia. */
   loadUsers() {
     const tenantId = this.tenantService.tenantId();
-    this.usersApi.list(tenantId ?? undefined).subscribe({
+    this.usersApi.listAll(tenantId ?? undefined).subscribe({
       next: (data) => this.users.set(data),
-      error: () => {},
+      error: () => {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Usuarios',
+          detail: 'No se pudo cargar la lista de usuarios para el filtro',
+        });
+      },
     });
   }
 
@@ -549,7 +630,6 @@ export class TimeTrackingPage implements OnInit {
       asistencias: u.asistencias,
       tardanzas: u.tardanzas,
       faltas: u.faltas,
-      totalMarcaciones: u.totalMarcaciones,
       itemsByDay: u.itemsByDay.map((day) => ({
         date: day.date,
         items: day.items.map(
@@ -567,20 +647,26 @@ export class TimeTrackingPage implements OnInit {
       startDate: start,
       endDate: end,
       kpis: {
-        total: stats.total,
+        asistencias: stats.diasConAsistencia,
         totalTardanzas: stats.totalTardanzas,
         faltas: stats.faltas,
-        diasEnRango: stats.diasEnRango,
-        usuariosConMarcacion: stats.usuariosConMarcacion,
       },
       users: reportUsers,
     };
+    void this.downloadPdfReportAsync(data, start, end);
+  }
+
+  private async downloadPdfReportAsync(
+    data: TimeTrackingReportData,
+    start: string,
+    end: string
+  ): Promise<void> {
     try {
-      const blob = this.timeTrackingPdfService.generateReport(data);
+      const blob = await this.timeTrackingPdfService.generateReport(data);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `reporte-marcaciones_${start}_${end}.pdf`;
+      link.download = `reporte-asistencias_${start}_${end}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
       this.messageService.add({
