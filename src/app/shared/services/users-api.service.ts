@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, EMPTY } from 'rxjs';
+import { map, expand, reduce } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { UserOption } from '../interfaces/menu-permission.interface';
 
@@ -78,6 +78,40 @@ export class UsersApiService {
           name: user.name,
           email: user.email,
           role: user.role,
+        }))
+      )
+    );
+  }
+
+  /**
+   * Obtiene todos los usuarios del tenant (todas las páginas) para selectores.
+   * Útil cuando el backend pagina y se necesita la lista completa.
+   */
+  listAll(tenantId?: string, pageSize = 100): Observable<UserOption[]> {
+    return this.listWithFilters({
+      tenantId,
+      page: 1,
+      limit: pageSize,
+    }).pipe(
+      expand((res) => {
+        const pagination = res.pagination;
+        if (!pagination || pagination.page >= pagination.pages) return EMPTY;
+        return this.listWithFilters({
+          tenantId,
+          page: pagination.page + 1,
+          limit: pageSize,
+        });
+      }),
+      reduce(
+        (acc: User[], res) => acc.concat(res.data ?? res.users ?? []),
+        [] as User[]
+      ),
+      map((users) =>
+        users.map((u) => ({
+          _id: u._id || u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
         }))
       )
     );
