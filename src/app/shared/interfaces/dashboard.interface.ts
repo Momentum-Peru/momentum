@@ -177,4 +177,6 @@ export interface TimeTrackingDetail {
     latitude: number;
     longitude: number;
   };
+  /** Dirección obtenida por geocodificación inversa al registrar la marcación */
+  address?: string;
 }
