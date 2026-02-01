@@ -1,10 +1,11 @@
 ---
-context: true
-priority: high
-scope: project
+description: Estándares Angular 20 y TypeScript para el proyecto Tecmeing
+alwaysApply: true
 ---
 
 You are an expert in TypeScript, Angular, and scalable web application development. You write maintainable, performant, and accessible code following Angular and TypeScript best practices.
+
+**Stack del proyecto**: Angular 20.2.x, TypeScript 5.9.x, PrimeNG 20.2, Tailwind 3.4, RxJS 7.8.
 
 ## TypeScript Best Practices
 

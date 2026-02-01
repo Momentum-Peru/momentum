@@ -1,8 +1,8 @@
 <div class="p-4 space-y-4 mt-5 overflow-x-hidden">
   <p-toast [life]="5000"></p-toast>
 
-  <!-- Título -->
-  <div class="mb-4">
+  <!-- Título y acciones -->
+  <div class="mb-4 flex flex-wrap items-center gap-2">
     <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">Marcación de Hora</h1>
     <button
       pButton
@@ -11,33 +11,311 @@
       label="Nueva Marcación"
       icon="pi pi-camera"
       severity="success"
-      class="mt-3"
       aria-label="Crear nueva marcación con reconocimiento facial"
     ></button>
+    @if (canAddForOthers()) {
+      <button
+        pButton
+        type="button"
+        (click)="openAddMarkDialog()"
+        label="Agregar marcación"
+        icon="pi pi-plus"
+        severity="secondary"
+        aria-label="Agregar marcación para otro usuario"
+      ></button>
+    }
+    @if (canViewAllUsers()) {
+      <button
+        pButton
+        type="button"
+        (click)="downloadPdfReport()"
+        label="Descargar PDF"
+        icon="pi pi-file-pdf"
+        severity="secondary"
+        class="p-button-outlined"
+        aria-label="Descargar reporte de marcaciones en PDF"
+      ></button>
+    }
   </div>
 
+  <!-- Rango de fechas, filtro de usuario (gerencia) y búsqueda -->
   <div class="flex flex-wrap items-center gap-2">
-    <input
-      pInputText
-      placeholder="Buscar por fecha o tipo..."
-      [ngModel]="query()"
-      (ngModelChange)="setQuery($event)"
-      name="searchQuery"
-      class="flex-1 min-w-[200px]"
-    />
     <p-datepicker
-      (ngModelChange)="onFilterDateChange($event)"
-      [ngModel]="getFilterDate()"
+      (ngModelChange)="onStartDateChange($event)"
+      [ngModel]="getStartDateValue()"
       dateFormat="dd/mm/yy"
-      placeholder="Filtrar por fecha"
+      placeholder="Desde"
       appendTo="body"
       iconDisplay="input"
-      [selectionMode]="'single'"
-      class="w-full xl:w-auto"
+      selectionMode="single"
+      class="w-full sm:w-auto"
     ></p-datepicker>
+    <p-datepicker
+      (ngModelChange)="onEndDateChange($event)"
+      [ngModel]="getEndDateValue()"
+      dateFormat="dd/mm/yy"
+      placeholder="Hasta"
+      appendTo="body"
+      iconDisplay="input"
+      selectionMode="single"
+      class="w-full sm:w-auto"
+    ></p-datepicker>
+    @if (canViewAllUsers()) {
+      <p-select
+        [options]="userFilterOptions()"
+        [ngModel]="getFilterUserValue()"
+        (ngModelChange)="onFilterUserChange($event)"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Filtrar por usuario"
+        styleClass="w-full sm:w-auto min-w-[220px]"
+        [showClear]="true"
+      ></p-select>
+    }
+    @if (!canViewAllUsers()) {
+      <input
+        pInputText
+        placeholder="Buscar por fecha o tipo..."
+        [ngModel]="query()"
+        (ngModelChange)="setQuery($event)"
+        name="searchQuery"
+        class="flex-1 min-w-[200px]"
+      />
+    }
   </div>
 
-  <!-- Vista Desktop: Tabla -->
+  <!-- Dashboard: KPIs y resumen -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-sm text-gray-500 dark:text-gray-400">Total marcaciones</div>
+      <div class="text-2xl font-semibold text-gray-800 dark:text-white mt-1">
+        {{ dashboardStats().total }}
+      </div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-sm text-gray-500 dark:text-gray-400">Tardanzas</div>
+      <div class="text-2xl font-semibold text-orange-600 dark:text-orange-400 mt-1">
+        {{ dashboardStats().totalTardanzas }}
+      </div>
+      <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Ingresos después de las 8:00</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-sm text-gray-500 dark:text-gray-400">Faltas (días sin asistencia)</div>
+      <div class="text-2xl font-semibold text-amber-600 dark:text-amber-400 mt-1">
+        {{ dashboardStats().faltas }}
+      </div>
+      <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Días del rango sin ningún ingreso</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-sm text-gray-500 dark:text-gray-400">Días seleccionados</div>
+      <div class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mt-1">
+        {{ dashboardStats().diasEnRango }}
+      </div>
+    </div>
+    @if (canViewAllUsers()) {
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Usuarios con marcación</div>
+        <div class="text-2xl font-semibold text-blue-600 dark:text-blue-400 mt-1">
+          {{ dashboardStats().usuariosConMarcacion }}
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Vista Gerencia: Resumen por usuario con opción Ver detalle -->
+  @if (canViewAllUsers()) {
+    <section class="space-y-4" aria-label="Resumen por usuario">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Resumen por usuario</h2>
+      @for (user of summaryByUser(); track user.userId) {
+        <div
+          class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm transition-shadow hover:shadow-md"
+        >
+          <div
+            class="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-4"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <div
+                class="flex-shrink-0 w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-semibold text-sm"
+                aria-hidden="true"
+              >
+                {{ user.userName.charAt(0).toUpperCase() }}
+              </div>
+              <div class="min-w-0">
+                <div class="font-medium text-gray-900 dark:text-white truncate">
+                  {{ user.userName }}
+                </div>
+                <div class="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <span class="inline-flex items-center gap-1">
+                    <i class="pi pi-calendar text-green-600 dark:text-green-400"></i>
+                    <strong class="text-green-700 dark:text-green-300">{{ user.asistencias }}</strong>
+                    días con asistencia
+                  </span>
+                  <span class="inline-flex items-center gap-1">
+                    <i class="pi pi-clock text-orange-600 dark:text-orange-400"></i>
+                    <strong class="text-orange-700 dark:text-orange-300">{{ user.tardanzas }}</strong>
+                    tardanzas
+                  </span>
+                  <span class="inline-flex items-center gap-1">
+                    <i class="pi pi-times-circle text-amber-600 dark:text-amber-400"></i>
+                    <strong class="text-amber-700 dark:text-amber-300">{{ user.faltas }}</strong>
+                    faltas
+                  </span>
+                  <span class="inline-flex items-center gap-1">
+                    <i class="pi pi-list text-gray-500"></i>
+                    <strong>{{ user.totalMarcaciones }}</strong>
+                    marcaciones
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              pButton
+              [label]="isUserDetailExpanded(user.userId) ? 'Ocultar detalle' : 'Ver detalle'"
+              [icon]="isUserDetailExpanded(user.userId) ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+              iconPos="right"
+              class="p-button-outlined p-button-sm"
+              (click)="toggleUserDetail(user.userId)"
+              [attr.aria-expanded]="isUserDetailExpanded(user.userId)"
+              aria-label="Ver u ocultar detalle de marcaciones"
+            ></button>
+          </div>
+          @if (isUserDetailExpanded(user.userId)) {
+            <div
+              class="border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30"
+            >
+              <div class="px-4 py-3 sm:px-5">
+                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Marcaciones por día
+                </h3>
+                @for (day of user.itemsByDay; track day.date) {
+                  <div
+                    class="mb-3 last:mb-0 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden"
+                  >
+                    <div
+                      class="px-3 py-2 bg-gray-100 dark:bg-gray-700/50 text-sm font-medium text-gray-700 dark:text-gray-200"
+                    >
+                      {{ day.date }}
+                    </div>
+                    <ul class="divide-y divide-gray-200 dark:divide-gray-600">
+                      @for (item of day.items; track item._id || item.date) {
+                        <li
+                          class="px-3 py-2 flex flex-wrap items-center gap-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                        >
+                          <span class="text-gray-600 dark:text-gray-400">
+                            {{ formatDateTime(item.date) }}
+                          </span>
+                          <span
+                            class="px-2 py-0.5 text-xs font-semibold rounded-full"
+                            [class]="getTypeBadgeClass(item.type)"
+                          >
+                            {{ item.type }}
+                          </span>
+                          @if (item.type === 'INGRESO' && isTardanza(item.date)) {
+                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200">
+                              Tardanza
+                            </span>
+                          }
+                          @if (item.location || item.address) {
+                            <span
+                              class="text-xs text-gray-500 truncate max-w-[180px]"
+                              [title]="formatLocation(item)"
+                            >
+                              <i class="pi pi-map-marker mr-1"></i>{{ formatLocation(item) }}
+                            </span>
+                          }
+                          <span class="ml-auto flex items-center gap-1">
+                            <button
+                              pButton
+                              icon="pi pi-eye"
+                              class="p-button-text p-button-sm"
+                              (click)="viewItem(item)"
+                              aria-label="Ver marcación"
+                            ></button>
+                            @if (canEditOrDelete()) {
+                              <button
+                                pButton
+                                icon="pi pi-pencil"
+                                class="p-button-text p-button-sm"
+                                (click)="editItem(item)"
+                                aria-label="Editar"
+                              ></button>
+                              <button
+                                pButton
+                                icon="pi pi-trash"
+                                class="p-button-text p-button-danger p-button-sm"
+                                (click)="remove(item)"
+                                aria-label="Eliminar"
+                              ></button>
+                            }
+                          </span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                } @empty {
+                  <p class="text-sm text-gray-500 dark:text-gray-400 py-2">
+                    No hay marcaciones en este período.
+                  </p>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @empty {
+        <div
+          class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center"
+        >
+          <i class="pi pi-users text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+          <p class="text-gray-600 dark:text-gray-400">
+            No hay marcaciones en el rango seleccionado.
+          </p>
+          <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">
+            Ajusta las fechas o el filtro de usuario.
+          </p>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- Vista usuario: Marcaciones por día (agrupado) -->
+  @if (!canViewAllUsers()) {
+    <div class="space-y-3">
+      <h2 class="text-lg font-medium text-gray-800 dark:text-white">Marcaciones por día</h2>
+      @for (day of itemsByDay(); track day.date) {
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div class="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 font-medium text-gray-700 dark:text-gray-200">
+            {{ day.date }}
+          </div>
+          <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+            @for (item of day.items; track item._id || item.date) {
+              <li class="px-4 py-2 flex flex-wrap items-center gap-2 text-sm">
+                <span class="font-medium text-gray-500 dark:text-gray-400">
+                  {{ formatDateTime(item.date) }}
+                </span>
+                <span
+                  class="px-2 py-0.5 text-xs font-semibold rounded-full"
+                  [class]="getTypeBadgeClass(item.type)"
+                >
+                  {{ item.type }}
+                </span>
+                @if (item.location || item.address) {
+                  <span class="text-xs text-gray-500 truncate max-w-[200px]" [title]="formatLocation(item)">
+                    <i class="pi pi-map-marker mr-1"></i>{{ formatLocation(item) }}
+                  </span>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      } @empty {
+        <p class="text-sm text-gray-500 dark:text-gray-400">No hay marcaciones en el rango seleccionado.</p>
+      }
+    </div>
+  }
+
+  <!-- Vista Desktop: Tabla (usuario normal; gerencia usa resumen + detalle) -->
+  @if (!canViewAllUsers()) {
   <div class="hidden md:block">
     <p-table
       [value]="filteredItems()"
@@ -47,6 +325,9 @@
     >
       <ng-template pTemplate="header">
         <tr>
+          @if (canViewAllUsers()) {
+            <th>Usuario</th>
+          }
           <th>Fecha y Hora</th>
           <th>Tipo</th>
           <th>Ubicación</th>
@@ -55,22 +336,26 @@
       </ng-template>
       <ng-template pTemplate="body" let-row>
         <tr>
+          @if (canViewAllUsers()) {
+            <td>{{ getUserName(row) }}</td>
+          }
           <td>{{ formatDateTime(row.date) }}</td>
           <td>
             <span
               class="px-2 py-1 text-xs font-semibold rounded-full"
-              [ngClass]="getTypeBadgeClass(row.type)"
+              [class]="getTypeBadgeClass(row.type)"
             >
               {{ row.type }}
             </span>
           </td>
           <td>
             <div class="text-xs text-gray-500 dark:text-gray-400">
-              <span *ngIf="row.location">
+              @if (row.location || row.address) {
                 <i class="pi pi-map-marker mr-1"></i>
-                {{ formatLocation(row.location) }}
-              </span>
-              <span *ngIf="!row.location">-</span>
+                {{ formatLocation(row) }}
+              } @else {
+                -
+              }
             </div>
           </td>
           <td class="text-right">
@@ -82,20 +367,20 @@
               aria-label="Ver detalles de la marcación"
             ></button>
             @if (canEditOrDelete()) {
-            <button
-              pButton
-              icon="pi pi-pencil"
-              class="p-button-text"
-              (click)="editItem(row)"
-              aria-label="Editar marcación"
-            ></button>
-            <button
-              pButton
-              icon="pi pi-trash"
-              class="p-button-text p-button-danger"
-              (click)="remove(row)"
-              aria-label="Eliminar marcación"
-            ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text"
+                (click)="editItem(row)"
+                aria-label="Editar marcación"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-danger"
+                (click)="remove(row)"
+                aria-label="Eliminar marcación"
+              ></button>
             }
           </td>
         </tr>
@@ -119,16 +404,21 @@
           <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
             {{ formatDateTime(row.date) }}
           </div>
-          <div class="flex items-center gap-2 mt-2">
+          @if (canViewAllUsers()) {
+            <div class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ getUserName(row) }}</div>
+          }
+          <div class="flex items-center gap-2 mt-2 flex-wrap">
             <span
               class="px-2 py-1 text-xs font-semibold rounded-full"
-              [ngClass]="getTypeBadgeClass(row.type)"
+              [class]="getTypeBadgeClass(row.type)"
             >
               {{ row.type }}
             </span>
-            <span *ngIf="row.location" class="text-xs text-gray-500">
-              <i class="pi pi-map-marker"></i> {{ formatLocation(row.location) }}
-            </span>
+            @if (row.location || row.address) {
+              <span class="text-xs text-gray-500">
+                <i class="pi pi-map-marker"></i> {{ formatLocation(row) }}
+              </span>
+            }
           </div>
         </div>
         <div class="flex-shrink-0">
@@ -149,19 +439,25 @@
             <div class="mt-1">
               <span
                 class="px-2 py-1 text-xs font-semibold rounded-full"
-                [ngClass]="getTypeBadgeClass(row.type)"
+                [class]="getTypeBadgeClass(row.type)"
               >
                 {{ row.type || '-' }}
               </span>
             </div>
           </div>
+          @if (canViewAllUsers()) {
+            <div class="text-sm text-gray-700 dark:text-gray-300">
+              <div class="font-medium">Usuario</div>
+              <div class="mt-1">{{ getUserName(row) }}</div>
+            </div>
+          }
 
           @if (row.location) {
           <div class="text-sm text-gray-700 dark:text-gray-300">
             <div class="font-medium">Ubicación</div>
             <div class="mt-1 text-xs">
               <i class="pi pi-map-marker mr-1"></i>
-              {{ formatLocation(row.location) }}
+              {{ formatLocation(row) }}
             </div>
           </div>
           }
@@ -200,6 +496,7 @@
     </div>
     }
   </div>
+  }
 
   <!-- Modal de edición/creación -->
   <p-dialog
@@ -295,43 +592,119 @@
       <span class="font-semibold">Ver detalles del registro</span>
     </ng-template>
 
-    <div class="space-y-4" *ngIf="viewing() as v">
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <span class="block text-xs text-gray-500 dark:text-white mb-1">Fecha y Hora</span>
-          <div class="font-medium text-gray-700 dark:text-white">
-            {{ formatDateTime(v.date) }}
-          </div>
-        </div>
-        <div>
-          <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo</span>
-          <div>
-            <span
-              class="px-2 py-1 text-xs font-semibold rounded-full"
-              [ngClass]="getTypeBadgeClass(v.type)"
-            >
-              {{ v.type || '-' }}
-            </span>
-          </div>
-        </div>
-        <div>
-          <span class="block text-xs text-gray-500 dark:text-white mb-1">Ubicación</span>
-          <div class="font-medium text-gray-700 dark:text-white">
-            @if (v.location) {
-            <div class="text-xs">
-              <i class="pi pi-map-marker mr-1"></i>
-              {{ formatLocation(v.location) }}
+    @if (viewing(); as v) {
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          @if (canViewAllUsers()) {
+            <div class="col-span-2">
+              <span class="block text-xs text-gray-500 dark:text-white mb-1">Usuario</span>
+              <div class="font-medium text-gray-700 dark:text-white">{{ getUserName(v) }}</div>
             </div>
-            } @else {
-            <span class="text-gray-400">-</span>
-            }
+          }
+          <div>
+            <span class="block text-xs text-gray-500 dark:text-white mb-1">Fecha y Hora</span>
+            <div class="font-medium text-gray-700 dark:text-white">{{ formatDateTime(v.date) }}</div>
+          </div>
+          <div>
+            <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo</span>
+            <div>
+              <span
+                class="px-2 py-1 text-xs font-semibold rounded-full"
+                [class]="getTypeBadgeClass(v.type)"
+              >
+                {{ v.type || '-' }}
+              </span>
+            </div>
+          </div>
+          <div class="col-span-2">
+            <span class="block text-xs text-gray-500 dark:text-white mb-1">Ubicación</span>
+            <div class="font-medium text-gray-700 dark:text-white">
+              @if (v.location || v.address) {
+                <div class="text-xs">
+                  <i class="pi pi-map-marker mr-1"></i>
+                  {{ formatLocation(v) }}
+                </div>
+              } @else {
+                <span class="text-gray-400">-</span>
+              }
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    }
 
     <ng-template pTemplate="footer">
       <button pButton label="Cerrar" (click)="closeViewDialog()" aria-label="Cerrar"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo Agregar marcación (solo administración) -->
+  <p-dialog
+    [visible]="showAddMarkDialog()"
+    (visibleChange)="showAddMarkDialog.set($event)"
+    header="Agregar marcación"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '28rem' }"
+    [closable]="true"
+    (onHide)="closeAddMarkDialog()"
+    appendTo="body"
+  >
+    <div class="grid gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Usuario *</label>
+        <p-select
+          [options]="users()"
+          [ngModel]="addingMarkUserId()"
+          (ngModelChange)="addingMarkUserId.set($event)"
+          optionLabel="name"
+          optionValue="_id"
+          placeholder="Seleccione usuario"
+          styleClass="w-full"
+        ></p-select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Fecha y Hora *</label
+        >
+        <input
+          pInputText
+          type="datetime-local"
+          [ngModel]="getAddMarkDateTime()"
+          (ngModelChange)="onAddMarkDateTimeChange($event)"
+          class="w-full"
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Tipo *</label>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            pButton
+            icon="pi pi-sign-in"
+            [severity]="addingMarkType() === 'INGRESO' ? 'success' : 'secondary'"
+            [outlined]="addingMarkType() !== 'INGRESO'"
+            (click)="addingMarkType.set('INGRESO')"
+            class="flex-1"
+          >
+            INGRESO
+          </button>
+          <button
+            type="button"
+            pButton
+            icon="pi pi-sign-out"
+            [severity]="addingMarkType() === 'SALIDA' ? 'danger' : 'secondary'"
+            [outlined]="addingMarkType() !== 'SALIDA'"
+            (click)="addingMarkType.set('SALIDA')"
+            class="flex-1"
+          >
+            SALIDA
+          </button>
+        </div>
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeAddMarkDialog()"></button>
+      <button pButton label="Guardar" (click)="saveAddMark()"></button>
     </ng-template>
   </p-dialog>
 

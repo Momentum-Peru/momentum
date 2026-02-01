@@ -291,7 +291,7 @@
                             @if (dayData.entry.location) {
                               <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 <i class="pi pi-map-marker text-xs"></i>
-                                {{ formatLocation(dayData.entry.location) }}
+                                {{ formatLocation(dayData.entry) }}
                               </span>
                             }
                           </div>
@@ -318,7 +318,7 @@
                             @if (dayData.exit.location) {
                               <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 <i class="pi pi-map-marker text-xs"></i>
-                                {{ formatLocation(dayData.exit.location) }}
+                                {{ formatLocation(dayData.exit) }}
                               </span>
                             }
                           </div>
@@ -408,7 +408,7 @@
                           @if (userData.days[0].entry.location) {
                             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                               <i class="pi pi-map-marker text-xs"></i>
-                              {{ formatLocation(userData.days[0].entry.location) }}
+                              {{ formatLocation(userData.days[0].entry) }}
                             </span>
                           }
                         </div>
@@ -438,7 +438,7 @@
                           @if (userData.days[0].exit.location) {
                             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                               <i class="pi pi-map-marker text-xs"></i>
-                              {{ formatLocation(userData.days[0].exit.location) }}
+                              {{ formatLocation(userData.days[0].exit) }}
                             </span>
                           }
                         </div>
@@ -594,7 +594,7 @@
                               @if (dayData.entry.location) {
                                 <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">
                                   <i class="pi pi-map-marker text-xs"></i>
-                                  {{ formatLocation(dayData.entry.location) }}
+                                  {{ formatLocation(dayData.entry) }}
                                 </span>
                               }
                             </div>
@@ -622,7 +622,7 @@
                               @if (dayData.exit.location) {
                                 <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">
                                   <i class="pi pi-map-marker text-xs"></i>
-                                  {{ formatLocation(dayData.exit.location) }}
+                                  {{ formatLocation(dayData.exit) }}
                                 </span>
                               }
                             </div>
@@ -731,7 +731,7 @@
                           @if (userData.days[0].entry.location) {
                             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">
                               <i class="pi pi-map-marker text-xs"></i>
-                              {{ formatLocation(userData.days[0].entry.location) }}
+                              {{ formatLocation(userData.days[0].entry) }}
                             </span>
                           }
                         </div>
@@ -759,7 +759,7 @@
                           @if (userData.days[0].exit.location) {
                             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">
                               <i class="pi pi-map-marker text-xs"></i>
-                              {{ formatLocation(userData.days[0].exit.location) }}
+                              {{ formatLocation(userData.days[0].exit) }}
                             </span>
                           }
                         </div>

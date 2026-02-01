@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --hmr",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development",
+    "watch": "ng build --watch --configuration development --hmr",
     "test": "ng test",
     "lint": "ng lint",
     "format": "prettier --write \"src/**/*.{ts,html}\""
@@ -35,6 +35,8 @@
     "@types/uuid": "^11.0.0",
     "chart.js": "^4.5.1",
     "face-api.js": "^0.22.2",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
     "primeicons": "^7.0.0",
     "primeng": "^20.2.0",
     "rxjs": "~7.8.0",
