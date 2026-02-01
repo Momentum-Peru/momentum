@@ -50,6 +50,7 @@ import {
   TimeTrackingReportUser,
   TimeTrackingReportMark,
 } from '../../shared/services/time-tracking-pdf.service';
+import JSZip from 'jszip';
 
 /** Cargos en duro por nombre completo (Nombre Apellido) normalizado a minúsculas. */
 const CARGO_POR_NOMBRE: Record<string, string> = {
@@ -123,6 +124,8 @@ export class TimeTrackingPage implements OnInit {
   private expandedRowKeys = signal<Set<string>>(new Set());
   /** Usuarios con detalle expandido (gerencia) */
   expandedUserDetail = signal<Set<string>>(new Set());
+  /** Descargando PDFs por usuario (evita múltiples clics) */
+  downloadingAllPdfs = signal(false);
 
   currentUser = toSignal(this.authService.currentUser$, {
     initialValue: this.authService.getCurrentUser(),
@@ -654,6 +657,98 @@ export class TimeTrackingPage implements OnInit {
       users: reportUsers,
     };
     void this.downloadPdfReportAsync(data, start, end);
+  }
+
+  /** Genera un PDF por usuario y los descarga en un único ZIP. */
+  async downloadAllPdfsByUser(): Promise<void> {
+    if (!this.canViewAllUsers()) return;
+    const start = this.startDate();
+    const end = this.endDate();
+    if (!start || !end) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Rango requerido',
+        detail: 'Seleccione rango de fechas antes de descargar el ZIP',
+      });
+      return;
+    }
+    const summary = this.summaryByUser();
+    if (summary.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Sin usuarios',
+        detail: 'No hay usuarios con datos en el período seleccionado',
+      });
+      return;
+    }
+    this.downloadingAllPdfs.set(true);
+    try {
+      const zip = new JSZip();
+      for (const u of summary) {
+        const reportUser: TimeTrackingReportUser = {
+          userName: u.userName,
+          asistencias: u.asistencias,
+          tardanzas: u.tardanzas,
+          faltas: u.faltas,
+          itemsByDay: u.itemsByDay.map((day) => ({
+            date: day.date,
+            items: day.items.map(
+              (item): TimeTrackingReportMark => ({
+                fecha: day.date,
+                hora: this.formatTime(item.date),
+                tipo: item.type ?? '-',
+                tardanza: item.type === 'INGRESO' && this.isTardanza(item.date),
+                ubicacion: this.formatLocation(item) || '-',
+              })
+            ),
+          })),
+        };
+        const data: TimeTrackingReportData = {
+          startDate: start,
+          endDate: end,
+          kpis: {
+            asistencias: u.asistencias,
+            totalTardanzas: u.tardanzas,
+            faltas: u.faltas,
+          },
+          users: [reportUser],
+        };
+        const blob = await this.timeTrackingPdfService.generateReport(data);
+        const nombreArchivo = this.sanitizeFileName(u.userName);
+        zip.file(`reporte-asistencias_${start}_${end}_${nombreArchivo}.pdf`, blob);
+      }
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `reportes-asistencias_${start}_${end}.zip`;
+      link.click();
+      URL.revokeObjectURL(url);
+      this.messageService.add({
+        severity: 'success',
+        summary: 'ZIP descargado',
+        detail: `Se descargó el ZIP con ${summary.length} reporte(s) de asistencias`,
+      });
+    } catch (err) {
+      console.error(err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo generar el ZIP',
+      });
+    } finally {
+      this.downloadingAllPdfs.set(false);
+    }
+  }
+
+  /** Sanitiza el nombre para usarlo en el nombre del archivo (sin espacios ni caracteres problemáticos). */
+  private sanitizeFileName(name: string): string {
+    return (name ?? '')
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-zA-Z0-9-_]/g, '')
+      .slice(0, 50) || 'usuario';
   }
 
   private async downloadPdfReportAsync(

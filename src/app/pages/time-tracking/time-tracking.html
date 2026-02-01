@@ -35,6 +35,17 @@
         class="p-button-outlined"
         aria-label="Descargar reporte de marcaciones en PDF"
       ></button>
+      <button
+        pButton
+        type="button"
+        (click)="downloadAllPdfsByUser()"
+        [disabled]="downloadingAllPdfs()"
+        label="{{ downloadingAllPdfs() ? 'Generando...' : 'Descargar PDFs en ZIP' }}"
+        icon="pi pi-download"
+        severity="secondary"
+        class="p-button-outlined"
+        aria-label="Descargar todos los reportes PDF en un archivo ZIP"
+      ></button>
     }
   </div>
 
