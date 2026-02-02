@@ -185,17 +185,14 @@ export class TimeTrackingPage implements OnInit {
     return list.filter((item) => {
       const dateMatch = item.date?.toLowerCase().includes(searchQuery) ?? false;
       const typeMatch = item.type?.toLowerCase().includes(searchQuery) ?? false;
-      const userMatch =
-        this.getUserName(item)?.toLowerCase().includes(searchQuery) ?? false;
+      const userMatch = this.getUserName(item)?.toLowerCase().includes(searchQuery) ?? false;
       return dateMatch || typeMatch || userMatch;
     });
   });
 
   /** Opciones para el selector de usuario (gerencia): orden alfabético por nombre, sin correo. */
   userFilterOptions = computed(() => {
-    const list = [...this.users()].sort((a, b) =>
-      (a.name ?? '').localeCompare(b.name ?? '', 'es')
-    );
+    const list = [...this.users()].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'es'));
     const options: { label: string; value: string | null }[] = [
       { label: 'Todos los usuarios', value: null },
     ];
@@ -206,7 +203,8 @@ export class TimeTrackingPage implements OnInit {
   });
 
   /**
-   * Indica si una marcación de INGRESO es tardanza (después de las 8:00 AM en hora local).
+   * Indica si una marcación de INGRESO es tardanza (después de las 8:15 AM en hora local).
+   * Se considera 15 minutos de tolerancia después de las 8:00 AM.
    */
   isTardanza(dateIso: string | undefined): boolean {
     if (!dateIso) return false;
@@ -214,7 +212,7 @@ export class TimeTrackingPage implements OnInit {
       const d = new Date(dateIso);
       if (isNaN(d.getTime())) return false;
       const minutesSinceMidnight = d.getHours() * 60 + d.getMinutes();
-      return minutesSinceMidnight > 8 * 60; // después de 8:00 AM
+      return minutesSinceMidnight > 8 * 60 + 15; // después de 8:15 AM (15 min de tolerancia)
     } catch {
       return false;
     }
@@ -224,7 +222,7 @@ export class TimeTrackingPage implements OnInit {
    * Resumen para dashboard.
    * - total: total de marcaciones (INGRESO + SALIDA).
    * - totalIngresos: cantidad de registros tipo INGRESO.
-   * - totalTardanzas: ingresos después de las 8:00 AM.
+   * - totalTardanzas: ingresos después de las 8:15 AM.
    * - diasConAsistencia: días distintos con al menos un INGRESO (para cálculo de faltas).
    * - faltas: días del rango sin ningún INGRESO.
    */
@@ -235,7 +233,7 @@ export class TimeTrackingPage implements OnInit {
     const total = list.length;
     const totalIngresos = list.filter((item) => item.type === 'INGRESO').length;
     const totalTardanzas = list.filter(
-      (item) => item.type === 'INGRESO' && this.isTardanza(item.date)
+      (item) => item.type === 'INGRESO' && this.isTardanza(item.date),
     ).length;
     const diasConIngreso = new Set<string>();
     const userIds = new Set<string>();
@@ -247,12 +245,20 @@ export class TimeTrackingPage implements OnInit {
       if (uid) userIds.add(uid);
     });
     const diasConAsistencia = diasConIngreso.size;
+    // Contar días en rango excluyendo domingos
     let diasEnRango = 0;
     if (start && end) {
       const s = new Date(start + 'T00:00:00');
       const e = new Date(end + 'T00:00:00');
       if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e >= s) {
-        diasEnRango = Math.floor((e.getTime() - s.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+        const current = new Date(s);
+        while (current <= e) {
+          // Excluir domingos (getDay() === 0)
+          if (current.getDay() !== 0) {
+            diasEnRango++;
+          }
+          current.setDate(current.getDate() + 1);
+        }
       }
     }
     const faltas = Math.max(0, diasEnRango - diasConAsistencia);
@@ -277,7 +283,9 @@ export class TimeTrackingPage implements OnInit {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(item);
     });
-    map.forEach((arr) => arr.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+    map.forEach((arr) =>
+      arr.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+    );
     const entries = Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
     return entries.map(([date, items]) => ({ date, items }));
   });
@@ -289,12 +297,20 @@ export class TimeTrackingPage implements OnInit {
     const end = this.endDate();
     const filterUid = this.filterUserId();
     const usersList = this.users();
+    // Contar días en rango excluyendo domingos
     let diasEnRango = 0;
     if (start && end) {
       const s = new Date(start + 'T00:00:00');
       const e = new Date(end + 'T00:00:00');
       if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e >= s) {
-        diasEnRango = Math.floor((e.getTime() - s.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+        const current = new Date(s);
+        while (current <= e) {
+          // Excluir domingos (getDay() === 0)
+          if (current.getDay() !== 0) {
+            diasEnRango++;
+          }
+          current.setDate(current.getDate() + 1);
+        }
       }
     }
     const byUser = new Map<
@@ -337,12 +353,12 @@ export class TimeTrackingPage implements OnInit {
     }[] = [];
     byUser.forEach((row, userId) => {
       const items = row.items.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
       );
       const asistencias = row.asistencias.size;
       const faltas = Math.max(0, diasEnRango - asistencias);
       const tardanzas = items.filter(
-        (item) => item.type === 'INGRESO' && this.isTardanza(item.date)
+        (item) => item.type === 'INGRESO' && this.isTardanza(item.date),
       ).length;
       const dayMap = new Map<string, TimeTracking[]>();
       items.forEach((item) => {
@@ -352,7 +368,7 @@ export class TimeTrackingPage implements OnInit {
         dayMap.get(key)!.push(item);
       });
       dayMap.forEach((arr) =>
-        arr.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        arr.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
       );
       const itemsByDay = Array.from(dayMap.entries())
         .sort((a, b) => b[0].localeCompare(a[0]))
@@ -479,8 +495,18 @@ export class TimeTrackingPage implements OnInit {
   monthPeriodOptions = computed(() => {
     const options: { label: string; value: string }[] = [];
     const monthNames = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
     ];
     const startYear = 2026;
     const startMonth = 0; // Enero
@@ -642,7 +668,7 @@ export class TimeTrackingPage implements OnInit {
             tipo: item.type ?? '-',
             tardanza: item.type === 'INGRESO' && this.isTardanza(item.date),
             ubicacion: this.formatLocation(item) || '-',
-          })
+          }),
         ),
       })),
     }));
@@ -699,7 +725,7 @@ export class TimeTrackingPage implements OnInit {
                 tipo: item.type ?? '-',
                 tardanza: item.type === 'INGRESO' && this.isTardanza(item.date),
                 ubicacion: this.formatLocation(item) || '-',
-              })
+              }),
             ),
           })),
         };
@@ -743,18 +769,20 @@ export class TimeTrackingPage implements OnInit {
 
   /** Sanitiza el nombre para usarlo en el nombre del archivo (sin espacios ni caracteres problemáticos). */
   private sanitizeFileName(name: string): string {
-    return (name ?? '')
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-      .replace(/\s+/g, '-')
-      .replace(/[^a-zA-Z0-9-_]/g, '')
-      .slice(0, 50) || 'usuario';
+    return (
+      (name ?? '')
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-zA-Z0-9-_]/g, '')
+        .slice(0, 50) || 'usuario'
+    );
   }
 
   private async downloadPdfReportAsync(
     data: TimeTrackingReportData,
     start: string,
-    end: string
+    end: string,
   ): Promise<void> {
     try {
       const blob = await this.timeTrackingPdfService.generateReport(data);
@@ -1407,7 +1435,7 @@ export class TimeTrackingPage implements OnInit {
           enableHighAccuracy: false, // Más rápido, menos preciso (suficiente para marcación)
           timeout: 5000, // Reducido a 5 segundos para respuesta más rápida
           maximumAge: 30000, // Aceptar ubicación cacheada de hasta 30 segundos
-        }
+        },
       );
     });
   }
@@ -1447,7 +1475,7 @@ export class TimeTrackingPage implements OnInit {
         severity: 'warn',
         summary: 'Permisos requeridos',
         detail: `Debe tener los permisos de ${missingPermissions.join(
-          ' y '
+          ' y ',
         )} para realizar la marcación.`,
         life: 5000,
       });
@@ -1755,7 +1783,7 @@ export class TimeTrackingPage implements OnInit {
         await this.markAttendanceWithFace();
       },
       'image/jpeg',
-      0.9
+      0.9,
     );
   }
 
