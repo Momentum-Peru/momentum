@@ -113,34 +113,48 @@
 
   <!-- Dashboard: KPIs y resumen -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+    >
       <div class="text-sm text-gray-500 dark:text-gray-400">Total marcaciones</div>
       <div class="text-2xl font-semibold text-gray-800 dark:text-white mt-1">
         {{ dashboardStats().total }}
       </div>
     </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+    >
       <div class="text-sm text-gray-500 dark:text-gray-400">Tardanzas</div>
       <div class="text-2xl font-semibold text-orange-600 dark:text-orange-400 mt-1">
         {{ dashboardStats().totalTardanzas }}
       </div>
-      <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Ingresos después de las 8:00</div>
+      <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+        Ingresos después de las 8:15
+      </div>
     </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+    >
       <div class="text-sm text-gray-500 dark:text-gray-400">Faltas (días sin asistencia)</div>
       <div class="text-2xl font-semibold text-amber-600 dark:text-amber-400 mt-1">
         {{ dashboardStats().faltas }}
       </div>
-      <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Días del rango sin ningún ingreso</div>
+      <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+        Días del rango sin ningún ingreso
+      </div>
     </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+    >
       <div class="text-sm text-gray-500 dark:text-gray-400">Días seleccionados</div>
       <div class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mt-1">
         {{ dashboardStats().diasEnRango }}
       </div>
     </div>
     @if (canViewAllUsers()) {
-      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div
+        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+      >
         <div class="text-sm text-gray-500 dark:text-gray-400">Usuarios con marcación</div>
         <div class="text-2xl font-semibold text-blue-600 dark:text-blue-400 mt-1">
           {{ dashboardStats().usuariosConMarcacion }}
@@ -157,9 +171,7 @@
         <div
           class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm transition-shadow hover:shadow-md"
         >
-          <div
-            class="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-4"
-          >
+          <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-4">
             <div class="flex items-center gap-3 min-w-0">
               <div
                 class="flex-shrink-0 w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-semibold text-sm"
@@ -176,15 +188,21 @@
                     {{ user.cargo }}
                   </div>
                 }
-                <div class="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <div
+                  class="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400"
+                >
                   <span class="inline-flex items-center gap-1">
                     <i class="pi pi-calendar text-green-600 dark:text-green-400"></i>
-                    <strong class="text-green-700 dark:text-green-300">{{ user.asistencias }}</strong>
+                    <strong class="text-green-700 dark:text-green-300">{{
+                      user.asistencias
+                    }}</strong>
                     días con asistencia
                   </span>
                   <span class="inline-flex items-center gap-1">
                     <i class="pi pi-clock text-orange-600 dark:text-orange-400"></i>
-                    <strong class="text-orange-700 dark:text-orange-300">{{ user.tardanzas }}</strong>
+                    <strong class="text-orange-700 dark:text-orange-300">{{
+                      user.tardanzas
+                    }}</strong>
                     tardanzas
                   </span>
                   <span class="inline-flex items-center gap-1">
@@ -244,7 +262,9 @@
                             {{ item.type }}
                           </span>
                           @if (item.type === 'INGRESO' && isTardanza(item.date)) {
-                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200">
+                            <span
+                              class="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200"
+                            >
                               Tardanza
                             </span>
                           }
@@ -315,8 +335,12 @@
     <div class="space-y-3">
       <h2 class="text-lg font-medium text-gray-800 dark:text-white">Marcaciones por día</h2>
       @for (day of itemsByDay(); track day.date) {
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div class="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 font-medium text-gray-700 dark:text-gray-200">
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+        >
+          <div
+            class="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 font-medium text-gray-700 dark:text-gray-200"
+          >
             {{ day.date }}
           </div>
           <ul class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -332,7 +356,10 @@
                   {{ item.type }}
                 </span>
                 @if (item.location || item.address) {
-                  <span class="text-xs text-gray-500 truncate max-w-[200px]" [title]="formatLocation(item)">
+                  <span
+                    class="text-xs text-gray-500 truncate max-w-[200px]"
+                    [title]="formatLocation(item)"
+                  >
                     <i class="pi pi-map-marker mr-1"></i>{{ formatLocation(item) }}
                   </span>
                 }
@@ -341,193 +368,197 @@
           </ul>
         </div>
       } @empty {
-        <p class="text-sm text-gray-500 dark:text-gray-400">No hay marcaciones en el rango seleccionado.</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          No hay marcaciones en el rango seleccionado.
+        </p>
       }
     </div>
   }
 
   <!-- Vista Desktop: Tabla (usuario normal; gerencia usa resumen + detalle) -->
   @if (!canViewAllUsers()) {
-  <div class="hidden md:block">
-    <p-table
-      [value]="filteredItems()"
-      [scrollable]="true"
-      scrollHeight="60vh"
-      styleClass="p-datatable-sm"
-    >
-      <ng-template pTemplate="header">
-        <tr>
-          @if (canViewAllUsers()) {
-            <th>Usuario</th>
-          }
-          <th>Fecha y Hora</th>
-          <th>Tipo</th>
-          <th>Ubicación</th>
-          <th class="text-right">Acciones</th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-row>
-        <tr>
-          @if (canViewAllUsers()) {
-            <td>{{ getUserName(row) }}</td>
-          }
-          <td>{{ formatDateTime(row.date) }}</td>
-          <td>
-            <span
-              class="px-2 py-1 text-xs font-semibold rounded-full"
-              [class]="getTypeBadgeClass(row.type)"
-            >
-              {{ row.type }}
-            </span>
-          </td>
-          <td>
-            <div class="text-xs text-gray-500 dark:text-gray-400">
-              @if (row.location || row.address) {
-                <i class="pi pi-map-marker mr-1"></i>
-                {{ formatLocation(row) }}
-              } @else {
-                -
-              }
-            </div>
-          </td>
-          <td class="text-right">
-            <button
-              pButton
-              icon="pi pi-eye"
-              class="p-button-text"
-              (click)="viewItem(row)"
-              aria-label="Ver detalles de la marcación"
-            ></button>
-            @if (canEditOrDelete()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                class="p-button-text"
-                (click)="editItem(row)"
-                aria-label="Editar marcación"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-text p-button-danger"
-                (click)="remove(row)"
-                aria-label="Eliminar marcación"
-              ></button>
-            }
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
-  </div>
-
-  <!-- Vista Móvil: Lista tipo tarjetas -->
-  <div class="md:hidden space-y-3">
-    @for (row of filteredItems(); track row._id || row.date; let i = $index) {
-    <div
-      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
-    >
-      <!-- Header clickable -->
-      <button
-        type="button"
-        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-        (click)="toggleRowByKey(row._id || row.date + '#' + i)"
+    <div class="hidden md:block">
+      <p-table
+        [value]="filteredItems()"
+        [scrollable]="true"
+        scrollHeight="60vh"
+        styleClass="p-datatable-sm"
       >
-        <div class="flex-1 text-left min-w-0 pr-4">
-          <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
-            {{ formatDateTime(row.date) }}
-          </div>
-          @if (canViewAllUsers()) {
-            <div class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ getUserName(row) }}</div>
-          }
-          <div class="flex items-center gap-2 mt-2 flex-wrap">
-            <span
-              class="px-2 py-1 text-xs font-semibold rounded-full"
-              [class]="getTypeBadgeClass(row.type)"
-            >
-              {{ row.type }}
-            </span>
-            @if (row.location || row.address) {
-              <span class="text-xs text-gray-500">
-                <i class="pi pi-map-marker"></i> {{ formatLocation(row) }}
-              </span>
+        <ng-template pTemplate="header">
+          <tr>
+            @if (canViewAllUsers()) {
+              <th>Usuario</th>
             }
-          </div>
-        </div>
-        <div class="flex-shrink-0">
-          <i
-            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
-            [class.pi-chevron-down]="!isRowExpandedByKey(row._id || row.date + '#' + i)"
-            [class.pi-chevron-up]="isRowExpandedByKey(row._id || row.date + '#' + i)"
-          ></i>
-        </div>
-      </button>
-
-      <!-- Body collapsible -->
-      @if (isRowExpandedByKey(row._id || (row.date + '#' + i))) {
-      <div class="border-t border-gray-200 dark:border-gray-700">
-        <div class="px-4 py-4 space-y-3">
-          <div class="text-sm text-gray-700 dark:text-gray-300">
-            <div class="font-medium">Tipo</div>
-            <div class="mt-1">
+            <th>Fecha y Hora</th>
+            <th>Tipo</th>
+            <th>Ubicación</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            @if (canViewAllUsers()) {
+              <td>{{ getUserName(row) }}</td>
+            }
+            <td>{{ formatDateTime(row.date) }}</td>
+            <td>
               <span
                 class="px-2 py-1 text-xs font-semibold rounded-full"
                 [class]="getTypeBadgeClass(row.type)"
               >
-                {{ row.type || '-' }}
+                {{ row.type }}
               </span>
+            </td>
+            <td>
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                @if (row.location || row.address) {
+                  <i class="pi pi-map-marker mr-1"></i>
+                  {{ formatLocation(row) }}
+                } @else {
+                  -
+                }
+              </div>
+            </td>
+            <td class="text-right">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text"
+                (click)="viewItem(row)"
+                aria-label="Ver detalles de la marcación"
+              ></button>
+              @if (canEditOrDelete()) {
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  class="p-button-text"
+                  (click)="editItem(row)"
+                  aria-label="Editar marcación"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  class="p-button-text p-button-danger"
+                  (click)="remove(row)"
+                  aria-label="Eliminar marcación"
+                ></button>
+              }
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- Vista Móvil: Lista tipo tarjetas -->
+    <div class="md:hidden space-y-3">
+      @for (row of filteredItems(); track row._id || row.date; let i = $index) {
+        <div
+          class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+        >
+          <!-- Header clickable -->
+          <button
+            type="button"
+            class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+            (click)="toggleRowByKey(row._id || row.date + '#' + i)"
+          >
+            <div class="flex-1 text-left min-w-0 pr-4">
+              <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
+                {{ formatDateTime(row.date) }}
+              </div>
+              @if (canViewAllUsers()) {
+                <div class="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                  {{ getUserName(row) }}
+                </div>
+              }
+              <div class="flex items-center gap-2 mt-2 flex-wrap">
+                <span
+                  class="px-2 py-1 text-xs font-semibold rounded-full"
+                  [class]="getTypeBadgeClass(row.type)"
+                >
+                  {{ row.type }}
+                </span>
+                @if (row.location || row.address) {
+                  <span class="text-xs text-gray-500">
+                    <i class="pi pi-map-marker"></i> {{ formatLocation(row) }}
+                  </span>
+                }
+              </div>
             </div>
-          </div>
-          @if (canViewAllUsers()) {
-            <div class="text-sm text-gray-700 dark:text-gray-300">
-              <div class="font-medium">Usuario</div>
-              <div class="mt-1">{{ getUserName(row) }}</div>
+            <div class="flex-shrink-0">
+              <i
+                class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+                [class.pi-chevron-down]="!isRowExpandedByKey(row._id || row.date + '#' + i)"
+                [class.pi-chevron-up]="isRowExpandedByKey(row._id || row.date + '#' + i)"
+              ></i>
+            </div>
+          </button>
+
+          <!-- Body collapsible -->
+          @if (isRowExpandedByKey(row._id || row.date + '#' + i)) {
+            <div class="border-t border-gray-200 dark:border-gray-700">
+              <div class="px-4 py-4 space-y-3">
+                <div class="text-sm text-gray-700 dark:text-gray-300">
+                  <div class="font-medium">Tipo</div>
+                  <div class="mt-1">
+                    <span
+                      class="px-2 py-1 text-xs font-semibold rounded-full"
+                      [class]="getTypeBadgeClass(row.type)"
+                    >
+                      {{ row.type || '-' }}
+                    </span>
+                  </div>
+                </div>
+                @if (canViewAllUsers()) {
+                  <div class="text-sm text-gray-700 dark:text-gray-300">
+                    <div class="font-medium">Usuario</div>
+                    <div class="mt-1">{{ getUserName(row) }}</div>
+                  </div>
+                }
+
+                @if (row.location) {
+                  <div class="text-sm text-gray-700 dark:text-gray-300">
+                    <div class="font-medium">Ubicación</div>
+                    <div class="mt-1 text-xs">
+                      <i class="pi pi-map-marker mr-1"></i>
+                      {{ formatLocation(row) }}
+                    </div>
+                  </div>
+                }
+
+                <div class="flex items-center gap-2 pt-2">
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    label="Ver"
+                    class="p-button-text p-button-sm"
+                    (click)="viewItem(row)"
+                    aria-label="Ver detalles de la marcación"
+                  ></button>
+                  @if (canEditOrDelete()) {
+                    <button
+                      pButton
+                      icon="pi pi-pencil"
+                      label="Editar"
+                      class="p-button-text p-button-sm"
+                      (click)="editItem(row)"
+                      aria-label="Editar marcación"
+                    ></button>
+                    <button
+                      pButton
+                      icon="pi pi-trash"
+                      label="Eliminar"
+                      class="p-button-text p-button-danger p-button-sm"
+                      (click)="remove(row)"
+                      aria-label="Eliminar marcación"
+                    ></button>
+                  }
+                </div>
+              </div>
             </div>
           }
-
-          @if (row.location) {
-          <div class="text-sm text-gray-700 dark:text-gray-300">
-            <div class="font-medium">Ubicación</div>
-            <div class="mt-1 text-xs">
-              <i class="pi pi-map-marker mr-1"></i>
-              {{ formatLocation(row) }}
-            </div>
-          </div>
-          }
-
-          <div class="flex items-center gap-2 pt-2">
-            <button
-              pButton
-              icon="pi pi-eye"
-              label="Ver"
-              class="p-button-text p-button-sm"
-              (click)="viewItem(row)"
-              aria-label="Ver detalles de la marcación"
-            ></button>
-            @if (canEditOrDelete()) {
-            <button
-              pButton
-              icon="pi pi-pencil"
-              label="Editar"
-              class="p-button-text p-button-sm"
-              (click)="editItem(row)"
-              aria-label="Editar marcación"
-            ></button>
-            <button
-              pButton
-              icon="pi pi-trash"
-              label="Eliminar"
-              class="p-button-text p-button-danger p-button-sm"
-              (click)="remove(row)"
-              aria-label="Eliminar marcación"
-            ></button>
-            }
-          </div>
         </div>
-      </div>
       }
     </div>
-    }
-  </div>
   }
 
   <!-- Modal de edición/creación -->
@@ -635,7 +666,9 @@
           }
           <div>
             <span class="block text-xs text-gray-500 dark:text-white mb-1">Fecha y Hora</span>
-            <div class="font-medium text-gray-700 dark:text-white">{{ formatDateTime(v.date) }}</div>
+            <div class="font-medium text-gray-700 dark:text-white">
+              {{ formatDateTime(v.date) }}
+            </div>
           </div>
           <div>
             <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo</span>
@@ -683,7 +716,9 @@
   >
     <div class="grid gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Usuario *</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >Usuario *</label
+        >
         <p-select
           [options]="users()"
           [ngModel]="addingMarkUserId()"
@@ -735,7 +770,12 @@
       </div>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeAddMarkDialog()"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeAddMarkDialog()"
+      ></button>
       <button pButton label="Guardar" (click)="saveAddMark()"></button>
     </ng-template>
   </p-dialog>
@@ -755,61 +795,72 @@
       <div class="space-y-3">
         <!-- Video de la cámara -->
         @if (isCameraActive() && !faceImagePreview()) {
-        <div class="space-y-3">
-          <div
-            class="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-black"
-          >
-            <video #cameraVideo autoplay playsinline class="w-full max-h-64 object-contain"></video>
-            <canvas
-              #detectionCanvas
-              class="absolute inset-0 pointer-events-none"
-              style="width: 100%; height: 100%"
-            ></canvas>
-            @if (!isVideoReady() || modelsLoading()) {
-            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-              <div class="text-center text-white">
-                <i class="pi pi-spin pi-spinner text-3xl mb-2"></i>
-                <p class="text-sm">
-                  @if (modelsLoading()) { Cargando modelos de reconocimiento... } @else { Iniciando
-                  cámara... }
-                </p>
-              </div>
-            </div>
-            } @if (isVideoReady() && faceDetectionResult()) {
+          <div class="space-y-3">
             <div
-              class="absolute bottom-2 left-2 right-2 bg-black bg-opacity-75 rounded-lg p-2 text-white text-xs"
+              class="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-black"
             >
-              <div class="flex items-center gap-2">
-                @if (faceDetectionResult()?.isValid) {
-                <i class="pi pi-check-circle text-green-400"></i>
-                <span class="font-semibold"
-                  >Rostro detectado correctamente. Marcando asistencia...</span
+              <video
+                #cameraVideo
+                autoplay
+                playsinline
+                class="w-full max-h-64 object-contain"
+              ></video>
+              <canvas
+                #detectionCanvas
+                class="absolute inset-0 pointer-events-none"
+                style="width: 100%; height: 100%"
+              ></canvas>
+              @if (!isVideoReady() || modelsLoading()) {
+                <div
+                  class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50"
                 >
-                } @else {
-                <i class="pi pi-exclamation-circle text-red-400"></i>
-                <span>{{ faceDetectionResult()?.message || 'Detectando...' }}</span>
-                }
-              </div>
+                  <div class="text-center text-white">
+                    <i class="pi pi-spin pi-spinner text-3xl mb-2"></i>
+                    <p class="text-sm">
+                      @if (modelsLoading()) {
+                        Cargando modelos de reconocimiento...
+                      } @else {
+                        Iniciando cámara...
+                      }
+                    </p>
+                  </div>
+                </div>
+              }
+              @if (isVideoReady() && faceDetectionResult()) {
+                <div
+                  class="absolute bottom-2 left-2 right-2 bg-black bg-opacity-75 rounded-lg p-2 text-white text-xs"
+                >
+                  <div class="flex items-center gap-2">
+                    @if (faceDetectionResult()?.isValid) {
+                      <i class="pi pi-check-circle text-green-400"></i>
+                      <span class="font-semibold"
+                        >Rostro detectado correctamente. Marcando asistencia...</span
+                      >
+                    } @else {
+                      <i class="pi pi-exclamation-circle text-red-400"></i>
+                      <span>{{ faceDetectionResult()?.message || 'Detectando...' }}</span>
+                    }
+                  </div>
+                </div>
+              }
             </div>
-            }
           </div>
-        </div>
         }
 
         <!-- Preview de imagen capturada (durante procesamiento) -->
         @if (faceImagePreview()) {
-        <div class="space-y-3">
-          <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Procesando marcación...
-          </span>
-          <div class="relative inline-block w-full">
-            <img
-              [src]="faceImagePreview()"
-              alt="Vista previa"
-              class="max-w-full h-auto max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 w-full object-contain"
-            />
+          <div class="space-y-3">
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Procesando marcación...
+            </span>
+            <div class="relative inline-block w-full">
+              <img
+                [src]="faceImagePreview()"
+                alt="Vista previa"
+                class="max-w-full h-auto max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 w-full object-contain"
+              />
+            </div>
           </div>
-        </div>
         }
 
         <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -857,34 +908,36 @@
           Ubicación GPS
         </div>
         @if (currentLocation()) {
-        <div
-          class="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
-        >
-          <i class="pi pi-map-marker text-green-600 dark:text-green-400"></i>
-          <div class="flex-1 text-sm">
-            <div class="font-medium text-green-800 dark:text-green-200">Coordenadas obtenidas</div>
-            <div class="text-xs text-green-600 dark:text-green-400">
-              Lat: {{ currentLocation()!.latitude.toFixed(6) }}, Lng:
-              {{ currentLocation()!.longitude.toFixed(6) }}
+          <div
+            class="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
+          >
+            <i class="pi pi-map-marker text-green-600 dark:text-green-400"></i>
+            <div class="flex-1 text-sm">
+              <div class="font-medium text-green-800 dark:text-green-200">
+                Coordenadas obtenidas
+              </div>
+              <div class="text-xs text-green-600 dark:text-green-400">
+                Lat: {{ currentLocation()!.latitude.toFixed(6) }}, Lng:
+                {{ currentLocation()!.longitude.toFixed(6) }}
+              </div>
             </div>
           </div>
-        </div>
         } @else if (locationError()) {
-        <div
-          class="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
-        >
-          <i class="pi pi-exclamation-triangle text-yellow-600 dark:text-yellow-400"></i>
-          <div class="flex-1 text-sm text-yellow-800 dark:text-yellow-200">
-            {{ locationError() }}
+          <div
+            class="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+          >
+            <i class="pi pi-exclamation-triangle text-yellow-600 dark:text-yellow-400"></i>
+            <div class="flex-1 text-sm text-yellow-800 dark:text-yellow-200">
+              {{ locationError() }}
+            </div>
           </div>
-        </div>
         } @else {
-        <div
-          class="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
-        >
-          <i class="pi pi-spin pi-spinner text-gray-500"></i>
-          <div class="text-sm text-gray-600 dark:text-gray-400">Obteniendo ubicación...</div>
-        </div>
+          <div
+            class="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+          >
+            <i class="pi pi-spin pi-spinner text-gray-500"></i>
+            <div class="text-sm text-gray-600 dark:text-gray-400">Obteniendo ubicación...</div>
+          </div>
         }
       </div>
     </div>
@@ -901,10 +954,10 @@
           aria-label="Cancelar"
         ></button>
         @if (isMarkingAttendance()) {
-        <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <i class="pi pi-spin pi-spinner"></i>
-          <span>Procesando marcación...</span>
-        </div>
+          <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <i class="pi pi-spin pi-spinner"></i>
+            <span>Procesando marcación...</span>
+          </div>
         }
       </div>
     </ng-template>
