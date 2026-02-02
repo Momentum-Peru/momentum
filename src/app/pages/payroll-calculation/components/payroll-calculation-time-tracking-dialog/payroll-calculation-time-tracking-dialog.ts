@@ -4,6 +4,8 @@ import {
   Output,
   EventEmitter,
   OnInit,
+  OnChanges,
+  SimpleChanges,
   signal,
   inject,
   ChangeDetectionStrategy,
@@ -45,7 +47,7 @@ import { TenantService } from '../../../../core/services/tenant.service';
   styleUrl: './payroll-calculation-time-tracking-dialog.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PayrollCalculationTimeTrackingDialogComponent implements OnInit {
+export class PayrollCalculationTimeTrackingDialogComponent implements OnInit, OnChanges {
   @Input({ required: true }) visible = false;
   @Input() editingItem: TimeTracking | null = null;
   @Input() defaultDate: Date | null = null;
@@ -81,6 +83,20 @@ export class PayrollCalculationTimeTrackingDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.initializeDialogState();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Detectar cuando el diálogo se hace visible o cuando editingItem cambia
+    if (changes['visible']?.currentValue === true || changes['editingItem']) {
+      this.initializeDialogState();
+    }
+  }
+
+  /**
+   * Inicializa el estado del diálogo según si es edición o creación
+   */
+  private initializeDialogState(): void {
     if (this.editingItem) {
       this.isEditMode.set(true);
       this.populateForm();
@@ -223,7 +239,7 @@ export class PayrollCalculationTimeTrackingDialogComponent implements OnInit {
     const offsetMins = Math.abs(offsetMinutes) % 60;
     const offsetSign = offsetMinutes <= 0 ? '+' : '-';
     const offsetString = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(
-      offsetMins
+      offsetMins,
     ).padStart(2, '0')}`;
 
     // Crear un string ISO usando los valores locales con el offset de zona horaria

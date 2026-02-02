@@ -100,7 +100,7 @@ export class TimeTrackingPdfService {
       head: [['Indicador', 'Valor']],
       body: [
         ['Asistencias', `${data.kpis.asistencias} días`],
-        ['Tardanzas (ingresos después de 8:00am)', String(data.kpis.totalTardanzas)],
+        ['Tardanzas (ingresos después de 8:15am)', String(data.kpis.totalTardanzas)],
         ['Faltas (días sin asistencia)', `${data.kpis.faltas} días`],
       ],
       theme: 'grid',
@@ -129,7 +129,8 @@ export class TimeTrackingPdfService {
         theme: 'grid',
         headStyles: { fillColor: [66, 139, 202], fontStyle: 'bold' },
         margin: { top: TOP_MARGIN_PAGES, left: MARGIN },
-        didDrawPage: (hookData) => this.drawLogoOnPage(hookData.doc, hookData.pageNumber, logoBase64),
+        didDrawPage: (hookData) =>
+          this.drawLogoOnPage(hookData.doc, hookData.pageNumber, logoBase64),
       });
       y = this.getFinalY(doc) + 12;
     }
@@ -169,7 +170,8 @@ export class TimeTrackingPdfService {
           bodyStyles: { fontSize: 8 },
           margin: { top: TOP_MARGIN_PAGES, left: MARGIN },
           tableLineWidth: 0.1,
-          didDrawPage: (hookData) => this.drawLogoOnPage(hookData.doc, hookData.pageNumber, logoBase64),
+          didDrawPage: (hookData) =>
+            this.drawLogoOnPage(hookData.doc, hookData.pageNumber, logoBase64),
         });
         y = this.getFinalY(doc) + 10;
       } else {
@@ -200,11 +202,7 @@ export class TimeTrackingPdfService {
    * Dibuja el logo en la página indicada (para didDrawPage de autoTable).
    * Garantiza que todas las hojas generadas por autoTable tengan el logo.
    */
-  private drawLogoOnPage(
-    doc: jsPDF,
-    pageNumber: number,
-    logoBase64: string | null
-  ): void {
+  private drawLogoOnPage(doc: jsPDF, pageNumber: number, logoBase64: string | null): void {
     if (!logoBase64) return;
     doc.setPage(pageNumber);
     doc.addImage(logoBase64, 'PNG', MARGIN, HEADER_Y, LOGO_WIDTH, LOGO_HEIGHT);
@@ -247,8 +245,18 @@ export class TimeTrackingPdfService {
   private getNombreMesDesdeYmd(ymd: string): string {
     if (!ymd || ymd.length < 7) return '';
     const meses = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
     ];
     const y = ymd.slice(0, 4);
     const m = parseInt(ymd.slice(5, 7), 10);

@@ -81,9 +81,9 @@ export class PayrollCalculationPage implements OnInit {
   showUserDetailsDialog = signal(false);
   selectedUserForDetails = signal<User | null>(null);
 
-  // Hora límite para considerar tardanza (8:00 AM)
+  // Hora límite para considerar tardanza (8:15 AM - 15 min de tolerancia)
   private readonly TARDANZA_HOUR = 8;
-  private readonly TARDANZA_MINUTE = 0;
+  private readonly TARDANZA_MINUTE = 15;
 
   ngOnInit(): void {
     // Establecer rango por defecto (mes actual)
@@ -279,9 +279,13 @@ export class PayrollCalculationPage implements OnInit {
       return new Date(a[0]).getTime() - new Date(b[0]).getTime();
     });
 
-    sortedDays.forEach(([, dayData]) => {
+    sortedDays.forEach(([dateKey, dayData]) => {
       const hasIngreso = !!dayData.ingreso;
       const hasSalida = !!dayData.salida;
+
+      // Verificar si es domingo (no contar faltas en domingos)
+      const dayDate = new Date(dateKey + 'T00:00:00');
+      const isDomingo = dayDate.getDay() === 0;
 
       // Calcular horas trabajadas SOLO si hay entrada Y salida en el mismo día
       if (hasIngreso && hasSalida) {
@@ -321,12 +325,16 @@ export class PayrollCalculationPage implements OnInit {
             totalTardanzas++;
           }
         } else {
-          // Tiene entrada y salida pero de días diferentes = falta
-          totalFaltas++;
+          // Tiene entrada y salida pero de días diferentes = falta (excepto domingos)
+          if (!isDomingo) {
+            totalFaltas++;
+          }
         }
       } else {
-        // Falta: no tiene entrada o no tiene salida en el mismo día
-        totalFaltas++;
+        // Falta: no tiene entrada o no tiene salida en el mismo día (excepto domingos)
+        if (!isDomingo) {
+          totalFaltas++;
+        }
       }
     });
 
