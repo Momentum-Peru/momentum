@@ -37,6 +37,10 @@ const LOGO_URL = '/images/logo.png';
 const LOGO_TECCON_URL = '/images/logo-teccon.png';
 const TECCON_COMPANY_ID = '690a258b7f32bf7456080093';
 const TECCON_COMPANY_NAME = 'Teccon';
+const TECCON_RUC = '20609435586';
+const TECCON_RAZON_SOCIAL = 'TECCON COMPANY S.A.C.';
+const DEFAULT_RUC = '20548168393';
+const DEFAULT_RAZON_SOCIAL = 'TECMEING PERU S.A.C';
 const MARGIN = 14;
 const LOGO_WIDTH = 35;
 const LOGO_HEIGHT = 12;
@@ -59,14 +63,17 @@ export class TimeTrackingPdfService {
   async generateReport(data: TimeTrackingReportData): Promise<Blob> {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const logoBase64 = await this.loadLogoBase64();
+    const isTeccon = this.isTecconCompany();
     let y = this.drawMembrete(doc, logoBase64, true);
 
     // Primera hoja: información de la empresa
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('RUC: 20548168393', MARGIN, y);
+    const ruc = isTeccon ? TECCON_RUC : DEFAULT_RUC;
+    const razonSocial = isTeccon ? TECCON_RAZON_SOCIAL : DEFAULT_RAZON_SOCIAL;
+    doc.text(`RUC: ${ruc}`, MARGIN, y);
     y += 6;
-    doc.text('Razón Social: TECMEING PERU S.A.C', MARGIN, y);
+    doc.text(`Razón Social: ${razonSocial}`, MARGIN, y);
     y += 10;
 
     // Título del reporte
@@ -213,17 +220,23 @@ export class TimeTrackingPdfService {
     doc.addImage(logoBase64, 'PNG', MARGIN, HEADER_Y, LOGO_WIDTH, LOGO_HEIGHT);
   }
 
+  /** Verifica si la empresa actual es Teccon */
+  private isTecconCompany(): boolean {
+    const tenantId = this.tenantService.tenantId();
+    const tenantName = this.tenantService.tenantName();
+    if (tenantId === TECCON_COMPANY_ID) return true;
+    if (tenantName === TECCON_COMPANY_NAME) return true;
+    if (tenantName && tenantName.toLowerCase() === TECCON_COMPANY_NAME.toLowerCase()) return true;
+    return false;
+  }
+
   /** Carga el logo de la empresa desde /images/logo.png o /images/logo-teccon.png según la empresa y devuelve base64 o null. */
   private async loadLogoBase64(): Promise<string | null> {
     try {
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
       
       // Verificar si la empresa actual es Teccon
-      const tenantId = this.tenantService.tenantId();
-      const tenantName = this.tenantService.tenantName();
-      const isTeccon = tenantId === TECCON_COMPANY_ID || 
-                       tenantName === TECCON_COMPANY_NAME ||
-                       (tenantName && tenantName.toLowerCase() === TECCON_COMPANY_NAME.toLowerCase());
+      const isTeccon = this.isTecconCompany();
       
       // Seleccionar la URL del logo según la empresa
       const logoUrl = isTeccon ? LOGO_TECCON_URL : LOGO_URL;
