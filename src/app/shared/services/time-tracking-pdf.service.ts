@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { TenantService } from '../../core/services/tenant.service';
 
 export interface TimeTrackingReportKpis {
   /** Días con al menos un ingreso (para mostrar como "X días") */
@@ -33,6 +34,9 @@ export interface TimeTrackingReportData {
 }
 
 const LOGO_URL = '/images/logo.png';
+const LOGO_TECCON_URL = '/images/logo-teccon.png';
+const TECCON_COMPANY_ID = '690a258b7f32bf7456080093';
+const TECCON_COMPANY_NAME = 'Teccon';
 const MARGIN = 14;
 const LOGO_WIDTH = 35;
 const LOGO_HEIGHT = 12;
@@ -47,6 +51,7 @@ const TOP_MARGIN_PAGES = HEADER_Y + LOGO_HEIGHT + 6;
  */
 @Injectable({ providedIn: 'root' })
 export class TimeTrackingPdfService {
+  private readonly tenantService = inject(TenantService);
   /**
    * Genera el PDF con logo en todas las hojas (membrete), datos de la empresa,
    * resumen general y detalle por usuario.
@@ -208,13 +213,43 @@ export class TimeTrackingPdfService {
     doc.addImage(logoBase64, 'PNG', MARGIN, HEADER_Y, LOGO_WIDTH, LOGO_HEIGHT);
   }
 
-  /** Carga el logo de la empresa desde /images/logo.png y devuelve base64 o null. */
+  /** Carga el logo de la empresa desde /images/logo.png o /images/logo-teccon.png según la empresa y devuelve base64 o null. */
   private async loadLogoBase64(): Promise<string | null> {
     try {
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const url = `${baseUrl}${LOGO_URL}`;
+      
+      // Verificar si la empresa actual es Teccon
+      const tenantId = this.tenantService.tenantId();
+      const tenantName = this.tenantService.tenantName();
+      const isTeccon = tenantId === TECCON_COMPANY_ID || 
+                       tenantName === TECCON_COMPANY_NAME ||
+                       (tenantName && tenantName.toLowerCase() === TECCON_COMPANY_NAME.toLowerCase());
+      
+      // Seleccionar la URL del logo según la empresa
+      const logoUrl = isTeccon ? LOGO_TECCON_URL : LOGO_URL;
+      const url = `${baseUrl}${logoUrl}`;
+      
       const res = await fetch(url);
-      if (!res.ok) return null;
+      if (!res.ok) {
+        // Si el logo de Teccon no existe, intentar con el logo por defecto
+        if (isTeccon) {
+          const defaultUrl = `${baseUrl}${LOGO_URL}`;
+          const defaultRes = await fetch(defaultUrl);
+          if (!defaultRes.ok) return null;
+          const defaultBlob = await defaultRes.blob();
+          return await new Promise<string | null>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const dataUrl = reader.result;
+              resolve(typeof dataUrl === 'string' ? dataUrl : null);
+            };
+            reader.onerror = () => reject(null);
+            reader.readAsDataURL(defaultBlob);
+          });
+        }
+        return null;
+      }
+      
       const blob = await res.blob();
       return await new Promise<string | null>((resolve, reject) => {
         const reader = new FileReader();
