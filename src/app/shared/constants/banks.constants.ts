@@ -9,19 +9,18 @@ export interface BankOption {
 }
 
 export const BANKS: BankOption[] = [
-  { label: 'Banco de la Nación', value: 'Banco de la Nación', code: '000' },
-  { label: 'BBVA', value: 'BBVA', code: '001' },
+  { label: 'Banco de la Nación', value: 'Banco de la Nación', code: '018' },
+  { label: 'BBVA', value: 'BBVA', code: '011' },
   { label: 'BCP', value: 'BCP', code: '002' },
   { label: 'Interbank', value: 'Interbank', code: '003' },
   { label: 'Scotiabank', value: 'Scotiabank', code: '009' },
-  { label: 'Banco Continental', value: 'Banco Continental', code: '017' },
-  { label: 'Banco Interamericano de Finanzas', value: 'Banco Interamericano de Finanzas', code: '019' },
-  { label: 'Banco Pichincha', value: 'Banco Pichincha', code: '034' },
-  { label: 'Banco Ripley', value: 'Banco Ripley', code: '035' },
-  { label: 'Banco Falabella', value: 'Banco Falabella', code: '038' },
+  { label: 'Banco Interamericano de Finanzas', value: 'Banco Interamericano de Finanzas', code: '038' },
+  { label: 'Banco Pichincha', value: 'Banco Pichincha', code: '035' },
+  { label: 'Banco Ripley', value: 'Banco Ripley', code: '043' },
+  { label: 'Banco Falabella', value: 'Banco Falabella', code: '044' },
   { label: 'Banco GNB', value: 'Banco GNB', code: '039' },
   { label: 'Banco Santander', value: 'Banco Santander', code: '040' },
-  { label: 'Banco de Comercio', value: 'Banco de Comercio', code: '001' },
+  { label: 'Banco de Comercio', value: 'Banco de Comercio', code: '023' },
 ];
 
 /**
