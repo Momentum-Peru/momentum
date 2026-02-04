@@ -1,3 +1,11 @@
 // Estilos específicos para el componente de empleados
 // La mayoría de estilos se manejan con TailwindCSS
 
+// Estilos para el diálogo de empleados
+::ng-deep .employee-dialog {
+  .p-dialog-content {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+

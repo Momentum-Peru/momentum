@@ -10,6 +10,7 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { FileUploadModule, FileSelectEvent } from 'primeng/fileupload';
+import { DatePicker } from 'primeng/datepicker';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { EmployeesApiService } from '../../shared/services/employees-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
@@ -43,6 +44,7 @@ import { BANKS, getBankCode } from '../../shared/constants/banks.constants';
     ConfirmDialogModule,
     TooltipModule,
     FileUploadModule,
+    DatePicker,
   ],
   templateUrl: './employees.html',
   styleUrl: './employees.scss',
@@ -76,6 +78,7 @@ export class EmployeesPage implements OnInit {
   // Archivos seleccionados para subir
   selectedContratos = signal<File[]>([]);
   selectedAntecedentes = signal<File[]>([]);
+  selectedFotoPerfil = signal<File | null>(null);
 
   // Estados de drag and drop
   isDraggingContratos = signal(false);
@@ -177,19 +180,39 @@ export class EmployeesPage implements OnInit {
     this.editing.set({
       nombre: '',
       apellido: '',
+      tipoDocumento: 'DNI',
       dni: '',
+      fotoPerfil: undefined,
       correo: '',
+      correoCorporativo: '',
       telefono: '',
       direccion: '',
+      geoReferencia: undefined,
+      conyugeConcubino: undefined,
+      hijos: [],
       cargo: '',
+      tipoEmpleado: 'Planilla',
       userId: undefined,
       areaId: undefined,
       accountNumber: '',
       bank: '',
       bankCode: '',
+      cci: '',
       accountType: undefined,
+      tipoContrato: undefined,
+      fechaInicioLabores: undefined,
+      fechaFinContrato: undefined,
+      sistemaPensionario: undefined,
+      afp: undefined,
+      tipoComision: undefined,
+      cuspp: '',
+      centroCostos: '',
+      proyectoObra: '',
+      ruc: '',
+      fechaVencimientoSuspension: undefined,
       contratos: [],
       antecedentesPoliciales: [],
+      constanciaSuspensionRenta: [],
     });
     this.selectedContratos.set([]);
     this.selectedAntecedentes.set([]);
@@ -219,6 +242,23 @@ export class EmployeesPage implements OnInit {
       editedItem.areaId = editedItem.areaId._id;
     }
 
+    // Convertir fechas a objetos Date para p-datepicker
+    if (editedItem.fechaInicioLabores) {
+      editedItem.fechaInicioLabores = new Date(editedItem.fechaInicioLabores);
+    }
+    if (editedItem.fechaFinContrato) {
+      editedItem.fechaFinContrato = new Date(editedItem.fechaFinContrato);
+    }
+    if (editedItem.fechaVencimientoSuspension) {
+      editedItem.fechaVencimientoSuspension = new Date(editedItem.fechaVencimientoSuspension);
+    }
+    if (editedItem.hijos && editedItem.hijos.length > 0) {
+      editedItem.hijos = editedItem.hijos.map(h => ({
+        ...h,
+        fechaNacimiento: h.fechaNacimiento ? new Date(h.fechaNacimiento) : ''
+      }));
+    }
+
     this.editing.set(editedItem);
     this.showDialog.set(true);
   }
@@ -228,6 +268,7 @@ export class EmployeesPage implements OnInit {
     this.editing.set(null);
     this.selectedContratos.set([]);
     this.selectedAntecedentes.set([]);
+    this.selectedFotoPerfil.set(null);
     this.isDraggingContratos.set(false);
     this.isDraggingAntecedentes.set(false);
   }
@@ -270,9 +311,9 @@ export class EmployeesPage implements OnInit {
             catchError((error) => {
               console.warn('No se pudo autocompletar DNI desde APIsPERU:', error);
               return of(null);
-            })
+            }),
           );
-        })
+        }),
       )
       .subscribe((response) => {
         if (!response) return;
@@ -374,17 +415,58 @@ export class EmployeesPage implements OnInit {
       const updateData: UpdateEmployeeRequest = {
         nombre: item.nombre,
         apellido: item.apellido,
+        tipoDocumento: item.tipoDocumento || undefined,
         dni: item.dni,
+        // fotoPerfil se maneja por separado
         correo: item.correo || undefined,
+        correoCorporativo: item.correoCorporativo || undefined,
         telefono: item.telefono || undefined,
         direccion: item.direccion || undefined,
+        geoReferencia: item.geoReferencia || undefined,
+        conyugeConcubino: item.conyugeConcubino || undefined,
+        hijos: item.hijos
+          ? item.hijos.map((hijo) => ({
+              ...hijo,
+              fechaNacimiento:
+                typeof hijo.fechaNacimiento === 'string'
+                  ? hijo.fechaNacimiento
+                  : hijo.fechaNacimiento instanceof Date
+                    ? hijo.fechaNacimiento.toISOString()
+                    : '',
+            }))
+          : undefined,
         cargo: item.cargo || undefined,
+        tipoEmpleado: item.tipoEmpleado || undefined,
         userId:
           typeof item.userId === 'string' && item.userId.trim() !== '' ? item.userId : undefined,
         accountNumber: item.accountNumber || undefined,
         bank: item.bank || undefined,
         bankCode: item.bankCode || undefined,
+        cci: item.cci || undefined,
         accountType: item.accountType || undefined,
+        tipoContrato: item.tipoContrato || undefined,
+        fechaInicioLabores: item.fechaInicioLabores
+          ? typeof item.fechaInicioLabores === 'string'
+            ? item.fechaInicioLabores
+            : (item.fechaInicioLabores as Date).toISOString()
+          : undefined,
+        fechaFinContrato: item.fechaFinContrato
+          ? typeof item.fechaFinContrato === 'string'
+            ? item.fechaFinContrato
+            : (item.fechaFinContrato as Date).toISOString()
+          : undefined,
+        sistemaPensionario: item.sistemaPensionario || undefined,
+        afp: item.afp || undefined,
+        tipoComision: item.tipoComision || undefined,
+        cuspp: item.cuspp || undefined,
+        centroCostos: item.centroCostos || undefined,
+        proyectoObra: item.proyectoObra || undefined,
+        ruc: item.ruc || undefined,
+        fechaVencimientoSuspension: item.fechaVencimientoSuspension
+          ? typeof item.fechaVencimientoSuspension === 'string'
+            ? item.fechaVencimientoSuspension
+            : (item.fechaVencimientoSuspension as Date).toISOString()
+          : undefined,
       };
 
       // Manejar areaId: solo incluir si tiene un valor válido
@@ -392,8 +474,8 @@ export class EmployeesPage implements OnInit {
         typeof item.areaId === 'string' && item.areaId.trim() !== ''
           ? item.areaId
           : typeof item.areaId === 'object' && item.areaId && '_id' in item.areaId
-          ? item.areaId._id
-          : '';
+            ? item.areaId._id
+            : '';
 
       // Si hay un valor válido, incluirlo; si es cadena vacía, enviar cadena vacía para limpiar
       if (areaIdValue) {
@@ -405,7 +487,9 @@ export class EmployeesPage implements OnInit {
 
       const contratosFiles = this.selectedContratos();
       const antecedentesFiles = this.selectedAntecedentes();
-      const hasFilesToUpload = contratosFiles.length > 0 || antecedentesFiles.length > 0;
+      const fotoPerfilFile = this.selectedFotoPerfil();
+      const hasFilesToUpload =
+        contratosFiles.length > 0 || antecedentesFiles.length > 0 || fotoPerfilFile !== null;
 
       if (!item._id) {
         this.toastError('Error: No se pudo obtener el ID del empleado');
@@ -417,6 +501,15 @@ export class EmployeesPage implements OnInit {
 
       this.employeesApi.update(employeeId, updateData).subscribe({
         next: () => {
+          // Subir foto de perfil si está seleccionada
+          if (fotoPerfilFile) {
+            this.uploadFotoPerfilFile(
+              employeeId,
+              fotoPerfilFile,
+              contratosFiles.length === 0 && antecedentesFiles.length === 0,
+            );
+          }
+
           if (!hasFilesToUpload) {
             this.toastSuccess('Empleado actualizado exitosamente');
             this.loading.set(false);
@@ -427,7 +520,11 @@ export class EmployeesPage implements OnInit {
 
           // Subir archivos de contratos si hay alguno seleccionado
           if (contratosFiles.length > 0) {
-            this.uploadContratosFiles(employeeId, contratosFiles, antecedentesFiles.length === 0);
+            this.uploadContratosFiles(
+              employeeId,
+              contratosFiles,
+              antecedentesFiles.length === 0 && fotoPerfilFile === null,
+            );
           }
 
           // Subir archivos de antecedentes si hay alguno seleccionado
@@ -435,7 +532,7 @@ export class EmployeesPage implements OnInit {
             this.uploadAntecedentesFiles(
               employeeId,
               antecedentesFiles,
-              contratosFiles.length === 0
+              contratosFiles.length === 0 && fotoPerfilFile === null,
             );
           }
         },
@@ -450,22 +547,65 @@ export class EmployeesPage implements OnInit {
       const createData: CreateEmployeeRequest = {
         nombre: item.nombre,
         apellido: item.apellido,
+        tipoDocumento: item.tipoDocumento || 'DNI',
         dni: item.dni,
+        // fotoPerfil se maneja por separado
         correo: item.correo || undefined,
+        correoCorporativo: item.correoCorporativo || undefined,
         telefono: item.telefono || undefined,
         direccion: item.direccion || undefined,
+        geoReferencia: item.geoReferencia || undefined,
+        conyugeConcubino: item.conyugeConcubino || undefined,
+        hijos: item.hijos
+          ? item.hijos.map((hijo) => ({
+              ...hijo,
+              fechaNacimiento:
+                typeof hijo.fechaNacimiento === 'string'
+                  ? hijo.fechaNacimiento
+                  : hijo.fechaNacimiento instanceof Date
+                    ? hijo.fechaNacimiento.toISOString()
+                    : '',
+            }))
+          : undefined,
         cargo: item.cargo || undefined,
+        tipoEmpleado: item.tipoEmpleado || 'Planilla',
         userId: typeof item.userId === 'string' && item.userId ? item.userId : undefined,
         areaId: typeof item.areaId === 'string' && item.areaId ? item.areaId : undefined,
         accountNumber: item.accountNumber || undefined,
         bank: item.bank || undefined,
         bankCode: item.bankCode || undefined,
+        cci: item.cci || undefined,
         accountType: item.accountType || undefined,
+        tipoContrato: item.tipoContrato || undefined,
+        fechaInicioLabores: item.fechaInicioLabores
+          ? typeof item.fechaInicioLabores === 'string'
+            ? item.fechaInicioLabores
+            : (item.fechaInicioLabores as Date).toISOString()
+          : undefined,
+        fechaFinContrato: item.fechaFinContrato
+          ? typeof item.fechaFinContrato === 'string'
+            ? item.fechaFinContrato
+            : (item.fechaFinContrato as Date).toISOString()
+          : undefined,
+        sistemaPensionario: item.sistemaPensionario || undefined,
+        afp: item.afp || undefined,
+        tipoComision: item.tipoComision || undefined,
+        cuspp: item.cuspp || undefined,
+        centroCostos: item.centroCostos || undefined,
+        proyectoObra: item.proyectoObra || undefined,
+        ruc: item.ruc || undefined,
+        fechaVencimientoSuspension: item.fechaVencimientoSuspension
+          ? typeof item.fechaVencimientoSuspension === 'string'
+            ? item.fechaVencimientoSuspension
+            : (item.fechaVencimientoSuspension as Date).toISOString()
+          : undefined,
       };
 
       const contratosFiles = this.selectedContratos();
       const antecedentesFiles = this.selectedAntecedentes();
-      const hasFilesToUpload = contratosFiles.length > 0 || antecedentesFiles.length > 0;
+      const fotoPerfilFile = this.selectedFotoPerfil();
+      const hasFilesToUpload =
+        contratosFiles.length > 0 || antecedentesFiles.length > 0 || fotoPerfilFile !== null;
 
       this.employeesApi.create(createData).subscribe({
         next: (createdEmployee) => {
@@ -473,6 +613,15 @@ export class EmployeesPage implements OnInit {
             this.toastError('Error: No se pudo obtener el ID del empleado creado');
             this.loading.set(false);
             return;
+          }
+
+          // Subir foto de perfil si está seleccionada
+          if (fotoPerfilFile) {
+            this.uploadFotoPerfilFile(
+              createdEmployee._id,
+              fotoPerfilFile,
+              contratosFiles.length === 0 && antecedentesFiles.length === 0,
+            );
           }
 
           if (!hasFilesToUpload) {
@@ -488,7 +637,7 @@ export class EmployeesPage implements OnInit {
             this.uploadContratosFiles(
               createdEmployee._id,
               contratosFiles,
-              antecedentesFiles.length === 0
+              antecedentesFiles.length === 0 && fotoPerfilFile === null,
             );
           }
 
@@ -497,7 +646,7 @@ export class EmployeesPage implements OnInit {
             this.uploadAntecedentesFiles(
               createdEmployee._id,
               antecedentesFiles,
-              contratosFiles.length === 0
+              contratosFiles.length === 0 && fotoPerfilFile === null,
             );
           }
         },
@@ -786,7 +935,7 @@ export class EmployeesPage implements OnInit {
         this.selectedContratos.set([...this.selectedContratos(), ...validFiles]);
       } else {
         this.toastError(
-          'Tipo de archivo no válido. Solo se permiten: PDF, DOC, DOCX, JPG, JPEG, PNG'
+          'Tipo de archivo no válido. Solo se permiten: PDF, DOC, DOCX, JPG, JPEG, PNG',
         );
       }
     }
@@ -822,9 +971,135 @@ export class EmployeesPage implements OnInit {
         this.selectedAntecedentes.set([...this.selectedAntecedentes(), ...validFiles]);
       } else {
         this.toastError(
-          'Tipo de archivo no válido. Solo se permiten: PDF, DOC, DOCX, JPG, JPEG, PNG'
+          'Tipo de archivo no válido. Solo se permiten: PDF, DOC, DOCX, JPG, JPEG, PNG',
         );
       }
+    }
+  }
+
+  // Métodos para manejar foto de perfil
+  onFotoPerfilSelect(event: FileSelectEvent) {
+    const file = event.files?.[0];
+    if (file) {
+      this.selectedFotoPerfil.set(file);
+      // Crear preview
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const current = this.editing();
+        if (current) {
+          this.editing.set({ ...current, fotoPerfil: e.target.result });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // Métodos para manejar cónyuge/concubino
+  onConyugeChange(field: string, value: string) {
+    const current = this.editing();
+    if (current) {
+      const conyuge = current.conyugeConcubino || {
+        nombre: '',
+        tipoDocumento: '',
+        numeroDocumento: '',
+      };
+      this.editing.set({
+        ...current,
+        conyugeConcubino: { ...conyuge, [field]: value },
+      });
+    }
+  }
+
+  // Métodos para manejar hijos
+  addHijo() {
+    const current = this.editing();
+    if (current) {
+      const hijos = current.hijos || [];
+      this.editing.set({
+        ...current,
+        hijos: [
+          ...hijos,
+          {
+            nombre: '',
+            fechaNacimiento: '',
+            tipoDocumento: 'DNI',
+            numeroDocumento: '',
+          },
+        ],
+      });
+    }
+  }
+
+  removeHijo(index: number) {
+    const current = this.editing();
+    if (current && current.hijos) {
+      const hijos = [...current.hijos];
+      hijos.splice(index, 1);
+      this.editing.set({ ...current, hijos });
+    }
+  }
+
+  onHijoChange(index: number, field: string, value: string) {
+    const current = this.editing();
+    if (current && current.hijos) {
+      const hijos = [...current.hijos];
+      hijos[index] = { ...hijos[index], [field]: value };
+      this.editing.set({ ...current, hijos });
+    }
+  }
+
+  // Método para subir foto de perfil
+  uploadFotoPerfilFile(employeeId: string, file: File, isLastUpload = false) {
+    this.employeesApi.uploadFotoPerfil(employeeId, file).subscribe({
+      next: () => {
+        this.toastSuccess('Foto de perfil subida exitosamente');
+        this.selectedFotoPerfil.set(null);
+        this.load();
+        if (isLastUpload) {
+          this.loading.set(false);
+          this.closeDialog();
+        }
+      },
+      error: (err) => {
+        const message = err.error?.message || `Error al subir ${file.name}`;
+        this.toastError(message);
+        if (isLastUpload) {
+          this.loading.set(false);
+          this.closeDialog();
+        }
+      },
+    });
+  }
+
+  // Métodos helper para convertir fechas a Date para p-calendar
+  getDateValue(date: string | Date | undefined): Date | null {
+    if (!date) return null;
+    if (date instanceof Date) {
+      return date;
+    }
+    if (typeof date === 'string') {
+      const parsed = new Date(date);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+    return null;
+  }
+
+  onDateChange(field: string, value: Date | null) {
+    if (value && value instanceof Date) {
+      // Mantener como objeto Date en el estado 'editing' para que el datepicker no falle
+      this.onEditChange(field as keyof Employee, value);
+    } else {
+      this.onEditChange(field as keyof Employee, undefined);
+    }
+  }
+
+  onHijoDateChange(index: number, value: Date | null) {
+    const current = this.editing();
+    if (current && current.hijos) {
+      const hijos = [...current.hijos];
+      // Mantener como Date en el estado
+      hijos[index] = { ...hijos[index], fechaNacimiento: value || '' };
+      this.editing.set({ ...current, hijos });
     }
   }
 }

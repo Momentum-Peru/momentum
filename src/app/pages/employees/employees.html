@@ -17,15 +17,15 @@
       class="flex-1 min-w-[200px]"
     />
     @if (canEdit()) {
-    <button
-      pButton
-      type="button"
-      (click)="newItem()"
-      label="Nuevo"
-      icon="pi pi-plus"
-      class="w-full xl:w-auto"
-      aria-label="Crear nuevo empleado"
-    ></button>
+      <button
+        pButton
+        type="button"
+        (click)="newItem()"
+        label="Nuevo"
+        icon="pi pi-plus"
+        class="w-full xl:w-auto"
+        aria-label="Crear nuevo empleado"
+      ></button>
     }
   </div>
 
@@ -84,24 +84,24 @@
               aria-label="Ver detalles del empleado"
             ></button>
             @if (canEdit()) {
-            <button
-              pButton
-              icon="pi pi-pencil"
-              class="p-button-text"
-              (click)="editItem(row)"
-              pTooltip="Editar"
-              tooltipPosition="top"
-              aria-label="Editar empleado"
-            ></button>
-            <button
-              pButton
-              icon="pi pi-trash"
-              class="p-button-text p-button-danger"
-              (click)="remove(row)"
-              pTooltip="Eliminar"
-              tooltipPosition="top"
-              aria-label="Eliminar empleado"
-            ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text"
+                (click)="editItem(row)"
+                pTooltip="Editar"
+                tooltipPosition="top"
+                aria-label="Editar empleado"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-text p-button-danger"
+                (click)="remove(row)"
+                pTooltip="Eliminar"
+                tooltipPosition="top"
+                aria-label="Eliminar empleado"
+              ></button>
             }
           </td>
         </tr>
@@ -117,145 +117,153 @@
   <!-- Vista Móvil: Lista tipo tarjetas -->
   <div class="md:hidden space-y-3">
     @for (row of filteredItems(); track row._id || row.dni; let i = $index) {
-    <div
-      class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"
-    >
       <div
-        class="p-4 flex items-center justify-between cursor-pointer"
-        (click)="toggleRowByKey(buildRowKey(row, i))"
-        (keyup.enter)="toggleRowByKey(buildRowKey(row, i))"
-        (keyup.space)="toggleRowByKey(buildRowKey(row, i))"
-        tabindex="0"
-        role="button"
-        [attr.aria-label]="
-          'Expandir o contraer detalles del empleado: ' + row.nombre + ' ' + row.apellido
-        "
+        class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"
       >
-        <div class="flex-1 min-w-0">
-          <div class="font-semibold text-gray-900 dark:text-white">
-            {{ row.nombre }} {{ row.apellido }}
+        <div
+          class="p-4 flex items-center justify-between cursor-pointer"
+          (click)="toggleRowByKey(buildRowKey(row, i))"
+          (keyup.enter)="toggleRowByKey(buildRowKey(row, i))"
+          (keyup.space)="toggleRowByKey(buildRowKey(row, i))"
+          tabindex="0"
+          role="button"
+          [attr.aria-label]="
+            'Expandir o contraer detalles del empleado: ' + row.nombre + ' ' + row.apellido
+          "
+        >
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-gray-900 dark:text-white">
+              {{ row.nombre }} {{ row.apellido }}
+            </div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">DNI: {{ row.dni }}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">
+              {{ row.correo || '-' }}
+            </div>
           </div>
-          <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">DNI: {{ row.dni }}</div>
-          <div class="text-sm text-gray-500 dark:text-gray-400">
-            {{ row.correo || '-' }}
+          <div class="flex items-center gap-2 ml-2">
+            <i
+              [class]="
+                isRowExpandedByKey(buildRowKey(row, i))
+                  ? 'pi pi-chevron-up text-gray-500'
+                  : 'pi pi-chevron-down text-gray-500'
+              "
+            ></i>
           </div>
         </div>
-        <div class="flex items-center gap-2 ml-2">
-          <i
-            [class]="
-              isRowExpandedByKey(buildRowKey(row, i))
-                ? 'pi pi-chevron-up text-gray-500'
-                : 'pi pi-chevron-down text-gray-500'
-            "
-          ></i>
-        </div>
-      </div>
 
-      @if (isRowExpandedByKey(buildRowKey(row, i))) {
-      <div class="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-700">
-        <div class="grid grid-cols-2 gap-2 pt-3">
-          <div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">Teléfono</div>
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              {{ row.telefono || '-' }}
-            </div>
-          </div>
-          <div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">Usuario</div>
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              {{ getUserName(row.userId) }}
-            </div>
-          </div>
-          <div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">Área</div>
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              {{ getAreaName(row.areaId) }}
-            </div>
-          </div>
-          <div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">Cargo</div>
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              {{ row.cargo || '-' }}
-            </div>
-          </div>
-          @if (row.direccion) {
-          <div class="col-span-2">
-            <div class="text-xs text-gray-500 dark:text-gray-400">Dirección</div>
-            <div class="text-sm font-medium text-gray-900 dark:text-white break-words">
-              {{ row.direccion }}
-            </div>
-          </div>
-          } @if (row.accountNumber || row.bank || row.bankCode || row.accountType) {
-          <div class="col-span-2 border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-            <div class="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">
-              Información Bancaria
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              @if (row.accountNumber) {
+        @if (isRowExpandedByKey(buildRowKey(row, i))) {
+          <div class="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-2 gap-2 pt-3">
               <div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">N° Cuenta</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Teléfono</div>
                 <div class="text-sm font-medium text-gray-900 dark:text-white">
-                  {{ row.accountNumber }}
+                  {{ row.telefono || '-' }}
                 </div>
               </div>
-              } @if (row.bank) {
               <div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">Banco</div>
-                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ row.bank }}</div>
-              </div>
-              } @if (row.bankCode) {
-              <div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">Código</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Usuario</div>
                 <div class="text-sm font-medium text-gray-900 dark:text-white">
-                  {{ row.bankCode }}
+                  {{ getUserName(row.userId) }}
                 </div>
               </div>
-              } @if (row.accountType) {
               <div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">Tipo</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Área</div>
                 <div class="text-sm font-medium text-gray-900 dark:text-white">
-                  {{ row.accountType }}
+                  {{ getAreaName(row.areaId) }}
                 </div>
               </div>
+              <div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Cargo</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ row.cargo || '-' }}
+                </div>
+              </div>
+              @if (row.direccion) {
+                <div class="col-span-2">
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Dirección</div>
+                  <div class="text-sm font-medium text-gray-900 dark:text-white break-words">
+                    {{ row.direccion }}
+                  </div>
+                </div>
+              }
+              @if (row.accountNumber || row.bank || row.bankCode || row.accountType) {
+                <div class="col-span-2 border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
+                  <div class="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">
+                    Información Bancaria
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    @if (row.accountNumber) {
+                      <div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">N° Cuenta</div>
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                          {{ row.accountNumber }}
+                        </div>
+                      </div>
+                    }
+                    @if (row.bank) {
+                      <div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Banco</div>
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                          {{ row.bank }}
+                        </div>
+                      </div>
+                    }
+                    @if (row.bankCode) {
+                      <div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Código</div>
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                          {{ row.bankCode }}
+                        </div>
+                      </div>
+                    }
+                    @if (row.accountType) {
+                      <div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Tipo</div>
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                          {{ row.accountType }}
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div class="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+              <button
+                pButton
+                icon="pi pi-eye"
+                label="Ver"
+                class="p-button-text flex-1"
+                (click)="viewItem(row)"
+                aria-label="Ver detalles del empleado"
+              ></button>
+              @if (canEdit()) {
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  label="Editar"
+                  class="p-button-text flex-1"
+                  (click)="editItem(row)"
+                  aria-label="Editar empleado"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  label="Eliminar"
+                  class="p-button-text p-button-danger flex-1"
+                  (click)="remove(row)"
+                  aria-label="Eliminar empleado"
+                ></button>
               }
             </div>
           </div>
-          }
-        </div>
-
-        <div class="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-          <button
-            pButton
-            icon="pi pi-eye"
-            label="Ver"
-            class="p-button-text flex-1"
-            (click)="viewItem(row)"
-            aria-label="Ver detalles del empleado"
-          ></button>
-          @if (canEdit()) {
-          <button
-            pButton
-            icon="pi pi-pencil"
-            label="Editar"
-            class="p-button-text flex-1"
-            (click)="editItem(row)"
-            aria-label="Editar empleado"
-          ></button>
-          <button
-            pButton
-            icon="pi pi-trash"
-            label="Eliminar"
-            class="p-button-text p-button-danger flex-1"
-            (click)="remove(row)"
-            aria-label="Eliminar empleado"
-          ></button>
-          }
-        </div>
+        }
       </div>
-      }
-    </div>
     } @empty {
-    <div class="text-center py-8 text-gray-500 dark:text-gray-400">No se encontraron empleados</div>
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        No se encontraron empleados
+      </div>
     }
   </div>
 
@@ -268,6 +276,12 @@
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
+    [contentStyle]="{
+      'max-height': 'calc(95vh - 120px)',
+      'overflow-y': 'auto',
+      'overflow-x': 'hidden',
+    }"
+    [styleClass]="'employee-dialog'"
     appendTo="body"
   >
     <ng-template pTemplate="header">
@@ -276,7 +290,7 @@
       </span>
     </ng-template>
 
-    <div class="space-y-4" *ngIf="editing() as e">
+    <div class="space-y-4 pr-2" *ngIf="editing() as e">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label
@@ -319,13 +333,35 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label
+            for="employeeTipoDocumento"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >
+            Tipo de Documento *
+          </label>
+          <p-select
+            id="employeeTipoDocumento"
+            [options]="[
+              { label: 'DNI', value: 'DNI' },
+              { label: 'Carné de Extranjería', value: 'Carné de Extranjería' },
+              { label: 'PTP', value: 'PTP' },
+              { label: 'Pasaporte', value: 'Pasaporte' },
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="e.tipoDocumento || 'DNI'"
+            (ngModelChange)="onEditChange('tipoDocumento', $event)"
+            name="tipoDocumento"
+            placeholder="Seleccionar tipo"
+            class="w-full"
+            [appendTo]="'body'"
+          ></p-select>
+        </div>
+        <div>
+          <label
             for="employeeDni"
             class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >
-            DNI *
-            <span class="text-xs text-gray-500 font-normal ml-1"
-              >(se autocompleta automáticamente)</span
-            >
+            Número de Documento *
           </label>
           <input
             id="employeeDni"
@@ -335,16 +371,19 @@
             name="dni"
             placeholder="12345678"
             class="w-full"
-            maxlength="8"
+            maxlength="12"
             required
           />
         </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label
             for="employeeCorreo"
             class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
           >
-            Correo
+            Correo Personal
           </label>
           <input
             id="employeeCorreo"
@@ -354,6 +393,24 @@
             (ngModelChange)="onEditChange('correo', $event)"
             name="correo"
             placeholder="correo@example.com"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label
+            for="employeeCorreoCorporativo"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          >
+            Correo Corporativo
+          </label>
+          <input
+            id="employeeCorreoCorporativo"
+            pInputText
+            type="email"
+            [ngModel]="e.correoCorporativo"
+            (ngModelChange)="onEditChange('correoCorporativo', $event)"
+            name="correoCorporativo"
+            placeholder="correo@company.com"
             class="w-full"
           />
         </div>
@@ -382,7 +439,7 @@
           for="employeeDireccion"
           class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
         >
-          Dirección
+          Dirección de Residencia *
         </label>
         <input
           id="employeeDireccion"
@@ -393,6 +450,208 @@
           placeholder="Av. Principal 123, Lima"
           class="w-full"
         />
+        <p class="text-xs text-gray-500 mt-1">(Validación de geo-referencia opcional)</p>
+      </div>
+
+      <!-- Foto de Perfil -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+          Foto de Perfil
+        </label>
+        <p-fileUpload
+          mode="basic"
+          name="fotoPerfil"
+          accept="image/*"
+          maxFileSize="5000000"
+          [multiple]="false"
+          [auto]="false"
+          (onSelect)="onFotoPerfilSelect($event)"
+          chooseLabel="Seleccionar Foto"
+          class="w-full"
+        >
+        </p-fileUpload>
+        @if (e.fotoPerfil) {
+          <div class="mt-2">
+            <img
+              [src]="e.fotoPerfil"
+              alt="Foto de perfil"
+              class="w-24 h-24 object-cover rounded border"
+            />
+          </div>
+        }
+      </div>
+
+      <!-- Datos Familiares -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+          Datos Familiares (Derechohabientes)
+        </h3>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+            Cónyuge/Concubino (para cálculo de Asignación Familiar)
+          </label>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <input
+                pInputText
+                [ngModel]="e.conyugeConcubino?.nombre || ''"
+                (ngModelChange)="onConyugeChange('nombre', $event)"
+                placeholder="Nombre completo"
+                class="w-full"
+              />
+            </div>
+            <div>
+              <p-select
+                [options]="[
+                  { label: 'DNI', value: 'DNI' },
+                  { label: 'Carné de Extranjería', value: 'Carné de Extranjería' },
+                  { label: 'PTP', value: 'PTP' },
+                  { label: 'Pasaporte', value: 'Pasaporte' },
+                ]"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="e.conyugeConcubino?.tipoDocumento || ''"
+                (ngModelChange)="onConyugeChange('tipoDocumento', $event)"
+                placeholder="Tipo Doc."
+                class="w-full"
+                [appendTo]="'body'"
+              ></p-select>
+            </div>
+            <div>
+              <input
+                pInputText
+                [ngModel]="e.conyugeConcubino?.numeroDocumento || ''"
+                (ngModelChange)="onConyugeChange('numeroDocumento', $event)"
+                placeholder="Número de documento"
+                class="w-full"
+              />
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+            <label class="block text-sm font-medium text-gray-700 dark:text-white">
+              Hijos (Datos para registro en Essalud y asignación familiar)
+            </label>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-plus"
+              label="Agregar Hijo"
+              size="small"
+              (click)="addHijo()"
+              class="p-button-sm w-full sm:w-auto"
+            ></button>
+          </div>
+          @if (e.hijos && e.hijos.length > 0) {
+            <div class="space-y-3">
+              @for (hijo of e.hijos; track $index) {
+                <div
+                  class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                >
+                  <div>
+                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      Nombre completo
+                    </label>
+                    <input
+                      pInputText
+                      [ngModel]="hijo.nombre"
+                      (ngModelChange)="onHijoChange($index, 'nombre', $event)"
+                      placeholder="Nombre completo"
+                      class="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      Fecha de nacimiento
+                    </label>
+                    <p-datepicker
+                      [ngModel]="hijo.fechaNacimiento"
+                      (ngModelChange)="onHijoDateChange($index, $event)"
+                      [showIcon]="true"
+                      dateFormat="dd/mm/yy"
+                      [showButtonBar]="true"
+                      placeholder="Fecha de nacimiento"
+                      inputId="hijoFechaNacimiento{{ $index }}"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                    ></p-datepicker>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      Tipo de documento
+                    </label>
+                    <p-select
+                      [options]="[
+                        { label: 'DNI', value: 'DNI' },
+                        { label: 'Carné de Extranjería', value: 'Carné de Extranjería' },
+                        { label: 'PTP', value: 'PTP' },
+                        { label: 'Pasaporte', value: 'Pasaporte' },
+                      ]"
+                      optionLabel="label"
+                      optionValue="value"
+                      [ngModel]="hijo.tipoDocumento"
+                      (ngModelChange)="onHijoChange($index, 'tipoDocumento', $event)"
+                      placeholder="Tipo Doc."
+                      class="w-full"
+                      [appendTo]="'body'"
+                    ></p-select>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      Número de documento
+                    </label>
+                    <div class="flex gap-2">
+                      <input
+                        pInputText
+                        [ngModel]="hijo.numeroDocumento"
+                        (ngModelChange)="onHijoChange($index, 'numeroDocumento', $event)"
+                        placeholder="Número de documento"
+                        class="flex-1 min-w-0"
+                      />
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-trash"
+                        severity="danger"
+                        size="small"
+                        [text]="true"
+                        (click)="removeHijo($index)"
+                        class="flex-shrink-0"
+                        pTooltip="Eliminar hijo"
+                        tooltipPosition="top"
+                      ></button>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div>
+        <label
+          for="employeeTipoEmpleado"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        >
+          Tipo de Empleado *
+        </label>
+        <p-select
+          id="employeeTipoEmpleado"
+          [options]="[
+            { label: 'Planilla (Régimen Privado)', value: 'Planilla' },
+            { label: 'Locador (RxH)', value: 'Locador' },
+          ]"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="e.tipoEmpleado || 'Planilla'"
+          (ngModelChange)="onEditChange('tipoEmpleado', $event)"
+          name="tipoEmpleado"
+          placeholder="Seleccionar tipo"
+          class="w-full"
+          [appendTo]="'body'"
+        ></p-select>
       </div>
 
       <div>
@@ -499,75 +758,75 @@
 
         <!-- Lista de archivos seleccionados para subir -->
         @if (selectedContratos().length > 0) {
-        <div class="mb-3">
-          <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
-            Archivos Seleccionados:
-          </div>
-          <div class="space-y-2">
-            @for (file of selectedContratos(); track file.name) {
-            <div
-              class="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded border"
-            >
-              <div class="flex items-center gap-2">
-                <i class="pi pi-file text-blue-600"></i>
-                <span class="text-sm text-gray-700 dark:text-white">{{ file.name }}</span>
-                <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
-              </div>
-              <button
-                pButton
-                icon="pi pi-times"
-                severity="danger"
-                size="small"
-                [text]="true"
-                (click)="removeContratoFile(file)"
-                pTooltip="Quitar archivo"
-                aria-label="Quitar archivo"
-              ></button>
+          <div class="mb-3">
+            <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+              Archivos Seleccionados:
             </div>
-            }
+            <div class="space-y-2">
+              @for (file of selectedContratos(); track file.name) {
+                <div
+                  class="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded border"
+                >
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-file text-blue-600"></i>
+                    <span class="text-sm text-gray-700 dark:text-white">{{ file.name }}</span>
+                    <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
+                  </div>
+                  <button
+                    pButton
+                    icon="pi pi-times"
+                    severity="danger"
+                    size="small"
+                    [text]="true"
+                    (click)="removeContratoFile(file)"
+                    pTooltip="Quitar archivo"
+                    aria-label="Quitar archivo"
+                  ></button>
+                </div>
+              }
+            </div>
           </div>
-        </div>
         }
 
         <!-- Lista de archivos ya subidos -->
         @if (e.contratos && e.contratos.length > 0) {
-        <div>
-          <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
-            Archivos Subidos:
-          </div>
-          <div class="space-y-2">
-            @for (url of e.contratos; track url) {
-            <div
-              class="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded border"
-            >
-              <div class="flex items-center gap-2 flex-1 min-w-0">
-                <i class="pi pi-file text-green-600"></i>
-                <a
-                  (click)="downloadFile(url)"
-                  (keyup.enter)="downloadFile(url)"
-                  (keyup.space)="downloadFile(url); $event.preventDefault()"
-                  tabindex="0"
-                  role="button"
-                  class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate"
-                  [title]="url"
-                >
-                  {{ url.split('/').pop() }}
-                </a>
-              </div>
-              <button
-                pButton
-                icon="pi pi-trash"
-                severity="danger"
-                size="small"
-                [text]="true"
-                (click)="removeContratoUrl(e._id!, url)"
-                pTooltip="Eliminar archivo"
-                aria-label="Eliminar archivo"
-              ></button>
+          <div>
+            <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+              Archivos Subidos:
             </div>
-            }
+            <div class="space-y-2">
+              @for (url of e.contratos; track url) {
+                <div
+                  class="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded border"
+                >
+                  <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <i class="pi pi-file text-green-600"></i>
+                    <a
+                      (click)="downloadFile(url)"
+                      (keyup.enter)="downloadFile(url)"
+                      (keyup.space)="downloadFile(url); $event.preventDefault()"
+                      tabindex="0"
+                      role="button"
+                      class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate"
+                      [title]="url"
+                    >
+                      {{ url.split('/').pop() }}
+                    </a>
+                  </div>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    severity="danger"
+                    size="small"
+                    [text]="true"
+                    (click)="removeContratoUrl(e._id!, url)"
+                    pTooltip="Eliminar archivo"
+                    aria-label="Eliminar archivo"
+                  ></button>
+                </div>
+              }
+            </div>
           </div>
-        </div>
         }
       </div>
 
@@ -603,75 +862,75 @@
 
         <!-- Lista de archivos seleccionados para subir -->
         @if (selectedAntecedentes().length > 0) {
-        <div class="mb-3">
-          <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
-            Archivos Seleccionados:
-          </div>
-          <div class="space-y-2">
-            @for (file of selectedAntecedentes(); track file.name) {
-            <div
-              class="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded border"
-            >
-              <div class="flex items-center gap-2">
-                <i class="pi pi-file text-blue-600"></i>
-                <span class="text-sm text-gray-700 dark:text-white">{{ file.name }}</span>
-                <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
-              </div>
-              <button
-                pButton
-                icon="pi pi-times"
-                severity="danger"
-                size="small"
-                [text]="true"
-                (click)="removeAntecedenteFile(file)"
-                pTooltip="Quitar archivo"
-                aria-label="Quitar archivo"
-              ></button>
+          <div class="mb-3">
+            <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+              Archivos Seleccionados:
             </div>
-            }
+            <div class="space-y-2">
+              @for (file of selectedAntecedentes(); track file.name) {
+                <div
+                  class="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded border"
+                >
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-file text-blue-600"></i>
+                    <span class="text-sm text-gray-700 dark:text-white">{{ file.name }}</span>
+                    <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
+                  </div>
+                  <button
+                    pButton
+                    icon="pi pi-times"
+                    severity="danger"
+                    size="small"
+                    [text]="true"
+                    (click)="removeAntecedenteFile(file)"
+                    pTooltip="Quitar archivo"
+                    aria-label="Quitar archivo"
+                  ></button>
+                </div>
+              }
+            </div>
           </div>
-        </div>
         }
 
         <!-- Lista de archivos ya subidos -->
         @if (e.antecedentesPoliciales && e.antecedentesPoliciales.length > 0) {
-        <div>
-          <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
-            Archivos Subidos:
-          </div>
-          <div class="space-y-2">
-            @for (url of e.antecedentesPoliciales; track url) {
-            <div
-              class="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded border"
-            >
-              <div class="flex items-center gap-2 flex-1 min-w-0">
-                <i class="pi pi-file text-green-600"></i>
-                <a
-                  (click)="downloadFile(url)"
-                  (keyup.enter)="downloadFile(url)"
-                  (keyup.space)="downloadFile(url); $event.preventDefault()"
-                  tabindex="0"
-                  role="button"
-                  class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate"
-                  [title]="url"
-                >
-                  {{ url.split('/').pop() }}
-                </a>
-              </div>
-              <button
-                pButton
-                icon="pi pi-trash"
-                severity="danger"
-                size="small"
-                [text]="true"
-                (click)="removeAntecedenteUrl(e._id!, url)"
-                pTooltip="Eliminar archivo"
-                aria-label="Eliminar archivo"
-              ></button>
+          <div>
+            <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+              Archivos Subidos:
             </div>
-            }
+            <div class="space-y-2">
+              @for (url of e.antecedentesPoliciales; track url) {
+                <div
+                  class="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded border"
+                >
+                  <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <i class="pi pi-file text-green-600"></i>
+                    <a
+                      (click)="downloadFile(url)"
+                      (keyup.enter)="downloadFile(url)"
+                      (keyup.space)="downloadFile(url); $event.preventDefault()"
+                      tabindex="0"
+                      role="button"
+                      class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate"
+                      [title]="url"
+                    >
+                      {{ url.split('/').pop() }}
+                    </a>
+                  </div>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    severity="danger"
+                    size="small"
+                    [text]="true"
+                    (click)="removeAntecedenteUrl(e._id!, url)"
+                    pTooltip="Eliminar archivo"
+                    aria-label="Eliminar archivo"
+                  ></button>
+                </div>
+              }
+            </div>
           </div>
-        </div>
         }
       </div>
 
@@ -686,7 +945,7 @@
               for="employeeAccountNumber"
               class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >
-              Número de Cuenta
+              Número de Cuenta *
             </label>
             <input
               id="employeeAccountNumber"
@@ -703,7 +962,7 @@
               for="employeeBank"
               class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >
-              Banco
+              Banco *
             </label>
             <p-select
               id="employeeBank"
@@ -727,33 +986,17 @@
           </div>
           <div>
             <label
-              for="employeeBankCode"
-              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-            >
-              Código de Banco
-            </label>
-            <input
-              id="employeeBankCode"
-              pInputText
-              [ngModel]="e.bankCode"
-              (ngModelChange)="onEditChange('bankCode', $event)"
-              name="bankCode"
-              placeholder="002"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label
               for="employeeAccountType"
               class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >
-              Tipo de Cuenta
+              Tipo de Cuenta *
             </label>
             <p-select
               id="employeeAccountType"
               [options]="[
                 { label: 'Ahorro', value: 'Ahorro' },
-                { label: 'Corriente', value: 'Corriente' }
+                { label: 'Corriente', value: 'Corriente' },
+                { label: 'Sueldo', value: 'Sueldo' },
               ]"
               optionLabel="label"
               optionValue="value"
@@ -765,8 +1008,316 @@
               [appendTo]="'body'"
             ></p-select>
           </div>
+          <div>
+            <label
+              for="employeeCci"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >
+              CCI (Código de Cuenta Interbancario) *
+            </label>
+            <input
+              id="employeeCci"
+              pInputText
+              [ngModel]="e.cci"
+              (ngModelChange)="onEditChange('cci', $event)"
+              name="cci"
+              placeholder="002-193-001234567801-12"
+              class="w-full"
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              Vital para transferencias interbancarias de haberes y depósitos de CTS
+            </p>
+          </div>
         </div>
       </div>
+
+      <!-- Datos Laborales (solo para Planilla) -->
+      @if (e.tipoEmpleado === 'Planilla') {
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+            Datos Laborales (Personal en Planilla)
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                for="employeeTipoContrato"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >
+                Tipo de Contrato *
+              </label>
+              <p-select
+                id="employeeTipoContrato"
+                [options]="[
+                  { label: 'A Plazo Indeterminado', value: 'A Plazo Indeterminado' },
+                  {
+                    label: 'Sujeto a Modalidad: Inicio de Actividad',
+                    value: 'Sujeto a Modalidad: Inicio de Actividad',
+                  },
+                  {
+                    label: 'Sujeto a Modalidad: Necesidad de Mercado',
+                    value: 'Sujeto a Modalidad: Necesidad de Mercado',
+                  },
+                  {
+                    label: 'Sujeto a Modalidad: Obra determinada',
+                    value: 'Sujeto a Modalidad: Obra determinada',
+                  },
+                ]"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="e.tipoContrato"
+                (ngModelChange)="onEditChange('tipoContrato', $event)"
+                name="tipoContrato"
+                placeholder="Seleccionar tipo"
+                class="w-full"
+                [appendTo]="'body'"
+              ></p-select>
+            </div>
+            <div>
+              <label
+                for="employeeFechaInicioLabores"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >
+                Fecha de Inicio de Labores *
+              </label>
+              <p-datepicker
+                id="employeeFechaInicioLabores"
+                [ngModel]="e.fechaInicioLabores"
+                (ngModelChange)="onDateChange('fechaInicioLabores', $event)"
+                name="fechaInicioLabores"
+                [showIcon]="true"
+                dateFormat="dd/mm/yy"
+                [showButtonBar]="true"
+                placeholder="Seleccionar fecha"
+                styleClass="w-full"
+                [appendTo]="'body'"
+              ></p-datepicker>
+            </div>
+            <div>
+              <label
+                for="employeeFechaFinContrato"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >
+                Fecha de Fin de Contrato
+              </label>
+              <p-datepicker
+                id="employeeFechaFinContrato"
+                [ngModel]="e.fechaFinContrato"
+                (ngModelChange)="onDateChange('fechaFinContrato', $event)"
+                name="fechaFinContrato"
+                [showIcon]="true"
+                dateFormat="dd/mm/yy"
+                [showButtonBar]="true"
+                placeholder="Seleccionar fecha"
+                styleClass="w-full"
+                [appendTo]="'body'"
+              ></p-datepicker>
+              <p class="text-xs text-gray-500 mt-1">
+                (Para alertas automáticas de renovación/vencimiento)
+              </p>
+            </div>
+            <div>
+              <label
+                for="employeeSistemaPensionario"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >
+                Sistema Pensionario *
+              </label>
+              <p-select
+                id="employeeSistemaPensionario"
+                [options]="[
+                  { label: 'SNP/ONP', value: 'SNP/ONP' },
+                  { label: 'SPP/AFP', value: 'SPP/AFP' },
+                ]"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="e.sistemaPensionario"
+                (ngModelChange)="onEditChange('sistemaPensionario', $event)"
+                name="sistemaPensionario"
+                placeholder="Seleccionar sistema"
+                class="w-full"
+                [appendTo]="'body'"
+              ></p-select>
+            </div>
+            @if (e.sistemaPensionario === 'SPP/AFP') {
+              <div>
+                <label
+                  for="employeeAfp"
+                  class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+                >
+                  AFP Específica *
+                </label>
+                <p-select
+                  id="employeeAfp"
+                  [options]="[
+                    { label: 'Integra', value: 'Integra' },
+                    { label: 'Prima', value: 'Prima' },
+                    { label: 'Hábitat', value: 'Hábitat' },
+                    { label: 'Profuturo', value: 'Profuturo' },
+                  ]"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="e.afp"
+                  (ngModelChange)="onEditChange('afp', $event)"
+                  name="afp"
+                  placeholder="Seleccionar AFP"
+                  class="w-full"
+                  [appendTo]="'body'"
+                ></p-select>
+              </div>
+              <div>
+                <label
+                  for="employeeTipoComision"
+                  class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+                >
+                  Tipo de Comisión *
+                </label>
+                <p-select
+                  id="employeeTipoComision"
+                  [options]="[
+                    { label: 'Flujo', value: 'Flujo' },
+                    { label: 'Mixta', value: 'Mixta' },
+                  ]"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="e.tipoComision"
+                  (ngModelChange)="onEditChange('tipoComision', $event)"
+                  name="tipoComision"
+                  placeholder="Seleccionar tipo"
+                  class="w-full"
+                  [appendTo]="'body'"
+                ></p-select>
+                <p class="text-xs text-gray-500 mt-1">
+                  Crítico para el cálculo correcto de la 5ta categoría
+                </p>
+              </div>
+              <div>
+                <label
+                  for="employeeCuspp"
+                  class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+                >
+                  CUSPP
+                </label>
+                <input
+                  id="employeeCuspp"
+                  pInputText
+                  [ngModel]="e.cuspp"
+                  (ngModelChange)="onEditChange('cuspp', $event)"
+                  name="cuspp"
+                  placeholder="12345678901"
+                  class="w-full"
+                />
+              </div>
+            }
+            <div>
+              <label
+                for="employeeCentroCostos"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >
+                Centro de Costos asignado *
+              </label>
+              <input
+                id="employeeCentroCostos"
+                pInputText
+                [ngModel]="e.centroCostos"
+                (ngModelChange)="onEditChange('centroCostos', $event)"
+                name="centroCostos"
+                placeholder="CC001"
+                class="w-full"
+              />
+            </div>
+            <div>
+              <label
+                for="employeeProyectoObra"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >
+                Proyecto/Obra actual
+              </label>
+              <input
+                id="employeeProyectoObra"
+                pInputText
+                [ngModel]="e.proyectoObra"
+                (ngModelChange)="onEditChange('proyectoObra', $event)"
+                name="proyectoObra"
+                placeholder="Proyecto Torre Lima"
+                class="w-full"
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                (Permite el prorrateo de costos en empresas constructoras)
+              </p>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Datos para Locadores (RxH) -->
+      @if (e.tipoEmpleado === 'Locador') {
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+            Datos para Locadores (RxH)
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                for="employeeRuc"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >
+                RUC *
+              </label>
+              <input
+                id="employeeRuc"
+                pInputText
+                [ngModel]="e.ruc"
+                (ngModelChange)="onEditChange('ruc', $event)"
+                name="ruc"
+                placeholder="20123456789"
+                class="w-full"
+                maxlength="11"
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                (Validación de estado Activo y Habido requerida)
+              </p>
+            </div>
+            <div>
+              <label
+                for="employeeFechaVencimientoSuspension"
+                class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+              >
+                Fecha de Vencimiento de la Suspensión
+              </label>
+              <p-datepicker
+                id="employeeFechaVencimientoSuspension"
+                [ngModel]="e.fechaVencimientoSuspension"
+                (ngModelChange)="onDateChange('fechaVencimientoSuspension', $event)"
+                name="fechaVencimientoSuspension"
+                [showIcon]="true"
+                dateFormat="dd/mm/yy"
+                [showButtonBar]="true"
+                placeholder="Seleccionar fecha"
+                styleClass="w-full"
+                [appendTo]="'body'"
+              ></p-datepicker>
+              <p class="text-xs text-gray-500 mt-1">(Para evitar retenciones indebidas del 8%)</p>
+            </div>
+          </div>
+          <div class="mt-4">
+            <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-2">
+              Constancia de Suspensión de Renta de 4ta Categoría (PDF)
+            </h4>
+            <p-fileUpload
+              mode="basic"
+              name="constanciaSuspensionRenta[]"
+              accept=".pdf"
+              maxFileSize="50000000"
+              [multiple]="true"
+              [auto]="false"
+              (onSelect)="onContratosSelect($event)"
+              chooseLabel="Seleccionar Archivos PDF"
+              class="w-full"
+            >
+            </p-fileUpload>
+          </div>
+        </div>
+      }
     </div>
 
     <ng-template pTemplate="footer">
@@ -803,6 +1354,17 @@
     </ng-template>
 
     <div class="space-y-4" *ngIf="viewing() as v">
+      <!-- Foto de Perfil -->
+      @if (v.fotoPerfil) {
+        <div class="flex justify-center mb-4">
+          <img
+            [src]="v.fotoPerfil"
+            alt="Foto de perfil"
+            class="w-32 h-32 object-cover rounded-full border-2 border-gray-200 dark:border-gray-700"
+          />
+        </div>
+      }
+
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <span class="block text-xs text-gray-500 dark:text-white mb-1">Nombre</span>
@@ -817,9 +1379,15 @@
           <div class="font-medium text-gray-700 dark:text-white">{{ v.dni }}</div>
         </div>
         <div>
-          <span class="block text-xs text-gray-500 dark:text-white mb-1">Correo</span>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Correo Personal</span>
           <div class="font-medium text-gray-700 dark:text-white break-words">
             {{ v.correo || '-' }}
+          </div>
+        </div>
+        <div>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Correo Corporativo</span>
+          <div class="font-medium text-gray-700 dark:text-white break-words">
+            {{ v.correoCorporativo || '-' }}
           </div>
         </div>
         <div>
@@ -848,224 +1416,402 @@
           </div>
         </div>
         @if (v.direccion) {
-        <div class="col-span-1 md:col-span-2">
-          <span class="block text-xs text-gray-500 dark:text-white mb-1">Dirección</span>
-          <div class="font-medium text-gray-700 dark:text-white break-words">
-            {{ v.direccion }}
+          <div class="col-span-1 md:col-span-2">
+            <span class="block text-xs text-gray-500 dark:text-white mb-1">Dirección</span>
+            <div class="font-medium text-gray-700 dark:text-white break-words">
+              {{ v.direccion }}
+              @if (v.geoReferencia && v.geoReferencia.lat && v.geoReferencia.lng) {
+                 <a
+                  [href]="'https://www.google.com/maps/search/?api=1&query=' + v.geoReferencia.lat + ',' + v.geoReferencia.lng"
+                  target="_blank"
+                  class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs inline-flex items-center gap-1"
+                >
+                  <i class="pi pi-map-marker"></i> Ver mapa
+                </a>
+              }
+            </div>
           </div>
-        </div>
-        } @if (v.createdAt) {
-        <div>
-          <span class="block text-xs text-gray-500 dark:text-white mb-1">Fecha de creación</span>
-          <div class="font-medium text-gray-700 dark:text-white">
-            {{ v.createdAt | date : 'dd/MM/yyyy HH:mm' }}
+        }
+        @if (v.createdAt) {
+          <div>
+            <span class="block text-xs text-gray-500 dark:text-white mb-1">Fecha de creación</span>
+            <div class="font-medium text-gray-700 dark:text-white">
+              {{ v.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+            </div>
           </div>
-        </div>
         }
       </div>
 
-      <!-- Contratos -->
-      @if (v.contratos && v.contratos.length > 0) {
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Contratos</h3>
-        <div class="space-y-3">
-          @for (url of v.contratos; track url) {
-          <div class="bg-gray-50 dark:bg-gray-800 rounded border p-3">
-            @if (isImageFile(url)) {
-            <!-- Previsualización de imagen -->
-            <div class="flex flex-col gap-2">
-              <div
-                class="w-32 h-32 rounded border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer"
-              >
-                <img
-                  [src]="url"
-                  [alt]="url.split('/').pop()"
-                  class="w-full h-full object-cover"
-                  (click)="downloadFile(url)"
-                  (keyup.enter)="downloadFile(url)"
-                  (keyup.space)="downloadFile(url); $event.preventDefault()"
-                  tabindex="0"
-                  role="button"
-                  [title]="'Click para abrir: ' + url.split('/').pop()"
-                />
-              </div>
-              <div class="flex items-center justify-between">
-                <a
-                  (click)="downloadFile(url)"
-                  (keyup.enter)="downloadFile(url)"
-                  (keyup.space)="downloadFile(url); $event.preventDefault()"
-                  tabindex="0"
-                  role="button"
-                  class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate flex-1"
-                  [title]="url"
-                >
-                  {{ url.split('/').pop() }}
-                </a>
-                <button
-                  pButton
-                  icon="pi pi-download"
-                  class="p-button-text p-button-sm ml-2"
-                  (click)="downloadFile(url)"
-                  pTooltip="Descargar archivo"
-                  aria-label="Descargar archivo"
-                ></button>
-              </div>
-            </div>
-            } @else {
-            <!-- Vista de documento -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3 flex-1 min-w-0">
-                <i class="pi pi-file text-blue-600 text-xl"></i>
-                <div class="flex-1 min-w-0">
-                  <a
-                    (click)="downloadFile(url)"
-                    (keyup.enter)="downloadFile(url)"
-                    (keyup.space)="downloadFile(url); $event.preventDefault()"
-                    tabindex="0"
-                    role="button"
-                    class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block truncate"
-                    [title]="url"
-                  >
-                    {{ url.split('/').pop() }}
-                  </a>
-                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                    {{ url }}
-                  </div>
+      <!-- Datos Familiares -->
+      @if (v.conyugeConcubino || (v.hijos && v.hijos.length > 0)) {
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+            Datos Familiares
+          </h3>
+          
+          @if (v.conyugeConcubino) {
+            <div class="mb-4">
+              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Cónyuge/Concubino</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded border border-gray-200 dark:border-gray-700">
+                <div>
+                  <span class="block text-xs text-gray-500 dark:text-gray-400">Nombre</span>
+                  <div class="text-sm text-gray-900 dark:text-white">{{ v.conyugeConcubino.nombre || '-' }}</div>
+                </div>
+                <div>
+                  <span class="block text-xs text-gray-500 dark:text-gray-400">Tipo Doc.</span>
+                  <div class="text-sm text-gray-900 dark:text-white">{{ v.conyugeConcubino.tipoDocumento || '-' }}</div>
+                </div>
+                <div>
+                  <span class="block text-xs text-gray-500 dark:text-gray-400">N° Documento</span>
+                  <div class="text-sm text-gray-900 dark:text-white">{{ v.conyugeConcubino.numeroDocumento || '-' }}</div>
                 </div>
               </div>
-              <button
-                pButton
-                icon="pi pi-download"
-                class="p-button-text p-button-sm"
-                (click)="downloadFile(url)"
-                pTooltip="Descargar archivo"
-                aria-label="Descargar archivo"
-              ></button>
             </div>
-            }
-          </div>
+          }
+
+          @if (v.hijos && v.hijos.length > 0) {
+            <div>
+              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Hijos</h4>
+              <div class="space-y-2">
+                @for (hijo of v.hijos; track $index) {
+                  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded border border-gray-200 dark:border-gray-700">
+                    <div>
+                      <span class="block text-xs text-gray-500 dark:text-gray-400">Nombre</span>
+                      <div class="text-sm text-gray-900 dark:text-white">{{ hijo.nombre || '-' }}</div>
+                    </div>
+                    <div>
+                      <span class="block text-xs text-gray-500 dark:text-gray-400">F. Nacimiento</span>
+                      <div class="text-sm text-gray-900 dark:text-white">{{ hijo.fechaNacimiento ? (hijo.fechaNacimiento | date: 'dd/MM/yyyy') : '-' }}</div>
+                    </div>
+                    <div>
+                      <span class="block text-xs text-gray-500 dark:text-gray-400">Tipo Doc.</span>
+                      <div class="text-sm text-gray-900 dark:text-white">{{ hijo.tipoDocumento || '-' }}</div>
+                    </div>
+                    <div>
+                      <span class="block text-xs text-gray-500 dark:text-gray-400">N° Documento</span>
+                      <div class="text-sm text-gray-900 dark:text-white">{{ hijo.numeroDocumento || '-' }}</div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
           }
         </div>
-      </div>
+      }
+
+      <!-- Datos Laborales (Personal en Planilla) -->
+      @if (v.tipoEmpleado === 'Planilla') {
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+            Datos Laborales
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div>
+               <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo de Contrato</span>
+               <div class="font-medium text-gray-700 dark:text-white">{{ v.tipoContrato || '-' }}</div>
+             </div>
+             <div>
+               <span class="block text-xs text-gray-500 dark:text-white mb-1">Inicio de Labores</span>
+               <div class="font-medium text-gray-700 dark:text-white">{{ v.fechaInicioLabores ? (v.fechaInicioLabores | date: 'dd/MM/yyyy') : '-' }}</div>
+             </div>
+             <div>
+               <span class="block text-xs text-gray-500 dark:text-white mb-1">Fin de Contrato</span>
+               <div class="font-medium text-gray-700 dark:text-white">{{ v.fechaFinContrato ? (v.fechaFinContrato | date: 'dd/MM/yyyy') : '-' }}</div>
+             </div>
+             <div>
+               <span class="block text-xs text-gray-500 dark:text-white mb-1">Sistema Pensionario</span>
+               <div class="font-medium text-gray-700 dark:text-white">{{ v.sistemaPensionario || '-' }}</div>
+             </div>
+             @if (v.sistemaPensionario === 'SPP/AFP') {
+               <div>
+                 <span class="block text-xs text-gray-500 dark:text-white mb-1">AFP</span>
+                 <div class="font-medium text-gray-700 dark:text-white">{{ v.afp || '-' }}</div>
+               </div>
+               <div>
+                 <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo Comisión</span>
+                 <div class="font-medium text-gray-700 dark:text-white">{{ v.tipoComision || '-' }}</div>
+               </div>
+               <div>
+                 <span class="block text-xs text-gray-500 dark:text-white mb-1">CUSPP</span>
+                 <div class="font-medium text-gray-700 dark:text-white">{{ v.cuspp || '-' }}</div>
+               </div>
+             }
+             <div>
+               <span class="block text-xs text-gray-500 dark:text-white mb-1">Centro de Costos</span>
+               <div class="font-medium text-gray-700 dark:text-white">{{ v.centroCostos || '-' }}</div>
+             </div>
+             <div>
+               <span class="block text-xs text-gray-500 dark:text-white mb-1">Proyecto/Obra</span>
+               <div class="font-medium text-gray-700 dark:text-white">{{ v.proyectoObra || '-' }}</div>
+             </div>
+          </div>
+        </div>
+      }
+
+      <!-- Datos para Locadores -->
+      @if (v.tipoEmpleado === 'Locador') {
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+            Datos de Locador
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div>
+               <span class="block text-xs text-gray-500 dark:text-white mb-1">RUC</span>
+               <div class="font-medium text-gray-700 dark:text-white">{{ v.ruc || '-' }}</div>
+             </div>
+             <div>
+               <span class="block text-xs text-gray-500 dark:text-white mb-1">Vencimiento Suspensión</span>
+               <div class="font-medium text-gray-700 dark:text-white">{{ v.fechaVencimientoSuspension ? (v.fechaVencimientoSuspension | date: 'dd/MM/yyyy') : '-' }}</div>
+             </div>
+          </div>
+
+          @if (v.constanciaSuspensionRenta && v.constanciaSuspensionRenta.length > 0) {
+            <div class="mt-4">
+               <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Constancia de Suspensión (PDF)</h4>
+               <div class="space-y-3">
+                @for (url of v.constanciaSuspensionRenta; track url) {
+                  <div class="bg-gray-50 dark:bg-gray-800 rounded border p-3 flex items-center justify-between">
+                     <div class="flex items-center gap-3 flex-1 min-w-0">
+                       <i class="pi pi-file-pdf text-red-600 text-xl"></i>
+                       <div class="flex-1 min-w-0">
+                         <a
+                           (click)="downloadFile(url)"
+                           (keyup.enter)="downloadFile(url)"
+                           (keyup.space)="downloadFile(url); $event.preventDefault()"
+                           tabindex="0"
+                           role="button"
+                           class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block truncate"
+                           [title]="url"
+                         >
+                           {{ url.split('/').pop() }}
+                         </a>
+                       </div>
+                     </div>
+                     <button
+                       pButton
+                       icon="pi pi-download"
+                       class="p-button-text p-button-sm"
+                       (click)="downloadFile(url)"
+                       pTooltip="Descargar archivo"
+                       aria-label="Descargar archivo"
+                     ></button>
+                  </div>
+                }
+               </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Contratos -->
+      @if (v.contratos && v.contratos.length > 0) {
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Contratos</h3>
+          <div class="space-y-3">
+            @for (url of v.contratos; track url) {
+              <div class="bg-gray-50 dark:bg-gray-800 rounded border p-3">
+                @if (isImageFile(url)) {
+                  <!-- Previsualización de imagen -->
+                  <div class="flex flex-col gap-2">
+                    <div
+                      class="w-32 h-32 rounded border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer"
+                    >
+                      <img
+                        [src]="url"
+                        [alt]="url.split('/').pop()"
+                        class="w-full h-full object-cover"
+                        (click)="downloadFile(url)"
+                        (keyup.enter)="downloadFile(url)"
+                        (keyup.space)="downloadFile(url); $event.preventDefault()"
+                        tabindex="0"
+                        role="button"
+                        [title]="'Click para abrir: ' + url.split('/').pop()"
+                      />
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <a
+                        (click)="downloadFile(url)"
+                        (keyup.enter)="downloadFile(url)"
+                        (keyup.space)="downloadFile(url); $event.preventDefault()"
+                        tabindex="0"
+                        role="button"
+                        class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate flex-1"
+                        [title]="url"
+                      >
+                        {{ url.split('/').pop() }}
+                      </a>
+                      <button
+                        pButton
+                        icon="pi pi-download"
+                        class="p-button-text p-button-sm ml-2"
+                        (click)="downloadFile(url)"
+                        pTooltip="Descargar archivo"
+                        aria-label="Descargar archivo"
+                      ></button>
+                    </div>
+                  </div>
+                } @else {
+                  <!-- Vista de documento -->
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                      <i class="pi pi-file text-blue-600 text-xl"></i>
+                      <div class="flex-1 min-w-0">
+                        <a
+                          (click)="downloadFile(url)"
+                          (keyup.enter)="downloadFile(url)"
+                          (keyup.space)="downloadFile(url); $event.preventDefault()"
+                          tabindex="0"
+                          role="button"
+                          class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block truncate"
+                          [title]="url"
+                        >
+                          {{ url.split('/').pop() }}
+                        </a>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                          {{ url }}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      pButton
+                      icon="pi pi-download"
+                      class="p-button-text p-button-sm"
+                      (click)="downloadFile(url)"
+                      pTooltip="Descargar archivo"
+                      aria-label="Descargar archivo"
+                    ></button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
       }
 
       <!-- Antecedentes Policiales -->
       @if (v.antecedentesPoliciales && v.antecedentesPoliciales.length > 0) {
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-          Antecedentes Policiales
-        </h3>
-        <div class="space-y-3">
-          @for (url of v.antecedentesPoliciales; track url) {
-          <div class="bg-gray-50 dark:bg-gray-800 rounded border p-3">
-            @if (isImageFile(url)) {
-            <!-- Previsualización de imagen -->
-            <div class="flex flex-col gap-2">
-              <div
-                class="w-32 h-32 rounded border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer"
-              >
-                <img
-                  [src]="url"
-                  [alt]="url.split('/').pop()"
-                  class="w-full h-full object-cover"
-                  (click)="downloadFile(url)"
-                  (keyup.enter)="downloadFile(url)"
-                  (keyup.space)="downloadFile(url); $event.preventDefault()"
-                  tabindex="0"
-                  role="button"
-                  [title]="'Click para abrir: ' + url.split('/').pop()"
-                />
-              </div>
-              <div class="flex items-center justify-between">
-                <a
-                  (click)="downloadFile(url)"
-                  (keyup.enter)="downloadFile(url)"
-                  (keyup.space)="downloadFile(url); $event.preventDefault()"
-                  tabindex="0"
-                  role="button"
-                  class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate flex-1"
-                  [title]="url"
-                >
-                  {{ url.split('/').pop() }}
-                </a>
-                <button
-                  pButton
-                  icon="pi pi-download"
-                  class="p-button-text p-button-sm ml-2"
-                  (click)="downloadFile(url)"
-                  pTooltip="Descargar archivo"
-                  aria-label="Descargar archivo"
-                ></button>
-              </div>
-            </div>
-            } @else {
-            <!-- Vista de documento -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3 flex-1 min-w-0">
-                <i class="pi pi-file text-green-600 text-xl"></i>
-                <div class="flex-1 min-w-0">
-                  <a
-                    (click)="downloadFile(url)"
-                    (keyup.enter)="downloadFile(url)"
-                    (keyup.space)="downloadFile(url); $event.preventDefault()"
-                    tabindex="0"
-                    role="button"
-                    class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block truncate"
-                    [title]="url"
-                  >
-                    {{ url.split('/').pop() }}
-                  </a>
-                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                    {{ url }}
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+            Antecedentes Policiales
+          </h3>
+          <div class="space-y-3">
+            @for (url of v.antecedentesPoliciales; track url) {
+              <div class="bg-gray-50 dark:bg-gray-800 rounded border p-3">
+                @if (isImageFile(url)) {
+                  <!-- Previsualización de imagen -->
+                  <div class="flex flex-col gap-2">
+                    <div
+                      class="w-32 h-32 rounded border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer"
+                    >
+                      <img
+                        [src]="url"
+                        [alt]="url.split('/').pop()"
+                        class="w-full h-full object-cover"
+                        (click)="downloadFile(url)"
+                        (keyup.enter)="downloadFile(url)"
+                        (keyup.space)="downloadFile(url); $event.preventDefault()"
+                        tabindex="0"
+                        role="button"
+                        [title]="'Click para abrir: ' + url.split('/').pop()"
+                      />
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <a
+                        (click)="downloadFile(url)"
+                        (keyup.enter)="downloadFile(url)"
+                        (keyup.space)="downloadFile(url); $event.preventDefault()"
+                        tabindex="0"
+                        role="button"
+                        class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate flex-1"
+                        [title]="url"
+                      >
+                        {{ url.split('/').pop() }}
+                      </a>
+                      <button
+                        pButton
+                        icon="pi pi-download"
+                        class="p-button-text p-button-sm ml-2"
+                        (click)="downloadFile(url)"
+                        pTooltip="Descargar archivo"
+                        aria-label="Descargar archivo"
+                      ></button>
+                    </div>
                   </div>
-                </div>
+                } @else {
+                  <!-- Vista de documento -->
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                      <i class="pi pi-file text-green-600 text-xl"></i>
+                      <div class="flex-1 min-w-0">
+                        <a
+                          (click)="downloadFile(url)"
+                          (keyup.enter)="downloadFile(url)"
+                          (keyup.space)="downloadFile(url); $event.preventDefault()"
+                          tabindex="0"
+                          role="button"
+                          class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block truncate"
+                          [title]="url"
+                        >
+                          {{ url.split('/').pop() }}
+                        </a>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                          {{ url }}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      pButton
+                      icon="pi pi-download"
+                      class="p-button-text p-button-sm"
+                      (click)="downloadFile(url)"
+                      pTooltip="Descargar archivo"
+                      aria-label="Descargar archivo"
+                    ></button>
+                  </div>
+                }
               </div>
-              <button
-                pButton
-                icon="pi pi-download"
-                class="p-button-text p-button-sm"
-                (click)="downloadFile(url)"
-                pTooltip="Descargar archivo"
-                aria-label="Descargar archivo"
-              ></button>
-            </div>
             }
           </div>
-          }
         </div>
-      </div>
       }
 
       <!-- Información Bancaria -->
       @if (v.accountNumber || v.bank || v.bankCode || v.accountType) {
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-          Información Bancaria
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          @if (v.accountNumber) {
-          <div>
-            <span class="block text-xs text-gray-500 dark:text-white mb-1">Número de Cuenta</span>
-            <div class="font-medium text-gray-700 dark:text-white">{{ v.accountNumber }}</div>
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+            Información Bancaria
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @if (v.accountNumber) {
+              <div>
+                <span class="block text-xs text-gray-500 dark:text-white mb-1"
+                  >Número de Cuenta</span
+                >
+                <div class="font-medium text-gray-700 dark:text-white">{{ v.accountNumber }}</div>
+              </div>
+            }
+            @if (v.bank) {
+              <div>
+                <span class="block text-xs text-gray-500 dark:text-white mb-1">Banco</span>
+                <div class="font-medium text-gray-700 dark:text-white">{{ v.bank }}</div>
+              </div>
+            }
+            @if (v.bankCode) {
+              <div>
+                <span class="block text-xs text-gray-500 dark:text-white mb-1"
+                  >Código de Banco</span
+                >
+                <div class="font-medium text-gray-700 dark:text-white">{{ v.bankCode }}</div>
+              </div>
+            }
+            @if (v.accountType) {
+              <div>
+                <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo de Cuenta</span>
+                <div class="font-medium text-gray-700 dark:text-white">{{ v.accountType }}</div>
+              </div>
+            }
           </div>
-          } @if (v.bank) {
-          <div>
-            <span class="block text-xs text-gray-500 dark:text-white mb-1">Banco</span>
-            <div class="font-medium text-gray-700 dark:text-white">{{ v.bank }}</div>
-          </div>
-          } @if (v.bankCode) {
-          <div>
-            <span class="block text-xs text-gray-500 dark:text-white mb-1">Código de Banco</span>
-            <div class="font-medium text-gray-700 dark:text-white">{{ v.bankCode }}</div>
-          </div>
-          } @if (v.accountType) {
-          <div>
-            <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo de Cuenta</span>
-            <div class="font-medium text-gray-700 dark:text-white">{{ v.accountType }}</div>
-          </div>
-          }
         </div>
-      </div>
       }
     </div>
 

@@ -113,4 +113,13 @@ export class EmployeesApiService {
     const params = new HttpParams().set('url', url);
     return this.http.delete<Employee>(`${this.baseUrl}/${id}/antecedentes-policiales`, { params });
   }
+
+  /**
+   * Sube una foto de perfil para un empleado
+   */
+  uploadFotoPerfil(id: string, file: File): Observable<Employee> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<Employee>(`${this.baseUrl}/${id}/foto-perfil`, formData);
+  }
 }
