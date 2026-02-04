@@ -52,6 +52,7 @@ export class MenuConfigService {
     { path: '/payroll', label: 'Planillas y Pagos', icon: 'pi pi-wallet' },
     { path: '/payroll-calculation', label: 'Cálculo de Planilla', icon: 'pi pi-calculator' },
     { path: '/profile', label: 'Mi Perfil', icon: 'pi pi-user-edit' },
+    { path: '/digital-signature', label: 'Firma Digital', icon: 'pi pi-pencil' },
   ];
 
   /**
@@ -277,6 +278,11 @@ export class MenuConfigService {
             label: 'Mi Perfil',
             icon: 'pi pi-user-edit',
             routerLink: '/profile',
+          },
+          {
+            label: 'Firma Digital',
+            icon: 'pi pi-pencil',
+            routerLink: '/digital-signature',
           },
           {
             label: 'Logs del Sistema',
