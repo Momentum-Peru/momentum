@@ -1460,8 +1460,14 @@
           <div class="font-medium text-gray-700 dark:text-white">{{ v.apellido }}</div>
         </div>
         <div>
-          <span class="block text-xs text-gray-500 dark:text-white mb-1">DNI</span>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">
+            {{ v.tipoDocumento || 'DNI' }}
+          </span>
           <div class="font-medium text-gray-700 dark:text-white">{{ v.dni }}</div>
+        </div>
+        <div>
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo de Empleado</span>
+          <div class="font-medium text-gray-700 dark:text-white">{{ v.tipoEmpleado }}</div>
         </div>
         <div>
           <span class="block text-xs text-gray-500 dark:text-white mb-1">Correo Personal</span>
@@ -1861,7 +1867,7 @@
       }
 
       <!-- Información Bancaria -->
-      @if (v.accountNumber || v.bank || v.bankCode || v.accountType) {
+      @if (v.accountNumber || v.bank || v.bankCode || v.accountType || v.cci) {
         <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
           <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
             Información Bancaria
@@ -1893,6 +1899,12 @@
               <div>
                 <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo de Cuenta</span>
                 <div class="font-medium text-gray-700 dark:text-white">{{ v.accountType }}</div>
+              </div>
+            }
+            @if (v.cci) {
+              <div>
+                <span class="block text-xs text-gray-500 dark:text-white mb-1">CCI</span>
+                <div class="font-medium text-gray-700 dark:text-white">{{ v.cci }}</div>
               </div>
             }
           </div>
