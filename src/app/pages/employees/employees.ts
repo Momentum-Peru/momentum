@@ -59,8 +59,9 @@ export class EmployeesPage implements OnInit {
   private readonly menuService = inject(MenuService);
   private readonly apisPeruService = inject(ApisPeruApiService);
 
-  // Subject para manejar la autocompletación de DNI
+  // Subject para manejar la autocompletación de DNI y RUC
   private readonly dniSubject = new Subject<string>();
+  private readonly rucSubject = new Subject<string>();
 
   // Verificar si el usuario tiene permiso de edición para este módulo
   readonly canEdit = computed(() => this.menuService.canEdit('/employees'));
@@ -78,11 +79,13 @@ export class EmployeesPage implements OnInit {
   // Archivos seleccionados para subir
   selectedContratos = signal<File[]>([]);
   selectedAntecedentes = signal<File[]>([]);
+  selectedConstancia = signal<File[]>([]);
   selectedFotoPerfil = signal<File | null>(null);
 
   // Estados de drag and drop
   isDraggingContratos = signal(false);
   isDraggingAntecedentes = signal(false);
+  isDraggingConstancia = signal(false);
 
   // Constante de bancos reutilizable
   readonly banks = BANKS;
@@ -117,6 +120,7 @@ export class EmployeesPage implements OnInit {
     this.loadUsers();
     this.loadAreas();
     this.setupDniAutocomplete();
+    this.setupRucAutocomplete();
   }
 
   load() {
@@ -211,11 +215,11 @@ export class EmployeesPage implements OnInit {
       ruc: '',
       fechaVencimientoSuspension: undefined,
       contratos: [],
-      antecedentesPoliciales: [],
       constanciaSuspensionRenta: [],
     });
     this.selectedContratos.set([]);
     this.selectedAntecedentes.set([]);
+    this.selectedConstancia.set([]);
     this.showDialog.set(true);
   }
 
@@ -268,9 +272,11 @@ export class EmployeesPage implements OnInit {
     this.editing.set(null);
     this.selectedContratos.set([]);
     this.selectedAntecedentes.set([]);
+    this.selectedConstancia.set([]);
     this.selectedFotoPerfil.set(null);
     this.isDraggingContratos.set(false);
     this.isDraggingAntecedentes.set(false);
+    this.isDraggingConstancia.set(false);
   }
 
   viewItem(item: Employee) {
@@ -291,6 +297,11 @@ export class EmployeesPage implements OnInit {
     // Si se cambió el DNI, disparar la autocompletación
     if (field === 'dni' && typeof value === 'string') {
       this.dniSubject.next(value);
+    }
+
+    // Si se cambió el RUC, disparar la validación
+    if (field === 'ruc' && typeof value === 'string') {
+      this.rucSubject.next(value);
     }
   }
 
@@ -340,6 +351,43 @@ export class EmployeesPage implements OnInit {
           nombre,
           apellido,
         });
+      });
+  }
+
+  /**
+   * Configura la validación de RUC (Activo y Habido)
+   */
+  private setupRucAutocomplete(): void {
+    this.rucSubject
+      .pipe(
+        debounceTime(800),
+        distinctUntilChanged(),
+        switchMap((ruc) => {
+          if (!ruc || ruc.length !== 11 || !/^\d{11}$/.test(ruc)) {
+            return of(null);
+          }
+
+          return this.apisPeruService.consultRuc(ruc).pipe(
+            catchError((error) => {
+              console.warn('No se pudo validar RUC desde APIsPERU:', error);
+              return of(null);
+            }),
+          );
+        }),
+      )
+      .subscribe((response) => {
+        if (!response) return;
+
+        const isActive = response.estado === 'ACTIVO';
+        const isHabido = response.condicion === 'HABIDO';
+
+        if (!isActive || !isHabido) {
+          this.toastError(
+            `Alerta: El RUC se encuentra en estado ${response.estado} y condición ${response.condicion}. Se requiere ACTIVO y HABIDO.`,
+          );
+        } else {
+            this.toastSuccess('RUC validado: ACTIVO y HABIDO');
+        }
       });
   }
 
@@ -487,9 +535,13 @@ export class EmployeesPage implements OnInit {
 
       const contratosFiles = this.selectedContratos();
       const antecedentesFiles = this.selectedAntecedentes();
+      const constanciaFiles = this.selectedConstancia();
       const fotoPerfilFile = this.selectedFotoPerfil();
       const hasFilesToUpload =
-        contratosFiles.length > 0 || antecedentesFiles.length > 0 || fotoPerfilFile !== null;
+        contratosFiles.length > 0 ||
+        antecedentesFiles.length > 0 ||
+        constanciaFiles.length > 0 ||
+        fotoPerfilFile !== null;
 
       if (!item._id) {
         this.toastError('Error: No se pudo obtener el ID del empleado');
@@ -501,15 +553,6 @@ export class EmployeesPage implements OnInit {
 
       this.employeesApi.update(employeeId, updateData).subscribe({
         next: () => {
-          // Subir foto de perfil si está seleccionada
-          if (fotoPerfilFile) {
-            this.uploadFotoPerfilFile(
-              employeeId,
-              fotoPerfilFile,
-              contratosFiles.length === 0 && antecedentesFiles.length === 0,
-            );
-          }
-
           if (!hasFilesToUpload) {
             this.toastSuccess('Empleado actualizado exitosamente');
             this.loading.set(false);
@@ -518,21 +561,44 @@ export class EmployeesPage implements OnInit {
             return;
           }
 
-          // Subir archivos de contratos si hay alguno seleccionado
-          if (contratosFiles.length > 0) {
-            this.uploadContratosFiles(
+          // Flags de existencia para determinar el último upload
+          const hasContratos = contratosFiles.length > 0;
+          const hasAntecedentes = antecedentesFiles.length > 0;
+          const hasConstancia = constanciaFiles.length > 0;
+
+          // Subir foto de perfil: es Last si no hay contratos, ni antecedentes, ni constancia
+          if (fotoPerfilFile) {
+            this.uploadFotoPerfilFile(
               employeeId,
-              contratosFiles,
-              antecedentesFiles.length === 0 && fotoPerfilFile === null,
+              fotoPerfilFile,
+              !hasContratos && !hasAntecedentes && !hasConstancia,
             );
           }
 
-          // Subir archivos de antecedentes si hay alguno seleccionado
-          if (antecedentesFiles.length > 0) {
+          // Subir contratos: es Last si no hay antecedentes ni constancia
+          if (hasContratos) {
+            this.uploadContratosFiles(
+              employeeId,
+              contratosFiles,
+              !hasAntecedentes && !hasConstancia,
+            );
+          }
+
+          // Subir antecedentes: es Last si no hay constancia
+          if (hasAntecedentes) {
             this.uploadAntecedentesFiles(
               employeeId,
               antecedentesFiles,
-              contratosFiles.length === 0 && fotoPerfilFile === null,
+              !hasConstancia,
+            );
+          }
+
+          // Subir constancia: siempre es Last si existe (porque es el último en la cadena)
+          if (hasConstancia) {
+            this.uploadConstanciaFiles(
+              employeeId,
+              constanciaFiles,
+              true,
             );
           }
         },
@@ -603,9 +669,13 @@ export class EmployeesPage implements OnInit {
 
       const contratosFiles = this.selectedContratos();
       const antecedentesFiles = this.selectedAntecedentes();
+      const constanciaFiles = this.selectedConstancia();
       const fotoPerfilFile = this.selectedFotoPerfil();
       const hasFilesToUpload =
-        contratosFiles.length > 0 || antecedentesFiles.length > 0 || fotoPerfilFile !== null;
+        contratosFiles.length > 0 ||
+        antecedentesFiles.length > 0 ||
+        constanciaFiles.length > 0 ||
+        fotoPerfilFile !== null;
 
       this.employeesApi.create(createData).subscribe({
         next: (createdEmployee) => {
@@ -613,15 +683,6 @@ export class EmployeesPage implements OnInit {
             this.toastError('Error: No se pudo obtener el ID del empleado creado');
             this.loading.set(false);
             return;
-          }
-
-          // Subir foto de perfil si está seleccionada
-          if (fotoPerfilFile) {
-            this.uploadFotoPerfilFile(
-              createdEmployee._id,
-              fotoPerfilFile,
-              contratosFiles.length === 0 && antecedentesFiles.length === 0,
-            );
           }
 
           if (!hasFilesToUpload) {
@@ -632,21 +693,44 @@ export class EmployeesPage implements OnInit {
             return;
           }
 
-          // Subir archivos de contratos si hay alguno seleccionado
-          if (contratosFiles.length > 0) {
-            this.uploadContratosFiles(
-              createdEmployee._id,
-              contratosFiles,
-              antecedentesFiles.length === 0 && fotoPerfilFile === null,
+          const employeeId = createdEmployee._id;
+          const hasContratos = contratosFiles.length > 0;
+          const hasAntecedentes = antecedentesFiles.length > 0;
+          const hasConstancia = constanciaFiles.length > 0;
+
+          // Subir foto de perfil
+          if (fotoPerfilFile) {
+            this.uploadFotoPerfilFile(
+              employeeId,
+              fotoPerfilFile,
+              !hasContratos && !hasAntecedentes && !hasConstancia,
             );
           }
 
-          // Subir archivos de antecedentes si hay alguno seleccionado
-          if (antecedentesFiles.length > 0) {
+          // Subir contratos
+          if (hasContratos) {
+            this.uploadContratosFiles(
+              employeeId,
+              contratosFiles,
+              !hasAntecedentes && !hasConstancia,
+            );
+          }
+
+          // Subir antecedentes
+          if (hasAntecedentes) {
             this.uploadAntecedentesFiles(
-              createdEmployee._id,
+              employeeId,
               antecedentesFiles,
-              contratosFiles.length === 0 && fotoPerfilFile === null,
+              !hasConstancia,
+            );
+          }
+
+           // Subir constancia
+          if (hasConstancia) {
+            this.uploadConstanciaFiles(
+              employeeId,
+              constanciaFiles,
+              true,
             );
           }
         },
@@ -696,9 +780,23 @@ export class EmployeesPage implements OnInit {
       errors.push('El apellido debe tener al menos 2 caracteres');
     }
 
-    if (!item.dni || !/^\d{8}$/.test(item.dni)) {
-      errors.push('El DNI debe tener exactamente 8 dígitos');
+    // Validación condicional según tipo de documento
+    const tipoDoc = item.tipoDocumento || 'DNI';
+    if (tipoDoc === 'DNI') {
+      if (!item.dni || !/^\d{8}$/.test(item.dni)) {
+        errors.push('El DNI debe tener exactamente 8 dígitos numéricos');
+      }
+    } else if (tipoDoc === 'Carné de Extranjería' || tipoDoc === 'PTP') {
+      if (!item.dni || !/^\w{8,15}$/.test(item.dni)) {
+        errors.push(`El ${tipoDoc} debe tener entre 8 y 15 caracteres`);
+      }
+    } else {
+      // Pasaporte u otros
+      if (!item.dni || item.dni.length < 6 || item.dni.length > 20) {
+        errors.push(`El documento debe tener entre 6 y 20 caracteres`);
+      }
     }
+
 
     if (
       item.correo &&
@@ -821,6 +919,53 @@ export class EmployeesPage implements OnInit {
     });
   }
 
+  // Métodos para manejar archivos de constancia de suspensión
+  onConstanciaSelect(event: FileSelectEvent) {
+    const files = Array.from(event.files || []) as File[];
+    this.selectedConstancia.set([...this.selectedConstancia(), ...files]);
+  }
+
+  removeConstanciaFile(file: File) {
+    const current = this.selectedConstancia();
+    this.selectedConstancia.set(current.filter((f) => f !== file));
+  }
+
+  uploadConstanciaFiles(employeeId: string, files: File[], isLastUpload = false) {
+    let uploadedCount = 0;
+    let errorCount = 0;
+    const totalFiles = files.length;
+
+    files.forEach((file) => {
+      this.employeesApi.uploadConstanciaSuspension(employeeId, file).subscribe({
+        next: () => {
+          uploadedCount++;
+          if (uploadedCount + errorCount === totalFiles) {
+            if (errorCount === 0) {
+              this.toastSuccess('Archivos de constancia subidos exitosamente');
+            }
+            this.selectedConstancia.set([]);
+            this.load();
+            if (isLastUpload) {
+              this.loading.set(false);
+              this.closeDialog();
+            }
+          }
+        },
+        error: (err) => {
+          errorCount++;
+          const message = err.error?.message || `Error al subir ${file.name}`;
+          this.toastError(message);
+          if (uploadedCount + errorCount === totalFiles) {
+            if (isLastUpload) {
+              this.loading.set(false);
+              this.closeDialog();
+            }
+          }
+        },
+      });
+    });
+  }
+
   // Métodos para eliminar archivos existentes
   removeContratoUrl(employeeId: string, url: string) {
     this.confirmationService.confirm({
@@ -864,6 +1009,37 @@ export class EmployeesPage implements OnInit {
         this.employeesApi.removeAntecedentePolicial(employeeId, url).subscribe({
           next: () => {
             this.toastSuccess('Archivo de antecedentes policiales eliminado exitosamente');
+            this.load();
+            // Actualizar el empleado en vista si está abierto
+            const current = this.viewing();
+            if (current && current._id === employeeId) {
+              this.employeesApi.getById(employeeId).subscribe({
+                next: (updated) => {
+                  this.viewing.set(updated);
+                },
+              });
+            }
+          },
+          error: (err) => {
+            const message = err.error?.message || 'Error al eliminar el archivo';
+            this.toastError(message);
+          },
+        });
+      },
+    });
+  }
+
+  removeConstanciaUrl(employeeId: string, url: string) {
+    this.confirmationService.confirm({
+      message: '¿Está seguro de que desea eliminar este archivo de constancia?',
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.employeesApi.removeConstanciaSuspension(employeeId, url).subscribe({
+          next: () => {
+            this.toastSuccess('Archivo de constancia eliminado exitosamente');
             this.load();
             // Actualizar el empleado en vista si está abierto
             const current = this.viewing();
@@ -969,6 +1145,42 @@ export class EmployeesPage implements OnInit {
       });
       if (validFiles.length > 0) {
         this.selectedAntecedentes.set([...this.selectedAntecedentes(), ...validFiles]);
+      } else {
+        this.toastError(
+          'Tipo de archivo no válido. Solo se permiten: PDF, DOC, DOCX, JPG, JPEG, PNG',
+        );
+      }
+    }
+  }
+
+  // Métodos para drag and drop de constancia
+  onDragOverConstancia(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingConstancia.set(true);
+  }
+
+  onDragLeaveConstancia(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingConstancia.set(false);
+  }
+
+  onDropConstancia(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingConstancia.set(false);
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files) as File[];
+      // Filtrar solo archivos válidos según el accept
+      const validFiles = fileArray.filter((file) => {
+        const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+        return ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'].includes(extension);
+      });
+      if (validFiles.length > 0) {
+        this.selectedConstancia.set([...this.selectedConstancia(), ...validFiles]);
       } else {
         this.toastError(
           'Tipo de archivo no válido. Solo se permiten: PDF, DOC, DOCX, JPG, JPEG, PNG',

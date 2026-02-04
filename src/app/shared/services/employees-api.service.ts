@@ -122,4 +122,20 @@ export class EmployeesApiService {
     formData.append('file', file);
     return this.http.post<Employee>(`${this.baseUrl}/${id}/foto-perfil`, formData);
   }
+  /**
+   * Sube un archivo de constancia de suspensión de 4ta categoría para un empleado
+   */
+  uploadConstanciaSuspension(id: string, file: File): Observable<Employee> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<Employee>(`${this.baseUrl}/${id}/constancia-suspension`, formData);
+  }
+
+  /**
+   * Elimina un archivo de constancia de suspensión de 4ta categoría de un empleado
+   */
+  removeConstanciaSuspension(id: string, url: string): Observable<Employee> {
+    const params = new HttpParams().set('url', url);
+    return this.http.delete<Employee>(`${this.baseUrl}/${id}/constancia-suspension`, { params });
+  }
 }

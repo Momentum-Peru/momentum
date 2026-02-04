@@ -1303,18 +1303,103 @@
             <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-2">
               Constancia de Suspensión de Renta de 4ta Categoría (PDF)
             </h4>
-            <p-fileUpload
-              mode="basic"
-              name="constanciaSuspensionRenta[]"
-              accept=".pdf"
-              maxFileSize="50000000"
-              [multiple]="true"
-              [auto]="false"
-              (onSelect)="onContratosSelect($event)"
-              chooseLabel="Seleccionar Archivos PDF"
-              class="w-full"
+            <div
+              [class]="
+                'mb-3 transition-colors ' +
+                (isDraggingConstancia()
+                  ? 'border border-blue-400 bg-blue-50/30 dark:bg-blue-900/5 rounded'
+                  : '')
+              "
+              (dragover)="onDragOverConstancia($event)"
+              (dragleave)="onDragLeaveConstancia($event)"
+              (drop)="onDropConstancia($event)"
             >
-            </p-fileUpload>
+              <p-fileUpload
+                mode="basic"
+                name="constanciaSuspensionRenta[]"
+                accept=".pdf"
+                maxFileSize="50000000"
+                [multiple]="true"
+                [auto]="false"
+                (onSelect)="onConstanciaSelect($event)"
+                chooseLabel="Seleccionar Archivos PDF"
+                class="w-full"
+              >
+              </p-fileUpload>
+            </div>
+
+            <!-- Lista de archivos seleccionados -->
+            @if (selectedConstancia().length > 0) {
+              <div class="mb-3">
+                <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+                  Archivos Seleccionados:
+                </div>
+                <div class="space-y-2">
+                  @for (file of selectedConstancia(); track file.name) {
+                    <div
+                      class="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded border"
+                    >
+                      <div class="flex items-center gap-2">
+                        <i class="pi pi-file-pdf text-red-600"></i>
+                        <span class="text-sm text-gray-700 dark:text-white">{{ file.name }}</span>
+                        <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
+                      </div>
+                      <button
+                        pButton
+                        icon="pi pi-times"
+                        severity="danger"
+                        size="small"
+                        [text]="true"
+                        (click)="removeConstanciaFile(file)"
+                        pTooltip="Quitar archivo"
+                        aria-label="Quitar archivo"
+                      ></button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Lista de archivos ya subidos -->
+            @if (e.constanciaSuspensionRenta && e.constanciaSuspensionRenta.length > 0) {
+              <div>
+                <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+                  Archivos Subidos:
+                </div>
+                <div class="space-y-2">
+                  @for (url of e.constanciaSuspensionRenta; track url) {
+                    <div
+                      class="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded border"
+                    >
+                      <div class="flex items-center gap-2 flex-1 min-w-0">
+                        <i class="pi pi-file-pdf text-red-600"></i>
+                        <a
+                          (click)="downloadFile(url)"
+                          (keyup.enter)="downloadFile(url)"
+                          (keyup.space)="downloadFile(url); $event.preventDefault()"
+                          tabindex="0"
+                          role="button"
+                          class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate"
+                          [title]="url"
+                        >
+                          {{ url.split('/').pop() }}
+                        </a>
+                      </div>
+                      <button
+                        pButton
+                        icon="pi pi-trash"
+                        severity="danger"
+                        size="small"
+                        [text]="true"
+                        (click)="removeConstanciaUrl(e._id!, url)"
+                        pTooltip="Eliminar archivo"
+                        aria-label="Eliminar archivo"
+                      ></button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
           </div>
         </div>
       }
