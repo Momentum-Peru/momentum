@@ -311,6 +311,12 @@ export const routes: Routes = [
         data: { menuPermission: '/profile' },
       },
       {
+        path: 'digital-signature',
+        loadComponent: () => import('./pages/digital-signature/digital-signature.page').then((m) => m.DigitalSignaturePage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/digital-signature' },
+      },
+      {
         path: 'logs',
         loadComponent: () => import('./pages/logs/logs').then((m) => m.LogsPage),
         canActivate: [MenuPermissionGuard],

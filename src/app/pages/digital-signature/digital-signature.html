@@ -1,0 +1,112 @@
+
+<div class="p-6">
+    <div class="card p-6 bg-white rounded-lg shadow-md border border-gray-200">
+        <div class="font-semibold text-xl mb-4 text-gray-900">Firma Digital</div>
+        <p class="text-gray-500 mb-6">
+            Administra tu firma digital. Esta firma se utilizará para validar documentos dentro de la plataforma.
+        </p>
+
+        <div class="flex flex-col gap-6">
+            <!-- Visualización de Firma -->
+            <!-- Visualización de Firma -->
+            <div class="flex flex-col items-center justify-center p-8 border-2 border-gray-300 rounded-lg transition-all duration-300 group"
+                 [ngClass]="{
+                    'border-dashed bg-gray-50 hover:bg-gray-100 hover:border-blue-500 cursor-pointer': !signature()?.signatureUrl,
+                    'border-solid bg-white': signature()?.signatureUrl
+                 }"
+                 (click)="!signature()?.signatureUrl && showDialog()" 
+                 [pTooltip]="!signature()?.signatureUrl ? 'Clic para dibujar firma' : ''" 
+                 tooltipPosition="top">
+                
+                <ng-container *ngIf="signature()?.signatureUrl; else noSignature">
+                    <p-image 
+                        [src]="signature()!.signatureUrl" 
+                        alt="Firma Digital" 
+                        width="250" 
+                        [preview]="true" 
+                        styleClass="max-w-full max-h-[200px] object-contain">
+                    </p-image>
+                </ng-container>
+                
+                <ng-template #noSignature>
+                    <div class="text-center text-gray-400 group-hover:text-gray-500 transition-colors">
+                        <i class="pi pi-pencil text-5xl mb-4"></i>
+                        <div class="font-medium text-lg text-gray-700">No hay firma configurada</div>
+                        <div class="text-sm">Clic para dibujar tu firma</div>
+                    </div>
+                </ng-template>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <p-button 
+                    *ngIf="signature()?.signatureUrl"
+                    label="Eliminar Firma" 
+                    icon="pi pi-trash" 
+                    (onClick)="confirmDelete($event)"
+                    styleClass="p-button-danger p-button-outlined">
+                </p-button>
+                <p-button 
+                    label="Dibujar Firma" 
+                    icon="pi pi-pencil" 
+                    (onClick)="showDialog()"
+                    styleClass="p-button-primary">
+                </p-button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Dibujo -->
+<p-dialog 
+    header="Dibujar Firma Digital" 
+    [(visible)]="visibleDialog" 
+    [modal]="true" 
+    [style]="{ width: '550px', maxWidth: '95vw' }" 
+    [draggable]="false" 
+    [resizable]="false"
+    styleClass="p-fluid">
+    
+    <div class="flex flex-col gap-4">
+        
+        <div class="flex flex-col gap-3">
+            <div class="text-sm text-gray-500">
+                Dibuja tu firma en el recuadro de abajo usando tu mouse o dedo.
+            </div>
+            
+            <div class="border border-gray-300 rounded bg-white shadow-sm overflow-hidden touch-none select-none relative" 
+                 style="height: 300px;">
+                <canvas 
+                    #signatureCanvas
+                    class="w-full h-full cursor-crosshair touch-none"
+                    (mousedown)="startDrawing($event)"
+                    (mousemove)="draw($event)"
+                    (mouseup)="stopDrawing()"
+                    (mouseleave)="stopDrawing()"
+                    (touchstart)="startDrawing($event)"
+                    (touchmove)="draw($event)"
+                    (touchend)="stopDrawing()">
+                </canvas>
+            </div>
+
+            <div class="flex justify-between items-center mt-2">
+                 <p-button 
+                    label="Limpiar" 
+                    icon="pi pi-eraser" 
+                    styleClass="p-button-outlined p-button-secondary"
+                    (onClick)="clearCanvas()">
+                </p-button>
+
+                <p-button 
+                    label="Guardar Firma" 
+                    icon="pi pi-check" 
+                    (onClick)="saveDrawing()"
+                    [loading]="uploading()">
+                </p-button>
+            </div>
+        </div>
+
+    </div>
+</p-dialog>
+
+<p-toast></p-toast>
+<p-confirmDialog header="Confirmación" icon="pi pi-exclamation-triangle"></p-confirmDialog>
