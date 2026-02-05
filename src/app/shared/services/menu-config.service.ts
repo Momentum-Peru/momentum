@@ -53,6 +53,7 @@ export class MenuConfigService {
     { path: '/payroll-calculation', label: 'Cálculo de Planilla', icon: 'pi pi-calculator' },
     { path: '/profile', label: 'Mi Perfil', icon: 'pi pi-user-edit' },
     { path: '/digital-signature', label: 'Firma Digital', icon: 'pi pi-pencil' },
+    { path: '/work-shifts', label: 'Turnos', icon: 'pi pi-calendar-times' },
   ];
 
   /**
@@ -268,6 +269,11 @@ export class MenuConfigService {
             label: 'Áreas',
             icon: 'pi pi-sitemap',
             routerLink: '/areas',
+          },
+          {
+            label: 'Turnos',
+            icon: 'pi pi-calendar-times',
+            routerLink: '/work-shifts',
           },
           {
             label: 'Registro Facial',
