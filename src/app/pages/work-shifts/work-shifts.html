@@ -1,0 +1,243 @@
+<div class="card p-4 h-full flex flex-col gap-4">
+  <p-toast></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Turnos de Trabajo</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Gestiona los horarios y turnos de los empleados</p>
+    </div>
+    @if (canEdit()) {
+      <p-button
+        label="Nuevo Turno"
+        icon="pi pi-plus"
+        (onClick)="newItem()"
+        styleClass="p-button-primary"
+      ></p-button>
+    }
+  </div>
+
+  <!-- Filters -->
+  <div class="flex gap-2">
+    <span class="p-input-icon-left w-full sm:w-auto">
+      <i class="pi pi-search"></i>
+      <input
+        pInputText
+        type="text"
+        placeholder="Buscar por nombre..."
+        [ngModel]="query()"
+        (ngModelChange)="setQuery($event)"
+        class="w-full sm:w-80"
+      />
+    </span>
+  </div>
+
+  <!-- Table -->
+  <p-table
+    [value]="items()"
+    [loading]="loading()"
+    [rowHover]="true"
+    [paginator]="true"
+    [rows]="10"
+    responsiveLayout="scroll"
+    styleClass="p-datatable-sm"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Nombre</th>
+        <th>Horario</th>
+        <th class="hidden sm:table-cell">Días</th>
+        <th class="hidden sm:table-cell">Tolerancia</th>
+        <th class="hidden sm:table-cell">Refrigerio</th>
+        <th>Estado</th>
+        <th class="w-24">Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-item>
+      <tr>
+        <td class="font-medium">{{ item.name }}</td>
+        <td>{{ item.startTime }} - {{ item.endTime }}</td>
+        <td class="hidden sm:table-cell">
+          <div class="flex flex-wrap gap-1">
+            @for (day of item.days; track day) {
+              <p-tag [value]="day.substring(0, 3)" severity="info" styleClass="text-xs"></p-tag>
+            }
+          </div>
+        </td>
+        <td class="hidden sm:table-cell">{{ item.toleranceMinutes }} min</td>
+        <td class="hidden sm:table-cell">{{ item.breakMinutes }} min</td>
+        <td>
+          <p-tag
+            [value]="item.isActive ? 'Activo' : 'Inactivo'"
+            [severity]="item.isActive ? 'success' : 'secondary'"
+          ></p-tag>
+        </td>
+        <td>
+          @if (canEdit()) {
+            <div class="flex gap-2">
+              <p-button
+                icon="pi pi-pencil"
+                [text]="true"
+                [rounded]="true"
+                severity="info"
+                (onClick)="editItem(item)"
+                pTooltip="Editar"
+              ></p-button>
+              <p-button
+                icon="pi pi-trash"
+                [text]="true"
+                [rounded]="true"
+                severity="danger"
+                (onClick)="remove(item)"
+                pTooltip="Eliminar"
+              ></p-button>
+            </div>
+          }
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="7" class="text-center p-4 text-gray-500">
+          No se encontraron turnos registrados.
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- Create/Edit Dialog -->
+<p-dialog
+  [(visible)]="showDialog"
+  [header]="editing()?._id ? 'Editar Turno' : 'Nuevo Turno'"
+  [modal]="true"
+  [style]="{ width: '100%', maxWidth: '32rem' }"
+  [draggable]="false"
+  [resizable]="false"
+  (onHide)="closeDialog()"
+>
+  @if (editing(); as form) {
+    <div class="flex flex-col gap-4 py-2">
+      <!-- Nombre -->
+      <div class="flex flex-col gap-2">
+        <label for="name" class="font-medium text-gray-700 dark:text-gray-200">
+          Nombre del Turno <span class="text-red-500">*</span>
+        </label>
+        <input
+          pInputText
+          id="name"
+          [(ngModel)]="form.name"
+          (ngModelChange)="onEditChange('name', $event)"
+          placeholder="Ej: Turno Mañana"
+        />
+      </div>
+
+      <!-- Horario -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="flex flex-col gap-2">
+          <label for="startTime" class="font-medium text-gray-700 dark:text-gray-200">
+            Inicio <span class="text-red-500">*</span>
+          </label>
+          <input
+            pInputText
+            id="startTime"
+            type="time"
+            [(ngModel)]="form.startTime"
+            (ngModelChange)="onEditChange('startTime', $event)"
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="endTime" class="font-medium text-gray-700 dark:text-gray-200">
+            Fin <span class="text-red-500">*</span>
+          </label>
+          <input
+            pInputText
+            id="endTime"
+            type="time"
+            [(ngModel)]="form.endTime"
+            (ngModelChange)="onEditChange('endTime', $event)"
+          />
+        </div>
+      </div>
+
+      <!-- Detalles -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="flex flex-col gap-2">
+          <label for="toleranceMinutes" class="font-medium text-gray-700 dark:text-gray-200">
+            Tolerancia (min)
+          </label>
+          <p-inputNumber
+            id="toleranceMinutes"
+            [(ngModel)]="form.toleranceMinutes"
+            (ngModelChange)="onEditChange('toleranceMinutes', $event)"
+            [min]="0"
+            [showButtons]="true"
+            styleClass="w-full"
+            [inputStyle]="{'width': '100%'}"
+          ></p-inputNumber>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="breakMinutes" class="font-medium text-gray-700 dark:text-gray-200">
+            Refrigerio (min)
+          </label>
+          <p-inputNumber
+            id="breakMinutes"
+            [(ngModel)]="form.breakMinutes"
+            (ngModelChange)="onEditChange('breakMinutes', $event)"
+            [min]="0"
+            [showButtons]="true"
+            styleClass="w-full"
+            [inputStyle]="{'width': '100%'}"
+          ></p-inputNumber>
+        </div>
+      </div>
+
+      <!-- Días -->
+      <div class="flex flex-col gap-2">
+        <label for="days" class="font-medium text-gray-700 dark:text-gray-200">
+          Días Laborables
+        </label>
+        <p-multiSelect
+          id="days"
+          [options]="daysOptions"
+          [(ngModel)]="form.days"
+          (ngModelChange)="onEditChange('days', $event)"
+          placeholder="Seleccionar días"
+          [style]="{ width: '100%' }"
+          display="chip"
+          [appendTo]="'body'"
+        ></p-multiSelect>
+      </div>
+
+      <!-- Activo -->
+      <div class="flex items-center gap-2 mt-2">
+        <p-checkbox
+          id="isActive"
+          [binary]="true"
+          [(ngModel)]="form.isActive"
+          (ngModelChange)="onEditChange('isActive', $event)"
+        ></p-checkbox>
+        <label for="isActive" class="cursor-pointer select-none text-gray-700 dark:text-gray-200">
+          Turno Activo
+        </label>
+      </div>
+
+    </div>
+
+    <div class="flex justify-end gap-2 mt-6">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        (onClick)="closeDialog()"
+        styleClass="p-button-text"
+      ></p-button>
+      <p-button
+        label="Guardar"
+        icon="pi pi-check"
+        (onClick)="save()"
+        [loading]="loading()"
+      ></p-button>
+    </div>
+  }
+</p-dialog>
