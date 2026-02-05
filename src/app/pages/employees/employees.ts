@@ -17,6 +17,7 @@ import { UsersApiService } from '../../shared/services/users-api.service';
 import { AreasApiService } from '../../shared/services/areas-api.service';
 import { MenuService } from '../../shared/services/menu.service';
 import { ApisPeruApiService } from '../../shared/services/apisperu-api.service';
+import { WorkShiftsApiService } from '../../shared/services/work-shifts-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { Subject, of } from 'rxjs';
@@ -27,6 +28,7 @@ import {
   AreaInfo,
 } from '../../shared/interfaces/employee.interface';
 import { Area } from '../../shared/interfaces/area.interface';
+import { WorkShift } from '../../shared/interfaces/work-shift.interface';
 import { BANKS, getBankCode } from '../../shared/constants/banks.constants';
 
 @Component({
@@ -56,6 +58,7 @@ export class EmployeesPage implements OnInit {
   private readonly areasApi = inject(AreasApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly workShiftsApi = inject(WorkShiftsApiService);
   private readonly menuService = inject(MenuService);
   private readonly apisPeruService = inject(ApisPeruApiService);
 
@@ -69,6 +72,7 @@ export class EmployeesPage implements OnInit {
   items = signal<Employee[]>([]);
   users = signal<UserOption[]>([]);
   areas = signal<Area[]>([]);
+  workShifts = signal<WorkShift[]>([]);
   query = signal('');
   showDialog = signal(false);
   showViewDialog = signal(false);
@@ -119,6 +123,7 @@ export class EmployeesPage implements OnInit {
     this.load();
     this.loadUsers();
     this.loadAreas();
+    this.loadWorkShifts();
     this.setupDniAutocomplete();
     this.setupRucAutocomplete();
   }
@@ -155,6 +160,17 @@ export class EmployeesPage implements OnInit {
       },
       error: () => {
         this.toastError('Error al cargar áreas');
+      },
+    });
+  }
+
+  loadWorkShifts() {
+    this.workShiftsApi.list({ isActive: true }).subscribe({
+      next: (data) => {
+        this.workShifts.set(data);
+      },
+      error: () => {
+        this.toastError('Error al cargar turnos');
       },
     });
   }
@@ -198,6 +214,7 @@ export class EmployeesPage implements OnInit {
       tipoEmpleado: 'Planilla',
       userId: undefined,
       areaId: undefined,
+      workShiftId: undefined,
       accountNumber: '',
       bank: '',
       bankCode: '',
@@ -244,6 +261,16 @@ export class EmployeesPage implements OnInit {
       editedItem.areaId._id
     ) {
       editedItem.areaId = editedItem.areaId._id;
+    }
+
+    // Si workShiftId es un objeto (populado), extraer el _id
+    if (
+      editedItem.workShiftId &&
+      typeof editedItem.workShiftId === 'object' &&
+      '_id' in (editedItem.workShiftId as any) &&
+      (editedItem.workShiftId as any)._id
+    ) {
+      editedItem.workShiftId = (editedItem.workShiftId as any)._id;
     }
 
     // Convertir fechas a objetos Date para p-datepicker
@@ -446,6 +473,15 @@ export class EmployeesPage implements OnInit {
     return area?.nombre || 'Área no encontrada';
   }
 
+  getWorkShiftName(workShiftId: string | WorkShift | undefined): string {
+    if (!workShiftId) return 'Sin turno';
+    if (typeof workShiftId === 'object' && 'name' in workShiftId) {
+      return workShiftId.name;
+    }
+    const ws = this.workShifts().find((w) => w._id === workShiftId);
+    return ws?.name || 'Turno no encontrado';
+  }
+
   save() {
     const item = this.editing();
     if (!item) return;
@@ -531,6 +567,20 @@ export class EmployeesPage implements OnInit {
       } else {
         // Enviar cadena vacía para indicar que se debe limpiar el área
         updateData.areaId = '';
+      }
+
+      // Manejar workShiftId
+      const workShiftIdValue =
+        typeof item.workShiftId === 'string' && item.workShiftId.trim() !== ''
+          ? item.workShiftId
+          : typeof item.workShiftId === 'object' && item.workShiftId && '_id' in (item.workShiftId as any)
+            ? (item.workShiftId as any)._id
+            : '';
+
+      if (workShiftIdValue) {
+        updateData.workShiftId = workShiftIdValue;
+      } else {
+        updateData.workShiftId = '';
       }
 
       const contratosFiles = this.selectedContratos();
@@ -637,6 +687,7 @@ export class EmployeesPage implements OnInit {
         tipoEmpleado: item.tipoEmpleado || 'Planilla',
         userId: typeof item.userId === 'string' && item.userId ? item.userId : undefined,
         areaId: typeof item.areaId === 'string' && item.areaId ? item.areaId : undefined,
+        workShiftId: typeof item.workShiftId === 'string' && item.workShiftId ? item.workShiftId : undefined,
         accountNumber: item.accountNumber || undefined,
         bank: item.bank || undefined,
         bankCode: item.bankCode || undefined,

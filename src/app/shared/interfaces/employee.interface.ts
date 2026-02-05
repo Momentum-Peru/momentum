@@ -11,6 +11,8 @@ export interface AreaInfo {
   codigo?: string;
 }
 
+import { WorkShift } from './work-shift.interface';
+
 export interface Employee {
   _id?: string;
   nombre: string;
@@ -38,6 +40,7 @@ export interface Employee {
   tipoEmpleado?: 'Planilla' | 'Locador';
   userId?: string | UserInfo;
   areaId?: string | AreaInfo;
+  workShiftId?: string | WorkShift;
   accountNumber?: string;
   bank?: string;
   bankCode?: string;
@@ -89,6 +92,7 @@ export interface CreateEmployeeRequest {
   tipoEmpleado?: 'Planilla' | 'Locador';
   userId?: string;
   areaId?: string;
+  workShiftId?: string;
   accountNumber?: string;
   bank?: string;
   bankCode?: string;
@@ -135,6 +139,7 @@ export interface UpdateEmployeeRequest {
   tipoEmpleado?: 'Planilla' | 'Locador';
   userId?: string | null;
   areaId?: string | null;
+  workShiftId?: string | null;
   accountNumber?: string;
   bank?: string;
   bankCode?: string;

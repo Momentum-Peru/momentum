@@ -142,6 +142,12 @@ export const routes: Routes = [
         data: { menuPermission: '/tickets' },
       },
       {
+        path: 'work-shifts',
+        loadComponent: () => import('./pages/work-shifts/work-shifts').then((m) => m.WorkShiftsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/work-shifts' },
+      },
+      {
         path: 'material-requests',
         loadComponent: () =>
           import('./pages/material-requests/material-requests').then((m) => m.MaterialRequestsPage),

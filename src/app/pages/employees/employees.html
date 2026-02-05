@@ -48,6 +48,7 @@
           <th>Cargo</th>
           <th>Usuario</th>
           <th>Área</th>
+          <th>Turno</th>
           <th class="text-right">Acciones</th>
         </tr>
       </ng-template>
@@ -71,6 +72,13 @@
               class="text-sm text-gray-700 dark:text-white font-medium break-words whitespace-normal"
             >
               {{ getAreaName(row.areaId) }}
+            </span>
+          </td>
+          <td>
+            <span
+              class="text-sm text-gray-700 dark:text-white font-medium break-words whitespace-normal"
+            >
+              {{ getWorkShiftName(row.workShiftId) }}
             </span>
           </td>
           <td class="text-right flex gap-2">
@@ -108,7 +116,7 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="9" class="text-center py-8 text-gray-500">No se encontraron empleados</td>
+          <td colspan="10" class="text-center py-8 text-gray-500">No se encontraron empleados</td>
         </tr>
       </ng-template>
     </p-table>
@@ -170,6 +178,12 @@
                 <div class="text-xs text-gray-500 dark:text-gray-400">Área</div>
                 <div class="text-sm font-medium text-gray-900 dark:text-white">
                   {{ getAreaName(row.areaId) }}
+                </div>
+              </div>
+              <div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Turno</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ getWorkShiftName(row.workShiftId) }}
                 </div>
               </div>
               <div>
@@ -723,6 +737,35 @@
             <div class="flex items-center gap-2">
               <span>{{ area.nombre }}</span>
               <span class="text-xs text-gray-500" *ngIf="area.codigo">({{ area.codigo }})</span>
+            </div>
+          </ng-template>
+        </p-select>
+      </div>
+
+      <div>
+        <label
+          for="employeeWorkShift"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        >
+          Turno de Trabajo
+        </label>
+        <p-select
+          id="employeeWorkShift"
+          [options]="workShifts()"
+          optionLabel="name"
+          optionValue="_id"
+          [ngModel]="e.workShiftId || ''"
+          (ngModelChange)="onEditChange('workShiftId', $event)"
+          name="workShiftId"
+          placeholder="Seleccionar turno"
+          class="w-full"
+          [appendTo]="'body'"
+          [showClear]="true"
+        >
+           <ng-template let-ws pTemplate="item">
+            <div class="flex items-center gap-2">
+              <span>{{ ws.name }}</span>
+              <span class="text-xs text-gray-500">({{ ws.startTime }} - {{ ws.endTime }})</span>
             </div>
           </ng-template>
         </p-select>
