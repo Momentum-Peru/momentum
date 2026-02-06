@@ -117,6 +117,12 @@ export class PayrollService {
       .pipe(map((payroll) => this.transformPayrollResponse(payroll)));
   }
 
+  generatePayroll(dto: { startDate: string; endDate: string }): Observable<Payroll> {
+    return this.http
+      .post<BackendPayroll>(`${this.apiUrl}/payrolls/generate`, dto)
+      .pipe(map((payroll) => this.transformPayrollResponse(payroll)));
+  }
+
   analyzePdf(file: File, payrollId: string): Observable<PdfAnalysisResult> {
     const formData = new FormData();
     formData.append('file', file);
