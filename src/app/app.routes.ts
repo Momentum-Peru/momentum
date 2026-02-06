@@ -119,9 +119,21 @@ export const routes: Routes = [
       },
       {
         path: 'employees',
-        loadComponent: () => import('./pages/employees/employees').then((m) => m.EmployeesPage),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/employees' },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./pages/employees/employees').then((m) => m.EmployeesPage),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./pages/employees/employee-summary/employee-summary.component').then(
+                (m) => m.EmployeeSummaryComponent,
+              ),
+          },
+        ],
       },
       {
         path: 'areas',
@@ -341,10 +353,10 @@ export const routes: Routes = [
               ),
           },
           {
-            path: 'upload',
+            path: 'generate',
             loadComponent: () =>
-              import('./pages/payroll/payroll-upload/payroll-upload.component').then(
-                (m) => m.PayrollUploadComponent,
+              import('./pages/payroll/payroll-generate/payroll-generate.component').then(
+                (m) => m.PayrollGenerateComponent,
               ),
           },
           {

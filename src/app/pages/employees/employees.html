@@ -54,8 +54,8 @@
       </ng-template>
       <ng-template pTemplate="body" let-row>
         <tr>
-          <td>{{ row.nombre }}</td>
-          <td>{{ row.apellido }}</td>
+          <td (click)="navigateToSummary(row)" class="cursor-pointer text-blue-600 font-medium hover:underline">{{ row.nombre }}</td>
+          <td (click)="navigateToSummary(row)" class="cursor-pointer text-blue-600 font-medium hover:underline">{{ row.apellido }}</td>
           <td>{{ row.dni }}</td>
           <td>{{ row.correo || '-' }}</td>
           <td>{{ row.telefono || '-' }}</td>
@@ -140,7 +140,10 @@
           "
         >
           <div class="flex-1 min-w-0">
-            <div class="font-semibold text-gray-900 dark:text-white">
+            <div
+              class="font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-blue-500"
+              (click)="navigateToSummary(row); $event.stopPropagation()"
+            >
               {{ row.nombre }} {{ row.apellido }}
             </div>
             <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">DNI: {{ row.dni }}</div>
@@ -668,7 +671,7 @@
         ></p-select>
       </div>
 
-      <div>
+  <div>
         <label
           for="employeeCargo"
           class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
@@ -683,6 +686,28 @@
           name="cargo"
           placeholder="Desarrollador"
           class="w-full"
+        />
+      </div>
+
+      <div>
+        <label
+          for="employeeSueldo"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        >
+          Sueldo Básico *
+        </label>
+        <input
+          id="employeeSueldo"
+          pInputText
+          type="number"
+          [ngModel]="e.sueldoBasico || 0"
+          (ngModelChange)="onEditChange('sueldoBasico', +$event)"
+          name="sueldoBasico"
+          placeholder="0.00"
+          class="w-full"
+          min="0"
+          step="0.01"
+          required
         />
       </div>
 
