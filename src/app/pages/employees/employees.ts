@@ -1,4 +1,5 @@
 import { Component, OnInit, signal, inject, computed } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -61,6 +62,7 @@ export class EmployeesPage implements OnInit {
   private readonly workShiftsApi = inject(WorkShiftsApiService);
   private readonly menuService = inject(MenuService);
   private readonly apisPeruService = inject(ApisPeruApiService);
+  private readonly router = inject(Router);
 
   // Subject para manejar la autocompletación de DNI y RUC
   private readonly dniSubject = new Subject<string>();
@@ -313,6 +315,12 @@ export class EmployeesPage implements OnInit {
 
   closeViewDialog() {
     this.showViewDialog.set(false);
+  }
+
+  navigateToSummary(employee: Employee) {
+    if (employee._id) {
+      this.router.navigate(['/employees', employee._id]);
+    }
   }
 
   onEditChange(field: keyof Employee, value: Employee[keyof Employee]) {
