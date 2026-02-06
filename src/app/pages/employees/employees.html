@@ -671,7 +671,7 @@
         ></p-select>
       </div>
 
-      <div>
+  <div>
         <label
           for="employeeCargo"
           class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
@@ -686,6 +686,28 @@
           name="cargo"
           placeholder="Desarrollador"
           class="w-full"
+        />
+      </div>
+
+      <div>
+        <label
+          for="employeeSueldo"
+          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+        >
+          Sueldo Básico *
+        </label>
+        <input
+          id="employeeSueldo"
+          pInputText
+          type="number"
+          [ngModel]="e.sueldoBasico || 0"
+          (ngModelChange)="onEditChange('sueldoBasico', +$event)"
+          name="sueldoBasico"
+          placeholder="0.00"
+          class="w-full"
+          min="0"
+          step="0.01"
+          required
         />
       </div>
 

@@ -37,6 +37,7 @@ export interface Employee {
     numeroDocumento: string;
   }[];
   cargo?: string;
+  sueldoBasico?: number;
   tipoEmpleado?: 'Planilla' | 'Locador';
   userId?: string | UserInfo;
   areaId?: string | AreaInfo;
@@ -89,6 +90,7 @@ export interface CreateEmployeeRequest {
     numeroDocumento: string;
   }[];
   cargo?: string;
+  sueldoBasico: number;
   tipoEmpleado?: 'Planilla' | 'Locador';
   userId?: string;
   areaId?: string;
@@ -136,6 +138,7 @@ export interface UpdateEmployeeRequest {
     numeroDocumento: string;
   }[];
   cargo?: string;
+  sueldoBasico?: number;
   tipoEmpleado?: 'Planilla' | 'Locador';
   userId?: string | null;
   areaId?: string | null;

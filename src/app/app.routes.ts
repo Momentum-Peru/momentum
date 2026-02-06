@@ -353,10 +353,10 @@ export const routes: Routes = [
               ),
           },
           {
-            path: 'upload',
+            path: 'generate',
             loadComponent: () =>
-              import('./pages/payroll/payroll-upload/payroll-upload.component').then(
-                (m) => m.PayrollUploadComponent,
+              import('./pages/payroll/payroll-generate/payroll-generate.component').then(
+                (m) => m.PayrollGenerateComponent,
               ),
           },
           {

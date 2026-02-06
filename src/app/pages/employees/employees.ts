@@ -213,6 +213,7 @@ export class EmployeesPage implements OnInit {
       conyugeConcubino: undefined,
       hijos: [],
       cargo: '',
+      sueldoBasico: 0,
       tipoEmpleado: 'Planilla',
       userId: undefined,
       areaId: undefined,
@@ -528,6 +529,7 @@ export class EmployeesPage implements OnInit {
             }))
           : undefined,
         cargo: item.cargo || undefined,
+        sueldoBasico: item.sueldoBasico,
         tipoEmpleado: item.tipoEmpleado || undefined,
         userId:
           typeof item.userId === 'string' && item.userId.trim() !== '' ? item.userId : undefined,
@@ -692,6 +694,7 @@ export class EmployeesPage implements OnInit {
             }))
           : undefined,
         cargo: item.cargo || undefined,
+        sueldoBasico: item.sueldoBasico || 0,
         tipoEmpleado: item.tipoEmpleado || 'Planilla',
         userId: typeof item.userId === 'string' && item.userId ? item.userId : undefined,
         areaId: typeof item.areaId === 'string' && item.areaId ? item.areaId : undefined,

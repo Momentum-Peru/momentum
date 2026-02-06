@@ -16,7 +16,7 @@ import { TooltipModule } from 'primeng/tooltip';
     <div class="card p-6">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-800">Gestión de Planillas y RxH</h1>
-        <p-button label="Nueva Planilla" icon="pi pi-plus" routerLink="upload"></p-button>
+        <p-button label="Generar Planilla" icon="pi pi-cog" routerLink="generate"></p-button>
       </div>
 
       <p-table [value]="payrolls" [loading]="loading" styleClass="p-datatable-sm">
