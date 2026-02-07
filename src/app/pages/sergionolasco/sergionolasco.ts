@@ -41,6 +41,7 @@ export class SergioNolascoPage implements OnInit {
   // Manejo de Vistas: 'login' | 'register' | 'app'
   viewState: 'login' | 'register' | 'app' = 'register'; // Changed default to register
   isLoading = false;
+  showThankYou = false; // For thank you message after registration
 
   // Login Data
   loginData = {
@@ -206,13 +207,10 @@ export class SergioNolascoPage implements OnInit {
       const result = await this.momentumService.createRegistration(this.registrationData);
       // Lead created (no auto login for lead)
       
-      this.messageService.add({
-        severity: 'success',
-        summary: '¡Éxito!',
-        detail: 'finalizar su registro ha sido exito',
-      });
+      // Show thank you message
+      this.showThankYou = true;
       
-      // Clear form (or at least the sensitive parts)
+      // Clear form
       this.registrationData = {
         nombreCompleto: '',
         dni: '',
@@ -226,7 +224,12 @@ export class SergioNolascoPage implements OnInit {
         enrolados: [],
       };
       
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // After 3 seconds, hide thank you and show form again
+      setTimeout(() => {
+        this.showThankYou = false;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 3000);
+      
     } catch (error: any) {
       this.messageService.add({
         severity: 'error',

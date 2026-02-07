@@ -82,8 +82,29 @@
     <!-- VISTA: REGISTRO -->
     <div *ngIf="viewState === 'register'" class="max-w-lg mx-auto bg-white p-2 sm:p-0 animate-fade-in">
 
+      <!-- THANK YOU MESSAGE -->
+      <div *ngIf="showThankYou" class="flex flex-col items-center justify-center py-16 px-8 text-center animate-fade-in">
+        <div class="mb-6">
+          <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+            <i class="pi pi-check text-5xl text-green-500"></i>
+          </div>
+        </div>
+        
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+          ¡Gracias por Registrarte!
+        </h2>
+        
+        <p class="text-gray-600 text-lg mb-2">
+          Tu información ha sido recibida exitosamente
+        </p>
+        
+        <p class="text-gray-500 text-sm">
+          Nos pondremos en contacto contigo pronto
+        </p>
+      </div>
 
-      <form (ngSubmit)="submitRegistration()" #registroForm="ngForm" class="space-y-5">
+      <!-- REGISTRATION FORM (Hidden when showing thank you) -->
+      <form *ngIf="!showThankYou" (ngSubmit)="submitRegistration()" #registroForm="ngForm" class="space-y-5">
         
         <!-- Nombre Completo -->
         <div>
