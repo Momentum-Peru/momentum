@@ -16,7 +16,7 @@
   </div>
 
   <!-- Contenedor Principal -->
-  <div class="w-full max-w-lg space-y-8">
+  <div class="w-full space-y-8">
     
     <!-- VISTA: LOGIN -->
     <div *ngIf="viewState === 'login'" class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 animate-fade-in text-center">
@@ -80,202 +80,564 @@
     </div>
 
     <!-- VISTA: REGISTRO -->
-    <div *ngIf="viewState === 'register'" class="bg-white p-2 sm:p-0 animate-fade-in">
-      <div class="text-center mb-6">
-        <h2 class="text-xl font-bold text-gray-800">FORMULARIO DE REGISTRO</h2>
-        <p class="text-gray-400 text-xs mt-1">
-          ¿Ya tienes cuenta? <a (click)="toggleView('login')" class="text-green-500 font-bold cursor-pointer hover:underline">Inicia Sesión</a>
-        </p>
-      </div>
+    <div *ngIf="viewState === 'register'" class="max-w-lg mx-auto bg-white p-2 sm:p-0 animate-fade-in">
+
 
       <form (ngSubmit)="submitRegistration()" #registroForm="ngForm" class="space-y-5">
         
         <!-- Nombre Completo -->
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Nombre Completo <span class="text-red-500">*</span></label>
-          <input pInputText [(ngModel)]="registrationData.nombreCompleto" name="nombreCompleto" required placeholder="Ej. Juan Pérez" class="w-full bg-gray-100 border-none rounded-md px-4 py-3 text-gray-700 text-sm font-medium" />
+          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">1. Nombre Completo <span class="text-red-500">*</span></label>
+          <input pInputText [(ngModel)]="registrationData.nombreCompleto" name="nombreCompleto" required placeholder="Ej. Juan Pérez" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-700 text-sm font-medium focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" />
+        </div>
+
+        <!-- DNI -->
+        <div>
+          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">2. DNI <span class="text-green-500">*</span></label>
+          <input pInputText [(ngModel)]="registrationData.dni" name="dni" required placeholder="Documento de Identidad" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-700 text-sm font-medium focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" />
+        </div>
+
+        <!-- Fecha de Nacimiento -->
+        <div>
+          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">3. Fecha de Nacimiento <span class="text-green-500">*</span></label>
+          <p-datepicker [(ngModel)]="registrationData.fechaNacimiento" name="fechaNacimiento" required [showIcon]="true" appendTo="body" styleClass="w-full" inputStyleClass="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-700 text-sm font-medium focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" placeholder="Seleccionar fecha"></p-datepicker>
+        </div>
+
+        <!-- Dirección -->
+        <div>
+          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">4. Dirección <span class="text-green-500">*</span></label>
+          <input pInputText [(ngModel)]="registrationData.direccion" name="direccion" required placeholder="Av. Principal 123, Distrito" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-700 text-sm font-medium focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" />
         </div>
 
         <!-- Correo -->
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Correo Electrónico <span class="text-red-500">*</span></label>
-          <input pInputText type="email" [(ngModel)]="registrationData.correo" name="correo" required placeholder="ejemplo@correo.com" class="w-full bg-gray-100 border-none rounded-md px-4 py-3 text-gray-700 text-sm font-medium" />
-        </div>
-
-        <!-- Password Registro (Nuevo) -->
-        <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Contraseña <span class="text-red-500">*</span></label>
-          <input pInputText type="password" [(ngModel)]="registrationData.password" name="password" required minlength="6" placeholder="Crea una contraseña segura" class="w-full bg-gray-100 border-none rounded-md px-4 py-3 text-gray-700 text-sm font-medium" />
-          <p class="text-xs text-gray-400 mt-1">Mínimo 6 caracteres</p>
+          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">5. Correo <span class="text-red-500">*</span></label>
+          <input pInputText type="email" [(ngModel)]="registrationData.correo" name="correo" required placeholder="ejemplo@correo.com" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-700 text-sm font-medium focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" />
         </div>
 
         <!-- Teléfono -->
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Teléfono <span class="text-red-500">*</span></label>
-          <input pInputText [(ngModel)]="registrationData.telefono" name="telefono" required placeholder="+51 900 000 000" class="w-full bg-gray-100 border-none rounded-md px-4 py-3 text-gray-700 text-sm font-medium" />
+          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">6. Teléfono <span class="text-red-500">*</span></label>
+          <input pInputText [(ngModel)]="registrationData.telefono" name="telefono" required placeholder="+51 900 000 000" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-700 text-sm font-medium focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" />
         </div>
 
-        <!-- País -->
+        <!-- Nickname -->
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">País <span class="text-red-500">*</span></label>
-          <input pInputText [(ngModel)]="registrationData.pais" name="pais" required placeholder="Perú" class="w-full bg-gray-100 border-none rounded-md px-4 py-3 text-gray-700 text-sm font-medium" />
+          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">7. Como te gustaría que te llamen</label>
+          <input pInputText [(ngModel)]="registrationData.nickname" name="nickname" placeholder="Ej. Pepe" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-700 text-sm font-medium focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" />
         </div>
 
-        <!-- Ubicación Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Dpto.</label>
-            <input pInputText [(ngModel)]="registrationData.departamento" name="departamento" placeholder="Lima" class="w-full bg-gray-100 border-none rounded-md px-4 py-3 text-gray-700 text-sm font-medium" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Prov.</label>
-            <input pInputText [(ngModel)]="registrationData.provincia" name="provincia" placeholder="Lima" class="w-full bg-gray-100 border-none rounded-md px-4 py-3 text-gray-700 text-sm font-medium" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Dist.</label>
-            <input pInputText [(ngModel)]="registrationData.distrito" name="distrito" placeholder="Miraflores" class="w-full bg-gray-100 border-none rounded-md px-4 py-3 text-gray-700 text-sm font-medium" />
-          </div>
-        </div>
-
-        <!-- Redes Sociales y Ocupación -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Facebook</label>
-            <input pInputText [(ngModel)]="registrationData.facebook" name="facebook" placeholder="Usuario/Link" class="w-full bg-gray-100 border-none rounded-md px-4 py-3 text-gray-700 text-sm font-medium" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Instagram</label>
-            <input pInputText [(ngModel)]="registrationData.instagram" name="instagram" placeholder="@usuario" class="w-full bg-gray-100 border-none rounded-md px-4 py-3 text-gray-700 text-sm font-medium" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">A qué se dedica</label>
-            <input pInputText [(ngModel)]="registrationData.ocupacion" name="ocupacion" placeholder="Tu ocupación" class="w-full bg-gray-100 border-none rounded-md px-4 py-3 text-gray-700 text-sm font-medium" />
-          </div>
-        </div>
-
-        <!-- Capítulo -->
-        <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">En qué capítulo te encuentras <span class="text-red-500">*</span></label>
-          <p-select [options]="[{label:'Recién Inscrito', value:'Recién Inscrito'}, {label:'Capítulo 1', value:'Capitulo 1'}, {label:'Capítulo 2', value:'Capitulo 2'}, {label:'Capítulo 3 (Maestría)', value:'Capitulo 3 (Maestría)'}, {label:'Graduado', value:'Graduado'}]" [(ngModel)]="registrationData.capitulo" name="capitulo" optionLabel="label" optionValue="value" placeholder="Seleccionar" styleClass="w-full border border-gray-200 rounded-md h-[46px] flex items-center" [appendTo]="'body'"></p-select>
-        </div>
-
-        <!-- Nombre IMO -->
-        <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Nombre de IMO</label>
-          <input pInputText [(ngModel)]="registrationData.nombreIMO" name="nombreIMO" placeholder="Nombre de tu IMO" class="w-full bg-gray-100 border-none rounded-md px-4 py-3 text-gray-700 text-sm font-medium" />
-        </div>
-
-        <!-- Enrolados -->
-        <div class="pt-2">
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Lista Enrolados</label>
-          <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-              <input pInputText [(ngModel)]="newEnrolado.nombre" [ngModelOptions]="{standalone: true}" placeholder="Nombre" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-sm" />
-              <div class="flex gap-2">
-                <input pInputText [(ngModel)]="newEnrolado.telefono" [ngModelOptions]="{standalone: true}" placeholder="Teléfono" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-sm" />
-                <button pButton type="button" icon="pi pi-plus" class="p-button-success p-button-sm rounded" (click)="addEnrolado()" [disabled]="!newEnrolado.nombre || !newEnrolado.telefono"></button>
-              </div>
-            </div>
-            <div *ngIf="registrationData.enrolados.length > 0" class="space-y-2">
-              <div *ngFor="let enrolado of registrationData.enrolados; let i = index" class="flex justify-between items-center bg-white p-2 rounded border border-gray-100 shadow-sm">
-                <span class="text-sm text-gray-600 font-medium">{{ enrolado.nombre }} - {{ enrolado.telefono }}</span>
-                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm h-8 w-8" (click)="removeEnrolado(i)"></button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="pt-4">
-          <button pButton type="submit" [label]="isLoading ? 'Registrando...' : 'CREAR REGISTRO'" class="w-full p-button-success font-bold text-base py-3 rounded-lg shadow-md hover:shadow-lg transition-all uppercase tracking-wider" [disabled]="!registroForm.form.valid || isLoading" [loading]="isLoading"></button>
+        <div class="pt-6">
+          <button pButton type="submit" [label]="isLoading ? 'Enviando...' : 'FINALIZAR REGISTRO'" class="w-full p-button-success font-bold text-base py-3.5 rounded-lg shadow-lg hover:shadow-xl transition-all uppercase tracking-wider transform hover:-translate-y-0.5" [disabled]="!registroForm.form.valid || isLoading" [loading]="isLoading"></button>
         </div>
       </form>
     </div>
 
-    <!-- VISTA: APP CRM (Solo visible tras login/registro) -->
-    <div *ngIf="viewState === 'app'" class="bg-white p-2 sm:p-0 animate-fade-in-up">
+    <!-- VISTA: APP CRM (User/Admin) -->
+    <div *ngIf="viewState === 'app'" class="bg-white p-2 sm:p-0 animate-fade-in-up w-full">
       <!-- Toolbar Superior -->
       <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
         <div>
-          <h2 class="text-xl font-bold text-gray-800">Hola, {{ registeredUser?.nombreCompleto?.split(' ')[0] }}</h2>
-          <p class="text-xs text-gray-400">Bienvenido a tu panel CRM</p>
+          <h2 class="text-xl font-bold text-gray-800" *ngIf="!isAdminMode">Hola, {{ registeredUser?.nombreCompleto?.split(' ')[0] }}</h2>
+          <h2 class="text-xl font-bold text-gray-800" *ngIf="isAdminMode">Panel de Administración</h2>
+          <p class="text-xs text-gray-400" *ngIf="!isAdminMode">Bienvenido a tu panel CRM</p>
+          <p class="text-xs text-gray-400" *ngIf="isAdminMode">Vista global de Leads Registrados ({{ registrationsList.length }})</p>
         </div>
-        <button pButton label="Cerrar Sesión" icon="pi pi-power-off" class="p-button-text p-button-danger p-button-sm" (click)="logout()"></button>
+        <button pButton label="Salir" icon="pi pi-power-off" class="p-button-text p-button-danger p-button-sm" (click)="logout()"></button>
       </div>
 
-      <!-- Formulario Nuevo Contacto -->
-      <form (ngSubmit)="submitContact()" #contactForm="ngForm" class="bg-gray-50 rounded-lg p-5 border border-gray-100 mb-8 space-y-4 shadow-sm">
-        <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-2 flex items-center gap-2">
-          <i class="pi pi-user-plus text-green-500"></i> Nuevo Contacto
-        </h3>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-gray-500 mb-1">Nombre Completo</label>
-            <input pInputText [(ngModel)]="contactData.nombreCompleto" name="nombreCompleto" required class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500" placeholder="Ej. María López" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-gray-500 mb-1">Número de teléfono</label>
-            <input pInputText [(ngModel)]="contactData.telefono" name="telefono" required class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500" placeholder="+51..." />
-          </div>
-        </div>
+      <!-- VISTA KANBAN CRM (Unified for User & Admin) -->
+      <div class="h-full">
+        <div class="flex gap-4 overflow-x-auto pb-4 h-[calc(100vh-140px)] items-start">
+          
+          <!-- COLUMNA 1: REGISTRO DATOS (Only show form if NOT admin, or enable for admin too if desired. User asked for the SAME view, so let's keep it) -->
+          <div class="min-w-[300px] w-[300px] flex-shrink-0 flex flex-col h-full bg-gray-50/50 rounded-xl border border-gray-200">
+            <div class="p-3 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center sticky top-0 z-10 shadow-sm">
+               <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide flex items-center gap-2">
+                 <i class="pi pi-plus-circle text-green-500"></i> Registro Datos
+               </h3>
+            </div>
+            
+            <div class="p-3 overflow-y-auto flex-1 h-full">
+               
+               <!-- SELECTOR & CRM FIELDS ONLY (Always visible now) -->
+               <div class="flex flex-col h-full">
+                  
+                  <!-- 1. SELECTOR -->
+                  <div class="mb-4">
+                      <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Buscar Lead (Nombre o DNI)</label>
+                      <p-autoComplete 
+                        [(ngModel)]="selectedLead" 
+                        [suggestions]="filteredLeads" 
+                        (completeMethod)="searchLeads($event)" 
+                        (onSelect)="onLeadSelect($event)"
+                        optionLabel="nombreCompleto"
+                        [dropdown]="true"
+                        [forceSelection]="true"
+                        dataKey="_id"
+                        [minLength]="1"
+                        placeholder="Escribe para buscar..."
+                        styleClass="w-full text-xs shadow-sm" 
+                        inputStyleClass="text-xs w-full py-2">
+                        
+                        <!-- Template for dropdown items -->
+                        <ng-template let-lead pTemplate="item">
+                            <div class="text-xs">
+                                <div class="font-bold text-gray-800">{{lead.nombreCompleto}}</div>
+                                <div class="text-[10px] text-gray-500 flex justify-between">
+                                  <span>{{lead.telefono}}</span>
+                                  <span>{{lead.dni}}</span>
+                                </div>
+                            </div>
+                        </ng-template>
+                      </p-autoComplete>
+                  </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-gray-500 mb-1">Donde lo conocí</label>
-            <p-select [options]="[{label: 'Evento', value: 'Evento'}, {label: 'Reunión', value: 'Reunión'}, {label: 'Es un familiar', value: 'Es un familiar'}, {label: 'Trabajo', value: 'Trabajo'}, {label: 'Amigo', value: 'Amigo'}, {label: 'Otros', value: 'Otros'}]" [(ngModel)]="contactData.dondeConocio" name="dondeConocio" optionLabel="label" optionValue="value" styleClass="w-full text-sm border-gray-200" [appendTo]="'body'"></p-select>
-            <input *ngIf="contactData.dondeConocio === 'Otros'" pInputText [(ngModel)]="contactData.dondeConocioOtros" name="dondeConocioOtros" placeholder="Escribe dónde..." class="w-full mt-2 bg-white border border-gray-200 rounded px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-gray-500 mb-1">A qué se dedica</label>
-            <p-select [options]="[{label: 'Empresario', value: 'Empresario'}, {label: 'Empleado', value: 'Empleado'}, {label: 'Profesional', value: 'Profesional'}, {label: 'Independiente', value: 'Independiente'}, {label: 'Estudiante', value: 'Estudiante'}, {label: 'Otros', value: 'Otros'}]" [(ngModel)]="contactData.ocupacion" name="ocupacion" optionLabel="label" optionValue="value" styleClass="w-full text-sm border-gray-200" [appendTo]="'body'"></p-select>
-             <input *ngIf="contactData.ocupacion === 'Otros'" pInputText [(ngModel)]="contactData.ocupacionOtros" name="ocupacionOtros" placeholder="Escribe ocupación..." class="w-full mt-2 bg-white border border-gray-200 rounded px-3 py-2 text-sm" />
-          </div>
-        </div>
-        <button pButton type="submit" [disabled]="!contactForm.form.valid || isLoading" label="AGREGAR CONTACTO" class="w-full p-button-success font-bold text-sm py-2 mt-2 shadow-sm hover:shadow"></button>
-      </form>
+                  <!-- 2. SELECTED LEAD INFO (ENHANCED) -->
+                  <div *ngIf="selectedLead" class="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 mb-4 shadow-md">
+                      <div class="flex items-center gap-2 mb-3 pb-2 border-b-2 border-blue-300">
+                         <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold shadow-md">
+                            <i class="pi pi-user text-lg"></i>
+                         </div>
+                         <div class="flex-1">
+                            <h4 class="text-sm font-bold text-blue-900">{{selectedLead.nombreCompleto}}</h4>
+                            <p class="text-[10px] text-blue-600">Lead Seleccionado</p>
+                         </div>
+                      </div>
+                      
+                      <div class="grid grid-cols-2 gap-3 text-xs">
+                          <div class="bg-white rounded-lg p-2 shadow-sm">
+                             <div class="text-[9px] text-gray-500 uppercase font-bold mb-1">Teléfono</div>
+                             <div class="flex items-center gap-1 text-blue-700 font-semibold">
+                                <i class="pi pi-phone text-green-500"></i>
+                                {{selectedLead.telefono}}
+                             </div>
+                          </div>
+                          
+                          <div class="bg-white rounded-lg p-2 shadow-sm">
+                             <div class="text-[9px] text-gray-500 uppercase font-bold mb-1">DNI</div>
+                             <div class="flex items-center gap-1 text-blue-700 font-semibold">
+                                <i class="pi pi-id-card text-blue-500"></i>
+                                {{selectedLead.dni || 'N/A'}}
+                             </div>
+                          </div>
+                          
+                          <div class="bg-white rounded-lg p-2 shadow-sm">
+                             <div class="text-[9px] text-gray-500 uppercase font-bold mb-1">Edad</div>
+                             <div class="flex items-center gap-1 text-blue-700 font-semibold">
+                                <i class="pi pi-calendar text-purple-500"></i>
+                                {{selectedLead.edad || 'N/A'}}
+                             </div>
+                          </div>
+                          
+                          <div class="bg-white rounded-lg p-2 shadow-sm">
+                             <div class="text-[9px] text-gray-500 uppercase font-bold mb-1">Estado</div>
+                             <div class="flex items-center gap-1 font-bold text-xs"
+                                  [ngClass]="{'text-blue-600': selectedLead.estadoProspeccion === 'Frio',
+                                              'text-yellow-600': selectedLead.estadoProspeccion === 'Tibio',
+                                              'text-orange-600': selectedLead.estadoProspeccion === 'Caliente',
+                                              'text-green-600': selectedLead.estadoProspeccion === 'Cierre'}">
+                                <i class="pi pi-circle-fill text-[8px]"></i>
+                                {{selectedLead.estadoProspeccion}}
+                             </div>
+                          </div>
+                      </div>
+                  </div>
 
-      <!-- Lista de Contactos -->
-      <div class="space-y-4">
-        <h3 class="font-bold text-gray-800 text-sm mb-4">MIS CONTACTOS ({{ contactsList.length }})</h3>
-        <div *ngFor="let contact of contactsList" class="bg-white border border-gray-100 shadow-sm rounded-lg p-4 hover:shadow-md transition-all">
-          <div class="flex justify-between items-start mb-3">
-            <div class="flex items-start gap-3">
-              <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-lg">
-                {{ contact.nombreCompleto.charAt(0) }}
-              </div>
-              <div>
-                <h3 class="font-bold text-gray-800 text-sm">{{ contact.nombreCompleto }}</h3>
-                <p class="text-xs text-gray-500 mt-0.5"><i class="pi pi-whatsapp mr-1 text-green-500"></i>{{ contact.telefono }}</p>
-                <div class="flex gap-2 mt-1">
-                   <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{{ contact.ocupacion }}</span>
-                   <span class="text-[10px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full">{{ contact.dondeConocio }}</span>
-                </div>
+                  <!-- 3. CRM FIELDS (EDITABLE) -->
+                  <div *ngIf="selectedLead" class="space-y-3 flex-1">
+                     
+                     <!-- Ubicación -->
+                     <div>
+                        <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Ubicación / Ciudad</label>
+                        <input pInputText [(ngModel)]="contactData.direccion" class="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-green-500 focus:ring-1 focus:ring-green-100 transition-colors" placeholder="Ej. Lima, Perú" />
+                     </div>
+
+                     <!-- Donde lo conocí -->
+                     <div>
+                        <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Donde lo conocí</label>
+                        <p-select [options]="[{label: 'Evento', value: 'Evento'}, {label: 'Reunión', value: 'Reunión'}, {label: 'Es un familiar', value: 'Es un familiar'}, {label: 'Trabajo', value: 'Trabajo'}, {label: 'Amigo', value: 'Amigo'}, {label: 'Otros', value: 'Otros'}]" 
+                                  [(ngModel)]="contactData.dondeConocio" 
+                                  optionLabel="label" 
+                                  optionValue="value" 
+                                  styleClass="w-full text-xs border-gray-300 rounded" 
+                                  [appendTo]="'body'" 
+                                  placeholder="Selecciona origen"></p-select>
+                        <input *ngIf="contactData.dondeConocio === 'Otros'" pInputText [(ngModel)]="contactData.dondeConocioOtros" placeholder="Especifique..." class="w-full mt-1 bg-gray-50 border border-gray-300 rounded px-2 py-1.5 text-xs" />
+                     </div>
+
+                     <!-- A qué se dedica -->
+                     <div>
+                        <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">A qué se dedica</label>
+                        <p-select [options]="[{label: 'Empresario', value: 'Empresario'}, {label: 'Empleado', value: 'Empleado'}, {label: 'Profesional', value: 'Profesional'}, {label: 'Independiente', value: 'Independiente'}, {label: 'Estudiante', value: 'Estudiante'}, {label: 'Otros', value: 'Otros'}]" 
+                                  [(ngModel)]="contactData.ocupacion" 
+                                  optionLabel="label" 
+                                  optionValue="value" 
+                                  styleClass="w-full text-xs border-gray-300 rounded" 
+                                  [appendTo]="'body'" 
+                                  placeholder="Selecciona ocupación"></p-select>
+                        <input *ngIf="contactData.ocupacion === 'Otros'" pInputText [(ngModel)]="contactData.ocupacionOtros" placeholder="Especifique..." class="w-full mt-1 bg-gray-50 border border-gray-300 rounded px-2 py-1.5 text-xs" />
+                     </div>
+                     
+                     <!-- Nota Inicial -->
+                      <div>
+                        <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Nota Inicial / Seguimiento</label>
+                        <textarea pInputTextarea [(ngModel)]="contactData.notas" rows="3" class="w-full text-xs bg-white border border-gray-300 p-2 rounded focus:border-green-500" placeholder="Primera nota..."></textarea>
+                     </div>
+
+                     <div class="pt-2">
+                        <button pButton (click)="submitContact()" [disabled]="isLoading" label="ACTUALIZAR Y GUARDAR" class="w-full p-button-success font-bold text-xs py-2 shadow-sm hover:shadow-md uppercase tracking-wider"></button>
+                        <button (click)="resetForm()" class="w-full text-[10px] text-gray-400 mt-2 hover:text-gray-600 underline text-center">Cancelar / Limpiar</button>
+                     </div>
+                  </div>
+                  
+                  <!-- EMPTY STATE -->
+                  <div *ngIf="!selectedLead" class="flex-1 flex flex-col justify-center items-center text-gray-400 p-6 text-center border-2 border-dashed border-gray-200 rounded-lg bg-gray-50/50 mt-4 h-full">
+                      <i class="pi pi-search text-3xl mb-2"></i>
+                      <p class="text-xs">Busca y selecciona un lead para editar su información CRM.</p>
+                  </div>
+
+               </div>
+            </div>
+          </div>
+
+
+
+          <!-- COLUMNA 2: FRIO -->
+          <div class="min-w-[300px] w-[300px] flex-shrink-0 flex flex-col h-full bg-blue-50/50 rounded-xl border border-blue-100">
+            <div class="p-3 border-b border-blue-100 bg-blue-50/80 rounded-t-xl flex justify-between items-center sticky top-0 z-10 backdrop-blur-sm">
+               <h3 class="font-bold text-blue-700 text-sm uppercase tracking-wide flex items-center gap-2">
+                 ❄️ Frio <span class="bg-blue-200 text-blue-800 text-[10px] px-2 py-0.5 rounded-full">{{ getContactsByStatus('Frio').length }}</span>
+               </h3>
+            </div>
+            <div class="p-3 overflow-y-auto flex-1">
+              <div *ngIf="selectedLead && selectedLead.estadoProspeccion === 'Frio'" class="space-y-3">
+                 
+                 <!-- Historial de seguimientos -->
+                 <div *ngIf="selectedLead.notas" class="space-y-2">
+                    <h4 class="text-xs font-bold text-blue-700 mb-2 flex items-center gap-1 sticky top-0 bg-blue-50/90 backdrop-blur-sm py-1 px-2 rounded -mx-2">
+                       <i class="pi pi-list"></i> Historial de Seguimientos
+                    </h4>
+                    
+                    <div *ngFor="let note of parseNotes(selectedLead.notas)" 
+                         class="bg-white border border-blue-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-all group">
+                       <!-- Note Header -->
+                       <div class="flex justify-between items-start mb-2">
+                          <div class="flex items-center gap-2">
+                             <span class="bg-blue-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
+                                #{{note.id}}
+                             </span>
+                             <span class="text-[9px] text-gray-500">
+                                <i class="pi pi-clock"></i> {{note.timestamp}}
+                             </span>
+                          </div>
+                          <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <button (click)="note.editing = !note.editing" 
+                                     class="text-blue-500 hover:text-blue-700 text-xs p-1 rounded hover:bg-blue-50"
+                                     title="Editar">
+                                <i class="pi pi-pencil"></i>
+                             </button>
+                             <button (click)="deleteFollowUpNote(selectedLead, note.id)" 
+                                     class="text-red-500 hover:text-red-700 text-xs p-1 rounded hover:bg-red-50"
+                                     title="Eliminar">
+                                <i class="pi pi-trash"></i>
+                             </button>
+                          </div>
+                       </div>
+                       
+                       <!-- Note Content (View/Edit Mode) -->
+                       <div *ngIf="!note.editing" class="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
+                          {{note.text}}
+                       </div>
+                       <div *ngIf="note.editing" class="space-y-2">
+                          <textarea [(ngModel)]="note.text" 
+                                    rows="3" 
+                                    class="w-full text-xs bg-gray-50 border border-blue-300 p-2 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none"></textarea>
+                          <div class="flex gap-2 justify-end">
+                             <button (click)="note.editing = false" 
+                                     class="text-[10px] px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 font-semibold">
+                                Cancelar
+                             </button>
+                             <button (click)="editFollowUpNote(selectedLead, note.id, note.text); note.editing = false" 
+                                     class="text-[10px] px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-white font-semibold">
+                                <i class="pi pi-check"></i> Guardar
+                             </button>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 <!-- Input para nuevo seguimiento -->
+                 <div>
+                    <textarea pInputTextarea 
+                              [(ngModel)]="frioNoteInput" 
+                              rows="3" 
+                              class="w-full text-xs bg-white border border-blue-200 p-2 rounded focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none shadow-sm" 
+                              placeholder="Escribe el seguimiento aquí..."></textarea>
+                    <button (click)="addFollowUpNote(selectedLead, frioNoteInput); frioNoteInput = ''" 
+                            [disabled]="!frioNoteInput || !frioNoteInput.trim()"
+                            class="w-full mt-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs font-bold py-2 rounded shadow transition-all">
+                       <i class="pi pi-plus"></i> AGREGAR SEGUIMIENTO
+                    </button>
+                 </div>
               </div>
             </div>
-            <button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm w-8 h-8 rounded-full hover:bg-red-50" (click)="deleteContact(contact._id)"></button>
           </div>
 
-          <!-- Prospección -->
-          <div class="mt-3 pt-3 border-t border-dashed border-gray-100">
-             <div class="flex items-center justify-between">
-               <span class="text-xs font-bold text-gray-400 uppercase">Estado</span>
-               <p-select [options]="[{label: '❄️ Frio', value: 'Frio'}, {label: '☁️ Tibio', value: 'Tibio'}, {label: '🔥 Caliente', value: 'Caliente'}, {label: '✅ Cierre', value: 'Cierre'}]" [(ngModel)]="contact.estadoProspeccion" (onChange)="updateContactEstado(contact._id, contact.estadoProspeccion)" optionLabel="label" optionValue="value" styleClass="p-select-sm border-none shadow-none" [style]="{'background': 'transparent', 'font-weight': 'bold'}" [appendTo]="'body'">
-                  <ng-template pTemplate="selectedItem" let-selectedOption>
-                      <div class="flex align-items-center gap-2 text-sm" [ngClass]="{'text-blue-500': selectedOption.value === 'Frio', 'text-yellow-600': selectedOption.value === 'Tibio', 'text-orange-500': selectedOption.value === 'Caliente', 'text-green-600': selectedOption.value === 'Cierre'}">
-                          <span>{{ selectedOption.label }}</span> <i class="pi pi-angle-down text-xs ml-1"></i>
-                      </div>
-                  </ng-template>
-               </p-select>
-             </div>
+          <!-- COLUMNA 3: TIBIO -->
+          <div class="min-w-[300px] w-[300px] flex-shrink-0 flex flex-col h-full bg-yellow-50/50 rounded-xl border border-yellow-100">
+            <div class="p-3 border-b border-yellow-100 bg-yellow-50/80 rounded-t-xl flex justify-between items-center sticky top-0 z-10 backdrop-blur-sm">
+               <h3 class="font-bold text-yellow-700 text-sm uppercase tracking-wide flex items-center gap-2">
+                 ☁️ Tibio <span class="bg-yellow-200 text-yellow-800 text-[10px] px-2 py-0.5 rounded-full">{{ getContactsByStatus('Tibio').length }}</span>
+               </h3>
+            </div>
+            <div class="p-3 overflow-y-auto flex-1">
+              <div *ngIf="selectedLead && selectedLead.estadoProspeccion === 'Tibio'" class="space-y-3">
+                 
+                 <!-- Historial de seguimientos -->
+                 <div *ngIf="selectedLead.notas" class="space-y-2">
+                    <h4 class="text-xs font-bold text-yellow-700 mb-2 flex items-center gap-1 sticky top-0 bg-yellow-50/90 backdrop-blur-sm py-1 px-2 rounded -mx-2">
+                       <i class="pi pi-list"></i> Historial de Seguimientos
+                    </h4>
+                    
+                    <div *ngFor="let note of parseNotes(selectedLead.notas)" 
+                         class="bg-white border border-yellow-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-all group">
+                       <div class="flex justify-between items-start mb-2">
+                          <div class="flex items-center gap-2">
+                             <span class="bg-yellow-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">#{{note.id}}</span>
+                             <span class="text-[9px] text-gray-500"><i class="pi pi-clock"></i> {{note.timestamp}}</span>
+                          </div>
+                          <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <button (click)="note.editing = !note.editing" class="text-yellow-600 hover:text-yellow-800 text-xs p-1 rounded hover:bg-yellow-50" title="Editar"><i class="pi pi-pencil"></i></button>
+                             <button (click)="deleteFollowUpNote(selectedLead, note.id)" class="text-red-500 hover:text-red-700 text-xs p-1 rounded hover:bg-red-50" title="Eliminar"><i class="pi pi-trash"></i></button>
+                          </div>
+                       </div>
+                       <div *ngIf="!note.editing" class="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">{{note.text}}</div>
+                       <div *ngIf="note.editing" class="space-y-2">
+                          <textarea [(ngModel)]="note.text" rows="3" class="w-full text-xs bg-gray-50 border border-yellow-300 p-2 rounded focus:border-yellow-500 focus:ring-1 focus:ring-yellow-100 resize-none"></textarea>
+                          <div class="flex gap-2 justify-end">
+                             <button (click)="note.editing = false" class="text-[10px] px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 font-semibold">Cancelar</button>
+                             <button (click)="editFollowUpNote(selectedLead, note.id, note.text); note.editing = false" class="text-[10px] px-3 py-1 bg-yellow-500 hover:bg-yellow-600 rounded text-white font-semibold"><i class="pi pi-check"></i> Guardar</button>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 <!-- Input para nuevo seguimiento -->
+                 <div>
+                    <textarea pInputTextarea 
+                              [(ngModel)]="tibioNoteInput" 
+                              rows="3" 
+                              class="w-full text-xs bg-white border border-yellow-200 p-2 rounded focus:border-yellow-500 focus:ring-2 focus:ring-yellow-100 transition-all resize-none shadow-sm" 
+                              placeholder="Escribe el seguimiento aquí..."></textarea>
+                    <button (click)="addFollowUpNote(selectedLead, tibioNoteInput); tibioNoteInput = ''" 
+                            [disabled]="!tibioNoteInput || !tibioNoteInput.trim()"
+                            class="w-full mt-2 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs font-bold py-2 rounded shadow transition-all">
+                       <i class="pi pi-plus"></i> AGREGAR SEGUIMIENTO
+                    </button>
+                 </div>
+              </div>
+            </div>
           </div>
-        </div>
-        
-        <div *ngIf="contactsList.length === 0" class="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-          <i class="pi pi-users text-4xl text-gray-300 mb-2"></i>
-          <p class="text-gray-400 text-sm">No tienes contactos registrados aún.</p>
+
+          <!-- COLUMNA 4: CALIENTE -->
+          <div class="min-w-[300px] w-[300px] flex-shrink-0 flex flex-col h-full bg-orange-50/50 rounded-xl border border-orange-100">
+            <div class="p-3 border-b border-orange-100 bg-orange-50/80 rounded-t-xl flex justify-between items-center sticky top-0 z-10 backdrop-blur-sm">
+               <h3 class="font-bold text-orange-700 text-sm uppercase tracking-wide flex items-center gap-2">
+                 🔥 Caliente <span class="bg-orange-200 text-orange-800 text-[10px] px-2 py-0.5 rounded-full">{{ getContactsByStatus('Caliente').length }}</span>
+               </h3>
+            </div>
+            <div class="p-3 overflow-y-auto flex-1">
+              <div *ngIf="selectedLead && selectedLead.estadoProspeccion === 'Caliente'" class="space-y-3">
+                 
+                 <!-- Historial de seguimientos -->
+                 <div *ngIf="selectedLead.notas" class="space-y-2">
+                    <h4 class="text-xs font-bold text-orange-700 mb-2 flex items-center gap-1 sticky top-0 bg-orange-50/90 backdrop-blur-sm py-1 px-2 rounded -mx-2">
+                       <i class="pi pi-list"></i> Historial de Seguimientos
+                    </h4>
+                    
+                    <div *ngFor="let note of parseNotes(selectedLead.notas)" 
+                         class="bg-white border border-orange-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-all group">
+                       <div class="flex justify-between items-start mb-2">
+                          <div class="flex items-center gap-2">
+                             <span class="bg-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">#{{note.id}}</span>
+                             <span class="text-[9px] text-gray-500"><i class="pi pi-clock"></i> {{note.timestamp}}</span>
+                          </div>
+                          <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <button (click)="note.editing = !note.editing" class="text-orange-600 hover:text-orange-800 text-xs p-1 rounded hover:bg-orange-50" title="Editar"><i class="pi pi-pencil"></i></button>
+                             <button (click)="deleteFollowUpNote(selectedLead, note.id)" class="text-red-500 hover:text-red-700 text-xs p-1 rounded hover:bg-red-50" title="Eliminar"><i class="pi pi-trash"></i></button>
+                          </div>
+                       </div>
+                       <div *ngIf="!note.editing" class="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">{{note.text}}</div>
+                       <div *ngIf="note.editing" class="space-y-2">
+                          <textarea [(ngModel)]="note.text" rows="3" class="w-full text-xs bg-gray-50 border border-orange-300 p-2 rounded focus:border-orange-500 focus:ring-1 focus:ring-orange-100 resize-none"></textarea>
+                          <div class="flex gap-2 justify-end">
+                             <button (click)="note.editing = false" class="text-[10px] px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 font-semibold">Cancelar</button>
+                             <button (click)="editFollowUpNote(selectedLead, note.id, note.text); note.editing = false" class="text-[10px] px-3 py-1 bg-orange-500 hover:bg-orange-600 rounded text-white font-semibold"><i class="pi pi-check"></i> Guardar</button>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 <!-- Input para nuevo seguimiento -->
+                 <div>
+                    <textarea pInputTextarea 
+                              [(ngModel)]="calienteNoteInput" 
+                              rows="3" 
+                              class="w-full text-xs bg-white border border-orange-200 p-2 rounded focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none shadow-sm" 
+                              placeholder="Escribe el seguimiento aquí..."></textarea>
+                    <button (click)="addFollowUpNote(selectedLead, calienteNoteInput); calienteNoteInput = ''" 
+                            [disabled]="!calienteNoteInput || !calienteNoteInput.trim()"
+                            class="w-full mt-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs font-bold py-2 rounded shadow transition-all">
+                       <i class="pi pi-plus"></i> AGREGAR SEGUIMIENTO
+                    </button>
+                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COLUMNA 5: CIERRE -->
+          <div class="min-w-[300px] w-[300px] flex-shrink-0 flex flex-col h-full bg-green-50/50 rounded-xl border border-green-100">
+            <div class="p-3 border-b border-green-100 bg-green-50/80 rounded-t-xl flex justify-between items-center sticky top-0 z-10 backdrop-blur-sm">
+               <h3 class="font-bold text-green-700 text-sm uppercase tracking-wide flex items-center gap-2">
+                 ✅ Cierre <span class="bg-green-200 text-green-800 text-[10px] px-2 py-0.5 rounded-full">{{ getContactsByStatus('Cierre').length }}</span>
+               </h3>
+            </div>
+            <div class="p-3 overflow-y-auto flex-1">
+              <div *ngIf="selectedLead && selectedLead.estadoProspeccion === 'Cierre'" class="space-y-3">
+                 
+                 <!-- Historial de seguimientos -->
+                 <div *ngIf="selectedLead.notas" class="space-y-2">
+                    <h4 class="text-xs font-bold text-green-700 mb-2 flex items-center gap-1 sticky top-0 bg-green-50/90 backdrop-blur-sm py-1 px-2 rounded -mx-2">
+                       <i class="pi pi-list"></i> Historial de Seguimientos
+                    </h4>
+                    
+                    <div *ngFor="let note of parseNotes(selectedLead.notas)" 
+                         class="bg-white border border-green-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-all group">
+                       <div class="flex justify-between items-start mb-2">
+                          <div class="flex items-center gap-2">
+                             <span class="bg-green-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">#{{note.id}}</span>
+                             <span class="text-[9px] text-gray-500"><i class="pi pi-clock"></i> {{note.timestamp}}</span>
+                          </div>
+                          <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <button (click)="note.editing = !note.editing" class="text-green-600 hover:text-green-800 text-xs p-1 rounded hover:bg-green-50" title="Editar"><i class="pi pi-pencil"></i></button>
+                             <button (click)="deleteFollowUpNote(selectedLead, note.id)" class="text-red-500 hover:text-red-700 text-xs p-1 rounded hover:bg-red-50" title="Eliminar"><i class="pi pi-trash"></i></button>
+                          </div>
+                       </div>
+                       <div *ngIf="!note.editing" class="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">{{note.text}}</div>
+                       <div *ngIf="note.editing" class="space-y-2">
+                          <textarea [(ngModel)]="note.text" rows="3" class="w-full text-xs bg-gray-50 border border-green-300 p-2 rounded focus:border-green-500 focus:ring-1 focus:ring-green-100 resize-none"></textarea>
+                          <div class="flex gap-2 justify-end">
+                             <button (click)="note.editing = false" class="text-[10px] px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 font-semibold">Cancelar</button>
+                             <button (click)="editFollowUpNote(selectedLead, note.id, note.text); note.editing = false" class="text-[10px] px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-white font-semibold"><i class="pi pi-check"></i> Guardar</button>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 <!-- Input para nuevo seguimiento -->
+                 <div>
+                    <textarea pInputTextarea 
+                              [(ngModel)]="cierreNoteInput" 
+                              rows="3" 
+                              class="w-full text-xs bg-white border border-green-200 p-2 rounded focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all resize-none shadow-sm" 
+                              placeholder="Escribe el seguimiento aquí..."></textarea>
+                    <button (click)="addFollowUpNote(selectedLead, cierreNoteInput); cierreNoteInput = ''" 
+                            [disabled]="!cierreNoteInput || !cierreNoteInput.trim()"
+                            class="w-full mt-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs font-bold py-2 rounded shadow transition-all">
+                       <i class="pi pi-plus"></i> AGREGAR SEGUIMIENTO
+                    </button>
+                 </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
+    
+    <!-- TEMPLATE PARA CARTA DE CONTACTO -->
+    <!-- MODIFIED CONTACT CARD TEMPLATE -->
+    <ng-template #contactCard let-contact>
+        <!-- Header: Avatar + Info -->
+        <div class="flex justify-between items-start mb-2">
+            <div class="flex items-start gap-3 w-full">
+              <!-- Avatar -->
+              <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs flex-shrink-0 border border-gray-200 shadow-sm">
+                 <i class="pi pi-user"></i>
+              </div>
+              
+              <!-- Name & Phone -->
+              <div class="flex-1 min-w-0">
+                 <div class="font-bold text-xs text-gray-800 truncate">{{ contact.nombreCompleto }}</div>
+                 <div class="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
+                    <span class="flex items-center gap-1 has-tooltip" title="Llamar">
+                       <i class="pi pi-whatsapp text-green-500"></i> {{ contact.telefono }}
+                    </span>
+                    <span *ngIf="contact.direccion" class="flex items-center gap-1 truncate max-w-[80px]" [title]="contact.direccion">
+                       <i class="pi pi-map-marker text-red-400"></i> {{ contact.direccion }}
+                    </span>
+                 </div>
+
+                 <!-- Tags -->
+                 <div class="flex flex-wrap gap-1 mt-1.5">
+                    <span *ngIf="contact.ocupacion" class="text-[9px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 truncate max-w-full font-medium">
+                      💼 {{ contact.ocupacion }}
+                    </span>
+                    <span *ngIf="contact.dondeConocio" class="text-[9px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-100 truncate max-w-full font-medium">
+                      👋 {{ contact.dondeConocio }}
+                    </span>
+                 </div>
+              </div>
+            </div>
+        </div>
+
+        <!-- SEGUIMIENTO SECTION -->
+        <div class="mt-3">
+             <!-- Note History (Always visible list) -->
+             <div *ngIf="contact.notas" class="max-h-[150px] overflow-y-auto mb-2 pr-1 custom-scrollbar text-[10px] text-gray-600 space-y-2 bg-yellow-50/50 p-2 rounded border border-yellow-100 shadow-sm">
+                <div class="whitespace-pre-wrap leading-relaxed font-medium">{{ contact.notas }}</div>
+             </div>
+
+             <!-- ADD NEW NOTE INPUT -->
+             <div class="relative group/input">
+                 <textarea pInputTextarea 
+                           [(ngModel)]="contact.newNoteInput" 
+                           rows="1" 
+                           class="w-full text-[11px] bg-white border border-gray-200 p-2 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 transition-all resize-none shadow-sm placeholder:text-gray-400 focus:rows-3 min-h-[34px]" 
+                           placeholder="Escribe el seguimiento aquí..."></textarea>
+                 
+                 <!-- Button -->
+                 <button *ngIf="contact.newNoteInput" 
+                         (click)="addFollowUpNote(contact, contact.newNoteInput); contact.newNoteInput = ''" 
+                         class="w-full mt-1 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold py-1.5 rounded shadow transition-all flex items-center justify-center gap-1">
+                     <i class="pi pi-plus"></i> AGREGAR
+                 </button>
+             </div>
+        </div>
+
+        <!-- STATE SELECTOR (Bottom) -->
+        <div class="mt-2 pt-2 border-t border-gray-100 flex items-center justify-end">
+             <p-select [options]="[{label: 'Frio', value: 'Frio'}, {label: 'Tibio', value: 'Tibio'}, {label: 'Caliente', value: 'Caliente'}, {label: 'Cierre', value: 'Cierre'}]" 
+                       [(ngModel)]="contact.estadoProspeccion" 
+                       (onChange)="updateContactEstado(contact._id, contact.estadoProspeccion)" 
+                       optionLabel="label" 
+                       optionValue="value" 
+                       styleClass="p-select-xs border-none shadow-none text-xs" 
+                       [style]="{'background': 'transparent'}" 
+                       [appendTo]="'body'">
+                  <ng-template pTemplate="selectedItem" let-selectedOption>
+                        <div class="flex align-items-center gap-1 text-[10px] bg-gray-100 px-2 py-1 rounded-full border border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                             [ngClass]="{'text-blue-600 bg-blue-50 border-blue-100': selectedOption.value === 'Frio', 
+                                         'text-yellow-600 bg-yellow-50 border-yellow-100': selectedOption.value === 'Tibio', 
+                                         'text-orange-600 bg-orange-50 border-orange-100': selectedOption.value === 'Caliente', 
+                                         'text-green-600 bg-green-50 border-green-100': selectedOption.value === 'Cierre'}">
+                             <span>{{ selectedOption.label }}</span> <i class="pi pi-chevron-down text-[8px]"></i>
+                        </div>
+                   </ng-template>
+             </p-select>
+        </div>
+    </ng-template>
 
     <!-- Footer -->
     <div class="text-center mt-8 text-xs text-gray-400 pb-8 animate-fade-in" *ngIf="viewState !== 'app'">
