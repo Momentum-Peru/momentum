@@ -1,0 +1,76 @@
+// Estilos personalizados
+:host {
+    display: block;
+    min-height: 100vh;
+    background-color: #ffffff;
+}
+
+::ng-deep {
+
+    // Inputs estilo "Gris"
+    .p-inputtext {
+
+        &.bg-gray-100,
+        &.bg-blue-50\/50 {
+            background-color: #f3f4f6 !important;
+            border-color: transparent !important;
+            color: #374151 !important;
+
+            &:focus {
+                background-color: #ffffff !important;
+                border-color: #84cc16 !important;
+                box-shadow: 0 0 0 2px rgba(132, 204, 22, 0.2) !important;
+            }
+        }
+    }
+
+    // Selectors estilo "Borde"
+    .p-select {
+        border-color: #e5e7eb;
+
+        &:hover {
+            border-color: #d1d5db;
+        }
+
+        &.p-focus {
+            border-color: #84cc16 !important;
+            box-shadow: 0 0 0 2px rgba(132, 204, 22, 0.2) !important;
+        }
+    }
+
+    // Botón Verde Personalizado
+    .p-button-success {
+        background-color: #84cc16 !important;
+        border-color: #84cc16 !important;
+
+        &:hover {
+            background-color: #65a30d !important;
+            border-color: #65a30d !important;
+        }
+
+        // Deshabilitado
+        &:disabled {
+            background-color: #d9f99d !important;
+            border-color: #d9f99d !important;
+            color: #3f6212 !important;
+            opacity: 0.8 !important;
+        }
+    }
+
+    // Animaciones
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
