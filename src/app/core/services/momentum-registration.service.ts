@@ -9,15 +9,24 @@ export interface Registration {
   correo: string;
   password?: string;
   telefono: string;
-  pais: string;
+  dni?: string; // New
+  fechaNacimiento?: Date | string; // New
+  direccion?: string; // New
+  nickname?: string; // New
+  pais?: string;
   departamento?: string;
   provincia?: string;
   distrito?: string;
   facebook?: string;
   instagram?: string;
   ocupacion?: string;
-  capitulo: string;
+  ocupacionOtros?: string; // New
+  capitulo?: string;
   nombreIMO?: string;
+  dondeConocio?: string; // New
+  dondeConocioOtros?: string; // New
+  estadoProspeccion?: string; // New
+  notas?: string; // New
   enrolados?: Array<{
     nombre: string;
     telefono: string;

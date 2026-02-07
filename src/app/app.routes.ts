@@ -16,6 +16,11 @@ export const routes: Routes = [
       import('./pages/sergionolasco/sergionolasco').then((m) => m.SergioNolascoPage),
   },
   {
+    path: 'sergionolasco/admin',
+    loadComponent: () =>
+      import('./pages/sergionolasco/sergionolasco').then((m) => m.SergioNolascoPage),
+  },
+  {
     path: 'ingreso',
     loadComponent: () => import('./pages/login/login').then((m) => m.Login),
     canActivate: [publicGuard],
