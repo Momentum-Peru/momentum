@@ -7,6 +7,7 @@ import {
   CreateAreaRequest,
   UpdateAreaRequest,
   AreaQueryParams,
+  AssignUsersRequest,
 } from '../interfaces/area.interface';
 
 /**
@@ -85,6 +86,20 @@ export class AreasApiService {
    */
   delete(id: string): Observable<{ deleted: boolean; id: string }> {
     return this.http.delete<{ deleted: boolean; id: string }>(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Asigna usuarios a un área
+   */
+  assignUsers(id: string, request: AssignUsersRequest): Observable<{ success: boolean }> {
+    return this.http.post<{ success: boolean }>(`${this.baseUrl}/${id}/users`, request);
+  }
+
+  /**
+   * Obtiene los usuarios asignados a un área
+   */
+  getAssignedUsers(id: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/${id}/users`);
   }
 }
 

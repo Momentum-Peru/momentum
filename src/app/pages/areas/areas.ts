@@ -12,8 +12,11 @@ import { ToggleButtonModule } from 'primeng/togglebutton';
 import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { AreasApiService } from '../../shared/services/areas-api.service';
+import { UsersApiService } from '../../shared/services/users-api.service';
 import { Area, CreateAreaRequest, UpdateAreaRequest } from '../../shared/interfaces/area.interface';
+import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 
 @Component({
   selector: 'app-areas',
@@ -31,6 +34,7 @@ import { Area, CreateAreaRequest, UpdateAreaRequest } from '../../shared/interfa
     ToggleButtonModule,
     SelectModule,
     TextareaModule,
+    MultiSelectModule,
   ],
   templateUrl: './areas.html',
   styleUrl: './areas.scss',
@@ -38,6 +42,7 @@ import { Area, CreateAreaRequest, UpdateAreaRequest } from '../../shared/interfa
 })
 export class AreasPage implements OnInit {
   private readonly areasApi = inject(AreasApiService);
+  private readonly usersApi = inject(UsersApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
 
@@ -49,6 +54,13 @@ export class AreasPage implements OnInit {
   editing = signal<Area | null>(null);
   viewing = signal<Area | null>(null);
   loading = signal(false);
+
+  // Estado para gestión de usuarios
+  showUsersDialog = signal(false);
+  areaForUsers = signal<Area | null>(null);
+  allUsers = signal<UserOption[]>([]);
+  selectedUserIds = signal<string[]>([]);
+  loadingUsers = signal(false);
 
   // Opciones para el filtro de estado
   filterActiveOptions = [
@@ -326,5 +338,65 @@ export class AreasPage implements OnInit {
       summary: 'Error',
       detail: message,
     });
+  }
+
+  // --- Gestión de Usuarios ---
+
+  openUsersModal(area: Area) {
+    this.areaForUsers.set(area);
+    this.showUsersDialog.set(true);
+    this.loadAllUsers();
+    this.loadAssignedUsers(area._id!);
+  }
+
+  loadAllUsers() {
+    if (this.allUsers().length > 0) return;
+    this.loadingUsers.set(true);
+    this.usersApi.listAll().subscribe({
+      next: (users) => {
+        this.allUsers.set(users);
+        this.loadingUsers.set(false);
+      },
+      error: () => {
+        this.toastError('Error al cargar la lista de usuarios');
+        this.loadingUsers.set(false);
+      },
+    });
+  }
+
+  loadAssignedUsers(areaId: string) {
+    this.loadingUsers.set(true);
+    this.areasApi.getAssignedUsers(areaId).subscribe({
+      next: (users) => {
+        const ids = users.map((u: any) => u._id || u.id);
+        this.selectedUserIds.set(ids);
+        this.loadingUsers.set(false);
+      },
+      error: () => {
+        this.toastError('Error al cargar usuarios asignados');
+        this.loadingUsers.set(false);
+      },
+    });
+  }
+
+  saveUserAssignments() {
+    const area = this.areaForUsers();
+    if (!area?._id) return;
+
+    this.loadingUsers.set(true);
+    this.areasApi
+      .assignUsers(area._id, { userIds: this.selectedUserIds() })
+      .subscribe({
+        next: () => {
+          this.toastSuccess('Usuarios asignados correctamente');
+          this.showUsersDialog.set(false);
+          this.loadingUsers.set(false);
+        },
+        error: (err) => {
+          const msg = err.error?.message || 'Error al asignar usuarios';
+          this.toastError(msg);
+          this.loadingUsers.set(false);
+        },
+      });
   }
 }
