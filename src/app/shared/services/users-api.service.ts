@@ -17,6 +17,7 @@ export interface User {
   updatedAt: string;
   lastLogin?: string; // Último acceso del usuario
   googleId?: string; // ID de Google si está vinculado
+  profilePicture?: string;
 }
 
 export interface UserCreateRequest {

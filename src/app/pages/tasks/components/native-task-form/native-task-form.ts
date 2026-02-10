@@ -745,7 +745,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
     const allUsersList = this.allUsers();
     const currentBoard = this.board();
 
-    // Si no hay boardId, mostrar todos los usuarios
+    // Si no hay boardId o tablero cargado, mostrar todos los usuarios
     if (!this.boardId || !currentBoard) {
       return allUsersList;
     }

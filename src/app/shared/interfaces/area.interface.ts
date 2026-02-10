@@ -27,3 +27,7 @@ export interface AreaQueryParams {
   isActive?: boolean;
 }
 
+export interface AssignUsersRequest {
+  userIds: string[];
+}
+

@@ -75,6 +75,28 @@ export class BoardsApiService {
   }
 
   /**
+   * Obtiene un tablero por ID de área
+   */
+  getByArea(areaId: string): Observable<Board> {
+    this.setLoading(true);
+    this.setError(null);
+
+    return this.http.get<Board>(`${this.baseUrl}/area/${areaId}`).pipe(
+      tap((board) => {
+        this.selectedBoard.set(board);
+        // Verificar si el tablero está en la lista, si no, agregarlo
+        const currentBoards = this.boards();
+        const exists = currentBoards.some((b) => b._id === board._id);
+        if (!exists) {
+          this.boards.set([...currentBoards, board]);
+        }
+      }),
+      tap(() => this.setLoading(false)),
+      tap({ error: (err) => this.handleError(err) })
+    );
+  }
+
+  /**
    * Crea un nuevo tablero
    */
   create(boardData: CreateBoardRequest): Observable<Board> {
