@@ -32,7 +32,7 @@ export class MenuConfigService {
     { path: '/quotes', label: 'Cotizaciones', icon: 'pi pi-dollar' },
     { path: '/providers', label: 'Proveedores', icon: 'pi pi-building' },
     { path: '/documents', label: 'Documentos', icon: 'pi pi-file' },
-    { path: '/tasks', label: 'Tareas', icon: 'pi pi-check-square' },
+    { path: '/tasks', label: 'Mi Área', icon: 'pi pi-check-square' },
     { path: '/daily-reports', label: 'Reportes Diarios', icon: 'pi pi-calendar' },
     { path: '/time-tracking', label: 'Marcación de Hora', icon: 'pi pi-clock' },
     { path: '/employees', label: 'Empleados', icon: 'pi pi-user' },
@@ -199,7 +199,7 @@ export class MenuConfigService {
             routerLink: '/payroll-calculation',
           },
           {
-            label: 'Tareas',
+            label: 'Mi Área',
             icon: 'pi pi-check-square',
             routerLink: '/tasks',
           },

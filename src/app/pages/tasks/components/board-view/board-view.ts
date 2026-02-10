@@ -16,10 +16,9 @@ import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { DialogModule } from 'primeng/dialog';
+import { AgendaActivityComponent } from '../agenda-activity/agenda-activity';
+import { User } from '../../../../shared/services/users-api.service';
 import { Board } from '../../../../shared/interfaces/board.interface';
-import { NativeKanbanBoardComponent } from '../native-kanban-board/native-kanban-board';
-import { NativeTaskStatsComponent } from '../native-task-stats/native-task-stats';
-import { NativeTaskListComponent } from '../native-task-list/native-task-list';
 import {
   Task,
   DragDropEvent,
@@ -44,9 +43,7 @@ import {
     DatePickerModule,
     MultiSelectModule,
     DialogModule,
-    NativeKanbanBoardComponent,
-    NativeTaskStatsComponent,
-    NativeTaskListComponent,
+    AgendaActivityComponent
   ],
   templateUrl: './board-view.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,6 +51,7 @@ import {
 export class BoardViewComponent {
   @Input({ required: true }) board!: Board;
   @Input() isOwner = false;
+  @Input() currentUser: User | null = null;
   @Input() tasksByStatus: { pending: Task[]; inProgress: Task[]; completed: Task[] } = {
     pending: [],
     inProgress: [],
@@ -83,11 +81,61 @@ export class BoardViewComponent {
   @Output() deleteTask = new EventEmitter<Task>();
   @Output() viewTask = new EventEmitter<Task>();
   @Output() createTask = new EventEmitter<void>();
+  @Output() quickCreateTask = new EventEmitter<{title: string, assignedTo: string, dueDate?: Date}>();
   @Output() filtersChanged = new EventEmitter<TasksSearchParams>();
 
   // Modo de vista
   public readonly viewMode = signal<'kanban' | 'list'>('list');
   public readonly showMembersDialog = signal(false);
+
+  // All Tasks Computed for Agenda View
+  public get allTasks(): Task[] {
+      return [
+        ...this.tasksByStatus.pending,
+        ...this.tasksByStatus.inProgress,
+        ...this.tasksByStatus.completed
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  // Board Users Computed for Agenda View
+  public get boardUsers(): User[] {
+    const owner = this.board.owner;
+    const members = this.board.members || [];
+    const users = owner ? [owner, ...members] : [...members];
+    
+    // Filter duplicates and map to User
+    const uniqueMap = new Map();
+    
+    users.forEach((u: any) => {
+        if (!u) return;
+
+        // Determine ID
+        let userId: string | undefined;
+        let userData: any = u;
+
+        if (typeof u === 'string') {
+            userId = u;
+            // If it's just a string ID, we can't really get name/email unless we look it up
+            // But we'll create a placeholder
+            userData = { _id: u, id: u };
+        } else if (typeof u === 'object') {
+            userId = u._id || u.id;
+        }
+
+        if (userId) {
+             uniqueMap.set(userId, {
+                _id: userId,
+                id: userId,
+                name: userData.name || userData.email || 'Sin nombre',
+                email: userData.email || '',
+                role: userData.role || 'user',
+                profilePicture: userData.profilePicture
+            } as unknown as User);
+        }
+    });
+    
+    return Array.from(uniqueMap.values());
+  }
 
   // Filtros
   public readonly showFilters = signal<boolean>(false);
@@ -109,6 +157,7 @@ export class BoardViewComponent {
   public get tagOptions(): { label: string; value: string }[] {
     return this.availableTags.map((tag) => ({ label: tag, value: tag }));
   }
+
 
   /**
    * Cambia el modo de vista
@@ -345,6 +394,19 @@ export class BoardViewComponent {
 
   onRemoveMember(memberId: string): void {
     this.removeMember.emit({ board: this.board, memberId });
+  }
+
+  onDeleteTask(task: Task): void {
+    this.deleteTask.emit(task);
+  }
+
+  onStatusChanged(event: {task: Task, newStatus: string}): void {
+    // Emitir evento de cambio de estado usando el formato DragDropEvent
+    this.taskStatusChanged.emit({
+      taskId: event.task._id,
+      newStatus: event.newStatus as any,
+      fromStatus: event.task.status
+    });
   }
 
   onLeaveBoard(): void {
