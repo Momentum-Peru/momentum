@@ -8,6 +8,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { firstValueFrom } from 'rxjs';
 
 // PrimeNG Components
 import { DialogModule } from 'primeng/dialog';
@@ -22,6 +23,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TextareaModule } from 'primeng/textarea';
 import { MessageModule } from 'primeng/message';
+import { SelectModule } from 'primeng/select';
 
 // Services
 import { TaskCommentsApiService } from '../../../../shared/services/task-comments-api.service';
@@ -57,6 +59,7 @@ import {
     ProgressSpinnerModule,
     TextareaModule,
     MessageModule,
+    SelectModule,
   ],
   template: `
     <p-dialog
@@ -96,6 +99,22 @@ import {
                   [severity]="getPrioritySeverity(task.priority)"
                   [rounded]="true"
                 ></p-tag>
+              </div>
+              
+              <!-- Status Selector -->
+              <div class="mt-3">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Cambiar estado
+                </label>
+                <p-select
+                  [ngModel]="task.status"
+                  (ngModelChange)="onStatusChange($event)"
+                  [options]="statusOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Selecciona un estado"
+                  styleClass="w-full md:w-64"
+                ></p-select>
               </div>
             </div>
           </div>
@@ -1030,11 +1049,53 @@ export class TaskDetailsComponent {
 
   // Form
   public readonly commentForm: FormGroup;
+  
+  // Opciones de estado
+  public readonly statusOptions = [
+    { label: 'Pendiente', value: 'Pendiente' },
+    { label: 'En curso', value: 'En curso' },
+    { label: 'Terminada', value: 'Terminada' }
+  ];
 
   constructor() {
     this.commentForm = this.fb.group({
       content: ['', [Validators.minLength(3)]], // Opcional, pero si se escribe debe tener al menos 3 caracteres
     });
+  }
+  
+  /**
+   * Cambia el estado de la tarea
+   */
+  public async onStatusChange(newStatus: string): Promise<void> {
+    if (!this.task) return;
+    
+    try {
+      // Actualizar la tarea en el backend usando firstValueFrom para convertir Observable a Promise
+      const updatedTask = await firstValueFrom(
+        this.tasksApiService.updateTask(this.task._id, { status: newStatus as any })
+      );
+      
+      // Actualizar localmente con la respuesta del servidor
+      if (updatedTask) {
+        this.task.status = updatedTask.status;
+      }
+      
+      // Mostrar mensaje de éxito
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Estado actualizado',
+        detail: `El estado de la tarea se cambió a "${newStatus}"`,
+        life: 3000
+      });
+    } catch (error) {
+      console.error('Error al cambiar estado:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo cambiar el estado de la tarea',
+        life: 3000
+      });
+    }
   }
 
   /**

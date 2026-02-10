@@ -92,7 +92,8 @@ export class Menu implements OnInit, OnDestroy {
     // Inicializar la ruta actual (solo la ruta, sin query params)
     const initialUrl = this.router.url.split('?')[0];
     this.currentRoute.set(initialUrl);
-    this.loadMenuItems();
+    
+    // NO llamar a loadMenuItems() aquí porque ya se carga en el effect
 
     // Suscribirse a cambios de ruta
     this.router.events
@@ -101,7 +102,10 @@ export class Menu implements OnInit, OnDestroy {
         // Solo la ruta, sin query params
         const url = event.url.split('?')[0];
         this.currentRoute.set(url);
-        this.loadMenuItems(); // Recargar items para actualizar estado activo
+        // Actualizar items solo si los permisos ya están cargados
+        if (!this.isLoadingPermissions()) {
+          this.loadMenuItems();
+        }
         // Cerrar el menú móvil al navegar
         this.closeMenu();
       });

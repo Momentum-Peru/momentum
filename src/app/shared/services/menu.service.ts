@@ -17,6 +17,10 @@ export class MenuService {
 
   // Signal para almacenar los permisos del usuario actual
   private userPermissions = signal<MenuPermission[]>([]);
+  
+  // Flag para evitar llamadas duplicadas
+  private isLoadingPermissions = false;
+  private lastLoadedUserId: string | null = null;
 
   // Ya no necesitamos generar menús, solo verificamos permisos
 
@@ -57,8 +61,22 @@ export class MenuService {
 
     if (!currentUser?.id) {
       this.userPermissions.set([]);
+      this.lastLoadedUserId = null;
       return;
     }
+
+    // Evitar llamadas duplicadas: si ya se están cargando permisos para el mismo usuario, no hacer nada
+    if (this.isLoadingPermissions && this.lastLoadedUserId === currentUser.id) {
+      return;
+    }
+
+    // Si los permisos ya están cargados para este usuario, no recargar
+    if (this.lastLoadedUserId === currentUser.id && this.userPermissions().length > 0) {
+      return;
+    }
+
+    this.isLoadingPermissions = true;
+    this.lastLoadedUserId = currentUser.id;
 
     this.menuPermissionsApi.getByUserId(currentUser.id).subscribe({
       next: (permissions) => {
@@ -75,9 +93,11 @@ export class MenuService {
           }))
           .filter((p) => p.userId !== '');
         this.userPermissions.set(normalized);
+        this.isLoadingPermissions = false;
       },
       error: () => {
         this.userPermissions.set([]);
+        this.isLoadingPermissions = false;
       },
     });
   }
@@ -256,6 +276,9 @@ export class MenuService {
    * Útil después de cambios en los permisos
    */
   refreshPermissions(): void {
+    // Limpiar el caché para forzar una recarga
+    this.lastLoadedUserId = null;
+    this.isLoadingPermissions = false;
     this.loadUserPermissions();
   }
 }

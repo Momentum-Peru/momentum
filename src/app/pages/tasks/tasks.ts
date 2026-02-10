@@ -37,7 +37,13 @@ import {
   UpdateBoardRequest,
   InviteUserRequest,
 } from '../../shared/interfaces/board.interface';
-import { Task, DragDropEvent, TasksSearchParams } from '../../shared/interfaces/task.interface';
+import {
+  Task,
+  DragDropEvent,
+  TasksSearchParams,
+  CreateTaskRequest
+} from '../../shared/interfaces/task.interface';
+import { User } from '../../shared/services/users-api.service';
 
 /**
  * Componente principal de gestión de tareas con tableros
@@ -106,9 +112,67 @@ export class TasksPage implements OnInit, AfterViewInit {
   @ViewChildren(BoardCardComponent) boardCards!: QueryList<BoardCardComponent>;
 
   // Computed
+
   public readonly currentUserId = computed(() => {
     const user = this.authService.getCurrentUser();
     return user?.id || '';
+  });
+
+  public readonly currentUserObject = computed(() => {
+    const authUser = this.authService.getCurrentUser();
+    if (!authUser) return null;
+    return {
+        _id: authUser.id,
+        name: authUser.name,
+        email: authUser.email,
+        role: authUser.role,
+        profilePicture: authUser.profilePicture
+    } as unknown as User;
+  });
+
+  public onQuickCreateTask(data: {title: string, assignedTo: string, dueDate?: Date}): void {
+      const board = this.selectedBoard();
+      const currentUser = this.currentUserObject();
+      if (!board || !currentUser) return;
+      
+      let areaId = board.areaId;
+      if (areaId && typeof areaId === 'object' && '_id' in areaId) {
+          areaId = (areaId as any)._id;
+      }
+
+      const payload: CreateTaskRequest = {
+          title: data.title,
+          boardId: board._id,
+          assignedTo: data.assignedTo,
+          createdBy: currentUser._id,
+          status: 'Pendiente',
+          priority: 'Media',
+          dueDate: data.dueDate,
+          areaId: areaId as string | undefined
+      };
+
+      this.tasksService.createTask(payload).subscribe({
+          next: () => {
+               this.messageService.add({
+                  severity: 'success',
+                  summary: 'Éxito',
+                  detail: 'Actividad creada correctamente'
+               });
+               this.loadBoardTasks(board._id, this.taskFilters());
+          },
+          error: () => {
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No se pudo crear la actividad'
+              });
+          }
+      });
+  }
+
+  public readonly currentUserRole = computed(() => {
+    const user = this.authService.getCurrentUser();
+    return user?.role || '';
   });
 
   /**
@@ -121,33 +185,43 @@ export class TasksPage implements OnInit, AfterViewInit {
       return [];
     }
 
-    const users: { label: string; value: string }[] = [];
+    const uniqueMap = new Map<string, { label: string; value: string }>();
+
+    // Helper para procesar usuario
+    const processUser = (u: any) => {
+        if (!u) return;
+        
+        let userId: string | undefined;
+        let userData: any = u;
+
+        if (typeof u === 'string') {
+            userId = u;
+            userData = { _id: u, name: 'Sin nombre', email: '' }; // Minimal info
+        } else if (typeof u === 'object') {
+            userId = u._id || u.id;
+        }
+
+        if (userId && !uniqueMap.has(userId)) {
+            uniqueMap.set(userId, {
+                label: userData.name || userData.email || 'Sin nombre',
+                value: userId
+            });
+        }
+    };
 
     // Agregar el owner
-    if (board.owner && board.owner._id) {
-      users.push({
-        label: board.owner?.name || board.owner?.email || 'Sin nombre',
-        value: board.owner._id,
-      });
+    if (board.owner) {
+        processUser(board.owner);
     }
 
     // Agregar los members
     if (board.members && Array.isArray(board.members)) {
       board.members.forEach((member) => {
-        if (member && member._id) {
-          // Evitar duplicados (por si el owner también está en members)
-          const isDuplicate = users.some((u) => u.value === member._id);
-          if (!isDuplicate) {
-            users.push({
-              label: member?.name || member?.email || 'Sin nombre',
-              value: member._id,
-            });
-          }
-        }
+        processUser(member);
       });
     }
 
-    return users;
+    return Array.from(uniqueMap.values());
   });
 
   public readonly tasksByStatus = computed(() => {
@@ -219,8 +293,10 @@ export class TasksPage implements OnInit, AfterViewInit {
 
   public readonly existingMemberIds = computed(() => {
     const board = this.invitingBoardFromList() || this.selectedBoard();
-    if (!board || !board.owner) return [];
-    return [board.owner._id, ...(board.members || []).map((m) => m._id)];
+    if (!board) return [];
+    const memberIds = (board.members || []).map((m) => m._id);
+    // Solo incluir el owner si existe (en tableros personales)
+    return board.owner ? [board.owner._id, ...memberIds] : memberIds;
   });
 
   public readonly pendingInvitations = signal<Board[]>([]);
@@ -256,28 +332,8 @@ export class TasksPage implements OnInit, AfterViewInit {
       });
     });
 
-    // Efecto para cargar todas las etiquetas cuando se selecciona un tablero
-    effect(() => {
-      const board = this.selectedBoard();
-      if (board) {
-        // Cargar todas las etiquetas del tablero (sin filtros)
-        const allTagsParams: TasksSearchParams = { boardId: board._id };
-        this.tasksService.getTasks(allTagsParams).subscribe({
-          next: (response) => {
-            const tagsSet = new Set<string>();
-            (response.data || []).forEach((task) => {
-              if (task.tags && Array.isArray(task.tags)) {
-                task.tags.forEach((tag) => tagsSet.add(tag));
-              }
-            });
-            this.availableTags.set(Array.from(tagsSet).sort());
-          },
-          error: () => {
-            // Error silencioso
-          },
-        });
-      }
-    });
+    // Efecto eliminado para optimización de llamadas API
+    // Las etiquetas ahora se cargan desde loadBoardTasks
   }
 
   ngOnInit(): void {
@@ -292,7 +348,6 @@ export class TasksPage implements OnInit, AfterViewInit {
         const boardInList = this.boardsService.boards().find((b) => b._id === boardId);
 
         if (boardInList) {
-          // Si está en la lista, usarlo directamente
           this.selectedBoard.set(boardInList);
           this.loadBoardTasks(boardId);
         } else {
@@ -411,9 +466,8 @@ export class TasksPage implements OnInit, AfterViewInit {
    */
   private loadBoards(): void {
     this.boardsService.getAll().subscribe({
-      next: () => {
-        // Ya no seleccionamos automáticamente el primer tablero
-        // El usuario debe hacer clic para ver un tablero
+      next: (boards) => {
+        // Automatic redirection logic removed as per user request
       },
       error: () => {
         this.messageService.add({
@@ -585,28 +639,19 @@ export class TasksPage implements OnInit, AfterViewInit {
       ...filters,
     };
 
-    // Cargar todas las tareas del tablero (sin filtros) para extraer todas las etiquetas
-    const allTagsParams: TasksSearchParams = { boardId };
-    this.tasksService.getTasks(allTagsParams).subscribe({
-      next: (allTagsResponse) => {
-        // Extraer todas las etiquetas de todas las tareas del tablero
+    // Cargar las tareas filtradas para mostrar
+    this.tasksService.getTasks(searchParams).subscribe({
+      next: (response) => {
+        // Extraer etiquetas de las tareas cargadas
         const tagsSet = new Set<string>();
-        (allTagsResponse.data || []).forEach((task) => {
+        (response.data || []).forEach((task) => {
           if (task.tags && Array.isArray(task.tags)) {
             task.tags.forEach((tag) => tagsSet.add(tag));
           }
         });
+        
+        // Actualizar las etiquetas disponibles
         this.availableTags.set(Array.from(tagsSet).sort());
-      },
-      error: () => {
-        // Error silencioso, no es crítico para la funcionalidad principal
-      },
-    });
-
-    // Cargar las tareas filtradas para mostrar
-    this.tasksService.getTasks(searchParams).subscribe({
-      next: () => {
-        // Tareas cargadas exitosamente
       },
       error: () => {
         this.messageService.add({

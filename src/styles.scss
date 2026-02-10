@@ -204,7 +204,7 @@ nav[class*='bg-black'] .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem
   // ÍCONOS - Selectores ultra específicos
   .p-menuitem-icon,
   .p-menuitem-icon.p-icon,
-  > .p-menuitem-icon,
+  >.p-menuitem-icon,
   i,
   i.pi,
   i[class*='pi-'],
@@ -222,7 +222,7 @@ nav[class*='bg-black'] .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem
   i[class*='pi-calendar'],
   i[class*='pi-users'],
   i[class*='pi-shield'],
-  > i {
+  >i {
     color: #000000 !important;
   }
 
@@ -231,8 +231,8 @@ nav[class*='bg-black'] .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem
   .p-menuitem-text.p-menuitem-text,
   span,
   span.p-menuitem-text,
-  > .p-menuitem-text,
-  > span {
+  >.p-menuitem-text,
+  >span {
     color: #000000 !important;
   }
 
@@ -245,21 +245,9 @@ nav[class*='bg-black'] .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem
 }
 
 // Item activo en submenús (solo cuando NO hay hover)
-nav.bg-black
-  .p-panelmenu
-  .p-panelmenu-content
-  .p-menuitem
-  .p-menuitem-link.p-menuitem-link-active:not(:hover),
-.bg-black
-  .p-panelmenu
-  .p-panelmenu-content
-  .p-menuitem
-  .p-menuitem-link[class*='active']:not(:hover),
-nav.bg-black
-  .p-panelmenu
-  .p-panelmenu-content
-  .p-menuitem
-  .p-menuitem-link[class*='router-link-active']:not(:hover) {
+nav.bg-black .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link.p-menuitem-link-active:not(:hover),
+.bg-black .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link[class*='active']:not(:hover),
+nav.bg-black .p-panelmenu .p-panelmenu-content .p-menuitem .p-menuitem-link[class*='router-link-active']:not(:hover) {
   background-color: rgba(255, 255, 255, 0.2) !important;
   color: #ffffff !important;
   border-left: 4px solid #ffffff !important;
@@ -298,7 +286,7 @@ body {
   &.p-datatable-sm {
     font-size: var(--table-font-size);
 
-    .p-datatable-thead > tr > th {
+    .p-datatable-thead>tr>th {
       background-color: var(--table-header-bg);
       color: var(--table-header-text);
       padding: var(--table-padding);
@@ -307,14 +295,14 @@ body {
       text-align: left;
     }
 
-    .p-datatable-tbody > tr {
+    .p-datatable-tbody>tr {
       transition: background-color 0.2s ease;
 
       &:hover {
         background-color: var(--table-row-hover);
       }
 
-      > td {
+      >td {
         padding: var(--table-padding);
         border-bottom: 1px solid var(--table-border-color);
       }
@@ -388,7 +376,8 @@ body {
   padding: var(--input-padding-y) var(--input-padding-x);
   font-size: var(--input-font-size);
   transition: all 0.2s ease;
-  min-height: calc((var(--input-padding-y) * 2) + 1.5rem); /* Altura mínima consistente */
+  min-height: calc((var(--input-padding-y) * 2) + 1.5rem);
+  /* Altura mínima consistente */
 
   /* Eliminar shadow azul en hover - igual que selectores */
   &:hover {
@@ -397,8 +386,10 @@ body {
   }
 
   &:focus {
-    border-color: #000000 !important; /* Borde negro como antes */
-    box-shadow: none !important; /* Sin shadow, solo cambio de borde */
+    border-color: #000000 !important;
+    /* Borde negro como antes */
+    box-shadow: none !important;
+    /* Sin shadow, solo cambio de borde */
     outline: none;
   }
 
@@ -410,7 +401,8 @@ body {
 .p-dropdown,
 .p-select {
   border-radius: var(--input-border-radius);
-  min-height: calc((var(--input-padding-y) * 2) + 1.5rem); /* Misma altura que inputs */
+  min-height: calc((var(--input-padding-y) * 2) + 1.5rem);
+  /* Misma altura que inputs */
   border: 1px solid var(--input-border-color);
   transition: all 0.2s ease;
 
@@ -431,8 +423,10 @@ body {
 
   &:focus,
   &:focus-within {
-    border-color: #000000 !important; /* Borde negro como antes */
-    box-shadow: none !important; /* Sin shadow, solo cambio de borde */
+    border-color: #000000 !important;
+    /* Borde negro como antes */
+    box-shadow: none !important;
+    /* Sin shadow, solo cambio de borde */
     outline: none;
   }
 
@@ -462,8 +456,10 @@ body {
 
   &:focus,
   &:focus-within {
-    border-color: #000000 !important; /* Borde negro como antes */
-    box-shadow: none !important; /* Sin shadow, solo cambio de borde */
+    border-color: #000000 !important;
+    /* Borde negro como antes */
+    box-shadow: none !important;
+    /* Sin shadow, solo cambio de borde */
     outline: none;
   }
 
@@ -493,8 +489,10 @@ body {
 
   &:focus,
   &:focus-within {
-    border-color: #000000 !important; /* Borde negro como antes */
-    box-shadow: none !important; /* Sin shadow, solo cambio de borde */
+    border-color: #000000 !important;
+    /* Borde negro como antes */
+    box-shadow: none !important;
+    /* Sin shadow, solo cambio de borde */
     outline: none;
   }
 
@@ -514,7 +512,6 @@ body {
   }
 
   .p-card-header {
-    padding: var(--card-padding);
     background-color: var(--table-header-bg);
     border-bottom: 1px solid var(--table-border-color);
     font-weight: 600;
@@ -616,6 +613,7 @@ body {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
