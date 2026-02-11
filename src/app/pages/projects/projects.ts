@@ -17,6 +17,11 @@ import { Project } from '../../shared/interfaces/project.interface';
 import { ClientOption } from '../../shared/services/clients-api.service';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../login/services/auth.service';
+import { TabsModule } from 'primeng/tabs';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { EmployeesApiService } from '../../shared/services/employees-api.service';
+import { TimeTrackingApiService } from '../../shared/services/time-tracking-api.service';
+import { Employee } from '../../shared/interfaces/employee.interface';
 
 @Component({
   selector: 'app-projects',
@@ -32,6 +37,8 @@ import { AuthService } from '../login/services/auth.service';
     DatePickerModule,
     TooltipModule,
     ToastModule,
+    TabsModule,
+    MultiSelectModule,
   ],
   templateUrl: './projects.html',
   styleUrl: './projects.scss',
@@ -43,6 +50,8 @@ export class ProjectsPage implements OnInit {
   private readonly menuService = inject(MenuService);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
+  private readonly employeesApi = inject(EmployeesApiService);
+  private readonly timeTrackingApi = inject(TimeTrackingApiService);
 
   // Verificar si el usuario tiene permiso de edición para este módulo
   readonly canEdit = computed(() => this.menuService.canEdit('/projects'));
@@ -57,6 +66,36 @@ export class ProjectsPage implements OnInit {
   showDetailsDialog = signal(false);
   editing = signal<Project | null>(null);
   viewingProject = signal<Project | null>(null);
+  
+  // Project Employee Management
+  projectEmployees = signal<any[]>([]);
+  availableEmployees = signal<Employee[]>([]);
+  showAssignDialog = signal(false);
+  showTeamDialog = signal(false);
+  selectedEmployeeId = signal<string | null>(null);
+  assigningEmployee = signal(false);
+
+  // Batch Attendance
+  showBatchDialog = signal(false);
+  batchData = signal({
+    startDate: '',
+    endDate: '',
+    daysOfWeek: [] as number[],
+    entryTime: '08:00',
+    exitTime: '17:00',
+    userIds: [] as string[]
+  });
+  batchSubmitting = signal(false);
+  weekDays = [
+      { label: 'Domingo', value: 0 },
+      { label: 'Lunes', value: 1 },
+      { label: 'Martes', value: 2 },
+      { label: 'Miércoles', value: 3 },
+      { label: 'Jueves', value: 4 },
+      { label: 'Viernes', value: 5 },
+      { label: 'Sábado', value: 6 }
+  ];
+
   expandedRowIds = signal<Set<string>>(new Set());
   nextCode = signal<number | null>(null);
   selectedFiles = signal<File[]>([]);
@@ -267,6 +306,118 @@ export class ProjectsPage implements OnInit {
     this.viewingProject.set(project);
     this.showDetailsDialog.set(true);
   }
+
+  openTeamDialog(project: Project) {
+    this.viewingProject.set(project);
+    this.showTeamDialog.set(true);
+    if(project._id) {
+        this.loadProjectEmployees(project._id);
+    }
+  }
+
+  loadProjectEmployees(projectId: string) {
+    this.projectsApi.getProjectEmployees(projectId).subscribe({
+        next: (employees) => this.projectEmployees.set(employees),
+        error: (err) => console.error('Error loading employees', err)
+    });
+  }
+
+  openAssignDialog() {
+    this.employeesApi.list().subscribe({
+        next: (employees) => {
+            // Filter out already assigned? Or backend handles it?
+            // Let's just show all for now, maybe filter in UI
+            this.availableEmployees.set(employees);
+            this.selectedEmployeeId.set(null);
+            this.showAssignDialog.set(true);
+        }
+    });
+  }
+
+  assignEmployee() {
+    const projectId = this.viewingProject()?._id;
+    const employeeId = this.selectedEmployeeId();
+    if (!projectId || !employeeId) return;
+
+    this.assigningEmployee.set(true);
+    this.projectsApi.assignEmployee(projectId, employeeId).subscribe({
+        next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Asignado', detail: 'Empleado asignado correctamente' });
+            this.loadProjectEmployees(projectId);
+            this.showAssignDialog.set(false);
+        },
+        error: (err) => {
+             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al asignar empleado' });
+        },
+        complete: () => this.assigningEmployee.set(false)
+    });
+  }
+
+  removeAssignment(employeeId: string) {
+      const projectId = this.viewingProject()?._id;
+      if (!projectId) return;
+      
+      this.projectsApi.removeAssignment(projectId, employeeId).subscribe({
+          next: () => {
+               this.messageService.add({ severity: 'success', summary: 'Eliminado', detail: 'Asignación eliminada' });
+               this.loadProjectEmployees(projectId);
+          },
+          error: (err) => {
+              this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar asignación' });
+          }
+      });
+  }
+
+  updateBatchField(field: string, value: any) {
+    this.batchData.update((data) => ({ ...data, [field]: value }));
+  }
+
+  openBatchDialog() {
+      this.batchData.set({
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        daysOfWeek: [1, 2, 3, 4, 5],
+        entryTime: '08:00',
+        exitTime: '17:00',
+        userIds: []
+      });
+      // Pre-select all project employees
+      const employeeIds = this.projectEmployees().map(e => e._id);
+      this.batchData.update(d => ({ ...d, userIds: employeeIds }));
+      this.showBatchDialog.set(true);
+  }
+
+  submitBatch() {
+       const projectId = this.viewingProject()?._id;
+       if (!projectId) return;
+       
+       const data = this.batchData();
+       // Validate
+       if (!data.startDate || !data.endDate || data.userIds.length === 0) {
+           this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Complete los campos requeridos' });
+           return;
+       }
+
+       this.batchSubmitting.set(true);
+       this.timeTrackingApi.batchCreate({
+           ...data,
+           projectId
+       }).subscribe({
+           next: (res) => {
+               this.messageService.add({ 
+                   severity: 'success', 
+                   summary: 'Procesado', 
+                   detail: `Creados: ${res.created}, Omitidos: ${res.skipped}, Errores: ${res.errors}` 
+               });
+               this.showBatchDialog.set(false);
+           },
+           error: (err) => {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error en proceso masivo' });
+           },
+           complete: () => this.batchSubmitting.set(false)
+       });
+  }
+
 
   closeDetails() {
     this.showDetailsDialog.set(false);

@@ -110,6 +110,17 @@
                 (click)="viewDetails(row)"
                 pTooltip="Ver detalles"
                 aria-label="Ver detalles del proyecto"
+                aria-label="Ver detalles del proyecto"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-users"
+                [text]="true"
+                severity="help"
+                size="small"
+                (click)="openTeamDialog(row)"
+                pTooltip="Gestionar Equipo"
+                aria-label="Gestionar equipo del proyecto"
               ></button>
               @if (canEdit()) {
                 <button
@@ -264,6 +275,15 @@
                     class="p-button-text p-button-sm flex-1"
                     (click)="viewDetails(row)"
                     aria-label="Ver detalles del proyecto"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-users"
+                    label="Equipo"
+                    class="p-button-text p-button-sm flex-1"
+                    severity="help"
+                    (click)="openTeamDialog(row)"
+                    aria-label="Gestionar equipo del proyecto"
                   ></button>
                   @if (canEdit()) {
                     <button
@@ -918,6 +938,153 @@
         (click)="closeDetails()"
         aria-label="Cerrar detalles del proyecto"
       ></button>
+    </ng-template>
+  </p-dialog>
+  
+  <!-- Modal de Gestión de Equipo -->
+  <p-dialog
+    [header]="'Equipo del Proyecto: ' + (viewingProject()?.name || '')"
+    [visible]="showTeamDialog()"
+    (visibleChange)="showTeamDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '90vw', maxWidth: '60rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    [appendTo]="'body'"
+  >
+    <div class="space-y-4 pt-2">
+         <div class="flex justify-between items-center mb-4">
+            <div class="text-sm text-gray-500">Gestione los empleados asignados a este proyecto.</div>
+            <div class="flex gap-2">
+                 <button pButton label="Asignar Nuevo" icon="pi pi-plus" (click)="openAssignDialog()" severity="success" size="small"></button>
+                 <button pButton label="Asistencia Masiva" icon="pi pi-calendar" (click)="openBatchDialog()" severity="help" size="small"></button>
+            </div>
+        </div>
+         <p-table [value]="projectEmployees()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-gridlines" [tableStyle]="{ 'min-width': '10px' }">
+             <ng-template pTemplate="header">
+                 <tr>
+                     <th>Nombre</th>
+                     <th>DNI</th>
+                     <th>Cargo</th>
+                     <th class="text-center" style="width: 8rem">Acciones</th>
+                 </tr>
+             </ng-template>
+             <ng-template pTemplate="body" let-emp>
+                 <tr>
+                     <td>{{ emp.name }} {{ emp.paternalSurname }} {{ emp.maternalSurname }}</td>
+                     <td>{{ emp.dni }}</td>
+                     <td>{{ emp.position || 'N/A' }}</td>
+                     <td class="text-center">
+                         <button pButton icon="pi pi-trash" [text]="true" severity="danger" (click)="removeAssignment(emp._id)" pTooltip="Desasignar del proyecto"></button>
+                     </td>
+                 </tr>
+             </ng-template>
+             <ng-template pTemplate="emptymessage">
+                 <tr><td colspan="4" class="text-center p-8 text-gray-400 font-medium">No hay personal asignado a este proyecto actualmente.</td></tr>
+             </ng-template>
+         </p-table>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton label="Cerrar" (click)="showTeamDialog.set(false)" class="p-button-text"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de Asignación de Personal -->
+  <p-dialog header="Asignar Personal" [visible]="showAssignDialog()" (visibleChange)="showAssignDialog.set($event)" [modal]="true" [style]="{width: '400px'}" [appendTo]="'body'">
+    <div class="flex flex-col gap-4 pt-4">
+        <div class="flex flex-col gap-2">
+            <label class="font-medium">Seleccionar Empleado</label>
+            <p-select 
+                [options]="availableEmployees()" 
+                optionLabel="name" 
+                optionValue="_id"
+                [ngModel]="selectedEmployeeId()"
+                (ngModelChange)="selectedEmployeeId.set($event)" 
+                placeholder="Buscar..." 
+                [filter]="true"
+                [appendTo]="'body'"
+                styleClass="w-full">
+                <ng-template let-emp pTemplate="item">
+                    <div class="flex align-items-center gap-2">
+                        <div>{{ emp.name }} {{ emp.paternalSurname }} {{ emp.maternalSurname }}</div>
+                        <small class="text-gray-500">{{ emp.dni }}</small>
+                    </div>
+                </ng-template>
+                 <ng-template let-emp pTemplate="selectedItem">
+                    <div *ngIf="emp">{{ emp.name }} {{ emp.paternalSurname }}</div>
+                </ng-template>
+            </p-select>
+        </div>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton label="Cancelar" (click)="showAssignDialog.set(false)" class="p-button-text"></button>
+        <button pButton label="Asignar" (click)="assignEmployee()" [loading]="assigningEmployee()" [disabled]="!selectedEmployeeId()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de Asistencia en Lote -->
+  <p-dialog header="Asistencia en Lote" [visible]="showBatchDialog()" (visibleChange)="showBatchDialog.set($event)" [modal]="true" [style]="{width: '500px', 'max-width': '95vw'}" [appendTo]="'body'">
+    <div class="flex flex-col gap-4 p-4">
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block mb-2 font-medium">Fecha Inicio</label>
+                <input type="date" pInputText [ngModel]="batchData().startDate" (ngModelChange)="updateBatchField('startDate', $event)" class="w-full">
+            </div>
+             <div>
+                <label class="block mb-2 font-medium">Fecha Fin</label>
+                <input type="date" pInputText [ngModel]="batchData().endDate" (ngModelChange)="updateBatchField('endDate', $event)" class="w-full">
+            </div>
+        </div>
+        
+        <div>
+            <label class="block mb-2 font-medium">Días de la Semana</label>
+            <p-multiselect 
+                [options]="weekDays" 
+                [ngModel]="batchData().daysOfWeek" 
+                (ngModelChange)="updateBatchField('daysOfWeek', $event)"
+                optionLabel="label" 
+                optionValue="value"
+                placeholder="Seleccionar días"
+                [appendTo]="'body'"
+                styleClass="w-full">
+            </p-multiselect>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block mb-2 font-medium">Hora Ingreso</label>
+                <input type="time" pInputText [ngModel]="batchData().entryTime" (ngModelChange)="updateBatchField('entryTime', $event)" class="w-full">
+            </div>
+             <div>
+                <label class="block mb-2 font-medium">Hora Salida</label>
+                <input type="time" pInputText [ngModel]="batchData().exitTime" (ngModelChange)="updateBatchField('exitTime', $event)" class="w-full">
+            </div>
+        </div>
+
+        <div>
+            <label class="block mb-2 font-medium">Empleados ({{batchData().userIds.length}})</label>
+             <p-multiselect 
+                [options]="projectEmployees()" 
+                [ngModel]="batchData().userIds" 
+                (ngModelChange)="updateBatchField('userIds', $event)"
+                optionLabel="name" 
+                optionValue="_id"
+                placeholder="Seleccionar empleados"
+                [appendTo]="'body'"
+                styleClass="w-full">
+                 <ng-template let-emp pTemplate="item">
+                    {{ emp.name }} {{ emp.paternalSurname }}
+                </ng-template>
+                 <ng-template let-emp pTemplate="selectedItem">
+                     {{ emp.name }}
+                 </ng-template>
+            </p-multiselect>
+        </div>
+    </div>
+     <ng-template pTemplate="footer">
+        <button pButton label="Cancelar" (click)="showBatchDialog.set(false)" class="p-button-text"></button>
+        <button pButton label="Procesar" (click)="submitBatch()" [loading]="batchSubmitting()"></button>
     </ng-template>
   </p-dialog>
 </div>

@@ -97,6 +97,13 @@ export class TimeTrackingApiService {
   }
 
   /**
+   * Crea registros de tiempo en lote
+   */
+  batchCreate(payload: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/batch`, payload);
+  }
+
+  /**
    * Actualiza un registro de tiempo
    */
   update(id: string, record: UpdateTimeTrackingRequest): Observable<TimeTracking> {
