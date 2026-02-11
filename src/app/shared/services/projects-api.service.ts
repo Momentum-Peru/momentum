@@ -163,12 +163,21 @@ export class ProjectsApiService {
     }
   }
 
-  /**
-   * Elimina un archivo adjunto de un proyecto
-   */
   deleteProjectAttachment(projectId: string, attachmentId: string): Observable<void> {
     return this.http.delete<void>(
       `${this.baseUrl}/projects/${projectId}/attachments/${attachmentId}`
     );
+  }
+
+  assignEmployee(projectId: string, employeeId: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/projects/${projectId}/assign/${employeeId}`, {});
+  }
+
+  removeAssignment(projectId: string, employeeId: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/projects/${projectId}/assign/${employeeId}`);
+  }
+
+  getProjectEmployees(projectId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/projects/${projectId}/employees`);
   }
 }
