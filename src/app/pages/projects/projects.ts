@@ -334,9 +334,19 @@ export class ProjectsPage implements OnInit {
   openAssignDialog() {
     this.usersApi.listAll().subscribe({
         next: (users) => {
-            this.availableUsers.set(users);
+            // Filter out users who are already assigned to the project
+            const currentProjectUsers = this.projectUsers();
+            const available = users.filter(user => 
+                !currentProjectUsers.some(assigned => assigned._id === user._id)
+            );
+            
+            this.availableUsers.set(available);
             this.selectedUserId.set(null);
             this.showAssignDialog.set(true);
+        },
+        error: (err) => {
+            console.error('Error loading available users:', err);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar usuarios disponibles' });
         }
     });
   }
@@ -352,11 +362,14 @@ export class ProjectsPage implements OnInit {
             this.messageService.add({ severity: 'success', summary: 'Asignado', detail: 'Usuario asignado correctamente' });
             this.loadProjectUsers(projectId);
             this.showAssignDialog.set(false);
+            this.assigningUser.set(false);
         },
         error: (err) => {
-             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al asignar usuario' });
-        },
-        complete: () => this.assigningUser.set(false)
+             console.error('Error assigning user:', err);
+             const errorMessage = err.error?.message || 'Error al asignar usuario';
+             this.messageService.add({ severity: 'error', summary: 'Error', detail: errorMessage });
+             this.assigningUser.set(false);
+        }
     });
   }
 
@@ -385,7 +398,7 @@ export class ProjectsPage implements OnInit {
         endDate: new Date().toISOString().split('T')[0],
         daysOfWeek: [1, 2, 3, 4, 5],
         entryTime: '08:00',
-        exitTime: '17:00',
+        exitTime: '18:00',
         userIds: []
       });
       // Pre-select all project users using the computed signal
