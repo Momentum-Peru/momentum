@@ -957,8 +957,8 @@
          <div class="flex justify-between items-center mb-4">
             <div class="text-sm text-gray-500">Gestione los empleados asignados a este proyecto.</div>
             <div class="flex gap-2">
-                 <button pButton label="Asignar Nuevo" icon="pi pi-plus" (click)="openAssignDialog()" severity="success" size="small"></button>
-                 <button pButton label="Asistencia Masiva" icon="pi pi-calendar" (click)="openBatchDialog()" severity="help" size="small"></button>
+                 <button pButton label="Asignar Nuevo" icon="pi pi-plus" (click)="openAssignDialog()" class="p-button-sm" [style]="{ 'background-color': 'black', 'border-color': 'black', 'color': 'white' }"></button>
+                 <button pButton label="Asistencia Masiva" icon="pi pi-calendar" (click)="openBatchDialog()" class="p-button-sm p-button-outlined" [style]="{ 'color': 'black', 'border-color': 'black' }"></button>
             </div>
         </div>
          <p-table [value]="projectUsers()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-gridlines" [tableStyle]="{ 'min-width': '10px' }">
