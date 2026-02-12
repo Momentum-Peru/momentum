@@ -961,27 +961,27 @@
                  <button pButton label="Asistencia Masiva" icon="pi pi-calendar" (click)="openBatchDialog()" severity="help" size="small"></button>
             </div>
         </div>
-         <p-table [value]="projectEmployees()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-gridlines" [tableStyle]="{ 'min-width': '10px' }">
+         <p-table [value]="projectUsers()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-gridlines" [tableStyle]="{ 'min-width': '10px' }">
              <ng-template pTemplate="header">
                  <tr>
                      <th>Nombre</th>
-                     <th>DNI</th>
-                     <th>Cargo</th>
+                     <th>Email</th>
+                     <th>Rol</th>
                      <th class="text-center" style="width: 8rem">Acciones</th>
                  </tr>
              </ng-template>
-             <ng-template pTemplate="body" let-emp>
+             <ng-template pTemplate="body" let-user>
                  <tr>
-                     <td>{{ emp.name }} {{ emp.paternalSurname }} {{ emp.maternalSurname }}</td>
-                     <td>{{ emp.dni }}</td>
-                     <td>{{ emp.position || 'N/A' }}</td>
+                     <td>{{ user.name }}</td>
+                     <td>{{ user.email }}</td>
+                     <td>{{ user.role }}</td>
                      <td class="text-center">
-                         <button pButton icon="pi pi-trash" [text]="true" severity="danger" (click)="removeAssignment(emp._id)" pTooltip="Desasignar del proyecto"></button>
+                         <button pButton icon="pi pi-trash" [text]="true" severity="danger" (click)="removeUserAssignment(user._id)" pTooltip="Desasignar del proyecto"></button>
                      </td>
                  </tr>
              </ng-template>
              <ng-template pTemplate="emptymessage">
-                 <tr><td colspan="4" class="text-center p-8 text-gray-400 font-medium">No hay personal asignado a este proyecto actualmente.</td></tr>
+                 <tr><td colspan="4" class="text-center p-8 text-gray-400 font-medium">No hay usuarios asignados a este proyecto actualmente.</td></tr>
              </ng-template>
          </p-table>
     </div>
@@ -990,36 +990,36 @@
     </ng-template>
   </p-dialog>
 
-  <!-- Modal de Asignación de Personal -->
-  <p-dialog header="Asignar Personal" [visible]="showAssignDialog()" (visibleChange)="showAssignDialog.set($event)" [modal]="true" [style]="{width: '400px'}" [appendTo]="'body'">
+  <!-- Modal de Asignación de Usuarios -->
+  <p-dialog header="Asignar Usuario" [visible]="showAssignDialog()" (visibleChange)="showAssignDialog.set($event)" [modal]="true" [style]="{width: '400px'}" [appendTo]="'body'">
     <div class="flex flex-col gap-4 pt-4">
         <div class="flex flex-col gap-2">
-            <label class="font-medium">Seleccionar Empleado</label>
+            <label class="font-medium">Seleccionar Usuario</label>
             <p-select 
-                [options]="availableEmployees()" 
+                [options]="availableUsers()" 
                 optionLabel="name" 
                 optionValue="_id"
-                [ngModel]="selectedEmployeeId()"
-                (ngModelChange)="selectedEmployeeId.set($event)" 
+                [ngModel]="selectedUserId()"
+                (ngModelChange)="selectedUserId.set($event)" 
                 placeholder="Buscar..." 
                 [filter]="true"
                 [appendTo]="'body'"
                 styleClass="w-full">
-                <ng-template let-emp pTemplate="item">
+                <ng-template let-user pTemplate="item">
                     <div class="flex align-items-center gap-2">
-                        <div>{{ emp.name }} {{ emp.paternalSurname }} {{ emp.maternalSurname }}</div>
-                        <small class="text-gray-500">{{ emp.dni }}</small>
+                        <div>{{ user.name }}</div>
+                        <small class="text-gray-500">{{ user.email }}</small>
                     </div>
                 </ng-template>
-                 <ng-template let-emp pTemplate="selectedItem">
-                    <div *ngIf="emp">{{ emp.name }} {{ emp.paternalSurname }}</div>
+                 <ng-template let-user pTemplate="selectedItem">
+                    <div *ngIf="user">{{ user.name }}</div>
                 </ng-template>
             </p-select>
         </div>
     </div>
     <ng-template pTemplate="footer">
         <button pButton label="Cancelar" (click)="showAssignDialog.set(false)" class="p-button-text"></button>
-        <button pButton label="Asignar" (click)="assignEmployee()" [loading]="assigningEmployee()" [disabled]="!selectedEmployeeId()"></button>
+        <button pButton label="Asignar" (click)="assignUser()" [loading]="assigningUser()" [disabled]="!selectedUserId()"></button>
     </ng-template>
   </p-dialog>
 
@@ -1063,22 +1063,17 @@
         </div>
 
         <div>
-            <label class="block mb-2 font-medium">Empleados ({{batchData().userIds.length}})</label>
+            <label class="block mb-2 font-medium">Usuarios ({{batchData().userIds.length}} de {{batchUserOptions().length}} elegibles)</label>
+             <div class="text-xs text-cool-gray-500 mb-2">Solo se muestran usuarios asignados al proyecto.</div>
              <p-multiselect 
-                [options]="projectEmployees()" 
+                [options]="batchUserOptions()" 
                 [ngModel]="batchData().userIds" 
                 (ngModelChange)="updateBatchField('userIds', $event)"
-                optionLabel="name" 
-                optionValue="_id"
-                placeholder="Seleccionar empleados"
+                optionLabel="label" 
+                optionValue="value"
+                placeholder="Seleccionar usuarios"
                 [appendTo]="'body'"
                 styleClass="w-full">
-                 <ng-template let-emp pTemplate="item">
-                    {{ emp.name }} {{ emp.paternalSurname }}
-                </ng-template>
-                 <ng-template let-emp pTemplate="selectedItem">
-                     {{ emp.name }}
-                 </ng-template>
             </p-multiselect>
         </div>
     </div>

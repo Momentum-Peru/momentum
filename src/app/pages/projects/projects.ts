@@ -19,9 +19,9 @@ import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../login/services/auth.service';
 import { TabsModule } from 'primeng/tabs';
 import { MultiSelectModule } from 'primeng/multiselect';
-import { EmployeesApiService } from '../../shared/services/employees-api.service';
+import { UsersApiService } from '../../shared/services/users-api.service';
 import { TimeTrackingApiService } from '../../shared/services/time-tracking-api.service';
-import { Employee } from '../../shared/interfaces/employee.interface';
+import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 
 @Component({
   selector: 'app-projects',
@@ -50,7 +50,7 @@ export class ProjectsPage implements OnInit {
   private readonly menuService = inject(MenuService);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
-  private readonly employeesApi = inject(EmployeesApiService);
+  private readonly usersApi = inject(UsersApiService);
   private readonly timeTrackingApi = inject(TimeTrackingApiService);
 
   // Verificar si el usuario tiene permiso de edición para este módulo
@@ -67,13 +67,22 @@ export class ProjectsPage implements OnInit {
   editing = signal<Project | null>(null);
   viewingProject = signal<Project | null>(null);
   
-  // Project Employee Management
-  projectEmployees = signal<any[]>([]);
-  availableEmployees = signal<Employee[]>([]);
+  // Project User Management
+  projectUsers = signal<any[]>([]);
+  availableUsers = signal<UserOption[]>([]);
   showAssignDialog = signal(false);
   showTeamDialog = signal(false);
-  selectedEmployeeId = signal<string | null>(null);
-  assigningEmployee = signal(false);
+  selectedUserId = signal<string | null>(null);
+  assigningUser = signal(false);
+
+  // Computed signal for batch-eligible users
+  batchUserOptions = computed(() => {
+    return this.projectUsers()
+      .map(user => ({
+        label: user.name,
+        value: user._id
+      }));
+  });
 
   // Batch Attendance
   showBatchDialog = signal(false);
@@ -311,56 +320,54 @@ export class ProjectsPage implements OnInit {
     this.viewingProject.set(project);
     this.showTeamDialog.set(true);
     if(project._id) {
-        this.loadProjectEmployees(project._id);
+        this.loadProjectUsers(project._id);
     }
   }
 
-  loadProjectEmployees(projectId: string) {
-    this.projectsApi.getProjectEmployees(projectId).subscribe({
-        next: (employees) => this.projectEmployees.set(employees),
-        error: (err) => console.error('Error loading employees', err)
+  loadProjectUsers(projectId: string) {
+    this.projectsApi.getProjectUsers(projectId).subscribe({
+        next: (users) => this.projectUsers.set(users),
+        error: (err) => console.error('Error loading users', err)
     });
   }
 
   openAssignDialog() {
-    this.employeesApi.list().subscribe({
-        next: (employees) => {
-            // Filter out already assigned? Or backend handles it?
-            // Let's just show all for now, maybe filter in UI
-            this.availableEmployees.set(employees);
-            this.selectedEmployeeId.set(null);
+    this.usersApi.listAll().subscribe({
+        next: (users) => {
+            this.availableUsers.set(users);
+            this.selectedUserId.set(null);
             this.showAssignDialog.set(true);
         }
     });
   }
 
-  assignEmployee() {
+  assignUser() {
     const projectId = this.viewingProject()?._id;
-    const employeeId = this.selectedEmployeeId();
-    if (!projectId || !employeeId) return;
+    const userId = this.selectedUserId();
+    if (!projectId || !userId) return;
 
-    this.assigningEmployee.set(true);
-    this.projectsApi.assignEmployee(projectId, employeeId).subscribe({
+    this.assigningUser.set(true);
+    this.projectsApi.assignUser(projectId, userId).subscribe({
         next: () => {
-            this.messageService.add({ severity: 'success', summary: 'Asignado', detail: 'Empleado asignado correctamente' });
-            this.loadProjectEmployees(projectId);
+            this.messageService.add({ severity: 'success', summary: 'Asignado', detail: 'Usuario asignado correctamente' });
+            this.loadProjectUsers(projectId);
             this.showAssignDialog.set(false);
         },
         error: (err) => {
-             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al asignar empleado' });
+             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al asignar usuario' });
         },
-        complete: () => this.assigningEmployee.set(false)
+        complete: () => this.assigningUser.set(false)
     });
   }
 
-  removeAssignment(employeeId: string) {
+  removeUserAssignment(userId: string) {
       const projectId = this.viewingProject()?._id;
       if (!projectId) return;
       
-      this.projectsApi.removeAssignment(projectId, employeeId).subscribe({
+      this.projectsApi.removeUserAssignment(projectId, userId).subscribe({
           next: () => {
                this.messageService.add({ severity: 'success', summary: 'Eliminado', detail: 'Asignación eliminada' });
-               this.loadProjectEmployees(projectId);
+               this.loadProjectUsers(projectId);
           },
           error: (err) => {
               this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar asignación' });
@@ -381,9 +388,9 @@ export class ProjectsPage implements OnInit {
         exitTime: '17:00',
         userIds: []
       });
-      // Pre-select all project employees
-      const employeeIds = this.projectEmployees().map(e => e._id);
-      this.batchData.update(d => ({ ...d, userIds: employeeIds }));
+      // Pre-select all project users using the computed signal
+      const userIds = this.batchUserOptions().map(opt => opt.value);
+      this.batchData.update(d => ({ ...d, userIds: userIds }));
       this.showBatchDialog.set(true);
   }
 

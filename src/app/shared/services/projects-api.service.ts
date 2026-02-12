@@ -169,15 +169,15 @@ export class ProjectsApiService {
     );
   }
 
-  assignEmployee(projectId: string, employeeId: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/projects/${projectId}/assign/${employeeId}`, {});
+  assignUser(projectId: string, userId: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/projects/${projectId}/assign/${userId}`, {});
   }
 
-  removeAssignment(projectId: string, employeeId: string): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/projects/${projectId}/assign/${employeeId}`);
+  removeUserAssignment(projectId: string, userId: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/projects/${projectId}/assign/${userId}`);
   }
 
-  getProjectEmployees(projectId: string): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/projects/${projectId}/employees`);
+  getProjectUsers(projectId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/projects/${projectId}/users`);
   }
 }
