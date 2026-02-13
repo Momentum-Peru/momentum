@@ -36,7 +36,6 @@ export class MenuConfigService {
     { path: '/time-tracking', label: 'Marcación de Hora', icon: 'pi pi-clock' },
     { path: '/employees', label: 'Empleados', icon: 'pi pi-user' },
     { path: '/areas', label: 'Áreas', icon: 'pi pi-sitemap' },
-    { path: '/meetings', label: 'Reuniones', icon: 'pi pi-video' },
     { path: '/tickets', label: 'Tickets', icon: 'pi pi-ticket' },
     { path: '/material-requests', label: 'Solicitudes de Materiales', icon: 'pi pi-shopping-bag' },
     { path: '/petty-cash', label: 'Caja Chica', icon: 'pi pi-wallet' },
@@ -206,12 +205,6 @@ export class MenuConfigService {
             label: 'Cálculo de Planilla',
             icon: 'pi pi-calculator',
             routerLink: '/payroll-calculation',
-          },
-
-          {
-            label: 'Reuniones',
-            icon: 'pi pi-video',
-            routerLink: '/meetings',
           },
           {
             label: 'Tickets',
