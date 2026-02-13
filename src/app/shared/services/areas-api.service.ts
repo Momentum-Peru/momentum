@@ -54,6 +54,13 @@ export class AreasApiService {
   }
 
   /**
+   * Obtiene las áreas asignadas al usuario actual
+   */
+  listMine(): Observable<Area[]> {
+    return this.http.get<Area[]>(`${this.baseUrl}/my-areas`);
+  }
+
+  /**
    * Obtiene un área por ID
    */
   getById(id: string): Observable<Area> {

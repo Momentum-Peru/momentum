@@ -19,6 +19,7 @@ import { DialogModule } from 'primeng/dialog';
 import { AgendaActivityComponent } from '../agenda-activity/agenda-activity';
 import { User } from '../../../../shared/services/users-api.service';
 import { Board } from '../../../../shared/interfaces/board.interface';
+import { Area } from '../../../../shared/interfaces/area.interface'; // Added
 import {
   Task,
   DragDropEvent,
@@ -81,7 +82,7 @@ export class BoardViewComponent {
   @Output() deleteTask = new EventEmitter<Task>();
   @Output() viewTask = new EventEmitter<Task>();
   @Output() createTask = new EventEmitter<void>();
-  @Output() quickCreateTask = new EventEmitter<{title: string, assignedTo: string, dueDate?: Date}>();
+  @Output() quickCreateTask = new EventEmitter<{title: string, assignedTo: string, dueDate?: Date, areaId?: string}>();
   @Output() filtersChanged = new EventEmitter<TasksSearchParams>();
 
   // Modo de vista
@@ -99,6 +100,12 @@ export class BoardViewComponent {
 
   // Board Users Computed for Agenda View
   public get boardUsers(): User[] {
+    // Si hay usuarios disponibles desde el padre, usarlos (para "Mis Actividades")
+    if (this.availableUsersObjects && this.availableUsersObjects.length > 0) {
+      return this.availableUsersObjects;
+    }
+
+    // Fallback: extraer del board (para boards normales)
     const owner = this.board.owner;
     const members = this.board.members || [];
     const users = owner ? [owner, ...members] : [...members];
@@ -138,15 +145,18 @@ export class BoardViewComponent {
   }
 
   // Filtros
-  public readonly showFilters = signal<boolean>(false);
+  public readonly showFilters = signal<boolean>(true);
   public readonly filterAssignedTo = signal<string | undefined>(undefined);
   public readonly filterDateFrom = signal<Date | undefined>(undefined);
   public readonly filterDateTo = signal<Date | undefined>(undefined);
   public readonly filterTags = signal<string[]>([]);
+  public readonly filterArea = signal<string | undefined>(undefined); // Added filter
 
   // Opciones para filtros
   @Input() availableUsers: { label: string; value: string }[] = [];
   @Input() availableTags: string[] = [];
+  @Input() availableAreas: Area[] = []; // Added input
+  @Input() availableUsersObjects: User[] = []; // Added: User objects for agenda
   @Input() currentUserId = '';
   @Output() removeMember = new EventEmitter<{ board: Board; memberId: string }>();
   @Output() leaveBoard = new EventEmitter<Board>();
@@ -156,6 +166,16 @@ export class BoardViewComponent {
    */
   public get tagOptions(): { label: string; value: string }[] {
     return this.availableTags.map((tag) => ({ label: tag, value: tag }));
+  }
+
+  /**
+   * Opciones de áreas para el select
+   */
+  public get areaOptions(): { label: string; value: string }[] {
+    return this.availableAreas.map((area) => ({ 
+        label: area.nombre || 'Sin nombre', 
+        value: area._id || '' 
+    })).filter(opt => opt.value !== '');
   }
 
 
@@ -226,6 +246,12 @@ export class BoardViewComponent {
       filters.tags = tags;
     }
 
+    // Normalizar y agregar filtro de área
+    const areaId = this.filterArea();
+    if (areaId) {
+        filters.areaId = areaId;
+    }
+
     this.filtersChanged.emit(filters);
   }
 
@@ -233,10 +259,9 @@ export class BoardViewComponent {
    * Limpia los filtros
    */
   public clearFilters(): void {
-    this.filterAssignedTo.set(undefined);
     this.filterDateFrom.set(undefined);
     this.filterDateTo.set(undefined);
-    this.filterTags.set([]);
+    this.filterArea.set(undefined);
     this.applyFilters();
   }
 
@@ -334,16 +359,51 @@ export class BoardViewComponent {
   }
 
   /**
+   * Normaliza el valor de área cuando cambia
+   */
+  public onAreaChange(value: string | { value: string; label: string } | null | undefined): void {
+      if (value === null || value === undefined || value === '') {
+        this.filterArea.set(undefined);
+      } else if (typeof value === 'object' && 'value' in value) {
+        const extractedValue = value.value;
+        this.filterArea.set(
+          extractedValue === null || extractedValue === undefined || extractedValue === ''
+            ? undefined
+            : extractedValue
+        );
+      } else if (typeof value === 'string' && value.trim() !== '') {
+        this.filterArea.set(value);
+      } else {
+        this.filterArea.set(undefined);
+      }
+      this.applyFilters();
+  }
+
+  /**
    * Verifica si hay filtros activos
    */
   public hasActiveFilters(): boolean {
-    return !!(
-      this.filterAssignedTo() ||
-      this.filterDateFrom() ||
-      this.filterDateTo() ||
-      this.filterTags().length > 0
-    );
+    const hasDateFrom = !!this.filterDateFrom();
+    const hasDateTo = !!this.filterDateTo();
+    const hasArea = !!this.filterArea();
+    
+    // Considerar activo si hay área O si hay fechas diferentes al default (solo dateTo = hoy)
+    const isDefaultDateFilter = !hasDateFrom && hasDateTo && this.isToday(this.filterDateTo());
+    
+    return hasArea || hasDateFrom || (hasDateTo && !isDefaultDateFilter);
   }
+
+  /**
+   * Verifica si una fecha es hoy
+   */
+  private isToday(date: Date | undefined): boolean {
+    if (!date) return false;
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+  }
+
 
   onBack(event: Event): void {
     event.stopPropagation();

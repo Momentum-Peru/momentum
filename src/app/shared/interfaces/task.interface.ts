@@ -123,15 +123,16 @@ export interface TasksSearchParams {
   search?: string;
   status?: TaskStatus;
   priority?: 'Baja' | 'Media' | 'Alta' | 'Crítica';
-  assignedTo?: string;
-  createdBy?: string;
-  boardId?: string;
+  assignedTo?: string | string[];
+  createdBy?: string | string[];
+  boardId?: string | string[];
   tags?: string[];
   dueDateFrom?: Date | string;
   dueDateTo?: Date | string;
   page?: number;
   limit?: number;
   q?: string;
+  areaId?: string | string[];
 }
 
 export interface TaskStats {

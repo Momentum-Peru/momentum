@@ -19,6 +19,8 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Task, TaskStatus } from '../../../../shared/interfaces/task.interface';
 import { Board } from '../../../../shared/interfaces/board.interface';
 import { User } from '../../../../shared/services/users-api.service';
+import { Area } from '../../../../shared/interfaces/area.interface';
+import { AreasApiService } from '../../../../shared/services/areas-api.service';
 
 @Component({
   selector: 'app-agenda-activity',
@@ -50,39 +52,53 @@ import { User } from '../../../../shared/services/users-api.service';
         
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
           <!-- Avatar Current User -->
-          <div class="md:col-span-1 flex justify-center">
+          <div class="md:col-span-1 xl:col-span-1 flex justify-center">
             <p-avatar 
               [image]="currentUser()?.profilePicture" 
               [label]="getInitials(currentUser()?.name)" 
               shape="circle" 
-              [style]="{'background-color': '#EEF2FF', 'color': '#6366f1', 'font-weight': 'bold', 'width': '36px', 'height': '36px', 'font-size': '14px'}"
+              [style]="{'background-color': '#F8FAFC', 'color': '#64748B', 'font-weight': 'bold', 'width': '38px', 'height': '38px', 'font-size': '14px', 'border': '2px solid #F1F5F9'}"
               [pTooltip]="currentUser()?.name || 'Usuario Actual'"
             ></p-avatar>
           </div>
 
-          <!-- Actividad Input -->
-          <div class="md:col-span-4">
-            <span class="p-input-icon-right w-full">
+          <!-- Area Select -->
+          <div class="md:col-span-4 xl:col-span-2">
+             <p-select 
+              [options]="areas" 
+              [(ngModel)]="selectedArea" 
+              (ngModelChange)="onAreaChange()"
+              optionLabel="nombre" 
+              placeholder="Área..."
+              styleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11 flex items-center"
+              [appendTo]="'body'"
+              [filter]="true"
+              filterBy="nombre"
+              [showClear]="true"
+            >
+            </p-select>
+          </div>
 
+          <!-- Actividad Input -->
+          <div class="md:col-span-7 xl:col-span-3">
               <input 
                 type="text" 
                 pInputText 
                 [(ngModel)]="newTaskTitle" 
                 placeholder="Escribe la actividad..." 
-                class="w-full text-sm"
+                class="w-full h-11 !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none text-sm px-4"
                 (keyup.enter)="createTask()"
               />
-            </span>
           </div>
 
           <!-- Asignar A -->
-          <div class="md:col-span-3">
+          <div class="md:col-span-6 xl:col-span-3">
              <p-select 
-              [options]="members()" 
+              [options]="currentAssignees()" 
               [(ngModel)]="selectedAssignee" 
               optionLabel="name" 
               placeholder="Asignar a..."
-              styleClass="w-full text-sm border-gray-300 rounded-lg"
+              styleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11 flex items-center"
               [appendTo]="'body'"
               [filter]="true"
               filterBy="name,email"
@@ -96,7 +112,7 @@ import { User } from '../../../../shared/services/users-api.service';
                     shape="circle" 
                     [style]="{'background-color': '#EEF2FF', 'color': '#4F46E5', 'width': '24px', 'height': '24px'}">
                   </p-avatar>
-                  <span class="truncate">{{ user.name }}</span>
+                  <span class="truncate text-sm">{{ user.name }}</span>
                 </div>
               </ng-template>
               <ng-template let-user pTemplate="item">
@@ -107,9 +123,9 @@ import { User } from '../../../../shared/services/users-api.service';
                     shape="circle"
                     [style]="{'background-color': '#EEF2FF', 'color': '#4F46E5'}">
                   </p-avatar>
-                  <div class="flex flex-col">
-                    <span class="text-sm font-medium">{{ user.name }}</span>
-                    <span class="text-xs text-gray-500">{{ user.email }}</span>
+                  <div class="flex flex-col overflow-hidden">
+                    <span class="text-sm font-medium truncate">{{ user.name }}</span>
+                    <span class="text-[10px] text-gray-500 truncate">{{ user.email }}</span>
                   </div>
                 </div>
               </ng-template>
@@ -117,25 +133,26 @@ import { User } from '../../../../shared/services/users-api.service';
           </div>
 
           <!-- Fecha Vencimiento -->
-          <div class="md:col-span-3">
+          <div class="md:col-span-5 xl:col-span-2">
             <p-datepicker 
               [(ngModel)]="selectedDueDate" 
               [showIcon]="true" 
+              iconDisplay="input"
               placeholder="Vencimiento"
               [minDate]="today"
               dateFormat="dd/mm/yy"
-              styleClass="w-full text-sm border-gray-300 rounded-lg"
-              inputStyleClass="text-sm rounded-lg"
+              styleClass="w-full"
+              inputStyleClass="w-full h-11 !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none text-sm"
               [appendTo]="'body'"
             ></p-datepicker>
           </div>
 
           <!-- Botón Crear -->
-          <div class="md:col-span-1 flex justify-end">
+          <div class="md:col-span-1 xl:col-span-1 flex justify-end">
              <button 
               pButton 
               icon="pi pi-plus" 
-              class="p-button-rounded p-button-secondary w-10 h-10 flex items-center justify-center bg-gray-800 hover:bg-gray-700 border-none text-white focus:ring-0" 
+              class="w-11 h-11 !rounded-xl flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 !border-none text-white shadow-sm transition-all disabled:!bg-gray-200 disabled:!text-gray-400 disabled:cursor-not-allowed" 
               (click)="createTask()"
               [disabled]="!newTaskTitle.trim() || !selectedAssignee"
               pTooltip="Agregar Actividad"
@@ -309,8 +326,10 @@ export class AgendaActivityComponent {
   @Input('members') set setMembers(value: User[]) { this.members.set(value); }
   @Input('currentUser') set setCurrentUser(value: User | null) { this.currentUser.set(value); }
 
+  @Input() areas: Area[] = [];
+
   // Outputs
-  @Output() taskCreated = new EventEmitter<{title: string, assignedTo: string, dueDate?: Date}>();
+  @Output() taskCreated = new EventEmitter<{title: string, assignedTo: string, dueDate?: Date, areaId?: string}>();
   @Output() taskUpdated = new EventEmitter<Task>();
   @Output() taskDeleted = new EventEmitter<Task>();
   @Output() viewTask = new EventEmitter<Task>();
@@ -319,11 +338,14 @@ export class AgendaActivityComponent {
   // Use confirmation service
   private confirmationService = inject(ConfirmationService);
   private messageService = inject(MessageService);
+  private areasService = inject(AreasApiService);
 
   // Form State
   newTaskTitle = '';
   selectedAssignee: User | null = null;
   selectedDueDate: Date | null = null;
+  selectedArea: Area | null = null;
+  areaUsers = signal<User[]>([]);
   today = new Date();
   
   // Status options
@@ -332,6 +354,13 @@ export class AgendaActivityComponent {
     { label: 'En curso', value: 'En curso' },
     { label: 'Terminada', value: 'Terminada' }
   ];
+
+  public currentAssignees = computed(() => {
+    if (this.selectedArea) {
+      return this.areaUsers();
+    }
+    return this.members();
+  });
 
   // Helper Methods
   getInitials(name?: string): string {
@@ -382,13 +411,39 @@ export class AgendaActivityComponent {
     this.taskCreated.emit({
       title: this.newTaskTitle,
       assignedTo: this.selectedAssignee._id,
-      dueDate: this.selectedDueDate || undefined
+      dueDate: this.selectedDueDate || undefined,
+      areaId: this.selectedArea?._id
     });
 
     // Reset Form
     this.newTaskTitle = '';
     this.selectedAssignee = null;
     this.selectedDueDate = null;
+    // Don't reset selectedArea so user can quickly add more tasks to same area if desired
+    // Or maybe reset if that's preferred. Let's keep it for now.
+  }
+
+  onAreaChange() {
+    this.selectedAssignee = null; // Reset assignee when area changes
+    if (this.selectedArea && this.selectedArea._id) {
+       this.areasService.getAssignedUsers(this.selectedArea._id).subscribe({
+           next: (users) => {
+               // users might be raw objects, ensure they have _id, name, etc.
+               // Map potential raw response to User objects
+               const safeUsers = users.map(u => ({
+                   ...u,
+                   _id: u._id || u.id,
+                   name: u.name || u.email || 'Usuario',
+               } as User));
+               this.areaUsers.set(safeUsers);
+           },
+           error: () => {
+               this.areaUsers.set([]);
+           }
+       });
+    } else {
+       this.areaUsers.set([]);
+    }
   }
 
   onStatusChange(task: Task, newStatus: string) {
