@@ -1,5 +1,129 @@
-
 <div class="space-y-6">
+  <!-- Header & Filters -->
+  <div class="flex flex-col gap-4">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <!-- Title -->
+          <div class="flex items-center gap-2">
+             <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ board.title }}</h2>
+             <p-tag *ngIf="board.isArchived" value="Archivado" severity="warn"></p-tag>
+          </div>
+          
+          <!-- Actions -->
+          <div class="flex flex-wrap gap-2">
+              <button 
+                  pButton 
+                  icon="pi pi-filter" 
+                  [outlined]="!hasActiveFilters()"
+                  [severity]="hasActiveFilters() ? 'primary' : 'secondary'"
+                  (click)="toggleFilters()" 
+                  pTooltip="Filtrar tareas"
+                  label="Filtros"
+                  class="p-button-sm"
+              ></button>
+              
+              <button 
+                  pButton 
+                  icon="pi pi-users" 
+                  [outlined]="true"
+                  severity="help"
+                  (click)="showMembersDialog.set(true)"
+                  pTooltip="Ver integrantes"
+                  class="p-button-sm"
+                  label="{{ (board.members?.length || 0) + (board.owner ? 1 : 0) | number }}"
+              ></button>
+
+              <button 
+                *ngIf="isOwner"
+                pButton 
+                icon="pi pi-user-plus" 
+                label="Invitar" 
+                class="p-button-sm"
+                (click)="onInvite($event)"
+              ></button>
+
+              <button 
+                *ngIf="isOwner"
+                pButton 
+                icon="pi pi-cog" 
+                class="p-button-sm p-button-secondary"
+                (click)="onEdit($event)"
+                pTooltip="Configurar tablero"
+              ></button>
+              
+              <button 
+                pButton 
+                icon="pi pi-refresh" 
+                class="p-button-sm p-button-secondary p-button-outlined"
+                (click)="onRefresh($event)"
+                pTooltip="Actualizar"
+              ></button>
+          </div>
+      </div>
+      
+      <!-- Filters Panel -->
+      <div *ngIf="showFilters()" class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all mb-4">
+          
+          <!-- Area Filter -->
+          <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Área de Trabajo</label>
+              <p-select 
+                  [options]="areaOptions" 
+                  [ngModel]="filterArea()"
+                  (ngModelChange)="onAreaChange($event)"
+                  placeholder="Todas las áreas" 
+                  styleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11 flex items-center"
+                  [showClear]="true"
+                  appendTo="body"
+              ></p-select>
+          </div>
+
+          <!-- Date Range Filter: Desde -->
+          <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Fecha de Inicio</label>
+              <p-datePicker 
+                  [ngModel]="filterDateFrom()" 
+                  (ngModelChange)="onDateFromChange($event)"
+                  placeholder="Desde..." 
+                  dateFormat="dd/mm/yy"
+                  styleClass="w-full"
+                  inputStyleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11"
+                  [showIcon]="true"
+                  iconDisplay="input"
+                  [showButtonBar]="true"
+                  appendTo="body"
+              ></p-datePicker>
+          </div>
+
+          <!-- Date Range Filter: Hasta -->
+          <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Fecha de Fin</label>
+              <p-datePicker 
+                  [ngModel]="filterDateTo()" 
+                  (ngModelChange)="onDateToChange($event)"
+                  placeholder="Hasta..." 
+                  dateFormat="dd/mm/yy"
+                  styleClass="w-full"
+                  inputStyleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11"
+                  [showIcon]="true"
+                  iconDisplay="input"
+                  [showButtonBar]="true"
+                  appendTo="body"
+              ></p-datePicker>
+          </div>
+          
+          <!-- Clear Filters -->
+          <div class="col-span-full border-t border-gray-50 dark:border-gray-700 pt-3 flex justify-end" *ngIf="hasActiveFilters()">
+              <button 
+                  pButton 
+                  label="Limpiar todos los filtros" 
+                  icon="pi pi-filter-slash" 
+                  class="p-button-sm p-button-text p-button-danger font-medium hover:bg-red-50" 
+                  (click)="clearFilters()"
+              ></button>
+          </div>
+      </div>
+  </div>
+
   <!-- Agenda View (List) -->
   <div class="mt-2">
     <app-agenda-activity
@@ -7,6 +131,7 @@
       [board]="board"
       [members]="boardUsers"
       [currentUser]="currentUser"
+      [areas]="availableAreas"
       (taskCreated)="quickCreateTask.emit($event)"
       (taskUpdated)="editTask.emit($event)"
       (taskDeleted)="onDeleteTask($event)"

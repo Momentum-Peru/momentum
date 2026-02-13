@@ -21,7 +21,6 @@ export class MenuConfigService {
   // Configuración centralizada de todas las rutas del sistema
   private readonly routesConfig: RouteConfig[] = [
     { path: '/dashboard', label: 'INICIO', icon: 'pi pi-home' },
-    { path: '/gerencia-boards', label: 'Tableros de Gerencia', icon: 'pi pi-th-large' },
     { path: '/projects/dashboard', label: 'Dashboard de Proyectos', icon: 'pi pi-chart-line' },
     { path: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
     { path: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
@@ -32,7 +31,7 @@ export class MenuConfigService {
     { path: '/quotes', label: 'Cotizaciones', icon: 'pi pi-dollar' },
     { path: '/providers', label: 'Proveedores', icon: 'pi pi-building' },
     { path: '/documents', label: 'Documentos', icon: 'pi pi-file' },
-    { path: '/tasks', label: 'Mi Área', icon: 'pi pi-check-square' },
+    { path: '/tasks', label: 'Mis Actividades', icon: 'pi pi-check-square' },
     { path: '/daily-reports', label: 'Reportes Diarios', icon: 'pi pi-calendar' },
     { path: '/time-tracking', label: 'Marcación de Hora', icon: 'pi pi-clock' },
     { path: '/employees', label: 'Empleados', icon: 'pi pi-user' },
@@ -86,13 +85,23 @@ export class MenuConfigService {
         routerLink: '/dashboard',
       },
       {
-        label: 'GERENCIA',
+        label: 'MI ESPACIO',
         icon: 'pi pi-briefcase',
         items: [
           {
-            label: 'Tableros de Tareas',
-            icon: 'pi pi-th-large',
-            routerLink: '/gerencia-boards',
+            label: 'Mis Actividades',
+            icon: 'pi pi-check-square',
+            routerLink: '/tasks',
+          },
+          {
+            label: 'Reportes Diarios',
+            icon: 'pi pi-calendar',
+            routerLink: '/daily-reports',
+          },
+          {
+            label: 'Marcación de Hora',
+            icon: 'pi pi-clock',
+            routerLink: '/time-tracking',
           },
         ],
       },
@@ -198,21 +207,7 @@ export class MenuConfigService {
             icon: 'pi pi-calculator',
             routerLink: '/payroll-calculation',
           },
-          {
-            label: 'Mi Área',
-            icon: 'pi pi-check-square',
-            routerLink: '/tasks',
-          },
-          {
-            label: 'Reportes Diarios',
-            icon: 'pi pi-calendar',
-            routerLink: '/daily-reports',
-          },
-          {
-            label: 'Marcación de Hora',
-            icon: 'pi pi-clock',
-            routerLink: '/time-tracking',
-          },
+
           {
             label: 'Reuniones',
             icon: 'pi pi-video',
