@@ -5,7 +5,7 @@ import { requireTenantGuard } from './guards/tenant.guard';
 import { permissionsGuard } from './guards/permissions.guard';
 
 export const routes: Routes = [
-    {
+  {
     path: 'sergio-nolasco',
     loadComponent: () =>
       import('./pages/personal-card/personal-card.page').then((m) => m.PersonalCardPage),
@@ -137,6 +137,16 @@ export const routes: Routes = [
             loadComponent: () => import('./pages/employees/employees').then((m) => m.EmployeesPage),
           },
           {
+            path: 'new',
+            loadComponent: () =>
+              import('./pages/employees/employee-form/employee-form').then((m) => m.EmployeeFormPage),
+          },
+          {
+            path: 'edit/:id',
+            loadComponent: () =>
+              import('./pages/employees/employee-form/employee-form').then((m) => m.EmployeeFormPage),
+          },
+          {
             path: ':id',
             loadComponent: () =>
               import('./pages/employees/employee-summary/employee-summary.component').then(
@@ -190,6 +200,14 @@ export const routes: Routes = [
           ),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/face-recognition-register' },
+      },
+      {
+        path: 'time-tracking/detail/:userId',
+        loadComponent: () =>
+          import(
+            './pages/time-tracking/time-tracking-detail/time-tracking-detail.component'
+          ).then(m => m.TimeTrackingDetailComponent),
+        canActivate: [MenuPermissionGuard],
       },
       {
         path: 'time-tracking',

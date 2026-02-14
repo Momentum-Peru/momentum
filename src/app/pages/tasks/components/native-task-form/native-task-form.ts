@@ -37,6 +37,7 @@ import { AuthService } from '../../../login/services/auth.service';
 import { BoardsApiService } from '../../../../shared/services/boards-api.service';
 import { ProjectsApiService } from '../../../../shared/services/projects-api.service';
 import { ClientsApiService } from '../../../../shared/services/clients-api.service';
+import { AreasApiService } from '../../../../shared/services/areas-api.service'; // Added
 
 // Interfaces
 import {
@@ -49,6 +50,7 @@ import {
 import { User } from '../../../../shared/services/users-api.service';
 import { Board } from '../../../../shared/interfaces/board.interface';
 import { Project } from '../../../../shared/interfaces/project.interface';
+import { Area } from '../../../../shared/interfaces/area.interface'; // Added
 
 // PrimeNG Services
 import { MessageService } from 'primeng/api';
@@ -195,6 +197,22 @@ export class TruncatePipe implements PipeTransform {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Area Field -->
+          <div class="space-y-2">
+            <label for="areaId" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Área
+            </label>
+            <p-select
+              id="areaId"
+              formControlName="areaId"
+              [options]="areaOptions()"
+              placeholder="Selecciona un área"
+              [appendTo]="'body'"
+              styleClass="w-full"
+              [showClear]="true"
+            ></p-select>
+          </div>
+
           <!-- Assigned To Field -->
           <div class="space-y-2">
             <label
@@ -222,7 +240,9 @@ export class TruncatePipe implements PipeTransform {
               Debes seleccionar un usuario.
             </p>
           </div>
+        </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Project Field -->
           <div class="space-y-2">
             <label
@@ -239,6 +259,7 @@ export class TruncatePipe implements PipeTransform {
               [appendTo]="'body'"
               styleClass="w-full"
               [loading]="projectsLoading()"
+              [showClear]="true"
             >
               <ng-template let-project pTemplate="selectedItem">
                 @if (project?.label) {
@@ -256,9 +277,7 @@ export class TruncatePipe implements PipeTransform {
               </ng-template>
             </p-select>
           </div>
-        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Due Date Field -->
           <div class="space-y-2">
             <label for="dueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -693,6 +712,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
   private readonly boardsApiService = inject(BoardsApiService);
   private readonly projectsApiService = inject(ProjectsApiService);
   private readonly clientsApiService = inject(ClientsApiService);
+  private readonly areasApiService = inject(AreasApiService); // Added
   private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
 
@@ -713,6 +733,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
   public readonly showProjectDialog = signal<boolean>(false);
   public readonly projectFormLoading = signal<boolean>(false);
   public readonly clients = signal<{ _id: string; name: string }[]>([]);
+  public readonly areas = signal<Area[]>([]); // Updated type
+  public readonly areaUsers = signal<string[] | null>(null);
   public readonly subtasks = signal<TaskSubtask[]>([]);
   public readonly selectedFiles = signal<File[]>([]);
   public readonly existingAttachments = signal<TaskAttachment[]>([]);
@@ -744,10 +766,17 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
   public readonly users = computed(() => {
     const allUsersList = this.allUsers();
     const currentBoard = this.board();
+    const areaAllowedUserIds = this.areaUsers(); // Get filtered users by area
 
-    // Si no hay boardId o tablero cargado, mostrar todos los usuarios
+    // Filter by Area first if selected
+    let filteredUsers = allUsersList;
+    if (areaAllowedUserIds) {
+      filteredUsers = filteredUsers.filter(u => areaAllowedUserIds.includes(u.id));
+    }
+
+    // Si no hay boardId o tablero cargado, mostrar usuarios filtrados (posiblemente solo por area)
     if (!this.boardId || !currentBoard) {
-      return allUsersList;
+      return filteredUsers;
     }
 
     // Obtener IDs de usuarios permitidos del board
@@ -777,7 +806,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     // Filtrar usuarios que están en la lista permitida
-    return allUsersList.filter((user) => allowedUserIds.has(user.id));
+    return filteredUsers.filter((user) => allowedUserIds.has(user.id));
   });
 
   public readonly userOptions = computed(() => {
@@ -794,10 +823,40 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
     }));
   });
 
+  public readonly areaOptions = computed(() => {
+    return this.areas().map((area) => ({
+      label: area.nombre,
+      value: area._id || '',
+    }));
+  });
+
   ngOnInit(): void {
     this.loadUsers();
     this.loadProjects();
     this.loadClients();
+    this.loadAreas(); // Added
+
+    // Subscribe to area changes
+    this.taskForm.get('areaId')?.valueChanges.subscribe(areaId => {
+      if (areaId) {
+        this.areasApiService.getAssignedUsers(areaId).subscribe({
+          next: (users) => {
+            const userIds = users.map(u => u._id || u.id);
+            this.areaUsers.set(userIds);
+
+            // If current assignedTo is not in new list, maybe clear it?
+            // Optional, but good UX.
+            const currentAssigned = this.taskForm.get('assignedTo')?.value;
+            if (currentAssigned && !userIds.includes(currentAssigned)) {
+              this.taskForm.patchValue({ assignedTo: null });
+            }
+          },
+          error: () => this.areaUsers.set([])
+        });
+      } else {
+        this.areaUsers.set(null);
+      }
+    });
     if (this.boardId) {
       this.loadBoard();
     }
@@ -838,12 +897,13 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
     return this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
       description: [''],
-      status: ['Pendiente', [Validators.required]],
-      priority: ['Media', [Validators.required]],
-      assignedTo: [null, [Validators.required]],
-      projectId: [null],
+      status: ['Pendiente', Validators.required],
+      priority: ['Media', Validators.required],
+      assignedTo: ['', Validators.required],
       dueDate: [null],
       tags: [''],
+      projectId: [null],
+      areaId: [null], // Added
       incompleteReason: [''],
     });
   }
@@ -875,6 +935,22 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
           severity: 'error',
           summary: 'Error',
           detail: 'No se pudieron cargar los clientes',
+        });
+      },
+    });
+  }
+
+  private loadAreas(): void {
+    this.areasApiService.listActive().subscribe({
+      next: (areas) => {
+        this.areas.set(areas);
+      },
+      error: (error) => {
+        console.error('Error loading areas:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las áreas',
         });
       },
     });
@@ -975,6 +1051,12 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
           ? (this.task.projectId as { _id?: string })._id
           : this.task.projectId;
 
+      // Extraer el ID del areaId si es un objeto
+      const areaId =
+        typeof this.task.areaId === 'object' && this.task.areaId !== null
+          ? (this.task.areaId as { _id?: string })._id
+          : this.task.areaId;
+
       // Llenar con los datos de la tarea
       this.taskForm.patchValue({
         title: this.task.title,
@@ -983,6 +1065,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
         priority: this.task.priority,
         assignedTo: assignedToId,
         projectId: projectId || null,
+        areaId: areaId || null, // Added
         dueDate: this.task.dueDate ? this.convertUTCDateToLocalDate(new Date(this.task.dueDate)) : null,
         tags: Array.isArray(this.task.tags) ? this.task.tags.join(', ') : this.task.tags || '',
         incompleteReason: this.task.incompleteReason || '',
@@ -1046,7 +1129,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
   private loadUsers(): void {
     // Si hay un boardId, no cargar usuarios aquí
     // Se extraerán del board cuando se cargue (más eficiente)
-    if (this.boardId) {
+    // Si hay un boardId y no es 'all', no cargar usuarios aquí
+    // Se extraerán del board cuando se cargue (más eficiente)
+    if (this.boardId && this.boardId !== 'all') {
       this.usersLoading.set(false);
       return;
     }
@@ -1077,7 +1162,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
    * También extrae los usuarios del board para evitar llamar al endpoint /users
    */
   private loadBoard(): void {
-    if (!this.boardId) return;
+    if (!this.boardId || this.boardId === 'all') return;
 
     this.boardsApiService
       .getById(this.boardId)
@@ -1205,9 +1290,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
         dueDate: normalizedDueDate ? normalizedDueDate.toISOString() : undefined,
         tags: formValue.tags
           ? formValue.tags
-              .split(',')
-              .map((tag: string) => tag.trim())
-              .filter((tag: string) => tag.length > 0)
+            .split(',')
+            .map((tag: string) => tag.trim())
+            .filter((tag: string) => tag.length > 0)
           : [],
         incompleteReason: formValue.incompleteReason?.trim() || undefined,
         subtasks: this.subtasks()
@@ -1517,7 +1602,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
     } else {
       // Limpiar solo los archivos nuevos y la lista de eliminación
       this.selectedFiles.set([]);
-      this.attachmentsToDelete.set([]);
+      if (this.attachmentsToDelete) {
+        this.attachmentsToDelete.set([]);
+      }
     }
 
     this.loading.set(false);

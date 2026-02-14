@@ -20,39 +20,37 @@ export interface RouteConfig {
 export class MenuConfigService {
   // Configuración centralizada de todas las rutas del sistema
   private readonly routesConfig: RouteConfig[] = [
-    { path: '/dashboard', label: 'INICIO', icon: 'pi pi-home' },
-    { path: '/gerencia-boards', label: 'Tableros de Gerencia', icon: 'pi pi-th-large' },
-    { path: '/projects/dashboard', label: 'Dashboard de Proyectos', icon: 'pi pi-chart-line' },
+    { path: '/dashboard', label: 'Inicio', icon: 'pi pi-home' },
+    { path: '/projects/dashboard', label: 'Dashboard de proyectos', icon: 'pi pi-chart-line' },
     { path: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
     { path: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
     { path: '/engineering', label: 'Ingeniería', icon: 'pi pi-cog' },
     { path: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
     { path: '/requirements', label: 'Requerimientos', icon: 'pi pi-inbox' },
-    { path: '/tdrs', label: 'TDRs', icon: 'pi pi-file' },
+    { path: '/tdrs', label: 'Tdrs', icon: 'pi pi-file' },
     { path: '/quotes', label: 'Cotizaciones', icon: 'pi pi-dollar' },
     { path: '/providers', label: 'Proveedores', icon: 'pi pi-building' },
     { path: '/documents', label: 'Documentos', icon: 'pi pi-file' },
-    { path: '/tasks', label: 'Mi Área', icon: 'pi pi-check-square' },
-    { path: '/daily-reports', label: 'Reportes Diarios', icon: 'pi pi-calendar' },
-    { path: '/time-tracking', label: 'Marcación de Hora', icon: 'pi pi-clock' },
+    { path: '/tasks', label: 'Agenda', icon: 'pi pi-check-square' },
+    { path: '/daily-reports', label: 'Reportes diarios', icon: 'pi pi-calendar' },
+    { path: '/time-tracking', label: 'Marcación de hora', icon: 'pi pi-clock' },
     { path: '/employees', label: 'Empleados', icon: 'pi pi-user' },
     { path: '/areas', label: 'Áreas', icon: 'pi pi-sitemap' },
-    { path: '/meetings', label: 'Reuniones', icon: 'pi pi-video' },
     { path: '/tickets', label: 'Tickets', icon: 'pi pi-ticket' },
-    { path: '/material-requests', label: 'Solicitudes de Materiales', icon: 'pi pi-shopping-bag' },
-    { path: '/petty-cash', label: 'Caja Chica', icon: 'pi pi-wallet' },
-    { path: '/face-recognition-register', label: 'Registro Facial', icon: 'pi pi-id-card' },
+    { path: '/material-requests', label: 'Solicitudes de materiales', icon: 'pi pi-shopping-bag' },
+    { path: '/petty-cash', label: 'Caja chica', icon: 'pi pi-wallet' },
+    { path: '/face-recognition-register', label: 'Registro facial', icon: 'pi pi-id-card' },
     { path: '/users', label: 'Usuarios', icon: 'pi pi-users' },
     { path: '/menu-permissions', label: 'Permisos', icon: 'pi pi-shield' },
-    { path: '/user-tenants-assignment', label: 'Asignación de Empresas', icon: 'pi pi-building' },
+    { path: '/user-tenants-assignment', label: 'Asignación de empresas', icon: 'pi pi-building' },
     { path: '/leads', label: 'Leads', icon: 'pi pi-user-plus' },
     { path: '/follow-ups', label: 'Seguimientos', icon: 'pi pi-calendar-plus' },
     { path: '/companies-crm', label: 'Empresas Momentum', icon: 'pi pi-building' },
-    { path: '/logs', label: 'Logs del Sistema', icon: 'pi pi-list' },
-    { path: '/payroll', label: 'Planillas y Pagos', icon: 'pi pi-wallet' },
-    { path: '/payroll-calculation', label: 'Cálculo de Planilla', icon: 'pi pi-calculator' },
-    { path: '/profile', label: 'Mi Perfil', icon: 'pi pi-user-edit' },
-    { path: '/digital-signature', label: 'Firma Digital', icon: 'pi pi-pencil' },
+    { path: '/logs', label: 'Logs del sistema', icon: 'pi pi-list' },
+    { path: '/payroll', label: 'Planillas y pagos', icon: 'pi pi-wallet' },
+    { path: '/payroll-calculation', label: 'Cálculo de planilla', icon: 'pi pi-calculator' },
+    { path: '/profile', label: 'Mi perfil', icon: 'pi pi-user-edit' },
+    { path: '/digital-signature', label: 'Firma digital', icon: 'pi pi-pencil' },
     { path: '/work-shifts', label: 'Turnos', icon: 'pi pi-calendar-times' },
   ];
 
@@ -81,23 +79,33 @@ export class MenuConfigService {
   getMenuItemsWithSubmenus(): MenuItem[] {
     return [
       {
-        label: 'INICIO',
+        label: 'Inicio',
         icon: 'pi pi-home',
         routerLink: '/dashboard',
       },
       {
-        label: 'GERENCIA',
+        label: 'Mi espacio',
         icon: 'pi pi-briefcase',
         items: [
           {
-            label: 'Tableros de Tareas',
-            icon: 'pi pi-th-large',
-            routerLink: '/gerencia-boards',
+            label: 'Agenda',
+            icon: 'pi pi-check-square',
+            routerLink: '/tasks',
+          },
+          {
+            label: 'Reportes diarios',
+            icon: 'pi pi-calendar',
+            routerLink: '/daily-reports',
+          },
+          {
+            label: 'Marcación de hora',
+            icon: 'pi pi-clock',
+            routerLink: '/time-tracking',
           },
         ],
       },
       {
-        label: 'VENTAS',
+        label: 'Ventas',
         icon: 'pi pi-folder',
         items: [
           {
@@ -133,7 +141,7 @@ export class MenuConfigService {
         ],
       },
       {
-        label: 'INGENIERÍA',
+        label: 'Ingeniería',
         icon: 'pi pi-cog',
         items: [
           {
@@ -144,7 +152,7 @@ export class MenuConfigService {
         ],
       },
       {
-        label: 'ADMINISTRACIÓN',
+        label: 'Administración',
         icon: 'pi pi-cog',
         items: [
           {
@@ -168,19 +176,19 @@ export class MenuConfigService {
             routerLink: '/documents/compras',
           },
           {
-            label: 'Solicitudes de Materiales',
+            label: 'Solicitudes de materiales',
             icon: 'pi pi-shopping-bag',
             routerLink: '/material-requests',
           },
           {
-            label: 'Caja Chica',
+            label: 'Caja chica',
             icon: 'pi pi-wallet',
             routerLink: '/petty-cash',
           },
         ],
       },
       {
-        label: 'RECURSOS HUMANOS',
+        label: 'Recursos humanos',
         icon: 'pi pi-users',
         items: [
           {
@@ -189,34 +197,14 @@ export class MenuConfigService {
             routerLink: '/employees',
           },
           {
-            label: 'Planillas y Pagos',
+            label: 'Planillas y pagos',
             icon: 'pi pi-wallet',
             routerLink: '/payroll',
           },
           {
-            label: 'Cálculo de Planilla',
+            label: 'Cálculo de planilla',
             icon: 'pi pi-calculator',
             routerLink: '/payroll-calculation',
-          },
-          {
-            label: 'Mi Área',
-            icon: 'pi pi-check-square',
-            routerLink: '/tasks',
-          },
-          {
-            label: 'Reportes Diarios',
-            icon: 'pi pi-calendar',
-            routerLink: '/daily-reports',
-          },
-          {
-            label: 'Marcación de Hora',
-            icon: 'pi pi-clock',
-            routerLink: '/time-tracking',
-          },
-          {
-            label: 'Reuniones',
-            icon: 'pi pi-video',
-            routerLink: '/meetings',
           },
           {
             label: 'Tickets',
@@ -247,7 +235,7 @@ export class MenuConfigService {
         ],
       },
       {
-        label: 'CONFIGURACIÓN',
+        label: 'Configuración',
         icon: 'pi pi-sliders-h',
         items: [
           {
@@ -261,7 +249,7 @@ export class MenuConfigService {
             routerLink: '/menu-permissions',
           },
           {
-            label: 'Asignación de Empresas',
+            label: 'Asignación de empresas',
             icon: 'pi pi-building',
             routerLink: '/user-tenants-assignment',
           },
@@ -276,22 +264,22 @@ export class MenuConfigService {
             routerLink: '/work-shifts',
           },
           {
-            label: 'Registro Facial',
+            label: 'Registro facial',
             icon: 'pi pi-id-card',
             routerLink: '/face-recognition-register',
           },
           {
-            label: 'Mi Perfil',
+            label: 'Mi perfil',
             icon: 'pi pi-user-edit',
             routerLink: '/profile',
           },
           {
-            label: 'Firma Digital',
+            label: 'Firma digital',
             icon: 'pi pi-pencil',
             routerLink: '/digital-signature',
           },
           {
-            label: 'Logs del Sistema',
+            label: 'Logs del sistema',
             icon: 'pi pi-list',
             routerLink: '/logs',
           },

@@ -19,6 +19,8 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Task, TaskStatus } from '../../../../shared/interfaces/task.interface';
 import { Board } from '../../../../shared/interfaces/board.interface';
 import { User } from '../../../../shared/services/users-api.service';
+import { Area } from '../../../../shared/interfaces/area.interface';
+import { AreasApiService } from '../../../../shared/services/areas-api.service';
 
 @Component({
   selector: 'app-agenda-activity',
@@ -50,39 +52,53 @@ import { User } from '../../../../shared/services/users-api.service';
         
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
           <!-- Avatar Current User -->
-          <div class="md:col-span-1 flex justify-center">
+          <div class="md:col-span-1 xl:col-span-1 flex justify-center">
             <p-avatar 
               [image]="currentUser()?.profilePicture" 
               [label]="getInitials(currentUser()?.name)" 
               shape="circle" 
-              [style]="{'background-color': '#EEF2FF', 'color': '#6366f1', 'font-weight': 'bold', 'width': '36px', 'height': '36px', 'font-size': '14px'}"
+              [style]="{'background-color': '#F8FAFC', 'color': '#64748B', 'font-weight': 'bold', 'width': '38px', 'height': '38px', 'font-size': '14px', 'border': '2px solid #F1F5F9'}"
               [pTooltip]="currentUser()?.name || 'Usuario Actual'"
             ></p-avatar>
           </div>
 
-          <!-- Actividad Input -->
-          <div class="md:col-span-4">
-            <span class="p-input-icon-right w-full">
+          <!-- Area Select -->
+          <div class="md:col-span-4 xl:col-span-2">
+             <p-select 
+              [options]="areas" 
+              [(ngModel)]="selectedArea" 
+              (ngModelChange)="onAreaChange()"
+              optionLabel="nombre" 
+              placeholder="Área..."
+              styleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11 flex items-center"
+              [appendTo]="'body'"
+              [filter]="true"
+              filterBy="nombre"
+              [showClear]="true"
+            >
+            </p-select>
+          </div>
 
+          <!-- Actividad Input -->
+          <div class="md:col-span-7 xl:col-span-3">
               <input 
                 type="text" 
                 pInputText 
                 [(ngModel)]="newTaskTitle" 
                 placeholder="Escribe la actividad..." 
-                class="w-full text-sm"
+                class="w-full h-11 !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none text-sm px-4"
                 (keyup.enter)="createTask()"
               />
-            </span>
           </div>
 
           <!-- Asignar A -->
-          <div class="md:col-span-3">
+          <div class="md:col-span-6 xl:col-span-3">
              <p-select 
-              [options]="members()" 
+              [options]="currentAssignees()" 
               [(ngModel)]="selectedAssignee" 
               optionLabel="name" 
               placeholder="Asignar a..."
-              styleClass="w-full text-sm border-gray-300 rounded-lg"
+              styleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11 flex items-center"
               [appendTo]="'body'"
               [filter]="true"
               filterBy="name,email"
@@ -96,7 +112,7 @@ import { User } from '../../../../shared/services/users-api.service';
                     shape="circle" 
                     [style]="{'background-color': '#EEF2FF', 'color': '#4F46E5', 'width': '24px', 'height': '24px'}">
                   </p-avatar>
-                  <span class="truncate">{{ user.name }}</span>
+                  <span class="truncate text-sm">{{ user.name }}</span>
                 </div>
               </ng-template>
               <ng-template let-user pTemplate="item">
@@ -107,9 +123,9 @@ import { User } from '../../../../shared/services/users-api.service';
                     shape="circle"
                     [style]="{'background-color': '#EEF2FF', 'color': '#4F46E5'}">
                   </p-avatar>
-                  <div class="flex flex-col">
-                    <span class="text-sm font-medium">{{ user.name }}</span>
-                    <span class="text-xs text-gray-500">{{ user.email }}</span>
+                  <div class="flex flex-col overflow-hidden">
+                    <span class="text-sm font-medium truncate">{{ user.name }}</span>
+                    <span class="text-[10px] text-gray-500 truncate">{{ user.email }}</span>
                   </div>
                 </div>
               </ng-template>
@@ -117,25 +133,26 @@ import { User } from '../../../../shared/services/users-api.service';
           </div>
 
           <!-- Fecha Vencimiento -->
-          <div class="md:col-span-3">
+          <div class="md:col-span-5 xl:col-span-2">
             <p-datepicker 
               [(ngModel)]="selectedDueDate" 
               [showIcon]="true" 
+              iconDisplay="input"
               placeholder="Vencimiento"
               [minDate]="today"
               dateFormat="dd/mm/yy"
-              styleClass="w-full text-sm border-gray-300 rounded-lg"
-              inputStyleClass="text-sm rounded-lg"
+              styleClass="w-full"
+              inputStyleClass="w-full h-11 !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none text-sm"
               [appendTo]="'body'"
             ></p-datepicker>
           </div>
 
           <!-- Botón Crear -->
-          <div class="md:col-span-1 flex justify-end">
+          <div class="md:col-span-1 xl:col-span-1 flex justify-end">
              <button 
               pButton 
               icon="pi pi-plus" 
-              class="p-button-rounded p-button-secondary w-10 h-10 flex items-center justify-center bg-gray-800 hover:bg-gray-700 border-none text-white focus:ring-0" 
+              class="w-11 h-11 !rounded-xl flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 !border-none text-white shadow-sm transition-all disabled:!bg-gray-200 disabled:!text-gray-400 disabled:cursor-not-allowed" 
               (click)="createTask()"
               [disabled]="!newTaskTitle.trim() || !selectedAssignee"
               pTooltip="Agregar Actividad"
@@ -157,131 +174,242 @@ import { User } from '../../../../shared/services/users-api.service';
            </h3>
         </div>
 
-        <p-table 
-          [value]="tasks()" 
-          [paginator]="true" 
-          [rows]="10"
-          [showCurrentPageReport]="true"
-          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} atividades"
-          styleClass="p-datatable-sm"
-          [rowHover]="true"
-          paginatorStyleClass="border-t border-gray-200 dark:border-gray-700"
-        >
-          <ng-template pTemplate="header">
-            <tr class="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 font-medium">
-              <th style="width: 35%" class="p-3">Actividad</th>
-              <th style="width: 20%" class="p-3">Asignado A</th>
-              <th style="width: 20%" class="p-3">Fecha y Hora vencimiento</th>
-              <th style="width: 10%" class="p-3">Asignado por</th>
-              <th style="width: 10%" class="p-3 text-center">Estado</th>
-              <th style="width: 5%" class="p-3 text-center">Acciones</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-task>
-            <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/30">
-              <td>
-                <div class="font-medium text-gray-900 dark:text-white">{{ task.title }}</div>
-                <div *ngIf="task.description" class="text-xs text-gray-500 truncate max-w-xs">{{ task.description }}</div>
-              </td>
+        <!-- Desktop Table View -->
+        <div class="hidden md:block">
+          <p-table 
+            [value]="tasks()" 
+            [paginator]="true" 
+            [rows]="10"
+            [showCurrentPageReport]="true"
+            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} atividades"
+            styleClass="p-datatable-sm"
+            [rowHover]="true"
+            paginatorStyleClass="border-t border-gray-200 dark:border-gray-700"
+          >
+            <ng-template pTemplate="header">
+              <tr class="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 font-medium">
+                <th style="width: 35%" class="p-3">Actividad</th>
+                <th style="width: 20%" class="p-3">Asignado A</th>
+                <th style="width: 20%" class="p-3">Fecha y Hora vencimiento</th>
+                <th style="width: 10%" class="p-3">Asignado por</th>
+                <th style="width: 10%" class="p-3 text-center">Estado</th>
+                <th style="width: 5%" class="p-3 text-center">Acciones</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-task>
+              <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                <td>
+                  <div class="font-medium text-gray-900 dark:text-white">{{ task.title }}</div>
+                  <div *ngIf="task.description" class="text-xs text-gray-500 truncate max-w-xs">{{ task.description }}</div>
+                </td>
 
-              <td>
-                <div class="flex items-center gap-2">
-                  <p-avatar 
-                    [image]="getAvatar(task.assignedTo)" 
-                    [label]="getInitialsName(task.assignedTo)" 
-                    shape="circle" 
-                    class="border-2 border-white dark:border-gray-800 shadow-sm"
-                    [style]="{'background-color': '#EEF2FF', 'color': '#4F46E5', 'width': '24px', 'height': '24px'}"
-                  ></p-avatar>
-                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ getName(task.assignedTo) }}</span>
+                <td>
+                  <div class="flex items-center gap-2">
+                    <p-avatar 
+                      [image]="getAvatar(task.assignedTo)" 
+                      [label]="getInitialsName(task.assignedTo)" 
+                      shape="circle" 
+                      class="border-2 border-white dark:border-gray-800 shadow-sm"
+                      [style]="{'background-color': '#EEF2FF', 'color': '#4F46E5', 'width': '24px', 'height': '24px'}"
+                    ></p-avatar>
+                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ getName(task.assignedTo) }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <i class="pi pi-calendar-clock text-xs"></i>
+                    <span>{{ task.dueDate | date:'dd/MM/yyyy' }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="flex justify-center">
+                      <div class="flex -space-x-2 overflow-hidden" pTooltip="Creado por {{ getName(task.createdBy) }}">
+                         <p-avatar 
+                          [image]="getAvatar(task.createdBy)" 
+                          [label]="getInitialsName(task.createdBy)" 
+                          shape="circle" 
+                          class="inline-block ring-2 ring-white dark:ring-gray-800"
+                          [style]="{'background-color': '#F3F4F6', 'color': '#374151', 'width': '24px', 'height': '24px'}"
+                        ></p-avatar>
+                      </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <p-select
+                    [ngModel]="task.status"
+                    (ngModelChange)="onStatusChange(task, $event)"
+                    [options]="statusOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    styleClass="text-sm w-auto"
+                    [appendTo]="'body'"
+                  >
+                    <ng-template let-option pTemplate="item">
+                      <span 
+                        [class]="getStatusClass(option.value)"
+                        class="text-sm font-medium py-1 px-2 rounded"
+                      >
+                        {{ option.label }}
+                      </span>
+                    </ng-template>
+                    <ng-template let-option pTemplate="selectedItem">
+                      <p-tag 
+                        [value]="option.label" 
+                        [severity]="getStatusSeverity(option.value)"
+                        [rounded]="true"
+                        styleClass="text-xs"
+                      ></p-tag>
+                    </ng-template>
+                  </p-select>
+                </td>
+                <td class="text-center">
+                  <div class="flex items-center justify-center gap-1">
+                    <button 
+                      pButton 
+                      icon="pi pi-eye" 
+                      class="p-button-rounded p-button-text p-button-secondary w-8 h-8 flex align-items-center justify-content-center" 
+                      (click)="viewTaskDetails(task)"
+                      pTooltip="Ver detalles"
+                      tooltipPosition="left"
+                    ></button>
+                    <button 
+                      pButton 
+                      icon="pi pi-pencil" 
+                      class="p-button-rounded p-button-text p-button-info w-8 h-8 flex align-items-center justify-content-center" 
+                      (click)="editTaskDetails(task)"
+                      pTooltip="Editar"
+                      tooltipPosition="left"
+                    ></button>
+                    <button 
+                      pButton 
+                      icon="pi pi-trash" 
+                      class="p-button-rounded p-button-text p-button-danger w-8 h-8 flex align-items-center justify-content-center" 
+                      (click)="confirmDelete(task, $event)"
+                      pTooltip="Eliminar"
+                      tooltipPosition="left"
+                    ></button>
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="6" class="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <i class="pi pi-inbox text-4xl mb-4 block text-gray-300 dark:text-gray-600"></i>
+                  No hay actividades registradas en este tablero.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <!-- Mobile Card List View -->
+        <div class="md:hidden">
+          <div *ngIf="tasks().length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
+            <div *ngFor="let task of tasks()" class="p-4 bg-white dark:bg-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors">
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex-1">
+                  <h4 class="font-semibold text-gray-900 dark:text-white leading-tight mb-1">{{ task.title }}</h4>
+                  <div *ngIf="task.description" class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                    {{ task.description }}
+                  </div>
                 </div>
-              </td>
-              <td>
-                <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <i class="pi pi-calendar-clock text-xs"></i>
-                  <span>{{ task.dueDate | date:'dd/MM/yyyy' }}</span>
+                <div class="ml-2 flex-shrink-0">
+                  <p-tag 
+                    [value]="task.status" 
+                    [severity]="getStatusSeverity(task.status)"
+                    [rounded]="true"
+                    styleClass="text-[10px]"
+                  ></p-tag>
                 </div>
-              </td>
-              <td>
-                <div class="flex justify-center">
-                    <div class="flex -space-x-2 overflow-hidden" pTooltip="Creado por {{ getName(task.createdBy) }}">
-                       <p-avatar 
-                        [image]="getAvatar(task.createdBy)" 
-                        [label]="getInitialsName(task.createdBy)" 
-                        shape="circle" 
-                        class="inline-block ring-2 ring-white dark:ring-gray-800"
-                        [style]="{'background-color': '#F3F4F6', 'color': '#374151', 'width': '24px', 'height': '24px'}"
-                      ></p-avatar>
-                    </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-y-3 mb-4">
+                <!-- Asignado A -->
+                <div class="flex flex-col gap-1">
+                  <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 tracking-wider">Responsable</span>
+                  <div class="flex items-center gap-2">
+                    <p-avatar 
+                      [image]="getAvatar(task.assignedTo)" 
+                      [label]="getInitialsName(task.assignedTo)" 
+                      shape="circle" 
+                      [style]="{'background-color': '#EEF2FF', 'color': '#4F46E5', 'width': '20px', 'height': '20px', 'font-size': '10px'}"
+                    ></p-avatar>
+                    <span class="text-xs text-gray-700 dark:text-gray-300 truncate">{{ getName(task.assignedTo) }}</span>
+                  </div>
                 </div>
-              </td>
-              <td class="text-center">
-                <p-select
-                  [ngModel]="task.status"
-                  (ngModelChange)="onStatusChange(task, $event)"
-                  [options]="statusOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  styleClass="text-sm w-auto"
-                  [appendTo]="'body'"
-                >
-                  <ng-template let-option pTemplate="item">
-                    <span 
-                      [class]="getStatusClass(option.value)"
-                      class="text-sm font-medium py-1 px-2 rounded"
-                    >
-                      {{ option.label }}
-                    </span>
-                  </ng-template>
-                  <ng-template let-option pTemplate="selectedItem">
-                    <p-tag 
-                      [value]="option.label" 
-                      [severity]="getStatusSeverity(option.value)"
-                      [rounded]="true"
-                      styleClass="text-xs"
-                    ></p-tag>
-                  </ng-template>
-                </p-select>
-              </td>
-              <td class="text-center">
-                <div class="flex items-center justify-center gap-1">
-                  <button 
-                    pButton 
-                    icon="pi pi-eye" 
-                    class="p-button-rounded p-button-text p-button-secondary w-8 h-8 flex align-items-center justify-content-center" 
-                    (click)="viewTaskDetails(task)"
-                    pTooltip="Ver detalles"
-                    tooltipPosition="left"
-                  ></button>
-                  <button 
-                    pButton 
-                    icon="pi pi-pencil" 
-                    class="p-button-rounded p-button-text p-button-info w-8 h-8 flex align-items-center justify-content-center" 
-                    (click)="editTaskDetails(task)"
-                    pTooltip="Editar"
-                    tooltipPosition="left"
-                  ></button>
-                  <button 
-                    pButton 
-                    icon="pi pi-trash" 
-                    class="p-button-rounded p-button-text p-button-danger w-8 h-8 flex align-items-center justify-content-center" 
-                    (click)="confirmDelete(task, $event)"
-                    pTooltip="Eliminar"
-                    tooltipPosition="left"
-                  ></button>
+
+                <!-- Fecha Vencimiento -->
+                <div class="flex flex-col gap-1">
+                  <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 tracking-wider">Vencimiento</span>
+                  <div class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <i class="pi pi-calendar text-[10px]"></i>
+                    <span>{{ task.dueDate | date:'dd MMM, yyyy' }}</span>
+                  </div>
                 </div>
-              </td>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="7" class="text-center py-8 text-gray-500 dark:text-gray-400">
-                <i class="pi pi-inbox text-4xl mb-4 block text-gray-300 dark:text-gray-600"></i>
-                No hay actividades registradas en este tablero.
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
+
+                <!-- Asignado por -->
+                <div class="flex flex-col gap-1">
+                  <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 tracking-wider">Asignado por</span>
+                  <div class="flex items-center gap-2">
+                    <p-avatar 
+                      [image]="getAvatar(task.createdBy)" 
+                      [label]="getInitialsName(task.createdBy)" 
+                      shape="circle" 
+                      [style]="{'background-color': '#F3F4F6', 'color': '#374151', 'width': '20px', 'height': '20px', 'font-size': '10px'}"
+                    ></p-avatar>
+                    <span class="text-xs text-gray-700 dark:text-gray-300 truncate">{{ getName(task.createdBy) }}</span>
+                  </div>
+                </div>
+
+                <!-- Cambio de Estado Rápido -->
+                <div class="flex flex-col gap-1">
+                  <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 tracking-wider">Cambiar Estado</span>
+                  <p-select
+                    [ngModel]="task.status"
+                    (ngModelChange)="onStatusChange(task, $event)"
+                    [options]="statusOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    styleClass="text-[10px] w-full h-7 !border-gray-100 !bg-gray-50/50"
+                    [appendTo]="'body'"
+                  >
+                  </p-select>
+                </div>
+              </div>
+
+              <!-- Acciones Mobile -->
+              <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-50 dark:border-gray-700/50">
+                <button 
+                  pButton 
+                  icon="pi pi-eye" 
+                  label="Ver"
+                  class="p-button-sm p-button-outlined p-button-secondary !text-xs !py-1 !px-3" 
+                  (click)="viewTaskDetails(task)"
+                ></button>
+                <button 
+                  pButton 
+                  icon="pi pi-pencil" 
+                  label="Editar"
+                  class="p-button-sm p-button-outlined p-button-info !text-xs !py-1 !px-3" 
+                  (click)="editTaskDetails(task)"
+                ></button>
+                <button 
+                  pButton 
+                  icon="pi pi-trash" 
+                  class="p-button-sm p-button-outlined p-button-danger !text-xs !w-8 !h-8 !p-0" 
+                  (click)="confirmDelete(task, $event)"
+                ></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State Mobile -->
+          <div *ngIf="tasks().length === 0" class="text-center py-12 px-4 text-gray-400 dark:text-gray-500">
+            <i class="pi pi-inbox text-4xl mb-3 opacity-20 block"></i>
+            <p class="text-sm">No hay actividades registradas</p>
+          </div>
+        </div>
       </div>
 
       <!-- Confirm Dialog -->
@@ -309,29 +437,48 @@ export class AgendaActivityComponent {
   @Input('members') set setMembers(value: User[]) { this.members.set(value); }
   @Input('currentUser') set setCurrentUser(value: User | null) { this.currentUser.set(value); }
 
+  @Input() areas: Area[] = [];
+  @Input() set preselectedAreaId(id: string | undefined) {
+    if (id !== this.selectedArea?._id) {
+      const foundArea = this.areas.find(a => a._id === id);
+      this.selectedArea = foundArea || null;
+      this.onAreaChange();
+    }
+  }
+
   // Outputs
-  @Output() taskCreated = new EventEmitter<{title: string, assignedTo: string, dueDate?: Date}>();
+  @Output() taskCreated = new EventEmitter<{ title: string, assignedTo: string, dueDate?: Date, areaId?: string }>();
   @Output() taskUpdated = new EventEmitter<Task>();
   @Output() taskDeleted = new EventEmitter<Task>();
   @Output() viewTask = new EventEmitter<Task>();
-  @Output() statusChanged = new EventEmitter<{task: Task, newStatus: string}>();
+  @Output() statusChanged = new EventEmitter<{ task: Task, newStatus: string }>();
 
   // Use confirmation service
   private confirmationService = inject(ConfirmationService);
   private messageService = inject(MessageService);
+  private areasService = inject(AreasApiService);
 
   // Form State
   newTaskTitle = '';
   selectedAssignee: User | null = null;
   selectedDueDate: Date | null = null;
+  selectedArea: Area | null = null;
+  areaUsers = signal<User[]>([]);
   today = new Date();
-  
+
   // Status options
   statusOptions = [
     { label: 'Pendiente', value: 'Pendiente' },
     { label: 'En curso', value: 'En curso' },
     { label: 'Terminada', value: 'Terminada' }
   ];
+
+  public currentAssignees = computed(() => {
+    if (this.selectedArea) {
+      return this.areaUsers();
+    }
+    return this.members();
+  });
 
   // Helper Methods
   getInitials(name?: string): string {
@@ -340,8 +487,8 @@ export class AgendaActivityComponent {
   }
 
   getInitialsName(user: any): string {
-     const name = this.getName(user);
-     return this.getInitials(name);
+    const name = this.getName(user);
+    return this.getInitials(name);
   }
 
   getName(user: any): string {
@@ -365,13 +512,13 @@ export class AgendaActivityComponent {
 
   getStatusClass(status: string): string {
     switch (status) {
-      case 'Pendiente': 
+      case 'Pendiente':
         return 'text-amber-700 bg-amber-50 hover:bg-amber-100';
-      case 'En curso': 
+      case 'En curso':
         return 'text-blue-700 bg-blue-50 hover:bg-blue-100';
-      case 'Terminada': 
+      case 'Terminada':
         return 'text-green-700 bg-green-50 hover:bg-green-100';
-      default: 
+      default:
         return 'text-gray-700 bg-gray-50 hover:bg-gray-100';
     }
   }
@@ -382,13 +529,39 @@ export class AgendaActivityComponent {
     this.taskCreated.emit({
       title: this.newTaskTitle,
       assignedTo: this.selectedAssignee._id,
-      dueDate: this.selectedDueDate || undefined
+      dueDate: this.selectedDueDate || undefined,
+      areaId: this.selectedArea?._id
     });
 
     // Reset Form
     this.newTaskTitle = '';
     this.selectedAssignee = null;
     this.selectedDueDate = null;
+    // Don't reset selectedArea so user can quickly add more tasks to same area if desired
+    // Or maybe reset if that's preferred. Let's keep it for now.
+  }
+
+  onAreaChange() {
+    this.selectedAssignee = null; // Reset assignee when area changes
+    if (this.selectedArea && this.selectedArea._id) {
+      this.areasService.getAssignedUsers(this.selectedArea._id).subscribe({
+        next: (users) => {
+          // users might be raw objects, ensure they have _id, name, etc.
+          // Map potential raw response to User objects
+          const safeUsers = users.map(u => ({
+            ...u,
+            _id: u._id || u.id,
+            name: u.name || u.email || 'Usuario',
+          } as User));
+          this.areaUsers.set(safeUsers);
+        },
+        error: () => {
+          this.areaUsers.set([]);
+        }
+      });
+    } else {
+      this.areaUsers.set([]);
+    }
   }
 
   onStatusChange(task: Task, newStatus: string) {

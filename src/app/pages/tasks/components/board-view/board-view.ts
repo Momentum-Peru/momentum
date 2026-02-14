@@ -5,6 +5,7 @@ import {
   EventEmitter,
   ChangeDetectionStrategy,
   signal,
+  OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -19,6 +20,7 @@ import { DialogModule } from 'primeng/dialog';
 import { AgendaActivityComponent } from '../agenda-activity/agenda-activity';
 import { User } from '../../../../shared/services/users-api.service';
 import { Board } from '../../../../shared/interfaces/board.interface';
+import { Area } from '../../../../shared/interfaces/area.interface'; // Added
 import {
   Task,
   DragDropEvent,
@@ -43,12 +45,12 @@ import {
     DatePickerModule,
     MultiSelectModule,
     DialogModule,
-    AgendaActivityComponent
+    AgendaActivityComponent,
   ],
   templateUrl: './board-view.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BoardViewComponent {
+export class BoardViewComponent implements OnInit {
   @Input({ required: true }) board!: Board;
   @Input() isOwner = false;
   @Input() currentUser: User | null = null;
@@ -64,12 +66,12 @@ export class BoardViewComponent {
     completed: number;
     overdue: number;
   } = {
-    total: 0,
-    pending: 0,
-    inProgress: 0,
-    completed: 0,
-    overdue: 0,
-  };
+      total: 0,
+      pending: 0,
+      inProgress: 0,
+      completed: 0,
+      overdue: 0,
+    };
   @Input() loading = false;
 
   @Output() back = new EventEmitter<void>();
@@ -81,7 +83,12 @@ export class BoardViewComponent {
   @Output() deleteTask = new EventEmitter<Task>();
   @Output() viewTask = new EventEmitter<Task>();
   @Output() createTask = new EventEmitter<void>();
-  @Output() quickCreateTask = new EventEmitter<{title: string, assignedTo: string, dueDate?: Date}>();
+  @Output() quickCreateTask = new EventEmitter<{
+    title: string;
+    assignedTo: string;
+    dueDate?: Date;
+    areaId?: string;
+  }>();
   @Output() filtersChanged = new EventEmitter<TasksSearchParams>();
 
   // Modo de vista
@@ -90,63 +97,73 @@ export class BoardViewComponent {
 
   // All Tasks Computed for Agenda View
   public get allTasks(): Task[] {
-      return [
-        ...this.tasksByStatus.pending,
-        ...this.tasksByStatus.inProgress,
-        ...this.tasksByStatus.completed
-      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return [
+      ...this.tasksByStatus.pending,
+      ...this.tasksByStatus.inProgress,
+      ...this.tasksByStatus.completed,
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   // Board Users Computed for Agenda View
   public get boardUsers(): User[] {
+    // Si hay usuarios disponibles desde el padre, usarlos (para "Agenda")
+    if (this.availableUsersObjects && this.availableUsersObjects.length > 0) {
+      return this.availableUsersObjects;
+    }
+
+    // Fallback: extraer del board (para boards normales)
     const owner = this.board.owner;
     const members = this.board.members || [];
     const users = owner ? [owner, ...members] : [...members];
-    
+
     // Filter duplicates and map to User
     const uniqueMap = new Map();
-    
+
     users.forEach((u: any) => {
-        if (!u) return;
+      if (!u) return;
 
-        // Determine ID
-        let userId: string | undefined;
-        let userData: any = u;
+      // Determine ID
+      let userId: string | undefined;
+      let userData: any = u;
 
-        if (typeof u === 'string') {
-            userId = u;
-            // If it's just a string ID, we can't really get name/email unless we look it up
-            // But we'll create a placeholder
-            userData = { _id: u, id: u };
-        } else if (typeof u === 'object') {
-            userId = u._id || u.id;
-        }
+      if (typeof u === 'string') {
+        userId = u;
+        // If it's just a string ID, we can't really get name/email unless we look it up
+        // But we'll create a placeholder
+        userData = { _id: u, id: u };
+      } else if (typeof u === 'object') {
+        userId = u._id || u.id;
+      }
 
-        if (userId) {
-             uniqueMap.set(userId, {
-                _id: userId,
-                id: userId,
-                name: userData.name || userData.email || 'Sin nombre',
-                email: userData.email || '',
-                role: userData.role || 'user',
-                profilePicture: userData.profilePicture
-            } as unknown as User);
-        }
+      if (userId) {
+        uniqueMap.set(userId, {
+          _id: userId,
+          id: userId,
+          name: userData.name || userData.email || 'Sin nombre',
+          email: userData.email || '',
+          role: userData.role || 'user',
+          profilePicture: userData.profilePicture,
+        } as unknown as User);
+      }
     });
-    
+
     return Array.from(uniqueMap.values());
   }
 
+
+
   // Filtros
-  public readonly showFilters = signal<boolean>(false);
+  public readonly showFilters = signal<boolean>(true);
   public readonly filterAssignedTo = signal<string | undefined>(undefined);
-  public readonly filterDateFrom = signal<Date | undefined>(undefined);
-  public readonly filterDateTo = signal<Date | undefined>(undefined);
+  public readonly filterDate = signal<Date | undefined>(new Date());
   public readonly filterTags = signal<string[]>([]);
+  public readonly filterArea = signal<string | undefined>(undefined); // Added filter
 
   // Opciones para filtros
   @Input() availableUsers: { label: string; value: string }[] = [];
   @Input() availableTags: string[] = [];
+  @Input() availableAreas: Area[] = []; // Added input
+  @Input() availableUsersObjects: User[] = []; // Added: User objects for agenda
   @Input() currentUserId = '';
   @Output() removeMember = new EventEmitter<{ board: Board; memberId: string }>();
   @Output() leaveBoard = new EventEmitter<Board>();
@@ -158,6 +175,22 @@ export class BoardViewComponent {
     return this.availableTags.map((tag) => ({ label: tag, value: tag }));
   }
 
+  /**
+   * Opciones de áreas para el select
+   */
+  public get areaOptions(): { label: string; value: string }[] {
+    return this.availableAreas
+      .map((area) => ({
+        label: area.nombre || 'Sin nombre',
+        value: area._id || '',
+      }))
+      .filter((opt) => opt.value !== '');
+  }
+
+  ngOnInit(): void {
+    // Aplicar filtros al cargar para que, con fechas por defecto (hoy), se listen las tareas del día
+    this.applyFilters();
+  }
 
   /**
    * Cambia el modo de vista
@@ -200,23 +233,20 @@ export class BoardViewComponent {
     }
 
     // Normalizar y agregar filtros de fecha
-    const dateFrom = this.filterDateFrom();
-    const dateTo = this.filterDateTo();
+    const selectedDate = this.filterDate();
 
-    if (dateFrom !== undefined && dateFrom !== null) {
-      const dateFromObj = dateFrom instanceof Date ? dateFrom : new Date(dateFrom);
-      // Solo agregar si es una fecha válida
-      if (!isNaN(dateFromObj.getTime())) {
-        filters.dueDateFrom = dateFromObj.toISOString();
-      }
-    }
+    if (selectedDate !== undefined && selectedDate !== null) {
+      const dateObj = selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
+      if (!isNaN(dateObj.getTime())) {
+        // Inicio del día (00:00:00)
+        const dateFrom = new Date(dateObj);
+        dateFrom.setHours(0, 0, 0, 0);
+        filters.dueDateFrom = dateFrom.toISOString();
 
-    if (dateTo !== undefined && dateTo !== null) {
-      const dateToObj = dateTo instanceof Date ? dateTo : new Date(dateTo);
-      // Solo agregar si es una fecha válida
-      if (!isNaN(dateToObj.getTime())) {
-        // Usar la fecha y hora seleccionada por el usuario
-        filters.dueDateTo = dateToObj.toISOString();
+        // Fin del día (23:59:59)
+        const dateTo = new Date(dateObj);
+        dateTo.setHours(23, 59, 59, 999);
+        filters.dueDateTo = dateTo.toISOString();
       }
     }
 
@@ -226,6 +256,12 @@ export class BoardViewComponent {
       filters.tags = tags;
     }
 
+    // Normalizar y agregar filtro de área
+    const areaId = this.filterArea();
+    if (areaId) {
+      filters.areaId = areaId;
+    }
+
     this.filtersChanged.emit(filters);
   }
 
@@ -233,9 +269,9 @@ export class BoardViewComponent {
    * Limpia los filtros
    */
   public clearFilters(): void {
+    this.filterDate.set(new Date());
+    this.filterArea.set(undefined);
     this.filterAssignedTo.set(undefined);
-    this.filterDateFrom.set(undefined);
-    this.filterDateTo.set(undefined);
     this.filterTags.set([]);
     this.applyFilters();
   }
@@ -244,7 +280,7 @@ export class BoardViewComponent {
    * Normaliza el valor de asignado a cuando cambia
    */
   public onAssignedToChange(
-    value: string | { value: string; label: string } | null | undefined
+    value: string | { value: string; label: string } | null | undefined,
   ): void {
     if (value === null || value === undefined || value === '') {
       this.filterAssignedTo.set(undefined);
@@ -254,7 +290,7 @@ export class BoardViewComponent {
       this.filterAssignedTo.set(
         extractedValue === null || extractedValue === undefined || extractedValue === ''
           ? undefined
-          : extractedValue
+          : extractedValue,
       );
     } else if (typeof value === 'string' && value.trim() !== '') {
       this.filterAssignedTo.set(value);
@@ -266,54 +302,25 @@ export class BoardViewComponent {
   }
 
   /**
-   * Normaliza el valor de fecha desde cuando cambia
+   * Normaliza el valor de fecha cuando cambia
    */
-  public onDateFromChange(value: Date | null | undefined | string): void {
-    // Manejar todos los casos: null, undefined, string vacío, o Date inválido
+  public onDateChange(value: Date | null | undefined | string): void {
     if (
       value === null ||
       value === undefined ||
       value === '' ||
       (typeof value === 'string' && value.trim() === '')
     ) {
-      this.filterDateFrom.set(undefined);
+      this.filterDate.set(undefined);
     } else if (value instanceof Date) {
-      // Solo establecer si es una fecha válida
       if (!isNaN(value.getTime())) {
-        this.filterDateFrom.set(value);
+        this.filterDate.set(value);
       } else {
-        this.filterDateFrom.set(undefined);
+        this.filterDate.set(undefined);
       }
     } else {
-      this.filterDateFrom.set(undefined);
+      this.filterDate.set(undefined);
     }
-    // Los signals son síncronos, así que podemos llamar applyFilters directamente
-    this.applyFilters();
-  }
-
-  /**
-   * Normaliza el valor de fecha hasta cuando cambia
-   */
-  public onDateToChange(value: Date | null | undefined | string): void {
-    // Manejar todos los casos: null, undefined, string vacío, o Date inválido
-    if (
-      value === null ||
-      value === undefined ||
-      value === '' ||
-      (typeof value === 'string' && value.trim() === '')
-    ) {
-      this.filterDateTo.set(undefined);
-    } else if (value instanceof Date) {
-      // Solo establecer si es una fecha válida
-      if (!isNaN(value.getTime())) {
-        this.filterDateTo.set(value);
-      } else {
-        this.filterDateTo.set(undefined);
-      }
-    } else {
-      this.filterDateTo.set(undefined);
-    }
-    // Los signals son síncronos, así que podemos llamar applyFilters directamente
     this.applyFilters();
   }
 
@@ -334,14 +341,50 @@ export class BoardViewComponent {
   }
 
   /**
+   * Normaliza el valor de área cuando cambia
+   */
+  public onAreaChange(value: string | { value: string; label: string } | null | undefined): void {
+    if (value === null || value === undefined || value === '') {
+      this.filterArea.set(undefined);
+    } else if (typeof value === 'object' && 'value' in value) {
+      const extractedValue = value.value;
+      this.filterArea.set(
+        extractedValue === null || extractedValue === undefined || extractedValue === ''
+          ? undefined
+          : extractedValue,
+      );
+    } else if (typeof value === 'string' && value.trim() !== '') {
+      this.filterArea.set(value);
+    } else {
+      this.filterArea.set(undefined);
+    }
+    this.applyFilters();
+  }
+
+  /**
    * Verifica si hay filtros activos
    */
   public hasActiveFilters(): boolean {
-    return !!(
-      this.filterAssignedTo() ||
-      this.filterDateFrom() ||
-      this.filterDateTo() ||
-      this.filterTags().length > 0
+    const hasDate = !!this.filterDate();
+    const hasArea = !!this.filterArea();
+    const hasAssignedTo = !!this.filterAssignedTo();
+    const hasTags = this.filterTags().length > 0;
+
+    const isDifferentDate = hasDate && !this.isToday(this.filterDate());
+
+    return hasArea || hasAssignedTo || hasTags || isDifferentDate;
+  }
+
+  /**
+   * Verifica si una fecha es hoy
+   */
+  private isToday(date: Date | undefined): boolean {
+    if (!date) return false;
+    const today = new Date();
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
     );
   }
 
@@ -400,12 +443,12 @@ export class BoardViewComponent {
     this.deleteTask.emit(task);
   }
 
-  onStatusChanged(event: {task: Task, newStatus: string}): void {
+  onStatusChanged(event: { task: Task; newStatus: string }): void {
     // Emitir evento de cambio de estado usando el formato DragDropEvent
     this.taskStatusChanged.emit({
       taskId: event.task._id,
       newStatus: event.newStatus as any,
-      fromStatus: event.task.status
+      fromStatus: event.task.status,
     });
   }
 

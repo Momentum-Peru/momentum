@@ -39,7 +39,8 @@ export const tenantInterceptor: HttpInterceptorFn = (req, next) => {
     const isBoardsOrTasksOrLogsRoute = req.url.includes('/boards') || req.url.includes('/tasks') || req.url.includes('/logs');
     
     // Si es una ruta de boards, tasks o logs, no enviar el header para que gerencia vea todos los datos
-    if (isBoardsOrTasksOrLogsRoute) {
+    // PERO solo para consultas (GET). Para modificaciones (POST/PUT/DELETE) necesitamos el contexto del tenant.
+    if (isBoardsOrTasksOrLogsRoute && req.method === 'GET') {
       return next(req);
     }
     

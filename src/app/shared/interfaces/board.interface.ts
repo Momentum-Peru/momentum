@@ -35,6 +35,7 @@ export interface Board {
   members?: BoardMember[] | null;
   invitations?: BoardInvitation[] | null;
   areaId?: string | { _id: string; nombre: string }; // Puede venir populado o como string
+  isArchived?: boolean;
   createdAt: Date | string;
   updatedAt: Date | string;
 }

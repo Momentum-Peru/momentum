@@ -12,6 +12,9 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
+
+// PrimeNG Imports
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -22,7 +25,10 @@ import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { SplitButtonModule } from 'primeng/splitbutton';
+import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
+
+// Services
 import { TimeTrackingApiService } from '../../shared/services/time-tracking-api.service';
 import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { FaceRecognitionApiService } from '../../shared/services/face-recognition-api.service';
@@ -30,6 +36,8 @@ import { GeocodingService } from '../../shared/services/geocoding.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { AuthService } from '../login/services/auth.service';
 import { TenantService } from '../../core/services/tenant.service';
+
+// Interfaces & Models
 import {
   TimeTracking,
   TimeTrackingType,
@@ -50,6 +58,7 @@ import {
   TimeTrackingReportUser,
   TimeTrackingReportMark,
 } from '../../shared/services/time-tracking-pdf.service';
+import { TimeTrackingExcelService } from '../../shared/services/time-tracking-excel.service';
 import JSZip from 'jszip';
 
 /** Cargos en duro por nombre completo (Nombre Apellido) normalizado a minúsculas. */
@@ -68,10 +77,6 @@ const CARGO_POR_NOMBRE: Record<string, string> = {
   'sergio nolasco estela': 'GERENTE GENERAL',
 };
 
-/**
- * Componente de Marcación de Hora
- * Principio de Responsabilidad Única: Gestiona la UI y estado de los registros de tiempo
- */
 @Component({
   selector: 'app-time-tracking',
   standalone: true,
@@ -88,6 +93,7 @@ const CARGO_POR_NOMBRE: Record<string, string> = {
     TooltipModule,
     ToastModule,
     ConfirmDialogModule,
+    SplitButtonModule,
   ],
   templateUrl: './time-tracking.html',
   styleUrl: './time-tracking.scss',
@@ -95,6 +101,9 @@ const CARGO_POR_NOMBRE: Record<string, string> = {
   providers: [MessageService, ConfirmationService],
 })
 export class TimeTrackingPage implements OnInit {
+  // ...
+  downloadOptions: MenuItem[] = [];
+
   private readonly timeTrackingApi = inject(TimeTrackingApiService);
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly faceRecognitionApi = inject(FaceRecognitionApiService);
@@ -106,6 +115,8 @@ export class TimeTrackingPage implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly timeTrackingPdfService = inject(TimeTrackingPdfService);
+  private readonly timeTrackingExcelService = inject(TimeTrackingExcelService);
+  protected readonly router = inject(Router);
 
   items = signal<TimeTracking[]>([]);
   projects = signal<ProjectOption[]>([]);
@@ -122,8 +133,6 @@ export class TimeTrackingPage implements OnInit {
   editing = signal<TimeTracking | null>(null);
   viewing = signal<TimeTracking | null>(null);
   private expandedRowKeys = signal<Set<string>>(new Set());
-  /** Usuarios con detalle expandido (gerencia) */
-  expandedUserDetail = signal<Set<string>>(new Set());
   /** Descargando PDFs por usuario (evita múltiples clics) */
   downloadingAllPdfs = signal(false);
 
@@ -348,8 +357,8 @@ export class TimeTrackingPage implements OnInit {
       asistencias: number;
       faltas: number;
       tardanzas: number;
-      items: TimeTracking[];
-      itemsByDay: { date: string; items: TimeTracking[] }[];
+      // items: TimeTracking[]; // Removed raw items if not needed, but keeping for now if referenced elsewhere, actually removed from push above so remove here
+      dailyGroups: { date: string; ingresos: TimeTracking[]; salidas: TimeTracking[] }[];
     }[] = [];
     byUser.forEach((row, userId) => {
       const items = row.items.sort(
@@ -360,6 +369,8 @@ export class TimeTrackingPage implements OnInit {
       const tardanzas = items.filter(
         (item) => item.type === 'INGRESO' && this.isTardanza(item.date),
       ).length;
+      const dailyGroups: { date: string; ingresos: TimeTracking[]; salidas: TimeTracking[] }[] = [];
+
       const dayMap = new Map<string, TimeTracking[]>();
       items.forEach((item) => {
         const key = item.date ? item.date.slice(0, 10) : '';
@@ -367,12 +378,21 @@ export class TimeTrackingPage implements OnInit {
         if (!dayMap.has(key)) dayMap.set(key, []);
         dayMap.get(key)!.push(item);
       });
-      dayMap.forEach((arr) =>
-        arr.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-      );
-      const itemsByDay = Array.from(dayMap.entries())
-        .sort((a, b) => b[0].localeCompare(a[0]))
-        .map(([date, dayItems]) => ({ date, items: dayItems }));
+
+      // Ordenar días descendente (más reciente primero)
+      const sortedDays = Array.from(dayMap.keys()).sort((a, b) => b.localeCompare(a));
+
+      sortedDays.forEach((date) => {
+        const dayItems = dayMap.get(date)!;
+        // Ordenar items por hora ascendente dentro del día
+        dayItems.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        const ingresos = dayItems.filter(i => i.type === 'INGRESO');
+        const salidas = dayItems.filter(i => i.type === 'SALIDA');
+
+        dailyGroups.push({ date, ingresos, salidas });
+      });
+
       const cargo = CARGO_POR_NOMBRE[this.normalizeName(row.userName)] ?? '';
       result.push({
         userId,
@@ -382,8 +402,7 @@ export class TimeTrackingPage implements OnInit {
         asistencias,
         faltas,
         tardanzas,
-        items,
-        itemsByDay,
+        dailyGroups, // New grouped structure
       });
     });
     result.sort((a, b) => a.userName.localeCompare(b.userName));
@@ -392,11 +411,46 @@ export class TimeTrackingPage implements OnInit {
 
   ngOnInit() {
     this.setDefaultDateRange();
+    this.initializeDownloadOptions();
     this.load();
     this.loadProjects();
     if (this.canViewAllUsers() || this.canAddForOthers()) {
       this.loadUsers();
     }
+  }
+
+  private initializeDownloadOptions() {
+    this.downloadOptions = [
+      {
+        label: 'Descargar PDF (Consolidado)',
+        icon: 'pi pi-file-pdf',
+        command: () => this.downloadPdfReport(),
+      },
+      {
+        label: 'Descargar ZIP (PDFs Individuales)',
+        icon: 'pi pi-file-archive',
+        visible: this.canViewAllUsers(),
+        command: () => this.downloadAllPdfsByUser(),
+      },
+      {
+        label: 'Descargar Excel (.xlsx)',
+        icon: 'pi pi-file-excel',
+        command: () => this.downloadExcelReport(),
+      },
+    ];
+  }
+
+  async downloadExcelReport() {
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Excel',
+      detail: 'Generando archivo Excel...',
+    });
+    this.timeTrackingExcelService.exportToExcel(
+      this.summaryByUser(),
+      this.startDate(),
+      this.endDate(),
+    );
   }
 
   private setDefaultDateRange() {
@@ -608,16 +662,7 @@ export class TimeTrackingPage implements OnInit {
     return '-';
   }
 
-  isUserDetailExpanded(userId: string): boolean {
-    return this.expandedUserDetail().has(userId);
-  }
 
-  toggleUserDetail(userId: string): void {
-    const set = new Set(this.expandedUserDetail());
-    if (set.has(userId)) set.delete(userId);
-    else set.add(userId);
-    this.expandedUserDetail.set(set);
-  }
 
   onFilterUserChange(value: string | null): void {
     this.filterUserId.set(value ?? null);
@@ -659,18 +704,23 @@ export class TimeTrackingPage implements OnInit {
       asistencias: u.asistencias,
       tardanzas: u.tardanzas,
       faltas: u.faltas,
-      itemsByDay: u.itemsByDay.map((day) => ({
-        date: day.date,
-        items: day.items.map(
-          (item): TimeTrackingReportMark => ({
-            fecha: day.date,
-            hora: this.formatTime(item.date),
-            tipo: item.type ?? '-',
-            tardanza: item.type === 'INGRESO' && this.isTardanza(item.date),
-            ubicacion: this.formatLocation(item) || '-',
-          }),
-        ),
-      })),
+      itemsByDay: u.dailyGroups.map((day) => {
+        const sortedItems = [...day.ingresos, ...day.salidas].sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+        return {
+          date: day.date,
+          items: sortedItems.map(
+            (item): TimeTrackingReportMark => ({
+              fecha: day.date,
+              hora: this.formatTime(item.date),
+              tipo: item.type ?? '-',
+              tardanza: item.type === 'INGRESO' && this.isTardanza(item.date),
+              ubicacion: this.formatLocation(item) || '-',
+            }),
+          ),
+        };
+      }),
     }));
     const data: TimeTrackingReportData = {
       startDate: start,
@@ -716,18 +766,23 @@ export class TimeTrackingPage implements OnInit {
           asistencias: u.asistencias,
           tardanzas: u.tardanzas,
           faltas: u.faltas,
-          itemsByDay: u.itemsByDay.map((day) => ({
-            date: day.date,
-            items: day.items.map(
-              (item): TimeTrackingReportMark => ({
-                fecha: day.date,
-                hora: this.formatTime(item.date),
-                tipo: item.type ?? '-',
-                tardanza: item.type === 'INGRESO' && this.isTardanza(item.date),
-                ubicacion: this.formatLocation(item) || '-',
-              }),
-            ),
-          })),
+          itemsByDay: u.dailyGroups.map((day) => {
+            const sortedItems = [...day.ingresos, ...day.salidas].sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+            );
+            return {
+              date: day.date,
+              items: sortedItems.map(
+                (item): TimeTrackingReportMark => ({
+                  fecha: day.date,
+                  hora: this.formatTime(item.date),
+                  tipo: item.type ?? '-',
+                  tardanza: item.type === 'INGRESO' && this.isTardanza(item.date),
+                  ubicacion: this.formatLocation(item) || '-',
+                }),
+              ),
+            };
+          }),
         };
         const data: TimeTrackingReportData = {
           startDate: start,
@@ -1216,7 +1271,7 @@ export class TimeTrackingPage implements OnInit {
     try {
       const d = new Date(value);
       if (!isNaN(d.getTime())) this.addingMarkDate.set(d.toISOString());
-    } catch {}
+    } catch { }
   }
 
   saveAddMark() {
@@ -1834,8 +1889,8 @@ export class TimeTrackingPage implements OnInit {
           next: async (attendanceRecord: AttendanceRecord) => {
             const userId =
               typeof attendanceRecord.userId === 'object' &&
-              attendanceRecord.userId !== null &&
-              '_id' in attendanceRecord.userId
+                attendanceRecord.userId !== null &&
+                '_id' in attendanceRecord.userId
                 ? (attendanceRecord.userId as { _id: string })._id
                 : String(attendanceRecord.userId);
 
@@ -1862,10 +1917,17 @@ export class TimeTrackingPage implements OnInit {
 
             this.timeTrackingApi.create(timeTrackingPayload).subscribe({
               next: () => {
+                const userName =
+                  typeof attendanceRecord.userId === 'object' &&
+                    attendanceRecord.userId !== null &&
+                    'name' in attendanceRecord.userId
+                    ? (attendanceRecord.userId as { name: string }).name
+                    : 'Usuario';
+
                 this.messageService.add({
                   severity: 'success',
                   summary: 'Éxito',
-                  detail: `Asistencia marcada correctamente. Confianza: ${(
+                  detail: `Asistencia de ${userName} marcada correctamente. Confianza: ${(
                     (attendanceRecord.confidence || 0) * 100
                   ).toFixed(1)}%`,
                 });

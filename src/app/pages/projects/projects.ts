@@ -17,6 +17,11 @@ import { Project } from '../../shared/interfaces/project.interface';
 import { ClientOption } from '../../shared/services/clients-api.service';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../login/services/auth.service';
+import { TabsModule } from 'primeng/tabs';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { UsersApiService } from '../../shared/services/users-api.service';
+import { TimeTrackingApiService } from '../../shared/services/time-tracking-api.service';
+import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 
 @Component({
   selector: 'app-projects',
@@ -32,6 +37,8 @@ import { AuthService } from '../login/services/auth.service';
     DatePickerModule,
     TooltipModule,
     ToastModule,
+    TabsModule,
+    MultiSelectModule,
   ],
   templateUrl: './projects.html',
   styleUrl: './projects.scss',
@@ -43,6 +50,8 @@ export class ProjectsPage implements OnInit {
   private readonly menuService = inject(MenuService);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
+  private readonly usersApi = inject(UsersApiService);
+  private readonly timeTrackingApi = inject(TimeTrackingApiService);
 
   // Verificar si el usuario tiene permiso de edición para este módulo
   readonly canEdit = computed(() => this.menuService.canEdit('/projects'));
@@ -57,6 +66,45 @@ export class ProjectsPage implements OnInit {
   showDetailsDialog = signal(false);
   editing = signal<Project | null>(null);
   viewingProject = signal<Project | null>(null);
+  
+  // Project User Management
+  projectUsers = signal<any[]>([]);
+  availableUsers = signal<UserOption[]>([]);
+  showAssignDialog = signal(false);
+  showTeamDialog = signal(false);
+  selectedUserId = signal<string | null>(null);
+  assigningUser = signal(false);
+
+  // Computed signal for batch-eligible users
+  batchUserOptions = computed(() => {
+    return this.projectUsers()
+      .map(user => ({
+        label: user.name,
+        value: user._id
+      }));
+  });
+
+  // Batch Attendance
+  showBatchDialog = signal(false);
+  batchData = signal({
+    startDate: '',
+    endDate: '',
+    daysOfWeek: [] as number[],
+    entryTime: '08:00',
+    exitTime: '17:00',
+    userIds: [] as string[]
+  });
+  batchSubmitting = signal(false);
+  weekDays = [
+      { label: 'Domingo', value: 0 },
+      { label: 'Lunes', value: 1 },
+      { label: 'Martes', value: 2 },
+      { label: 'Miércoles', value: 3 },
+      { label: 'Jueves', value: 4 },
+      { label: 'Viernes', value: 5 },
+      { label: 'Sábado', value: 6 }
+  ];
+
   expandedRowIds = signal<Set<string>>(new Set());
   nextCode = signal<number | null>(null);
   selectedFiles = signal<File[]>([]);
@@ -267,6 +315,129 @@ export class ProjectsPage implements OnInit {
     this.viewingProject.set(project);
     this.showDetailsDialog.set(true);
   }
+
+  openTeamDialog(project: Project) {
+    this.viewingProject.set(project);
+    this.showTeamDialog.set(true);
+    if(project._id) {
+        this.loadProjectUsers(project._id);
+    }
+  }
+
+  loadProjectUsers(projectId: string) {
+    this.projectsApi.getProjectUsers(projectId).subscribe({
+        next: (users) => this.projectUsers.set(users),
+        error: (err) => console.error('Error loading users', err)
+    });
+  }
+
+  openAssignDialog() {
+    this.usersApi.listAll().subscribe({
+        next: (users) => {
+            // Filter out users who are already assigned to the project
+            const currentProjectUsers = this.projectUsers();
+            const available = users.filter(user => 
+                !currentProjectUsers.some(assigned => assigned._id === user._id)
+            );
+            
+            this.availableUsers.set(available);
+            this.selectedUserId.set(null);
+            this.showAssignDialog.set(true);
+        },
+        error: (err) => {
+            console.error('Error loading available users:', err);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar usuarios disponibles' });
+        }
+    });
+  }
+
+  assignUser() {
+    const projectId = this.viewingProject()?._id;
+    const userId = this.selectedUserId();
+    if (!projectId || !userId) return;
+
+    this.assigningUser.set(true);
+    this.projectsApi.assignUser(projectId, userId).subscribe({
+        next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Asignado', detail: 'Usuario asignado correctamente' });
+            this.loadProjectUsers(projectId);
+            this.showAssignDialog.set(false);
+            this.assigningUser.set(false);
+        },
+        error: (err) => {
+             console.error('Error assigning user:', err);
+             const errorMessage = err.error?.message || 'Error al asignar usuario';
+             this.messageService.add({ severity: 'error', summary: 'Error', detail: errorMessage });
+             this.assigningUser.set(false);
+        }
+    });
+  }
+
+  removeUserAssignment(userId: string) {
+      const projectId = this.viewingProject()?._id;
+      if (!projectId) return;
+      
+      this.projectsApi.removeUserAssignment(projectId, userId).subscribe({
+          next: () => {
+               this.messageService.add({ severity: 'success', summary: 'Eliminado', detail: 'Asignación eliminada' });
+               this.loadProjectUsers(projectId);
+          },
+          error: (err) => {
+              this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar asignación' });
+          }
+      });
+  }
+
+  updateBatchField(field: string, value: any) {
+    this.batchData.update((data) => ({ ...data, [field]: value }));
+  }
+
+  openBatchDialog() {
+      this.batchData.set({
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        daysOfWeek: [1, 2, 3, 4, 5],
+        entryTime: '08:00',
+        exitTime: '18:00',
+        userIds: []
+      });
+      // Pre-select all project users using the computed signal
+      const userIds = this.batchUserOptions().map(opt => opt.value);
+      this.batchData.update(d => ({ ...d, userIds: userIds }));
+      this.showBatchDialog.set(true);
+  }
+
+  submitBatch() {
+       const projectId = this.viewingProject()?._id;
+       if (!projectId) return;
+       
+       const data = this.batchData();
+       // Validate
+       if (!data.startDate || !data.endDate || data.userIds.length === 0) {
+           this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Complete los campos requeridos' });
+           return;
+       }
+
+       this.batchSubmitting.set(true);
+       this.timeTrackingApi.batchCreate({
+           ...data,
+           projectId
+       }).subscribe({
+           next: (res) => {
+               this.messageService.add({ 
+                   severity: 'success', 
+                   summary: 'Procesado', 
+                   detail: `Creados: ${res.created}, Omitidos: ${res.skipped}, Errores: ${res.errors}` 
+               });
+               this.showBatchDialog.set(false);
+           },
+           error: (err) => {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error en proceso masivo' });
+           },
+           complete: () => this.batchSubmitting.set(false)
+       });
+  }
+
 
   closeDetails() {
     this.showDetailsDialog.set(false);
