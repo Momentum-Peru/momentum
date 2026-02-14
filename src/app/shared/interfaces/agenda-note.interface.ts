@@ -1,5 +1,7 @@
 export type AgendaNoteType = 'text' | 'voice' | 'drawing';
 
+export type AgendaNoteStatus = 'pendiente' | 'en_proceso' | 'terminado';
+
 export interface AgendaNoteUser {
   _id: string;
   name: string;
@@ -23,6 +25,8 @@ export interface AgendaNote {
   assignedTo?: (AgendaNoteUser | string)[];
   /** Fecha y hora de vencimiento (ISO). */
   dueAt?: string | null;
+  /** Estado de la tarea: pendiente, en_proceso, terminado. */
+  status?: AgendaNoteStatus;
   sharedVia?: AgendaNoteSharedVia[];
   teamsMeetingId?: string | null;
   createdAt?: string;
@@ -33,6 +37,7 @@ export interface CreateAgendaNotePayload {
   type: AgendaNoteType;
   content?: string;
   tenantId?: string;
+  status?: AgendaNoteStatus;
 }
 
 export interface UpdateAgendaNotePayload {
@@ -40,6 +45,7 @@ export interface UpdateAgendaNotePayload {
   content?: string;
   /** Fecha y hora de vencimiento (ISO). null para quitar. */
   dueAt?: string | null;
+  status?: AgendaNoteStatus;
 }
 
 export interface AssignAgendaNotePayload {

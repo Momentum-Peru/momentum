@@ -15,6 +15,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { DatePickerModule } from 'primeng/datepicker';
 import { CheckboxModule } from 'primeng/checkbox';
+import { TagModule } from 'primeng/tag';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { AgendaApiService } from '../../shared/services/agenda-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
@@ -23,6 +24,7 @@ import { MenuService } from '../../shared/services/menu.service';
 import type {
   AgendaNote,
   AgendaNoteType,
+  AgendaNoteStatus,
   AgendaNoteUser,
 } from '../../shared/interfaces/agenda-note.interface';
 import type { UserOption } from '../../shared/interfaces/menu-permission.interface';
@@ -34,6 +36,12 @@ const NOTE_TYPE_OPTIONS: { label: string; value: AgendaNoteType; icon: string }[
   { label: 'Texto', value: 'text', icon: 'pi pi-pencil' },
   { label: 'Voz', value: 'voice', icon: 'pi pi-microphone' },
   { label: 'Dibujo', value: 'drawing', icon: 'pi pi-palette' },
+];
+
+const STATUS_OPTIONS: { label: string; value: AgendaNoteStatus }[] = [
+  { label: 'Pendiente', value: 'pendiente' },
+  { label: 'En proceso', value: 'en_proceso' },
+  { label: 'Terminado', value: 'terminado' },
 ];
 
 @Component({
@@ -56,6 +64,7 @@ const NOTE_TYPE_OPTIONS: { label: string; value: AgendaNoteType; icon: string }[
     TooltipModule,
     DatePickerModule,
     CheckboxModule,
+    TagModule,
   ],
   templateUrl: './agenda.html',
   styleUrl: './agenda.scss',
@@ -71,6 +80,35 @@ export class AgendaPage implements OnInit {
   private readonly router = inject(Router);
 
   readonly canEdit = computed(() => this.menuService.canEdit('/agenda'));
+
+  /** True si el usuario actual está en la lista de asignados de la nota. */
+  isAssignedToMe(note: AgendaNote): boolean {
+    const userId = this.authService.getCurrentUser()?.id;
+    if (!userId || !note.assignedTo?.length) return false;
+    return note.assignedTo.some((a) => {
+      const id = typeof a === 'string' ? a : (a as AgendaNoteUser)?._id;
+      return id === userId;
+    });
+  }
+
+  /** True si el usuario actual es el creador de la nota. */
+  isCreator(note: AgendaNote): boolean {
+    const userId = this.authService.getCurrentUser()?.id;
+    if (!userId) return false;
+    const creatorId =
+      typeof note.createdBy === 'string' ? note.createdBy : (note.createdBy as AgendaNoteUser)?._id;
+    return creatorId === userId;
+  }
+
+  /** True si el usuario puede editar la nota por completo (asignar, compartir, eliminar, editar contenido). Gerencia o creador. */
+  canEditFull(note: AgendaNote): boolean {
+    return this.canEdit() && (this.authService.isGerencia() || this.isCreator(note));
+  }
+
+  /** True si el usuario puede editar el estado de la nota (permiso completo o estar asignado). */
+  canEditStatus(note: AgendaNote): boolean {
+    return this.canEditFull(note) || this.isAssignedToMe(note);
+  }
 
   /** Indica si el navegador soporta la API nativa de compartir. */
   hasNativeShare(): boolean {
@@ -203,6 +241,7 @@ export class AgendaPage implements OnInit {
   detailEditContent = signal('');
   /** Fecha/hora de vencimiento en edición en el detalle. */
   detailEditDueAt = signal<Date | null>(null);
+  detailEditStatus = signal<AgendaNoteStatus>('pendiente');
   /** ID de la nota que se está editando (regrabar voz o reemplazar dibujo). */
   editingNoteId = signal<string | null>(null);
   /** URLs de audio actuales al regrabar (para eliminarlas al guardar). */
@@ -218,6 +257,7 @@ export class AgendaPage implements OnInit {
   private detailLastY = 0;
 
   readonly typeOptions = NOTE_TYPE_OPTIONS;
+  readonly statusOptions = STATUS_OPTIONS;
 
   @ViewChild('canvasEl') canvasRef?: ElementRef<HTMLCanvasElement>;
 
@@ -704,6 +744,29 @@ export class AgendaPage implements OnInit {
     this.openAssignModalForNote(note, userId);
   }
 
+  onStatusChange(note: AgendaNote, status: AgendaNoteStatus): void {
+    this.agendaApi.update(note._id, { status }).subscribe({
+      next: (updated) => {
+        this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
+        if (this.currentNote()?._id === updated._id) {
+          this.currentNote.set(updated);
+        }
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Estado',
+          detail: 'Estado actualizado',
+        });
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: (err?.error?.message as string) ?? 'No se pudo actualizar el estado',
+        });
+      },
+    });
+  }
+
   shareNoteFromNote(note: AgendaNote, channel: 'email' | 'whatsapp'): void {
     // Cargar la nota completa para asegurar contenido, transcripción e imagen (enlace)
     this.agendaApi.getById(note._id).subscribe({
@@ -1031,6 +1094,7 @@ export class AgendaPage implements OnInit {
     this.currentNote.set(note);
     this.detailEditContent.set(note.content ?? '');
     this.detailEditDueAt.set(note.dueAt ? new Date(note.dueAt) : null);
+    this.detailEditStatus.set(note.status ?? 'pendiente');
     this.detailEditMode.set(false);
     this.showDetailDialog.set(true);
   }
@@ -1162,6 +1226,40 @@ export class AgendaPage implements OnInit {
     });
   }
 
+  saveDetailStatus(note: AgendaNote): void {
+    const status = this.detailEditStatus();
+    this.agendaApi.update(note._id, { status }).subscribe({
+      next: (updated) => {
+        this.currentNote.set(updated);
+        this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Guardado',
+          detail: 'Estado actualizado',
+        });
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: err?.error?.message ?? 'No se pudo guardar',
+        });
+      },
+    });
+  }
+
+  getStatusLabel(status: AgendaNoteStatus | undefined): string {
+    if (!status) return 'Pendiente';
+    const opt = STATUS_OPTIONS.find((o) => o.value === status);
+    return opt?.label ?? status;
+  }
+
+  getStatusSeverity(status: AgendaNoteStatus | undefined): 'secondary' | 'info' | 'success' {
+    if (status === 'terminado') return 'success';
+    if (status === 'en_proceso') return 'info';
+    return 'secondary';
+  }
+
   startRerecordVoice(note: AgendaNote): void {
     this.editingNoteId.set(note._id);
     this.editingNoteVoiceUrls.set(note.voiceUrl ?? []);
@@ -1184,17 +1282,14 @@ export class AgendaPage implements OnInit {
     this.closingRerecordForConfirm = false;
   }
 
-  /** Guardar dibujo editado en detalle (subir nueva imagen y reemplazar). */
-  saveDetailDrawing(note: AgendaNote): void {
+  /** Sube el dibujo del canvas y reemplaza en la nota. Lanza si falla. */
+  private uploadDetailDrawing(note: AgendaNote): Promise<void> {
     const canvas = this.detailCanvasRef?.nativeElement;
-    if (!canvas) return;
+    if (!canvas) return Promise.resolve();
     const dataUrl = canvas.toDataURL('image/png');
-    this.saving.set(true);
-    this.dataUrlToBlob(dataUrl)
+    return this.dataUrlToBlob(dataUrl)
       .then((blob) => {
-        const file = new File([blob], `dibujo-${Date.now()}.png`, {
-          type: 'image/png',
-        });
+        const file = new File([blob], `dibujo-${Date.now()}.png`, { type: 'image/png' });
         const noteId = note._id;
         const oldUrls = note.drawingUrl ?? [];
         return firstValueFrom(
@@ -1214,21 +1309,48 @@ export class AgendaPage implements OnInit {
       .then((updated) => {
         this.currentNote.set(updated);
         this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
+      })
+      .then(() => undefined);
+  }
+
+  /** Guardar todo en modo edición del detalle: contenido, estado, vencimiento y dibujo (si aplica). */
+  saveDetailAll(note: AgendaNote): void {
+    this.saving.set(true);
+    const run = async () => {
+      try {
+        if (note.type === 'drawing') {
+          await this.uploadDetailDrawing(note);
+        }
+        const content = this.detailEditContent().trim();
+        const dueAt = this.detailEditDueAt();
+        const dueAtIso = dueAt ? dueAt.toISOString() : null;
+        const status = this.detailEditStatus();
+        const updated = await firstValueFrom(
+          this.agendaApi.update(note._id, {
+            content: content || undefined,
+            dueAt: dueAtIso,
+            status,
+          }),
+        );
+        this.currentNote.set(updated);
+        this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
         this.detailEditMode.set(false);
         this.messageService.add({
           severity: 'success',
           summary: 'Guardado',
-          detail: 'Dibujo actualizado',
+          detail: 'Cambios guardados correctamente',
         });
-      })
-      .catch(() => {
+      } catch (err: unknown) {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo guardar el dibujo',
+          detail: (err as { error?: { message?: string } })?.error?.message ?? 'No se pudo guardar',
         });
-      })
-      .finally(() => this.saving.set(false));
+      } finally {
+        this.saving.set(false);
+      }
+    };
+    run();
   }
 
   deleteNote(note: AgendaNote): void {

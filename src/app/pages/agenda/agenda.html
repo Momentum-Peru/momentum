@@ -133,6 +133,7 @@
             <th class="text-left w-12">#</th>
             <th class="text-left">Tipo</th>
             <th class="text-left">Contenido</th>
+            <th class="text-left hidden sm:table-cell">Estado</th>
             <th class="text-left hidden md:table-cell">Creado por</th>
             <th class="text-left hidden lg:table-cell">Asignados</th>
             <th class="text-right">Acciones</th>
@@ -165,11 +166,30 @@
                 {{ getContentSummary(note) }}
               </p>
             </td>
+            <td class="hidden sm:table-cell" (click)="$event.stopPropagation()">
+              @if (canEditStatus(note)) {
+                <p-select
+                  [options]="statusOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="note.status ?? 'pendiente'"
+                  (ngModelChange)="onStatusChange(note, $event)"
+                  styleClass="w-full min-w-[120px]"
+                  appendTo="body"
+                  placeholder="Estado"
+                ></p-select>
+              } @else {
+                <p-tag
+                  [value]="getStatusLabel(note.status)"
+                  [severity]="getStatusSeverity(note.status)"
+                ></p-tag>
+              }
+            </td>
             <td class="hidden md:table-cell text-sm text-gray-600 dark:text-gray-300">
               {{ getCreatorName(note) }}
             </td>
             <td class="hidden lg:table-cell" (click)="$event.stopPropagation()">
-              @if (canEdit()) {
+              @if (canEditFull(note)) {
                 <p-select
                   [options]="userOptions()"
                   optionLabel="name"
@@ -195,7 +215,7 @@
             </td>
             <td class="text-right whitespace-nowrap" (click)="$event.stopPropagation()">
               <div class="flex flex-wrap justify-end gap-2">
-                @if (canEdit()) {
+                @if (canEditFull(note) || isAssignedToMe(note)) {
                   @if (hasNativeShare()) {
                     <button
                       pButton
@@ -227,6 +247,8 @@
                       appendTo="body"
                     ></p-menu>
                   }
+                }
+                @if (canEditFull(note)) {
                   <button
                     pButton
                     icon="pi pi-trash"
@@ -506,7 +528,7 @@
         </div>
 
         @if (note.type === 'text') {
-          @if (canEdit() && detailEditMode()) {
+          @if (canEditFull(note) && detailEditMode()) {
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >Contenido</label
@@ -519,14 +541,6 @@
                 [ngModel]="detailEditContent()"
                 (ngModelChange)="detailEditContent.set($event)"
               ></textarea>
-              <button
-                pButton
-                type="button"
-                label="Guardar"
-                icon="pi pi-check"
-                class="mt-2"
-                (click)="saveDetailText(note)"
-              ></button>
             </div>
           } @else {
             @if (note.content) {
@@ -546,7 +560,7 @@
               }
             </div>
           }
-          @if (canEdit() && detailEditMode()) {
+          @if (canEditFull(note) && detailEditMode()) {
             <button
               pButton
               type="button"
@@ -559,7 +573,7 @@
         }
 
         @if (note.type === 'drawing') {
-          @if (canEdit() && detailEditMode()) {
+          @if (canEditFull(note) && detailEditMode()) {
             <div>
               <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Editar dibujo</p>
               <div
@@ -585,14 +599,6 @@
                   severity="secondary"
                   [outlined]="true"
                   (click)="clearDetailDrawing()"
-                ></button>
-                <button
-                  pButton
-                  type="button"
-                  label="Guardar dibujo"
-                  icon="pi pi-check"
-                  [loading]="saving()"
-                  (click)="saveDetailDrawing(note)"
                 ></button>
               </div>
             </div>
@@ -630,29 +636,39 @@
           </div>
         }
         <div>
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</p>
+          @if (canEditFull(note) && detailEditMode()) {
+            <p-select
+              [options]="statusOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="detailEditStatus()"
+              (ngModelChange)="detailEditStatus.set($event)"
+              styleClass="w-full min-w-[160px]"
+              appendTo="body"
+              placeholder="Estado"
+            ></p-select>
+          } @else {
+            <p-tag
+              [value]="getStatusLabel(note.status)"
+              [severity]="getStatusSeverity(note.status)"
+            ></p-tag>
+          }
+        </div>
+        <div>
           <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vencimiento</p>
-          @if (canEdit() && detailEditMode()) {
-            <div class="flex flex-wrap items-end gap-2">
-              <p-datepicker
-                [ngModel]="detailEditDueAt()"
-                (ngModelChange)="detailEditDueAt.set($event)"
-                [showTime]="true"
-                dateFormat="dd/mm/yy"
-                hourFormat="24"
-                [showIcon]="true"
-                [appendTo]="'body'"
-                styleClass="w-full min-w-[200px]"
-                placeholder="Fecha y hora de vencimiento"
-              ></p-datepicker>
-              <button
-                pButton
-                type="button"
-                label="Guardar"
-                icon="pi pi-check"
-                size="small"
-                (click)="saveDetailDueAt(note)"
-              ></button>
-            </div>
+          @if (canEditFull(note) && detailEditMode()) {
+            <p-datepicker
+              [ngModel]="detailEditDueAt()"
+              (ngModelChange)="detailEditDueAt.set($event)"
+              [showTime]="true"
+              dateFormat="dd/mm/yy"
+              hourFormat="24"
+              [showIcon]="true"
+              [appendTo]="'body'"
+              styleClass="w-full min-w-[200px]"
+              placeholder="Fecha y hora de vencimiento"
+            ></p-datepicker>
           } @else {
             @if (note.dueAt) {
               <p class="text-sm text-gray-600 dark:text-gray-400">{{ formatDueAt(note.dueAt) }}</p>
@@ -666,7 +682,7 @@
     <ng-template pTemplate="footer">
       @if (currentNote(); as note) {
         <button pButton type="button" label="Cerrar" (click)="showDetailDialog.set(false)"></button>
-        @if (canEdit()) {
+        @if (canEditFull(note)) {
           @if (detailEditMode()) {
             <button
               pButton
@@ -675,6 +691,14 @@
               icon="pi pi-times"
               [outlined]="true"
               (click)="exitDetailEditMode()"
+            ></button>
+            <button
+              pButton
+              type="button"
+              label="Guardar"
+              icon="pi pi-check"
+              [loading]="saving()"
+              (click)="saveDetailAll(note)"
             ></button>
           } @else {
             <button
@@ -686,7 +710,7 @@
             ></button>
           }
         }
-        @if (canEdit()) {
+        @if (canEditFull(note)) {
           <button
             pButton
             type="button"
