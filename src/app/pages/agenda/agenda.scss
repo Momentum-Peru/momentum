@@ -1,0 +1,10 @@
+// Estilos específicos de la página Agenda (Tailwind cubre la mayoría)
+.agenda-dialog {
+  .p-dialog-content {
+    overflow-y: auto;
+  }
+}
+
+canvas {
+  display: block;
+}

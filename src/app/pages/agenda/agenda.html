@@ -1,0 +1,414 @@
+<div class="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+        <i class="pi pi-book text-primary"></i>
+        Agenda
+      </h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        Crea notas en texto, voz o dibujo; asígnalas y compártelas.
+      </p>
+    </div>
+  </div>
+
+  <!-- Opciones de tipo (visibles directamente para crear nota) -->
+  @if (canEdit()) {
+    <div
+      class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 space-y-3"
+    >
+      <p class="text-gray-600 dark:text-gray-300 text-sm font-medium">
+        Elige cómo quieres crear la nota:
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3">
+        @for (opt of typeOptions; track opt.value) {
+          <button
+            pButton
+            type="button"
+            [label]="opt.label"
+            [icon]="opt.icon"
+            [outlined]="true"
+            severity="secondary"
+            class="flex-1"
+            (click)="selectTypeAndOpenDialog(opt.value)"
+          ></button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Lista de notas -->
+  <p-card class="shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
+    @if (loading()) {
+      <div class="flex justify-center py-12">
+        <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+      </div>
+    } @else if (filteredNotes().length === 0) {
+      <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+        <i class="pi pi-inbox text-5xl mb-4 block opacity-50"></i>
+        <p class="font-medium">No hay notas</p>
+        <p class="text-sm mt-1">Elige texto, voz o dibujo arriba para crear tu primera nota.</p>
+      </div>
+    } @else {
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">
+          Items ({{ filteredNotes().length }})
+        </span>
+      </div>
+      <p-table
+        [value]="filteredNotes()"
+        styleClass="p-datatable-sm p-datatable-striped"
+        [tableStyle]="{ 'min-width': '50rem' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th class="text-left w-12">#</th>
+            <th class="text-left">Tipo</th>
+            <th class="text-left">Contenido</th>
+            <th class="text-left hidden md:table-cell">Creado por</th>
+            <th class="text-left hidden lg:table-cell">Asignados</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-note let-rowIndex="rowIndex">
+          <tr
+            (click)="viewNote(note)"
+            class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+          >
+            <td class="font-medium text-gray-700 dark:text-gray-300">{{ rowIndex + 1 }}</td>
+            <td>
+              <span class="inline-flex items-center gap-2">
+                <i [class]="getTypeIcon(note.type) + ' text-primary'"></i>
+                <span class="text-sm font-medium">{{ getTypeLabel(note.type) }}</span>
+              </span>
+            </td>
+            <td>
+              <p class="text-gray-800 dark:text-white truncate max-w-[200px]">
+                {{ getContentSummary(note) }}
+              </p>
+            </td>
+            <td class="hidden md:table-cell text-sm text-gray-600 dark:text-gray-300">
+              {{ getCreatorName(note) }}
+            </td>
+            <td class="hidden lg:table-cell" (click)="$event.stopPropagation()">
+              @if (canEdit()) {
+                <p-select
+                  [options]="userOptions()"
+                  optionLabel="name"
+                  optionValue="_id"
+                  [ngModel]="getAssignedSingleId(note)"
+                  (ngModelChange)="onAssignChange(note, $event)"
+                  placeholder="Asignar..."
+                  [showClear]="true"
+                  [filter]="true"
+                  filterPlaceholder="Buscar..."
+                  styleClass="w-full min-w-[140px]"
+                  appendTo="body"
+                ></p-select>
+              } @else {
+                @if (note.assignedTo?.length) {
+                  <span class="text-sm text-gray-600 dark:text-gray-300">
+                    {{ getAssignedUserDisplay(note.assignedTo[0]) }}
+                  </span>
+                } @else {
+                  <span class="text-sm text-gray-400">—</span>
+                }
+              }
+            </td>
+            <td class="text-right whitespace-nowrap" (click)="$event.stopPropagation()">
+              <div class="flex flex-wrap justify-end gap-2">
+                @if (canEdit()) {
+                  <button
+                    pButton
+                    icon="pi pi-share-alt"
+                    [rounded]="true"
+                    [text]="true"
+                    severity="secondary"
+                    size="small"
+                    (click)="shareMenu.toggle($event)"
+                    pTooltip="Compartir"
+                    aria-label="Compartir"
+                  ></button>
+                  <p-menu
+                    #shareMenu
+                    [model]="getShareMenuItems(note)"
+                    [popup]="true"
+                    appendTo="body"
+                  ></p-menu>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    [rounded]="true"
+                    [text]="true"
+                    severity="danger"
+                    size="small"
+                    (click)="deleteNote(note)"
+                    pTooltip="Eliminar"
+                    aria-label="Eliminar nota"
+                  ></button>
+                }
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  </p-card>
+
+  <!-- Diálogo crear nota (solo contenido: texto, voz o dibujo) -->
+  <p-dialog
+    [(visible)]="showCreateDialog"
+    (onHide)="closeCreate()"
+    header="Crear nota"
+    [modal]="true"
+    [dismissableMask]="true"
+    [style]="{ width: 'min(90vw, 560px)' }"
+    [contentStyle]="{ overflow: 'visible' }"
+    class="agenda-dialog"
+  >
+    <!-- Contenido según tipo -->
+    @if (step() === 2) {
+      @if (selectedType() === 'text') {
+        <div class="space-y-4">
+          <div>
+            <label
+              for="agenda-note-content"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >Contenido</label
+            >
+            <textarea
+              id="agenda-note-content"
+              pTextarea
+              [autoResize]="true"
+              rows="4"
+              class="w-full"
+              placeholder="Escribe aquí..."
+              [ngModel]="noteContent()"
+              (ngModelChange)="noteContent.set($event)"
+            ></textarea>
+          </div>
+        </div>
+      }
+      @if (selectedType() === 'voice') {
+        <div class="space-y-4">
+          @if (transcribing()) {
+            <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+              <i class="pi pi-spin pi-spinner"></i>
+              Transcribiendo...
+            </p>
+          } @else {
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              {{
+                recording()
+                  ? 'Grabando... Pulsa Detener cuando termines.'
+                  : 'Graba con el micrófono.'
+              }}
+            </p>
+            <div class="flex flex-wrap gap-2">
+              @if (!recording()) {
+                <button
+                  pButton
+                  type="button"
+                  label="Grabar"
+                  icon="pi pi-microphone"
+                  (click)="startRecording()"
+                ></button>
+              } @else {
+                <button
+                  pButton
+                  type="button"
+                  label="Detener"
+                  icon="pi pi-stop"
+                  severity="danger"
+                  (click)="stopRecording()"
+                ></button>
+              }
+            </div>
+          }
+        </div>
+      }
+      @if (selectedType() === 'drawing') {
+        <div class="space-y-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Dibuja en el recuadro y luego continúa.
+          </p>
+          <div
+            class="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-800"
+          >
+            <canvas
+              #canvasEl
+              width="500"
+              height="280"
+              class="block w-full max-w-full cursor-crosshair touch-none"
+              (mousedown)="onCanvasMouseDown($event)"
+              (mousemove)="onCanvasMouseMove($event)"
+              (mouseup)="onCanvasMouseUp()"
+              (mouseleave)="onCanvasMouseLeave()"
+            ></canvas>
+          </div>
+          <button
+            pButton
+            type="button"
+            label="Limpiar"
+            icon="pi pi-eraser"
+            severity="secondary"
+            [outlined]="true"
+            (click)="clearDrawing()"
+          ></button>
+        </div>
+      }
+    }
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-between w-full">
+        <button
+          pButton
+          type="button"
+          label="Atrás"
+          icon="pi pi-arrow-left"
+          [outlined]="true"
+          (click)="prevStep()"
+        ></button>
+        @if (selectedType() !== 'voice') {
+          <button
+            pButton
+            type="button"
+            label="Crear nota"
+            icon="pi pi-check"
+            iconPos="right"
+            [loading]="saving()"
+            [disabled]="!canGoNext()"
+            (click)="nextStep()"
+          ></button>
+        }
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal confirmar nota de voz: transcripción + audio + Guardar -->
+  <p-dialog
+    [visible]="showVoiceConfirmModal()"
+    (onHide)="closeVoiceConfirmModal()"
+    header="Revisar nota de voz"
+    [modal]="true"
+    [closable]="true"
+    [style]="{ width: 'min(90vw, 520px)' }"
+  >
+    <div class="space-y-4">
+      <div>
+        <label
+          for="voice-transcription"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Transcripción</label
+        >
+        <textarea
+          id="voice-transcription"
+          pTextarea
+          [autoResize]="true"
+          rows="4"
+          class="w-full"
+          placeholder="Texto transcrito..."
+          [ngModel]="noteContent()"
+          (ngModelChange)="noteContent.set($event)"
+        ></textarea>
+      </div>
+      @if (voicePreviewUrl(); as url) {
+        <div>
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Audio</p>
+          <audio [src]="url" controls class="w-full max-w-full"></audio>
+        </div>
+      }
+    </div>
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        type="button"
+        label="Cancelar"
+        [outlined]="true"
+        (click)="closeVoiceConfirmModal()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Guardar"
+        icon="pi pi-check"
+        [loading]="saving()"
+        (click)="saveFromVoiceModal()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo ver nota -->
+  <p-dialog
+    [(visible)]="showDetailDialog"
+    (onHide)="showDetailDialog.set(false)"
+    header="Detalle de la nota"
+    [modal]="true"
+    [style]="{ width: 'min(90vw, 480px)' }"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    @if (currentNote(); as note) {
+      <div class="space-y-4">
+        <div class="flex items-center gap-2">
+          <i [class]="getTypeIcon(note.type) + ' text-primary text-xl'"></i>
+          <span class="font-semibold text-gray-800 dark:text-white">{{
+            getTypeLabel(note.type)
+          }}</span>
+        </div>
+        @if (note.content) {
+          <p class="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{{ note.content }}</p>
+        }
+        @if (note.voiceUrl?.length) {
+          <div class="flex flex-wrap gap-2">
+            @for (url of note.voiceUrl; track url) {
+              <audio [src]="url" controls class="max-w-full"></audio>
+            }
+          </div>
+        }
+        @if (note.drawingUrl?.length) {
+          <div class="flex flex-wrap gap-2">
+            @for (url of note.drawingUrl; track url) {
+              <img
+                [src]="url"
+                alt="Dibujo"
+                class="max-w-full rounded border border-gray-200 dark:border-gray-600 max-h-64 object-contain"
+              />
+            }
+          </div>
+        }
+        @if (note.assignedTo?.length) {
+          <div>
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Usuarios asignados
+            </p>
+            <ul class="list-disc list-inside space-y-1 text-sm text-gray-600 dark:text-gray-400">
+              @for (assignee of note.assignedTo; track $index) {
+                <li>{{ getAssignedUserDisplay(assignee) }}</li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    }
+    <ng-template pTemplate="footer">
+      @if (currentNote(); as note) {
+        <button pButton type="button" label="Cerrar" (click)="showDetailDialog.set(false)"></button>
+        @if (canEdit()) {
+          <button
+            pButton
+            type="button"
+            label="Eliminar"
+            icon="pi pi-trash"
+            severity="danger"
+            [outlined]="true"
+            (click)="deleteNote(note); showDetailDialog.set(false)"
+          ></button>
+        }
+      }
+    </ng-template>
+  </p-dialog>
+</div>

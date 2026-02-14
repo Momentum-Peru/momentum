@@ -32,6 +32,7 @@ export class MenuConfigService {
     { path: '/providers', label: 'Proveedores', icon: 'pi pi-building' },
     { path: '/documents', label: 'Documentos', icon: 'pi pi-file' },
     { path: '/tasks', label: 'Agenda', icon: 'pi pi-check-square' },
+    { path: '/agenda', label: 'Notas', icon: 'pi pi-book' },
     { path: '/daily-reports', label: 'Reportes diarios', icon: 'pi pi-calendar' },
     { path: '/time-tracking', label: 'Marcación de hora', icon: 'pi pi-clock' },
     { path: '/employees', label: 'Empleados', icon: 'pi pi-user' },
@@ -91,6 +92,11 @@ export class MenuConfigService {
             label: 'Agenda',
             icon: 'pi pi-check-square',
             routerLink: '/tasks',
+          },
+          {
+            label: 'Notas',
+            icon: 'pi pi-book',
+            routerLink: '/agenda',
           },
           {
             label: 'Reportes diarios',

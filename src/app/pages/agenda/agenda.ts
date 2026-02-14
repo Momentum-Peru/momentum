@@ -1,0 +1,736 @@
+import { Component, OnInit, signal, inject, computed, ViewChild, ElementRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { InputTextModule } from 'primeng/inputtext';
+import { ButtonModule } from 'primeng/button';
+import { TextareaModule } from 'primeng/textarea';
+import { CardModule } from 'primeng/card';
+import { DialogModule } from 'primeng/dialog';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { SelectModule } from 'primeng/select';
+import { MenuModule } from 'primeng/menu';
+import { TableModule } from 'primeng/table';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
+import { AgendaApiService } from '../../shared/services/agenda-api.service';
+import { UsersApiService } from '../../shared/services/users-api.service';
+import { AuthService } from '../login/services/auth.service';
+import { MenuService } from '../../shared/services/menu.service';
+import type {
+  AgendaNote,
+  AgendaNoteType,
+  AgendaNoteUser,
+} from '../../shared/interfaces/agenda-note.interface';
+import type { UserOption } from '../../shared/interfaces/menu-permission.interface';
+import { firstValueFrom, of } from 'rxjs';
+import { tap, map, catchError, finalize } from 'rxjs/operators';
+
+const NOTE_TYPE_OPTIONS: { label: string; value: AgendaNoteType; icon: string }[] = [
+  { label: 'Texto', value: 'text', icon: 'pi pi-pencil' },
+  { label: 'Voz', value: 'voice', icon: 'pi pi-microphone' },
+  { label: 'Dibujo', value: 'drawing', icon: 'pi pi-palette' },
+];
+
+@Component({
+  selector: 'app-agenda',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    InputTextModule,
+    ButtonModule,
+    TextareaModule,
+    CardModule,
+    DialogModule,
+    SelectButtonModule,
+    SelectModule,
+    MenuModule,
+    TableModule,
+    ToastModule,
+    ConfirmDialogModule,
+    TooltipModule,
+  ],
+  templateUrl: './agenda.html',
+  styleUrl: './agenda.scss',
+  providers: [MessageService, ConfirmationService],
+})
+export class AgendaPage implements OnInit {
+  private readonly agendaApi = inject(AgendaApiService);
+  private readonly usersApi = inject(UsersApiService);
+  private readonly authService = inject(AuthService);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  private readonly menuService = inject(MenuService);
+
+  readonly canEdit = computed(() => this.menuService.canEdit('/agenda'));
+
+  notes = signal<AgendaNote[]>([]);
+  loading = signal(false);
+  step = signal(1);
+  selectedType = signal<AgendaNoteType | null>(null);
+  noteContent = signal('');
+  currentNote = signal<AgendaNote | null>(null);
+  /** Referencia a la nota recién creada para no perderla si la lista del servidor no la devuelve. */
+  private lastCreatedNote = signal<AgendaNote | null>(null);
+  userOptions = signal<UserOption[]>([]);
+  showCreateOptions = signal(false);
+  showCreateDialog = signal(false);
+  showDetailDialog = signal(false);
+  saving = signal(false);
+  recording = signal(false);
+  private mediaRecorder: MediaRecorder | null = null;
+  private audioChunks: Blob[] = [];
+  pendingVoiceFile = signal<File | null>(null);
+  pendingDrawingDataUrl = signal<string | null>(null);
+  /** Modal de confirmación tras grabar voz: transcripción + audio + Guardar */
+  showVoiceConfirmModal = signal(false);
+  transcribing = signal(false);
+  /** URL del blob del audio grabado para el reproductor en el modal de voz */
+  voicePreviewUrl = signal<string | null>(null);
+
+  readonly typeOptions = NOTE_TYPE_OPTIONS;
+
+  @ViewChild('canvasEl') canvasRef?: ElementRef<HTMLCanvasElement>;
+
+  filteredNotes = computed(() => {
+    const list = this.notes().slice();
+    return list.sort((a, b) => {
+      const t1 = new Date(a.createdAt ?? 0).getTime();
+      const t2 = new Date(b.createdAt ?? 0).getTime();
+      return t2 - t1;
+    });
+  });
+
+  ngOnInit(): void {
+    this.loadNotes();
+    this.loadUsers();
+  }
+
+  loadNotes(): void {
+    this.loading.set(true);
+    this.agendaApi
+      .list()
+      .subscribe({
+        next: (list) => this.notes.set(list),
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudieron cargar las notas',
+          });
+        },
+      })
+      .add(() => this.loading.set(false));
+  }
+
+  /** Carga las notas y devuelve una promesa que se resuelve cuando terminó.
+   * Si hay una nota recién creada (lastCreatedNote) y el servidor no la devuelve, se añade al inicio. */
+  loadNotesAndWait(): Promise<void> {
+    this.loading.set(true);
+    const noteToMerge = this.lastCreatedNote();
+    return firstValueFrom(
+      this.agendaApi.list().pipe(
+        tap((list) => {
+          const listWithMerged = this.mergeCreatedNoteIfMissing(list, noteToMerge);
+          this.notes.set(listWithMerged);
+        }),
+        map(() => undefined),
+        catchError(() => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudieron cargar las notas',
+          });
+          return of(undefined);
+        }),
+        finalize(() => this.loading.set(false)),
+      ),
+    ).then(() => undefined);
+  }
+
+  /** Si la nota creada no está en la lista del servidor, la pone al inicio. */
+  private mergeCreatedNoteIfMissing(
+    serverList: AgendaNote[],
+    created: AgendaNote | null,
+  ): AgendaNote[] {
+    if (!created?._id) return serverList;
+    const id = String(created._id);
+    if (serverList.some((n) => String(n._id) === id)) return serverList;
+    return [created, ...serverList];
+  }
+
+  loadUsers(): void {
+    this.usersApi.list().subscribe({
+      next: (opts) => this.userOptions.set(opts),
+      error: () => {
+        /* usuarios opcionales para asignar */
+      },
+    });
+  }
+
+  openCreate(): void {
+    this.step.set(1);
+    this.selectedType.set(null);
+    this.noteContent.set('');
+    this.currentNote.set(null);
+    this.pendingVoiceFile.set(null);
+    this.pendingDrawingDataUrl.set(null);
+    this.showVoiceConfirmModal.set(false);
+    const url = this.voicePreviewUrl();
+    if (url) URL.revokeObjectURL(url);
+    this.voicePreviewUrl.set(null);
+    this.showCreateOptions.set(true);
+  }
+
+  /** Elegir tipo en la vista inline y abrir el diálogo en paso 2 */
+  selectTypeAndOpenDialog(type: AgendaNoteType): void {
+    this.selectedType.set(type);
+    this.showCreateOptions.set(false);
+    this.step.set(2);
+    this.showCreateDialog.set(true);
+    if (type === 'voice') {
+      setTimeout(() => this.startRecording(), 300);
+    }
+  }
+
+  cancelCreateOptions(): void {
+    this.showCreateOptions.set(false);
+    this.selectedType.set(null);
+  }
+
+  closeCreate(): void {
+    this.showCreateDialog.set(false);
+    this.recording.set(false);
+    if (this.mediaRecorder?.state === 'recording') {
+      this.mediaRecorder.stop();
+    }
+  }
+
+  canGoNext = computed(() => {
+    const s = this.step();
+    const type = this.selectedType();
+    if (s === 1) return type != null;
+    if (s === 2) {
+      if (type === 'text') return this.noteContent().trim().length > 0;
+      if (type === 'voice')
+        return this.pendingVoiceFile() != null || (this.currentNote()?.voiceUrl?.length ?? 0) > 0;
+      if (type === 'drawing')
+        return (
+          this.pendingDrawingDataUrl() != null || (this.currentNote()?.drawingUrl?.length ?? 0) > 0
+        );
+      return false;
+    }
+    return true;
+  });
+
+  nextStep(): void {
+    if (this.step() === 2 && this.canGoNext()) {
+      this.saveNoteAndContinue();
+    }
+  }
+
+  prevStep(): void {
+    const s = this.step();
+    if (s === 2) {
+      this.showCreateDialog.set(false);
+      this.showCreateOptions.set(true);
+      this.step.set(1);
+      return;
+    }
+    if (s > 1) this.step.set(s - 1);
+  }
+
+  private saveNoteAndContinue(): void {
+    const type = this.selectedType()!;
+    const content = this.noteContent().trim();
+
+    this.saving.set(true);
+    this.agendaApi
+      .create({ type, content: content || undefined })
+      .subscribe({
+        next: (created) => {
+          this.currentNote.set(created);
+          this.lastCreatedNote.set(created);
+          this.notes.update((prev) => [created, ...prev]);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Nota creada',
+            detail: 'Puedes asignar, compartir o conectar Teams desde la tabla.',
+          });
+          const createdId = created?._id != null ? String(created._id) : '';
+          if (!createdId) {
+            this.closeCreate();
+            this.saving.set(false);
+            return;
+          }
+          this.uploadPendingVoiceOrDrawing(createdId)
+            .then(() => {
+              this.ensureCreatedNoteInList(createdId);
+              this.closeCreate();
+            })
+            .finally(() => {
+              this.lastCreatedNote.set(null);
+              this.saving.set(false);
+            });
+        },
+        error: (err) => {
+          this.saving.set(false);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: err?.error?.message ?? 'No se pudo crear la nota',
+          });
+        },
+      })
+      .add(() => {
+        // success: saving se apaga en uploadPendingVoiceOrDrawing.finally(); error: en error callback
+      });
+  }
+
+  private async uploadPendingVoiceOrDrawing(noteId: string): Promise<void> {
+    const type = this.selectedType()!;
+    const voiceFile = this.pendingVoiceFile();
+    const drawingDataUrl = this.pendingDrawingDataUrl();
+    const id = String(noteId);
+
+    if (type === 'voice' && voiceFile) {
+      try {
+        const res = await firstValueFrom(
+          this.agendaApi.generateVoicePresignedUrl(
+            id,
+            voiceFile.name,
+            voiceFile.type || 'audio/webm',
+            3600,
+          ),
+        );
+        await this.agendaApi.uploadFileToS3(
+          res.presignedUrl,
+          voiceFile,
+          voiceFile.type || 'audio/webm',
+        );
+        await firstValueFrom(this.agendaApi.confirmVoiceUpload(id, res.publicUrl));
+        this.pendingVoiceFile.set(null);
+      } catch {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Audio',
+          detail: 'No se pudo subir el audio. Puedes agregarlo después.',
+        });
+      }
+    }
+
+    if (type === 'drawing' && drawingDataUrl) {
+      try {
+        const blob = await this.dataUrlToBlob(drawingDataUrl);
+        const file = new File([blob], `dibujo-${Date.now()}.png`, { type: 'image/png' });
+        const res = await firstValueFrom(
+          this.agendaApi.generateDrawingPresignedUrl(id, file.name, file.type, 3600),
+        );
+        await this.agendaApi.uploadFileToS3(res.presignedUrl, file, file.type);
+        await firstValueFrom(this.agendaApi.confirmDrawingUpload(id, res.publicUrl));
+        this.pendingDrawingDataUrl.set(null);
+      } catch {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Dibujo',
+          detail: 'No se pudo subir el dibujo. Puedes agregarlo después.',
+        });
+      }
+    }
+
+    await this.loadNotesAndWait();
+    this.ensureCreatedNoteInList(id);
+    try {
+      const updated = await firstValueFrom(this.agendaApi.getById(id));
+      this.currentNote.set(updated);
+    } catch {
+      this.currentNote.set(this.notes().find((n) => n._id === id) ?? null);
+    }
+  }
+
+  /** Si la nota recién creada no está en la lista (el servidor no la devolvió), la volvemos a añadir. */
+  private ensureCreatedNoteInList(noteId: string): void {
+    const id = String(noteId);
+    const note = this.lastCreatedNote() ?? this.currentNote();
+    if (!note?._id || String(note._id) !== id) return;
+    const list = this.notes();
+    if (list.some((n) => String(n._id) === id)) return;
+    this.notes.update((prev) => [note, ...prev]);
+  }
+
+  private async dataUrlToBlob(dataUrl: string): Promise<Blob> {
+    const res = await fetch(dataUrl);
+    return res.blob();
+  }
+
+  /** Id del único usuario asignado (primero de la lista) o null. */
+  getAssignedSingleId(note: AgendaNote): string | null {
+    const ids = (note.assignedTo ?? []).map((a) => (typeof a === 'string' ? a : a._id));
+    return ids.length > 0 ? ids[0] : null;
+  }
+
+  /** Asignar o cambiar la única persona asignada desde el select de la tabla. */
+  onAssignChange(note: AgendaNote, userId: string | null): void {
+    if (!note._id) return;
+    const userIds = userId ? [userId] : [];
+    this.agendaApi.assign(note._id, { userIds }).subscribe({
+      next: () => {
+        this.loadNotes();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Asignado',
+          detail: userIds.length ? 'Usuario asignado correctamente' : 'Asignación quitada',
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo asignar',
+        });
+      },
+    });
+  }
+
+  shareNoteFromNote(note: AgendaNote, channel: 'email' | 'whatsapp'): void {
+    this.currentNote.set(note);
+    this.shareNote(channel);
+  }
+
+  /** Items del menú Compartir (Correo, WhatsApp) para una nota. */
+  getShareMenuItems(note: AgendaNote): MenuItem[] {
+    return [
+      {
+        label: 'Correo',
+        icon: 'pi pi-envelope',
+        command: () => this.shareNoteFromNote(note, 'email'),
+      },
+      {
+        label: 'WhatsApp',
+        icon: 'pi pi-whatsapp',
+        command: () => this.shareNoteFromNote(note, 'whatsapp'),
+      },
+    ];
+  }
+
+  openTeamsForNote(note: AgendaNote): void {
+    this.currentNote.set(note);
+    this.openTeamsLink();
+  }
+
+  shareNote(channel: 'email' | 'whatsapp'): void {
+    const note = this.currentNote();
+    if (!note?._id) return;
+    const to = channel === 'email' ? undefined : undefined;
+    this.agendaApi.share(note._id, { channel, to }).subscribe({
+      next: (updated) => {
+        this.currentNote.set(updated);
+        if (channel === 'whatsapp') {
+          const text = encodeURIComponent(
+            (note.content || 'Nota').slice(0, 200) +
+              ((note.content?.length ?? 0) > 200 ? '...' : ''),
+          );
+          window.open(`https://wa.me/?text=${text}`, '_blank');
+        }
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Compartir',
+          detail:
+            channel === 'email'
+              ? 'Registro de envío por correo guardado'
+              : 'Enlace listo para WhatsApp',
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo registrar la compartición',
+        });
+      },
+    });
+  }
+
+  openTeamsLink(): void {
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Teams',
+      detail: 'La integración con Microsoft Teams estará disponible próximamente.',
+    });
+  }
+
+  async startRecording(): Promise<void> {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.mediaRecorder = new MediaRecorder(stream);
+      this.audioChunks = [];
+      this.mediaRecorder.ondataavailable = (e) => e.data.size > 0 && this.audioChunks.push(e.data);
+      this.mediaRecorder.onstop = () => {
+        const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        const file = new File([blob], `voz-${Date.now()}.webm`, { type: 'audio/webm' });
+        this.pendingVoiceFile.set(file);
+        stream.getTracks().forEach((t) => t.stop());
+        this.recording.set(false);
+        this.transcribeAndShowVoiceModal(file);
+      };
+      this.mediaRecorder.start();
+      this.recording.set(true);
+    } catch {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Micrófono',
+        detail: 'No se pudo acceder al micrófono',
+      });
+    }
+  }
+
+  stopRecording(): void {
+    if (this.mediaRecorder?.state === 'recording') {
+      this.mediaRecorder.stop();
+    }
+  }
+
+  /** Tras grabar: transcribir y abrir modal de confirmación (transcripción + audio + Guardar). */
+  private transcribeAndShowVoiceModal(file: File): void {
+    this.transcribing.set(true);
+    this.agendaApi
+      .transcribe(file)
+      .subscribe({
+        next: (res) => {
+          this.noteContent.set(res.text ?? '');
+          const prev = this.voicePreviewUrl();
+          if (prev) URL.revokeObjectURL(prev);
+          this.voicePreviewUrl.set(URL.createObjectURL(file));
+          this.showVoiceConfirmModal.set(true);
+          this.showCreateDialog.set(false);
+        },
+        error: (err) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Transcripción',
+            detail: err?.error?.message ?? 'No se pudo transcribir el audio',
+          });
+          this.noteContent.set('');
+          const prev = this.voicePreviewUrl();
+          if (prev) URL.revokeObjectURL(prev);
+          this.voicePreviewUrl.set(URL.createObjectURL(file));
+          this.showVoiceConfirmModal.set(true);
+          this.showCreateDialog.set(false);
+        },
+      })
+      .add(() => this.transcribing.set(false));
+  }
+
+  closeVoiceConfirmModal(): void {
+    const url = this.voicePreviewUrl();
+    if (url) URL.revokeObjectURL(url);
+    this.voicePreviewUrl.set(null);
+    this.showVoiceConfirmModal.set(false);
+    this.pendingVoiceFile.set(null);
+    this.noteContent.set('');
+  }
+
+  /** Guardar nota de voz desde el modal (crear nota + subir audio). */
+  saveFromVoiceModal(): void {
+    const content = this.noteContent().trim();
+    const file = this.pendingVoiceFile();
+    if (!file) return;
+    this.saving.set(true);
+    this.agendaApi.create({ type: 'voice', content: content || undefined }).subscribe({
+      next: (created) => {
+        this.currentNote.set(created);
+        this.lastCreatedNote.set(created);
+        this.notes.update((prev) => [created, ...prev]);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Nota creada',
+          detail: 'Nota de voz guardada correctamente.',
+        });
+        const createdId = created?._id != null ? String(created._id) : '';
+        if (!createdId) {
+          this.closeVoiceConfirmModal();
+          this.saving.set(false);
+          return;
+        }
+        this.uploadVoiceFileToNote(createdId, file)
+          .then(() => {
+            this.loadNotesAndWait();
+            this.ensureCreatedNoteInList(createdId);
+          })
+          .finally(() => {
+            this.lastCreatedNote.set(null);
+            this.saving.set(false);
+            this.closeVoiceConfirmModal();
+          });
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: err?.error?.message ?? 'No se pudo crear la nota',
+        });
+      },
+    });
+  }
+
+  private async uploadVoiceFileToNote(noteId: string, voiceFile: File): Promise<void> {
+    try {
+      const res = await firstValueFrom(
+        this.agendaApi.generateVoicePresignedUrl(
+          noteId,
+          voiceFile.name,
+          voiceFile.type || 'audio/webm',
+          3600,
+        ),
+      );
+      await this.agendaApi.uploadFileToS3(
+        res.presignedUrl,
+        voiceFile,
+        voiceFile.type || 'audio/webm',
+      );
+      await firstValueFrom(this.agendaApi.confirmVoiceUpload(noteId, res.publicUrl));
+    } catch {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Audio',
+        detail: 'No se pudo subir el audio. La nota se creó con la transcripción.',
+      });
+    }
+  }
+
+  private isDrawing = false;
+  private lastX = 0;
+  private lastY = 0;
+
+  onCanvasMouseDown(e: MouseEvent): void {
+    this.isDrawing = true;
+    const canvas = this.canvasRef?.nativeElement;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    this.lastX = e.clientX - rect.left;
+    this.lastY = e.clientY - rect.top;
+  }
+
+  onCanvasMouseMove(e: MouseEvent): void {
+    if (!this.isDrawing) return;
+    const canvas = this.canvasRef?.nativeElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(this.lastX, this.lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    this.lastX = x;
+    this.lastY = y;
+  }
+
+  onCanvasMouseUp(): void {
+    this.isDrawing = false;
+    const canvas = this.canvasRef?.nativeElement;
+    if (canvas) this.pendingDrawingDataUrl.set(canvas.toDataURL('image/png'));
+  }
+
+  onCanvasMouseLeave(): void {
+    this.isDrawing = false;
+  }
+
+  clearDrawing(): void {
+    const canvas = this.canvasRef?.nativeElement;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    this.pendingDrawingDataUrl.set(null);
+  }
+
+  viewNote(note: AgendaNote): void {
+    this.currentNote.set(note);
+    this.showDetailDialog.set(true);
+  }
+
+  deleteNote(note: AgendaNote): void {
+    this.confirmationService.confirm({
+      message: '¿Eliminar esta nota?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí',
+      rejectLabel: 'No',
+      accept: () => {
+        this.agendaApi.delete(note._id).subscribe({
+          next: () => {
+            this.loadNotes();
+            if (this.currentNote()?._id === note._id) {
+              this.showDetailDialog.set(false);
+              this.currentNote.set(null);
+            }
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Eliminada',
+              detail: 'Nota eliminada',
+            });
+          },
+          error: (err) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: err?.error?.message ?? 'No se pudo eliminar',
+            });
+          },
+        });
+      },
+    });
+  }
+
+  getTypeIcon(type: string): string {
+    return this.typeOptions.find((o) => o.value === type)?.icon ?? 'pi pi-file';
+  }
+
+  getTypeLabel(type: string): string {
+    return this.typeOptions.find((o) => o.value === type)?.label ?? type;
+  }
+
+  getCreatorName(note: AgendaNote): string {
+    const u = note.createdBy;
+    if (typeof u === 'object' && u) {
+      if (u.name) return u.name;
+      if ((u as { email?: string }).email) return (u as { email: string }).email;
+    }
+    return '—';
+  }
+
+  /** Nombre o email del usuario asignado para mostrar en detalle. */
+  getAssignedUserDisplay(assignee: AgendaNoteUser | string): string {
+    if (typeof assignee === 'object' && assignee) {
+      if (assignee.name) return assignee.name;
+      if (assignee.email) return assignee.email;
+    }
+    return '—';
+  }
+
+  /** Resumen para la columna Contenido: texto, "Audio" / "N audio(s)", "Dibujo" / "N imagen(es)". */
+  getContentSummary(note: AgendaNote): string {
+    if (note.type === 'text' && note.content?.trim()) {
+      const text = note.content.trim();
+      return text.length > 80 ? text.slice(0, 80) + '…' : text;
+    }
+    if (note.type === 'voice') {
+      const n = note.voiceUrl?.length ?? 0;
+      return n ? (n === 1 ? 'Audio' : `${n} audio(s)`) : '—';
+    }
+    if (note.type === 'drawing') {
+      const n = note.drawingUrl?.length ?? 0;
+      return n ? (n === 1 ? 'Dibujo' : `${n} imagen(es)`) : '—';
+    }
+    return '—';
+  }
+}
