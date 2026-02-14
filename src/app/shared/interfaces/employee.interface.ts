@@ -63,6 +63,54 @@ export interface Employee {
   fechaVencimientoSuspension?: string | Date;
   contratos?: string[];
   antecedentesPoliciales?: string[];
+  // Personal de Campo - EPP
+  tallaCalzado?: string;
+  tallaCamisa?: string;
+  tallaPantalon?: string;
+  tallaCasco?: string;
+  tallaGuantes?: string;
+  tallaRespirador?: string;
+  lentesMedida?: boolean;
+  // Personal de Campo - Administrativo y Salud
+  examenMedico?: {
+    fechaVencimiento?: string | Date;
+    aptoAltura?: boolean;
+    archivo?: string;
+  };
+  sctr?: {
+    salud?: boolean;
+    pension?: boolean;
+    fechaVencimiento?: string | Date;
+    archivo?: string;
+  };
+  contactoEmergencia?: {
+    nombre: string;
+    parentesco: string;
+    telefono: string;
+  };
+  grupoSanguineo?: string;
+  alergias?: string;
+  // Personal de Campo - Documentación
+  licenciaConducir?: {
+    numero: string;
+    categoria: string;
+    fechaVencimiento: string | Date;
+    archivo?: string;
+  };
+  antecedentes?: {
+    penales?: boolean;
+    judiciales?: boolean;
+    policiales?: boolean;
+    fechaEmision?: string | Date;
+    archivo?: string;
+  };
+  capacitaciones?: {
+    curso: string;
+    fecha: string | Date;
+    horas: number;
+    archivo?: string;
+  }[];
+  isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -113,6 +161,54 @@ export interface CreateEmployeeRequest {
   // Datos Locadores
   ruc?: string;
   fechaVencimientoSuspension?: string;
+  // Personal de Campo - EPP
+  tallaCalzado?: string;
+  tallaCamisa?: string;
+  tallaPantalon?: string;
+  tallaCasco?: string;
+  tallaGuantes?: string;
+  tallaRespirador?: string;
+  lentesMedida?: boolean;
+  // Personal de Campo - Administrativo y Salud
+  examenMedico?: {
+    fechaVencimiento?: string;
+    aptoAltura?: boolean;
+    archivo?: string;
+  };
+  sctr?: {
+    salud?: boolean;
+    pension?: boolean;
+    fechaVencimiento?: string;
+    archivo?: string;
+  };
+  contactoEmergencia?: {
+    nombre: string;
+    parentesco: string;
+    telefono: string;
+  };
+  grupoSanguineo?: string;
+  alergias?: string;
+  // Personal de Campo - Documentación
+  licenciaConducir?: {
+    numero: string;
+    categoria: string;
+    fechaVencimiento: string;
+    archivo?: string;
+  };
+  antecedentes?: {
+    penales?: boolean;
+    judiciales?: boolean;
+    policiales?: boolean;
+    fechaEmision?: string;
+    archivo?: string;
+  };
+  capacitaciones?: {
+    curso: string;
+    fecha: string;
+    horas: number;
+    archivo?: string;
+  }[];
+  isActive?: boolean;
 }
 
 export interface UpdateEmployeeRequest {
@@ -161,6 +257,7 @@ export interface UpdateEmployeeRequest {
   // Datos Locadores
   ruc?: string;
   fechaVencimientoSuspension?: string;
+  isActive?: boolean;
 }
 
 export interface EmployeeQueryParams {

@@ -25,27 +25,13 @@
       ></button>
     }
     @if (canViewAllUsers()) {
-      <button
-        pButton
-        type="button"
-        (click)="downloadPdfReport()"
-        label="Descargar PDF"
-        icon="pi pi-file-pdf"
-        severity="secondary"
-        class="p-button-outlined"
-        aria-label="Descargar reporte de marcaciones en PDF"
-      ></button>
-      <button
-        pButton
-        type="button"
-        (click)="downloadAllPdfsByUser()"
-        [disabled]="downloadingAllPdfs()"
-        label="{{ downloadingAllPdfs() ? 'Generando...' : 'Descargar PDFs en ZIP' }}"
-        icon="pi pi-download"
-        severity="secondary"
-        class="p-button-outlined"
-        aria-label="Descargar todos los reportes PDF en un archivo ZIP"
-      ></button>
+      <p-splitButton 
+        label="Descargar PDF" 
+        icon="pi pi-file-pdf" 
+        (onClick)="downloadPdfReport()" 
+        [model]="downloadOptions"
+        styleClass="p-button-danger">
+      </p-splitButton>
     }
   </div>
 
@@ -104,7 +90,7 @@
         pInputText
         placeholder="Buscar por fecha o tipo..."
         [ngModel]="query()"
-        (ngModelChange)="setQuery($event)"
+        (ngModelChange)="query.set($event)"
         name="searchQuery"
         class="flex-1 min-w-[200px]"
       />
@@ -221,98 +207,13 @@
             <button
               type="button"
               pButton
-              [label]="isUserDetailExpanded(user.userId) ? 'Ocultar detalle' : 'Ver detalle'"
-              [icon]="isUserDetailExpanded(user.userId) ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
-              iconPos="right"
+              label="Ver historial completo"
+              icon="pi pi-external-link"
               class="p-button-outlined p-button-sm"
-              (click)="toggleUserDetail(user.userId)"
-              [attr.aria-expanded]="isUserDetailExpanded(user.userId)"
-              aria-label="Ver u ocultar detalle de marcaciones"
+              (click)="router.navigate(['/time-tracking/detail', user.userId])"
+              aria-label="Ver historial completo del usuario"
             ></button>
           </div>
-          @if (isUserDetailExpanded(user.userId)) {
-            <div
-              class="border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30"
-            >
-              <div class="px-4 py-3 sm:px-5">
-                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Marcaciones por día
-                </h3>
-                @for (day of user.itemsByDay; track day.date) {
-                  <div
-                    class="mb-3 last:mb-0 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden"
-                  >
-                    <div
-                      class="px-3 py-2 bg-gray-100 dark:bg-gray-700/50 text-sm font-medium text-gray-700 dark:text-gray-200"
-                    >
-                      {{ day.date }}
-                    </div>
-                    <ul class="divide-y divide-gray-200 dark:divide-gray-600">
-                      @for (item of day.items; track item._id || item.date) {
-                        <li
-                          class="px-3 py-2 flex flex-wrap items-center gap-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                        >
-                          <span class="text-gray-600 dark:text-gray-400">
-                            {{ formatDateTime(item.date) }}
-                          </span>
-                          <span
-                            class="px-2 py-0.5 text-xs font-semibold rounded-full"
-                            [class]="getTypeBadgeClass(item.type)"
-                          >
-                            {{ item.type }}
-                          </span>
-                          @if (item.type === 'INGRESO' && isTardanza(item.date)) {
-                            <span
-                              class="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200"
-                            >
-                              Tardanza
-                            </span>
-                          }
-                          @if (item.location || item.address) {
-                            <span
-                              class="text-xs text-gray-500 truncate max-w-[180px]"
-                              [title]="formatLocation(item)"
-                            >
-                              <i class="pi pi-map-marker mr-1"></i>{{ formatLocation(item) }}
-                            </span>
-                          }
-                          <span class="ml-auto flex items-center gap-1">
-                            <button
-                              pButton
-                              icon="pi pi-eye"
-                              class="p-button-text p-button-sm"
-                              (click)="viewItem(item)"
-                              aria-label="Ver marcación"
-                            ></button>
-                            @if (canEditOrDelete()) {
-                              <button
-                                pButton
-                                icon="pi pi-pencil"
-                                class="p-button-text p-button-sm"
-                                (click)="editItem(item)"
-                                aria-label="Editar"
-                              ></button>
-                              <button
-                                pButton
-                                icon="pi pi-trash"
-                                class="p-button-text p-button-danger p-button-sm"
-                                (click)="remove(item)"
-                                aria-label="Eliminar"
-                              ></button>
-                            }
-                          </span>
-                        </li>
-                      }
-                    </ul>
-                  </div>
-                } @empty {
-                  <p class="text-sm text-gray-500 dark:text-gray-400 py-2">
-                    No hay marcaciones en este período.
-                  </p>
-                }
-              </div>
-            </div>
-          }
         </div>
       } @empty {
         <div

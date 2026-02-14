@@ -137,4 +137,8 @@ export class SelectCompanyPage implements OnInit {
       this.selectCompany(company);
     }
   }
+
+  logout(): void {
+    this.auth.logout();
+  }
 }

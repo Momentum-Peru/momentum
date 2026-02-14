@@ -1,0 +1,154 @@
+/* employee-form.scss */
+
+.employee-form-container {
+  max-width: 1280px;
+  margin: 1.5rem auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+
+  .title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+  }
+
+  .subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.form-main-container {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  min-height: 600px;
+}
+
+.form-sidebar {
+  background: #f8fafc;
+  padding: 24px 16px;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  position: relative;
+  
+  i {
+    font-size: 1.1rem;
+  }
+
+  &:hover {
+    background: #f1f5f9;
+    color: var(--primary-color);
+  }
+
+  &.active {
+    background: white;
+    color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    
+    .active-indicator {
+      position: absolute;
+      left: 0;
+      top: 12px;
+      bottom: 12px;
+      width: 4px;
+      background: var(--primary-color);
+      border-radius: 0 4px 4px 0;
+    }
+  }
+}
+
+.form-content-area {
+  padding: 32px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.section-container {
+  max-width: 900px;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.full-width {
+  grid-column: span 2;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.upload-zone {
+  border: 2px dashed #e2e8f0;
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f8fafc;
+
+  &:hover {
+    border-color: var(--primary-color);
+    background: #f0f9ff;
+  }
+
+  &.is-dragging {
+    border-color: var(--primary-color);
+    background: #eff6ff;
+  }
+}

@@ -1,58 +1,69 @@
-<div class="p-4 sm:p-6 min-h-[60vh] space-y-6">
-  <!-- Logo -->
-  <div class="flex justify-center mb-6">
-    <img src="/images/logo_b.png" alt="Logo Momentum" class="max-w-[150px] invert dark:invert-0" />
+<div class="select-company-container">
+  <!-- Logout Button -->
+  <div class="absolute top-4 right-4 sm:top-6 sm:right-6">
+    <button 
+      pButton 
+      type="button" 
+      icon="pi pi-power-off" 
+      label="Cerrar sesión" 
+      class="p-button-text p-button-secondary"
+      (click)="logout()"
+    ></button>
+  </div>
+
+  <!-- Logo & Page Header -->
+  <div class="page-header animate-fade-in">
+    <div class="flex justify-center mb-8">
+      <img src="/images/logo_b.png" alt="Logo Momentum" class="max-w-[180px] invert dark:invert-0" />
+    </div>
+    <h1 class="title">Seleccionar Empresa</h1>
+    <p class="subtitle">Elija la organización con la que desea trabajar hoy</p>
   </div>
 
   <!-- Loading State -->
   @if (loading()) {
-  <div class="flex flex-col items-center justify-center py-16">
-    <p-progressSpinner styleClass="w-8 h-8" strokeWidth="4"></p-progressSpinner>
-    <p class="mt-4 text-gray-600 dark:text-gray-400">Cargando empresas...</p>
+  <div class="flex flex-col items-center justify-center py-24">
+    <p-progressSpinner styleClass="w-10 h-10" strokeWidth="4"></p-progressSpinner>
+    <p class="mt-4 text-gray-500 font-medium">Cargando empresas disponibles...</p>
   </div>
   }
 
   <!-- Empty State -->
   @if (!loading() && filtered().length === 0) {
-  <div class="text-center py-16">
-    <i class="pi pi-building text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-    <h3 class="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
-      No hay empresas disponibles
-    </h3>
-    <p class="text-gray-500 dark:text-gray-500">No hay empresas disponibles para seleccionar</p>
+  <div class="text-center py-24 animate-fade-in">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 mb-6">
+      <i class="pi pi-building text-4xl text-gray-300"></i>
+    </div>
+    <h3 class="text-xl font-bold text-gray-900 mb-2">No se encontraron empresas</h3>
+    <p class="text-gray-500 max-w-xs mx-auto">No tiene acceso a ninguna empresa o no hay empresas activas en el sistema.</p>
   </div>
   }
 
   <!-- Companies Grid -->
   @if (!loading() && filtered().length > 0) {
-  <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+  <div class="company-grid animate-fade-in">
     @for (company of filtered(); track company._id) {
     <button
       type="button"
-      class="w-full aspect-square bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:ring-offset-2"
+      class="company-card focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-4"
       (click)="selectCompany(company)"
       (keyup.enter)="selectCompany(company)"
       (keyup.space)="selectCompany(company)"
       [attr.aria-label]="'Seleccionar empresa: ' + company.name"
     >
-      <div class="h-full flex flex-col items-center justify-center p-4 text-center">
-        <div
-          class="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4"
-        >
-          <i class="pi pi-building text-gray-900 dark:text-white text-2xl"></i>
-        </div>
-        <h3
-          class="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2"
-          [title]="company.name"
-        >
-          {{ company.name }}
-        </h3>
-        @if (company.code) {
-        <p class="text-sm text-gray-500 dark:text-gray-400 font-mono">
-          {{ company.code }}
-        </p>
-        }
+      <div class="icon-wrapper">
+        <i class="pi pi-building"></i>
       </div>
+      
+      <h3 class="company-name" [title]="company.name">
+        {{ company.name }}
+      </h3>
+      
+      @if (company.code) {
+      <span class="company-code">
+        {{ company.code }}
+      </span>
+      }
     </button>
     }
   </div>
