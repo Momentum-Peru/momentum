@@ -1397,13 +1397,16 @@ export class AgendaPage implements OnInit {
 
   getCreatorName(note: AgendaNote): string {
     const u = note.createdBy;
+    const currentUser = this.authService.getCurrentUser();
     if (typeof u === 'object' && u) {
       if (u.name) return u.name;
       if ((u as { email?: string }).email) return (u as { email: string }).email;
     }
     if (typeof u === 'string') {
-      const currentId = this.authService.getCurrentUser()?.id;
-      if (u === currentId) return 'Tú';
+      // Si el creador es el usuario actual, mostrar su nombre (no "Tú")
+      if (u === currentUser?.id) {
+        return currentUser?.name ?? currentUser?.email ?? 'Tú';
+      }
       const found = this.userOptions().find((x) => x._id === u);
       return found?.name ?? found?.email ?? '—';
     }
