@@ -21,6 +21,7 @@ import { AgendaApiService } from '../../shared/services/agenda-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { AuthService } from '../login/services/auth.service';
 import { MenuService } from '../../shared/services/menu.service';
+import { TenantService } from '../../core/services/tenant.service';
 import type {
   AgendaNote,
   AgendaNoteType,
@@ -78,6 +79,7 @@ export class AgendaPage implements OnInit {
   private readonly confirmationService = inject(ConfirmationService);
   private readonly menuService = inject(MenuService);
   private readonly router = inject(Router);
+  private readonly tenantService = inject(TenantService);
 
   readonly canEdit = computed(() => this.menuService.canEdit('/agenda'));
 
@@ -353,8 +355,10 @@ export class AgendaPage implements OnInit {
     return [created, ...serverList];
   }
 
+  /** Carga todos los usuarios del tenant (todas las páginas) para el selector Asignados. */
   loadUsers(): void {
-    this.usersApi.list().subscribe({
+    const tenantId = this.tenantService.tenantId();
+    this.usersApi.listAll(tenantId ?? undefined).subscribe({
       next: (opts) => this.userOptions.set(opts),
       error: () => {
         /* usuarios opcionales para asignar */
