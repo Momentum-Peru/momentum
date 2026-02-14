@@ -21,6 +21,7 @@ import { AgendaApiService } from '../../shared/services/agenda-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { AuthService } from '../login/services/auth.service';
 import { MenuService } from '../../shared/services/menu.service';
+import { TenantService } from '../../core/services/tenant.service';
 import type {
   AgendaNote,
   AgendaNoteType,
@@ -78,6 +79,7 @@ export class AgendaPage implements OnInit {
   private readonly confirmationService = inject(ConfirmationService);
   private readonly menuService = inject(MenuService);
   private readonly router = inject(Router);
+  private readonly tenantService = inject(TenantService);
 
   readonly canEdit = computed(() => this.menuService.canEdit('/agenda'));
 
@@ -353,8 +355,10 @@ export class AgendaPage implements OnInit {
     return [created, ...serverList];
   }
 
+  /** Carga todos los usuarios del tenant (todas las páginas) para el selector Asignados. */
   loadUsers(): void {
-    this.usersApi.list().subscribe({
+    const tenantId = this.tenantService.tenantId();
+    this.usersApi.listAll(tenantId ?? undefined).subscribe({
       next: (opts) => this.userOptions.set(opts),
       error: () => {
         /* usuarios opcionales para asignar */
@@ -363,16 +367,7 @@ export class AgendaPage implements OnInit {
   }
 
   openCreate(): void {
-    this.step.set(1);
-    this.selectedType.set(null);
-    this.noteContent.set('');
-    this.currentNote.set(null);
-    this.pendingVoiceFile.set(null);
-    this.pendingDrawingDataUrl.set(null);
-    this.showVoiceConfirmModal.set(false);
-    const url = this.voicePreviewUrl();
-    if (url) URL.revokeObjectURL(url);
-    this.voicePreviewUrl.set(null);
+    this.clearCreateFields();
     this.showCreateOptions.set(true);
   }
 
@@ -390,6 +385,7 @@ export class AgendaPage implements OnInit {
   cancelCreateOptions(): void {
     this.showCreateOptions.set(false);
     this.selectedType.set(null);
+    this.clearCreateFields();
   }
 
   closeCreate(): void {
@@ -398,6 +394,27 @@ export class AgendaPage implements OnInit {
     if (this.mediaRecorder?.state === 'recording') {
       this.mediaRecorder.stop();
     }
+    // No limpiar si se está abriendo el modal de voz (transcripción + guardar); si no, se cerraría al instante
+    if (!this.showVoiceConfirmModal()) {
+      this.clearCreateFields();
+    }
+  }
+
+  /** Limpia texto, voz y dibujo del flujo de creación (al cerrar, cancelar o guardar). */
+  private clearCreateFields(): void {
+    this.noteContent.set('');
+    this.pendingVoiceFile.set(null);
+    this.pendingDrawingDataUrl.set(null);
+    this.selectedType.set(null);
+    this.step.set(1);
+    this.showVoiceConfirmModal.set(false);
+    this.editingNoteId.set(null);
+    this.editingNoteVoiceUrls.set([]);
+    this.currentNote.set(null);
+    const url = this.voicePreviewUrl();
+    if (url) URL.revokeObjectURL(url);
+    this.voicePreviewUrl.set(null);
+    this.clearDrawing();
   }
 
   canGoNext = computed(() => {
@@ -426,6 +443,10 @@ export class AgendaPage implements OnInit {
   prevStep(): void {
     const s = this.step();
     if (s === 2) {
+      this.noteContent.set('');
+      this.pendingVoiceFile.set(null);
+      this.pendingDrawingDataUrl.set(null);
+      this.clearDrawing();
       this.showCreateDialog.set(false);
       this.showCreateOptions.set(true);
       this.step.set(1);
