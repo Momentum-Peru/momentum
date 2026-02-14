@@ -6,9 +6,20 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { toSignal } from '@angular/core/rxjs-interop';
+
 import { TimeTrackingApiService } from '../../../shared/services/time-tracking-api.service';
 import { UsersApiService, User } from '../../../shared/services/users-api.service';
-import { TimeTracking } from '../../../shared/interfaces/time-tracking.interface';
+import { AuthService } from '../../login/services/auth.service';
+import {
+    TimeTracking,
+    CreateTimeTrackingRequest,
+    UpdateTimeTrackingRequest
+} from '../../../shared/interfaces/time-tracking.interface';
+import { PayrollCalculationTimeTrackingDialogComponent } from '../../payroll-calculation/components/payroll-calculation-time-tracking-dialog/payroll-calculation-time-tracking-dialog';
 
 @Component({
     selector: 'app-time-tracking-detail',
@@ -20,8 +31,12 @@ import { TimeTracking } from '../../../shared/interfaces/time-tracking.interface
         CardModule,
         TagModule,
         TooltipModule,
-        RouterModule
+        RouterModule,
+        ToastModule,
+        ConfirmDialogModule,
+        PayrollCalculationTimeTrackingDialogComponent
     ],
+    providers: [MessageService, ConfirmationService],
     templateUrl: './time-tracking-detail.component.html',
     styleUrls: ['./time-tracking-detail.component.css']
 })
@@ -30,11 +45,30 @@ export class TimeTrackingDetailComponent implements OnInit {
     private router = inject(Router);
     private timeTrackingApi = inject(TimeTrackingApiService);
     private usersApi = inject(UsersApiService);
+    private authService = inject(AuthService);
+    private messageService = inject(MessageService);
+    private confirmationService = inject(ConfirmationService);
 
     userId = signal<string>('');
     user = signal<User | null>(null);
     records = signal<TimeTracking[]>([]);
     loading = signal<boolean>(false);
+
+    // Manual Entry State
+    showTimeTrackingDialog = signal(false);
+    editingTimeTracking = signal<TimeTracking | null>(null);
+    selectedTimeTrackingDate = signal<Date | null>(null);
+    defaultTrackingType = signal<'INGRESO' | 'SALIDA' | null>(null);
+
+    // Current User & Permissions
+    currentUser = toSignal(this.authService.currentUser$, {
+        initialValue: this.authService.getCurrentUser(),
+    });
+
+    canEditTimeTracking = computed(() => {
+        const user = this.currentUser();
+        return user?.role === 'admin' || user?.role === 'gerencia';
+    });
 
     // Stats
     attendanceCount = computed(() => {
@@ -49,18 +83,11 @@ export class TimeTrackingDetailComponent implements OnInit {
         return this.records().filter(r => {
             if (r.type !== 'INGRESO') return false;
             const date = new Date(r.date);
-            // Late if after 8:15 AM
-            // Using local time for simplicity as timezone handling without luxon is verbose
-            // Ideally we should use a library or proper offset handling
             const hour = date.getHours();
             const minute = date.getMinutes();
             return hour > 8 || (hour === 8 && minute > 15);
         }).length;
     });
-
-    // A simple absence calculation would require a known schedule. 
-    // For now we might just omit it or rely on a more complex calculation if needed.
-    // We'll stick to what we can compute from the records for now.
 
     ngOnInit() {
         this.route.paramMap.subscribe(params => {
@@ -81,8 +108,7 @@ export class TimeTrackingDetailComponent implements OnInit {
             error: (err) => console.error('Error loading user', err)
         });
 
-        // Load Records (last 30 days by default, or implement date filters)
-        // For now getting all active or a reasonable range
+        // Load Records (last 30 days)
         const now = new Date();
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(now.getDate() - 30);
@@ -92,12 +118,113 @@ export class TimeTrackingDetailComponent implements OnInit {
 
         this.timeTrackingApi.getByUser(userId, { startDate, endDate }).subscribe({
             next: (data) => {
-                this.records.set(data);
+                // Sort by date descending
+                const sorted = data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                this.records.set(sorted);
                 this.loading.set(false);
             },
             error: (err) => {
                 console.error('Error loading records', err);
                 this.loading.set(false);
+            }
+        });
+    }
+
+    // Manual Entry Methods
+    openAddTimeTrackingDialog(type: 'INGRESO' | 'SALIDA'): void {
+        const defaultDate = new Date();
+        if (type === 'INGRESO') {
+            defaultDate.setHours(8, 0, 0, 0);
+        } else {
+            defaultDate.setHours(17, 0, 0, 0);
+        }
+
+        this.selectedTimeTrackingDate.set(defaultDate);
+        this.defaultTrackingType.set(type);
+        this.editingTimeTracking.set(null);
+        this.showTimeTrackingDialog.set(true);
+    }
+
+    openEditTimeTrackingDialog(record: TimeTracking): void {
+        this.editingTimeTracking.set(record);
+        this.selectedTimeTrackingDate.set(new Date(record.date));
+        this.showTimeTrackingDialog.set(true);
+    }
+
+    saveTimeTracking(request: CreateTimeTrackingRequest | UpdateTimeTrackingRequest): void {
+        const editing = this.editingTimeTracking();
+        const userId = this.userId();
+
+        if (editing) {
+            this.timeTrackingApi.update(editing._id!, request as UpdateTimeTrackingRequest).subscribe({
+                next: () => {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Éxito',
+                        detail: 'Registro actualizado'
+                    });
+                    this.showTimeTrackingDialog.set(false);
+                    this.loadData(userId);
+                },
+                error: (err) => {
+                    console.error('Error updating', err);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'No se pudo actualizar el registro'
+                    });
+                }
+            });
+        } else {
+            const createRequest = request as CreateTimeTrackingRequest;
+            createRequest.userId = userId;
+            this.timeTrackingApi.create(createRequest).subscribe({
+                next: () => {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Éxito',
+                        detail: 'Registro creado'
+                    });
+                    this.showTimeTrackingDialog.set(false);
+                    this.loadData(userId);
+                },
+                error: (err) => {
+                    console.error('Error creating', err);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'No se pudo crear el registro'
+                    });
+                }
+            });
+        }
+    }
+
+    deleteTimeTracking(record: TimeTracking): void {
+        this.confirmationService.confirm({
+            message: '¿Estás seguro de que deseas eliminar este registro?',
+            header: 'Confirmar eliminación',
+            icon: 'pi pi-exclamation-triangle',
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.timeTrackingApi.delete(record._id!).subscribe({
+                    next: () => {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: 'Registro eliminado'
+                        });
+                        this.loadData(this.userId());
+                    },
+                    error: (err) => {
+                        console.error('Error deleting', err);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'No se pudo eliminar el registro'
+                        });
+                    }
+                });
             }
         });
     }
@@ -122,3 +249,4 @@ export class TimeTrackingDetailComponent implements OnInit {
         });
     }
 }
+

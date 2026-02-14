@@ -1,6 +1,9 @@
 <div class="p-6 fade-in">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
   <!-- Header -->
-  <div class="mb-6 flex items-center justify-between">
+  <div class="mb-6 flex items-center justify-between flex-wrap gap-4">
     <div class="flex items-center gap-4">
       <p-button 
         icon="pi pi-arrow-left" 
@@ -18,6 +21,26 @@
           {{ user()?.name }} - {{ user()?.role | titlecase }}
         </p>
       </div>
+    </div>
+
+    <!-- Actions for Admin/Gerencia -->
+    <div class="flex items-center gap-2" *ngIf="canEditTimeTracking()">
+      <p-button 
+        label="Agregar Entrada" 
+        icon="pi pi-sign-in" 
+        severity="success" 
+        [outlined]="true"
+        size="small"
+        (onClick)="openAddTimeTrackingDialog('INGRESO')">
+      </p-button>
+      <p-button 
+        label="Agregar Salida" 
+        icon="pi pi-sign-out" 
+        severity="info" 
+        [outlined]="true"
+        size="small"
+        (onClick)="openAddTimeTrackingDialog('SALIDA')">
+      </p-button>
     </div>
   </div>
 
@@ -64,6 +87,7 @@
           <th pSortableColumn="type">Tipo <p-sortIcon field="type"></p-sortIcon></th>
           <th>Ubicación</th>
           <th>Notas/Confianza</th>
+          <th *ngIf="canEditTimeTracking()" class="text-center" style="width: 120px">Acciones</th>
         </tr>
       </ng-template>
 
@@ -80,14 +104,14 @@
             </p-tag>
           </td>
           <td>
-            <div class="flex flex-col">
-              <span class="text-sm truncate max-w-xs" [title]="record.address || 'Sin dirección'">
+            <div class="flex flex-col text-xs">
+              <span class="truncate max-w-xs" [title]="record.address || 'Sin dirección'">
                 {{ record.address || 'Ubicación registrada' }}
               </span>
             </div>
           </td>
           <td>
-            <div class="flex flex-col text-sm text-gray-500">
+            <div class="flex flex-col text-xs text-gray-500">
                <span *ngIf="record.attendanceRecordId?.confidence">
                  Confianza: {{ (record.attendanceRecordId.confidence * 100).toFixed(1) }}%
                </span>
@@ -96,12 +120,32 @@
                </span>
             </div>
           </td>
+          <td *ngIf="canEditTimeTracking()" class="text-center">
+            <div class="flex items-center justify-center gap-1">
+              <button 
+                pButton 
+                icon="pi pi-pencil" 
+                class="p-button-rounded p-button-text p-button-info w-8 h-8 flex align-items-center justify-content-center" 
+                (click)="openEditTimeTrackingDialog(record)"
+                pTooltip="Editar"
+                tooltipPosition="left"
+              ></button>
+              <button 
+                pButton 
+                icon="pi pi-trash" 
+                class="p-button-rounded p-button-text p-button-danger w-8 h-8 flex align-items-center justify-content-center" 
+                (click)="deleteTimeTracking(record)"
+                pTooltip="Eliminar"
+                tooltipPosition="left"
+              ></button>
+            </div>
+          </td>
         </tr>
       </ng-template>
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="4" class="text-center p-4">
+          <td [attr.colspan]="canEditTimeTracking() ? 5 : 4" class="text-center p-4">
             No hay registros para este período.
           </td>
         </tr>
@@ -109,3 +153,15 @@
     </p-table>
   </p-card>
 </div>
+
+<!-- Manual Entry Dialog -->
+<app-payroll-calculation-time-tracking-dialog
+  *ngIf="showTimeTrackingDialog()"
+  [visible]="showTimeTrackingDialog()"
+  [editingItem]="editingTimeTracking()"
+  [defaultDate]="selectedTimeTrackingDate()"
+  [defaultType]="defaultTrackingType()"
+  [userId]="userId()"
+  (closeDialog)="showTimeTrackingDialog.set(false); editingTimeTracking.set(null)"
+  (formSubmit)="saveTimeTracking($event)"
+></app-payroll-calculation-time-tracking-dialog>
