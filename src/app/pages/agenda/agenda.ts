@@ -299,13 +299,12 @@ export class AgendaPage implements OnInit {
     };
   }
 
-  /** Filtros para listar notas: fecha y, si no es gerencia, solo las asignadas al usuario actual. */
+  /** Filtros para listar notas: fecha y, si no es gerencia, las creadas por mí o asignadas a mí (backend usa el usuario del token). */
   private buildListFilters(): Parameters<AgendaApiService['list']>[0] {
     const { startDate, endDate } = this.buildDateFilters();
     const filters: Parameters<AgendaApiService['list']>[0] = { startDate, endDate };
     if (!this.authService.isGerencia()) {
-      const userId = this.authService.getCurrentUser()?.id;
-      if (userId) filters.assignedTo = userId;
+      filters.forUser = true;
     }
     return filters;
   }
@@ -1421,14 +1420,13 @@ export class AgendaPage implements OnInit {
   }
 
   /** Resumen para la columna Contenido: texto, "Audio" / "N audio(s)", "Dibujo" / "N imagen(es)". */
+  /** Texto completo para la tabla: contenido de texto, transcripción para voz, o etiqueta para dibujo. */
   getContentSummary(note: AgendaNote): string {
-    if (note.type === 'text' && note.content?.trim()) {
-      const text = note.content.trim();
-      return text.length > 80 ? text.slice(0, 80) + '…' : text;
-    }
+    if (note.type === 'text' && note.content?.trim()) return note.content.trim();
+    if (note.type === 'voice' && note.content?.trim()) return note.content.trim();
     if (note.type === 'voice') {
       const n = note.voiceUrl?.length ?? 0;
-      return n ? (n === 1 ? 'Audio' : `${n} audio(s)`) : '—';
+      return n ? (n === 1 ? 'Audio (sin transcripción)' : `${n} audio(s)`) : '—';
     }
     if (note.type === 'drawing') {
       const n = note.drawingUrl?.length ?? 0;
