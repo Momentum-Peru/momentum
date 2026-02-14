@@ -21,6 +21,8 @@ export interface AgendaNote {
   voiceUrl?: string[];
   drawingUrl?: string[];
   assignedTo?: (AgendaNoteUser | string)[];
+  /** Fecha y hora de vencimiento (ISO). */
+  dueAt?: string | null;
   sharedVia?: AgendaNoteSharedVia[];
   teamsMeetingId?: string | null;
   createdAt?: string;
@@ -36,10 +38,14 @@ export interface CreateAgendaNotePayload {
 export interface UpdateAgendaNotePayload {
   type?: AgendaNoteType;
   content?: string;
+  /** Fecha y hora de vencimiento (ISO). null para quitar. */
+  dueAt?: string | null;
 }
 
 export interface AssignAgendaNotePayload {
   userIds: string[];
+  /** Fecha y hora de vencimiento (ISO). Opcional. */
+  dueAt?: string | null;
 }
 
 export interface ShareAgendaNotePayload {

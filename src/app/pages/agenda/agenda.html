@@ -94,9 +94,8 @@
             type="button"
             label="Asignar"
             icon="pi pi-user-plus"
-            [loading]="bulkAssigning()"
             [disabled]="!bulkAssignUserId()"
-            (click)="onBulkAssign()"
+            (click)="openAssignModalForBulk()"
           ></button>
           <button
             pButton
@@ -234,9 +233,65 @@
     }
   </p-card>
 
+  <!-- Modal asignar con fecha/hora de vencimiento (uno o masivo) -->
+  <p-dialog
+    [(visible)]="showAssignModal"
+    (onHide)="closeAssignModal()"
+    header="Asignar con vencimiento"
+    [modal]="true"
+    [closable]="true"
+    [style]="{ width: 'min(90vw, 420px)' }"
+  >
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Asignar a</label
+        >
+        <p class="text-gray-800 dark:text-white font-medium">{{ getAssignModalUserName() }}</p>
+      </div>
+      <div>
+        <label
+          for="assign-due-at"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Fecha y hora de vencimiento</label
+        >
+        <p-datepicker
+          id="assign-due-at"
+          [ngModel]="assignModalDueAt()"
+          (ngModelChange)="assignModalDueAt.set($event)"
+          [showTime]="true"
+          dateFormat="dd/mm/yy"
+          hourFormat="24"
+          [showIcon]="true"
+          [appendTo]="'body'"
+          styleClass="w-full"
+          placeholder="Seleccione fecha y hora"
+        ></p-datepicker>
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        type="button"
+        label="Cancelar"
+        [outlined]="true"
+        (click)="closeAssignModal()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Asignar"
+        icon="pi pi-check"
+        [loading]="bulkAssigning()"
+        (click)="confirmAssignModal()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
   <!-- Diálogo crear nota (solo contenido: texto, voz o dibujo) -->
   <p-dialog
     [(visible)]="showCreateDialog"
+    (onHide)="closeCreate()"
     (onHide)="closeCreate()"
     header="Crear nota"
     [modal]="true"
@@ -560,6 +615,38 @@
             </ul>
           </div>
         }
+        <div>
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vencimiento</p>
+          @if (canEdit() && detailEditMode()) {
+            <div class="flex flex-wrap items-end gap-2">
+              <p-datepicker
+                [ngModel]="detailEditDueAt()"
+                (ngModelChange)="detailEditDueAt.set($event)"
+                [showTime]="true"
+                dateFormat="dd/mm/yy"
+                hourFormat="24"
+                [showIcon]="true"
+                [appendTo]="'body'"
+                styleClass="w-full min-w-[200px]"
+                placeholder="Fecha y hora de vencimiento"
+              ></p-datepicker>
+              <button
+                pButton
+                type="button"
+                label="Guardar"
+                icon="pi pi-check"
+                size="small"
+                (click)="saveDetailDueAt(note)"
+              ></button>
+            </div>
+          } @else {
+            @if (note.dueAt) {
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ formatDueAt(note.dueAt) }}</p>
+            } @else {
+              <p class="text-sm text-gray-400">—</p>
+            }
+          }
+        </div>
       </div>
     }
     <ng-template pTemplate="footer">

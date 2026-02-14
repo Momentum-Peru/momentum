@@ -104,10 +104,18 @@ export class AgendaPage implements OnInit {
   /** Cargando asignación masiva. */
   bulkAssigning = signal(false);
 
+  /** Modal asignar con fecha/hora de vencimiento (uno o masivo). */
+  showAssignModal = signal(false);
+  assignModalNoteIds = signal<string[]>([]);
+  assignModalUserId = signal<string | null>(null);
+  assignModalDueAt = signal<Date | null>(null);
+
   /** Si en el detalle estamos en modo edición (tras pulsar Editar). */
   detailEditMode = signal(false);
   /** Contenido en edición en el diálogo de detalle (texto). */
   detailEditContent = signal('');
+  /** Fecha/hora de vencimiento en edición en el detalle. */
+  detailEditDueAt = signal<Date | null>(null);
   /** ID de la nota que se está editando (regrabar voz o reemplazar dibujo). */
   editingNoteId = signal<string | null>(null);
   /** URLs de audio actuales al regrabar (para eliminarlas al guardar). */
@@ -459,25 +467,102 @@ export class AgendaPage implements OnInit {
     this.selectedNoteIds.set(new Set());
   }
 
-  /** Asignación masiva: asignar el usuario seleccionado a todas las notas seleccionadas. */
-  onBulkAssign(): void {
-    const userId = this.bulkAssignUserId();
-    const ids = Array.from(this.selectedNoteIds());
-    if (!ids.length) return;
-    if (!userId) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Asignar',
-        detail: 'Elige un usuario para asignar',
+  /** Abre el modal de asignación para una sola nota (desde el select de la fila). */
+  openAssignModalForNote(note: AgendaNote, userId: string | null): void {
+    if (!note._id) return;
+    if (userId == null) {
+      this.agendaApi.assign(note._id, { userIds: [], dueAt: null }).subscribe({
+        next: () => {
+          this.loadNotes();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Asignado',
+            detail: 'Asignación quitada',
+          });
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo actualizar',
+          });
+        },
       });
       return;
     }
+    this.assignModalNoteIds.set([String(note._id)]);
+    this.assignModalUserId.set(userId);
+    this.assignModalDueAt.set(note.dueAt ? new Date(note.dueAt) : null);
+    this.showAssignModal.set(true);
+  }
+
+  /** Abre el modal de asignación masiva (desde la barra). */
+  openAssignModalForBulk(): void {
+    const userId = this.bulkAssignUserId();
+    const ids = Array.from(this.selectedNoteIds());
+    if (!ids.length || !userId) {
+      if (!userId) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Asignar',
+          detail: 'Elige un usuario para asignar',
+        });
+      }
+      return;
+    }
+    this.assignModalNoteIds.set(ids);
+    this.assignModalUserId.set(userId);
+    this.assignModalDueAt.set(null);
+    this.showAssignModal.set(true);
+  }
+
+  closeAssignModal(): void {
+    this.showAssignModal.set(false);
+    this.assignModalNoteIds.set([]);
+    this.assignModalUserId.set(null);
+    this.assignModalDueAt.set(null);
+  }
+
+  /** Formatea fecha/hora de vencimiento para mostrar en detalle. */
+  formatDueAt(dueAt: string): string {
+    try {
+      const d = new Date(dueAt);
+      return d.toLocaleString('es-PE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dueAt;
+    }
+  }
+
+  /** Nombre del usuario seleccionado en el modal de asignación. */
+  getAssignModalUserName(): string {
+    const id = this.assignModalUserId();
+    if (!id) return '—';
+    const user = this.userOptions().find((u) => u._id === id);
+    return user?.name ?? user?.email ?? id;
+  }
+
+  /** Confirmar asignación desde el modal (aplica usuario y fecha/hora vencimiento). */
+  confirmAssignModal(): void {
+    const ids = this.assignModalNoteIds();
+    const userId = this.assignModalUserId();
+    const dueAt = this.assignModalDueAt();
+    if (!ids.length) {
+      this.closeAssignModal();
+      return;
+    }
+    const userIds = userId ? [userId] : [];
+    const dueAtIso = dueAt ? dueAt.toISOString() : null;
     this.bulkAssigning.set(true);
-    const userIds = [userId];
     Promise.all(
       ids.map((id) =>
         firstValueFrom(
-          this.agendaApi.assign(id, { userIds }).pipe(
+          this.agendaApi.assign(id, { userIds, dueAt: dueAtIso }).pipe(
             map(() => true),
             catchError(() => of(false)),
           ),
@@ -488,13 +573,19 @@ export class AgendaPage implements OnInit {
         const ok = results.filter(Boolean).length;
         const fail = results.length - ok;
         this.loadNotes();
-        this.clearSelection();
-        this.bulkAssignUserId.set(null);
+        this.closeAssignModal();
+        if (ids.length > 1) {
+          this.clearSelection();
+          this.bulkAssignUserId.set(null);
+        }
         if (fail === 0) {
           this.messageService.add({
             severity: 'success',
             summary: 'Asignado',
-            detail: `${ok} nota(s) asignada(s) correctamente`,
+            detail:
+              ids.length === 1
+                ? 'Nota asignada con vencimiento'
+                : `${ok} nota(s) asignada(s) correctamente`,
           });
         } else {
           this.messageService.add({
@@ -510,27 +601,9 @@ export class AgendaPage implements OnInit {
       .finally(() => this.bulkAssigning.set(false));
   }
 
-  /** Asignar o cambiar la única persona asignada desde el select de la tabla. */
+  /** Asignar o cambiar la única persona asignada desde el select de la tabla (abre modal con vencimiento). */
   onAssignChange(note: AgendaNote, userId: string | null): void {
-    if (!note._id) return;
-    const userIds = userId ? [userId] : [];
-    this.agendaApi.assign(note._id, { userIds }).subscribe({
-      next: () => {
-        this.loadNotes();
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Asignado',
-          detail: userIds.length ? 'Usuario asignado correctamente' : 'Asignación quitada',
-        });
-      },
-      error: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo asignar',
-        });
-      },
-    });
+    this.openAssignModalForNote(note, userId);
   }
 
   shareNoteFromNote(note: AgendaNote, channel: 'email' | 'whatsapp'): void {
@@ -841,6 +914,7 @@ export class AgendaPage implements OnInit {
   viewNote(note: AgendaNote): void {
     this.currentNote.set(note);
     this.detailEditContent.set(note.content ?? '');
+    this.detailEditDueAt.set(note.dueAt ? new Date(note.dueAt) : null);
     this.detailEditMode.set(false);
     this.showDetailDialog.set(true);
   }
@@ -937,6 +1011,29 @@ export class AgendaPage implements OnInit {
           severity: 'success',
           summary: 'Guardado',
           detail: 'Contenido actualizado',
+        });
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: err?.error?.message ?? 'No se pudo guardar',
+        });
+      },
+    });
+  }
+
+  saveDetailDueAt(note: AgendaNote): void {
+    const dueAt = this.detailEditDueAt();
+    const dueAtIso = dueAt ? dueAt.toISOString() : null;
+    this.agendaApi.update(note._id, { dueAt: dueAtIso }).subscribe({
+      next: (updated) => {
+        this.currentNote.set(updated);
+        this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Guardado',
+          detail: 'Vencimiento actualizado',
         });
       },
       error: (err) => {
