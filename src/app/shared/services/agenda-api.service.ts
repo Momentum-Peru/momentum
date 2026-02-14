@@ -13,6 +13,8 @@ import type {
 export interface AgendaListFilters {
   createdBy?: string;
   assignedTo?: string;
+  /** Si es true, el backend filtra por "creadas por mí O asignadas a mí" usando el usuario del token. */
+  forUser?: boolean;
   type?: string;
   startDate?: string;
   endDate?: string;
@@ -40,6 +42,7 @@ export class AgendaApiService {
     const params = new URLSearchParams();
     if (filters?.createdBy) params.set('createdBy', filters.createdBy);
     if (filters?.assignedTo) params.set('assignedTo', filters.assignedTo);
+    if (filters?.forUser) params.set('forUser', '1');
     if (filters?.type) params.set('type', filters.type);
     if (filters?.startDate) params.set('startDate', filters.startDate);
     if (filters?.endDate) params.set('endDate', filters.endDate);
