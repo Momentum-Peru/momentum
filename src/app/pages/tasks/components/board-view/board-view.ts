@@ -66,12 +66,12 @@ export class BoardViewComponent implements OnInit {
     completed: number;
     overdue: number;
   } = {
-    total: 0,
-    pending: 0,
-    inProgress: 0,
-    completed: 0,
-    overdue: 0,
-  };
+      total: 0,
+      pending: 0,
+      inProgress: 0,
+      completed: 0,
+      overdue: 0,
+    };
   @Input() loading = false;
 
   @Output() back = new EventEmitter<void>();
@@ -106,7 +106,7 @@ export class BoardViewComponent implements OnInit {
 
   // Board Users Computed for Agenda View
   public get boardUsers(): User[] {
-    // Si hay usuarios disponibles desde el padre, usarlos (para "Mis Actividades")
+    // Si hay usuarios disponibles desde el padre, usarlos (para "Agenda")
     if (this.availableUsersObjects && this.availableUsersObjects.length > 0) {
       return this.availableUsersObjects;
     }
@@ -150,26 +150,12 @@ export class BoardViewComponent implements OnInit {
     return Array.from(uniqueMap.values());
   }
 
-  /** Inicio del día de hoy (00:00:00) para usar como valor por defecto de fecha de inicio */
-  private static getDefaultDateFrom(): Date {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }
-  /** Fin del día de hoy (23:59:59) para usar como valor por defecto de fecha de fin */
-  private static getDefaultDateTo(): Date {
-    const d = new Date();
-    d.setHours(23, 59, 59, 999);
-    return d;
-  }
+
 
   // Filtros
   public readonly showFilters = signal<boolean>(true);
   public readonly filterAssignedTo = signal<string | undefined>(undefined);
-  public readonly filterDateFrom = signal<Date | undefined>(
-    BoardViewComponent.getDefaultDateFrom(),
-  );
-  public readonly filterDateTo = signal<Date | undefined>(BoardViewComponent.getDefaultDateTo());
+  public readonly filterDate = signal<Date | undefined>(new Date());
   public readonly filterTags = signal<string[]>([]);
   public readonly filterArea = signal<string | undefined>(undefined); // Added filter
 
@@ -247,23 +233,20 @@ export class BoardViewComponent implements OnInit {
     }
 
     // Normalizar y agregar filtros de fecha
-    const dateFrom = this.filterDateFrom();
-    const dateTo = this.filterDateTo();
+    const selectedDate = this.filterDate();
 
-    if (dateFrom !== undefined && dateFrom !== null) {
-      const dateFromObj = dateFrom instanceof Date ? dateFrom : new Date(dateFrom);
-      // Solo agregar si es una fecha válida
-      if (!isNaN(dateFromObj.getTime())) {
-        filters.dueDateFrom = dateFromObj.toISOString();
-      }
-    }
+    if (selectedDate !== undefined && selectedDate !== null) {
+      const dateObj = selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
+      if (!isNaN(dateObj.getTime())) {
+        // Inicio del día (00:00:00)
+        const dateFrom = new Date(dateObj);
+        dateFrom.setHours(0, 0, 0, 0);
+        filters.dueDateFrom = dateFrom.toISOString();
 
-    if (dateTo !== undefined && dateTo !== null) {
-      const dateToObj = dateTo instanceof Date ? dateTo : new Date(dateTo);
-      // Solo agregar si es una fecha válida
-      if (!isNaN(dateToObj.getTime())) {
-        // Usar la fecha y hora seleccionada por el usuario
-        filters.dueDateTo = dateToObj.toISOString();
+        // Fin del día (23:59:59)
+        const dateTo = new Date(dateObj);
+        dateTo.setHours(23, 59, 59, 999);
+        filters.dueDateTo = dateTo.toISOString();
       }
     }
 
@@ -286,9 +269,10 @@ export class BoardViewComponent implements OnInit {
    * Limpia los filtros
    */
   public clearFilters(): void {
-    this.filterDateFrom.set(undefined);
-    this.filterDateTo.set(undefined);
+    this.filterDate.set(new Date());
     this.filterArea.set(undefined);
+    this.filterAssignedTo.set(undefined);
+    this.filterTags.set([]);
     this.applyFilters();
   }
 
@@ -318,54 +302,25 @@ export class BoardViewComponent implements OnInit {
   }
 
   /**
-   * Normaliza el valor de fecha desde cuando cambia
+   * Normaliza el valor de fecha cuando cambia
    */
-  public onDateFromChange(value: Date | null | undefined | string): void {
-    // Manejar todos los casos: null, undefined, string vacío, o Date inválido
+  public onDateChange(value: Date | null | undefined | string): void {
     if (
       value === null ||
       value === undefined ||
       value === '' ||
       (typeof value === 'string' && value.trim() === '')
     ) {
-      this.filterDateFrom.set(undefined);
+      this.filterDate.set(undefined);
     } else if (value instanceof Date) {
-      // Solo establecer si es una fecha válida
       if (!isNaN(value.getTime())) {
-        this.filterDateFrom.set(value);
+        this.filterDate.set(value);
       } else {
-        this.filterDateFrom.set(undefined);
+        this.filterDate.set(undefined);
       }
     } else {
-      this.filterDateFrom.set(undefined);
+      this.filterDate.set(undefined);
     }
-    // Los signals son síncronos, así que podemos llamar applyFilters directamente
-    this.applyFilters();
-  }
-
-  /**
-   * Normaliza el valor de fecha hasta cuando cambia
-   */
-  public onDateToChange(value: Date | null | undefined | string): void {
-    // Manejar todos los casos: null, undefined, string vacío, o Date inválido
-    if (
-      value === null ||
-      value === undefined ||
-      value === '' ||
-      (typeof value === 'string' && value.trim() === '')
-    ) {
-      this.filterDateTo.set(undefined);
-    } else if (value instanceof Date) {
-      // Solo establecer si es una fecha válida
-      if (!isNaN(value.getTime())) {
-        this.filterDateTo.set(value);
-      } else {
-        this.filterDateTo.set(undefined);
-      }
-    } else {
-      this.filterDateTo.set(undefined);
-    }
-    // Los signals son síncronos, así que podemos llamar applyFilters directamente
     this.applyFilters();
   }
 
@@ -410,14 +365,14 @@ export class BoardViewComponent implements OnInit {
    * Verifica si hay filtros activos
    */
   public hasActiveFilters(): boolean {
-    const hasDateFrom = !!this.filterDateFrom();
-    const hasDateTo = !!this.filterDateTo();
+    const hasDate = !!this.filterDate();
     const hasArea = !!this.filterArea();
+    const hasAssignedTo = !!this.filterAssignedTo();
+    const hasTags = this.filterTags().length > 0;
 
-    // Considerar activo si hay área O si hay fechas diferentes al default (solo dateTo = hoy)
-    const isDefaultDateFilter = !hasDateFrom && hasDateTo && this.isToday(this.filterDateTo());
+    const isDifferentDate = hasDate && !this.isToday(this.filterDate());
 
-    return hasArea || hasDateFrom || (hasDateTo && !isDefaultDateFilter);
+    return hasArea || hasAssignedTo || hasTags || isDifferentDate;
   }
 
   /**

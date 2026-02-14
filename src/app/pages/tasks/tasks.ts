@@ -113,7 +113,7 @@ export class TasksPage implements OnInit, AfterViewInit {
   public readonly availableTags = signal<string[]>([]);
   public readonly availableAreas = signal<Area[]>([]); // Added
   public readonly areaUsers = signal<string[] | null>(null); // Added: User IDs for selected area
-  public readonly allUsers = signal<User[]>([]); // Added: All users for 'Mis Actividades' view
+  public readonly allUsers = signal<User[]>([]); // Added: All users for 'Agenda' view
   public readonly allAreaUsers = signal<string[]>([]); // Added: User IDs from ALL available areas
   private readonly processedTaskId = signal<string | null>(null);
 
@@ -130,62 +130,62 @@ export class TasksPage implements OnInit, AfterViewInit {
     const authUser = this.authService.getCurrentUser();
     if (!authUser) return null;
     return {
-        _id: authUser.id,
-        name: authUser.name,
-        email: authUser.email,
-        role: authUser.role,
-        profilePicture: authUser.profilePicture
+      _id: authUser.id,
+      name: authUser.name,
+      email: authUser.email,
+      role: authUser.role,
+      profilePicture: authUser.profilePicture
     } as unknown as User;
   });
 
-  public onQuickCreateTask(data: {title: string, assignedTo: string, dueDate?: Date, areaId?: string}): void {
-      const board = this.selectedBoard();
-      const currentUser = this.currentUserObject();
-      if (!board || !currentUser) return;
-      
-      let areaId: string | undefined = data.areaId;
+  public onQuickCreateTask(data: { title: string, assignedTo: string, dueDate?: Date, areaId?: string }): void {
+    const board = this.selectedBoard();
+    const currentUser = this.currentUserObject();
+    if (!board || !currentUser) return;
 
-      if (!areaId) {
-          const boardArea = board.areaId;
-          if (boardArea) {
-              if (typeof boardArea === 'string') {
-                  areaId = boardArea;
-              } else if (typeof boardArea === 'object' && '_id' in boardArea) {
-                  areaId = (boardArea as any)._id;
-              }
-          }
+    let areaId: string | undefined = data.areaId;
+
+    if (!areaId) {
+      const boardArea = board.areaId;
+      if (boardArea) {
+        if (typeof boardArea === 'string') {
+          areaId = boardArea;
+        } else if (typeof boardArea === 'object' && '_id' in boardArea) {
+          areaId = (boardArea as any)._id;
+        }
       }
+    }
 
-      const targetBoardId = board._id === 'all' ? undefined : board._id;
+    const targetBoardId = board._id === 'all' ? undefined : board._id;
 
-      const payload: CreateTaskRequest = {
-          title: data.title,
-          boardId: targetBoardId,
-          assignedTo: data.assignedTo,
-          createdBy: currentUser._id,
-          status: 'Pendiente',
-          priority: 'Media',
-          dueDate: data.dueDate,
-          areaId: areaId
-      };
+    const payload: CreateTaskRequest = {
+      title: data.title,
+      boardId: targetBoardId,
+      assignedTo: data.assignedTo,
+      createdBy: currentUser._id,
+      status: 'Pendiente',
+      priority: 'Media',
+      dueDate: data.dueDate,
+      areaId: areaId
+    };
 
-      this.tasksService.createTask(payload).subscribe({
-          next: () => {
-               this.messageService.add({
-                  severity: 'success',
-                  summary: 'Éxito',
-                  detail: 'Actividad creada correctamente'
-               });
-                this.extractTags();
-          },
-          error: () => {
-              this.messageService.add({
-                severity: 'error',
-                summary: 'Error',
-                detail: 'No se pudo crear la actividad'
-              });
-          }
-      });
+    this.tasksService.createTask(payload).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Actividad creada correctamente'
+        });
+        this.extractTags();
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo crear la actividad'
+        });
+      }
+    });
   }
 
   public readonly currentUserRole = computed(() => {
@@ -204,26 +204,26 @@ export class TasksPage implements OnInit, AfterViewInit {
       return [];
     }
 
-    // Si estamos en "Mis Actividades" (boardId='all'), usar allUsers
+    // Si estamos en "Agenda" (boardId='all'), usar allUsers
     if (board._id === 'all') {
       const users = this.allUsers();
       const selectedAreaUserIds = this.areaUsers(); // If filtering by specific area
       const allAreasUserIds = this.allAreaUsers(); // Users from ALL available areas
-      
+
       return users
         .filter(u => {
           const userId = u._id || u.id;
-          
+
           // Si hay un área específica seleccionada, solo mostrar usuarios de esa área
           if (selectedAreaUserIds && selectedAreaUserIds.length > 0) {
             return selectedAreaUserIds.includes(userId);
           }
-          
+
           // Si NO hay área seleccionada, mostrar usuarios de TODAS las áreas disponibles
           if (allAreasUserIds && allAreasUserIds.length > 0) {
             return allAreasUserIds.includes(userId);
           }
-          
+
           // Fallback: mostrar todos
           return true;
         })
@@ -239,35 +239,35 @@ export class TasksPage implements OnInit, AfterViewInit {
 
     // Helper para procesar usuario
     const processUser = (u: any) => {
-        if (!u) return;
-        
-        let userId: string | undefined;
-        let userData: any = u;
+      if (!u) return;
 
-        if (typeof u === 'string') {
-            userId = u;
-            userData = { _id: u, name: 'Sin nombre', email: '' }; // Minimal info
-        } else if (typeof u === 'object') {
-            userId = u._id || u.id;
+      let userId: string | undefined;
+      let userData: any = u;
+
+      if (typeof u === 'string') {
+        userId = u;
+        userData = { _id: u, name: 'Sin nombre', email: '' }; // Minimal info
+      } else if (typeof u === 'object') {
+        userId = u._id || u.id;
+      }
+
+      if (userId && !uniqueMap.has(userId)) {
+        // Filter logic:
+        // If allowedUserIds is present (area selected), check if user is in it.
+        if (allowedUserIds && !allowedUserIds.includes(userId)) {
+          return;
         }
 
-        if (userId && !uniqueMap.has(userId)) {
-             // Filter logic:
-             // If allowedUserIds is present (area selected), check if user is in it.
-             if (allowedUserIds && !allowedUserIds.includes(userId)) {
-                 return; 
-             }
-             
-            uniqueMap.set(userId, {
-                label: userData.name || userData.email || 'Sin nombre',
-                value: userId
-            });
-        }
+        uniqueMap.set(userId, {
+          label: userData.name || userData.email || 'Sin nombre',
+          value: userId
+        });
+      }
     };
 
     // Agregar el owner
     if (board.owner) {
-        processUser(board.owner);
+      processUser(board.owner);
     }
 
     // Agregar los members
@@ -290,7 +290,7 @@ export class TasksPage implements OnInit, AfterViewInit {
       return [];
     }
 
-    // Si estamos en "Mis Actividades", usar allUsers filtrados
+    // Si estamos en "Agenda", usar allUsers filtrados
     if (board._id === 'all') {
       const users = this.allUsers();
       const selectedAreaUserIds = this.areaUsers();
@@ -298,15 +298,15 @@ export class TasksPage implements OnInit, AfterViewInit {
 
       return users.filter(u => {
         const userId = u._id || u.id;
-        
+
         if (selectedAreaUserIds && selectedAreaUserIds.length > 0) {
           return selectedAreaUserIds.includes(userId);
         }
-        
+
         if (allAreasUserIds && allAreasUserIds.length > 0) {
           return allAreasUserIds.includes(userId);
         }
-        
+
         return true;
       }).filter(u => (u._id || u.id) !== 'system');
     }
@@ -317,7 +317,7 @@ export class TasksPage implements OnInit, AfterViewInit {
 
     const processUser = (u: any) => {
       if (!u) return;
-      
+
       let userId: string | undefined;
       let userData: any = u;
 
@@ -332,7 +332,7 @@ export class TasksPage implements OnInit, AfterViewInit {
         if (allowedUserIds && !allowedUserIds.includes(userId)) {
           return;
         }
-        
+
         uniqueMap.set(userId, {
           _id: userId,
           id: userId,
@@ -359,8 +359,8 @@ export class TasksPage implements OnInit, AfterViewInit {
    * Areas disponibles para filtrar, según el rol del usuario
    */
   public readonly filteredAreas = computed<Area[]>(() => {
-      // availableAreas is already filtered by role in loadAreas
-      return this.availableAreas();
+    // availableAreas is already filtered by role in loadAreas
+    return this.availableAreas();
   });
 
   public readonly tasksByStatus = computed(() => {
@@ -377,13 +377,13 @@ export class TasksPage implements OnInit, AfterViewInit {
       return undefined;
     };
 
-    const filteredTasks = boardId === 'all' 
-      ? tasks 
+    const filteredTasks = boardId === 'all'
+      ? tasks
       : boardId
         ? tasks.filter((task) => {
-            const taskBoardId = getBoardId(task.boardId);
-            return taskBoardId === boardId;
-          })
+          const taskBoardId = getBoardId(task.boardId);
+          return taskBoardId === boardId;
+        })
         : [];
 
     return {
@@ -411,11 +411,11 @@ export class TasksPage implements OnInit, AfterViewInit {
       ? tasks
       : boardId
         ? tasks.filter((task) => {
-            const taskBoardId = getBoardId(task.boardId);
-            return taskBoardId === boardId;
-          })
+          const taskBoardId = getBoardId(task.boardId);
+          return taskBoardId === boardId;
+        })
         : [];
-        
+
     const now = new Date();
 
     return {
@@ -492,14 +492,14 @@ export class TasksPage implements OnInit, AfterViewInit {
     // Leer parámetros de ruta (boardId)
     this.route.params.subscribe((params) => {
       const rawBoardId = params['boardId'];
-      
+
       if (rawBoardId) {
         const boardId = String(rawBoardId).trim();
-        
-        if (boardId === 'all') { // Mis Actividades
-             this.selectedBoard.set(this.VIRTUAL_BOARD_ALL);
-             this.loadBoardTasks('all');
-             return;
+
+        if (boardId === 'all') { // Agenda
+          this.selectedBoard.set(this.VIRTUAL_BOARD_ALL);
+          this.loadBoardTasks('all');
+          return;
         }
 
         // Verificar primero si el tablero está en la lista local
@@ -530,14 +530,14 @@ export class TasksPage implements OnInit, AfterViewInit {
           }
         }
       } else {
-        // Default to "Mis Actividades" instead of clearing
+        // Default to "Agenda" instead of clearing
         if (!this.manuallyShowBoardList()) {
-             // Redirect to 'all' to ensure consistent URL and state
-             this.selectedBoard.set(this.VIRTUAL_BOARD_ALL);
-             this.loadBoardTasks('all');
+          // Redirect to 'all' to ensure consistent URL and state
+          this.selectedBoard.set(this.VIRTUAL_BOARD_ALL);
+          this.loadBoardTasks('all');
         } else {
-             this.selectedBoard.set(null);
-             this.tasksService.clearState();
+          this.selectedBoard.set(null);
+          this.tasksService.clearState();
         }
       }
     });
@@ -584,10 +584,10 @@ export class TasksPage implements OnInit, AfterViewInit {
               typeof task.boardId === 'string'
                 ? task.boardId
                 : typeof task.boardId === 'object' && task.boardId !== null && '_id' in task.boardId
-                ? String((task.boardId as { _id?: string })._id || task.boardId)
-                : task.boardId
-                ? String(task.boardId)
-                : undefined;
+                  ? String((task.boardId as { _id?: string })._id || task.boardId)
+                  : task.boardId
+                    ? String(task.boardId)
+                    : undefined;
 
             if (boardId) {
               // Navegar al tablero sin query params para evitar bucles
@@ -664,91 +664,91 @@ export class TasksPage implements OnInit, AfterViewInit {
    * Carga las áreas activas
    */
   private loadAreas(): void {
-      const userRole = this.currentUserRole();
-      
-      let areasObservable;
-      
-      if (userRole === 'admin' || userRole === 'gerencia') {
-          areasObservable = this.areasService.listActive();
-      } else {
-          areasObservable = this.areasService.listMine();
+    const userRole = this.currentUserRole();
+
+    let areasObservable;
+
+    if (userRole === 'admin' || userRole === 'gerencia') {
+      areasObservable = this.areasService.listActive();
+    } else {
+      areasObservable = this.areasService.listMine();
+    }
+
+    areasObservable.subscribe({
+      next: (areas) => {
+        this.availableAreas.set(areas);
+      },
+      error: () => {
+        console.error('Error loading areas');
+        this.availableAreas.set([]);
       }
-      
-      areasObservable.subscribe({
-          next: (areas) => {
-              this.availableAreas.set(areas);
-          },
-          error: () => {
-              console.error('Error loading areas');
-              this.availableAreas.set([]);
-          }
-      });
+    });
   }
 
   /**
-   * Carga todos los usuarios para la vista "Mis Actividades"
+   * Carga todos los usuarios para la vista "Agenda"
    */
   private loadAllUsers(): void {
-      this.usersService.listWithFilters({}).subscribe({
-          next: (response) => {
-              this.allUsers.set(response.data || []);
-          },
-          error: () => {
-              console.error('Error loading all users');
-              this.allUsers.set([]);
-          }
-      });
+    this.usersService.listWithFilters({}).subscribe({
+      next: (response) => {
+        this.allUsers.set(response.data || []);
+      },
+      error: () => {
+        console.error('Error loading all users');
+        this.allUsers.set([]);
+      }
+    });
   }
 
   /**
    * Carga los usuarios de TODAS las áreas disponibles
    */
   private loadAllAreaUsers(): void {
-      const areas = this.availableAreas();
-      if (areas.length === 0) {
-          // Si no hay áreas cargadas aún, esperar y reintentar
-          setTimeout(() => this.loadAllAreaUsers(), 500);
-          return;
-      }
+    const areas = this.availableAreas();
+    if (areas.length === 0) {
+      // Si no hay áreas cargadas aún, esperar y reintentar
+      setTimeout(() => this.loadAllAreaUsers(), 500);
+      return;
+    }
 
-      const userIdsSet = new Set<string>();
-      let completedRequests = 0;
-      const totalAreas = areas.length;
+    const userIdsSet = new Set<string>();
+    let completedRequests = 0;
+    const totalAreas = areas.length;
 
-      if (totalAreas === 0) {
-          this.allAreaUsers.set([]);
-          return;
-      }
+    if (totalAreas === 0) {
+      this.allAreaUsers.set([]);
+      return;
+    }
 
-      areas.forEach(area => {
-          if (area._id) {
-              this.areasService.getAssignedUsers(area._id).subscribe({
-                  next: (users) => {
-                      users.forEach(u => {
-                          const userId = u._id || u.id;
-                          if (userId) {
-                              userIdsSet.add(userId);
-                          }
-                      });
-                      completedRequests++;
-                      if (completedRequests === totalAreas) {
-                          this.allAreaUsers.set(Array.from(userIdsSet));
-                      }
-                  },
-                  error: () => {
-                      completedRequests++;
-                      if (completedRequests === totalAreas) {
-                          this.allAreaUsers.set(Array.from(userIdsSet));
-                      }
-                  }
-              });
-          } else {
-              completedRequests++;
-              if (completedRequests === totalAreas) {
-                  this.allAreaUsers.set(Array.from(userIdsSet));
+    areas.forEach(area => {
+      if (area._id) {
+        this.areasService.getAssignedUsers(area._id).subscribe({
+          next: (users) => {
+            users.forEach(u => {
+              const userId = u._id || u.id;
+              if (userId) {
+                userIdsSet.add(userId);
               }
+            });
+            completedRequests++;
+            if (completedRequests === totalAreas) {
+              this.allAreaUsers.set(Array.from(userIdsSet));
+            }
+          },
+          error: () => {
+            completedRequests++;
+            if (completedRequests === totalAreas) {
+              this.allAreaUsers.set(Array.from(userIdsSet));
+            }
           }
-      });
+        });
+      } else {
+        completedRequests++;
+        if (completedRequests === totalAreas) {
+          this.allAreaUsers.set(Array.from(userIdsSet));
+        }
+      }
+    });
   }
 
   /**
@@ -919,17 +919,17 @@ export class TasksPage implements OnInit, AfterViewInit {
     let searchParams: TasksSearchParams = {
       ...filters,
     };
-    
+
     // Si el filtro contiene explícitamente boardId='all', removerlo para evitar error 400
     if (searchParams.boardId === 'all') {
-        delete searchParams.boardId;
+      delete searchParams.boardId;
     }
 
     if (boardId !== 'all') {
       searchParams.boardId = boardId;
       this.tasksService.getTasks(searchParams).subscribe(this.handleTasksResponse);
     } else {
-      // Logic for 'Mis Actividades' (all boards view)
+      // Logic for 'Agenda' (all boards view)
       const role = this.currentUserRole();
       if (role === 'gerencia' || role === 'admin') {
         // Management sees all
@@ -939,33 +939,33 @@ export class TasksPage implements OnInit, AfterViewInit {
         // If a specific area filter is already applied, respect it.
         // If not, force filter by ALL their areas.
         if (searchParams.areaId) {
-             this.tasksService.getTasks(searchParams).subscribe(this.handleTasksResponse);
+          this.tasksService.getTasks(searchParams).subscribe(this.handleTasksResponse);
         } else {
-             // Check if areas are already loaded
-             const currentAreas = this.availableAreas();
-             if (currentAreas.length > 0) {
-                 const myAreaIds = currentAreas.map(a => a._id).filter((id): id is string => !!id);
-                 searchParams.areaId = myAreaIds.length > 0 ? myAreaIds : ['000000000000000000000000'];
-                 this.tasksService.getTasks(searchParams).subscribe(this.handleTasksResponse);
-             } else {
-                 // Fetch areas if not loaded
-                 this.areasService.listMine().subscribe({
-                     next: (areas) => {
-                         this.availableAreas.set(areas);
-                         const myAreaIds = areas.map(a => a._id).filter((id): id is string => !!id);
-                         searchParams.areaId = myAreaIds.length > 0 ? myAreaIds : ['000000000000000000000000'];
-                         this.tasksService.getTasks(searchParams).subscribe(this.handleTasksResponse);
-                     },
-                     error: () => {
-                         this.messageService.add({
-                           severity: 'error',
-                           summary: 'Error',
-                           detail: 'No se pudieron cargar sus áreas para filtrar actividades'
-                         });
-                         // Fallback? Show nothing or try loading without filter (might show nothing anyway if backend protected)
-                     }
-                 });
-             }
+          // Check if areas are already loaded
+          const currentAreas = this.availableAreas();
+          if (currentAreas.length > 0) {
+            const myAreaIds = currentAreas.map(a => a._id).filter((id): id is string => !!id);
+            searchParams.areaId = myAreaIds.length > 0 ? myAreaIds : ['000000000000000000000000'];
+            this.tasksService.getTasks(searchParams).subscribe(this.handleTasksResponse);
+          } else {
+            // Fetch areas if not loaded
+            this.areasService.listMine().subscribe({
+              next: (areas) => {
+                this.availableAreas.set(areas);
+                const myAreaIds = areas.map(a => a._id).filter((id): id is string => !!id);
+                searchParams.areaId = myAreaIds.length > 0 ? myAreaIds : ['000000000000000000000000'];
+                this.tasksService.getTasks(searchParams).subscribe(this.handleTasksResponse);
+              },
+              error: () => {
+                this.messageService.add({
+                  severity: 'error',
+                  summary: 'Error',
+                  detail: 'No se pudieron cargar sus áreas para filtrar actividades'
+                });
+                // Fallback? Show nothing or try loading without filter (might show nothing anyway if backend protected)
+              }
+            });
+          }
         }
       }
     }
@@ -990,27 +990,27 @@ export class TasksPage implements OnInit, AfterViewInit {
    */
   public onFiltersChanged(filters: TasksSearchParams): void {
     this.taskFilters.set(filters);
-    
+
     // Check if areaId changed to update user list
     if (filters.areaId) {
-        // Handle potential array from multi-select
-        const areaId = Array.isArray(filters.areaId) ? filters.areaId[0] : filters.areaId;
-        if (areaId) {
-            this.areasService.getAssignedUsers(areaId).subscribe({
-                next: (users) => {
-                    // users is object array usually, map to IDs
-                     const userIds = users.map(u => u._id || u.id);
-                     this.areaUsers.set(userIds);
-                },
-                error: () => {
-                    this.areaUsers.set([]);
-                }
-            });
-        }
+      // Handle potential array from multi-select
+      const areaId = Array.isArray(filters.areaId) ? filters.areaId[0] : filters.areaId;
+      if (areaId) {
+        this.areasService.getAssignedUsers(areaId).subscribe({
+          next: (users) => {
+            // users is object array usually, map to IDs
+            const userIds = users.map(u => u._id || u.id);
+            this.areaUsers.set(userIds);
+          },
+          error: () => {
+            this.areaUsers.set([]);
+          }
+        });
+      }
     } else {
-        this.areaUsers.set(null);
+      this.areaUsers.set(null);
     }
-    
+
     const board = this.selectedBoard();
     if (board) {
       this.loadBoardTasks(board._id, filters);
@@ -1025,8 +1025,8 @@ export class TasksPage implements OnInit, AfterViewInit {
     if (!board) return;
 
     if (board._id === 'all') {
-         this.loadBoardTasks('all', this.taskFilters());
-         return;
+      this.loadBoardTasks('all', this.taskFilters());
+      return;
     }
 
     // Recargar el tablero
@@ -1131,13 +1131,13 @@ export class TasksPage implements OnInit, AfterViewInit {
    * Elimina un tablero
    */
   private deleteBoard(id: string): void {
-      this.boardsService.delete(id).subscribe({
-          next: () => {
-              this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Tablero eliminado' });
-              this.refreshBoards();
-          },
-          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar tablero' })
-      });
+    this.boardsService.delete(id).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Tablero eliminado' });
+        this.refreshBoards();
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar tablero' })
+    });
   }
 
   /**
@@ -1164,13 +1164,13 @@ export class TasksPage implements OnInit, AfterViewInit {
     });
   }
 
-  // --- Modificaciones para "Mis Actividades" por defecto ---
+  // --- Modificaciones para "Agenda" por defecto ---
 
   public readonly manuallyShowBoardList = signal<boolean>(false);
 
   private readonly VIRTUAL_BOARD_ALL: Board = {
     _id: 'all',
-    title: 'Mis Actividades',
+    title: 'Agenda',
     description: 'Vista consolidada de todas las actividades asignadas',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -1184,161 +1184,161 @@ export class TasksPage implements OnInit, AfterViewInit {
   };
 
   public onTaskStatusChanged(event: DragDropEvent): void {
-     this.tasksService.updateTaskStatus(event).subscribe({
-         next: () => {
-             // Ya se actualiza por signal
-         },
-         error: () => {
-             this.messageService.add({
-                 severity: 'error',
-                 summary: 'Error',
-                 detail: 'No se pudo actualizar el estado de la actividad'
-             });
-         }
-     });
+    this.tasksService.updateTaskStatus(event).subscribe({
+      next: () => {
+        // Ya se actualiza por signal
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar el estado de la actividad'
+        });
+      }
+    });
   }
 
   public openTaskForm(task?: Task): void {
-      if (task) {
-          this.selectedTask.set(task);
-          this.isEditingTask.set(true);
-      } else {
-          this.selectedTask.set(null);
-          this.isEditingTask.set(false);
-      }
-      this.showTaskForm.set(true);
+    if (task) {
+      this.selectedTask.set(task);
+      this.isEditingTask.set(true);
+    } else {
+      this.selectedTask.set(null);
+      this.isEditingTask.set(false);
+    }
+    this.showTaskForm.set(true);
   }
 
   public closeTaskForm(): void {
-      this.showTaskForm.set(false);
-      this.selectedTask.set(null);
-      this.isEditingTask.set(false);
+    this.showTaskForm.set(false);
+    this.selectedTask.set(null);
+    this.isEditingTask.set(false);
   }
 
   public onTaskSave(): void {
-      this.closeTaskForm();
-      const board = this.selectedBoard();
-      // Reload current view
-      if (board) {
-          this.loadBoardTasks(board._id, this.taskFilters());
-      }
+    this.closeTaskForm();
+    const board = this.selectedBoard();
+    // Reload current view
+    if (board) {
+      this.loadBoardTasks(board._id, this.taskFilters());
+    }
   }
-  
+
   public viewTaskDetails(task: Task): void {
-      this.selectedTask.set(task);
-      this.showTaskDetails.set(true);
+    this.selectedTask.set(task);
+    this.showTaskDetails.set(true);
   }
 
   public closeTaskDetails(): void {
-      this.showTaskDetails.set(false);
-      this.selectedTask.set(null);
-      
-      const currentParams = this.route.snapshot.params;
-      if (currentParams['boardId']) {
-           this.router.navigate(['/tasks', currentParams['boardId']], { replaceUrl: true });
-      } else {
-           this.router.navigate(['/tasks'], { replaceUrl: true });
-      }
+    this.showTaskDetails.set(false);
+    this.selectedTask.set(null);
+
+    const currentParams = this.route.snapshot.params;
+    if (currentParams['boardId']) {
+      this.router.navigate(['/tasks', currentParams['boardId']], { replaceUrl: true });
+    } else {
+      this.router.navigate(['/tasks'], { replaceUrl: true });
+    }
   }
 
   public confirmDeleteTask(task: Task): void {
-      this.confirmationService.confirm({
-          message: '¿Estás seguro de eliminar esta actividad?',
-          header: 'Confirmar',
-          icon: 'pi pi-exclamation-triangle',
-          accept: () => {
-              this.deleteTask(task._id);
-          }
-      });
+    this.confirmationService.confirm({
+      message: '¿Estás seguro de eliminar esta actividad?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.deleteTask(task._id);
+      }
+    });
   }
 
   public deleteTask(taskId: string): void {
-      this.tasksService.deleteTask(taskId).subscribe({
-          next: () => {
-              this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Actividad eliminada' });
-          },
-          error: () => {
-             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar actividad' });
-          }
-      });
+    this.tasksService.deleteTask(taskId).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Actividad eliminada' });
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar actividad' });
+      }
+    });
   }
 
   public openBoardInvitations(): void {
-      this.showBoardInvitations.set(true);
+    this.showBoardInvitations.set(true);
   }
 
   public closeBoardInvitations(): void {
-      this.showBoardInvitations.set(false);
-      this.loadPendingInvitations(); // Recargar contador
+    this.showBoardInvitations.set(false);
+    this.loadPendingInvitations(); // Recargar contador
   }
 
   public onInvitationAccepted(event: any): void {
-      this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Invitación aceptada' });
-      this.loadPendingInvitations();
-      this.refreshBoards();
+    this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Invitación aceptada' });
+    this.loadPendingInvitations();
+    this.refreshBoards();
   }
-  
+
   public onInvitationRejected(event: any): void {
-      this.messageService.add({ severity: 'info', summary: 'Información', detail: 'Invitación rechazada' });
-      this.loadPendingInvitations();
+    this.messageService.add({ severity: 'info', summary: 'Información', detail: 'Invitación rechazada' });
+    this.loadPendingInvitations();
   }
-  
+
   public onRemoveMember(event: { board: Board, memberId: string }): void {
-      this.confirmationService.confirm({
-          message: '¿Estás seguro de eliminar a este miembro del tablero?',
-          header: 'Confirmar',
-          icon: 'pi pi-exclamation-triangle',
-          accept: () => {
-              this.boardsService.removeMember(event.board._id, event.memberId).subscribe({
-                  next: () => {
-                      this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Miembro eliminado' });
-                      if (this.selectedBoard() && this.selectedBoard()!._id === event.board._id) {
-                          this.onRefreshBoard();
-                      }
-                  },
-                  error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar al miembro' })
-              });
-          }
-      });
+    this.confirmationService.confirm({
+      message: '¿Estás seguro de eliminar a este miembro del tablero?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.boardsService.removeMember(event.board._id, event.memberId).subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Miembro eliminado' });
+            if (this.selectedBoard() && this.selectedBoard()!._id === event.board._id) {
+              this.onRefreshBoard();
+            }
+          },
+          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar al miembro' })
+        });
+      }
+    });
   }
-  
+
   public onLeaveBoard(board: Board): void {
-       this.confirmationService.confirm({
-          message: '¿Estás seguro de abandonar este tablero?',
-          header: 'Confirmar',
-          icon: 'pi pi-exclamation-triangle',
-          accept: () => {
-              this.boardsService.leaveBoard(board._id).subscribe({
-                  next: () => {
-                      this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Has abandonado el tablero' });
-                      this.onBackToBoards();
-                      this.refreshBoards();
-                  },
-                  error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo abandonar el tablero' })
-              });
-          }
-      });
+    this.confirmationService.confirm({
+      message: '¿Estás seguro de abandonar este tablero?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.boardsService.leaveBoard(board._id).subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Has abandonado el tablero' });
+            this.onBackToBoards();
+            this.refreshBoards();
+          },
+          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo abandonar el tablero' })
+        });
+      }
+    });
   }
 
   ngAfterViewInit() {
     this.boardCards.changes.subscribe(() => {
-        this.equalizeHeaderHeights();
-        this.equalizeFooterHeights();
+      this.equalizeHeaderHeights();
+      this.equalizeFooterHeights();
     });
     setTimeout(() => {
-        this.equalizeHeaderHeights();
-        this.equalizeFooterHeights();
+      this.equalizeHeaderHeights();
+      this.equalizeFooterHeights();
     }, 500);
   }
 
   equalizeHeaderHeights() {
-      // Implementación simplificada o vacía si no es crítica, 
-      // o restaurar si tengo el código. 
-      // Por ahora dejaré vacío para evitar errores si no tengo los refs exactos.
-      // Wait, I saw the method calls in constructor.
+    // Implementación simplificada o vacía si no es crítica, 
+    // o restaurar si tengo el código. 
+    // Por ahora dejaré vacío para evitar errores si no tengo los refs exactos.
+    // Wait, I saw the method calls in constructor.
   }
-  
+
   equalizeFooterHeights() {
-      // Igual
+    // Igual
   }
 }

@@ -116,18 +116,23 @@ export class TimeTrackingPdfService {
         ['Faltas (días sin asistencia)', `${data.kpis.faltas} días`],
       ],
       theme: 'grid',
-      headStyles: { fillColor: [66, 139, 202], fontStyle: 'bold' },
-      margin: { top: TOP_MARGIN_PAGES, left: MARGIN },
+      headStyles: { fillColor: [66, 139, 202], fontStyle: 'bold', halign: 'center' },
+      bodyStyles: { halign: 'left', cellPadding: 3 },
+      columnStyles: {
+        0: { cellWidth: 80 },
+        1: { cellWidth: 'auto', halign: 'center' },
+      },
+      margin: { top: TOP_MARGIN_PAGES, left: MARGIN, right: MARGIN },
       didDrawPage: (hookData) => this.drawLogoOnPage(hookData.doc, hookData.pageNumber, logoBase64),
     });
-    y = this.getFinalY(doc) + 12;
+    y = this.getFinalY(doc) + 15; // Mayor espacio entre tablas
 
     // Resumen por usuario (solo cuando hay más de un usuario)
     if (data.users.length > 1) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.text('Resumen por usuario', MARGIN, y);
-      y += 6;
+      y += 8;
 
       autoTable(doc, {
         startY: y,
@@ -139,25 +144,30 @@ export class TimeTrackingPdfService {
           String(u.faltas),
         ]),
         theme: 'grid',
-        headStyles: { fillColor: [66, 139, 202], fontStyle: 'bold' },
-        margin: { top: TOP_MARGIN_PAGES, left: MARGIN },
+        headStyles: { fillColor: [66, 139, 202], fontStyle: 'bold', halign: 'center' },
+        bodyStyles: { cellPadding: 2.5 },
+        columnStyles: {
+          0: { cellWidth: 80 },
+          1: { halign: 'center' },
+          2: { halign: 'center' },
+          3: { halign: 'center' },
+        },
+        margin: { top: TOP_MARGIN_PAGES, left: MARGIN, right: MARGIN },
         didDrawPage: (hookData) =>
           this.drawLogoOnPage(hookData.doc, hookData.pageNumber, logoBase64),
       });
-      y = this.getFinalY(doc) + 12;
+      y = this.getFinalY(doc) + 15;
     }
 
-    // Detalle por usuario (cada usuario en su sección)
+    // Detalle por usuario (cada usuario en su sección dedicada)
     for (const user of data.users) {
-      if (y > 250) {
-        doc.addPage();
-        y = this.drawMembrete(doc, logoBase64, false);
-      }
+      doc.addPage();
+      y = this.drawMembrete(doc, logoBase64, false);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text(`Detalle: ${user.userName}`, MARGIN, y);
-      y += 6;
+      doc.setFontSize(14); // Un poco más grande para el título de hoja
+      doc.text(`Detalle de Asistencia: ${user.userName}`, MARGIN, y);
+      y += 8;
 
       const rows: string[][] = [];
       for (const day of user.itemsByDay) {
@@ -178,14 +188,21 @@ export class TimeTrackingPdfService {
           head: [['Fecha', 'Hora', 'Tipo', 'Tardanza', 'Ubicación']],
           body: rows,
           theme: 'grid',
-          headStyles: { fillColor: [100, 100, 100], fontStyle: 'bold', fontSize: 8 },
-          bodyStyles: { fontSize: 8 },
-          margin: { top: TOP_MARGIN_PAGES, left: MARGIN },
+          headStyles: { fillColor: [100, 100, 100], fontStyle: 'bold', fontSize: 8, halign: 'center' },
+          bodyStyles: { fontSize: 8, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 20, halign: 'center' },
+            1: { cellWidth: 15, halign: 'center' },
+            2: { cellWidth: 20, halign: 'center' },
+            3: { cellWidth: 15, halign: 'center' },
+            4: { cellWidth: 'auto', halign: 'left' },
+          },
+          margin: { top: TOP_MARGIN_PAGES, left: MARGIN, right: MARGIN },
           tableLineWidth: 0.1,
           didDrawPage: (hookData) =>
             this.drawLogoOnPage(hookData.doc, hookData.pageNumber, logoBase64),
         });
-        y = this.getFinalY(doc) + 10;
+        y = this.getFinalY(doc) + 12;
       } else {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
@@ -234,14 +251,14 @@ export class TimeTrackingPdfService {
   private async loadLogoBase64(): Promise<string | null> {
     try {
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      
+
       // Verificar si la empresa actual es Teccon
       const isTeccon = this.isTecconCompany();
-      
+
       // Seleccionar la URL del logo según la empresa
       const logoUrl = isTeccon ? LOGO_TECCON_URL : LOGO_URL;
       const url = `${baseUrl}${logoUrl}`;
-      
+
       const res = await fetch(url);
       if (!res.ok) {
         // Si el logo de Teccon no existe, intentar con el logo por defecto
@@ -262,7 +279,7 @@ export class TimeTrackingPdfService {
         }
         return null;
       }
-      
+
       const blob = await res.blob();
       return await new Promise<string | null>((resolve, reject) => {
         const reader = new FileReader();

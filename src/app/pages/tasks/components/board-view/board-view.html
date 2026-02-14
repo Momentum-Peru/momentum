@@ -77,30 +77,13 @@
               ></p-select>
           </div>
 
-          <!-- Date Range Filter: Desde -->
+          <!-- Date Filter -->
           <div class="flex flex-col gap-2">
-              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Fecha de Inicio</label>
+              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Filtrar por Fecha</label>
               <p-datePicker 
-                  [ngModel]="filterDateFrom()" 
-                  (ngModelChange)="onDateFromChange($event)"
-                  placeholder="Desde..." 
-                  dateFormat="dd/mm/yy"
-                  styleClass="w-full"
-                  inputStyleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11"
-                  [showIcon]="true"
-                  iconDisplay="input"
-                  [showButtonBar]="true"
-                  appendTo="body"
-              ></p-datePicker>
-          </div>
-
-          <!-- Date Range Filter: Hasta -->
-          <div class="flex flex-col gap-2">
-              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Fecha de Fin</label>
-              <p-datePicker 
-                  [ngModel]="filterDateTo()" 
-                  (ngModelChange)="onDateToChange($event)"
-                  placeholder="Hasta..." 
+                  [ngModel]="filterDate()" 
+                  (ngModelChange)="onDateChange($event)"
+                  placeholder="Selecciona una fecha..." 
                   dateFormat="dd/mm/yy"
                   styleClass="w-full"
                   inputStyleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11"
@@ -132,6 +115,7 @@
       [members]="boardUsers"
       [currentUser]="currentUser"
       [areas]="availableAreas"
+      [preselectedAreaId]="filterArea()"
       (taskCreated)="quickCreateTask.emit($event)"
       (taskUpdated)="editTask.emit($event)"
       (taskDeleted)="onDeleteTask($event)"
