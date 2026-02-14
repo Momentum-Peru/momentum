@@ -143,19 +143,14 @@ export class AgendaPage implements OnInit {
     return `${base}\n\n${link}`;
   }
 
-  /** Comparte la nota con la API nativa del sistema (móvil o escritorio). Carga la nota completa para tener contenido e imagen. */
+  /** Comparte la nota con la API nativa del sistema (móvil o escritorio). Carga la nota completa si es posible; si falla (404, red), usa la nota de la lista. */
   async shareNoteNative(note: AgendaNote): Promise<void> {
     if (!this.hasNativeShare()) return;
     let fullNote: AgendaNote;
     try {
       fullNote = await firstValueFrom(this.agendaApi.getById(note._id));
     } catch {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'No se pudo cargar la nota para compartir',
-      });
-      return;
+      fullNote = note;
     }
     const shareData: ShareData = {
       title: 'Tienes una nueva tarea asignada',
@@ -540,12 +535,9 @@ export class AgendaPage implements OnInit {
 
     await this.loadNotesAndWait();
     this.ensureCreatedNoteInList(id);
-    try {
-      const updated = await firstValueFrom(this.agendaApi.getById(id));
-      this.currentNote.set(updated);
-    } catch {
-      this.currentNote.set(this.notes().find((n) => n._id === id) ?? null);
-    }
+    // Usar la nota de la lista para evitar 404 en getById (replicación, multi-tenant, etc.)
+    const fromList = this.notes().find((n) => String(n._id) === id) ?? null;
+    this.currentNote.set(fromList);
   }
 
   /** Si la nota recién creada no está en la lista (el servidor no la devolvió), la volvemos a añadir. */
@@ -768,18 +760,14 @@ export class AgendaPage implements OnInit {
   }
 
   shareNoteFromNote(note: AgendaNote, channel: 'email' | 'whatsapp'): void {
-    // Cargar la nota completa para asegurar contenido, transcripción e imagen (enlace)
     this.agendaApi.getById(note._id).subscribe({
       next: (fullNote) => {
         this.currentNote.set(fullNote);
         this.shareNote(channel);
       },
       error: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo cargar la nota para compartir',
-        });
+        this.currentNote.set(note);
+        this.shareNote(channel);
       },
     });
   }
@@ -808,26 +796,27 @@ export class AgendaPage implements OnInit {
   shareNote(channel: 'email' | 'whatsapp'): void {
     const note = this.currentNote();
     if (!note?._id) return;
-    const to = channel === 'email' ? undefined : undefined;
-    this.agendaApi.share(note._id, { channel, to }).subscribe({
+    const shareText = this.getShareText(note);
+    const link = this.getAgendaLink();
+    const openShareTarget = () => {
+      if (channel === 'whatsapp') {
+        const maxLen = 1200;
+        const textForWa =
+          shareText.length <= maxLen
+            ? shareText
+            : shareText.slice(0, maxLen) + '\n\n... Ver más: ' + link;
+        window.open(`https://wa.me/?text=${encodeURIComponent(textForWa)}`, '_blank');
+      }
+      if (channel === 'email') {
+        const subject = encodeURIComponent('Tienes una nueva tarea asignada');
+        const body = encodeURIComponent(shareText);
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+      }
+    };
+    this.agendaApi.share(note._id, { channel, to: undefined }).subscribe({
       next: (updated) => {
         this.currentNote.set(updated);
-        const shareText = this.getShareText(note);
-        const link = this.getAgendaLink();
-        if (channel === 'whatsapp') {
-          // Limitar longitud para que la URL no exceda límites del navegador (~2k); el enlace va al final
-          const maxLen = 1200;
-          const textForWa =
-            shareText.length <= maxLen
-              ? shareText
-              : shareText.slice(0, maxLen) + '\n\n... Ver más: ' + link;
-          window.open(`https://wa.me/?text=${encodeURIComponent(textForWa)}`, '_blank');
-        }
-        if (channel === 'email') {
-          const subject = encodeURIComponent('Tienes una nueva tarea asignada');
-          const body = encodeURIComponent(shareText);
-          window.location.href = `mailto:?subject=${subject}&body=${body}`;
-        }
+        openShareTarget();
         this.messageService.add({
           severity: 'success',
           summary: 'Compartir',
@@ -835,10 +824,12 @@ export class AgendaPage implements OnInit {
         });
       },
       error: () => {
+        openShareTarget();
         this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo registrar la compartición',
+          severity: 'warn',
+          summary: 'Compartir',
+          detail:
+            'Enlace listo. No se pudo registrar en el servidor (la nota pudo haber sido eliminada).',
         });
       },
     });
