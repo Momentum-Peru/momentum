@@ -130,13 +130,12 @@
                 ></p-checkbox>
               </th>
             }
-            <th class="text-left w-12">#</th>
-            <th class="text-left">Tipo</th>
+            <th class="text-left w-10">#</th>
             <th class="text-left">Contenido</th>
-            <th class="text-left hidden sm:table-cell">Estado</th>
-            <th class="text-left hidden md:table-cell">Creado por</th>
-            <th class="text-left hidden lg:table-cell">Asignados</th>
-            <th class="text-right">Acciones</th>
+            <th class="text-left hidden sm:table-cell w-36">Estado</th>
+            <th class="text-left hidden md:table-cell w-28">Creado por</th>
+            <th class="text-left hidden lg:table-cell w-32">Asignados</th>
+            <th class="text-right w-24">Acciones</th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-note let-rowIndex="rowIndex">
@@ -155,18 +154,14 @@
               </td>
             }
             <td class="font-medium text-gray-700 dark:text-gray-300">{{ rowIndex + 1 }}</td>
-            <td>
-              <span class="inline-flex items-center gap-2">
-                <i [class]="getTypeIcon(note.type) + ' text-primary'"></i>
-                <span class="text-sm font-medium">{{ getTypeLabel(note.type) }}</span>
-              </span>
-            </td>
-            <td>
-              <p class="text-gray-800 dark:text-white truncate max-w-[200px]">
+            <td class="min-w-0">
+              <p
+                class="text-gray-800 dark:text-white text-sm whitespace-pre-wrap break-words max-h-32 overflow-y-auto"
+              >
                 {{ getContentSummary(note) }}
               </p>
             </td>
-            <td class="hidden sm:table-cell" (click)="$event.stopPropagation()">
+            <td class="hidden sm:table-cell w-36" (click)="$event.stopPropagation()">
               @if (canEditStatus(note)) {
                 <p-select
                   [options]="statusOptions"
@@ -174,7 +169,7 @@
                   optionValue="value"
                   [ngModel]="note.status ?? 'pendiente'"
                   (ngModelChange)="onStatusChange(note, $event)"
-                  styleClass="w-full min-w-[120px]"
+                  styleClass="w-full max-w-[8rem]"
                   appendTo="body"
                   placeholder="Estado"
                 ></p-select>
@@ -185,10 +180,13 @@
                 ></p-tag>
               }
             </td>
-            <td class="hidden md:table-cell text-sm text-gray-600 dark:text-gray-300">
+            <td
+              class="hidden md:table-cell w-28 text-sm text-gray-600 dark:text-gray-300 truncate max-w-[7rem]"
+              [title]="getCreatorName(note)"
+            >
               {{ getCreatorName(note) }}
             </td>
-            <td class="hidden lg:table-cell" (click)="$event.stopPropagation()">
+            <td class="hidden lg:table-cell w-32" (click)="$event.stopPropagation()">
               @if (canEditFull(note)) {
                 <p-select
                   [options]="userOptions()"
@@ -200,7 +198,7 @@
                   [showClear]="true"
                   [filter]="true"
                   filterPlaceholder="Buscar..."
-                  styleClass="w-full min-w-[140px]"
+                  styleClass="w-full max-w-[8rem]"
                   appendTo="body"
                 ></p-select>
               } @else {
