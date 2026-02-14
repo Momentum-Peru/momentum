@@ -263,16 +263,16 @@ export class TruncatePipe implements PipeTransform {
             >
               <ng-template let-project pTemplate="selectedItem">
                 @if (project?.label) {
-                <span class="truncate block w-full" [title]="project.label">
-                  {{ project.label | truncate : 40 }}
-                </span>
+                  <span class="truncate block w-full" [title]="project.label">
+                    {{ project.label | truncate: 40 }}
+                  </span>
                 } @else {
-                <span class="truncate block w-full">Selecciona un proyecto</span>
+                  <span class="truncate block w-full">Selecciona un proyecto</span>
                 }
               </ng-template>
               <ng-template let-project pTemplate="item">
                 <span class="truncate block w-full" [title]="project.label">
-                  {{ project.label | truncate : 40 }}
+                  {{ project.label | truncate: 40 }}
                 </span>
               </ng-template>
             </p-select>
@@ -374,97 +374,99 @@ export class TruncatePipe implements PipeTransform {
           <div class="space-y-2">
             <!-- Archivos existentes (solo en modo edición) -->
             @if (isEditing() && existingAttachments().length > 0) {
-            <div class="mb-3">
-              <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                Archivos existentes
+              <div class="mb-3">
+                <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                  Archivos existentes
+                </div>
+                @for (attachment of existingAttachments(); track attachment._id || $index) {
+                  <div
+                    class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md mb-2"
+                    [class.opacity-50]="attachmentsToDelete().includes(attachment._id || '')"
+                  >
+                    <i class="pi pi-file text-gray-500"></i>
+                    <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                      {{ attachment.originalName }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ formatFileSize(attachment.size) }}
+                    </span>
+                    <button
+                      type="button"
+                      (click)="removeExistingAttachment(attachment._id || '')"
+                      class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                      [title]="
+                        attachmentsToDelete().includes(attachment._id || '')
+                          ? 'Restaurar archivo'
+                          : 'Eliminar archivo'
+                      "
+                    >
+                      @if (attachmentsToDelete().includes(attachment._id || '')) {
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
+                      } @else {
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      }
+                    </button>
+                  </div>
+                }
               </div>
-              @for (attachment of existingAttachments(); track attachment._id || $index) {
-              <div
-                class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md mb-2"
-                [class.opacity-50]="attachmentsToDelete().includes(attachment._id || '')"
-              >
-                <i class="pi pi-file text-gray-500"></i>
-                <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
-                  {{ attachment.originalName }}
-                </span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ formatFileSize(attachment.size) }}
-                </span>
-                <button
-                  type="button"
-                  (click)="removeExistingAttachment(attachment._id || '')"
-                  class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                  [title]="
-                    attachmentsToDelete().includes(attachment._id || '')
-                      ? 'Restaurar archivo'
-                      : 'Eliminar archivo'
-                  "
-                >
-                  @if (attachmentsToDelete().includes(attachment._id || '')) {
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  } @else {
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                  }
-                </button>
-              </div>
-              }
-            </div>
             }
 
             <!-- Archivos nuevos seleccionados -->
             @if (selectedFiles().length > 0) {
-            <div class="mb-3">
-              <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                Archivos nuevos
+              <div class="mb-3">
+                <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                  Archivos nuevos
+                </div>
+                @for (file of selectedFiles(); track $index) {
+                  <div
+                    class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md mb-2"
+                  >
+                    <i class="pi pi-file text-gray-500"></i>
+                    <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                      {{ file.name }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ formatFileSize(file.size) }}
+                    </span>
+                    <button
+                      type="button"
+                      (click)="removeFile($index)"
+                      class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                      title="Eliminar archivo"
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                }
               </div>
-              @for (file of selectedFiles(); track $index) {
-              <div class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md mb-2">
-                <i class="pi pi-file text-gray-500"></i>
-                <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
-                  {{ file.name }}
-                </span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ formatFileSize(file.size) }}
-                </span>
-                <button
-                  type="button"
-                  (click)="removeFile($index)"
-                  class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                  title="Eliminar archivo"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
-              </div>
-              }
-            </div>
             }
             <label
               class="flex flex-col items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200"
               [ngClass]="{
                 'border-blue-500 bg-blue-50 dragging-overlay': isDragging(),
                 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600':
-                  !isDragging()
+                  !isDragging(),
               }"
               (dragover)="onDragOver($event)"
               (dragleave)="onDragLeave($event)"
@@ -500,9 +502,10 @@ export class TruncatePipe implements PipeTransform {
                   [class.dark:text-gray-400]="!isDragging()"
                 >
                   @if (isDragging()) {
-                  <span class="font-semibold">Suelta los archivos aquí</span>
+                    <span class="font-semibold">Suelta los archivos aquí</span>
                   } @else {
-                  <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta }
+                    <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta
+                  }
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
                   PNG, JPG, PDF, DOC, DOCX, DWG, SKP (MAX. 20MB). También puedes arrastrar desde
@@ -575,7 +578,7 @@ export class TruncatePipe implements PipeTransform {
             [class.p-invalid]="projectForm.get('name')?.invalid && projectForm.get('name')?.touched"
           />
           @if (projectForm.get('name')?.invalid && projectForm.get('name')?.touched) {
-          <small class="text-red-500">El nombre es requerido (2-100 caracteres)</small>
+            <small class="text-red-500">El nombre es requerido (2-100 caracteres)</small>
           }
         </div>
 
@@ -599,9 +602,9 @@ export class TruncatePipe implements PipeTransform {
             "
           ></textarea>
           @if (projectForm.get('description')?.invalid && projectForm.get('description')?.touched) {
-          <small class="text-red-500"
-            >Si proporcionas una descripción, debe tener entre 10 y 500 caracteres</small
-          >
+            <small class="text-red-500"
+              >Si proporcionas una descripción, debe tener entre 10 y 500 caracteres</small
+            >
           }
         </div>
 
@@ -625,7 +628,7 @@ export class TruncatePipe implements PipeTransform {
             "
           ></p-select>
           @if (projectForm.get('clientId')?.invalid && projectForm.get('clientId')?.touched) {
-          <small class="text-red-500">El cliente es requerido</small>
+            <small class="text-red-500">El cliente es requerido</small>
           }
         </div>
 
@@ -650,7 +653,7 @@ export class TruncatePipe implements PipeTransform {
             "
           ></p-datePicker>
           @if (projectForm.get('startDate')?.invalid && projectForm.get('startDate')?.touched) {
-          <small class="text-red-500">La fecha de inicio es requerida</small>
+            <small class="text-red-500">La fecha de inicio es requerida</small>
           }
         </div>
 
@@ -771,7 +774,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
     // Filter by Area first if selected
     let filteredUsers = allUsersList;
     if (areaAllowedUserIds) {
-      filteredUsers = filteredUsers.filter(u => areaAllowedUserIds.includes(u.id));
+      filteredUsers = filteredUsers.filter((u) => areaAllowedUserIds.includes(u.id));
     }
 
     // Si no hay boardId o tablero cargado, mostrar usuarios filtrados (posiblemente solo por area)
@@ -837,11 +840,11 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
     this.loadAreas(); // Added
 
     // Subscribe to area changes
-    this.taskForm.get('areaId')?.valueChanges.subscribe(areaId => {
+    this.taskForm.get('areaId')?.valueChanges.subscribe((areaId) => {
       if (areaId) {
         this.areasApiService.getAssignedUsers(areaId).subscribe({
           next: (users) => {
-            const userIds = users.map(u => u._id || u.id);
+            const userIds = users.map((u) => u._id || u.id);
             this.areaUsers.set(userIds);
 
             // If current assignedTo is not in new list, maybe clear it?
@@ -851,7 +854,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
               this.taskForm.patchValue({ assignedTo: null });
             }
           },
-          error: () => this.areaUsers.set([])
+          error: () => this.areaUsers.set([]),
         });
       } else {
         this.areaUsers.set(null);
@@ -1066,7 +1069,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
         assignedTo: assignedToId,
         projectId: projectId || null,
         areaId: areaId || null, // Added
-        dueDate: this.task.dueDate ? this.convertUTCDateToLocalDate(new Date(this.task.dueDate)) : null,
+        dueDate: this.task.dueDate
+          ? this.convertUTCDateToLocalDate(new Date(this.task.dueDate))
+          : null,
         tags: Array.isArray(this.task.tags) ? this.task.tags.join(', ') : this.task.tags || '',
         incompleteReason: this.task.incompleteReason || '',
       });
@@ -1272,27 +1277,28 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
       // El datepicker devuelve fechas en hora local, necesitamos convertir correctamente a UTC
       let normalizedDueDate: Date | undefined;
       if (formValue.dueDate) {
-        const dueDate = formValue.dueDate instanceof Date ? formValue.dueDate : new Date(formValue.dueDate);
+        const dueDate =
+          formValue.dueDate instanceof Date ? formValue.dueDate : new Date(formValue.dueDate);
         // El objeto Date ya tiene la información de zona horaria correcta
         // Simplemente usamos toISOString() que convierte correctamente de hora local a UTC
         // No necesitamos extraer componentes manualmente porque eso causaría problemas de zona horaria
         normalizedDueDate = dueDate;
       }
 
-      const taskData = {
+      const taskData: Record<string, unknown> = {
         ...formValue,
         // Solo agregar createdBy si es una nueva tarea
         ...(this.isEditing() ? {} : { createdBy: currentUser.id }),
-        // Agregar boardId si está disponible
-        ...(this.boardId ? { boardId: this.boardId } : {}),
+        // Solo agregar boardId si es un ID real de MongoDB (no "all", que es el filtro de Agenda)
+        ...(this.boardId && this.boardId !== 'all' ? { boardId: this.boardId } : {}),
         // Agregar projectId si está disponible
         ...(formValue.projectId ? { projectId: formValue.projectId } : {}),
         dueDate: normalizedDueDate ? normalizedDueDate.toISOString() : undefined,
         tags: formValue.tags
           ? formValue.tags
-            .split(',')
-            .map((tag: string) => tag.trim())
-            .filter((tag: string) => tag.length > 0)
+              .split(',')
+              .map((tag: string) => tag.trim())
+              .filter((tag: string) => tag.length > 0)
           : [],
         incompleteReason: formValue.incompleteReason?.trim() || undefined,
         subtasks: this.subtasks()
@@ -1304,10 +1310,15 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
           .filter((st) => st.title.length > 0),
       };
 
+      // El backend UpdateTaskDto no acepta areaId; quitarlo al actualizar para evitar 400
+      if (this.isEditing()) {
+        delete taskData['areaId'];
+      }
+
       const task = this.task;
       const operation = task
-        ? this.tasksApiService.updateTask(task._id, taskData as UpdateTaskRequest)
-        : this.tasksApiService.createTask(taskData as CreateTaskRequest);
+        ? this.tasksApiService.updateTask(task._id, taskData as unknown as UpdateTaskRequest)
+        : this.tasksApiService.createTask(taskData as unknown as CreateTaskRequest);
 
       operation.pipe(take(1)).subscribe({
         next: async (res) => {
@@ -1520,7 +1531,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
         severity: 'warn',
         summary: 'Archivos muy grandes',
         detail: `Los siguientes archivos exceden el tamaño máximo de 20MB: ${invalidFiles.join(
-          ', '
+          ', ',
         )}`,
       });
     }
@@ -1563,7 +1574,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
    */
   private async deleteAttachments(taskId: string, attachmentIds: string[]): Promise<void> {
     const deletePromises = attachmentIds.map((attachmentId) =>
-      this.tasksApiService.deleteTaskAttachment(taskId, attachmentId).pipe(take(1)).toPromise()
+      this.tasksApiService.deleteTaskAttachment(taskId, attachmentId).pipe(take(1)).toPromise(),
     );
 
     try {
@@ -1623,7 +1634,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
         (progress) => {
           // Opcional: mostrar progreso
           console.log(`Progreso de subida: ${progress}%`);
-        }
+        },
       );
 
       this.messageService.add({
