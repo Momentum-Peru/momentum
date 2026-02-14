@@ -196,23 +196,37 @@
             <td class="text-right whitespace-nowrap" (click)="$event.stopPropagation()">
               <div class="flex flex-wrap justify-end gap-2">
                 @if (canEdit()) {
-                  <button
-                    pButton
-                    icon="pi pi-share-alt"
-                    [rounded]="true"
-                    [text]="true"
-                    severity="secondary"
-                    size="small"
-                    (click)="shareMenu.toggle($event)"
-                    pTooltip="Compartir"
-                    aria-label="Compartir"
-                  ></button>
-                  <p-menu
-                    #shareMenu
-                    [model]="getShareMenuItems(note)"
-                    [popup]="true"
-                    appendTo="body"
-                  ></p-menu>
+                  @if (hasNativeShare()) {
+                    <button
+                      pButton
+                      icon="pi pi-share-alt"
+                      [rounded]="true"
+                      [text]="true"
+                      severity="secondary"
+                      size="small"
+                      (click)="shareNoteNative(note)"
+                      pTooltip="Compartir"
+                      aria-label="Compartir"
+                    ></button>
+                  } @else {
+                    <button
+                      pButton
+                      icon="pi pi-share-alt"
+                      [rounded]="true"
+                      [text]="true"
+                      severity="secondary"
+                      size="small"
+                      (click)="shareMenu.toggle($event)"
+                      pTooltip="Compartir"
+                      aria-label="Compartir"
+                    ></button>
+                    <p-menu
+                      #shareMenu
+                      [model]="getShareMenuItems(note)"
+                      [popup]="true"
+                      appendTo="body"
+                    ></p-menu>
+                  }
                   <button
                     pButton
                     icon="pi pi-trash"

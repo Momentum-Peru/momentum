@@ -26,6 +26,7 @@ import type {
   AgendaNoteUser,
 } from '../../shared/interfaces/agenda-note.interface';
 import type { UserOption } from '../../shared/interfaces/menu-permission.interface';
+import { Router } from '@angular/router';
 import { firstValueFrom, of } from 'rxjs';
 import { tap, map, catchError, finalize } from 'rxjs/operators';
 
@@ -67,8 +68,94 @@ export class AgendaPage implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly menuService = inject(MenuService);
+  private readonly router = inject(Router);
 
   readonly canEdit = computed(() => this.menuService.canEdit('/agenda'));
+
+  /** Indica si el navegador soporta la API nativa de compartir. */
+  hasNativeShare(): boolean {
+    return typeof navigator !== 'undefined' && !!navigator.share;
+  }
+
+  /** URL absoluta de la página de agenda (para compartir). */
+  getAgendaLink(): string {
+    const path = this.router.serializeUrl(this.router.createUrlTree(['/agenda']));
+    return `${window.location.origin}${path}`;
+  }
+
+  /** Construye el texto a compartir según el tipo de nota (link + contenido real). */
+  getShareText(note: AgendaNote): string {
+    const link = this.getAgendaLink();
+    const base = 'Tienes una nueva tarea asignada.';
+    if (note.type === 'text') {
+      const contenido = (note.content ?? '').trim();
+      return contenido ? `${base}\n\n${contenido}\n\n${link}` : `${base}\n\n${link}`;
+    }
+    if (note.type === 'voice') {
+      const transcripcion = (note.content ?? '').trim();
+      return transcripcion
+        ? `${base}\n\nTranscripción:\n${transcripcion}\n\n${link}`
+        : `${base}\n\n${link}`;
+    }
+    if (note.type === 'drawing') {
+      const imgUrl = note.drawingUrl?.[0];
+      const verDibujo = imgUrl ? `Ver dibujo: ${imgUrl}\n\n` : 'Ver enlace para el dibujo.\n\n';
+      return `${base} ${verDibujo}${link}`;
+    }
+    return `${base}\n\n${link}`;
+  }
+
+  /** Comparte la nota con la API nativa del sistema (móvil o escritorio). Carga la nota completa para tener contenido e imagen. */
+  async shareNoteNative(note: AgendaNote): Promise<void> {
+    if (!this.hasNativeShare()) return;
+    let fullNote: AgendaNote;
+    try {
+      fullNote = await firstValueFrom(this.agendaApi.getById(note._id));
+    } catch {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo cargar la nota para compartir',
+      });
+      return;
+    }
+    const shareData: ShareData = {
+      title: 'Tienes una nueva tarea asignada',
+      text: this.getShareText(fullNote),
+      url: this.getAgendaLink(),
+    };
+    // Para dibujo: adjuntar la imagen si está disponible (data URL o URL con CORS)
+    if (fullNote.type === 'drawing' && fullNote.drawingUrl?.length) {
+      const imgUrl = fullNote.drawingUrl[0];
+      try {
+        const res = await fetch(imgUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          const file = new File([blob], 'tarea-dibujo.png', {
+            type: blob.type || 'image/png',
+          });
+          shareData.files = [file];
+        }
+      } catch {
+        // Sin archivo se comparte el texto con el enlace al dibujo (getShareText ya lo incluye)
+      }
+    }
+    try {
+      await navigator.share(shareData);
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Compartido',
+        detail: 'Contenido compartido correctamente',
+      });
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Compartir',
+        detail: 'No se pudo usar el compartir del sistema. Usa Correo o WhatsApp.',
+      });
+    }
+  }
 
   notes = signal<AgendaNote[]>([]);
   loading = signal(false);
@@ -150,7 +237,7 @@ export class AgendaPage implements OnInit {
 
   loadNotes(): void {
     this.loading.set(true);
-    const filters = this.buildDateFilters();
+    const filters = this.buildListFilters();
     this.agendaApi
       .list(filters)
       .subscribe({
@@ -177,6 +264,17 @@ export class AgendaPage implements OnInit {
     };
   }
 
+  /** Filtros para listar notas: fecha y, si no es gerencia, solo las asignadas al usuario actual. */
+  private buildListFilters(): Parameters<AgendaApiService['list']>[0] {
+    const { startDate, endDate } = this.buildDateFilters();
+    const filters: Parameters<AgendaApiService['list']>[0] = { startDate, endDate };
+    if (!this.authService.isGerencia()) {
+      const userId = this.authService.getCurrentUser()?.id;
+      if (userId) filters.assignedTo = userId;
+    }
+    return filters;
+  }
+
   onFilterDateChange(date: Date | null): void {
     if (date) {
       this.filterDate.set(date);
@@ -189,7 +287,7 @@ export class AgendaPage implements OnInit {
   loadNotesAndWait(): Promise<void> {
     this.loading.set(true);
     const noteToMerge = this.lastCreatedNote();
-    const filters = this.buildDateFilters();
+    const filters = this.buildListFilters();
     return firstValueFrom(
       this.agendaApi.list(filters).pipe(
         tap((list) => {
@@ -607,8 +705,20 @@ export class AgendaPage implements OnInit {
   }
 
   shareNoteFromNote(note: AgendaNote, channel: 'email' | 'whatsapp'): void {
-    this.currentNote.set(note);
-    this.shareNote(channel);
+    // Cargar la nota completa para asegurar contenido, transcripción e imagen (enlace)
+    this.agendaApi.getById(note._id).subscribe({
+      next: (fullNote) => {
+        this.currentNote.set(fullNote);
+        this.shareNote(channel);
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo cargar la nota para compartir',
+        });
+      },
+    });
   }
 
   /** Items del menú Compartir (Correo, WhatsApp) para una nota. */
@@ -639,20 +749,26 @@ export class AgendaPage implements OnInit {
     this.agendaApi.share(note._id, { channel, to }).subscribe({
       next: (updated) => {
         this.currentNote.set(updated);
+        const shareText = this.getShareText(note);
+        const link = this.getAgendaLink();
         if (channel === 'whatsapp') {
-          const text = encodeURIComponent(
-            (note.content || 'Nota').slice(0, 200) +
-              ((note.content?.length ?? 0) > 200 ? '...' : ''),
-          );
-          window.open(`https://wa.me/?text=${text}`, '_blank');
+          // Limitar longitud para que la URL no exceda límites del navegador (~2k); el enlace va al final
+          const maxLen = 1200;
+          const textForWa =
+            shareText.length <= maxLen
+              ? shareText
+              : shareText.slice(0, maxLen) + '\n\n... Ver más: ' + link;
+          window.open(`https://wa.me/?text=${encodeURIComponent(textForWa)}`, '_blank');
+        }
+        if (channel === 'email') {
+          const subject = encodeURIComponent('Tienes una nueva tarea asignada');
+          const body = encodeURIComponent(shareText);
+          window.location.href = `mailto:?subject=${subject}&body=${body}`;
         }
         this.messageService.add({
           severity: 'success',
           summary: 'Compartir',
-          detail:
-            channel === 'email'
-              ? 'Registro de envío por correo guardado'
-              : 'Enlace listo para WhatsApp',
+          detail: channel === 'email' ? 'Cliente de correo abierto' : 'Enlace listo para WhatsApp',
         });
       },
       error: () => {
