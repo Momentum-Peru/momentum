@@ -128,6 +128,12 @@ export const routes: Routes = [
         data: { menuPermission: '/daily-reports' },
       },
       {
+        path: 'agenda',
+        loadComponent: () => import('./pages/agenda/agenda').then((m) => m.AgendaPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/agenda' },
+      },
+      {
         path: 'employees',
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/employees' },
@@ -139,12 +145,16 @@ export const routes: Routes = [
           {
             path: 'new',
             loadComponent: () =>
-              import('./pages/employees/employee-form/employee-form').then((m) => m.EmployeeFormPage),
+              import('./pages/employees/employee-form/employee-form').then(
+                (m) => m.EmployeeFormPage,
+              ),
           },
           {
             path: 'edit/:id',
             loadComponent: () =>
-              import('./pages/employees/employee-form/employee-form').then((m) => m.EmployeeFormPage),
+              import('./pages/employees/employee-form/employee-form').then(
+                (m) => m.EmployeeFormPage,
+              ),
           },
           {
             path: ':id',
@@ -175,7 +185,8 @@ export const routes: Routes = [
       },
       {
         path: 'work-shifts',
-        loadComponent: () => import('./pages/work-shifts/work-shifts').then((m) => m.WorkShiftsPage),
+        loadComponent: () =>
+          import('./pages/work-shifts/work-shifts').then((m) => m.WorkShiftsPage),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/work-shifts' },
       },
@@ -204,9 +215,9 @@ export const routes: Routes = [
       {
         path: 'time-tracking/detail/:userId',
         loadComponent: () =>
-          import(
-            './pages/time-tracking/time-tracking-detail/time-tracking-detail.component'
-          ).then(m => m.TimeTrackingDetailComponent),
+          import('./pages/time-tracking/time-tracking-detail/time-tracking-detail.component').then(
+            (m) => m.TimeTrackingDetailComponent,
+          ),
         canActivate: [MenuPermissionGuard],
       },
       {
@@ -358,7 +369,10 @@ export const routes: Routes = [
       },
       {
         path: 'digital-signature',
-        loadComponent: () => import('./pages/digital-signature/digital-signature.page').then((m) => m.DigitalSignaturePage),
+        loadComponent: () =>
+          import('./pages/digital-signature/digital-signature.page').then(
+            (m) => m.DigitalSignaturePage,
+          ),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/digital-signature' },
       },
