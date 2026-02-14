@@ -13,6 +13,7 @@ import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
+import { DatePickerModule } from 'primeng/datepicker';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { AgendaApiService } from '../../shared/services/agenda-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
@@ -51,6 +52,7 @@ const NOTE_TYPE_OPTIONS: { label: string; value: AgendaNoteType; icon: string }[
     ToastModule,
     ConfirmDialogModule,
     TooltipModule,
+    DatePickerModule,
   ],
   templateUrl: './agenda.html',
   styleUrl: './agenda.scss',
@@ -90,6 +92,27 @@ export class AgendaPage implements OnInit {
   /** URL del blob del audio grabado para el reproductor en el modal de voz */
   voicePreviewUrl = signal<string | null>(null);
 
+  /** Filtro por fecha (por defecto hoy). Notas creadas en ese día. */
+  filterDate = signal<Date>(new Date());
+
+  /** Si en el detalle estamos en modo edición (tras pulsar Editar). */
+  detailEditMode = signal(false);
+  /** Contenido en edición en el diálogo de detalle (texto). */
+  detailEditContent = signal('');
+  /** ID de la nota que se está editando (regrabar voz o reemplazar dibujo). */
+  editingNoteId = signal<string | null>(null);
+  /** URLs de audio actuales al regrabar (para eliminarlas al guardar). */
+  editingNoteVoiceUrls = signal<string[]>([]);
+  /** Diálogo solo para regrabar voz (desde detalle). */
+  showVoiceRerecordDialog = signal(false);
+  /** True cuando cerramos el diálogo de regrabar para abrir el de transcripción (no borrar editingNoteId). */
+  private closingRerecordForConfirm = false;
+  /** Canvas del detalle para editar dibujo (ViewChild se asigna cuando hay nota tipo drawing). */
+  @ViewChild('detailCanvasEl') detailCanvasRef?: ElementRef<HTMLCanvasElement>;
+  private isDetailDrawing = false;
+  private detailLastX = 0;
+  private detailLastY = 0;
+
   readonly typeOptions = NOTE_TYPE_OPTIONS;
 
   @ViewChild('canvasEl') canvasRef?: ElementRef<HTMLCanvasElement>;
@@ -110,8 +133,9 @@ export class AgendaPage implements OnInit {
 
   loadNotes(): void {
     this.loading.set(true);
+    const filters = this.buildDateFilters();
     this.agendaApi
-      .list()
+      .list(filters)
       .subscribe({
         next: (list) => this.notes.set(list),
         error: () => {
@@ -125,13 +149,32 @@ export class AgendaPage implements OnInit {
       .add(() => this.loading.set(false));
   }
 
+  /** startDate/endDate para el día seleccionado en el filtro (inicio y fin del día en local, en ISO). */
+  private buildDateFilters(): { startDate: string; endDate: string } {
+    const d = this.filterDate();
+    const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+    const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+    return {
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+    };
+  }
+
+  onFilterDateChange(date: Date | null): void {
+    if (date) {
+      this.filterDate.set(date);
+      this.loadNotes();
+    }
+  }
+
   /** Carga las notas y devuelve una promesa que se resuelve cuando terminó.
    * Si hay una nota recién creada (lastCreatedNote) y el servidor no la devuelve, se añade al inicio. */
   loadNotesAndWait(): Promise<void> {
     this.loading.set(true);
     const noteToMerge = this.lastCreatedNote();
+    const filters = this.buildDateFilters();
     return firstValueFrom(
-      this.agendaApi.list().pipe(
+      this.agendaApi.list(filters).pipe(
         tap((list) => {
           const listWithMerged = this.mergeCreatedNoteIfMissing(list, noteToMerge);
           this.notes.set(listWithMerged);
@@ -494,6 +537,8 @@ export class AgendaPage implements OnInit {
 
   /** Tras grabar: transcribir y abrir modal de confirmación (transcripción + audio + Guardar). */
   private transcribeAndShowVoiceModal(file: File): void {
+    this.closingRerecordForConfirm = true;
+    this.showVoiceRerecordDialog.set(false);
     this.transcribing.set(true);
     this.agendaApi
       .transcribe(file)
@@ -530,14 +575,58 @@ export class AgendaPage implements OnInit {
     this.showVoiceConfirmModal.set(false);
     this.pendingVoiceFile.set(null);
     this.noteContent.set('');
+    this.editingNoteId.set(null);
+    this.editingNoteVoiceUrls.set([]);
   }
 
-  /** Guardar nota de voz desde el modal (crear nota + subir audio). */
+  /** Guardar nota de voz desde el modal (crear nueva o actualizar existente si editingNoteId). */
   saveFromVoiceModal(): void {
     const content = this.noteContent().trim();
     const file = this.pendingVoiceFile();
     if (!file) return;
+    const noteId = this.editingNoteId();
     this.saving.set(true);
+    if (noteId) {
+      const oldUrls = this.editingNoteVoiceUrls();
+      this.agendaApi.update(noteId, { content: content || undefined }).subscribe({
+        next: () => {
+          Promise.all(oldUrls.map((url) => firstValueFrom(this.agendaApi.removeVoice(noteId, url))))
+            .then(() => this.uploadVoiceFileToNote(noteId, file))
+            .then(() => firstValueFrom(this.agendaApi.getById(noteId)))
+            .then((updated) => {
+              this.currentNote.set(updated);
+              this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Actualizado',
+                detail: 'Nota de voz actualizada.',
+              });
+              this.closeVoiceConfirmModal();
+              this.detailEditMode.set(false);
+              this.showDetailDialog.set(true);
+            })
+            .catch(() => {
+              this.messageService.add({
+                severity: 'warn',
+                summary: 'Audio',
+                detail: 'No se pudo reemplazar el audio.',
+              });
+            })
+            .finally(() => {
+              this.saving.set(false);
+            });
+        },
+        error: (err) => {
+          this.saving.set(false);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: err?.error?.message ?? 'No se pudo actualizar',
+          });
+        },
+      });
+      return;
+    }
     this.agendaApi.create({ type: 'voice', content: content || undefined }).subscribe({
       next: (created) => {
         this.currentNote.set(created);
@@ -655,7 +744,182 @@ export class AgendaPage implements OnInit {
 
   viewNote(note: AgendaNote): void {
     this.currentNote.set(note);
+    this.detailEditContent.set(note.content ?? '');
+    this.detailEditMode.set(false);
     this.showDetailDialog.set(true);
+  }
+
+  /** Pasar a modo edición en el detalle (carga el canvas para dibujo si aplica). */
+  enterDetailEditMode(): void {
+    this.detailEditMode.set(true);
+    const note = this.currentNote();
+    if (note?.type === 'drawing' && note.drawingUrl?.length) {
+      setTimeout(() => this.loadDetailDrawingImage(), 200);
+    }
+  }
+
+  exitDetailEditMode(): void {
+    this.detailEditMode.set(false);
+  }
+
+  /** Carga la imagen actual del dibujo en el canvas del detalle para poder editarla. */
+  loadDetailDrawingImage(): void {
+    const note = this.currentNote();
+    const canvas = this.detailCanvasRef?.nativeElement;
+    if (!note?.drawingUrl?.length || !canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+    img.src = note.drawingUrl[0];
+  }
+
+  onDetailCanvasMouseDown(e: MouseEvent): void {
+    this.isDetailDrawing = true;
+    const canvas = this.detailCanvasRef?.nativeElement;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    this.detailLastX = e.clientX - rect.left;
+    this.detailLastY = e.clientY - rect.top;
+  }
+
+  onDetailCanvasMouseMove(e: MouseEvent): void {
+    if (!this.isDetailDrawing) return;
+    const canvas = this.detailCanvasRef?.nativeElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(this.detailLastX, this.detailLastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    this.detailLastX = x;
+    this.detailLastY = y;
+  }
+
+  onDetailCanvasMouseUp(): void {
+    this.isDetailDrawing = false;
+  }
+
+  onDetailCanvasMouseLeave(): void {
+    this.isDetailDrawing = false;
+  }
+
+  clearDetailDrawing(): void {
+    const note = this.currentNote();
+    const canvas = this.detailCanvasRef?.nativeElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (note?.drawingUrl?.length) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      img.src = note.drawingUrl![0];
+    }
+  }
+
+  saveDetailText(note: AgendaNote): void {
+    const content = this.detailEditContent().trim();
+    this.agendaApi.update(note._id, { content }).subscribe({
+      next: (updated) => {
+        this.currentNote.set(updated);
+        this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
+        this.detailEditMode.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Guardado',
+          detail: 'Contenido actualizado',
+        });
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: err?.error?.message ?? 'No se pudo guardar',
+        });
+      },
+    });
+  }
+
+  startRerecordVoice(note: AgendaNote): void {
+    this.editingNoteId.set(note._id);
+    this.editingNoteVoiceUrls.set(note.voiceUrl ?? []);
+    this.noteContent.set(note.content ?? '');
+    this.showDetailDialog.set(false);
+    this.showVoiceRerecordDialog.set(true);
+    setTimeout(() => this.startRecording(), 300);
+  }
+
+  closeVoiceRerecordDialog(): void {
+    if (this.mediaRecorder?.state === 'recording') {
+      this.mediaRecorder.stop();
+    }
+    this.recording.set(false);
+    this.showVoiceRerecordDialog.set(false);
+    if (!this.closingRerecordForConfirm) {
+      this.editingNoteId.set(null);
+      this.editingNoteVoiceUrls.set([]);
+    }
+    this.closingRerecordForConfirm = false;
+  }
+
+  /** Guardar dibujo editado en detalle (subir nueva imagen y reemplazar). */
+  saveDetailDrawing(note: AgendaNote): void {
+    const canvas = this.detailCanvasRef?.nativeElement;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    this.saving.set(true);
+    this.dataUrlToBlob(dataUrl)
+      .then((blob) => {
+        const file = new File([blob], `dibujo-${Date.now()}.png`, {
+          type: 'image/png',
+        });
+        const noteId = note._id;
+        const oldUrls = note.drawingUrl ?? [];
+        return firstValueFrom(
+          this.agendaApi.generateDrawingPresignedUrl(noteId, file.name, file.type, 3600),
+        ).then((res) =>
+          this.agendaApi
+            .uploadFileToS3(res.presignedUrl, file, file.type)
+            .then(() => firstValueFrom(this.agendaApi.confirmDrawingUpload(noteId, res.publicUrl)))
+            .then(() =>
+              Promise.all(
+                oldUrls.map((url) => firstValueFrom(this.agendaApi.removeDrawing(noteId, url))),
+              ).catch(() => undefined),
+            )
+            .then(() => firstValueFrom(this.agendaApi.getById(noteId))),
+        );
+      })
+      .then((updated) => {
+        this.currentNote.set(updated);
+        this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
+        this.detailEditMode.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Guardado',
+          detail: 'Dibujo actualizado',
+        });
+      })
+      .catch(() => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo guardar el dibujo',
+        });
+      })
+      .finally(() => this.saving.set(false));
   }
 
   deleteNote(note: AgendaNote): void {

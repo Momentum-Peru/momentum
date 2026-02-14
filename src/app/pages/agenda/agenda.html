@@ -13,6 +13,22 @@
         Crea notas en texto, voz o dibujo; asígnalas y compártelas.
       </p>
     </div>
+    <div class="flex items-center gap-2 sm:ml-auto">
+      <label
+        for="agenda-filter-date"
+        class="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap"
+        >Fecha</label
+      >
+      <p-datepicker
+        id="agenda-filter-date"
+        [ngModel]="filterDate()"
+        (ngModelChange)="onFilterDateChange($event)"
+        dateFormat="dd/mm/yy"
+        [showIcon]="true"
+        [appendTo]="'body'"
+        styleClass="w-full min-w-[140px]"
+      ></p-datepicker>
+    </div>
   </div>
 
   <!-- Opciones de tipo (visibles directamente para crear nota) -->
@@ -290,9 +306,9 @@
 
   <!-- Modal confirmar nota de voz: transcripción + audio + Guardar -->
   <p-dialog
-    [visible]="showVoiceConfirmModal()"
+    [(visible)]="showVoiceConfirmModal"
     (onHide)="closeVoiceConfirmModal()"
-    header="Revisar nota de voz"
+    [header]="editingNoteId() ? 'Actualizar nota de voz' : 'Revisar nota de voz'"
     [modal]="true"
     [closable]="true"
     [style]="{ width: 'min(90vw, 520px)' }"
@@ -344,10 +360,10 @@
   <!-- Diálogo ver nota -->
   <p-dialog
     [(visible)]="showDetailDialog"
-    (onHide)="showDetailDialog.set(false)"
+    (onHide)="showDetailDialog.set(false); exitDetailEditMode()"
     header="Detalle de la nota"
     [modal]="true"
-    [style]="{ width: 'min(90vw, 480px)' }"
+    [style]="{ width: 'min(90vw, 520px)' }"
     [draggable]="false"
     [resizable]="false"
   >
@@ -359,27 +375,119 @@
             getTypeLabel(note.type)
           }}</span>
         </div>
-        @if (note.content) {
-          <p class="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{{ note.content }}</p>
-        }
-        @if (note.voiceUrl?.length) {
-          <div class="flex flex-wrap gap-2">
-            @for (url of note.voiceUrl; track url) {
-              <audio [src]="url" controls class="max-w-full"></audio>
+
+        @if (note.type === 'text') {
+          @if (canEdit() && detailEditMode()) {
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Contenido</label
+              >
+              <textarea
+                pTextarea
+                [autoResize]="true"
+                rows="4"
+                class="w-full"
+                [ngModel]="detailEditContent()"
+                (ngModelChange)="detailEditContent.set($event)"
+              ></textarea>
+              <button
+                pButton
+                type="button"
+                label="Guardar"
+                icon="pi pi-check"
+                class="mt-2"
+                (click)="saveDetailText(note)"
+              ></button>
+            </div>
+          } @else {
+            @if (note.content) {
+              <p class="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{{ note.content }}</p>
             }
-          </div>
+          }
         }
-        @if (note.drawingUrl?.length) {
-          <div class="flex flex-wrap gap-2">
-            @for (url of note.drawingUrl; track url) {
-              <img
-                [src]="url"
-                alt="Dibujo"
-                class="max-w-full rounded border border-gray-200 dark:border-gray-600 max-h-64 object-contain"
-              />
+
+        @if (note.type === 'voice') {
+          @if (note.content) {
+            <p class="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{{ note.content }}</p>
+          }
+          @if (note.voiceUrl?.length) {
+            <div class="flex flex-wrap gap-2">
+              @for (url of note.voiceUrl; track url) {
+                <audio [src]="url" controls class="max-w-full"></audio>
+              }
+            </div>
+          }
+          @if (canEdit() && detailEditMode()) {
+            <button
+              pButton
+              type="button"
+              label="Regrabar"
+              icon="pi pi-microphone"
+              [outlined]="true"
+              (click)="startRerecordVoice(note)"
+            ></button>
+          }
+        }
+
+        @if (note.type === 'drawing') {
+          @if (canEdit() && detailEditMode()) {
+            <div>
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Editar dibujo</p>
+              <div
+                class="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-800"
+              >
+                <canvas
+                  #detailCanvasEl
+                  width="500"
+                  height="280"
+                  class="block w-full max-w-full cursor-crosshair touch-none"
+                  (mousedown)="onDetailCanvasMouseDown($event)"
+                  (mousemove)="onDetailCanvasMouseMove($event)"
+                  (mouseup)="onDetailCanvasMouseUp()"
+                  (mouseleave)="onDetailCanvasMouseLeave()"
+                ></canvas>
+              </div>
+              <div class="flex gap-2 mt-2">
+                <button
+                  pButton
+                  type="button"
+                  label="Limpiar y volver a cargar"
+                  icon="pi pi-eraser"
+                  severity="secondary"
+                  [outlined]="true"
+                  (click)="clearDetailDrawing()"
+                ></button>
+                <button
+                  pButton
+                  type="button"
+                  label="Guardar dibujo"
+                  icon="pi pi-check"
+                  [loading]="saving()"
+                  (click)="saveDetailDrawing(note)"
+                ></button>
+              </div>
+            </div>
+          } @else {
+            @if (note.drawingUrl?.length) {
+              <div class="flex flex-wrap gap-2">
+                @for (url of note.drawingUrl; track url) {
+                  <img
+                    [src]="url"
+                    alt="Dibujo"
+                    class="max-w-full rounded border border-gray-200 dark:border-gray-600 max-h-64 object-contain"
+                  />
+                }
+              </div>
             }
-          </div>
+          }
         }
+
+        @if (note.type !== 'text' && note.type !== 'voice' && note.type !== 'drawing') {
+          @if (note.content) {
+            <p class="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{{ note.content }}</p>
+          }
+        }
+
         @if (note.assignedTo?.length) {
           <div>
             <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -398,6 +506,26 @@
       @if (currentNote(); as note) {
         <button pButton type="button" label="Cerrar" (click)="showDetailDialog.set(false)"></button>
         @if (canEdit()) {
+          @if (detailEditMode()) {
+            <button
+              pButton
+              type="button"
+              label="Cancelar"
+              icon="pi pi-times"
+              [outlined]="true"
+              (click)="exitDetailEditMode()"
+            ></button>
+          } @else {
+            <button
+              pButton
+              type="button"
+              label="Editar"
+              icon="pi pi-pencil"
+              (click)="enterDetailEditMode()"
+            ></button>
+          }
+        }
+        @if (canEdit()) {
           <button
             pButton
             type="button"
@@ -409,6 +537,62 @@
           ></button>
         }
       }
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo regrabar voz (desde detalle) -->
+  <p-dialog
+    [(visible)]="showVoiceRerecordDialog"
+    (onHide)="closeVoiceRerecordDialog()"
+    header="Nueva grabación"
+    [modal]="true"
+    [closable]="true"
+    [style]="{ width: 'min(90vw, 400px)' }"
+  >
+    <div class="space-y-4">
+      @if (transcribing()) {
+        <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+          <i class="pi pi-spin pi-spinner"></i>
+          Transcribiendo...
+        </p>
+      } @else {
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          {{
+            recording()
+              ? 'Grabando... Pulsa Detener cuando termines.'
+              : 'Graba de nuevo. Al detener se transcribirá y podrás guardar.'
+          }}
+        </p>
+        <div class="flex flex-wrap gap-2">
+          @if (!recording()) {
+            <button
+              pButton
+              type="button"
+              label="Grabar"
+              icon="pi pi-microphone"
+              (click)="startRecording()"
+            ></button>
+          } @else {
+            <button
+              pButton
+              type="button"
+              label="Detener"
+              icon="pi pi-stop"
+              severity="danger"
+              (click)="stopRecording()"
+            ></button>
+          }
+        </div>
+      }
+    </div>
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        type="button"
+        label="Cancelar"
+        [outlined]="true"
+        (click)="closeVoiceRerecordDialog()"
+      ></button>
     </ng-template>
   </p-dialog>
 </div>
