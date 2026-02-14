@@ -14,6 +14,7 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { DatePickerModule } from 'primeng/datepicker';
+import { CheckboxModule } from 'primeng/checkbox';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { AgendaApiService } from '../../shared/services/agenda-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
@@ -53,6 +54,7 @@ const NOTE_TYPE_OPTIONS: { label: string; value: AgendaNoteType; icon: string }[
     ConfirmDialogModule,
     TooltipModule,
     DatePickerModule,
+    CheckboxModule,
   ],
   templateUrl: './agenda.html',
   styleUrl: './agenda.scss',
@@ -94,6 +96,13 @@ export class AgendaPage implements OnInit {
 
   /** Filtro por fecha (por defecto hoy). Notas creadas en ese día. */
   filterDate = signal<Date>(new Date());
+
+  /** IDs de notas seleccionadas para asignación masiva. */
+  selectedNoteIds = signal<Set<string>>(new Set());
+  /** Usuario a asignar en la barra de asignación masiva. */
+  bulkAssignUserId = signal<string | null>(null);
+  /** Cargando asignación masiva. */
+  bulkAssigning = signal(false);
 
   /** Si en el detalle estamos en modo edición (tras pulsar Editar). */
   detailEditMode = signal(false);
@@ -412,6 +421,93 @@ export class AgendaPage implements OnInit {
   getAssignedSingleId(note: AgendaNote): string | null {
     const ids = (note.assignedTo ?? []).map((a) => (typeof a === 'string' ? a : a._id));
     return ids.length > 0 ? ids[0] : null;
+  }
+
+  toggleSelectNote(note: AgendaNote): void {
+    const id = String(note._id);
+    this.selectedNoteIds.update((set) => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  toggleSelectAll(): void {
+    const notes = this.filteredNotes();
+    if (this.selectedNoteIds().size === notes.length) {
+      this.selectedNoteIds.set(new Set());
+    } else {
+      this.selectedNoteIds.set(new Set(notes.map((n) => String(n._id))));
+    }
+  }
+
+  isNoteSelected(note: AgendaNote): boolean {
+    return this.selectedNoteIds().has(String(note._id));
+  }
+
+  isAllSelected(): boolean {
+    const notes = this.filteredNotes();
+    return notes.length > 0 && this.selectedNoteIds().size === notes.length;
+  }
+
+  isSomeSelected(): boolean {
+    return this.selectedNoteIds().size > 0;
+  }
+
+  clearSelection(): void {
+    this.selectedNoteIds.set(new Set());
+  }
+
+  /** Asignación masiva: asignar el usuario seleccionado a todas las notas seleccionadas. */
+  onBulkAssign(): void {
+    const userId = this.bulkAssignUserId();
+    const ids = Array.from(this.selectedNoteIds());
+    if (!ids.length) return;
+    if (!userId) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Asignar',
+        detail: 'Elige un usuario para asignar',
+      });
+      return;
+    }
+    this.bulkAssigning.set(true);
+    const userIds = [userId];
+    Promise.all(
+      ids.map((id) =>
+        firstValueFrom(
+          this.agendaApi.assign(id, { userIds }).pipe(
+            map(() => true),
+            catchError(() => of(false)),
+          ),
+        ),
+      ),
+    )
+      .then((results) => {
+        const ok = results.filter(Boolean).length;
+        const fail = results.length - ok;
+        this.loadNotes();
+        this.clearSelection();
+        this.bulkAssignUserId.set(null);
+        if (fail === 0) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Asignado',
+            detail: `${ok} nota(s) asignada(s) correctamente`,
+          });
+        } else {
+          this.messageService.add({
+            severity: ok ? 'warn' : 'error',
+            summary: 'Asignar',
+            detail:
+              ok > 0
+                ? `Asignadas ${ok} nota(s). ${fail} no se pudieron asignar (solo el creador puede asignar).`
+                : 'No se pudo asignar (solo el creador de cada nota puede asignar).',
+          });
+        }
+      })
+      .finally(() => this.bulkAssigning.set(false));
   }
 
   /** Asignar o cambiar la única persona asignada desde el select de la tabla. */

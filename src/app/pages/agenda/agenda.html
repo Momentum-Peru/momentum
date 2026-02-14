@@ -69,6 +69,46 @@
         <p class="text-sm mt-1">Elige texto, voz o dibujo arriba para crear tu primera nota.</p>
       </div>
     } @else {
+      @if (canEdit() && isSomeSelected()) {
+        <div
+          class="flex flex-wrap items-center gap-3 mb-3 p-3 rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/20"
+        >
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ selectedNoteIds().size }} seleccionada(s)
+          </span>
+          <p-select
+            [options]="userOptions()"
+            optionLabel="name"
+            optionValue="_id"
+            [ngModel]="bulkAssignUserId()"
+            (ngModelChange)="bulkAssignUserId.set($event)"
+            placeholder="Asignar a..."
+            [showClear]="true"
+            [filter]="true"
+            filterPlaceholder="Buscar usuario..."
+            styleClass="min-w-[180px]"
+            appendTo="body"
+          ></p-select>
+          <button
+            pButton
+            type="button"
+            label="Asignar"
+            icon="pi pi-user-plus"
+            [loading]="bulkAssigning()"
+            [disabled]="!bulkAssignUserId()"
+            (click)="onBulkAssign()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Desmarcar"
+            icon="pi pi-times"
+            [outlined]="true"
+            severity="secondary"
+            (click)="clearSelection()"
+          ></button>
+        </div>
+      }
       <div class="flex items-center justify-between mb-3">
         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">
           Items ({{ filteredNotes().length }})
@@ -81,6 +121,16 @@
       >
         <ng-template pTemplate="header">
           <tr>
+            @if (canEdit()) {
+              <th class="w-10 text-left" (click)="$event.stopPropagation()">
+                <p-checkbox
+                  [binary]="true"
+                  [ngModel]="isAllSelected()"
+                  (ngModelChange)="toggleSelectAll()"
+                  [inputId]="'select-all-agenda'"
+                ></p-checkbox>
+              </th>
+            }
             <th class="text-left w-12">#</th>
             <th class="text-left">Tipo</th>
             <th class="text-left">Contenido</th>
@@ -94,6 +144,16 @@
             (click)="viewNote(note)"
             class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
           >
+            @if (canEdit()) {
+              <td (click)="$event.stopPropagation()">
+                <p-checkbox
+                  [binary]="true"
+                  [ngModel]="isNoteSelected(note)"
+                  (ngModelChange)="toggleSelectNote(note)"
+                  [inputId]="'select-note-' + note._id"
+                ></p-checkbox>
+              </td>
+            }
             <td class="font-medium text-gray-700 dark:text-gray-300">{{ rowIndex + 1 }}</td>
             <td>
               <span class="inline-flex items-center gap-2">
