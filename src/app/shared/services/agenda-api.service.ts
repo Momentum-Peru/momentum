@@ -30,6 +30,7 @@ export interface PresignedUrlResponse {
 /**
  * Servicio responsable únicamente de las llamadas HTTP al API de Agenda.
  * No contiene lógica de negocio ni estado de UI.
+ * Normaliza los ids a string para evitar 404 por serialización (p. ej. en producción).
  */
 @Injectable({
   providedIn: 'root',
@@ -37,6 +38,12 @@ export interface PresignedUrlResponse {
 export class AgendaApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/agenda`;
+
+  /** Asegura que el id se envía como string (evita [object Object] si viene como objeto). */
+  private id(id: string | { toString?: () => string } | undefined): string {
+    if (id == null) return '';
+    return typeof id === 'string' ? id : (id?.toString?.() ?? String(id));
+  }
 
   list(filters?: AgendaListFilters): Observable<AgendaNote[]> {
     const params = new URLSearchParams();
@@ -53,7 +60,7 @@ export class AgendaApiService {
   }
 
   getById(id: string): Observable<AgendaNote> {
-    return this.http.get<AgendaNote>(`${this.baseUrl}/${id}`);
+    return this.http.get<AgendaNote>(`${this.baseUrl}/${this.id(id)}`);
   }
 
   create(payload: CreateAgendaNotePayload): Observable<AgendaNote> {
@@ -61,19 +68,19 @@ export class AgendaApiService {
   }
 
   update(id: string, payload: UpdateAgendaNotePayload): Observable<AgendaNote> {
-    return this.http.patch<AgendaNote>(`${this.baseUrl}/${id}`, payload);
+    return this.http.patch<AgendaNote>(`${this.baseUrl}/${this.id(id)}`, payload);
   }
 
   delete(id: string): Observable<{ deleted: boolean }> {
-    return this.http.delete<{ deleted: boolean }>(`${this.baseUrl}/${id}`);
+    return this.http.delete<{ deleted: boolean }>(`${this.baseUrl}/${this.id(id)}`);
   }
 
   assign(id: string, payload: AssignAgendaNotePayload): Observable<AgendaNote> {
-    return this.http.patch<AgendaNote>(`${this.baseUrl}/${id}/assign`, payload);
+    return this.http.patch<AgendaNote>(`${this.baseUrl}/${this.id(id)}/assign`, payload);
   }
 
   share(id: string, payload: ShareAgendaNotePayload): Observable<AgendaNote> {
-    return this.http.post<AgendaNote>(`${this.baseUrl}/${id}/share`, payload);
+    return this.http.post<AgendaNote>(`${this.baseUrl}/${this.id(id)}/share`, payload);
   }
 
   generateVoicePresignedUrl(
@@ -82,15 +89,20 @@ export class AgendaApiService {
     contentType: string,
     expirationTime?: number,
   ): Observable<PresignedUrlResponse> {
-    return this.http.post<PresignedUrlResponse>(`${this.baseUrl}/${noteId}/voice/presigned-url`, {
-      fileName,
-      contentType,
-      ...(expirationTime && { expirationTime }),
-    });
+    return this.http.post<PresignedUrlResponse>(
+      `${this.baseUrl}/${this.id(noteId)}/voice/presigned-url`,
+      {
+        fileName,
+        contentType,
+        ...(expirationTime && { expirationTime }),
+      },
+    );
   }
 
   confirmVoiceUpload(noteId: string, voiceUrl: string): Observable<AgendaNote> {
-    return this.http.post<AgendaNote>(`${this.baseUrl}/${noteId}/voice/confirm`, { voiceUrl });
+    return this.http.post<AgendaNote>(`${this.baseUrl}/${this.id(noteId)}/voice/confirm`, {
+      voiceUrl,
+    });
   }
 
   generateDrawingPresignedUrl(
@@ -99,25 +111,30 @@ export class AgendaApiService {
     contentType: string,
     expirationTime?: number,
   ): Observable<PresignedUrlResponse> {
-    return this.http.post<PresignedUrlResponse>(`${this.baseUrl}/${noteId}/drawing/presigned-url`, {
-      fileName,
-      contentType,
-      ...(expirationTime && { expirationTime }),
-    });
+    return this.http.post<PresignedUrlResponse>(
+      `${this.baseUrl}/${this.id(noteId)}/drawing/presigned-url`,
+      {
+        fileName,
+        contentType,
+        ...(expirationTime && { expirationTime }),
+      },
+    );
   }
 
   confirmDrawingUpload(noteId: string, drawingUrl: string): Observable<AgendaNote> {
-    return this.http.post<AgendaNote>(`${this.baseUrl}/${noteId}/drawing/confirm`, { drawingUrl });
+    return this.http.post<AgendaNote>(`${this.baseUrl}/${this.id(noteId)}/drawing/confirm`, {
+      drawingUrl,
+    });
   }
 
   removeVoice(noteId: string, voiceUrl: string): Observable<AgendaNote> {
-    return this.http.delete<AgendaNote>(`${this.baseUrl}/${noteId}/voice`, {
+    return this.http.delete<AgendaNote>(`${this.baseUrl}/${this.id(noteId)}/voice`, {
       body: { voiceUrl },
     });
   }
 
   removeDrawing(noteId: string, drawingUrl: string): Observable<AgendaNote> {
-    return this.http.delete<AgendaNote>(`${this.baseUrl}/${noteId}/drawing`, {
+    return this.http.delete<AgendaNote>(`${this.baseUrl}/${this.id(noteId)}/drawing`, {
       body: { drawingUrl },
     });
   }
