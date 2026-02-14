@@ -29,8 +29,8 @@ import type {
 } from '../../shared/interfaces/agenda-note.interface';
 import type { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import { Router } from '@angular/router';
-import { firstValueFrom, of } from 'rxjs';
-import { tap, map, catchError, finalize } from 'rxjs/operators';
+import { firstValueFrom, of, timer } from 'rxjs';
+import { tap, map, catchError, finalize, switchMap } from 'rxjs/operators';
 
 const NOTE_TYPE_OPTIONS: { label: string; value: AgendaNoteType; icon: string }[] = [
   { label: 'Texto', value: 'text', icon: 'pi pi-pencil' },
@@ -689,16 +689,27 @@ export class AgendaPage implements OnInit {
     const userIds = userId ? [userId] : [];
     const dueAtIso = dueAt ? dueAt.toISOString() : null;
     this.bulkAssigning.set(true);
-    Promise.all(
-      ids.map((id) =>
-        firstValueFrom(
-          this.agendaApi.assign(id, { userIds, dueAt: dueAtIso }).pipe(
-            map(() => true),
-            catchError(() => of(false)),
-          ),
+    const payload = { userIds, dueAt: dueAtIso };
+    const assignWithRetry = (id: string) =>
+      firstValueFrom(
+        this.agendaApi.assign(id, payload).pipe(
+          map(() => true),
+          catchError((err: { status?: number }) => {
+            if (err?.status === 404) {
+              return timer(1000).pipe(
+                switchMap(() =>
+                  this.agendaApi.assign(id, payload).pipe(
+                    map(() => true),
+                    catchError(() => of(false)),
+                  ),
+                ),
+              );
+            }
+            return of(false);
+          }),
         ),
-      ),
-    )
+      );
+    Promise.all(ids.map((id) => assignWithRetry(id)))
       .then((results) => {
         const ok = results.filter(Boolean).length;
         const fail = results.length - ok;
@@ -1390,6 +1401,12 @@ export class AgendaPage implements OnInit {
     if (typeof u === 'object' && u) {
       if (u.name) return u.name;
       if ((u as { email?: string }).email) return (u as { email: string }).email;
+    }
+    if (typeof u === 'string') {
+      const currentId = this.authService.getCurrentUser()?.id;
+      if (u === currentId) return 'Tú';
+      const found = this.userOptions().find((x) => x._id === u);
+      return found?.name ?? found?.email ?? '—';
     }
     return '—';
   }
