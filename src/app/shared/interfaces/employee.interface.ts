@@ -15,10 +15,10 @@ import { WorkShift } from './work-shift.interface';
 
 export interface Employee {
   _id?: string;
-  nombre: string;
-  apellido: string;
+  nombre?: string;
+  apellido?: string;
   tipoDocumento?: 'DNI' | 'Carné de Extranjería' | 'PTP' | 'Pasaporte';
-  dni: string;
+  dni?: string;
   fotoPerfil?: string;
   correo?: string;
   correoCorporativo?: string;
@@ -116,10 +116,10 @@ export interface Employee {
 }
 
 export interface CreateEmployeeRequest {
-  nombre: string;
-  apellido: string;
+  nombre?: string;
+  apellido?: string;
   tipoDocumento?: 'DNI' | 'Carné de Extranjería' | 'PTP' | 'Pasaporte';
-  dni: string;
+  dni?: string;
   fotoPerfil?: string;
   correo?: string;
   correoCorporativo?: string;
@@ -138,7 +138,7 @@ export interface CreateEmployeeRequest {
     numeroDocumento: string;
   }[];
   cargo?: string;
-  sueldoBasico: number;
+  sueldoBasico?: number;
   tipoEmpleado?: 'Planilla' | 'Locador';
   userId?: string;
   areaId?: string;
