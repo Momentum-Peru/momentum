@@ -413,6 +413,8 @@ export class EmployeeFormPage implements OnInit {
       delete data.tenantId;
       delete data.createdAt;
       delete data.updatedAt;
+      // La foto se sube por endpoint aparte (uploadFotoPerfil), no en el body del PATCH
+      delete data.fotoPerfil;
       // Quitar null de objetos anidados para que pasen la validación
       ['examenMedico', 'sctr', 'contactoEmergencia', 'licenciaConducir', 'antecedentes'].forEach((key) => {
         const obj = data[key];
