@@ -3,7 +3,7 @@
   <p-toast [life]="5000"></p-toast>
   <div class="flex flex-col gap-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-semibold dark:text-gray-800">Futuros Imposibles</h2>
+      <h2 class="text-xl font-semibold dark:text-gray-800">Planes de Acción</h2>
       <p-button
         (onClick)="openCreate()"
         label="Nuevo"
@@ -53,7 +53,7 @@
         <tr class="text-sm">
           <th>Título</th>
           <th>Descripción</th>
-          <th>Atravesar</th>
+          <th>Desafío</th>
           <th>Rango</th>
           <th>Activo</th>
           <th></th>
@@ -147,7 +147,7 @@
           </div>
           <div>
             <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Atravesar
+              Desafío
             </div>
             <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
               {{ item.atravesar || '-' }}
@@ -191,7 +191,7 @@
     } @empty {
     <div class="text-center py-12 text-gray-500 dark:text-gray-400">
       <i class="pi pi-inbox text-4xl mb-2"></i>
-      <p>No hay futuros imposibles registrados</p>
+      <p>No hay planes de acción registrados</p>
     </div>
     }
   </div>
@@ -231,7 +231,7 @@
       ></textarea>
     </div>
     <div>
-      <label for="atravesar" class="text-sm text-gray-600 mb-1 block">Atravesar</label>
+      <label for="atravesar" class="text-sm text-gray-600 mb-1 block">Desafío</label>
       <textarea
         id="atravesar"
         pTextarea
