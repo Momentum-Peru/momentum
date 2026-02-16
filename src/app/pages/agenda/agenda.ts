@@ -74,7 +74,7 @@ const STATUS_OPTIONS: { label: string; value: AgendaNoteStatus }[] = [
 export class AgendaPage implements OnInit {
   private readonly agendaApi = inject(AgendaApiService);
   private readonly usersApi = inject(UsersApiService);
-  private readonly authService = inject(AuthService);
+  public readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly menuService = inject(MenuService);
@@ -110,6 +110,23 @@ export class AgendaPage implements OnInit {
   /** True si el usuario puede editar el estado de la nota (permiso completo o estar asignado). */
   canEditStatus(note: AgendaNote): boolean {
     return this.canEditFull(note) || this.isAssignedToMe(note);
+  }
+
+  /** True si el usuario es Gerencia. */
+  isGerencia(): boolean {
+    return this.authService.isGerencia();
+  }
+
+  isOverdue(note: AgendaNote): boolean {
+    if (!note.dueAt || note.status === 'terminado') return false;
+    return new Date(note.dueAt).getTime() < Date.now();
+  }
+
+  getRowClass(note: AgendaNote): string {
+    if (note.status === 'terminado') return 'row-finished';
+    if (this.isOverdue(note)) return 'row-overdue';
+    if (note.status === 'pendiente') return 'row-pending';
+    return '';
   }
 
   /** Indica si el navegador soporta la API nativa de compartir. */
@@ -219,6 +236,12 @@ export class AgendaPage implements OnInit {
   /** Filtro por fecha (por defecto hoy). Notas creadas en ese día. */
   filterDate = signal<Date>(new Date());
 
+  /** ID del usuario seleccionado para filtrar agenda (sólo gerencia). */
+  selectedUserId = signal<string | null>(null);
+
+  /** Query de búsqueda para el panel lateral de usuarios. */
+  userSearchQuery = signal('');
+
   /** IDs de notas seleccionadas para asignación masiva. */
   selectedNoteIds = signal<Set<string>>(new Set());
   /** Usuario a asignar en la barra de asignación masiva. */
@@ -267,6 +290,75 @@ export class AgendaPage implements OnInit {
     });
   });
 
+  /** Usuarios ordenados: el actual primero, luego el resto, filtrados por buscador. */
+  sortedUserOptions = computed(() => {
+    const raw = this.userOptions();
+    const query = this.userSearchQuery().toLowerCase().trim();
+    const currentUserId = this.authService.getCurrentUser()?.id;
+
+    let filtered = raw;
+    if (query) {
+      filtered = raw.filter(
+        (u) => u.name?.toLowerCase().includes(query) || u.email?.toLowerCase().includes(query),
+      );
+    }
+
+    return filtered.sort((a, b) => {
+      if (a._id === currentUserId) return -1;
+      if (b._id === currentUserId) return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  });
+
+  /** Notas sin asignar (Backlog). */
+  backlogNotes = computed(() => {
+    const notes = this.filteredNotes();
+    const selected = this.selectedUserId();
+    const backlog = notes.filter((n) => !n.assignedTo || n.assignedTo.length === 0);
+
+    if (selected) {
+      // Si hay un usuario seleccionado, mostramos sus propios items sin asignar
+      return backlog.filter((n) => {
+        const creatorId =
+          typeof n.createdBy === 'string' ? n.createdBy : (n.createdBy as AgendaNoteUser)?._id;
+        return creatorId === selected;
+      });
+    }
+
+    return backlog;
+  });
+
+  /** Notas asignadas (o todas si no se filtra por usuario). */
+  assignedNotes = computed(() => {
+    const notes = this.filteredNotes();
+    const selected = this.selectedUserId();
+    const filterDate = this.filterDate();
+
+    // Filtramos por fecha en el frontend para la sección "Agenda"
+    // (el backend ahora trae todo para permitir el backlog global)
+    const start = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate(), 0, 0, 0, 0).getTime();
+    const end = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate(), 23, 59, 59, 999).getTime();
+
+    const list = notes.filter(n => {
+      const d = new Date(n.dueAt || n.createdAt || 0).getTime();
+      return d >= start && d <= end;
+    });
+
+    // Si hay un usuario seleccionado, filtramos por los asignados a ese usuario
+    if (selected) {
+      return list.filter((n) => {
+        if (!n.assignedTo || n.assignedTo.length === 0) return false;
+        return n.assignedTo.some((a) => {
+          const id = typeof a === 'string' ? a : (a as AgendaNoteUser)?._id;
+          return id === selected;
+        });
+      });
+    }
+
+    // Si no hay usuario seleccionado (o no es gerencia), mostramos las asignadas
+    return list.filter((n) => n.assignedTo && n.assignedTo.length > 0);
+  });
+
   ngOnInit(): void {
     this.loadNotes();
     this.loadUsers();
@@ -301,14 +393,20 @@ export class AgendaPage implements OnInit {
     };
   }
 
-  /** Filtros para listar notas: fecha y, si no es gerencia, las creadas por mí o asignadas a mí (backend usa el usuario del token). */
+  /** Filtros para listar notas: ahora traemos todo lo del usuario/tenant para permitir backlog global. */
   private buildListFilters(): Parameters<AgendaApiService['list']>[0] {
-    const { startDate, endDate } = this.buildDateFilters();
-    const filters: Parameters<AgendaApiService['list']>[0] = { startDate, endDate };
+    const filters: Parameters<AgendaApiService['list']>[0] = {};
+
     if (!this.authService.isGerencia()) {
       filters.forUser = true;
     }
+
     return filters;
+  }
+
+  selectUser(userId: string | null): void {
+    this.selectedUserId.set(userId);
+    this.loadNotes();
   }
 
   onFilterDateChange(date: Date | null): void {
