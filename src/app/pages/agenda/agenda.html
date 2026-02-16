@@ -31,6 +31,76 @@
     </div>
   </div>
 
+  <div class="flex flex-col lg:flex-row gap-6">
+    <!-- Panel Lateral (Sólo Gerencia) -->
+    @if (isGerencia()) {
+      <div class="w-full lg:w-72 flex-shrink-0">
+        <p-card styleClass="h-full shadow-sm" class="sticky top-4">
+          <div class="space-y-4">
+            <h3 class="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+              <i class="pi pi-users"></i>
+              Agendas
+            </h3>
+            
+            <!-- Buscador de usuarios -->
+            <div class="p-input-icon-left w-full">
+              <i class="pi pi-search"></i>
+              <input
+                pInputText
+                type="text"
+                [ngModel]="userSearchQuery()"
+                (ngModelChange)="userSearchQuery.set($event)"
+                placeholder="Buscar usuario..."
+                class="w-full text-sm"
+              />
+            </div>
+
+            <div class="flex flex-col gap-1 max-h-[60vh] overflow-y-auto pr-1">
+              <button
+                pButton
+                type="button"
+                label="Ver Todas"
+                icon="pi pi-th-large"
+                [text]="selectedUserId() !== null"
+                [outlined]="selectedUserId() === null"
+                severity="secondary"
+                class="justify-start text-left w-full h-10 overflow-hidden"
+                (click)="selectUser(null)"
+              ></button>
+              <div class="border-t border-gray-100 dark:border-gray-700 my-2"></div>
+              @for (user of sortedUserOptions(); track user._id) {
+                <button
+                  pButton
+                  type="button"
+                  [text]="selectedUserId() !== user._id"
+                  [outlined]="selectedUserId() === user._id"
+                  severity="secondary"
+                  class="user-tab-btn justify-start text-left w-full h-10 overflow-hidden px-3"
+                  (click)="selectUser(user._id)"
+                  [pTooltip]="user.email"
+                  tooltipPosition="right"
+                >
+                  <div class="flex items-center gap-2 w-full truncate">
+                    <i class="pi pi-user flex-shrink-0"></i>
+                    <span class="truncate flex-1">{{ user.name || user.email }}</span>
+                    @if (user._id === (authService.getCurrentUser()?.id)) {
+                      <span class="text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded flex-shrink-0">
+                        MI AGENDA
+                      </span>
+                    }
+                  </div>
+                </button>
+              }
+            </div>
+          </div>
+        </p-card>
+      </div>
+    }
+
+    <!-- Contenido Principal -->
+    <div class="flex-1 space-y-6">
+
+
   <!-- Opciones de tipo (visibles directamente para crear nota) -->
   @if (canEdit()) {
     <div
@@ -56,216 +126,244 @@
     </div>
   }
 
-  <!-- Lista de notas -->
-  <p-card class="shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
-    @if (loading()) {
-      <div class="flex justify-center py-12">
-        <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+      <!-- Sección Sin Asignar -->
+      <div class="space-y-3">
+        <h2 class="text-lg font-bold text-gray-700 dark:text-white flex items-center gap-2">
+          <i class="pi pi-inbox text-orange-500"></i>
+          Sin Asignar
+        </h2>
+        <p-card class="shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
+          @if (loading()) {
+            <div class="flex justify-center py-6">
+              <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+            </div>
+          } @else if (backlogNotes().length === 0) {
+            <div class="text-center py-6 text-gray-500 dark:text-gray-400">
+              <p class="text-sm">No hay items en el backlog</p>
+            </div>
+          } @else {
+            <ng-container *ngTemplateOutlet="notesTable; context: { $implicit: backlogNotes() }"></ng-container>
+          }
+        </p-card>
       </div>
-    } @else if (filteredNotes().length === 0) {
-      <div class="text-center py-12 text-gray-500 dark:text-gray-400">
-        <i class="pi pi-inbox text-5xl mb-4 block opacity-50"></i>
-        <p class="font-medium">No hay notas</p>
-        <p class="text-sm mt-1">Elige texto, voz o dibujo arriba para crear tu primera nota.</p>
+
+      <!-- Sección Agenda (Asignados) -->
+      <div class="space-y-3">
+        <h2 class="text-lg font-bold text-gray-700 dark:text-white flex items-center gap-2">
+          <i class="pi pi-calendar text-primary"></i>
+          Agenda {{ selectedUserId() ? ' de ' + getAssignModalUserName() : '' }}
+        </h2>
+        <p-card class="shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
+          @if (loading()) {
+            <div class="flex justify-center py-6">
+              <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+            </div>
+          } @else if (assignedNotes().length === 0) {
+            <div class="text-center py-6 text-gray-500 dark:text-gray-400">
+              <p class="text-sm">No hay items asignados</p>
+            </div>
+          } @else {
+            <ng-container *ngTemplateOutlet="notesTable; context: { $implicit: assignedNotes() }"></ng-container>
+          }
+        </p-card>
       </div>
-    } @else {
-      @if (canEdit() && isSomeSelected()) {
-        <div
-          class="flex flex-wrap items-center gap-3 mb-3 p-3 rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/20"
-        >
-          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {{ selectedNoteIds().size }} seleccionada(s)
-          </span>
-          <p-select
-            [options]="userOptions()"
-            optionLabel="name"
-            optionValue="_id"
-            [ngModel]="bulkAssignUserId()"
-            (ngModelChange)="bulkAssignUserId.set($event)"
-            placeholder="Asignar a..."
-            [showClear]="true"
-            [filter]="true"
-            filterPlaceholder="Buscar usuario..."
-            styleClass="min-w-[180px]"
-            appendTo="body"
-          ></p-select>
-          <button
-            pButton
-            type="button"
-            label="Asignar"
-            icon="pi pi-user-plus"
-            [disabled]="!bulkAssignUserId()"
-            (click)="openAssignModalForBulk()"
-          ></button>
-          <button
-            pButton
-            type="button"
-            label="Desmarcar"
-            icon="pi pi-times"
-            [outlined]="true"
-            severity="secondary"
-            (click)="clearSelection()"
-          ></button>
-        </div>
-      }
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">
-          Items ({{ filteredNotes().length }})
-        </span>
-      </div>
-      <p-table
-        [value]="filteredNotes()"
-        styleClass="p-datatable-sm p-datatable-striped"
-        [tableStyle]="{ 'min-width': '50rem' }"
+    </div>
+  </div>
+
+  <!-- Template para la tabla de notas -->
+  <ng-template #notesTable let-notes>
+    @if (canEdit() && isSomeSelected()) {
+      <div
+        class="flex flex-wrap items-center gap-3 mb-3 p-3 rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/20"
       >
-        <ng-template pTemplate="header">
-          <tr>
-            @if (canEdit()) {
-              <th class="w-10 text-left" (click)="$event.stopPropagation()">
-                <p-checkbox
-                  [binary]="true"
-                  [ngModel]="isAllSelected()"
-                  (ngModelChange)="toggleSelectAll()"
-                  [inputId]="'select-all-agenda'"
-                ></p-checkbox>
-              </th>
-            }
-            <th class="text-left w-10">Item</th>
-            <th class="text-left">Descripción de actividades</th>
-            <th class="text-left hidden sm:table-cell w-36">Estado</th>
-            <th class="text-left hidden md:table-cell w-28">Creado por</th>
-            <th class="text-left hidden lg:table-cell w-32">Asignados</th>
-            <th class="text-right w-24">Acciones</th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-note let-rowIndex="rowIndex">
-          <tr
-            (click)="viewNote(note)"
-            class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-          >
-            @if (canEdit()) {
-              <td (click)="$event.stopPropagation()">
-                <p-checkbox
-                  [binary]="true"
-                  [ngModel]="isNoteSelected(note)"
-                  (ngModelChange)="toggleSelectNote(note)"
-                  [inputId]="'select-note-' + note._id"
-                ></p-checkbox>
-              </td>
-            }
-            <td class="font-medium text-gray-700 dark:text-gray-300">{{ rowIndex + 1 }}</td>
-            <td class="min-w-0">
-              <p
-                class="text-gray-800 dark:text-white text-sm whitespace-pre-wrap break-words max-h-32 overflow-y-auto"
-              >
-                {{ getContentSummary(note) }}
-              </p>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {{ selectedNoteIds().size }} seleccionada(s)
+        </span>
+        <p-select
+          [options]="userOptions()"
+          optionLabel="name"
+          optionValue="_id"
+          [ngModel]="bulkAssignUserId()"
+          (ngModelChange)="bulkAssignUserId.set($event)"
+          placeholder="Asignar a..."
+          [showClear]="true"
+          [filter]="true"
+          filterPlaceholder="Buscar usuario..."
+          styleClass="min-w-[180px]"
+          appendTo="body"
+        ></p-select>
+        <button
+          pButton
+          type="button"
+          label="Asignar"
+          icon="pi pi-user-plus"
+          [disabled]="!bulkAssignUserId()"
+          (click)="openAssignModalForBulk()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Desmarcar"
+          icon="pi pi-times"
+          [outlined]="true"
+          severity="secondary"
+          (click)="clearSelection()"
+        ></button>
+      </div>
+    }
+    <p-table
+      [value]="notes"
+      styleClass="p-datatable-sm p-datatable-striped"
+      [tableStyle]="{ 'min-width': '40rem' }"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          @if (canEdit()) {
+            <th class="w-10 text-left" (click)="$event.stopPropagation()">
+              <p-checkbox
+                [binary]="true"
+                [ngModel]="isAllSelected()"
+                (ngModelChange)="toggleSelectAll()"
+                [inputId]="'select-all-agenda'"
+              ></p-checkbox>
+            </th>
+          }
+          <th class="text-left w-10">#</th>
+          <th class="text-left">Actividades</th>
+          <th class="text-left hidden sm:table-cell w-36">Estado</th>
+          <th class="text-left hidden md:table-cell w-28">Creado por</th>
+          <th class="text-left hidden lg:table-cell w-32">Asignados</th>
+          <th class="text-right w-24">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-note let-rowIndex="rowIndex">
+        <tr
+          (click)="viewNote(note)"
+          class="cursor-pointer transition-colors"
+          [ngClass]="getRowClass(note)"
+        >
+          @if (canEdit()) {
+            <td (click)="$event.stopPropagation()">
+              <p-checkbox
+                [binary]="true"
+                [ngModel]="isNoteSelected(note)"
+                (ngModelChange)="toggleSelectNote(note)"
+                [inputId]="'select-note-' + note._id"
+              ></p-checkbox>
             </td>
-            <td class="hidden sm:table-cell w-36" (click)="$event.stopPropagation()">
-              @if (canEditStatus(note)) {
-                <p-select
-                  [options]="statusOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  [ngModel]="note.status ?? 'pendiente'"
-                  (ngModelChange)="onStatusChange(note, $event)"
-                  styleClass="w-full max-w-[8rem]"
-                  appendTo="body"
-                  placeholder="Estado"
-                ></p-select>
-              } @else {
-                <p-tag
-                  [value]="getStatusLabel(note.status)"
-                  [severity]="getStatusSeverity(note.status)"
-                ></p-tag>
-              }
-            </td>
-            <td
-              class="hidden md:table-cell w-28 text-sm text-gray-600 dark:text-gray-300 truncate max-w-[7rem]"
-              [title]="getCreatorName(note)"
+          }
+          <td class="font-medium text-gray-700 dark:text-gray-300">{{ rowIndex + 1 }}</td>
+          <td class="min-w-0">
+            <p
+              class="text-gray-800 dark:text-white text-sm whitespace-pre-wrap break-words"
             >
-              {{ getCreatorName(note) }}
-            </td>
-            <td class="hidden lg:table-cell w-32" (click)="$event.stopPropagation()">
-              @if (canEditFull(note)) {
-                <p-select
-                  [options]="userOptions()"
-                  optionLabel="name"
-                  optionValue="_id"
-                  [ngModel]="getAssignedSingleId(note)"
-                  (ngModelChange)="onAssignChange(note, $event)"
-                  placeholder="Asignar..."
-                  [showClear]="true"
-                  [filter]="true"
-                  filterPlaceholder="Buscar..."
-                  styleClass="w-full max-w-[8rem]"
-                  appendTo="body"
-                ></p-select>
+              {{ getContentSummary(note) }}
+            </p>
+          </td>
+          <td class="hidden sm:table-cell w-36" (click)="$event.stopPropagation()">
+            @if (canEditStatus(note)) {
+              <p-select
+                [options]="statusOptions"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="note.status ?? 'pendiente'"
+                (ngModelChange)="onStatusChange(note, $event)"
+                styleClass="w-full max-w-[8rem]"
+                appendTo="body"
+                placeholder="Estado"
+              ></p-select>
+            } @else {
+              <p-tag
+                [value]="getStatusLabel(note.status)"
+                [severity]="getStatusSeverity(note.status)"
+              ></p-tag>
+            }
+          </td>
+          <td
+            class="hidden md:table-cell w-28 text-sm text-gray-600 dark:text-gray-300 truncate max-w-[7rem]"
+            [title]="getCreatorName(note)"
+          >
+            {{ getCreatorName(note) }}
+          </td>
+          <td class="hidden lg:table-cell w-32" (click)="$event.stopPropagation()">
+            @if (canEditFull(note)) {
+              <p-select
+                [options]="userOptions()"
+                optionLabel="name"
+                optionValue="_id"
+                [ngModel]="getAssignedSingleId(note)"
+                (ngModelChange)="onAssignChange(note, $event)"
+                placeholder="Asignar..."
+                [showClear]="true"
+                [filter]="true"
+                filterPlaceholder="Buscar..."
+                styleClass="w-full max-w-[8rem]"
+                appendTo="body"
+              ></p-select>
+            } @else {
+              @if (note.assignedTo?.length) {
+                <span class="text-sm text-gray-600 dark:text-gray-300">
+                  {{ getAssignedUserDisplay(note.assignedTo[0]) }}
+                </span>
               } @else {
-                @if (note.assignedTo?.length) {
-                  <span class="text-sm text-gray-600 dark:text-gray-300">
-                    {{ getAssignedUserDisplay(note.assignedTo[0]) }}
-                  </span>
-                } @else {
-                  <span class="text-sm text-gray-400">—</span>
-                }
+                <span class="text-sm text-gray-400">—</span>
               }
-            </td>
-            <td class="text-right whitespace-nowrap" (click)="$event.stopPropagation()">
-              <div class="flex flex-wrap justify-end gap-2">
-                @if (canEditFull(note) || isAssignedToMe(note)) {
-                  @if (hasNativeShare()) {
-                    <button
-                      pButton
-                      icon="pi pi-share-alt"
-                      [rounded]="true"
-                      [text]="true"
-                      severity="secondary"
-                      size="small"
-                      (click)="shareNoteNative(note)"
-                      pTooltip="Compartir"
-                      aria-label="Compartir"
-                    ></button>
-                  } @else {
-                    <button
-                      pButton
-                      icon="pi pi-share-alt"
-                      [rounded]="true"
-                      [text]="true"
-                      severity="secondary"
-                      size="small"
-                      (click)="shareMenu.toggle($event)"
-                      pTooltip="Compartir"
-                      aria-label="Compartir"
-                    ></button>
-                    <p-menu
-                      #shareMenu
-                      [model]="getShareMenuItems(note)"
-                      [popup]="true"
-                      appendTo="body"
-                    ></p-menu>
-                  }
-                }
-                @if (canEditFull(note)) {
+            }
+          </td>
+          <td class="text-right whitespace-nowrap" (click)="$event.stopPropagation()">
+            <div class="flex flex-wrap justify-end gap-2">
+              @if (canEditFull(note) || isAssignedToMe(note)) {
+                @if (hasNativeShare()) {
                   <button
                     pButton
-                    icon="pi pi-trash"
+                    icon="pi pi-share-alt"
                     [rounded]="true"
                     [text]="true"
-                    severity="danger"
+                    severity="secondary"
                     size="small"
-                    (click)="deleteNote(note)"
-                    pTooltip="Eliminar"
-                    aria-label="Eliminar nota"
+                    (click)="shareNoteNative(note)"
+                    pTooltip="Compartir"
+                    aria-label="Compartir"
                   ></button>
+                } @else {
+                  <button
+                    pButton
+                    icon="pi pi-share-alt"
+                    [rounded]="true"
+                    [text]="true"
+                    severity="secondary"
+                    size="small"
+                    (click)="shareMenu.toggle($event)"
+                    pTooltip="Compartir"
+                    aria-label="Compartir"
+                  ></button>
+                  <p-menu
+                    #shareMenu
+                    [model]="getShareMenuItems(note)"
+                    [popup]="true"
+                    appendTo="body"
+                  ></p-menu>
                 }
-              </div>
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    }
-  </p-card>
+              }
+              @if (canEditFull(note)) {
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  [rounded]="true"
+                  [text]="true"
+                  severity="danger"
+                  size="small"
+                  (click)="deleteNote(note)"
+                  pTooltip="Eliminar"
+                  aria-label="Eliminar nota"
+                ></button>
+              }
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </ng-template>
 
   <!-- Modal asignar con fecha/hora de vencimiento (uno o masivo) -->
   <p-dialog
