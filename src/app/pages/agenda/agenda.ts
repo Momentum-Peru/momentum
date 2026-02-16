@@ -284,8 +284,10 @@ export class AgendaPage implements OnInit {
   filteredNotes = computed(() => {
     const list = this.notes().slice();
     return list.sort((a, b) => {
-      const t1 = new Date(a.createdAt ?? 0).getTime();
-      const t2 = new Date(b.createdAt ?? 0).getTime();
+      // Ordenar por updatedAt si está disponible, sino por createdAt
+      // De más reciente a más antigua (descendente)
+      const t1 = new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
+      const t2 = new Date(b.updatedAt ?? b.createdAt ?? 0).getTime();
       return t2 - t1;
     });
   });
