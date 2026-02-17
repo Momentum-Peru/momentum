@@ -1,7 +1,7 @@
 import { APP_INITIALIZER, ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, importProvidersFrom } from '@angular/core';
 import { IPublicClientApplication } from '@azure/msal-browser';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
 
 import { routes } from './app.routes';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -78,7 +78,8 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideAnimationsAsync(),
     provideHttpClient(
-      withInterceptors([tokenInterceptor, tenantInterceptor, authInterceptor, logsInterceptor])
+      withInterceptors([tokenInterceptor, tenantInterceptor, authInterceptor, logsInterceptor]),
+      withInterceptorsFromDi()
     ),
     MessageService,
     providePrimeNG({
