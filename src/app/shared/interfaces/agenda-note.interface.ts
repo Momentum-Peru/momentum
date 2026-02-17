@@ -14,6 +14,13 @@ export interface AgendaNoteSharedVia {
   to?: string;
 }
 
+export interface AgendaNoteExternal {
+  name: string;
+  email: string;
+  phone?: string;
+  createdAt?: string;
+}
+
 export interface AgendaNote {
   _id: string;
   tenantId?: string;
@@ -23,12 +30,21 @@ export interface AgendaNote {
   voiceUrl?: string[];
   drawingUrl?: string[];
   assignedTo?: (AgendaNoteUser | string)[];
+  assignedExternal?: AgendaNoteExternal[];
   /** Fecha y hora de vencimiento (ISO). */
   dueAt?: string | null;
+  /** Fecha y hora de finalización (ISO) para eventos de Microsoft. */
+  endAt?: string | null;
   /** Estado de la tarea: pendiente, en_proceso, terminado. */
   status?: AgendaNoteStatus;
   sharedVia?: AgendaNoteSharedVia[];
   teamsMeetingId?: string | null;
+  /** Indica si es un evento importado de Microsoft Graph. */
+  isMicrosoftEvent?: boolean;
+  /** URL de la reunión de Teams. */
+  onlineMeetingUrl?: string | null;
+  /** Enlace a la reunión en la web (Outlook). */
+  webLink?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -52,6 +68,7 @@ export interface AssignAgendaNotePayload {
   userIds: string[];
   /** Fecha y hora de vencimiento (ISO). Opcional. */
   dueAt?: string | null;
+  externalContacts?: AgendaNoteExternal[];
 }
 
 export interface ShareAgendaNotePayload {

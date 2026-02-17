@@ -23,7 +23,7 @@ export const MSAL_CONFIG = {
     auth: {
         clientId: '3ff54580-5b1c-407a-b434-887770ce231f', // Reemplazar con el ID de cliente de Azure
         authority: 'https://login.microsoftonline.com/common', // "common" para multi-tenant
-        redirectUri: window.location.origin + '/agenda',
+        redirectUri: window.location.origin + '/agenda', // Sin barra final para coincidir con Azure
         navigateToLoginRequestUrl: true, // Permitir que MSAL maneje el regreso a la URL original
     },
     cache: {

@@ -3,7 +3,7 @@ import { MsalService, MsalBroadcastService, MSAL_GUARD_CONFIG, MsalGuardConfigur
 import { InteractionStatus, RedirectRequest, PopupRequest, AuthenticationResult, EventMessage, EventType } from '@azure/msal-browser';
 import { Subject } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 export interface MicrosoftEvent {
     id: string;
@@ -54,22 +54,32 @@ export class MicrosoftGraphService {
             });
 
         // Inicialización y recuperación de sesión
+        console.log('[MSAL] Inicializando...');
         this.authService.instance.initialize().then(() => {
             this.initialized = true;
-            this.authService.instance.handleRedirectPromise().then(() => {
+            console.log('[MSAL] Inicializado, manejando promesa de redirección...');
+            this.authService.instance.handleRedirectPromise().then((result) => {
+                console.log('[MSAL] Promesa de redirección manejada:', result ? 'ÉXITO' : 'Sin resultado de redirección');
                 this.checkAccount();
+            }).catch(err => {
+                console.error('[MSAL] Error en handleRedirectPromise:', err);
             });
         });
     }
 
     checkAccount(): void {
         const activeAccount = this.authService.instance.getActiveAccount();
-        if (!activeAccount && this.authService.instance.getAllAccounts().length > 0) {
-            this.authService.instance.setActiveAccount(this.authService.instance.getAllAccounts()[0]);
+        const allAccounts = this.authService.instance.getAllAccounts();
+        console.log('[MSAL] Cuentas encontradas:', allAccounts.length, 'Activa:', activeAccount?.username || 'Ninguna');
+
+        if (!activeAccount && allAccounts.length > 0) {
+            console.log('[MSAL] Estableciendo cuenta activa por defecto');
+            this.authService.instance.setActiveAccount(allAccounts[0]);
             this.isLoggedIn.set(true);
         } else {
             this.isLoggedIn.set(!!activeAccount);
         }
+        console.log('[MSAL] isLoggedIn signal set to:', this.isLoggedIn());
     }
 
     async login(): Promise<void> {
@@ -87,12 +97,24 @@ export class MicrosoftGraphService {
         });
     }
 
-    logout(): void {
+    async logout(): Promise<void> {
         this.authService.logoutRedirect();
         this.isLoggedIn.set(false);
     }
 
+    getCalendarView(startDate: string, endDate: string) {
+        const headers = new HttpHeaders({
+            'Prefer': 'outlook.timezone="SA Pacific Standard Time"'
+        });
+        // calendarView es mejor para filtrar por rango de fechas
+        const url = `https://graph.microsoft.com/v1.0/me/calendar/calendarView?startDateTime=${startDate}&endDateTime=${endDate}&$select=subject,start,end,webLink,organizer,isOnlineMeeting,onlineMeetingUrl&$orderby=start/dateTime`;
+        return this.http.get<{ value: MicrosoftEvent[] }>(url, { headers });
+    }
+
     getCalendarEvents() {
-        return this.http.get<{ value: MicrosoftEvent[] }>('https://graph.microsoft.com/v1.0/me/calendar/events?$select=subject,start,end,webLink,organizer,isOnlineMeeting,onlineMeetingUrl&$orderby=start/dateTime');
+        const headers = new HttpHeaders({
+            'Prefer': 'outlook.timezone="SA Pacific Standard Time"'
+        });
+        return this.http.get<{ value: MicrosoftEvent[] }>('https://graph.microsoft.com/v1.0/me/calendar/events?$select=subject,start,end,webLink,organizer,isOnlineMeeting,onlineMeetingUrl&$orderby=start/dateTime', { headers });
     }
 }

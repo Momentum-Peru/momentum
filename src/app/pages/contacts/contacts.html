@@ -1,0 +1,153 @@
+<div class="flex flex-col h-full bg-white dark:bg-gray-900">
+  <!-- Header -->
+  <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Mis contactos</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Gestiona tus contactos externos y agenda actividades</p>
+    </div>
+    <div class="flex gap-3">
+      <span class="p-input-icon-left">
+        <i class="pi pi-search"></i>
+        <input 
+          pInputText 
+          type="text" 
+          placeholder="Buscar contactos..." 
+          [(ngModel)]="searchTerm" 
+          (ngModelChange)="onSearch($event)"
+          class="w-64 p-inputtext-sm" 
+        />
+      </span>
+      <button 
+        pButton 
+        label="Nuevo Contacto" 
+        icon="pi pi-plus" 
+        (click)="openCreateDialog()" 
+        class="p-button-primary p-button-sm"
+      ></button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900/50">
+    @if (loading()) {
+      <div class="flex items-center justify-center h-64">
+        <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+      </div>
+    } @else if (contacts().length === 0) {
+      <div class="flex flex-col items-center justify-center h-full text-center text-gray-500">
+        <i class="pi pi-users text-6xl mb-4 opacity-20"></i>
+        <h3 class="text-lg font-medium">No hay contactos</h3>
+        <p class="text-sm mb-4">Añade tu primer contacto externo para empezar a gestionarlos.</p>
+        <button pButton label="Crear Contacto" (click)="openCreateDialog()" class="p-button-outlined"></button>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        @for (contact of contacts(); track contact._id) {
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow relative group">
+            
+            <!-- Actions Menu (Absolute Top Right) -->
+            <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+               <button pButton icon="pi pi-pencil" [text]="true" [rounded]="true" severity="secondary" size="small" (click)="openEditDialog(contact)"></button>
+               <button pButton icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" size="small" (click)="deleteContact(contact)"></button>
+            </div>
+
+            <div class="flex flex-col gap-3">
+              <!-- Avatar & Name -->
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center text-lg font-bold">
+                  {{ contact.name.charAt(0).toUpperCase() }}
+                </div>
+                <div>
+                   <h3 class="font-bold text-gray-800 dark:text-gray-100 truncate w-40" [pTooltip]="contact.name">{{ contact.name }}</h3>
+                   <span class="text-xs text-gray-500 dark:text-gray-400 block truncate w-40">{{ contact.role || 'Sin cargo' }}</span>
+                </div>
+              </div>
+
+              <!-- Details -->
+              <div class="space-y-2 mt-2">
+                 @if (contact.email) {
+                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                       <i class="pi pi-envelope text-xs opacity-70"></i>
+                       <span class="truncate">{{ contact.email }}</span>
+                    </div>
+                 }
+                 @if (contact.phone) {
+                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                       <i class="pi pi-whatsapp text-xs opacity-70 text-green-500"></i>
+                       <span>{{ contact.phone }}</span>
+                    </div>
+                 }
+                 @if (contact.company) {
+                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                       <i class="pi pi-building text-xs opacity-70"></i>
+                       <span class="truncate">{{ contact.company }}</span>
+                    </div>
+                 }
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex gap-2 mt-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+                 <button 
+                    pButton 
+                    label="WhatsApp" 
+                    icon="pi pi-whatsapp" 
+                    class="flex-1 p-button-sm p-button-outlined p-button-success" 
+                    [disabled]="!contact.phone"
+                    (click)="openWhatsApp(contact)"
+                 ></button>
+                 <button 
+                    pButton 
+                    label="Agendar" 
+                    icon="pi pi-calendar-plus" 
+                    class="flex-1 p-button-sm p-button-outlined p-button-info" 
+                    (click)="openAgendaModal(contact)"
+                 ></button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Create/Edit Dialog -->
+<p-dialog 
+  [(visible)]="showDialog" 
+  [header]="editingContact() ? 'Editar Contacto' : 'Nuevo Contacto'" 
+  [modal]="true" 
+  [style]="{width: '450px'}" 
+  [draggable]="false" 
+  [resizable]="false" 
+  class="p-fluid"
+>
+  <div class="flex flex-col gap-4 pt-4">
+     <div class="field">
+        <label for="name" class="font-bold block mb-2">Nombre Completo *</label>
+        <input pInputText id="name" [(ngModel)]="form.name" required autofocus />
+     </div>
+     <div class="field">
+        <label for="email" class="font-bold block mb-2">Correo Electrónico</label>
+        <input pInputText id="email" [(ngModel)]="form.email" />
+     </div>
+     <div class="field">
+        <label for="phone" class="font-bold block mb-2">Teléfono / Celular</label>
+        <input pInputText id="phone" [(ngModel)]="form.phone" placeholder="Para WhatsApp" />
+     </div>
+     <div class="grid grid-cols-2 gap-4">
+       <div class="field">
+          <label for="company" class="font-bold block mb-2">Empresa</label>
+          <input pInputText id="company" [(ngModel)]="form.company" />
+       </div>
+       <div class="field">
+          <label for="role" class="font-bold block mb-2">Cargo</label>
+          <input pInputText id="role" [(ngModel)]="form.role" />
+       </div>
+     </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancelar" icon="pi pi-times" [text]="true" (click)="closeDialog()"></button>
+    <button pButton label="Guardar" icon="pi pi-check" [loading]="saving()" (click)="saveContact()"></button>
+  </ng-template>
+</p-dialog>
