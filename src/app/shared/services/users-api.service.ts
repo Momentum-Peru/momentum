@@ -34,6 +34,7 @@ export interface UserUpdateRequest {
   role?: 'user' | 'admin' | 'gerencia' | 'supervisor';
   isActive?: boolean;
   tenantIds?: string[]; // Actualizar empresas asignadas
+  agendaSharedWith?: string[]; // Usuarios con los que se comparte la agenda
 }
 
 export interface UserFilters {
@@ -162,5 +163,12 @@ export class UsersApiService {
    */
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Obtiene los usuarios que han compartido su agenda con el usuario actual
+   */
+  getSharedWithMe(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.baseUrl}/shared-with-me`);
   }
 }

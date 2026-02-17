@@ -9,46 +9,111 @@ canvas {
   display: block;
 }
 
-// Estilos para el panel lateral de agendas
-.sticky.top-4 {
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
-}
-
-// Colores por estado para las filas
+// Colores por estado para las filas (Table) y Cards (Mobile)
 ::ng-deep {
   .row-finished {
-    background-color: rgba(34, 197, 94, 0.1) !important; // Green-500 10%
-    &:hover { background-color: rgba(34, 197, 94, 0.2) !important; }
+    background-color: rgba(16, 185, 129, 0.03) !important; // Emerald-500 3%
+    &:hover { background-color: rgba(16, 185, 129, 0.08) !important; }
   }
   .row-pending {
-    background-color: rgba(234, 179, 8, 0.1) !important; // Yellow-500 10%
-    &:hover { background-color: rgba(234, 179, 8, 0.2) !important; }
+    background-color: rgba(245, 158, 11, 0.03) !important; // Amber-500 3%
+    &:hover { background-color: rgba(245, 158, 11, 0.08) !important; }
+  }
+  .row-process {
+    background-color: rgba(59, 130, 246, 0.03) !important; // Blue-500 3%
+    &:hover { background-color: rgba(59, 130, 246, 0.08) !important; }
   }
   .row-overdue {
-    background-color: rgba(239, 68, 68, 0.1) !important; // Red-500 10%
-    &:hover { background-color: rgba(239, 68, 68, 0.2) !important; }
+    background-color: rgba(239, 68, 68, 0.03) !important; // Red-500 3%
+    &:hover { background-color: rgba(239, 68, 68, 0.08) !important; }
   }
 
-  // Asegurar que el icono de PrimeNG en p-input-icon-left no se superponga
-  .p-input-icon-left {
-    > i {
-      left: 0.75rem;
-      color: #9ca3af; // text-gray-400
-    }
-    .p-inputtext {
-      padding-left: 2.5rem !important;
-    }
+  // Pestañas personalizadas
+  .p-button.p-button-text {
+      &:focus {
+          box-shadow: none;
+      }
   }
 }
 
-.user-tab-btn {
-  height: 42px !important; // Altura estándar uniforme
-  padding: 0 1rem !important;
-  
-  span {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+// Fade in animation for new elements
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translate3d(0, -10px, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+.animate-fade-in-down {
+    animation: fadeInDown 0.3s ease-out;
+}
+
+// Estilos para el modal de acciones
+::ng-deep {
+    .actions-modal {
+        .p-dialog-header {
+            padding: 1.25rem 1.5rem 0.75rem;
+            background: transparent;
+            border: none;
+            
+            .p-dialog-title {
+                font-size: 1.125rem;
+                font-weight: 700;
+                color: var(--primary-color);
+                letter-spacing: -0.01em;
+            }
+        }
+
+        .p-dialog-content {
+            padding: 0 1.5rem 1.5rem;
+            background: transparent;
+        }
+
+        .p-select {
+            border-radius: 0.75rem;
+            border-color: rgba(0,0,0,0.05);
+            background: rgba(0,0,0,0.02);
+            transition: all 0.2s;
+            
+            &:hover {
+                border-color: var(--primary-color);
+                background: white;
+            }
+        }
+
+        .p-button {
+            border-radius: 0.75rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            &:active {
+                transform: scale(0.96);
+            }
+        }
+    }
+
+    .dark {
+        .actions-modal {
+            .p-select {
+                border-color: rgba(255,255,255,0.05);
+                background: rgba(255,255,255,0.02);
+                
+                &:hover {
+                    background: rgba(255,255,255,0.05);
+                }
+            }
+        }
+    }
+}
+
+// Hide scrollbar for tabs
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

@@ -1,5 +1,6 @@
 import { Component, signal, OnInit, inject, OnDestroy } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
+import { MsalRedirectComponent } from '@azure/msal-angular';
 import { PermissionsService } from './core/services/permissions.service';
 import { AuthService } from './pages/login/services/auth.service';
 import { PermissionsRequiredComponent } from './components/permissions-required/permissions-required';
@@ -19,7 +20,7 @@ export class App implements OnInit, OnDestroy {
 
   protected readonly title = signal('Momentum');
   showPermissionsRequired = signal<boolean>(false);
-  
+
   private routeSubscription?: Subscription;
   private checkInterval?: any;
 
@@ -55,7 +56,7 @@ export class App implements OnInit, OnDestroy {
    */
   private async checkPermissionsForCurrentRoute(): Promise<void> {
     const currentUrl = this.router.url;
-    
+
     // Rutas públicas que no requieren permisos
     const publicRoutes = ['/ingreso', '/registro', '/unauthorized', '/solicitud-contacto', '/sergio-nolasco'];
     const isPublic = publicRoutes.some(route => currentUrl.startsWith(route));
