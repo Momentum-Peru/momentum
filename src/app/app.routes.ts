@@ -134,6 +134,10 @@ export const routes: Routes = [
         data: { menuPermission: '/agenda' },
       },
       {
+        path: 'contacts',
+        loadComponent: () => import('./pages/contacts/contacts.component').then((m) => m.ContactsComponent),
+      },
+      {
         path: 'employees',
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/employees' },
