@@ -108,5 +108,12 @@ export class AreasApiService {
   getAssignedUsers(id: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/${id}/users`);
   }
+
+  /**
+   * Obtiene todas las áreas con sus usuarios asignados
+   */
+  listWithUsers(): Observable<import('../interfaces/area.interface').AreaWithUsers[]> {
+    return this.http.get<import('../interfaces/area.interface').AreaWithUsers[]>(`${this.baseUrl}/with-users`);
+  }
 }
 
