@@ -1,4 +1,5 @@
-import { APP_INITIALIZER, ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, importProvidersFrom } from '@angular/core';
+import { IPublicClientApplication } from '@azure/msal-browser';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
@@ -8,6 +9,22 @@ import { providePrimeNG } from 'primeng/config';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import type { Translation } from 'primeng/api';
 import MayaPreset from './themes/maya-preset';
+import {
+  MSAL_INSTANCE,
+  MSAL_GUARD_CONFIG,
+  MSAL_INTERCEPTOR_CONFIG,
+  MsalService,
+  MsalGuard,
+  MsalBroadcastService,
+  MsalModule,
+  MsalInterceptor
+} from '@azure/msal-angular';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import {
+  MSALInstanceFactory,
+  MSALGuardConfigFactory,
+  MSALInterceptorConfigFactory
+} from './core/configs/msal.config';
 
 /** Traducción global de PrimeNG a español (datepicker, filtros, etc.) */
 const primeNgLocaleEs: Translation = {
@@ -87,6 +104,33 @@ export const appConfig: ApplicationConfig = {
       multi: true,
       useFactory: (tenant: TenantService) => () => tenant.loadFromStorage(),
       deps: [TenantService],
-    }
+    },
+    importProvidersFrom(MsalModule),
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: MsalInterceptor,
+      multi: true
+    },
+    {
+      provide: MSAL_INSTANCE,
+      useFactory: MSALInstanceFactory
+    },
+    {
+      provide: MSAL_GUARD_CONFIG,
+      useFactory: MSALGuardConfigFactory
+    },
+    {
+      provide: MSAL_INTERCEPTOR_CONFIG,
+      useFactory: MSALInterceptorConfigFactory
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: (msal: IPublicClientApplication) => () => msal.initialize(),
+      deps: [MSAL_INSTANCE],
+      multi: true
+    },
+    MsalService,
+    MsalGuard,
+    MsalBroadcastService
   ]
 };

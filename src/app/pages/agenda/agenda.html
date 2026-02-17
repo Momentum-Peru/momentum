@@ -31,142 +31,308 @@
     </div>
   </div>
 
-  <div class="flex flex-col lg:flex-row gap-6">
-    <!-- Panel Lateral (Sólo Gerencia) -->
-    @if (isGerencia()) {
-      <div class="w-full lg:w-72 flex-shrink-0">
-        <p-card styleClass="h-full shadow-sm" class="sticky top-4">
-          <div class="space-y-4">
-            <h3 class="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-              <i class="pi pi-users"></i>
-              Agendas
-            </h3>
-            
-            <!-- Buscador de usuarios -->
-            <div class="p-input-icon-left w-full">
-              <i class="pi pi-search"></i>
-              <input
-                pInputText
-                type="text"
-                [ngModel]="userSearchQuery()"
-                (ngModelChange)="userSearchQuery.set($event)"
-                placeholder="Buscar usuario..."
-                class="w-full text-sm"
-              />
-            </div>
+  <div class="flex flex-col min-h-0">
+    <!-- Top Bar: Buscador y Filtros -->
+    <div class="flex flex-col md:flex-row gap-3 mb-6 items-end md:items-center">
+      <!-- Buscador -->
+      <p-iconfield class="flex-1 w-full">
+        <p-inputicon class="pi pi-search" />
+        <input 
+          pInputText 
+          type="text" 
+          placeholder="Buscar por contenido..." 
+          class="w-full"
+          [ngModel]="searchQuery()" 
+          (ngModelChange)="searchQuery.set($event)"
+        />
+      </p-iconfield>
 
-            <div class="flex flex-col gap-1 max-h-[60vh] overflow-y-auto pr-1">
+      <!-- Selector de Agenda (Visible para todos, opciones filtradas) -->
+        <p-select
+          [options]="sortedUserOptions()"
+          [ngModel]="selectedUserId()"
+          (ngModelChange)="selectUser($event)"
+          optionLabel="name"
+          optionValue="_id"
+          placeholder="Seleccionar Agenda"
+          [filter]="true"
+          filterBy="name,email"
+          [showClear]="true"
+          styleClass="w-full md:w-64"
+        >
+          <ng-template #item let-user>
+            <div class="flex items-center gap-2">
+              <i class="pi pi-user text-gray-400"></i>
+              <span>{{ user.name || user.email }}</span>
+              @if (user._id === (authService.getCurrentUser()?.id)) {
+                <span class="text-[10px] font-bold bg-primary/10 text-primary px-1 py-0.5 rounded">TÚ</span>
+              }
+              <!-- Label para compartidos? -->
+            </div>
+          </ng-template>
+        </p-select>
+
+      <!-- Botón Compartir Agenda -->
+      <button
+        pButton
+        type="button"
+        label="Compartir Agenda"
+        icon="pi pi-share-alt"
+        class="w-full md:w-auto p-button-outlined p-button-secondary"
+        (click)="openShareModal()"
+      ></button>
+
+      <!-- Botón Nueva Tarea -->
+      @if (canEdit()) {
+        <button
+          pButton
+          type="button"
+          label="Nueva Tarea"
+          icon="pi pi-plus"
+          class="w-full md:w-auto"
+          (click)="openCreate()"
+        ></button>
+      }
+    </div>
+
+      <!-- crear nota options panel when openCreate is called -->
+      @if (showCreateOptions()) {
+        <div class="mb-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 animate-fade-in-down">
+          <div class="flex justify-between items-center mb-3">
+             <p class="text-gray-600 dark:text-gray-300 text-sm font-medium">
+                Elige el tipo de nota:
+             </p>
+             <button pButton icon="pi pi-times" [text]="true" [rounded]="true" size="small" (click)="cancelCreateOptions()"></button>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3">
+            @for (opt of typeOptions; track opt.value) {
               <button
                 pButton
                 type="button"
-                label="Ver Todas"
-                icon="pi pi-th-large"
-                [text]="selectedUserId() !== null"
-                [outlined]="selectedUserId() === null"
+                [label]="opt.label"
+                [icon]="opt.icon"
+                [outlined]="true"
                 severity="secondary"
-                class="justify-start text-left w-full h-10 overflow-hidden"
-                (click)="selectUser(null)"
+                class="flex-1"
+                (click)="selectTypeAndOpenDialog(opt.value)"
               ></button>
-              <div class="border-t border-gray-100 dark:border-gray-700 my-2"></div>
-              @for (user of sortedUserOptions(); track user._id) {
-                <button
-                  pButton
-                  type="button"
-                  [text]="selectedUserId() !== user._id"
-                  [outlined]="selectedUserId() === user._id"
-                  severity="secondary"
-                  class="user-tab-btn justify-start text-left w-full h-10 overflow-hidden px-3"
-                  (click)="selectUser(user._id)"
-                  [pTooltip]="user.email"
-                  tooltipPosition="right"
-                >
-                  <div class="flex items-center gap-2 w-full truncate">
-                    <i class="pi pi-user flex-shrink-0"></i>
-                    <span class="truncate flex-1">{{ user.name || user.email }}</span>
-                    @if (user._id === (authService.getCurrentUser()?.id)) {
-                      <span class="text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded flex-shrink-0">
-                        MI AGENDA
-                      </span>
-                    }
-                  </div>
-                </button>
-              }
-            </div>
+            }
           </div>
-        </p-card>
-      </div>
-    }
+        </div>
+      }
 
-    <!-- Contenido Principal -->
-    <div class="flex-1 space-y-6">
-
-
-  <!-- Opciones de tipo (visibles directamente para crear nota) -->
-  @if (canEdit()) {
-    <div
-      class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 space-y-3"
-    >
-      <p class="text-gray-600 dark:text-gray-300 text-sm font-medium">
-        Elige cómo quieres crear la nota:
-      </p>
-      <div class="flex flex-col sm:flex-row gap-3">
-        @for (opt of typeOptions; track opt.value) {
-          <button
-            pButton
-            type="button"
-            [label]="opt.label"
-            [icon]="opt.icon"
-            [outlined]="true"
-            severity="secondary"
-            class="flex-1"
-            (click)="selectTypeAndOpenDialog(opt.value)"
-          ></button>
-        }
-      </div>
-    </div>
-  }
-
-      <!-- Sección Sin Asignar -->
-      <div class="space-y-3">
-        <h2 class="text-lg font-bold text-gray-700 dark:text-white flex items-center gap-2">
-          <i class="pi pi-inbox text-orange-500"></i>
-          Sin Asignar
-        </h2>
-        <p-card class="shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
-          @if (loading()) {
-            <div class="flex justify-center py-6">
-              <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
-            </div>
-          } @else if (backlogNotes().length === 0) {
-            <div class="text-center py-6 text-gray-500 dark:text-gray-400">
-              <p class="text-sm">No hay items en el backlog</p>
-            </div>
-          } @else {
-            <ng-container *ngTemplateOutlet="notesTable; context: { $implicit: backlogNotes() }"></ng-container>
-          }
-        </p-card>
+      <!-- Tabs Navigation -->
+      <div class="flex overflow-x-auto pb-2 mb-4 border-b border-gray-200 dark:border-gray-700 no-scrollbar gap-6">
+         <button 
+            class="pb-2 text-sm font-medium whitespace-nowrap transition-colors relative"
+            [ngClass]="activeTab() === 'meetings' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            (click)="activeTab.set('meetings')"
+         >
+            Reuniones
+         </button>
+         <button 
+            class="pb-2 text-sm font-medium whitespace-nowrap transition-colors relative"
+            [ngClass]="activeTab() === 'my-activities' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            (click)="activeTab.set('my-activities')"
+         >
+            Mis Actividades
+         </button>
+         <button 
+            class="pb-2 text-sm font-medium whitespace-nowrap transition-colors relative"
+            [ngClass]="activeTab() === 'assigned' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            (click)="activeTab.set('assigned')"
+         >
+            Asignados
+         </button>
+         <button 
+            class="pb-2 text-sm font-medium whitespace-nowrap transition-colors relative"
+            [ngClass]="activeTab() === 'unassigned' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            (click)="activeTab.set('unassigned')"
+         >
+            Sin Asignar
+         </button>
       </div>
 
-      <!-- Sección Agenda (Asignados) -->
-      <div class="space-y-3">
-        <h2 class="text-lg font-bold text-gray-700 dark:text-white flex items-center gap-2">
-          <i class="pi pi-calendar text-primary"></i>
-          Agenda {{ selectedUserId() ? ' de ' + getAssignModalUserName() : '' }}
-        </h2>
-        <p-card class="shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
-          @if (loading()) {
-            <div class="flex justify-center py-6">
-              <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+      <!-- Tab Content -->
+      <div class="flex-1 min-h-0">
+         @if (activeTab() === 'meetings') {
+            <!-- Contenido Pestaña Reuniones -->
+            <div class="h-full overflow-y-auto px-1">
+                @if (!msGraphService.isLoggedIn()) {
+                    <div class="flex flex-col items-center justify-center h-64 gap-4 text-center">
+                        <i class="pi pi-microsoft text-4xl text-blue-500"></i>
+                        <div>
+                            <h3 class="font-semibold text-lg text-gray-800 dark:text-white">Conectar con Microsoft Teams</h3>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm max-w-md mx-auto mt-1">
+                                Inicia sesión para ver tus próximas reuniones y unirte directamente desde aquí.
+                            </p>
+                        </div>
+                        <button 
+                            pButton 
+                            label="Conectar Cuenta" 
+                            icon="pi pi-microsoft" 
+                            class="p-button-outlined"
+                            (click)="connectMicrosoft()"
+                        ></button>
+                        <p class="text-[10px] text-gray-400 mt-2">
+                            ¿Problemas para conectar? 
+                            <span class="text-primary cursor-pointer hover:underline" (click)="logoutMicrosoft()">Haz clic aquí para reiniciar</span>
+                        </p>
+                    </div>
+                } @else {
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex flex-col">
+                            <h3 class="font-medium text-gray-700 dark:text-gray-200">Próximas Reuniones</h3>
+                            <span class="text-[10px] text-gray-400">Microsoft Teams de {{ msGraphService.isLoggedIn() ? 'conectado' : 'desconectado' }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button pButton icon="pi pi-refresh" [text]="true" [rounded]="true" (click)="loadMsEvents()" [loading]="loadingMsEvents()" pTooltip="Refrescar"></button>
+                            <button pButton icon="pi pi-sign-out" [text]="true" [rounded]="true" (click)="logoutMicrosoft()" severity="secondary" pTooltip="Cerrar sesión de Microsoft"></button>
+                        </div>
+                    </div>
+
+                    @if (loadingMsEvents()) {
+                        <div class="space-y-3">
+                           <div class="h-20 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+                           <div class="h-20 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+                           <div class="h-20 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+                        </div>
+                    } @else if (msEvents().length === 0) {
+                        <div class="text-center py-10 text-gray-500">
+                            <p>No tienes reuniones próximas en tu calendario.</p>
+                            <button pButton label="Actualizar" icon="pi pi-refresh" styleClass="p-button-link" (click)="loadMsEvents()"></button>
+                        </div>
+                    } @else {
+                        <div class="space-y-3 pb-20">
+                            @for (event of msEvents(); track event.id) {
+                                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                                     <!-- Stripe lateral color teams -->
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#464EB8]"></div>
+                                    
+                                    <div class="pl-2 flex justify-between items-start gap-3">
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="font-medium text-gray-900 dark:text-gray-100 truncate" [pTooltip]="event.subject">{{ event.subject }}</h4>
+                                            
+                                            <div class="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                                <div class="flex items-center gap-1.5">
+                                                    <i class="pi pi-calendar text-xs opacity-70"></i>
+                                                    <span>{{ event.start.dateTime | date:'dd/MM/yyyy' }}</span>
+                                                </div>
+                                                <div class="flex items-center gap-1.5">
+                                                    <i class="pi pi-clock text-xs opacity-70"></i>
+                                                    <span [class.text-red-500]="false">
+                                                        {{ event.start.dateTime | date:'HH:mm' }} - {{ event.end.dateTime | date:'HH:mm' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            @if (event.organizer.emailAddress.name) {
+                                                <div class="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
+                                                    <i class="pi pi-user opacity-70"></i>
+                                                    <span>Org: {{ event.organizer.emailAddress.name }}</span>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        @if (event.isOnlineMeeting || event.onlineMeetingUrl) {
+                                            <a 
+                                                pButton 
+                                                [href]="event.onlineMeetingUrl || event.webLink" 
+                                                target="_blank"
+                                                icon="pi pi-video" 
+                                                label="Unirse"
+                                                class="p-button-sm p-button-rounded bg-[#464EB8] border-[#464EB8] hover:bg-[#3b42a1]"
+                                            ></a>
+                                        } @else {
+                                             <a 
+                                                pButton 
+                                                [href]="event.webLink" 
+                                                target="_blank"
+                                                icon="pi pi-external-link" 
+                                                label="Ver"
+                                                class="p-button-sm p-button-rounded p-button-outlined p-button-secondary"
+                                            ></a>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
             </div>
-          } @else if (assignedNotes().length === 0) {
-            <div class="text-center py-6 text-gray-500 dark:text-gray-400">
-              <p class="text-sm">No hay items asignados</p>
-            </div>
-          } @else {
-            <ng-container *ngTemplateOutlet="notesTable; context: { $implicit: assignedNotes() }"></ng-container>
-          }
-        </p-card>
+         } @else {
+             @if (loading()) {
+               <div class="flex justify-center py-10">
+                 <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+               </div>
+             } @else if (displayedNotes().length === 0) {
+                 <div class="flex flex-col items-center justify-center py-12 text-center text-gray-400 dark:text-gray-500">
+                    <i class="pi pi-inbox text-4xl mb-2 opacity-50"></i>
+                    <p>No tienes actividades aquí</p>
+                 </div>
+             } @else {
+                <!-- Desktop Table (Hidden on Mobile) -->
+                <div class="hidden md:block">
+                    <ng-container *ngTemplateOutlet="notesTable; context: { $implicit: displayedNotes() }"></ng-container>
+                </div>
+
+                <!-- Mobile List View (Visible on Mobile) -->
+                <div class="md:hidden space-y-4">
+                    @for (note of displayedNotes(); track note._id) {
+                        <div 
+                            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 transition-all active:scale-[0.98]"
+                            [ngClass]="getRowClass(note)"
+                            (click)="viewNote(note)"
+                        >
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-900 flex items-center justify-center border border-gray-100 dark:border-gray-700">
+                                        <i [class]="getTypeIcon(note.type) + ' text-gray-500 text-sm'"></i>
+                                    </div>
+                                    <span class="text-[10px] uppercase font-bold tracking-wider" [ngClass]="{
+                                        'text-yellow-600': note.status === 'pendiente',
+                                        'text-blue-600': note.status === 'en_proceso',
+                                        'text-emerald-600': note.status === 'terminado'
+                                    }">{{ getStatusLabel(note.status) }}</span>
+                                </div>
+                                <button 
+                                    pButton 
+                                    icon="pi pi-bolt" 
+                                    label="Acciones"
+                                    [text]="true" 
+                                    [rounded]="true" 
+                                    size="small" 
+                                    class="text-primary font-bold"
+                                    (click)="$event.stopPropagation(); openActions(note)"
+                                ></button>
+                            </div>
+                            
+                            <p class="text-gray-900 dark:text-white font-medium text-sm line-clamp-3 mb-4">
+                                {{ getContentSummary(note) || 'Sin contenido' }}
+                            </p>
+
+                            <div class="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-700/50">
+                                <div class="flex items-center gap-2 text-xs text-gray-500">
+                                    <div class="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold border border-primary/20">
+                                        {{ getCreatorName(note).charAt(0).toUpperCase() }}
+                                    </div>
+                                    <span class="truncate max-w-[120px]">{{ getCreatorName(note) }}</span>
+                                </div>
+                                
+                                @if (note.dueAt) {
+                                    <span class="text-[10px] text-gray-400 flex items-center gap-1">
+                                        <i class="pi pi-clock text-[9px]"></i>
+                                        {{ formatDueAt(note.dueAt) }}
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+             }
+         }
       </div>
+    
     </div>
   </div>
 
@@ -176,9 +342,10 @@
       <div
         class="flex flex-wrap items-center gap-3 mb-3 p-3 rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/20"
       >
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <span class="text-sm font-medium text-primary">
           {{ selectedNoteIds().size }} seleccionada(s)
         </span>
+        <div class="flex-1"></div>
         <p-select
           [options]="userOptions()"
           optionLabel="name"
@@ -188,31 +355,32 @@
           placeholder="Asignar a..."
           [showClear]="true"
           [filter]="true"
-          filterPlaceholder="Buscar usuario..."
-          styleClass="min-w-[180px]"
-          appendTo="body"
+          styleClass="w-full md:w-48"
         ></p-select>
         <button
           pButton
-          type="button"
           label="Asignar"
           icon="pi pi-user-plus"
+          size="small"
           [disabled]="!bulkAssignUserId()"
+          [loading]="bulkAssigning()"
           (click)="openAssignModalForBulk()"
         ></button>
         <button
           pButton
-          type="button"
-          label="Desmarcar"
           icon="pi pi-times"
-          [outlined]="true"
+          [text]="true"
           severity="secondary"
+          size="small"
           (click)="clearSelection()"
         ></button>
       </div>
     }
+
     <p-table
       [value]="notes"
+      [loading]="loading()"
+      responsiveLayout="scroll"
       styleClass="p-datatable-sm p-datatable-striped"
       [tableStyle]="{ 'min-width': '40rem' }"
     >
@@ -228,12 +396,10 @@
               ></p-checkbox>
             </th>
           }
-          <th class="text-left w-10">#</th>
+          <th class="text-left w-10 text-gray-400 font-normal">#</th>
           <th class="text-left">Actividades</th>
-          <th class="text-left hidden sm:table-cell w-36">Estado</th>
-          <th class="text-left hidden md:table-cell w-28">Creado por</th>
-          <th class="text-left hidden lg:table-cell w-32">Asignados</th>
-          <th class="text-right w-24">Acciones</th>
+          <th class="text-left hidden md:table-cell w-48">Creado por</th>
+          <th class="text-right w-32">Acciones</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-note let-rowIndex="rowIndex">
@@ -252,113 +418,55 @@
               ></p-checkbox>
             </td>
           }
-          <td class="font-medium text-gray-700 dark:text-gray-300">{{ rowIndex + 1 }}</td>
+          <td class="text-gray-400 text-xs">{{ rowIndex + 1 }}</td>
           <td class="min-w-0">
-            <p
-              class="text-gray-800 dark:text-white text-sm whitespace-pre-wrap break-words"
-            >
-              {{ getContentSummary(note) }}
-            </p>
-          </td>
-          <td class="hidden sm:table-cell w-36" (click)="$event.stopPropagation()">
-            @if (canEditStatus(note)) {
-              <p-select
-                [options]="statusOptions"
-                optionLabel="label"
-                optionValue="value"
-                [ngModel]="note.status ?? 'pendiente'"
-                (ngModelChange)="onStatusChange(note, $event)"
-                styleClass="w-full max-w-[8rem]"
-                appendTo="body"
-                placeholder="Estado"
-              ></p-select>
-            } @else {
-              <p-tag
-                [value]="getStatusLabel(note.status)"
-                [severity]="getStatusSeverity(note.status)"
-              ></p-tag>
-            }
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center border border-gray-100 dark:border-gray-700">
+                    <i [class]="getTypeIcon(note.type) + ' text-gray-500 text-sm'"></i>
+                </div>
+                <div class="flex flex-col min-w-0">
+                    <p class="text-gray-800 dark:text-white text-sm font-medium truncate">
+                      {{ getContentSummary(note) }}
+                    </p>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span class="text-[10px] uppercase font-bold tracking-wider" [ngClass]="{
+                            'text-yellow-600': note.status === 'pendiente',
+                            'text-blue-600': note.status === 'en_proceso',
+                            'text-emerald-600': note.status === 'terminado'
+                        }">{{ getStatusLabel(note.status) }}</span>
+                        @if (note.dueAt) {
+                            <span class="text-[10px] text-gray-400 flex items-center gap-1">
+                                <i class="pi pi-clock text-[9px]"></i>
+                                {{ formatDueAt(note.dueAt) }}
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
           </td>
           <td
-            class="hidden md:table-cell w-28 text-sm text-gray-600 dark:text-gray-300 truncate max-w-[7rem]"
+            class="hidden md:table-cell w-48 text-sm text-gray-600 dark:text-gray-300"
             [title]="getCreatorName(note)"
           >
-            {{ getCreatorName(note) }}
-          </td>
-          <td class="hidden lg:table-cell w-32" (click)="$event.stopPropagation()">
-            @if (canEditFull(note)) {
-              <p-select
-                [options]="userOptions()"
-                optionLabel="name"
-                optionValue="_id"
-                [ngModel]="getAssignedSingleId(note)"
-                (ngModelChange)="onAssignChange(note, $event)"
-                placeholder="Asignar..."
-                [showClear]="true"
-                [filter]="true"
-                filterPlaceholder="Buscar..."
-                styleClass="w-full max-w-[8rem]"
-                appendTo="body"
-              ></p-select>
-            } @else {
-              @if (note.assignedTo?.length) {
-                <span class="text-sm text-gray-600 dark:text-gray-300">
-                  {{ getAssignedUserDisplay(note.assignedTo[0]) }}
-                </span>
-              } @else {
-                <span class="text-sm text-gray-400">—</span>
-              }
-            }
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/20">
+                    {{ getCreatorName(note).charAt(0).toUpperCase() }}
+                </div>
+                <span class="truncate">{{ getCreatorName(note) }}</span>
+            </div>
           </td>
           <td class="text-right whitespace-nowrap" (click)="$event.stopPropagation()">
-            <div class="flex flex-wrap justify-end gap-2">
-              @if (canEditFull(note) || isAssignedToMe(note)) {
-                @if (hasNativeShare()) {
-                  <button
-                    pButton
-                    icon="pi pi-share-alt"
-                    [rounded]="true"
-                    [text]="true"
-                    severity="secondary"
-                    size="small"
-                    (click)="shareNoteNative(note)"
-                    pTooltip="Compartir"
-                    aria-label="Compartir"
-                  ></button>
-                } @else {
-                  <button
-                    pButton
-                    icon="pi pi-share-alt"
-                    [rounded]="true"
-                    [text]="true"
-                    severity="secondary"
-                    size="small"
-                    (click)="shareMenu.toggle($event)"
-                    pTooltip="Compartir"
-                    aria-label="Compartir"
-                  ></button>
-                  <p-menu
-                    #shareMenu
-                    [model]="getShareMenuItems(note)"
-                    [popup]="true"
-                    appendTo="body"
-                  ></p-menu>
-                }
-              }
-              @if (canEditFull(note)) {
-                <button
-                  pButton
-                  icon="pi pi-trash"
-                  [rounded]="true"
-                  [text]="true"
-                  severity="danger"
-                  size="small"
-                  (click)="deleteNote(note)"
-                  pTooltip="Eliminar"
-                  aria-label="Eliminar nota"
-                ></button>
-              }
-            </div>
+            <button
+                pButton
+                label="Acciones"
+                icon="pi pi-bolt"
+                iconPos="right"
+                [text]="true"
+                size="small"
+                severity="primary"
+                class="font-bold"
+                (click)="openActions(note)"
+            ></button>
           </td>
         </tr>
       </ng-template>
@@ -876,4 +984,203 @@
       ></button>
     </ng-template>
   </p-dialog>
-</div>
+
+  <!-- Centralized Actions Modal -->
+  <p-dialog
+    [(visible)]="showActionsModal"
+    (onHide)="closeActions()"
+    [header]="'Acciones'"
+    [modal]="true"
+    [style]="{ width: 'min(90vw, 450px)' }"
+    [draggable]="false"
+    [resizable]="false"
+    appendTo="body"
+    styleClass="actions-modal"
+  >
+    @if (selectedActionNote(); as note) {
+      <div class="space-y-6">
+        <!-- Header Info -->
+        <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
+          <div class="w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center border border-gray-100 dark:border-gray-700 shadow-sm flex-shrink-0">
+             <i [class]="getTypeIcon(note.type) + ' text-primary text-xl'"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-800 dark:text-white font-medium line-clamp-2">
+              {{ getContentSummary(note) }}
+            </p>
+            <div class="flex items-center gap-2 mt-1">
+               <span class="text-[10px] uppercase font-bold tracking-wider text-gray-400">Creado por:</span>
+               <span class="text-[10px] font-medium text-gray-600 dark:text-gray-300">{{ getCreatorName(note) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Section -->
+        <div class="space-y-2">
+          <label class="text-[11px] uppercase font-bold tracking-wider text-gray-400 flex items-center gap-2">
+            <i class="pi pi-check-circle"></i> Estado de la tarea
+          </label>
+          <div class="grid grid-cols-3 gap-2">
+            @for (opt of statusOptions; track opt.value) {
+              <button
+                pButton
+                [label]="opt.label"
+                [severity]="note.status === opt.value ? (getStatusSeverity(opt.value)) : 'secondary'"
+                [outlined]="note.status !== opt.value"
+                size="small"
+                class="w-full text-xs py-2 px-1"
+                (click)="onStatusChange(note, opt.value)"
+              ></button>
+            }
+          </div>
+        </div>
+
+        <!-- Assignment Section -->
+        @if (canEditFull(note)) {
+          <div class="space-y-2">
+            <label class="text-[11px] uppercase font-bold tracking-wider text-gray-400 flex items-center gap-2">
+              <i class="pi pi-user-plus"></i> Asignar responsable
+            </label>
+            <p-select
+              [options]="userOptions()"
+              optionLabel="name"
+              optionValue="_id"
+              [ngModel]="getAssignedSingleId(note)"
+              (ngModelChange)="onAssignChange(note, $event)"
+              placeholder="Seleccionar usuario..."
+              [showClear]="true"
+              [filter]="true"
+              styleClass="w-full"
+              appendTo="body"
+            >
+              <ng-template #item let-user>
+                 <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
+                        {{ user.name.charAt(0).toUpperCase() }}
+                    </div>
+                    <span class="text-sm">{{ user.name }}</span>
+                 </div>
+              </ng-template>
+            </p-select>
+          </div>
+        }
+
+        <!-- Share Options -->
+        <div class="space-y-2">
+          <label class="text-[11px] uppercase font-bold tracking-wider text-gray-400 flex items-center gap-2">
+            <i class="pi pi-share-alt"></i> Notificar / Compartir
+          </label>
+          <div class="flex gap-2">
+            <button
+              pButton
+              label="WhatsApp"
+              icon="pi pi-whatsapp"
+              severity="success"
+              class="flex-1 text-xs"
+              (click)="shareNoteFromNote(note, 'whatsapp')"
+            ></button>
+            <button
+              pButton
+              label="Correo"
+              icon="pi pi-envelope"
+              severity="info"
+              class="flex-1 text-xs"
+              (click)="shareNoteFromNote(note, 'email')"
+            ></button>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        @if (canEditFull(note)) {
+          <div class="pt-4 border-t border-gray-100 dark:border-gray-700/50">
+            <button
+              pButton
+              label="Eliminar Tarea"
+              icon="pi pi-trash"
+              severity="danger"
+              [text]="true"
+              class="w-full text-xs"
+              (click)="deleteNote(note); closeActions()"
+            ></button>
+          </div>
+        }
+      </div>
+    }
+  </p-dialog>
+
+  <!-- Diálogo de Compartir Agenda -->
+  <p-dialog
+    header="Compartir mi Agenda"
+    [(visible)]="showShareModal"
+    [modal]="true"
+    [style]="{ width: '90vw', maxWidth: '600px' }"
+    [draggable]="false"
+    [resizable]="false"
+    styleClass="actions-modal"
+  >
+    <div class="flex flex-col gap-4">
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        Selecciona los usuarios con los que deseas compartir tu agenda. Ellos podrán ver tus actividades creadas.
+      </p>
+
+      <div class="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2">
+        @for (area of areasWithUsers(); track area._id) {
+          @if (area.users && area.users.length > 0) {
+            <div class="border rounded-xl p-4 bg-gray-50 dark:bg-gray-800/50">
+              <h3 class="font-medium text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
+                <i class="pi pi-folder text-primary"></i>
+                {{ area.nombre }}
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                @for (user of area.users; track user._id || user.id) {
+                  <!-- Excluir al usuario actual de la lista -->
+                  @if ((user._id || user.id) !== authService.getCurrentUser()?.id) {
+                    <div
+                      class="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors hover:bg-white dark:hover:bg-gray-700/50 border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
+                      (click)="toggleUserShare(user._id || user.id)"
+                    >
+                      <div
+                        class="w-5 h-5 rounded border flex items-center justify-center transition-colors"
+                        [class.bg-primary]="mySharedWith().includes(user._id || user.id)"
+                        [class.border-primary]="mySharedWith().includes(user._id || user.id)"
+                        [class.border-gray-300]="!mySharedWith().includes(user._id || user.id)"
+                        [class.dark:border-gray-600]="!mySharedWith().includes(user._id || user.id)"
+                      >
+                        @if (mySharedWith().includes(user._id || user.id)) {
+                          <i class="pi pi-check text-white text-xs"></i>
+                        }
+                      </div>
+                      <span class="text-sm text-gray-700 dark:text-gray-300 select-none">
+                        {{ user.name }}
+                      </span>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          }
+        } @empty {
+          <div class="text-center py-8 text-gray-500">
+            <i class="pi pi-users text-4xl mb-2 opacity-50"></i>
+            <p>Cargando áreas y usuarios...</p>
+          </div>
+        }
+      </div>
+
+      <div class="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
+        <button
+          pButton
+          label="Cancelar"
+          class="p-button-text p-button-secondary"
+          (click)="closeShareModal()"
+        ></button>
+        <button
+          pButton
+          label="Guardar Preferencias"
+          class="p-button-primary"
+          [loading]="saving()"
+          (click)="saveSharing()"
+        ></button>
+      </div>
+    </div>
+  </p-dialog>

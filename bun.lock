@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "Momentum",
@@ -11,6 +12,8 @@
         "@angular/forms": "^20.2.0",
         "@angular/platform-browser": "^20.2.0",
         "@angular/router": "^20.2.0",
+        "@azure/msal-angular": "^5.0.4",
+        "@azure/msal-browser": "^5.2.0",
         "@primeuix/themes": "^1.2.5",
         "@types/uuid": "^11.0.0",
         "chart.js": "^4.5.1",
@@ -124,6 +127,12 @@
     "@angular/platform-browser": ["@angular/platform-browser@20.3.2", "", { "dependencies": { "tslib": "^2.3.0" }, "peerDependencies": { "@angular/animations": "20.3.2", "@angular/common": "20.3.2", "@angular/core": "20.3.2" }, "optionalPeers": ["@angular/animations"] }, "sha512-d9XcT2UuWZCc0UOtkCcPEnMcOFKNczahamT/Izg3H9jLS3IcT6l0ry23d/Xf0DRwhLYQdOZiG7l8HMZ1sWPMOg=="],
 
     "@angular/router": ["@angular/router@20.3.2", "", { "dependencies": { "tslib": "^2.3.0" }, "peerDependencies": { "@angular/common": "20.3.2", "@angular/core": "20.3.2", "@angular/platform-browser": "20.3.2", "rxjs": "^6.5.3 || ^7.4.0" } }, "sha512-+Crx6QpK00juoNU3A1vbVf4DQ7fduLe3DUdAob6a9Uj+IoWj2Ijd8zUWF8E0cfNNFotJ4Gost0lJORDvqKcC7A=="],
+
+    "@azure/msal-angular": ["@azure/msal-angular@5.0.4", "", { "dependencies": { "tslib": "^2.3.0" }, "peerDependencies": { "@azure/msal-browser": "^5.2.0", "rxjs": "^7.0.0" } }, "sha512-Ha/mZ2GotOo9rOXLI5ZYg6KOXKdRGOOy75LBvpqe2xb2PhkylfNscIr6qUR/M+3OeA6rQzCxNL9+qQwSACVbqQ=="],
+
+    "@azure/msal-browser": ["@azure/msal-browser@5.2.0", "", { "dependencies": { "@azure/msal-common": "16.0.4" } }, "sha512-YP2XEo6Bsi9urkyWxe5s2yl0ZJhJ46BJjUYIhXe6TUQguj460+wFioztwNAGgL33ECn/s3p0UK6CAQDJ5K7bnw=="],
+
+    "@azure/msal-common": ["@azure/msal-common@16.0.4", "", {}, "sha512-0KZ9/wbUyZN65JLAx5bGNfWjkD0kRMUgM99oSpZFg7wEOb3XcKIiHrFnIpgyc8zZ70fHodyh8JKEOel1oN24Gw=="],
 
     "@babel/code-frame": ["@babel/code-frame@7.27.1", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.27.1", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg=="],
 

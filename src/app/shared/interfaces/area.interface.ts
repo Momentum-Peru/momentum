@@ -31,3 +31,9 @@ export interface AssignUsersRequest {
   userIds: string[];
 }
 
+import { User } from '../services/users-api.service';
+
+export interface AreaWithUsers extends Area {
+  users: User[];
+}
+

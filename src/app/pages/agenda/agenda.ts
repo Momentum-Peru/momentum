@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject, computed, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, signal, inject, computed, ViewChild, ElementRef, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -16,9 +16,13 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DatePickerModule } from 'primeng/datepicker';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TagModule } from 'primeng/tag';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { AgendaApiService } from '../../shared/services/agenda-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
+import { AreasApiService } from '../../shared/services/areas-api.service';
+import { MicrosoftGraphService } from '../../shared/services/microsoft-graph.service';
 import { AuthService } from '../login/services/auth.service';
 import { MenuService } from '../../shared/services/menu.service';
 import { TenantService } from '../../core/services/tenant.service';
@@ -66,6 +70,8 @@ const STATUS_OPTIONS: { label: string; value: AgendaNoteStatus }[] = [
     DatePickerModule,
     CheckboxModule,
     TagModule,
+    IconFieldModule,
+    InputIconModule,
   ],
   templateUrl: './agenda.html',
   styleUrl: './agenda.scss',
@@ -74,7 +80,9 @@ const STATUS_OPTIONS: { label: string; value: AgendaNoteStatus }[] = [
 export class AgendaPage implements OnInit {
   private readonly agendaApi = inject(AgendaApiService);
   private readonly usersApi = inject(UsersApiService);
+  private readonly areasApi = inject(AreasApiService);
   public readonly authService = inject(AuthService);
+  public readonly msGraphService = inject(MicrosoftGraphService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly menuService = inject(MenuService);
@@ -82,6 +90,15 @@ export class AgendaPage implements OnInit {
   private readonly tenantService = inject(TenantService);
 
   readonly canEdit = computed(() => this.menuService.canEdit('/agenda'));
+
+  constructor() {
+    // Auto-cargar eventos al loguearse o al entrar a la pestaña si ya está logueado
+    effect(() => {
+      if (this.msGraphService.isLoggedIn() && this.activeTab() === 'meetings') {
+        this.loadMsEvents();
+      }
+    });
+  }
 
   /** True si el usuario actual está en la lista de asignados de la nota. */
   isAssignedToMe(note: AgendaNote): boolean {
@@ -276,21 +293,23 @@ export class AgendaPage implements OnInit {
   private detailLastX = 0;
   private detailLastY = 0;
 
+  /** Modal de acciones centralizado. */
+  showActionsModal = signal(false);
+  selectedActionNote = signal<AgendaNote | null>(null);
+
+  // Sharing Modal
+  showShareModal = signal(false);
+  areasWithUsers = signal<import('../../shared/interfaces/area.interface').AreaWithUsers[]>([]);
+  mySharedWith = signal<string[]>([]); // Usuarios con los que YO comparto
+  sharedWithMe = signal<UserOption[]>([]); // Usuarios que comparten CONMIGO
+
   readonly typeOptions = NOTE_TYPE_OPTIONS;
   readonly statusOptions = STATUS_OPTIONS;
 
   @ViewChild('canvasEl') canvasRef?: ElementRef<HTMLCanvasElement>;
 
-  filteredNotes = computed(() => {
-    const list = this.notes().slice();
-    return list.sort((a, b) => {
-      // Ordenar por updatedAt si está disponible, sino por createdAt
-      // De más reciente a más antigua (descendente)
-      const t1 = new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
-      const t2 = new Date(b.updatedAt ?? b.createdAt ?? 0).getTime();
-      return t2 - t1;
-    });
-  });
+  activeTab = signal<'meetings' | 'my-activities' | 'assigned' | 'unassigned'>('my-activities');
+  searchQuery = signal('');
 
   /** Usuarios ordenados: el actual primero, luego el resto, filtrados por buscador. */
   sortedUserOptions = computed(() => {
@@ -312,58 +331,95 @@ export class AgendaPage implements OnInit {
     });
   });
 
-  /** Notas sin asignar (Backlog). */
-  backlogNotes = computed(() => {
-    const notes = this.filteredNotes();
-    const selected = this.selectedUserId();
-    const backlog = notes.filter((n) => !n.assignedTo || n.assignedTo.length === 0);
+  /** Notas filtradas por pestaña, búsqueda y filtros adicionales. */
+  displayedNotes = computed(() => {
+    const tab = this.activeTab();
+    const query = this.searchQuery().toLowerCase().trim();
+    const allNotes = this.notes();
+    const currentUserId = this.authService.getCurrentUser()?.id;
+    const filterUser = this.selectedUserId(); // Reusing selectedUserId as the "Assignee" filter if needed, or we might need a separate one.
 
-    if (selected) {
-      // Si hay un usuario seleccionado, mostramos sus propios items sin asignar
-      return backlog.filter((n) => {
-        const creatorId =
-          typeof n.createdBy === 'string' ? n.createdBy : (n.createdBy as AgendaNoteUser)?._id;
-        return creatorId === selected;
+    // 1. Filtrar por pestaña
+    let notes: AgendaNote[] = [];
+    const filterDateValue = this.filterDate();
+    const isSameDay = (d1: Date | string | null | undefined, d2: Date) => {
+      if (!d1) return false;
+      const date1 = new Date(d1);
+      return (
+        date1.getFullYear() === d2.getFullYear() &&
+        date1.getMonth() === d2.getMonth() &&
+        date1.getDate() === d2.getDate()
+      );
+    };
+
+    if (tab === 'meetings') {
+      return []; // Por ahora vacío
+    } else if (tab === 'my-activities') {
+      // SOLO las actividades asignadas a mí para la fecha seleccionada
+      notes = allNotes.filter(n => this.isAssignedToMe(n) && isSameDay(n.dueAt, filterDateValue));
+    } else if (tab === 'assigned') {
+      // Actividades que HE ASIGNADO a otros (creadas por mí y con asignados) para la fecha
+      if (!currentUserId) return [];
+      notes = allNotes.filter(n => {
+        const isCreator = this.isCreator(n);
+        const hasAssignees = n.assignedTo && n.assignedTo.length > 0;
+        return isCreator && hasAssignees && isSameDay(n.dueAt, filterDateValue);
       });
+    } else if (tab === 'unassigned') {
+      // Mi Backlog: Creadas por mí y sin asignar (sin filtro de fecha)
+      notes = allNotes.filter(n => this.isCreator(n) && (!n.assignedTo || n.assignedTo.length === 0));
     }
 
-    return backlog;
-  });
+    // 2. Filtrar por Búsqueda (Texto, busca en contenido)
+    if (query) {
+      notes = notes.filter(n => n.content?.toLowerCase().includes(query));
+    }
 
-  /** Notas asignadas (o todas si no se filtra por usuario). */
-  assignedNotes = computed(() => {
-    const notes = this.filteredNotes();
-    const selected = this.selectedUserId();
-    const filterDate = this.filterDate();
+    // 3. Filtrar por Usuario (Context Switching - Solo en pestañas de actividades/asignados)
+    if (filterUser && (tab === 'assigned' || tab === 'my-activities')) {
+      const contextUserId = filterUser;
 
-    // Filtramos por fecha en el frontend para la sección "Agenda"
-    // (el backend ahora trae todo para permitir el backlog global)
-    const start = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate(), 0, 0, 0, 0).getTime();
-    const end = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate(), 23, 59, 59, 999).getTime();
-
-    const list = notes.filter(n => {
-      const d = new Date(n.dueAt || n.createdAt || 0).getTime();
-      return d >= start && d <= end;
-    });
-
-    // Si hay un usuario seleccionado, filtramos por los asignados a ese usuario
-    if (selected) {
-      return list.filter((n) => {
-        if (!n.assignedTo || n.assignedTo.length === 0) return false;
-        return n.assignedTo.some((a) => {
-          const id = typeof a === 'string' ? a : (a as AgendaNoteUser)?._id;
-          return id === selected;
+      if (tab === 'my-activities') {
+        notes = allNotes.filter(n => {
+          // Asignado al usuario seleccionado Y coincide fecha
+          if (!n.assignedTo?.length) return false;
+          const isAssigned = n.assignedTo.some((a) => {
+            const id = typeof a === 'string' ? a : (a as AgendaNoteUser)?._id;
+            return id === contextUserId;
+          });
+          return isAssigned && isSameDay(n.dueAt, filterDateValue);
         });
-      });
+      } else if (tab === 'assigned') {
+        // Creadas por el usuario seleccionado y asignadas Y coincide fecha
+        notes = allNotes.filter(n => {
+          const creatorId = typeof n.createdBy === 'string' ? n.createdBy : (n.createdBy as AgendaNoteUser)?._id;
+          const isCreator = creatorId === contextUserId;
+          const hasAssignees = n.assignedTo && n.assignedTo.length > 0;
+          return isCreator && hasAssignees && isSameDay(n.dueAt, filterDateValue);
+        });
+      }
+
+      // Aplicar búsqueda de nuevo si se reinició notes
+      if (query) {
+        notes = notes.filter(n => n.content?.toLowerCase().includes(query));
+      }
     }
 
-    // Si no hay usuario seleccionado (o no es gerencia), mostramos las asignadas
-    return list.filter((n) => n.assignedTo && n.assignedTo.length > 0);
+    // Ordenar (Más recientes primero)
+    return notes.sort((a, b) => {
+      const t1 = new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
+      const t2 = new Date(b.updatedAt ?? b.createdAt ?? 0).getTime();
+      return t2 - t1;
+    });
   });
+
+  // Alias para la vista, reemplazando los computed anteriores si es necesario o usándolos de base
+  // Vamos a usar displayedNotes() en el HTML principal.
 
   ngOnInit(): void {
     this.loadNotes();
     this.loadUsers();
+    this.loadSharedWithMe();
   }
 
   loadNotes(): void {
@@ -455,15 +511,27 @@ export class AgendaPage implements OnInit {
     return [created, ...serverList];
   }
 
-  /** Carga todos los usuarios del tenant (todas las páginas) para el selector Asignados. */
+  /** Carga todos los usuarios del tenant (todas las páginas) para el selector. */
   loadUsers(): void {
     const tenantId = this.tenantService.tenantId();
-    this.usersApi.listAll(tenantId ?? undefined).subscribe({
-      next: (opts) => this.userOptions.set(opts),
-      error: () => {
-        /* usuarios opcionales para asignar */
-      },
-    });
+    if (this.isGerencia()) {
+      this.usersApi.listAll(tenantId ?? undefined).subscribe({
+        next: (opts) => this.userOptions.set(opts),
+        error: () => { },
+      });
+    } else {
+      // Para usuarios normales, iniciamos con el usuario actual.
+      // loadSharedWithMe agregará los compartidos.
+      const currentUser = this.authService.getCurrentUser();
+      if (currentUser) {
+        this.userOptions.set([{
+          _id: currentUser.id,
+          name: currentUser.name,
+          email: currentUser.email,
+          role: currentUser.role
+        }]);
+      }
+    }
   }
 
   openCreate(): void {
@@ -692,7 +760,7 @@ export class AgendaPage implements OnInit {
   }
 
   toggleSelectAll(): void {
-    const notes = this.filteredNotes();
+    const notes = this.displayedNotes();
     if (this.selectedNoteIds().size === notes.length) {
       this.selectedNoteIds.set(new Set());
     } else {
@@ -705,7 +773,7 @@ export class AgendaPage implements OnInit {
   }
 
   isAllSelected(): boolean {
-    const notes = this.filteredNotes();
+    const notes = this.displayedNotes();
     return notes.length > 0 && this.selectedNoteIds().size === notes.length;
   }
 
@@ -1557,5 +1625,195 @@ export class AgendaPage implements OnInit {
       return n ? (n === 1 ? 'Dibujo' : `${n} imagen(es)`) : '—';
     }
     return '—';
+  }
+  /** Genera las acciones disponibles para una nota en el menú contextual. */
+  getNoteMenu(note: AgendaNote): MenuItem[] {
+    const actions: MenuItem[] = [
+      {
+        label: 'Ver detalle',
+        icon: 'pi pi-eye',
+        command: () => this.viewNote(note),
+      },
+      {
+        separator: true,
+      },
+      {
+        label: 'Cambiar Estado',
+        icon: 'pi pi-check-circle',
+        items: STATUS_OPTIONS.map((opt) => ({
+          label: opt.label,
+          icon: note.status === opt.value ? 'pi pi-check text-primary' : '',
+          command: () => this.onStatusChange(note, opt.value),
+        })),
+      },
+      {
+        label: 'Asignar a...',
+        icon: 'pi pi-user-plus',
+        command: () => this.openAssignModalForNote(note, this.getAssignedSingleId(note)),
+        visible: this.canEditFull(note),
+      },
+      {
+        label: 'Compartir',
+        icon: 'pi pi-share-alt',
+        items: [
+          {
+            label: 'WhatsApp',
+            icon: 'pi pi-whatsapp',
+            command: () => this.shareNoteFromNote(note, 'whatsapp'),
+          },
+          {
+            label: 'Correo',
+            icon: 'pi pi-envelope',
+            command: () => this.shareNoteFromNote(note, 'email'),
+          },
+        ],
+      },
+    ];
+
+    if (this.canEditFull(note)) {
+      actions.push({
+        label: 'Eliminar',
+        icon: 'pi pi-trash',
+        severity: 'danger' as any,
+        command: () => this.deleteNote(note),
+      });
+    }
+
+    return actions;
+  }
+
+  /** Abre el modal de acciones para una nota. */
+  openActions(note: AgendaNote): void {
+    this.selectedActionNote.set(note);
+    this.showActionsModal.set(true);
+  }
+
+  /** Cierra el modal de acciones. */
+  closeActions(): void {
+    this.showActionsModal.set(false);
+    this.selectedActionNote.set(null);
+  }
+
+  // --- Sharing Logic ---
+
+  /** Abre el modal de compartir agenda. */
+  openShareModal(): void {
+    this.showShareModal.set(true);
+    // Cargar datos si no están cargados
+    if (this.areasWithUsers().length === 0) {
+      this.loadSharingData();
+    }
+    // Cargar mi configuración actual
+    const user = this.authService.getCurrentUser();
+    if (user && user.id) {
+      this.usersApi.getById(user.id).subscribe(u => {
+        // agendaSharedWith puede ser string[] o objeto[], normalizar siempre a IDs
+        const shared = (u as any).agendaSharedWith || [];
+        const ids = shared.map((s: any) => {
+          if (typeof s === 'string') return s;
+          return s._id || s.id;
+        }).filter((id: string) => !!id);
+        this.mySharedWith.set(ids);
+      });
+    }
+  }
+
+  closeShareModal(): void {
+    this.showShareModal.set(false);
+  }
+
+  loadSharingData(): void {
+    this.areasApi.listWithUsers().subscribe(areas => {
+      this.areasWithUsers.set(areas);
+    });
+  }
+
+  toggleUserShare(userId: string): void {
+    if (!userId) {
+      console.warn('ID de usuario inválido en toggleUserShare');
+      return;
+    }
+    const current = this.mySharedWith();
+    if (current.includes(userId)) {
+      this.mySharedWith.set(current.filter(id => id !== userId));
+    } else {
+      this.mySharedWith.set([...current, userId]);
+    }
+    console.log('Usuarios compartidos actualizados:', this.mySharedWith());
+  }
+
+  saveSharing(): void {
+    const user = this.authService.getCurrentUser();
+    if (!user || !user.id) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se detectó el usuario actual' });
+      return;
+    }
+
+    const payload = { agendaSharedWith: this.mySharedWith() };
+    console.log('Guardando preferencias de compartir:', payload);
+
+    this.saving.set(true);
+    this.usersApi.update(user.id, payload).subscribe({
+      next: (res) => {
+        console.log('Respuesta de guardado:', res);
+        this.messageService.add({ severity: 'success', summary: 'Guardado', detail: 'Preferencias de compartir guardadas' });
+        this.closeShareModal();
+        this.saving.set(false);
+      },
+      error: (err) => {
+        console.error('Error al guardar preferencias:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar' });
+        this.saving.set(false);
+      }
+    });
+  }
+
+  /** Carga la lista de usuarios que compartieron conmigo para el filtro. */
+  loadSharedWithMe(): void {
+    this.usersApi.getSharedWithMe().subscribe(users => {
+      const options = users.map(u => ({
+        _id: u.id || u._id,
+        name: u.name,
+        email: u.email,
+        role: u.role
+      }));
+      this.sharedWithMe.set(options);
+
+      // Si no es gerencia, agregar estos usuarios a userOptions
+      if (!this.isGerencia()) {
+        const current = this.userOptions();
+        const newOptions = [...current];
+        options.forEach(opt => {
+          if (!newOptions.some(o => o._id === opt._id)) {
+            newOptions.push(opt);
+          }
+        });
+        this.userOptions.set(newOptions);
+      }
+    });
+  }
+
+  // --- Microsoft Calendar Logic ---
+  msEvents = signal<import('../../shared/services/microsoft-graph.service').MicrosoftEvent[]>([]);
+  loadingMsEvents = signal(false);
+
+  connectMicrosoft(): void {
+    this.msGraphService.login();
+  }
+
+  logoutMicrosoft(): void {
+    this.msGraphService.logout();
+    this.msEvents.set([]);
+  }
+
+  loadMsEvents(): void {
+    if (!this.msGraphService.isLoggedIn()) return;
+    this.loadingMsEvents.set(true);
+    this.msGraphService.getCalendarEvents()
+      .pipe(finalize(() => this.loadingMsEvents.set(false)))
+      .subscribe({
+        next: (res: { value: import('../../shared/services/microsoft-graph.service').MicrosoftEvent[] }) => this.msEvents.set(res.value),
+        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el calendario' })
+      });
   }
 }
