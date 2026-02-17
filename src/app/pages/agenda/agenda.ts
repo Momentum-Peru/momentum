@@ -22,6 +22,7 @@ import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { AgendaApiService } from '../../shared/services/agenda-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { AreasApiService } from '../../shared/services/areas-api.service';
+import { ProfileApiService } from '../../shared/services/profile-api.service';
 import { MicrosoftGraphService } from '../../shared/services/microsoft-graph.service';
 import { AuthService } from '../login/services/auth.service';
 import { MenuService } from '../../shared/services/menu.service';
@@ -80,6 +81,7 @@ const STATUS_OPTIONS: { label: string; value: AgendaNoteStatus }[] = [
 export class AgendaPage implements OnInit {
   private readonly agendaApi = inject(AgendaApiService);
   private readonly usersApi = inject(UsersApiService);
+  private readonly profileApi = inject(ProfileApiService);
   private readonly areasApi = inject(AreasApiService);
   public readonly authService = inject(AuthService);
   public readonly msGraphService = inject(MicrosoftGraphService);
@@ -1753,9 +1755,9 @@ export class AgendaPage implements OnInit {
     console.log('Guardando preferencias de compartir:', payload);
 
     this.saving.set(true);
-    this.usersApi.update(user.id, payload).subscribe({
+    this.profileApi.updateProfile(payload).subscribe({
       next: (res) => {
-        console.log('Respuesta de guardado:', res);
+        console.log('Respuesta de guardado (perfil):', res);
         this.messageService.add({ severity: 'success', summary: 'Guardado', detail: 'Preferencias de compartir guardadas' });
         this.closeShareModal();
         this.saving.set(false);

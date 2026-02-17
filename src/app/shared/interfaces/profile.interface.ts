@@ -21,4 +21,5 @@ export interface UserProfile {
  */
 export interface UpdateProfileRequest {
   name?: string;
+  agendaSharedWith?: string[];
 }
