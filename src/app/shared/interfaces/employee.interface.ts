@@ -269,4 +269,5 @@ export interface UserOption {
   _id: string;
   name: string;
   email: string;
+  areaName?: string;
 }
