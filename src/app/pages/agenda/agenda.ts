@@ -1260,6 +1260,9 @@ export class AgendaPage implements OnInit {
           this.clearSelection();
           this.bulkAssignUserId.set(null);
         }
+        if (fail === 0 && ids.length === 1 && this.currentNote()?._id === ids[0]) {
+          this.agendaApi.getById(ids[0]).subscribe((updated) => this.currentNote.set(updated));
+        }
         if (fail === 0) {
           this.messageService.add({
             severity: 'success',
@@ -1711,6 +1714,21 @@ export class AgendaPage implements OnInit {
     this.pendingDrawingDataUrl.set(null);
   }
 
+  /** Breakpoint 768px (Tailwind md): debajo = mobile, arriba = desktop. */
+  isMobile(): boolean {
+    return typeof window !== 'undefined' && window.innerWidth < 768;
+  }
+
+  /** Abre el modal de detalle (Acciones / Editar) con la nota indicada. */
+  openDetailModal(note: AgendaNote): void {
+    this.currentNote.set(note);
+    this.detailEditContent.set(note.content ?? '');
+    this.detailEditDueAt.set(note.dueAt ? new Date(note.dueAt) : null);
+    this.detailEditStatus.set(note.status ?? 'pendiente');
+    this.detailEditMode.set(false);
+    this.showDetailDialog.set(true);
+  }
+
   viewNote(note: AgendaNote): void {
     // Si es un evento de Microsoft, abrir el link de la reunión o el webLink
     if ((note as any).isMicrosoftEvent) {
@@ -1721,16 +1739,12 @@ export class AgendaPage implements OnInit {
       }
     }
 
-    if (this.canEditFull(note)) {
+    // Desktop: al hacer clic en la fila, edición inline (no abrir modal). Mobile: siempre modal.
+    if (!this.isMobile() && this.canEditFull(note)) {
       this.startInlineEdit(note);
-    } else {
-      this.currentNote.set(note);
-      this.detailEditContent.set(note.content ?? '');
-      this.detailEditDueAt.set(note.dueAt ? new Date(note.dueAt) : null);
-      this.detailEditStatus.set(note.status ?? 'pendiente');
-      this.detailEditMode.set(false);
-      this.showDetailDialog.set(true);
+      return;
     }
+    this.openDetailModal(note);
   }
 
   startInlineEdit(note: AgendaNote): void {
@@ -2146,10 +2160,9 @@ export class AgendaPage implements OnInit {
     return actions;
   }
 
-  /** Abre el modal de acciones para una nota. */
+  /** Abre el modal de acciones (asignar, compartir, editar, eliminar). En desktop el clic en la fila no abre modal. */
   openActions(note: AgendaNote): void {
-    this.selectedActionNote.set(note);
-    this.showActionsModal.set(true);
+    this.openDetailModal(note);
   }
 
   /** Cierra el modal de acciones. */
@@ -2285,6 +2298,12 @@ export class AgendaPage implements OnInit {
     this.showCreateContactDialog.set(true);
   }
 
+  /** Abre el diálogo de crear contacto desde el modal de detalle (usa currentNote). */
+  openCreateContactDialogFromDetail(): void {
+    this.selectedActionNote.set(this.currentNote());
+    this.openCreateContactDialog();
+  }
+
   closeCreateContactDialog(): void {
     this.showCreateContactDialog.set(false);
   }
@@ -2312,7 +2331,7 @@ export class AgendaPage implements OnInit {
       .pipe(
         switchMap((contact: Contact) => {
           this.loadGlobalContacts(); // Reload options
-          const note = this.selectedActionNote();
+          const note = this.selectedActionNote() ?? this.currentNote();
           if (note) {
             const ext = { name: contact.name, email: contact.email || '', phone: contact.phone };
             return this.agendaApi.assign(note._id, {
