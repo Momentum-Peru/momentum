@@ -1,9 +1,10 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { MsalService, MsalBroadcastService, MSAL_GUARD_CONFIG, MsalGuardConfiguration } from '@azure/msal-angular';
-import { InteractionStatus, RedirectRequest, PopupRequest, AuthenticationResult, EventMessage, EventType } from '@azure/msal-browser';
+import { MsalService, MsalBroadcastService } from '@azure/msal-angular';
+import { InteractionStatus, AuthenticationResult, EventMessage, EventType } from '@azure/msal-browser';
 import { Subject } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { AuthService } from '../../pages/login/services/auth.service';
 
 export interface MicrosoftEvent {
     id: string;
@@ -21,23 +22,24 @@ export interface MicrosoftEvent {
 })
 export class MicrosoftGraphService {
     private readonly http = inject(HttpClient);
-    private readonly authService = inject(MsalService);
+    private readonly msalService = inject(MsalService);
     private readonly msalBroadcastService = inject(MsalBroadcastService);
+    private readonly appAuthService = inject(AuthService);
 
-    readonly isSpecialized = signal(false); // Placeholder for now
+    readonly isSpecialized = signal(false);
     readonly isLoggedIn = signal(false);
 
     private readonly _destroying$ = new Subject<void>();
 
     private initialized = false;
-    private interactionInProgress = false;
 
     constructor() {
         // Monitorea el estado de la interacción
         this.msalBroadcastService.inProgress$
             .pipe(takeUntil(this._destroying$))
             .subscribe((status: InteractionStatus) => {
-                this.interactionInProgress = status !== InteractionStatus.None;
+                // interactionInProgress logic handled natively by MSAL components usually, 
+                // but we keep sync for isLoggedIn
             });
 
         this.msalBroadcastService.msalSubject$
@@ -48,18 +50,15 @@ export class MicrosoftGraphService {
             .subscribe((result: EventMessage) => {
                 const payload = result.payload as AuthenticationResult;
                 if (payload?.account) {
-                    this.authService.instance.setActiveAccount(payload.account);
-                    this.isLoggedIn.set(true);
+                    this.msalService.instance.setActiveAccount(payload.account);
+                    this.checkAccount();
                 }
             });
 
         // Inicialización y recuperación de sesión
-        console.log('[MSAL] Inicializando...');
-        this.authService.instance.initialize().then(() => {
+        this.msalService.instance.initialize().then(() => {
             this.initialized = true;
-            console.log('[MSAL] Inicializado, manejando promesa de redirección...');
-            this.authService.instance.handleRedirectPromise().then((result) => {
-                console.log('[MSAL] Promesa de redirección manejada:', result ? 'ÉXITO' : 'Sin resultado de redirección');
+            this.msalService.instance.handleRedirectPromise().then(() => {
                 this.checkAccount();
             }).catch(err => {
                 console.error('[MSAL] Error en handleRedirectPromise:', err);
@@ -68,37 +67,36 @@ export class MicrosoftGraphService {
     }
 
     checkAccount(): void {
-        const activeAccount = this.authService.instance.getActiveAccount();
-        const allAccounts = this.authService.instance.getAllAccounts();
-        console.log('[MSAL] Cuentas encontradas:', allAccounts.length, 'Activa:', activeAccount?.username || 'Ninguna');
+        const activeAccount = this.msalService.instance.getActiveAccount();
+        const allAccounts = this.msalService.instance.getAllAccounts() as any[];
 
         if (!activeAccount && allAccounts.length > 0) {
-            console.log('[MSAL] Estableciendo cuenta activa por defecto');
-            this.authService.instance.setActiveAccount(allAccounts[0]);
+            this.msalService.instance.setActiveAccount(allAccounts[0]);
             this.isLoggedIn.set(true);
         } else {
             this.isLoggedIn.set(!!activeAccount);
         }
-        console.log('[MSAL] isLoggedIn signal set to:', this.isLoggedIn());
     }
 
     async login(): Promise<void> {
         if (this.isLoggedIn()) return;
 
         if (!this.initialized) {
-            await this.authService.instance.initialize();
+            await this.msalService.instance.initialize();
             this.initialized = true;
         }
 
-        // Usamos loginRedirect para estabilidad absoluta
-        this.authService.loginRedirect({
+        const currentUserEmail = this.appAuthService.getCurrentUser()?.email;
+
+        this.msalService.loginRedirect({
             scopes: ['user.read', 'calendars.read'],
-            prompt: 'select_account'
+            prompt: 'select_account',
+            loginHint: currentUserEmail || undefined
         });
     }
 
     async logout(): Promise<void> {
-        this.authService.logoutRedirect();
+        this.msalService.logoutRedirect();
         this.isLoggedIn.set(false);
     }
 
@@ -106,7 +104,6 @@ export class MicrosoftGraphService {
         const headers = new HttpHeaders({
             'Prefer': 'outlook.timezone="SA Pacific Standard Time"'
         });
-        // calendarView es mejor para filtrar por rango de fechas
         const url = `https://graph.microsoft.com/v1.0/me/calendar/calendarView?startDateTime=${startDate}&endDateTime=${endDate}&$select=subject,start,end,webLink,organizer,isOnlineMeeting,onlineMeetingUrl&$orderby=start/dateTime`;
         return this.http.get<{ value: MicrosoftEvent[] }>(url, { headers });
     }

@@ -245,6 +245,15 @@ export class AgendaPage implements OnInit {
     return '';
   }
 
+  getStatusClass(status: AgendaNoteStatus): string {
+    switch (status) {
+      case 'pendiente': return 'text-yellow-600';
+      case 'en_proceso': return 'text-blue-600';
+      case 'terminado': return 'text-emerald-600';
+      default: return '';
+    }
+  }
+
   /** Indica si el navegador soporta la API nativa de compartir. */
   hasNativeShare(): boolean {
     return typeof navigator !== 'undefined' && !!navigator.share;
@@ -257,75 +266,14 @@ export class AgendaPage implements OnInit {
   }
 
   /** Construye el texto a compartir según el tipo de nota (solo contenido, sin URL de la página). */
-  getShareText(note: AgendaNote): string {
-    const base = 'Tienes una nueva tarea asignada.';
-    if (note.type === 'text') {
-      const contenido = (note.content ?? '').trim();
-      return contenido ? `${base}\n\n${contenido}` : base;
-    }
-    if (note.type === 'voice') {
-      const transcripcion = (note.content ?? '').trim();
-      return transcripcion ? `${base}\n\nTranscripción:\n${transcripcion}` : base;
-    }
-    if (note.type === 'drawing') {
-      const imgUrl = note.drawingUrl?.[0];
-      const verDibujo = imgUrl ? `Ver dibujo: ${imgUrl}` : 'Ver enlace para el dibujo.';
-      return `${base}\n\n${verDibujo}`;
-    }
-    return base;
-  }
 
-  /** Comparte la nota con la API nativa del sistema (móvil o escritorio). Carga la nota completa si es posible; si falla (404, red), usa la nota de la lista. */
-  async shareNoteNative(note: AgendaNote): Promise<void> {
-    if (!this.hasNativeShare()) return;
-    let fullNote: AgendaNote;
-    try {
-      fullNote = await firstValueFrom(this.agendaApi.getById(note._id));
-    } catch {
-      fullNote = note;
-    }
-    const shareData: ShareData = {
-      title: 'Tienes una nueva tarea asignada',
-      text: this.getShareText(fullNote),
-    };
-    // Para dibujo: adjuntar la imagen si está disponible (data URL o URL con CORS)
-    if (fullNote.type === 'drawing' && fullNote.drawingUrl?.length) {
-      const imgUrl = fullNote.drawingUrl[0];
-      try {
-        const res = await fetch(imgUrl);
-        if (res.ok) {
-          const blob = await res.blob();
-          const file = new File([blob], 'tarea-dibujo.png', {
-            type: blob.type || 'image/png',
-          });
-          shareData.files = [file];
-        }
-      } catch {
-        // Sin archivo se comparte el texto con el enlace al dibujo (getShareText ya lo incluye)
-      }
-    }
-    try {
-      await navigator.share(shareData);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Compartido',
-        detail: 'Contenido compartido correctamente',
-      });
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') return;
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Compartir',
-        detail: 'No se pudo usar el compartir del sistema. Usa Correo o WhatsApp.',
-      });
-    }
-  }
 
   notes = signal<AgendaNote[]>([]);
   loading = signal(false);
   step = signal(1);
   selectedType = signal<AgendaNoteType | null>(null);
   noteContent = signal('');
+  createDueAt = signal<Date | null>(null);
   currentNote = signal<AgendaNote | null>(null);
   /** Referencia a la nota recién creada para no perderla si la lista del servidor no la devuelve. */
   private lastCreatedNote = signal<AgendaNote | null>(null);
@@ -397,6 +345,8 @@ export class AgendaPage implements OnInit {
   // --- Inline Editing State ---
   inlineEditingId = signal<string | null>(null);
   inlineEditContent = signal('');
+  inlineEditDueAt = signal<Date | null>(null);
+  inlineEditStatus = signal<AgendaNoteStatus>('pendiente');
 
   // Sharing Modal
   showShareModal = signal(false);
@@ -411,7 +361,14 @@ export class AgendaPage implements OnInit {
 
   @ViewChild('canvasEl') canvasRef?: ElementRef<HTMLCanvasElement>;
 
-  activeTab = signal<'meetings' | 'my-activities' | 'assigned' | 'unassigned'>('my-activities');
+  tabs: { label: string; value: string; icon: string }[] = [
+    { label: 'Reuniones', value: 'meetings', icon: 'pi pi-calendar' },
+    { label: 'Actividades', value: 'activities', icon: 'pi pi-list' },
+  ];
+
+  activeTab = signal<string>('activities');
+
+
   searchQuery = signal('');
 
   /** Usuarios ordenados: el actual primero, luego el resto, filtrados por buscador. */
@@ -420,9 +377,18 @@ export class AgendaPage implements OnInit {
     const query = this.userSearchQuery().toLowerCase().trim();
     const currentUserId = this.authService.getCurrentUser()?.id;
 
-    let filtered = raw;
+    // Deduplicar defensivamente por _id
+    const uniqueUsersMap = new Map<string, UserOption>();
+    raw.forEach(u => {
+      if (!uniqueUsersMap.has(u._id)) {
+        uniqueUsersMap.set(u._id, u);
+      }
+    });
+    const uniqueRaw = Array.from(uniqueUsersMap.values());
+
+    let filtered = uniqueRaw;
     if (query) {
-      filtered = raw.filter(
+      filtered = uniqueRaw.filter(
         (u) => u.name?.toLowerCase().includes(query) || u.email?.toLowerCase().includes(query),
       );
     }
@@ -431,7 +397,10 @@ export class AgendaPage implements OnInit {
       if (a._id === currentUserId) return -1;
       if (b._id === currentUserId) return 1;
       return (a.name || '').localeCompare(b.name || '');
-    });
+    }).map(u => ({
+      ...u,
+      name: u._id === currentUserId ? 'Mi Agenda' : `Agenda de ${u.name}`
+    }));
   });
 
   isViewingOther = computed(() => {
@@ -448,125 +417,146 @@ export class AgendaPage implements OnInit {
   });
 
   /** Notas filtradas por pestaña, búsqueda y filtros adicionales. */
-  displayedNotes = computed(() => {
-    const tab = this.activeTab();
-    const query = this.searchQuery().toLowerCase().trim();
+  // --- Computed Views for Template ---
+
+  calendarNotes = computed(() => {
+    if (this.activeTab() !== 'meetings') return [];
+
+    // Solo mostramos eventos de Microsoft en esta vista
+    const msEventsAsNotes = this.msEvents().map(e => ({
+      _id: e.id,
+      type: 'text',
+      content: e.subject,
+      status: 'en_proceso' as AgendaNoteStatus,
+      createdBy: { name: e.organizer.emailAddress.name } as AgendaNoteUser,
+      dueAt: e.start.dateTime,
+      endAt: e.end.dateTime,
+      isMicrosoftEvent: true,
+      onlineMeetingUrl: e.onlineMeetingUrl,
+      webLink: e.webLink,
+    }) as any as AgendaNote);
+
+    return msEventsAsNotes.sort((a, b) => {
+      return new Date(a.dueAt!).getTime() - new Date(b.dueAt!).getTime();
+    });
+  });
+
+  /**
+   * Vista Agrupada para Gerencia en "Actividades".
+   * Retorna array de grupos: { user: UserOption, notes: AgendaNote[] }
+   * Incluye un grupo para "Sin Asignar".
+   */
+  groupedActivities = computed(() => {
+    if (this.activeTab() !== 'activities' || !this.authService.isGerencia()) {
+      return [];
+    }
+    // Si hay usuario seleccionado, no mostramos agrupado, mostramos plano de ese usuario (flatActivities se encarga)
+    if (this.selectedUserId()) return [];
+
     const allNotes = this.notes();
-    const currentUserId = this.authService.getCurrentUser()?.id;
-    const filterUser = this.selectedUserId();
-    const filterDateValue = this.filterDate();
-    const isOther = this.isViewingOther();
+    const users = this.userOptions();
+    const query = this.searchQuery().toLowerCase().trim();
 
-    const isSameDay = (d1: Date | string | null | undefined, d2: Date) => {
-      if (!d1) return false;
-      const date1 = new Date(d1);
-      return (
-        date1.getFullYear() === d2.getFullYear() &&
-        date1.getMonth() === d2.getMonth() &&
-        date1.getDate() === d2.getDate()
-      );
-    };
+    // Filtro de búsqueda local
+    let filteredNotes = allNotes;
+    if (query) {
+      filteredNotes = allNotes.filter((n) => n.content?.toLowerCase().includes(query));
+    }
 
-    // Si estamos viendo la agenda de otro usuario, mostramos una lista única de sus actividades para el día
-    if (isOther && filterUser) {
-      let notes = allNotes.filter((n) => {
-        const isAssigned = n.assignedTo?.some((a) => {
-          const id = typeof a === 'string' ? a : (a as any)?._id;
-          return id === filterUser;
-        });
-        return isAssigned && isSameDay(n.dueAt, filterDateValue);
-      });
+    // Agrupar
+    const groups = new Map<string, AgendaNote[]>();
+    const unassigned: AgendaNote[] = [];
 
-      if (query) {
-        notes = notes.filter((n) => n.content?.toLowerCase().includes(query));
+    filteredNotes.forEach((note) => {
+      if (!note.assignedTo || note.assignedTo.length === 0) {
+        unassigned.push(note);
+      } else {
+        // Tomamos el primer asignado para agrupar
+        const assignee = note.assignedTo[0];
+        const userId = typeof assignee === 'string' ? assignee : assignee._id;
+        if (userId) {
+          if (!groups.has(userId)) groups.set(userId, []);
+          groups.get(userId)?.push(note);
+        } else {
+          unassigned.push(note);
+        }
       }
+    });
 
-      return notes;
-    }
+    const result: { user: UserOption | null; notes: AgendaNote[] }[] = [];
 
-    // 1. Filtrar por pestaña
-    let notes: AgendaNote[] = [];
+    // 1. Grupos de Usuarios
+    const currentUserId = this.authService.getCurrentUser()?.id;
 
-    if (tab === 'meetings') {
-      // Filtrar eventos de Microsoft por fecha
-      const events = this.msEvents().filter((e) => isSameDay(e.start.dateTime, filterDateValue));
-      // Convertir MicrosoftEvent a AgendaNote para que la tabla/lista lo maneje uniformemente
-      notes = events.map(
-        (e) =>
-          ({
-            _id: e.id,
-            type: 'text',
-            content: e.subject,
-            status: 'en_proceso' as AgendaNoteStatus,
-            createdBy: { name: e.organizer.emailAddress.name } as AgendaNoteUser,
-            dueAt: e.start.dateTime,
-            endAt: e.end.dateTime,
-            isMicrosoftEvent: true,
-            onlineMeetingUrl: e.onlineMeetingUrl,
-            webLink: e.webLink,
-          }) as any as AgendaNote,
-      );
-    } else if (tab === 'my-activities') {
-      // SOLO las actividades asignadas a mí para la fecha seleccionada
-      notes = allNotes.filter((n) => this.isAssignedToMe(n) && isSameDay(n.dueAt, filterDateValue));
-    } else if (tab === 'assigned') {
-      // Actividades que HE ASIGNADO a otros para la fecha
-      if (!currentUserId) return [];
-      notes = allNotes.filter((n) => {
-        const isCreator = this.isCreator(n);
-        const hasAssignees = n.assignedTo && n.assignedTo.length > 0;
-        return isCreator && hasAssignees && isSameDay(n.dueAt, filterDateValue);
+    // Obtener los usuarios que tienen notas y ordenarlos
+    const usersWithNotes = users
+      .filter((u) => groups.has(u._id))
+      .sort((a, b) => {
+        // Mi agenda primero
+        if (a._id === currentUserId) return -1;
+        if (b._id === currentUserId) return 1;
+        // Resto alfabéticamente
+        return (a.name || '').localeCompare(b.name || '');
       });
-    } else if (tab === 'unassigned') {
-      // Mi Backlog (Sin filtro de fecha)
-      notes = allNotes.filter(
-        (n) => this.isCreator(n) && (!n.assignedTo || n.assignedTo.length === 0),
-      );
+
+    usersWithNotes.forEach((u) => {
+      result.push({ user: u, notes: groups.get(u._id)! });
+    });
+
+    // 2. Sin Asignar (al principio para triage)
+    if (unassigned.length > 0) {
+      result.unshift({
+        user: { _id: 'unassigned', name: 'Sin Asignar', email: '', role: 'user' },
+        notes: unassigned,
+      });
     }
 
-    // 2. Filtrar por Búsqueda (Texto)
+    return result;
+  });
+
+  /**
+   * Vista Simple para Empleados (o cuando se filtra por usuario en Gerencia).
+   * Muestra lista plana.
+   */
+  flatActivities = computed(() => {
+    const tab = this.activeTab();
+    if (tab !== 'activities') return [];
+
+    const isGerencia = this.authService.isGerencia();
+    const selectedUser = this.selectedUserId();
+
+    // Si es gerencia y NO ha seleccionado usuario, usamos la vista agrupada (return empty here).
+    if (isGerencia && !selectedUser) {
+      return [];
+    }
+
+    const allNotes = this.notes();
+    const query = this.searchQuery().toLowerCase().trim();
+
+    let notes = allNotes;
     if (query) {
       notes = notes.filter((n) => n.content?.toLowerCase().includes(query));
     }
 
-    // 3. Filtrar por Usuario (Context Switching)
-    if (filterUser && (tab === 'assigned' || tab === 'my-activities')) {
-      const contextUserId = filterUser;
-
-      if (tab === 'my-activities') {
-        notes = allNotes.filter((n) => {
-          if (!n.assignedTo?.length) return false;
-          const isAssigned = n.assignedTo.some((a) => {
-            const id = typeof a === 'string' ? a : (a as AgendaNoteUser)?._id;
-            return id === contextUserId;
-          });
-          return isAssigned && isSameDay(n.dueAt, filterDateValue);
-        });
-      } else if (tab === 'assigned') {
-        notes = allNotes.filter((n) => {
-          const creatorId =
-            typeof n.createdBy === 'string' ? n.createdBy : (n.createdBy as AgendaNoteUser)?._id;
-          const isCreator = creatorId === contextUserId;
-          const hasAssignees = n.assignedTo && n.assignedTo.length > 0;
-          return isCreator && hasAssignees && isSameDay(n.dueAt, filterDateValue);
-        });
-      }
-
-      if (query) {
-        notes = notes.filter((n) => n.content?.toLowerCase().includes(query));
-      }
-    }
-
-    // Ordenar (Más recientes primero si no es un evento de MS, o por fecha de inicio si lo es)
+    // Ordenar por fecha de creación descendente (Backlog)
     return notes.sort((a, b) => {
-      // @ts-ignore
-      if (a.isMicrosoftEvent && b.isMicrosoftEvent) {
-        return new Date(a.dueAt!).getTime() - new Date(b.dueAt!).getTime();
-      }
       const t1 = new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
       const t2 = new Date(b.updatedAt ?? b.createdAt ?? 0).getTime();
       return t2 - t1;
     });
+  });
+
+  /** Helper para operaciones masivas (seleccionar todo) que devuelve todas las notas visibles actualmente */
+  visibleNotes = computed(() => {
+    const tab = this.activeTab();
+    if (tab === 'meetings') return this.calendarNotes();
+
+    // Activities
+    const grouped = this.groupedActivities();
+    if (grouped.length > 0) {
+      return grouped.flatMap(g => g.notes);
+    }
+    return this.flatActivities();
   });
 
   // Alias para la vista, reemplazando los computed anteriores si es necesario o usándolos de base
@@ -607,6 +597,8 @@ export class AgendaPage implements OnInit {
   loadNotes(): void {
     this.loading.set(true);
     const filters = this.buildListFilters();
+    console.log('[Agenda] Loading notes with filters:', filters);
+
     this.agendaApi
       .list(filters)
       .subscribe({
@@ -633,12 +625,49 @@ export class AgendaPage implements OnInit {
     };
   }
 
-  /** Filtros para listar notas: ahora traemos todo lo del usuario/tenant para permitir backlog global. */
+  /** Filtros para listar notas:
+   * - Reuniones: Filtra por fecha y usuario seleccionado/actual.
+   * - Actividades (Gerencia): TRAE TODO (Backlog global), sin filtro de fecha ni usuario.
+   * - Actividades (Empleado): Trae sus asignadas (sin filtro de fecha).
+   */
   private buildListFilters(): Parameters<AgendaApiService['list']>[0] {
     const filters: Parameters<AgendaApiService['list']>[0] = {};
+    const tab = this.activeTab();
+    const isGerencia = this.authService.isGerencia();
+    const selectedUser = this.selectedUserId();
 
-    if (!this.authService.isGerencia()) {
-      filters.forUser = true;
+    // 1. Filtros por Usuario
+    if (tab === 'meetings') {
+      // En reuniones, si selecciona usuario, filtra por él. Si no, por el actual.
+      if (selectedUser) {
+        filters.assignedTo = selectedUser;
+      } else {
+        // Si no hay seleccionado, meetings suele ser "mi agenda" (forUser=true)
+        filters.forUser = true;
+      }
+    } else {
+      // Actividades
+      if (isGerencia) {
+        // Gerencia ve TODO por defecto.
+        // Si selecciona un usuario específico, filtramos por él.
+        if (selectedUser) {
+          filters.assignedTo = selectedUser;
+        }
+        // Si no selecciona usuario, NO ponemos filters.assignedTo ni filters.forUser -> Trae TODO.
+      } else {
+        // Empleado solo ve lo suyo
+        filters.forUser = true;
+      }
+    }
+
+    // 2. Filtros por Fecha
+    if (tab === 'meetings') {
+      // Reuniones SIEMPRE por fecha
+      const dates = this.buildDateFilters();
+      filters.startDate = dates.startDate;
+      filters.endDate = dates.endDate;
+    } else {
+      // Actividades: NO filtramos por fecha (Backlog completo)
     }
 
     return filters;
@@ -652,10 +681,12 @@ export class AgendaPage implements OnInit {
   onFilterDateChange(date: Date | null): void {
     if (date) {
       this.filterDate.set(date);
-      this.loadNotes();
-      // También recargar eventos de Microsoft si está en esa pestaña
-      if (this.activeTab() === 'meetings' && this.msGraphService.isLoggedIn()) {
-        this.loadMsEvents();
+      // Solo recargar si estamos en reuniones (donde importa la fecha) o si queremos hacer refresh explícito
+      if (this.activeTab() === 'meetings') {
+        this.loadNotes();
+        if (this.msGraphService.isLoggedIn()) {
+          this.loadMsEvents();
+        }
       }
     }
   }
@@ -710,7 +741,7 @@ export class AgendaPage implements OnInit {
     if (this.isGerencia()) {
       this.usersApi.listAll(tenantId ?? undefined).subscribe({
         next: (opts) => this.userOptions.set(opts),
-        error: () => {},
+        error: () => { },
       });
     } else {
       // Para usuarios normales, iniciamos con el usuario actual.
@@ -766,6 +797,7 @@ export class AgendaPage implements OnInit {
   /** Limpia texto, voz y dibujo del flujo de creación (al cerrar, cancelar o guardar). */
   private clearCreateFields(): void {
     this.noteContent.set('');
+    this.createDueAt.set(null);
     this.pendingVoiceFile.set(null);
     this.pendingDrawingDataUrl.set(null);
     this.selectedType.set(null);
@@ -826,8 +858,10 @@ export class AgendaPage implements OnInit {
     const content = this.noteContent().trim();
 
     this.saving.set(true);
+    const dueAt = this.createDueAt()?.toISOString() || undefined;
+
     this.agendaApi
-      .create({ type, content: content || undefined })
+      .create({ type, content: content || undefined, dueAt })
       .subscribe({
         next: (created) => {
           this.currentNote.set(created);
@@ -1023,7 +1057,7 @@ export class AgendaPage implements OnInit {
   }
 
   toggleSelectAll(): void {
-    const notes = this.displayedNotes();
+    const notes = this.visibleNotes();
     if (this.selectedNoteIds().size === notes.length) {
       this.selectedNoteIds.set(new Set());
     } else {
@@ -1036,7 +1070,7 @@ export class AgendaPage implements OnInit {
   }
 
   isAllSelected(): boolean {
-    const notes = this.displayedNotes();
+    const notes = this.visibleNotes();
     return notes.length > 0 && this.selectedNoteIds().size === notes.length;
   }
 
@@ -1291,17 +1325,15 @@ export class AgendaPage implements OnInit {
     });
   }
 
-  async shareNative(note: AgendaNote): Promise<void> {
-    const shareText = this.getShareText(note);
+  shareNoteNative(note: AgendaNote): void {
+    const shareText = this.generateTaskShareMessage(note, true); // Ensure we use the message generator
 
     if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Tarea Tecmeing',
-          text: shareText,
-        });
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
+      navigator.share({
+        title: 'Tarea Tecmeing',
+        text: shareText,
+      }).catch((err) => {
+        if (err.name !== 'AbortError') {
           console.error('Error sharing:', err);
           this.messageService.add({
             severity: 'error',
@@ -1309,7 +1341,7 @@ export class AgendaPage implements OnInit {
             detail: 'No se pudo abrir el menú de compartir',
           });
         }
-      }
+      });
     } else {
       this.shareNoteFromNote(note, 'whatsapp');
     }
@@ -1353,23 +1385,23 @@ export class AgendaPage implements OnInit {
     return msg;
   }
 
-  shareNote(channel: 'email' | 'whatsapp'): void {
-    const note = this.currentNote();
-    console.log('[Agenda] shareNote called', { channel, note });
+  shareNote(channel: 'email' | 'whatsapp', note?: AgendaNote): void {
+    const noteToShare = note || this.currentNote();
+    console.log('[Agenda] shareNote called', { channel, note: noteToShare });
 
-    if (!note) {
+    if (!noteToShare) {
       console.warn('[Agenda] No current note to share');
       return;
     }
 
     // Para contactos externos, no incluimos el link según petición del usuario
-    const isExternal = (note.assignedExternal ?? []).length > 0;
-    const shareMessage = this.generateTaskShareMessage(note, !isExternal);
+    const isExternal = (noteToShare.assignedExternal ?? []).length > 0;
+    const shareMessage = this.generateTaskShareMessage(noteToShare, !isExternal);
 
     // Abrimos el destino inmediatamente
     if (channel === 'whatsapp') {
       const encodedMsg = encodeURIComponent(shareMessage);
-      const phone = note.assignedExternal?.[0]?.phone || '';
+      const phone = noteToShare.assignedExternal?.[0]?.phone || '';
       const cleanPhone = phone.replace(/[^0-9]/g, '');
       const url = cleanPhone
         ? `https://wa.me/${cleanPhone}?text=${encodedMsg}`
@@ -1381,7 +1413,7 @@ export class AgendaPage implements OnInit {
     } else if (channel === 'email') {
       const subject = encodeURIComponent('Detalles de actividad agenda');
       const body = encodeURIComponent(shareMessage);
-      const email = note.assignedExternal?.[0]?.email || '';
+      const email = noteToShare.assignedExternal?.[0]?.email || '';
       const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
 
       console.log('[Agenda] Opening Email URL:', mailtoUrl);
@@ -1390,10 +1422,13 @@ export class AgendaPage implements OnInit {
     }
 
     // Registramos la acción en el servidor en segundo plano
-    this.agendaApi.share(note._id, { channel, to: undefined }).subscribe({
+    this.agendaApi.share(noteToShare._id, { channel, to: undefined }).subscribe({
       next: (updated) => {
         console.log('[Agenda] Share registered successfully');
-        this.currentNote.set(updated);
+        // Update the note in the list/view if needed
+        if (this.currentNote()?._id === updated._id) {
+          this.currentNote.set(updated);
+        }
         this.messageService.add({
           severity: 'success',
           summary: 'Compartir',
@@ -1660,6 +1695,15 @@ export class AgendaPage implements OnInit {
   }
 
   viewNote(note: AgendaNote): void {
+    // Si es un evento de Microsoft, abrir el link de la reunión o el webLink
+    if ((note as any).isMicrosoftEvent) {
+      const link = (note as any).onlineMeetingUrl || (note as any).webLink;
+      if (link) {
+        window.open(link, '_blank');
+        return;
+      }
+    }
+
     if (this.canEditFull(note)) {
       this.startInlineEdit(note);
     } else {
@@ -1675,18 +1719,24 @@ export class AgendaPage implements OnInit {
   startInlineEdit(note: AgendaNote): void {
     this.inlineEditingId.set(note._id);
     this.inlineEditContent.set(note.content ?? '');
+    this.inlineEditDueAt.set(note.dueAt ? new Date(note.dueAt) : null);
+    this.inlineEditStatus.set(note.status ?? 'pendiente');
   }
 
   cancelInlineEdit(): void {
     this.inlineEditingId.set(null);
     this.inlineEditContent.set('');
+    this.inlineEditDueAt.set(null);
+    this.inlineEditStatus.set('pendiente');
   }
 
   saveInlineEdit(note: AgendaNote): void {
     const content = this.inlineEditContent().trim();
+    const dueAt = this.inlineEditDueAt()?.toISOString() || null;
+    const status = this.inlineEditStatus();
 
     this.saving.set(true);
-    this.agendaApi.update(note._id, { content }).subscribe({
+    this.agendaApi.update(note._id, { content, dueAt, status }).subscribe({
       next: (updated) => {
         this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
         this.messageService.add({
@@ -2377,6 +2427,123 @@ export class AgendaPage implements OnInit {
   msEvents = signal<import('../../shared/services/microsoft-graph.service').MicrosoftEvent[]>([]);
   loadingMsEvents = signal(false);
 
+  calendarViewType = signal<'day' | 'workWeek' | 'week'>('workWeek');
+  calendarViewOptions = [
+    { label: 'Día', value: 'day' },
+    { label: 'Semana laboral', value: 'workWeek' },
+    { label: 'Semana', value: 'week' },
+  ];
+
+  calendarStartDay = computed(() => {
+    const d = new Date(this.filterDate() || new Date());
+    const day = d.getDay(); // 0 (Sun) to 6 (Sat)
+    // Ajustar a Lunes: Lunes=1, Domingo=0
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  });
+
+  weekDays = computed(() => {
+    const start = this.calendarStartDay();
+    const days: Date[] = [];
+    const count = this.calendarViewType() === 'day' ? 1 : this.calendarViewType() === 'workWeek' ? 5 : 7;
+
+    if (this.calendarViewType() === 'day') {
+      days.push(new Date(this.filterDate()));
+      return days;
+    }
+
+    for (let i = 0; i < count; i++) {
+      const nextDay = new Date(start);
+      nextDay.setDate(start.getDate() + i);
+      days.push(nextDay);
+    }
+    return days;
+  });
+
+  calendarRangeLabel = computed(() => {
+    const days = this.weekDays();
+    if (days.length === 0) return '';
+    if (this.calendarViewType() === 'day') {
+      return days[0].toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    const start = days[0];
+    const end = days[days.length - 1];
+
+    const formatMonth = (d: Date) => d.toLocaleString('es-PE', { month: 'long' });
+    const formatYear = (d: Date) => d.getFullYear();
+
+    if (start.getMonth() === end.getMonth()) {
+      return `${start.getDate()}-${end.getDate()} de ${formatMonth(start)} de ${formatYear(start)}`;
+    } else {
+      return `${start.getDate()} de ${formatMonth(start)} - ${end.getDate()} de ${formatMonth(end)} de ${formatYear(end)}`;
+    }
+  });
+
+  goNextPeriod(): void {
+    const d = new Date(this.filterDate());
+    if (this.calendarViewType() === 'day') {
+      d.setDate(d.getDate() + 1);
+    } else {
+      d.setDate(d.getDate() + 7);
+    }
+    this.filterDate.set(d);
+    this.loadNotes();
+    if (this.msGraphService.isLoggedIn()) this.loadMsEvents();
+  }
+
+  goPrevPeriod(): void {
+    const d = new Date(this.filterDate());
+    if (this.calendarViewType() === 'day') {
+      d.setDate(d.getDate() - 1);
+    } else {
+      d.setDate(d.getDate() - 7);
+    }
+    this.filterDate.set(d);
+    this.loadNotes();
+    if (this.msGraphService.isLoggedIn()) this.loadMsEvents();
+  }
+
+  goToday(): void {
+    this.filterDate.set(new Date());
+    this.loadNotes();
+    if (this.msGraphService.isLoggedIn()) this.loadMsEvents();
+  }
+
+  getEventLeft(date: string): string {
+    const d = new Date(date);
+    const day = d.getDay(); // 0-6 (0=Sun, 1=Mon...)
+    if (this.calendarViewType() === 'day') return '0%';
+
+    // Index: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5, Sun=6
+    const index = day === 0 ? 6 : day - 1;
+    const count = this.calendarViewType() === 'workWeek' ? 5 : 7;
+
+    if (this.calendarViewType() === 'workWeek' && index > 4) return '0%'; // invisible
+    return `${(index / count) * 100}%`;
+  }
+
+  getEventWidth(): string {
+    const count = this.calendarViewType() === 'day' ? 1 : this.calendarViewType() === 'workWeek' ? 5 : 7;
+    return `${100 / count}%`;
+  }
+
+  isTodayVisible(): boolean {
+    const today = new Date();
+    return this.weekDays().some(d =>
+      d.getFullYear() === today.getFullYear() &&
+      d.getMonth() === today.getMonth() &&
+      d.getDate() === today.getDate()
+    );
+  }
+
+  getTodayLeft(): string {
+    const today = new Date();
+    return this.getEventLeft(today.toISOString());
+  }
+
   connectMicrosoft(): void {
     this.msGraphService.login();
   }
@@ -2386,37 +2553,41 @@ export class AgendaPage implements OnInit {
     this.msEvents.set([]);
   }
 
+  openTeamsCalendar(): void {
+    window.open('https://teams.microsoft.com/_#/calendarv2', '_blank');
+  }
+
   loadMsEvents(): void {
-    console.log('[Agenda] Llamando a loadMsEvents...');
-    if (!this.msGraphService.isLoggedIn()) {
-      console.warn('[Agenda] Saltando carga: No hay sesión activa de Microsoft');
-      return;
-    }
+    if (!this.msGraphService.isLoggedIn()) return;
 
     this.loadingMsEvents.set(true);
-    this.msEvents.set([]); // Limpiar previas para evitar confusión
-    const { startDate, endDate } = this.buildDateFilters();
 
-    console.log(
-      `[Agenda] Pidiendo eventos al Graph Service (calendarView)... desde ${startDate} a ${endDate}`,
-    );
+    // Filtros de fecha para la vista actual (Día o Semana)
+    let startDate: string;
+    let endDate: string;
+
+    if (this.calendarViewType() === 'day') {
+      const dates = this.buildDateFilters();
+      startDate = dates.startDate;
+      endDate = dates.endDate;
+    } else {
+      const start = this.calendarStartDay();
+      const end = new Date(start);
+      end.setDate(start.getDate() + (this.calendarViewType() === 'workWeek' ? 5 : 7));
+      end.setHours(23, 59, 59, 999);
+      startDate = start.toISOString();
+      endDate = end.toISOString();
+    }
+
     this.msGraphService
       .getCalendarView(startDate, endDate)
       .pipe(finalize(() => this.loadingMsEvents.set(false)))
       .subscribe({
-        next: (res: {
-          value: import('../../shared/services/microsoft-graph.service').MicrosoftEvent[];
-        }) => {
-          console.log('[Agenda] Eventos recibidos:', res.value?.length || 0);
+        next: (res) => {
           this.msEvents.set(res.value || []);
         },
         error: (err) => {
           console.error('[Agenda] Error cargando calendario:', err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo cargar el calendario',
-          });
         },
       });
   }
