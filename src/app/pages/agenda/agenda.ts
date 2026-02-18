@@ -247,10 +247,14 @@ export class AgendaPage implements OnInit {
 
   getStatusClass(status: AgendaNoteStatus): string {
     switch (status) {
-      case 'pendiente': return 'text-yellow-600';
-      case 'en_proceso': return 'text-blue-600';
-      case 'terminado': return 'text-emerald-600';
-      default: return '';
+      case 'pendiente':
+        return 'text-yellow-600';
+      case 'en_proceso':
+        return 'text-blue-600';
+      case 'terminado':
+        return 'text-emerald-600';
+      default:
+        return '';
     }
   }
 
@@ -266,7 +270,6 @@ export class AgendaPage implements OnInit {
   }
 
   /** Construye el texto a compartir según el tipo de nota (solo contenido, sin URL de la página). */
-
 
   notes = signal<AgendaNote[]>([]);
   loading = signal(false);
@@ -368,7 +371,6 @@ export class AgendaPage implements OnInit {
 
   activeTab = signal<string>('activities');
 
-
   searchQuery = signal('');
 
   /** Usuarios ordenados: el actual primero, luego el resto, filtrados por buscador. */
@@ -379,7 +381,7 @@ export class AgendaPage implements OnInit {
 
     // Deduplicar defensivamente por _id
     const uniqueUsersMap = new Map<string, UserOption>();
-    raw.forEach(u => {
+    raw.forEach((u) => {
       if (!uniqueUsersMap.has(u._id)) {
         uniqueUsersMap.set(u._id, u);
       }
@@ -393,14 +395,16 @@ export class AgendaPage implements OnInit {
       );
     }
 
-    return filtered.sort((a, b) => {
-      if (a._id === currentUserId) return -1;
-      if (b._id === currentUserId) return 1;
-      return (a.name || '').localeCompare(b.name || '');
-    }).map(u => ({
-      ...u,
-      name: u._id === currentUserId ? 'Mi Agenda' : `Agenda de ${u.name}`
-    }));
+    return filtered
+      .sort((a, b) => {
+        if (a._id === currentUserId) return -1;
+        if (b._id === currentUserId) return 1;
+        return (a.name || '').localeCompare(b.name || '');
+      })
+      .map((u) => ({
+        ...u,
+        name: u._id === currentUserId ? 'Mi Agenda' : `Agenda de ${u.name}`,
+      }));
   });
 
   isViewingOther = computed(() => {
@@ -423,18 +427,21 @@ export class AgendaPage implements OnInit {
     if (this.activeTab() !== 'meetings') return [];
 
     // Solo mostramos eventos de Microsoft en esta vista
-    const msEventsAsNotes = this.msEvents().map(e => ({
-      _id: e.id,
-      type: 'text',
-      content: e.subject,
-      status: 'en_proceso' as AgendaNoteStatus,
-      createdBy: { name: e.organizer.emailAddress.name } as AgendaNoteUser,
-      dueAt: e.start.dateTime,
-      endAt: e.end.dateTime,
-      isMicrosoftEvent: true,
-      onlineMeetingUrl: e.onlineMeetingUrl,
-      webLink: e.webLink,
-    }) as any as AgendaNote);
+    const msEventsAsNotes = this.msEvents().map(
+      (e) =>
+        ({
+          _id: e.id,
+          type: 'text',
+          content: e.subject,
+          status: 'en_proceso' as AgendaNoteStatus,
+          createdBy: { name: e.organizer.emailAddress.name } as AgendaNoteUser,
+          dueAt: e.start.dateTime,
+          endAt: e.end.dateTime,
+          isMicrosoftEvent: true,
+          onlineMeetingUrl: e.onlineMeetingUrl,
+          webLink: e.webLink,
+        }) as any as AgendaNote,
+    );
 
     return msEventsAsNotes.sort((a, b) => {
       return new Date(a.dueAt!).getTime() - new Date(b.dueAt!).getTime();
@@ -554,7 +561,7 @@ export class AgendaPage implements OnInit {
     // Activities
     const grouped = this.groupedActivities();
     if (grouped.length > 0) {
-      return grouped.flatMap(g => g.notes);
+      return grouped.flatMap((g) => g.notes);
     }
     return this.flatActivities();
   });
@@ -580,7 +587,7 @@ export class AgendaPage implements OnInit {
 
         if (contact.name) {
           // Open Create Dialog first to clear previous state
-          this.activeTab.set('unassigned');
+          this.activeTab.set('activities');
           this.openCreate();
           // Then set the pending contact
           this.pendingContactAssignment.set(contact);
@@ -700,8 +707,10 @@ export class AgendaPage implements OnInit {
 
   /** Carga las notas y devuelve una promesa que se resuelve cuando terminó.
    * Si hay una nota recién creada (lastCreatedNote) y el servidor no la devuelve, se añade al inicio. */
-  loadNotesAndWait(): Promise<void> {
-    this.loading.set(true);
+  loadNotesAndWait(silent = false): Promise<void> {
+    if (!silent) {
+      this.loading.set(true);
+    }
     const noteToMerge = this.lastCreatedNote();
     const filters = this.buildListFilters();
     return firstValueFrom(
@@ -712,14 +721,20 @@ export class AgendaPage implements OnInit {
         }),
         map(() => undefined),
         catchError(() => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudieron cargar las notas',
-          });
+          if (!silent) {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudieron cargar las notas',
+            });
+          }
           return of(undefined);
         }),
-        finalize(() => this.loading.set(false)),
+        finalize(() => {
+          if (!silent) {
+            this.loading.set(false);
+          }
+        }),
       ),
     ).then(() => undefined);
   }
@@ -741,7 +756,7 @@ export class AgendaPage implements OnInit {
     if (this.isGerencia()) {
       this.usersApi.listAll(tenantId ?? undefined).subscribe({
         next: (opts) => this.userOptions.set(opts),
-        error: () => { },
+        error: () => {},
       });
     } else {
       // Para usuarios normales, iniciamos con el usuario actual.
@@ -882,7 +897,7 @@ export class AgendaPage implements OnInit {
             .then(() => {
               this.ensureCreatedNoteInList(createdId);
               this.assignPendingContact(createdId); // Assign contact if pending
-              this.activeTab.set('unassigned');
+              this.activeTab.set('activities');
               const assignToId = this.createAssignUserId();
               if (assignToId) {
                 this.assignModalNoteIds.set([createdId]);
@@ -1009,7 +1024,7 @@ export class AgendaPage implements OnInit {
       }
     }
 
-    await this.loadNotesAndWait();
+    await this.loadNotesAndWait(true); // Recarga silenciosa para no ocultar las notas
     this.ensureCreatedNoteInList(id);
     // Usar la nota de la lista para evitar 404 en getById (replicación, multi-tenant, etc.)
     const fromList = this.notes().find((n) => String(n._id) === id) ?? null;
@@ -1196,7 +1211,7 @@ export class AgendaPage implements OnInit {
     const dueAtIso = dueAt ? dueAt.toISOString() : null;
     this.bulkAssigning.set(true);
 
-    let payload: any = { dueAt: dueAtIso };
+    const payload: any = { dueAt: dueAtIso };
     if (targetId) {
       if (targetId.startsWith('ext_')) {
         const contactId = targetId.split('_')[1];
@@ -1329,19 +1344,21 @@ export class AgendaPage implements OnInit {
     const shareText = this.generateTaskShareMessage(note, true); // Ensure we use the message generator
 
     if (navigator.share) {
-      navigator.share({
-        title: 'Tarea Tecmeing',
-        text: shareText,
-      }).catch((err) => {
-        if (err.name !== 'AbortError') {
-          console.error('Error sharing:', err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Compartir',
-            detail: 'No se pudo abrir el menú de compartir',
-          });
-        }
-      });
+      navigator
+        .share({
+          title: 'Tarea Tecmeing',
+          text: shareText,
+        })
+        .catch((err) => {
+          if (err.name !== 'AbortError') {
+            console.error('Error sharing:', err);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Compartir',
+              detail: 'No se pudo abrir el menú de compartir',
+            });
+          }
+        });
     } else {
       this.shareNoteFromNote(note, 'whatsapp');
     }
@@ -1371,7 +1388,7 @@ export class AgendaPage implements OnInit {
   /**
    * Genera el mensaje de texto para compartir (solo texto y detalles, sin URL de la página).
    */
-  private generateTaskShareMessage(note: AgendaNote, _includeLink: boolean = true): string {
+  private generateTaskShareMessage(note: AgendaNote, _includeLink = true): string {
     let msg = `Tienes una nueva tarea en la plataforma Momentum\n\n`;
     msg += `📝 Descripción: ${note.content || 'Sin contenido'}\n`;
     msg += `📊 Estado: ${this.getStatusLabel(note.status)}\n`;
@@ -1590,7 +1607,7 @@ export class AgendaPage implements OnInit {
         }
         this.uploadVoiceFileToNote(createdId, file)
           .then(() => {
-            this.loadNotesAndWait();
+            this.loadNotesAndWait(true); // Recarga silenciosa para no ocultar las notas
             this.ensureCreatedNoteInList(createdId);
             const assignToId = this.createAssignUserId();
             if (assignToId) {
@@ -2447,7 +2464,8 @@ export class AgendaPage implements OnInit {
   weekDays = computed(() => {
     const start = this.calendarStartDay();
     const days: Date[] = [];
-    const count = this.calendarViewType() === 'day' ? 1 : this.calendarViewType() === 'workWeek' ? 5 : 7;
+    const count =
+      this.calendarViewType() === 'day' ? 1 : this.calendarViewType() === 'workWeek' ? 5 : 7;
 
     if (this.calendarViewType() === 'day') {
       days.push(new Date(this.filterDate()));
@@ -2466,7 +2484,11 @@ export class AgendaPage implements OnInit {
     const days = this.weekDays();
     if (days.length === 0) return '';
     if (this.calendarViewType() === 'day') {
-      return days[0].toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+      return days[0].toLocaleDateString('es-PE', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
     }
 
     const start = days[0];
@@ -2526,16 +2548,18 @@ export class AgendaPage implements OnInit {
   }
 
   getEventWidth(): string {
-    const count = this.calendarViewType() === 'day' ? 1 : this.calendarViewType() === 'workWeek' ? 5 : 7;
+    const count =
+      this.calendarViewType() === 'day' ? 1 : this.calendarViewType() === 'workWeek' ? 5 : 7;
     return `${100 / count}%`;
   }
 
   isTodayVisible(): boolean {
     const today = new Date();
-    return this.weekDays().some(d =>
-      d.getFullYear() === today.getFullYear() &&
-      d.getMonth() === today.getMonth() &&
-      d.getDate() === today.getDate()
+    return this.weekDays().some(
+      (d) =>
+        d.getFullYear() === today.getFullYear() &&
+        d.getMonth() === today.getMonth() &&
+        d.getDate() === today.getDate(),
     );
   }
 
