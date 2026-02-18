@@ -14,6 +14,7 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  areaName?: string;
 }
 
 export interface MenuPermissionWithUser extends Omit<MenuPermission, 'userId'> {
@@ -57,4 +58,5 @@ export interface UserOption {
   name: string;
   email: string;
   role: string;
+  areaName?: string;
 }

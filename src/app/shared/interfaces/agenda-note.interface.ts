@@ -54,6 +54,7 @@ export interface CreateAgendaNotePayload {
   content?: string;
   tenantId?: string;
   status?: AgendaNoteStatus;
+  dueAt?: string | null;
 }
 
 export interface UpdateAgendaNotePayload {

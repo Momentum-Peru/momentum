@@ -44,22 +44,24 @@
         </ng-template>
       </p-select>
 
-      <div class="flex items-center gap-2">
-        <label
-          for="agenda-filter-date"
-          class="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap hidden sm:block"
-          >Fecha</label
-        >
-        <p-datepicker
-          id="agenda-filter-date"
-          [ngModel]="filterDate()"
-          (ngModelChange)="onFilterDateChange($event)"
-          dateFormat="dd/mm/yy"
-          [showIcon]="true"
-          [appendTo]="'body'"
-          styleClass="w-full min-w-[140px]"
-        ></p-datepicker>
-      </div>
+      @if (activeTab() === 'meetings') {
+        <div class="flex items-center gap-2 animate-fade-in">
+          <label
+            for="agenda-filter-date"
+            class="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap hidden sm:block"
+            >Fecha</label
+          >
+          <p-datepicker
+            id="agenda-filter-date"
+            [ngModel]="filterDate()"
+            (ngModelChange)="onFilterDateChange($event)"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full min-w-[140px]"
+          ></p-datepicker>
+        </div>
+      }
     </div>
   </div>
 
@@ -80,15 +82,7 @@
           />
         </p-iconfield>
 
-        <!-- Botón Compartir Agenda -->
-        <button
-          pButton
-          type="button"
-          label="Compartir Agenda"
-          icon="pi pi-share-alt"
-          class="w-full md:w-auto p-button-outlined p-button-secondary"
-          (click)="openShareModal()"
-        ></button>
+
 
         <!-- Botón Nueva Tarea -->
         @if (canEdit()) {
@@ -161,679 +155,436 @@
     }
 
     <!-- Tabs Navigation -->
-    @if (!isViewingOther()) {
-      <div
-        class="flex overflow-x-auto pb-2 mb-4 border-b border-gray-200 dark:border-gray-700 no-scrollbar gap-6"
-      >
+    <div class="flex overflow-x-auto pb-2 mb-4 border-b border-gray-200 dark:border-gray-700 no-scrollbar gap-2">
+      @for (tab of tabs; track tab.value) {
         <button
-          class="pb-2 text-sm font-medium whitespace-nowrap transition-colors relative"
+          class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap"
           [ngClass]="
-            activeTab() === 'meetings'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            activeTab() === tab.value
+              ? 'bg-primary text-white shadow-md shadow-primary/20'
+              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
           "
-          (click)="activeTab.set('meetings')"
+          (click)="activeTab.set(tab.value)"
         >
-          Reuniones
+          <i [class]="tab.icon"></i>
+          {{ tab.label }}
         </button>
-        <button
-          class="pb-2 text-sm font-medium whitespace-nowrap transition-colors relative"
-          [ngClass]="
-            activeTab() === 'my-activities'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-          "
-          (click)="activeTab.set('my-activities')"
-        >
-          Mis Actividades
-        </button>
-        <button
-          class="pb-2 text-sm font-medium whitespace-nowrap transition-colors relative"
-          [ngClass]="
-            activeTab() === 'unassigned'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-          "
-          (click)="activeTab.set('unassigned')"
-        >
-          Sin Asignar
-        </button>
-      </div>
-    }
-
-    <!-- Tab Content -->
-    <div class="flex-1 min-h-0">
-      @if (isViewingOther()) {
-        <!-- Vista Unificada para Agenda Compartida -->
-        @if (loading()) {
-          <div class="flex justify-center py-10">
-            <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
-          </div>
-        } @else if (displayedNotes().length === 0) {
-          <div
-            class="flex flex-col items-center justify-center py-12 text-center text-gray-400 dark:text-gray-500"
-          >
-            <i class="pi pi-inbox text-4xl mb-2 opacity-50"></i>
-            <p>No hay actividades programadas para este día.</p>
-          </div>
-        } @else {
-          <!-- Desktop Table -->
-          <div class="hidden md:block">
-            <ng-container
-              *ngTemplateOutlet="notesTable; context: { $implicit: displayedNotes() }"
-            ></ng-container>
-          </div>
-
-          <!-- Mobile List View -->
-          <div class="md:hidden space-y-4">
-            @for (note of displayedNotes(); track note._id) {
-              <div
-                class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 transition-all"
-                [ngClass]="getRowClass(note)"
-                (click)="viewNote(note)"
-              >
-                <div class="flex justify-between items-start mb-3">
-                  <div class="flex items-center gap-2">
-                    <div
-                      class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-900 flex items-center justify-center border border-gray-100 dark:border-gray-700"
-                    >
-                      <i [class]="getTypeIcon(note.type) + ' text-gray-500 text-sm'"></i>
-                    </div>
-                    <span
-                      class="text-[10px] uppercase font-bold tracking-wider"
-                      [ngClass]="{
-                        'text-yellow-600': note.status === 'pendiente',
-                        'text-blue-600': note.status === 'en_proceso',
-                        'text-emerald-600': note.status === 'terminado',
-                      }"
-                      >{{ getStatusLabel(note.status) }}</span
-                    >
-                  </div>
-                  <button
-                    pButton
-                    icon="pi pi-bolt"
-                    label="Acciones"
-                    [text]="true"
-                    [rounded]="true"
-                    size="small"
-                    class="text-primary font-bold"
-                    (click)="$event.stopPropagation(); openActions(note)"
-                  ></button>
-                </div>
-
-                <p class="text-gray-900 dark:text-white font-medium text-sm line-clamp-3 mb-4">
-                  {{ getContentSummary(note) || 'Sin contenido' }}
-                </p>
-
-                <div
-                  class="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-700/50"
-                >
-                  <div class="flex items-center gap-2 text-xs text-gray-500">
-                    <div
-                      class="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold border border-primary/20"
-                    >
-                      {{ getCreatorName(note).charAt(0).toUpperCase() }}
-                    </div>
-                    <span class="truncate max-w-[120px]">{{ getCreatorName(note) }}</span>
-                  </div>
-
-                  @if (note.dueAt) {
-                    <span class="text-[10px] text-gray-400 flex items-center gap-1">
-                      <i class="pi pi-clock text-[9px]"></i>
-                      {{ formatDueAt(note.dueAt) }}
-                    </span>
-                  }
-                </div>
-              </div>
-            }
-          </div>
-        }
-      } @else {
-        @if (activeTab() === 'meetings') {
-          <!-- Contenido Pestaña Reuniones -->
-          <div class="h-full overflow-y-auto px-1">
-            @if (!msGraphService.isLoggedIn()) {
-              <div class="flex flex-col items-center justify-center h-64 gap-4 text-center">
-                <i class="pi pi-microsoft text-4xl text-blue-500"></i>
-                <div>
-                  <h3 class="font-semibold text-lg text-gray-800 dark:text-white">
-                    Conectar con Microsoft Teams
-                  </h3>
-                  <p class="text-gray-500 dark:text-gray-400 text-sm max-w-md mx-auto mt-1">
-                    Inicia sesión para ver tus próximas reuniones y unirte directamente desde aquí.
-                  </p>
-                </div>
-                <button
-                  pButton
-                  label="Conectar Cuenta"
-                  icon="pi pi-microsoft"
-                  class="p-button-outlined"
-                  (click)="connectMicrosoft()"
-                ></button>
-                <p class="text-[10px] text-gray-400 mt-2">
-                  ¿Problemas para conectar?
-                  <span
-                    class="text-primary cursor-pointer hover:underline"
-                    (click)="logoutMicrosoft()"
-                    >Haz clic aquí para reiniciar</span
-                  >
-                </p>
-              </div>
-            } @else {
-              <div class="flex justify-between items-center mb-4">
-                <div class="flex flex-col">
-                  <h3 class="font-medium text-gray-700 dark:text-gray-200">Próximas Reuniones</h3>
-                  <span class="text-[10px] text-gray-400"
-                    >Microsoft Teams gestionado por calendario</span
-                  >
-                </div>
-                <div class="flex items-center gap-2">
-                  <button
-                    pButton
-                    label="Nueva Reunión"
-                    icon="pi pi-plus"
-                    class="p-button-sm p-button-primary font-bold shadow-sm"
-                    (click)="openNewMeeting()"
-                    pTooltip="Crear en Microsoft Outlook"
-                  ></button>
-                  <button
-                    pButton
-                    icon="pi pi-refresh"
-                    [text]="true"
-                    [rounded]="true"
-                    (click)="loadMsEvents()"
-                    [loading]="loadingMsEvents()"
-                    pTooltip="Refrescar"
-                  ></button>
-                  <button
-                    pButton
-                    icon="pi pi-sign-out"
-                    [text]="true"
-                    [rounded]="true"
-                    (click)="logoutMicrosoft()"
-                    severity="secondary"
-                    pTooltip="Cerrar sesión de Microsoft"
-                  ></button>
-                </div>
-              </div>
-
-              <div
-                class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm flex flex-col h-[650px] relative"
-              >
-                <!-- Loading Overlay -->
-                @if (loadingMsEvents()) {
-                  <div
-                    class="absolute inset-0 bg-white/50 dark:bg-gray-900/50 z-20 flex items-center justify-center backdrop-blur-[1px]"
-                  >
-                    <p-progressSpinner
-                      styleClass="w-10 h-10"
-                      fill="transparent"
-                      strokeWidth="4"
-                      animationDuration=".5s"
-                    />
-                  </div>
-                }
-
-                <!-- Calendar Grid -->
-                <div class="flex-1 overflow-y-auto relative p-0 no-scrollbar">
-                  <div
-                    class="relative"
-                    [style.height.px]="(CALENDAR_END_HOUR - CALENDAR_START_HOUR + 1) * HOUR_HEIGHT"
-                  >
-                    <!-- Left Hour Column Background -->
-                    <div
-                      class="absolute left-0 top-0 bottom-0 w-16 bg-gray-50 dark:bg-gray-800/50 border-r border-gray-100 dark:border-gray-700 z-10"
-                    ></div>
-
-                    <!-- Current Time Indicator -->
-                    @if (isTodaySelected()) {
-                      <div
-                        class="absolute left-16 right-0 z-30 border-t-2 border-red-500 pointer-events-none flex items-center"
-                        [style.top.px]="getCurrentTimeTop()"
-                      >
-                        <div class="w-3 h-3 rounded-full bg-red-500 -ml-1.5 shadow-sm"></div>
-                        <div class="flex-1 border-t border-red-500/30"></div>
-                      </div>
-                    }
-
-                    <!-- Hour Lines -->
-                    @for (hour of getCalendarHours(); track hour) {
-                      <!-- Main Hour Line -->
-                      <div
-                        class="absolute left-0 w-full border-t border-gray-100 dark:border-gray-700 flex items-start"
-                        [style.top.px]="(hour - CALENDAR_START_HOUR) * HOUR_HEIGHT"
-                        [style.height.px]="HOUR_HEIGHT"
-                      >
-                        <span
-                          class="text-[11px] text-gray-500 dark:text-gray-400 font-bold w-16 text-right pr-3 pt-1 z-20"
-                        >
-                          {{ hour > 12 ? hour - 12 : hour }} {{ hour >= 12 ? 'PM' : 'AM' }}
-                        </span>
-                        <div
-                          class="flex-1 border-t border-gray-100 dark:border-gray-700/50 mt-0"
-                        ></div>
-                      </div>
-
-                      <!-- Half Hour Line -->
-                      @if (hour < CALENDAR_END_HOUR) {
-                        <div
-                          class="absolute left-16 right-0 border-t border-dashed border-gray-50 dark:border-gray-800/50"
-                          [style.top.px]="
-                            (hour - CALENDAR_START_HOUR) * HOUR_HEIGHT + HOUR_HEIGHT / 2
-                          "
-                        ></div>
-                      }
-                    }
-
-                    <!-- Events -->
-                    @for (note of displayedNotes(); track note._id) {
-                      <div
-                        class="absolute left-[70px] right-4 rounded-lg border-l-4 p-3 shadow-sm transition-all hover:shadow-md cursor-pointer overflow-hidden group z-20"
-                        [style.top.px]="getEventTop(note.dueAt!)"
-                        [style.height.px]="getEventHeight(note.dueAt!, note.endAt!)"
-                        [ngClass]="{
-                          'bg-blue-50/90 border-blue-500 text-blue-800 dark:bg-blue-900/40':
-                            !note.onlineMeetingUrl,
-                          'bg-indigo-50/90 border-indigo-500 text-indigo-800 dark:bg-indigo-900/40':
-                            note.onlineMeetingUrl,
-                        }"
-                        (click)="viewNote(note)"
-                      >
-                        <div class="flex justify-between items-start gap-2 mb-1">
-                          <p class="text-xs font-bold truncate leading-tight">{{ note.content }}</p>
-                          <span
-                            class="text-[10px] font-semibold opacity-70 whitespace-nowrap bg-white/50 dark:bg-black/20 px-1.5 py-0.5 rounded"
-                          >
-                            {{ formatEventTimeRange(note.dueAt!, note.endAt!) }}
-                          </span>
-                        </div>
-                        <div class="flex items-center gap-1.5 opacity-80 mb-1">
-                          <div
-                            class="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-[8px] font-bold"
-                          >
-                            {{ getCreatorName(note).charAt(0).toUpperCase() }}
-                          </div>
-                          <p class="text-[10px] truncate">{{ getCreatorName(note) }}</p>
-                        </div>
-                        @if (note.onlineMeetingUrl) {
-                          <div class="mt-auto pt-1 flex items-center gap-1.5">
-                            <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
-                            <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-300"
-                              >Unirse a Microsoft Teams</span
-                            >
-                          </div>
-                        }
-                      </div>
-                    } @empty {
-                      <div
-                        class="flex flex-col items-center justify-center h-full text-gray-400 ml-16"
-                      >
-                        <i class="pi pi-calendar-plus text-3xl mb-3 opacity-20"></i>
-                        <p class="text-sm font-medium">No hay reuniones programadas</p>
-                        <p class="text-xs opacity-60">Selecciona otro día en el calendario</p>
-                      </div>
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        } @else {
-          @if (loading()) {
-            <div class="flex justify-center py-10">
-              <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
-            </div>
-          } @else if (displayedNotes().length === 0) {
-            <div
-              class="flex flex-col items-center justify-center py-12 text-center text-gray-400 dark:text-gray-500"
-            >
-              <i class="pi pi-inbox text-4xl mb-2 opacity-50"></i>
-              <p>No tienes actividades aquí</p>
-            </div>
-          } @else {
-            <!-- Desktop Table (Hidden on Mobile) -->
-            <div class="hidden md:block">
-              <ng-container
-                *ngTemplateOutlet="notesTable; context: { $implicit: displayedNotes() }"
-              ></ng-container>
-            </div>
-
-            <!-- Mobile List View (Visible on Mobile) -->
-            <div class="md:hidden space-y-4">
-              @for (note of displayedNotes(); track note._id) {
-                <div
-                  class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 transition-all"
-                  [ngClass]="getRowClass(note)"
-                  (click)="viewNote(note)"
-                >
-                  <div class="flex justify-between items-start mb-3">
-                    <div class="flex items-center gap-2">
-                      <div
-                        class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-900 flex items-center justify-center border border-gray-100 dark:border-gray-700"
-                      >
-                        <i [class]="getTypeIcon(note.type) + ' text-gray-500 text-sm'"></i>
-                      </div>
-                      <span
-                        class="text-[10px] uppercase font-bold tracking-wider"
-                        [ngClass]="{
-                          'text-yellow-600': note.status === 'pendiente',
-                          'text-blue-600': note.status === 'en_proceso',
-                          'text-emerald-600': note.status === 'terminado',
-                        }"
-                        >{{ getStatusLabel(note.status) }}</span
-                      >
-                    </div>
-                    @if (inlineEditingId() === note._id) {
-                      <div class="flex gap-1" (click)="$event.stopPropagation()">
-                        <button
-                          pButton
-                          icon="pi pi-check"
-                          [text]="true"
-                          [rounded]="true"
-                          size="small"
-                          severity="success"
-                          [loading]="saving()"
-                          (click)="saveInlineEdit(note)"
-                        ></button>
-                        <button
-                          pButton
-                          icon="pi pi-times"
-                          [text]="true"
-                          [rounded]="true"
-                          size="small"
-                          severity="secondary"
-                          (click)="cancelInlineEdit()"
-                        ></button>
-                      </div>
-                    } @else {
-                      <button
-                        pButton
-                        icon="pi pi-bolt"
-                        label="Acciones"
-                        [text]="true"
-                        [rounded]="true"
-                        size="small"
-                        class="text-primary font-bold"
-                        (click)="$event.stopPropagation(); openActions(note)"
-                      ></button>
-                    }
-                  </div>
-
-                  @if (inlineEditingId() === note._id) {
-                    <div class="space-y-3 mb-4" (click)="$event.stopPropagation()">
-                      <textarea
-                        pTextarea
-                        [autoResize]="true"
-                        rows="3"
-                        class="w-full text-sm p-3 border rounded-lg"
-                        [ngModel]="inlineEditContent()"
-                        (ngModelChange)="inlineEditContent.set($event)"
-                      ></textarea>
-                    </div>
-                  } @else {
-                    <p class="text-gray-900 dark:text-white font-medium text-sm line-clamp-3 mb-4">
-                      {{ getContentSummary(note) || 'Sin contenido' }}
-                    </p>
-                  }
-
-                  <div
-                    class="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-700/50"
-                  >
-                    <div class="flex items-center gap-2 text-xs text-gray-500">
-                      <div
-                        class="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold border border-primary/20"
-                      >
-                        {{ getCreatorName(note).charAt(0).toUpperCase() }}
-                      </div>
-                      <span class="truncate max-w-[120px]">{{ getCreatorName(note) }}</span>
-                    </div>
-
-                    @if (note.dueAt) {
-                      <span class="text-[10px] text-gray-400 flex items-center gap-1">
-                        <i class="pi pi-clock text-[9px]"></i>
-                        {{ formatDueAt(note.dueAt) }}
-                      </span>
-                    }
-                  </div>
-                </div>
-              }
-            </div>
-          }
-        }
       }
+    </div>
+
+    <!-- Content Area -->
+    <div class="flex-1 min-h-0 relative flex flex-col">
+        @if (loading()) {
+           <div class="flex justify-center py-10 flex-1">
+             <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+           </div>
+        } @else {
+            @if (activeTab() === 'meetings') {
+                <!-- Calendar Week View (Teams Style) -->
+                <div class="flex-1 flex flex-col min-h-0">
+                    <!-- Calendar Toolbar -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <div class="flex items-center gap-2">
+                            <button pButton label="Hoy" class="p-button-outlined p-button-sm px-4 h-8" (click)="goToday()"></button>
+                            <div class="flex items-center border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden ml-2 shadow-sm bg-white dark:bg-gray-800">
+                                <button pButton icon="pi pi-chevron-left" class="p-button-text p-button-secondary p-button-sm h-8 w-8" (click)="goPrevPeriod()" pTooltip="Semana anterior"></button>
+                                <button pButton icon="pi pi-chevron-right" class="p-button-text p-button-secondary p-button-sm h-8 w-8" (click)="goNextPeriod()" pTooltip="Semana siguiente"></button>
+                            </div>
+                            <h3 class="font-bold text-gray-700 dark:text-gray-200 ml-3 text-sm md:text-base">
+                                {{ calendarRangeLabel() }}
+                            </h3>
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                            <!-- MS Sincro Status -->
+                            @if (!msGraphService.isLoggedIn()) {
+                                <span class="text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 rounded-full flex items-center gap-1 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors border border-amber-100 dark:border-amber-800" (click)="connectMicrosoft()">
+                                    <i class="pi pi-exclamation-triangle"></i> Conectar Microsoft
+                                </span>
+                            } @else {
+                                <div class="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-full border border-green-100 dark:border-green-800 group/status">
+                                    <span class="text-[10px] text-green-600 font-bold flex items-center gap-1">
+                                        <i class="pi pi-check-circle"></i> Sincronizado
+                                    </span>
+                                    <button pButton icon="pi pi-power-off" class="p-button-rounded p-button-text p-button-danger p-[2px] h-5 w-5" (click)="logoutMicrosoft()" pTooltip="Desconectar"></button>
+                                </div>
+                            }
+
+                            <!-- View Selector -->
+                            <p-select [options]="calendarViewOptions" [ngModel]="calendarViewType()" (ngModelChange)="calendarViewType.set($event); loadMsEvents()"
+                                    optionLabel="label" optionValue="value" styleClass="p-select-sm w-36 h-8 text-[11px] border-gray-200 shadow-sm" [appendTo]="'body'"></p-select>
+                            
+                            <button pButton icon="pi pi-video" label="Reunirse ahora" class="p-button-sm p-button-outlined h-8 border-gray-200 text-gray-700 dark:text-gray-300" (click)="openTeamsCalendar()"></button>
+                            <button pButton icon="pi pi-plus" label="Nuevo" class="p-button-sm bg-[#464EB8] hover:bg-[#3b419a] border-none text-white h-8 px-4 font-bold shadow-md shadow-[#464EB8]/20" (click)="openNewMeeting()"></button>
+                        </div>
+                    </div>
+
+                    <!-- Main Grid Container -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm flex flex-col flex-1 relative min-h-0">
+                        <!-- Grid Header (Days) -->
+                        <div class="flex border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                            <div class="w-16 flex-shrink-0 border-r border-gray-100 dark:border-gray-700"></div>
+                            <div class="flex-1 flex min-w-0">
+                                @for (day of weekDays(); track day) {
+                                    <div class="flex-1 py-1.5 text-center border-r border-gray-100 dark:border-gray-700 last:border-r-0">
+                                        <div class="text-[12px] font-black text-[#464EB8]">{{ day.getDate() }}</div>
+                                        <div class="text-[9px] text-gray-500 uppercase font-black tracking-tighter">{{ day.toLocaleDateString('es', { weekday: 'short' }) }}</div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto relative no-scrollbar">
+                            <div class="flex relative" [style.height.px]="(CALENDAR_END_HOUR - CALENDAR_START_HOUR + 1) * HOUR_HEIGHT">
+                                <!-- Hours Axis -->
+                                <div class="w-16 flex-shrink-0 bg-gray-50/50 dark:bg-gray-800/30 border-r border-gray-100 dark:border-gray-700 z-10">
+                                    @for (hour of getCalendarHours(); track hour) {
+                                        <div class="text-right pr-3 pt-1 text-[10px] text-gray-400 font-black" [style.height.px]="HOUR_HEIGHT">
+                                            {{ hour > 12 ? hour - 12 : hour }} {{ hour >= 12 ? 'PM' : 'AM' }}
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Days Content Grid -->
+                                <div class="flex-1 relative bg-white dark:bg-gray-900/10">
+                                    <!-- Vertical Column Lines -->
+                                    <div class="absolute inset-0 flex pointer-events-none z-0">
+                                        @for (day of weekDays(); track day) {
+                                            <div class="flex-1 border-r border-gray-100/80 dark:border-gray-700/50 last:border-r-0"></div>
+                                        }
+                                    </div>
+
+                                    <!-- Horizontal hour lines -->
+                                    @for (hour of getCalendarHours(); track hour) {
+                                        <div class="absolute w-full border-t border-gray-100/60 dark:border-gray-700/30 z-0"
+                                            [style.top.px]="(hour - CALENDAR_START_HOUR) * HOUR_HEIGHT"></div>
+                                    }
+
+                                    <!-- Real-time Indicator -->
+                                    @if (isTodayVisible()) {
+                                        <div class="absolute z-40 pointer-events-none flex items-center" 
+                                            [style.top.px]="getCurrentTimeTop()"
+                                            [style.left]="getTodayLeft()"
+                                            [style.width]="getEventWidth()">
+                                            <div class="w-2.5 h-2.5 rounded-full bg-red-500 -ml-1.25 shadow-md border-2 border-white dark:border-gray-800"></div>
+                                            <div class="flex-1 border-t-2 border-red-500/80"></div>
+                                        </div>
+                                    }
+
+                                    <!-- Events Area -->
+                                    <div class="absolute inset-0 z-20">
+                                        @for (note of calendarNotes(); track note._id) {
+                                            <div class="absolute rounded-md border-l-[3px] p-2 shadow-sm transition-all hover:scale-[1.02] hover:shadow-md cursor-pointer overflow-hidden group text-[10px] leading-[1.1]"
+                                                [style.top.px]="getEventTop(note.dueAt!)"
+                                                [style.height.px]="getEventHeight(note.dueAt!, note.endAt!)"
+                                                [style.left]="getEventLeft(note.dueAt!)"
+                                                [style.width]="getEventWidth()"
+                                                [ngClass]="note.onlineMeetingUrl 
+                                                    ? 'bg-indigo-50/95 border-indigo-400 text-indigo-900 dark:bg-indigo-900/40 dark:text-indigo-100' 
+                                                    : 'bg-blue-50/95 border-blue-400 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100'"
+                                                (click)="viewNote(note)">
+                                                <div class="font-black truncate mb-0.5">{{ note.content }}</div>
+                                                <div class="opacity-70 flex items-center gap-1 font-bold text-[9px]">
+                                                    <i class="pi pi-clock text-[8px]"></i> {{ formatEventTimeRange(note.dueAt!, note.endAt!) }}
+                                                </div>
+                                                @if (note.onlineMeetingUrl) {
+                                                    <div class="mt-1 font-black text-indigo-600 dark:text-indigo-400 text-[9px] flex items-center gap-1">
+                                                        <i class="pi pi-video text-[9px]"></i> Teams
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+ @else {
+                  <!-- Activities View -->
+                  <div class="flex-1 overflow-y-auto min-h-0 pr-1">
+                      @if (groupedActivities().length > 0) {
+                          <!-- Grouped View (Management) -->
+                          <div class="space-y-8 pb-10">
+                             @for (group of groupedActivities(); track group.user?._id) {
+                                 <div class="space-y-3">
+                                     <div class="sticky top-0 z-20 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm">
+                                         <div class="flex items-center gap-3">
+                                             <div class="w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-primary font-bold shadow-sm">
+                                                 {{ (group.user?.name || 'U').charAt(0).toUpperCase() }}
+                                             </div>
+                                             <div>
+                                                 <h3 class="font-bold text-gray-800 dark:text-white leading-tight">
+                                                     {{ group.user?.name || 'Sin Asignar' }}
+                                                 </h3>
+                                                 @if (group.user?.areaName) {
+                                                     <p class="text-[11px] font-medium text-primary/80 dark:text-primary-400/80 -mt-0.5 lowercase">
+                                                         {{ group.user?.areaName }}
+                                                     </p>
+                                                 }
+                                                 <p class="text-[10px] text-gray-500 mt-0.5">{{ group.user?.email }}</p>
+                                             </div>
+                                         </div>
+                                         <span class="bg-primary/10 text-primary text-xs font-bold px-2.5 py-1 rounded-full">{{ group.notes.length }}</span>
+                                     </div>
+                                     
+                                     <!-- Desktop Table -->
+                                     <div class="hidden md:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+                                         <p-table [value]="group.notes" [rows]="10" styleClass="p-datatable-sm">
+                                             <ng-template pTemplate="header">
+                                                 <tr>
+                                                     <th class="w-12 text-center text-[10px] font-bold text-gray-400 uppercase">#</th>
+                                                     <th class="text-[10px] font-bold text-gray-400 uppercase">Actividad</th>
+                                                     <th class="w-40 text-[10px] font-bold text-gray-400 uppercase text-center">Vencimiento</th>
+                                                     <th class="w-32 text-[10px] font-bold text-gray-400 uppercase text-center">Estado</th>
+                                                     <th class="w-20"></th>
+                                                 </tr>
+                                             </ng-template>
+                                             <ng-template pTemplate="body" let-note let-rowIndex="rowIndex">
+                                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer" (click)="viewNote(note)">
+                                                     <td class="text-center font-bold text-gray-400 text-xs">{{ rowIndex + 1 }}</td>
+                                                     <td>
+                                                         @if (inlineEditingId() === note._id) {
+                                                             <div class="flex flex-col gap-2 p-1" (click)="$event.stopPropagation()">
+                                                                 <textarea pTextarea [autoResize]="true" rows="2" class="w-full text-xs" 
+                                                                           [ngModel]="inlineEditContent()" (ngModelChange)="inlineEditContent.set($event)"></textarea>
+                                                             </div>
+                                                         } @else {
+                                                             <div class="flex items-center gap-2 group/cell">
+                                                                 <i [class]="getTypeIcon(note.type) + ' text-gray-400 text-[10px]'"></i>
+                                                                 <span class="text-xs font-medium text-gray-700 dark:text-gray-200 line-clamp-2">
+                                                                     {{ getContentSummary(note) }}
+                                                                 </span>
+                                                                 @if (canEditFull(note)) {
+                                                                     <i class="pi pi-pencil text-[10px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-auto"></i>
+                                                                 }
+                                                             </div>
+                                                         }
+                                                     </td>
+                                                     <td class="text-center">
+                                                         @if (inlineEditingId() === note._id) {
+                                                             <div class="flex flex-col gap-1" (click)="$event.stopPropagation()">
+                                                                 <p-datepicker [ngModel]="inlineEditDueAt()" (ngModelChange)="inlineEditDueAt.set($event)"
+                                                                              [showTime]="true" dateFormat="dd/mm/yy" hourFormat="24"
+                                                                              [appendTo]="'body'" styleClass="w-full h-8 text-[11px]"></p-datepicker>
+                                                             </div>
+                                                         } @else {
+                                                             @if (note.dueAt) {
+                                                                 <span class="text-[10px] font-medium" [ngClass]="{'text-red-500': isOverdue(note)}">
+                                                                     {{ formatDueAt(note.dueAt) }}
+                                                                 </span>
+                                                             } @else {
+                                                                 <span class="text-[10px] text-gray-400">—</span>
+                                                             }
+                                                             @if (canEditFull(note)) {
+                                                                 <i class="pi pi-pencil text-[9px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-1"></i>
+                                                             }
+                                                         }
+                                                     </td>
+                                                     <td class="text-center">
+                                                         @if (inlineEditingId() === note._id) {
+                                                             <div class="flex items-center gap-1" (click)="$event.stopPropagation()">
+                                                                 <p-select [options]="statusOptions" [ngModel]="inlineEditStatus()" (ngModelChange)="inlineEditStatus.set($event)"
+                                                                          optionLabel="label" optionValue="value" styleClass="w-full h-8 text-[10px]" [appendTo]="'body'"></p-select>
+                                                                 <div class="flex flex-col gap-1.5 w-24 px-1">
+                                                                     <button pButton label="Guardar" icon="pi pi-check" size="small" class="h-7 text-[10px] w-full px-3" [loading]="saving()" (click)="saveInlineEdit(note)"></button>
+                                                                     <button pButton label="Cancelar" icon="pi pi-times" size="small" class="p-button-secondary h-7 text-[10px] w-full px-3" (click)="cancelInlineEdit()"></button>
+                                                                 </div>
+                                                             </div>
+                                                         } @else {
+                                                             <span class="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full"
+                                                                  [ngClass]="getStatusClass(note.status)">
+                                                                  {{ getStatusLabel(note.status) }}
+                                                             </span>
+                                                             @if (canEditFull(note)) {
+                                                                 <i class="pi pi-pencil text-[9px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-1"></i>
+                                                             }
+                                                         }
+                                                     </td>
+                                                     <td class="text-right">
+                                                         <button pButton icon="pi pi-ellipsis-v" [text]="true" [rounded]="true" size="small" 
+                                                                 class="text-gray-400 h-7 w-7" (click)="$event.stopPropagation(); openActions(note)"></button>
+                                                     </td>
+                                                 </tr>
+                                             </ng-template>
+                                         </p-table>
+                                     </div>
+
+                                     <!-- Mobile Numbered List -->
+                                     <div class="md:hidden space-y-3">
+                                         @for (note of group.notes; track note._id; let i = $index) {
+                                             <div class="relative">
+                                                 <span class="absolute -left-1 -top-1 w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 z-10 shadow-sm border border-white dark:border-gray-800">
+                                                     {{ i + 1 }}
+                                                 </span>
+                                                 <ng-container *ngTemplateOutlet="noteCard; context: { $implicit: note }"></ng-container>
+                                             </div>
+                                         }
+                                     </div>
+                                 </div>
+                             }
+                          </div>
+                      } @else {
+                          <!-- Flat View (Employee / Filtered) -->
+                          @if (flatActivities().length === 0) {
+                             <div class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500 opacity-60">
+                                 <i class="pi pi-inbox text-5xl mb-4"></i>
+                                 <p class="text-lg font-medium">No hay actividades</p>
+                             </div>
+                          } @else {
+                             <!-- Desktop Table -->
+                             <div class="hidden md:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm mb-10">
+                                 <p-table [value]="flatActivities()" [rows]="20" styleClass="p-datatable-sm">
+                                     <ng-template pTemplate="header">
+                                         <tr>
+                                             <th class="w-12 text-center text-[10px] font-bold text-gray-400 uppercase">#</th>
+                                             <th class="text-[10px] font-bold text-gray-400 uppercase">Actividad</th>
+                                             <th class="w-40 text-[10px] font-bold text-gray-400 uppercase text-center">Vencimiento</th>
+                                             <th class="w-32 text-[10px] font-bold text-gray-400 uppercase text-center">Estado</th>
+                                             <th class="w-20"></th>
+                                         </tr>
+                                     </ng-template>
+                                     <ng-template pTemplate="body" let-note let-rowIndex="rowIndex">
+                                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer" (click)="viewNote(note)">
+                                             <td class="text-center font-bold text-gray-400 text-xs">{{ rowIndex + 1 }}</td>
+                                             <td>
+                                                 @if (inlineEditingId() === note._id) {
+                                                     <div class="flex flex-col gap-2 p-1" (click)="$event.stopPropagation()">
+                                                         <textarea pTextarea [autoResize]="true" rows="2" class="w-full text-xs" 
+                                                                   [ngModel]="inlineEditContent()" (ngModelChange)="inlineEditContent.set($event)"></textarea>
+                                                     </div>
+                                                 } @else {
+                                                     <div class="flex items-center gap-2 group/cell">
+                                                         <i [class]="getTypeIcon(note.type) + ' text-gray-400 text-[10px]'"></i>
+                                                         <span class="text-xs font-medium text-gray-700 dark:text-gray-200 line-clamp-2">
+                                                             {{ getContentSummary(note) }}
+                                                         </span>
+                                                         @if (canEditFull(note)) {
+                                                             <i class="pi pi-pencil text-[10px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-auto"></i>
+                                                         }
+                                                     </div>
+                                                 }
+                                             </td>
+                                             <td class="text-center">
+                                                 @if (inlineEditingId() === note._id) {
+                                                     <div class="flex flex-col gap-1" (click)="$event.stopPropagation()">
+                                                         <p-datepicker [ngModel]="inlineEditDueAt()" (ngModelChange)="inlineEditDueAt.set($event)"
+                                                                      [showTime]="true" dateFormat="dd/mm/yy" hourFormat="24"
+                                                                      [appendTo]="'body'" styleClass="w-full h-8 text-[11px]"></p-datepicker>
+                                                     </div>
+                                                 } @else {
+                                                     @if (note.dueAt) {
+                                                         <span class="text-[10px] font-medium" [ngClass]="{'text-red-500': isOverdue(note)}">
+                                                             {{ formatDueAt(note.dueAt) }}
+                                                         </span>
+                                                     } @else {
+                                                         <span class="text-[10px] text-gray-400">—</span>
+                                                     }
+                                                     @if (canEditFull(note)) {
+                                                         <i class="pi pi-pencil text-[9px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-1"></i>
+                                                     }
+                                                 }
+                                             </td>
+                                             <td class="text-center">
+                                                 @if (inlineEditingId() === note._id) {
+                                                     <div class="flex items-center gap-1" (click)="$event.stopPropagation()">
+                                                         <p-select [options]="statusOptions" [ngModel]="inlineEditStatus()" (ngModelChange)="inlineEditStatus.set($event)"
+                                                                  optionLabel="label" optionValue="value" styleClass="w-full h-8 text-[10px]" [appendTo]="'body'"></p-select>
+                                                         <div class="flex flex-col gap-1.5 w-24 px-1">
+                                                             <button pButton label="Guardar" icon="pi pi-check" size="small" class="h-7 text-[10px] w-full px-3" [loading]="saving()" (click)="saveInlineEdit(note)"></button>
+                                                             <button pButton label="Cancelar" icon="pi pi-times" size="small" class="p-button-secondary h-7 text-[10px] w-full px-3" (click)="cancelInlineEdit()"></button>
+                                                         </div>
+                                                     </div>
+                                                 } @else {
+                                                     <span class="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full"
+                                                          [ngClass]="getStatusClass(note.status)">
+                                                          {{ getStatusLabel(note.status) }}
+                                                     </span>
+                                                     @if (canEditFull(note)) {
+                                                         <i class="pi pi-pencil text-[9px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-1"></i>
+                                                     }
+                                                 }
+                                             </td>
+                                             <td class="text-right">
+                                                 <button pButton icon="pi pi-ellipsis-v" [text]="true" [rounded]="true" size="small" 
+                                                         class="text-gray-400 h-7 w-7" (click)="$event.stopPropagation(); openActions(note)"></button>
+                                             </td>
+                                         </tr>
+                                     </ng-template>
+                                 </p-table>
+                             </div>
+
+                             <!-- Mobile Numbered List -->
+                             <div class="md:hidden space-y-4 pb-10">
+                                 @for (note of flatActivities(); track note._id; let i = $index) {
+                                     <div class="relative">
+                                         <span class="absolute -left-1 -top-1 w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 z-10 shadow-sm border border-white dark:border-gray-800">
+                                             {{ i + 1 }}
+                                         </span>
+                                         <ng-container *ngTemplateOutlet="noteCard; context: { $implicit: note }"></ng-container>
+                                     </div>
+                                 }
+                             </div>
+                          }
+                      }
+                  </div>
+            }
+        }
     </div>
   </div>
 </div>
 
-<!-- Template para la tabla de notas -->
-<ng-template #notesTable let-notes>
-  @if (canEdit() && isSomeSelected()) {
-    <div
-      class="flex flex-wrap items-center gap-3 mb-3 p-3 rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/20"
-    >
-      <span class="text-sm font-medium text-primary">
-        {{ selectedNoteIds().size }} seleccionada(s)
-      </span>
-      <div class="flex-1"></div>
-      <p-select
-        [options]="userOptions()"
-        optionLabel="name"
-        optionValue="_id"
-        [ngModel]="bulkAssignUserId()"
-        (ngModelChange)="bulkAssignUserId.set($event)"
-        placeholder="Asignar a..."
-        [showClear]="true"
-        [filter]="true"
-        styleClass="w-full md:w-48"
-      ></p-select>
-      <button
-        pButton
-        label="Asignar"
-        icon="pi pi-user-plus"
-        size="small"
-        [disabled]="!bulkAssignUserId()"
-        [loading]="bulkAssigning()"
-        (click)="openAssignModalForBulk()"
-      ></button>
-      <button
-        pButton
-        icon="pi pi-times"
-        [text]="true"
-        severity="secondary"
-        size="small"
-        (click)="clearSelection()"
-      ></button>
-    </div>
-  }
+<!-- Template for Note Card -->
+<ng-template #noteCard let-note>
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-all cursor-pointer h-full flex flex-col"
+       [ngClass]="getRowClass(note)"
+       (click)="viewNote(note)">
+       
+       <div class="flex justify-between items-start mb-3">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-900 flex items-center justify-center border border-gray-100 dark:border-gray-700">
+                    <i [class]="getTypeIcon(note.type) + ' text-gray-500 text-sm'"></i>
+                </div>
+                <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded bg-gray-50 dark:bg-gray-700/50"
+                     [ngClass]="getStatusClass(note.status)">
+                     {{ getStatusLabel(note.status) }}
+                </span>
+            </div>
+            <!-- Actions Button -->
+             <button pButton icon="pi pi-ellipsis-v" [text]="true" [rounded]="true" size="small" class="text-gray-400" (click)="$event.stopPropagation(); openActions(note)"></button>
+       </div>
 
-  <p-table
-    [value]="displayedNotes()"
-    [loading]="loading()"
-    responsiveLayout="scroll"
-    styleClass="p-datatable-sm p-datatable-striped w-full"
-    [tableStyle]="{ width: '100%', 'table-layout': 'fixed' }"
-  >
-    <ng-template pTemplate="header">
-      <tr>
-        @if (canEdit()) {
-          <th class="w-10 text-left" (click)="$event.stopPropagation()">
-            <p-checkbox
-              [binary]="true"
-              [ngModel]="isAllSelected()"
-              (ngModelChange)="toggleSelectAll()"
-              [inputId]="'select-all-agenda'"
-            ></p-checkbox>
-          </th>
-        }
-        <th class="text-left w-10 text-gray-400 font-normal">#</th>
-        <th class="text-left">Actividades</th>
-        <th class="text-left w-40">Estado</th>
-        <th class="text-left hidden md:table-cell w-48">Creado por</th>
-        <th class="text-right w-32">Acciones</th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-note let-rowIndex="rowIndex">
-      <tr
-        (click)="viewNote(note)"
-        class="cursor-pointer transition-colors"
-        [ngClass]="getRowClass(note)"
-      >
-        @if (canEdit()) {
-          <td (click)="$event.stopPropagation()">
-            <p-checkbox
-              [binary]="true"
-              [ngModel]="isNoteSelected(note)"
-              (ngModelChange)="toggleSelectNote(note)"
-              [inputId]="'select-note-' + note._id"
-            ></p-checkbox>
-          </td>
-        }
-        <td class="text-gray-400 text-xs">{{ rowIndex + 1 }}</td>
-        <td class="min-w-0">
-          <div class="flex items-center gap-3">
-            <div
-              class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center border border-gray-100 dark:border-gray-700"
-            >
-              <i [class]="getTypeIcon(note.type) + ' text-gray-500 text-sm'"></i>
-            </div>
-            <div class="flex flex-col min-w-0 flex-1">
-              @if (inlineEditingId() === note._id) {
-                <div class="flex flex-col gap-2" (click)="$event.stopPropagation()">
-                  <textarea
-                    id="inline-edit-content"
-                    pTextarea
-                    [autoResize]="true"
-                    rows="2"
-                    class="w-full text-sm p-2"
-                    placeholder="Contenido de la nota..."
-                    [ngModel]="inlineEditContent()"
-                    (ngModelChange)="inlineEditContent.set($event)"
-                  ></textarea>
+       <div class="flex-1 mb-4">
+            <p class="text-gray-800 dark:text-white font-medium text-sm line-clamp-4 leading-relaxed">
+                {{ getContentSummary(note) || 'Sin contenido' }}
+            </p>
+       </div>
+
+       <div class="pt-3 border-t border-gray-50 dark:border-gray-700/50 flex items-center justify-between mt-auto">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
+                    {{ getCreatorName(note).charAt(0).toUpperCase() }}
                 </div>
-              } @else {
-                <div class="flex items-center justify-between gap-4">
-                  <p
-                    class="text-gray-800 dark:text-white text-sm font-medium whitespace-normal break-words"
-                  >
-                    {{ getContentSummary(note) }}
-                  </p>
-                  <!-- @ts-ignore -->
-                  @if (note.isMicrosoftEvent && note.endAt) {
-                    <span
-                      class="text-xs font-semibold text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded border"
-                    >
-                      {{ formatEventTimeRange(note.dueAt!, note.endAt!) }}
-                    </span>
-                  }
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-gray-500 dark:text-gray-400">Creado por</span>
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate max-w-[80px]">{{ getCreatorName(note) }}</span>
                 </div>
-                @if (note.dueAt) {
-                  <div class="flex items-center gap-2 mt-1">
-                    <span class="text-[10px] text-gray-400 flex items-center gap-1">
-                      <i class="pi pi-clock text-[9px]"></i>
-                      {{ formatDueAt(note.dueAt) }}
-                    </span>
-                  </div>
-                }
-              }
             </div>
-          </div>
-        </td>
-        <td class="w-40" (click)="$event.stopPropagation()">
-          <p-select
-            [options]="statusOptions"
-            [ngModel]="note.status"
-            (ngModelChange)="onStatusChange(note, $event)"
-            optionLabel="label"
-            optionValue="value"
-            [appendTo]="'body'"
-            styleClass="w-full text-xs"
-            variant="filled"
-            [fluid]="true"
-          >
-            <ng-template #selecteditem let-selectedOption>
-              @if (selectedOption) {
-                <div class="flex items-center gap-2">
-                  <div
-                    class="w-2 h-2 rounded-full"
-                    [ngClass]="{
-                      'bg-yellow-400': selectedOption.value === 'pendiente',
-                      'bg-blue-400': selectedOption.value === 'en_proceso',
-                      'bg-emerald-400': selectedOption.value === 'terminado',
-                    }"
-                  ></div>
-                  <span class="text-xs font-medium">{{ selectedOption.label }}</span>
+            
+            @if (note.dueAt) {
+                <div class="flex flex-col items-end">
+                     <span class="text-[10px] text-gray-500 dark:text-gray-400">Vence</span>
+                     <span class="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1" [ngClass]="{'text-red-500': isOverdue(note)}">
+                        {{ formatDueAt(note.dueAt) }}
+                     </span>
                 </div>
-              }
-            </ng-template>
-            <ng-template #item let-opt>
-              <div class="flex items-center gap-2">
-                <div
-                  class="w-2 h-2 rounded-full"
-                  [ngClass]="{
-                    'bg-yellow-400': opt.value === 'pendiente',
-                    'bg-blue-400': opt.value === 'en_proceso',
-                    'bg-emerald-400': opt.value === 'terminado',
-                  }"
-                ></div>
-                <span class="text-xs">{{ opt.label }}</span>
-              </div>
-            </ng-template>
-          </p-select>
-        </td>
-        <td
-          class="hidden md:table-cell w-48 text-sm text-gray-600 dark:text-gray-300"
-          [title]="getCreatorName(note)"
-        >
-          <div class="flex items-center gap-2">
-            <div
-              class="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/20"
-            >
-              {{ getCreatorName(note).charAt(0).toUpperCase() }}
-            </div>
-            <span class="truncate">{{ getCreatorName(note) }}</span>
-          </div>
-        </td>
-        <td class="text-right whitespace-nowrap" (click)="$event.stopPropagation()">
-          @if (inlineEditingId() === note._id) {
-            <div class="flex justify-end gap-1">
-              <button
-                pButton
-                icon="pi pi-check"
-                [rounded]="true"
-                [text]="true"
-                severity="success"
-                [loading]="saving()"
-                (click)="saveInlineEdit(note)"
-                pTooltip="Guardar"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-times"
-                [rounded]="true"
-                [text]="true"
-                severity="secondary"
-                (click)="cancelInlineEdit()"
-                pTooltip="Cancelar"
-              ></button>
-            </div>
-          } @else {
-            <button
-              pButton
-              label="Acciones"
-              icon="pi pi-bolt"
-              iconPos="right"
-              [text]="true"
-              size="small"
-              severity="primary"
-              class="font-bold"
-              (click)="openActions(note)"
-            ></button>
-          }
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
+            }
+       </div>
+  </div>
 </ng-template>
+
+
 
 <!-- Modal asignar con fecha/hora de vencimiento (uno o masivo) -->
 <p-dialog
