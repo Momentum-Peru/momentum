@@ -30,6 +30,7 @@
         filterBy="name,email"
         [showClear]="true"
         styleClass="w-full sm:w-64"
+        [appendTo]="'body'"
       >
         <ng-template #item let-user>
           <div class="flex items-center gap-2">
@@ -1255,6 +1256,76 @@
     } @else {
       <!-- Vista por defecto: apariencia "Acciones" (asignar, crear contacto, compartir) -->
       <div class="space-y-6">
+        <!-- Visualización de audios (primero para que sea más visible) -->
+        @if (note.voiceUrl?.length) {
+          <div class="space-y-2">
+            <label
+              class="text-[11px] uppercase font-bold tracking-wider text-gray-400 flex items-center gap-2"
+            >
+              <i class="pi pi-volume-up"></i> Audio
+            </label>
+            <div class="flex flex-col gap-3">
+              @for (url of note.voiceUrl; track url; let i = $index) {
+                <div
+                  class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900/50"
+                >
+                  @if ((note.voiceUrl?.length ?? 0) > 1) {
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">
+                      Audio {{ i + 1 }} de {{ note.voiceUrl?.length ?? 0 }}
+                    </p>
+                  }
+                  <audio [src]="url" controls class="w-full max-w-full" preload="metadata">
+                    Tu navegador no soporta el elemento de audio.
+                  </audio>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Visualización de dibujos -->
+        @if (note.type === 'drawing' && note.drawingUrl?.length) {
+          <div class="space-y-2">
+            <label
+              class="text-[11px] uppercase font-bold tracking-wider text-gray-400 flex items-center gap-2"
+            >
+              <i class="pi pi-image"></i> Dibujo
+            </label>
+            <div class="flex flex-col gap-3">
+              @for (url of note.drawingUrl; track url) {
+                <div
+                  class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900/50"
+                >
+                  <img
+                    [src]="url"
+                    [alt]="'Dibujo de ' + (note.content || 'nota')"
+                    class="w-full h-auto max-h-[400px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                    (click)="openDrawingViewer(url)"
+                  />
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Contenido de texto si existe -->
+        @if (note.content && (note.type === 'text' || note.type === 'voice')) {
+          <div class="space-y-2">
+            <label
+              class="text-[11px] uppercase font-bold tracking-wider text-gray-400 flex items-center gap-2"
+            >
+              <i class="pi pi-file-edit"></i> Contenido
+            </label>
+            <div
+              class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/50"
+            >
+              <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                {{ note.content }}
+              </p>
+            </div>
+          </div>
+        }
+
         <div class="space-y-2">
           <label
             class="text-[11px] uppercase font-bold tracking-wider text-gray-400 flex items-center gap-2"
@@ -1573,4 +1644,43 @@
       ></button>
     </div>
   </div>
+</p-dialog>
+
+<!-- Modal para visualizar dibujo en tamaño completo -->
+<p-dialog
+  [(visible)]="showDrawingViewerModal"
+  (onHide)="closeDrawingViewerModal()"
+  header="Visualizar Dibujo"
+  [modal]="true"
+  [closable]="true"
+  [style]="{ width: 'min(95vw, 900px)', maxHeight: '95vh' }"
+  [contentStyle]="{ overflow: 'auto', maxHeight: 'calc(95vh - 120px)' }"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  appendTo="body"
+>
+  @if (drawingViewerUrl(); as url) {
+    <div
+      class="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg"
+    >
+      <img
+        [src]="url"
+        alt="Dibujo"
+        class="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+      />
+    </div>
+  }
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      type="button"
+      label="Cerrar"
+      icon="pi pi-times"
+      severity="secondary"
+      [outlined]="true"
+      class="font-bold"
+      (click)="closeDrawingViewerModal()"
+    ></button>
+  </ng-template>
 </p-dialog>
