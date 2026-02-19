@@ -1,0 +1,13 @@
+---
+description: UI con Tailwind y PrimeNG - Mobile First
+globs: "**/*.html,**/*.scss"
+alwaysApply: false
+---
+
+# UI y estilos (Tecmeing)
+
+- **Mobile First**: Diseñar primero para móvil; usar breakpoints de Tailwind (`sm:`, `md:`, `lg:`) para escalar.
+- **Tailwind**: Preferir utilidades de Tailwind; evitar CSS custom salvo variables reutilizables en `src/styles/`.
+- **PrimeNG**: Usar componentes PrimeNG (p-button, p-table, p-dialog, etc.) con el preset Maya; no duplicar estilos que ya trae el tema.
+- **Clases**: Usar `class` binding en lugar de `ngClass`; `style` binding en lugar de `ngStyle`.
+- **Imágenes**: Usar `NgOptimizedImage` para imágenes estáticas; no para base64 inline.

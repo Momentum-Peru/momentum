@@ -17,6 +17,10 @@ export class MenuService {
 
   // Signal para almacenar los permisos del usuario actual
   private userPermissions = signal<MenuPermission[]>([]);
+  
+  // Flag para evitar llamadas duplicadas
+  private isLoadingPermissions = false;
+  private lastLoadedUserId: string | null = null;
 
   // Ya no necesitamos generar menús, solo verificamos permisos
 
@@ -57,8 +61,22 @@ export class MenuService {
 
     if (!currentUser?.id) {
       this.userPermissions.set([]);
+      this.lastLoadedUserId = null;
       return;
     }
+
+    // Evitar llamadas duplicadas: si ya se están cargando permisos para el mismo usuario, no hacer nada
+    if (this.isLoadingPermissions && this.lastLoadedUserId === currentUser.id) {
+      return;
+    }
+
+    // Si los permisos ya están cargados para este usuario, no recargar
+    if (this.lastLoadedUserId === currentUser.id && this.userPermissions().length > 0) {
+      return;
+    }
+
+    this.isLoadingPermissions = true;
+    this.lastLoadedUserId = currentUser.id;
 
     this.menuPermissionsApi.getByUserId(currentUser.id).subscribe({
       next: (permissions) => {
@@ -75,9 +93,11 @@ export class MenuService {
           }))
           .filter((p) => p.userId !== '');
         this.userPermissions.set(normalized);
+        this.isLoadingPermissions = false;
       },
       error: () => {
         this.userPermissions.set([]);
+        this.isLoadingPermissions = false;
       },
     });
   }
@@ -86,6 +106,10 @@ export class MenuService {
    * Verifica si el usuario tiene permiso para acceder a una ruta específica
    * El dashboard siempre está disponible sin restricciones
    * Para gerencia: todas las rutas están disponibles
+   * 
+   * También verifica si alguna ruta permitida es un prefijo de la ruta solicitada.
+   * Por ejemplo, si el usuario tiene permiso para '/documents', puede acceder a
+   * '/documents/ventas' y '/documents/compras'.
    */
   hasPermission(route: string): boolean {
     // El dashboard siempre está disponible sin restricciones
@@ -98,7 +122,31 @@ export class MenuService {
       return true;
     }
     
-    return this.allowedRoutes().includes(route);
+    const allowedRoutes = this.allowedRoutes();
+    
+    // Verificar coincidencia exacta
+    if (allowedRoutes.includes(route)) {
+      return true;
+    }
+    
+    // Verificar si alguna ruta permitida es un prefijo de la ruta solicitada
+    const normalizedRoute = route.endsWith('/') && route !== '/' ? route.slice(0, -1) : route;
+    return allowedRoutes.some((allowedRoute) => {
+      const normalizedAllowed = allowedRoute.endsWith('/') && allowedRoute !== '/' 
+        ? allowedRoute.slice(0, -1) 
+        : allowedRoute;
+      
+      if (normalizedRoute === normalizedAllowed) {
+        return true;
+      }
+      
+      // Verificar si la ruta solicitada es hija de la ruta permitida
+      if (normalizedRoute.startsWith(normalizedAllowed + '/')) {
+        return true;
+      }
+      
+      return false;
+    });
   }
 
   /**
@@ -120,6 +168,10 @@ export class MenuService {
    * Útil para mostrar/ocultar elementos del menú
    * El dashboard siempre está disponible sin restricciones
    * Para gerencia: todas las rutas están disponibles
+   * 
+   * También verifica si alguna ruta permitida es un prefijo de la ruta solicitada.
+   * Por ejemplo, si el usuario tiene permiso para '/documents', puede acceder a
+   * '/documents/ventas' y '/documents/compras'.
    */
   canAccess(route: string): boolean {
     // El dashboard siempre está disponible sin restricciones
@@ -133,7 +185,36 @@ export class MenuService {
     }
     
     const allowedRoutes = this.allowedRoutes();
-    const hasAccess = allowedRoutes.includes(route);
+    
+    // Verificar coincidencia exacta
+    if (allowedRoutes.includes(route)) {
+      return true;
+    }
+    
+    // Verificar si alguna ruta permitida es un prefijo de la ruta solicitada
+    // Esto permite que rutas hijas sean accesibles si se tiene permiso a la ruta padre
+    // Por ejemplo: si tiene permiso a '/documents', puede acceder a '/documents/ventas'
+    const normalizedRoute = route.endsWith('/') && route !== '/' ? route.slice(0, -1) : route;
+    const hasAccess = allowedRoutes.some((allowedRoute) => {
+      // Normalizar la ruta permitida
+      const normalizedAllowed = allowedRoute.endsWith('/') && allowedRoute !== '/' 
+        ? allowedRoute.slice(0, -1) 
+        : allowedRoute;
+      
+      // Verificar si la ruta solicitada comienza con la ruta permitida seguida de '/'
+      // Esto asegura que '/documents' permita '/documents/ventas' pero no '/documents-other'
+      if (normalizedRoute === normalizedAllowed) {
+        return true; // Coincidencia exacta (ya verificada arriba, pero por seguridad)
+      }
+      
+      // Verificar si la ruta solicitada es hija de la ruta permitida
+      if (normalizedRoute.startsWith(normalizedAllowed + '/')) {
+        return true;
+      }
+      
+      return false;
+    });
+    
     return hasAccess;
   }
 
@@ -195,6 +276,9 @@ export class MenuService {
    * Útil después de cambios en los permisos
    */
   refreshPermissions(): void {
+    // Limpiar el caché para forzar una recarga
+    this.lastLoadedUserId = null;
+    this.isLoadingPermissions = false;
     this.loadUserPermissions();
   }
 }

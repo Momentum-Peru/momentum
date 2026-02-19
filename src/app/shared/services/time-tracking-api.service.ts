@@ -31,6 +31,7 @@ export class TimeTrackingApiService {
     if (params?.endDate) httpParams = httpParams.set('endDate', params.endDate);
     if (params?.type) httpParams = httpParams.set('type', params.type);
     if (params?.q) httpParams = httpParams.set('q', params.q);
+    if (params?.tenantId) httpParams = httpParams.set('tenantId', params.tenantId);
 
     return this.http.get<TimeTracking[]>(this.baseUrl, { params: httpParams });
   }
@@ -93,6 +94,13 @@ export class TimeTrackingApiService {
    */
   create(record: CreateTimeTrackingRequest): Observable<TimeTracking> {
     return this.http.post<TimeTracking>(this.baseUrl, record);
+  }
+
+  /**
+   * Crea registros de tiempo en lote
+   */
+  batchCreate(payload: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/batch`, payload);
   }
 
   /**

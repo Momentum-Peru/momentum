@@ -2,12 +2,23 @@ import { Routes } from '@angular/router';
 import { requireAuthGuard, publicGuard } from './guards/auth.guard';
 import { MenuPermissionGuard } from './guards/menu-permission.guard';
 import { requireTenantGuard } from './guards/tenant.guard';
+import { permissionsGuard } from './guards/permissions.guard';
 
 export const routes: Routes = [
   {
     path: 'sergio-nolasco',
     loadComponent: () =>
       import('./pages/personal-card/personal-card.page').then((m) => m.PersonalCardPage),
+  },
+  {
+    path: 'sergionolasco',
+    loadComponent: () =>
+      import('./pages/sergionolasco/sergionolasco').then((m) => m.SergioNolascoPage),
+  },
+  {
+    path: 'sergionolasco/admin',
+    loadComponent: () =>
+      import('./pages/sergionolasco/sergionolasco').then((m) => m.SergioNolascoPage),
   },
   {
     path: 'ingreso',
@@ -28,16 +39,28 @@ export const routes: Routes = [
     path: 'solicitud-contacto',
     loadComponent: () => import('./pages/lead-form/lead-form').then((m) => m.LeadFormComponent),
   },
+  // Rutas públicas primero
+  {
+    path: 'landing',
+    loadComponent: () => import('./pages/landing/landing').then((m) => m.LandingPage),
+  },
   {
     path: 'select-company',
     loadComponent: () =>
       import('./pages/select-company/select-company').then((m) => m.SelectCompanyPage),
     canActivate: [requireAuthGuard],
   },
+  // Ruta raíz - redirige a landing (debe estar antes del layout principal)
+  {
+    path: '',
+    redirectTo: 'landing',
+    pathMatch: 'full',
+  },
+  // Rutas protegidas con layout principal
   {
     path: '',
     loadComponent: () => import('./layouts/main/main').then((m) => m.Main),
-    canActivate: [requireAuthGuard, requireTenantGuard],
+    canActivate: [requireAuthGuard, requireTenantGuard, permissionsGuard],
     children: [
       {
         path: 'clients',
@@ -77,7 +100,7 @@ export const routes: Routes = [
             path: 'dashboard',
             loadComponent: () =>
               import('./pages/projects-dashboard/projects-dashboard').then(
-                (m) => m.ProjectsDashboardPage
+                (m) => m.ProjectsDashboardPage,
               ),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/projects/dashboard' },
@@ -105,10 +128,46 @@ export const routes: Routes = [
         data: { menuPermission: '/daily-reports' },
       },
       {
+        path: 'agenda',
+        loadComponent: () => import('./pages/agenda/agenda').then((m) => m.AgendaPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/agenda' },
+      },
+      {
+        path: 'contacts',
+        loadComponent: () => import('./pages/contacts/contacts.component').then((m) => m.ContactsComponent),
+      },
+      {
         path: 'employees',
-        loadComponent: () => import('./pages/employees/employees').then((m) => m.EmployeesPage),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/employees' },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./pages/employees/employees').then((m) => m.EmployeesPage),
+          },
+          {
+            path: 'new',
+            loadComponent: () =>
+              import('./pages/employees/employee-form/employee-form').then(
+                (m) => m.EmployeeFormPage,
+              ),
+          },
+          {
+            path: 'edit/:id',
+            loadComponent: () =>
+              import('./pages/employees/employee-form/employee-form').then(
+                (m) => m.EmployeeFormPage,
+              ),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./pages/employees/employee-summary/employee-summary.component').then(
+                (m) => m.EmployeeSummaryComponent,
+              ),
+          },
+        ],
       },
       {
         path: 'areas',
@@ -117,13 +176,53 @@ export const routes: Routes = [
         data: { menuPermission: '/areas' },
       },
       {
+        path: 'meetings',
+        loadComponent: () => import('./pages/meetings/meetings').then((m) => m.MeetingsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/meetings' },
+      },
+      {
+        path: 'tickets',
+        loadComponent: () => import('./pages/tickets/tickets').then((m) => m.TicketsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/tickets' },
+      },
+      {
+        path: 'work-shifts',
+        loadComponent: () =>
+          import('./pages/work-shifts/work-shifts').then((m) => m.WorkShiftsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/work-shifts' },
+      },
+      {
+        path: 'material-requests',
+        loadComponent: () =>
+          import('./pages/material-requests/material-requests').then((m) => m.MaterialRequestsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/material-requests' },
+      },
+      {
+        path: 'petty-cash',
+        loadComponent: () => import('./pages/petty-cash/petty-cash').then((m) => m.PettyCashPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/petty-cash' },
+      },
+      {
         path: 'face-recognition-register',
         loadComponent: () =>
           import('./pages/face-recognition-register/face-recognition-register').then(
-            (m) => m.FaceRecognitionRegisterPage
+            (m) => m.FaceRecognitionRegisterPage,
           ),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/face-recognition-register' },
+      },
+      {
+        path: 'time-tracking/detail/:userId',
+        loadComponent: () =>
+          import('./pages/time-tracking/time-tracking-detail/time-tracking-detail.component').then(
+            (m) => m.TimeTrackingDetailComponent,
+          ),
+        canActivate: [MenuPermissionGuard],
       },
       {
         path: 'time-tracking',
@@ -131,6 +230,15 @@ export const routes: Routes = [
           import('./pages/time-tracking/time-tracking').then((m) => m.TimeTrackingPage),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/time-tracking' },
+      },
+      {
+        path: 'payroll-calculation',
+        loadComponent: () =>
+          import('./pages/payroll-calculation/payroll-calculation').then(
+            (m) => m.PayrollCalculationPage,
+          ),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/payroll-calculation' },
       },
       {
         path: 'users',
@@ -157,14 +265,46 @@ export const routes: Routes = [
       },
       {
         path: 'documents',
-        loadComponent: () => import('./pages/documents/documents').then((m) => m.DocumentsPage),
-        canActivate: [MenuPermissionGuard],
-        data: { menuPermission: '/documents' },
+        children: [
+          {
+            path: 'compras',
+            loadComponent: () => import('./pages/documents/documents').then((m) => m.DocumentsPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/documents', tipo: 'compra' },
+          },
+          {
+            path: 'ventas',
+            loadComponent: () => import('./pages/documents/documents').then((m) => m.DocumentsPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/documents', tipo: 'venta' },
+          },
+          {
+            path: '',
+            redirectTo: 'compras',
+            pathMatch: 'full',
+          },
+        ],
       },
       {
         path: 'dashboard',
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.DashboardPage),
         data: { menuPermission: '/dashboard' },
+      },
+      {
+        path: 'dashboard-gerencia',
+        loadComponent: () =>
+          import('./pages/dashboard-gerencia/dashboard-gerencia').then(
+            (m) => m.DashboardGerenciaPage,
+          ),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/dashboard-gerencia' },
+      },
+      {
+        path: 'gerencia-boards',
+        loadComponent: () =>
+          import('./pages/gerencia-boards/gerencia-boards').then((m) => m.GerenciaBoardsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/gerencia-boards' },
       },
       {
         path: 'menu-permissions',
@@ -220,7 +360,7 @@ export const routes: Routes = [
         path: 'user-tenants-assignment',
         loadComponent: () =>
           import('./pages/user-tenants-assignment/user-tenants-assignment').then(
-            (m) => m.UserTenantsAssignmentPage
+            (m) => m.UserTenantsAssignmentPage,
           ),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/user-tenants-assignment' },
@@ -230,6 +370,15 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/profile/profile').then((m) => m.ProfilePage),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/profile' },
+      },
+      {
+        path: 'digital-signature',
+        loadComponent: () =>
+          import('./pages/digital-signature/digital-signature.page').then(
+            (m) => m.DigitalSignaturePage,
+          ),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/digital-signature' },
       },
       {
         path: 'logs',
@@ -246,21 +395,21 @@ export const routes: Routes = [
             path: '',
             loadComponent: () =>
               import('./pages/payroll/payroll-list/payroll-list.component').then(
-                (m) => m.PayrollListComponent
+                (m) => m.PayrollListComponent,
               ),
           },
           {
-            path: 'upload',
+            path: 'generate',
             loadComponent: () =>
-              import('./pages/payroll/payroll-upload/payroll-upload.component').then(
-                (m) => m.PayrollUploadComponent
+              import('./pages/payroll/payroll-generate/payroll-generate.component').then(
+                (m) => m.PayrollGenerateComponent,
               ),
           },
           {
             path: 'detail/:id',
             loadComponent: () =>
               import('./pages/payroll/payroll-detail/payroll-detail.component').then(
-                (m) => m.PayrollDetailComponent
+                (m) => m.PayrollDetailComponent,
               ),
           },
         ],
@@ -272,10 +421,10 @@ export const routes: Routes = [
       },
     ],
   },
-  // Ruta por defecto - redirigir según autenticación
+  // Ruta por defecto - redirigir a landing para rutas no encontradas
   {
     path: '**',
-    redirectTo: '',
+    redirectTo: 'landing',
     pathMatch: 'full',
   },
 ];

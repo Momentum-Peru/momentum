@@ -1,0 +1,167 @@
+<div class="p-4 space-y-4 mt-5 overflow-x-hidden">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Título y filtros -->
+  <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <h1 class="text-2xl font-semibold text-gray-800">Cálculo de Planilla</h1>
+
+    <!-- Filtro de rango de fechas -->
+    <div class="flex flex-col md:flex-row gap-2">
+      <div class="flex items-center gap-2">
+        <label for="dateRange" class="text-sm font-medium text-gray-700 whitespace-nowrap">
+          Rango de fechas:
+        </label>
+        <p-datepicker
+          id="dateRange"
+          [(ngModel)]="dateRange"
+          (ngModelChange)="onRangeChange($event)"
+          iconDisplay="input"
+          [selectionMode]="'range'"
+          dateFormat="dd/mm/yy"
+          placeholder="Seleccionar rango"
+          [appendTo]="'body'"
+          [showIcon]="true"
+          [showButtonBar]="true"
+          class="w-full md:w-auto"
+        ></p-datepicker>
+      </div>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-times"
+        severity="secondary"
+        (click)="clearFilters()"
+        class="w-full md:w-auto"
+      >
+        Limpiar
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabla principal de resumen -->
+  <p-card>
+    <p-table
+      [value]="userSummaryData()"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50, 100]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} usuarios"
+      [globalFilterFields]="['name', 'email']"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="caption">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <span class="text-lg font-semibold text-gray-800 dark:text-white">
+            Resumen de Asistencias
+          </span>
+          <div class="flex flex-col md:flex-row gap-2">
+            <span class="p-input-icon-left w-full md:w-auto">
+              <input
+                pInputText
+                type="text"
+                (input)="searchQuery.set($any($event.target).value)"
+                [value]="searchQuery()"
+                placeholder="Buscar usuario..."
+                class="w-full"
+              />
+            </span>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-file-excel"
+              class="p-button-success w-full md:w-auto"
+              (click)="downloadGeneralReport()"
+              [disabled]="loading()"
+            >
+              Descargar Excel
+            </button>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Usuario</th>
+          <th class="text-center">Total Asistencias</th>
+          <th class="text-center">Total Tardanzas</th>
+          <th class="text-center">Total Faltas</th>
+          <th class="text-center">Horas Trabajadas</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-userSummary>
+        <tr>
+          <td>
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold"
+              >
+                {{ userSummary.name.charAt(0).toUpperCase() }}
+              </div>
+              <div>
+                <p class="font-medium text-gray-900 dark:text-white">{{ userSummary.name }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ userSummary.email }}</p>
+              </div>
+            </div>
+          </td>
+          <td class="text-center">
+            <span class="font-semibold text-green-600 dark:text-green-400">
+              {{ userSummary.totalAsistencias }}
+            </span>
+          </td>
+          <td class="text-center">
+            <span class="font-semibold text-yellow-600 dark:text-yellow-400">
+              {{ userSummary.totalTardanzas }}
+            </span>
+          </td>
+          <td class="text-center">
+            <span class="font-semibold text-red-600 dark:text-red-400">
+              {{ userSummary.totalFaltas }}
+            </span>
+          </td>
+          <td class="text-center">
+            <span class="font-semibold text-gray-900 dark:text-white">
+              {{ formatWorkedHours(userSummary.totalHorasTrabajadas) }}
+            </span>
+          </td>
+          <td class="text-right">
+            <button
+              pButton
+              type="button"
+              icon="pi pi-eye"
+              class="p-button-sm"
+              (click)="openUserDetails(userSummary.user)"
+            >
+              Detalles
+            </button>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-8">
+            <i class="pi pi-users text-4xl text-gray-400 mb-2"></i>
+            <p class="text-gray-500 dark:text-gray-400">No se encontraron usuarios</p>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <!-- Diálogo de detalles del usuario -->
+  @if (showUserDetailsDialog()) {
+  <app-payroll-calculation-user-details
+    [visible]="showUserDetailsDialog()"
+    [user]="selectedUserForDetails()"
+    [startDate]="getStartDate()"
+    [endDate]="getEndDate()"
+    (closeDialog)="showUserDetailsDialog.set(false); selectedUserForDetails.set(null)"
+    (refreshData)="loadAllUsersData()"
+  ></app-payroll-calculation-user-details>
+  }
+</div>

@@ -47,13 +47,14 @@ export interface Task {
   description?: string;
   status: TaskStatus;
   priority: 'Baja' | 'Media' | 'Alta' | 'Crítica';
-  assignedTo: string | { _id?: string; name?: string; email?: string }; // User ID o objeto poblado
+  assignedTo: string | { _id?: string; name?: string; email?: string; profilePicture?: string }; // User ID o objeto poblado
   assignedToName?: string; // User name for display
-  createdBy: string | { _id?: string; name?: string; email?: string }; // User ID o objeto poblado
+  createdBy: string | { _id?: string; name?: string; email?: string; profilePicture?: string }; // User ID o objeto poblado
   createdByName?: string; // User name for display
   dueDate?: Date | string;
   tags: string[];
-  boardId?: string; // Board ID (opcional)
+  boardId?: string | { _id?: string; title?: string }; // Board ID (opcional) o objeto poblado
+  areaId?: string | { _id?: string; nombre?: string }; // Area ID o objeto poblado
   projectId?: string | { _id?: string; name?: string; code?: string }; // Project ID o objeto poblado (opcional)
   info?: TaskComment[]; // Comentarios/información de la tarea
   files?: TaskFile[];
@@ -75,6 +76,7 @@ export interface CreateTaskRequest {
   dueDate?: Date | string;
   tags?: string[];
   boardId?: string;
+  areaId?: string;
   projectId?: string;
   subtasks?: TaskSubtask[];
   attachments?: TaskAttachment[];
@@ -121,15 +123,16 @@ export interface TasksSearchParams {
   search?: string;
   status?: TaskStatus;
   priority?: 'Baja' | 'Media' | 'Alta' | 'Crítica';
-  assignedTo?: string;
-  createdBy?: string;
-  boardId?: string;
+  assignedTo?: string | string[];
+  createdBy?: string | string[];
+  boardId?: string | string[];
   tags?: string[];
   dueDateFrom?: Date | string;
   dueDateTo?: Date | string;
   page?: number;
   limit?: number;
   q?: string;
+  areaId?: string | string[];
 }
 
 export interface TaskStats {

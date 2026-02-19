@@ -12,17 +12,21 @@
 
 <!-- Boards Grid -->
 @if (!loading() && !error() && boards().length > 0) {
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style="align-items: stretch;">
   @for (board of boards(); track board._id) {
-  <app-board-card
+  <div style="height: 100%; display: flex; flex-direction: column;">
+    <app-board-card
     [board]="board"
     [isOwner]="isBoardOwner(board)"
     [isSelected]="selectedBoardId() === board._id"
+    [currentUserId]="currentUserId()"
     (view)="viewBoard.emit(board)"
     (edit)="editBoard.emit(board)"
     (invite)="inviteUser.emit(board)"
     (delete)="deleteBoard.emit(board)"
-  ></app-board-card>
+    (colorChange)="changeColor.emit($event)"
+    ></app-board-card>
+  </div>
   }
 </div>
 }

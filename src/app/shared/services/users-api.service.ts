@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, EMPTY } from 'rxjs';
+import { map, expand, reduce } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { UserOption } from '../interfaces/menu-permission.interface';
 
@@ -17,6 +17,7 @@ export interface User {
   updatedAt: string;
   lastLogin?: string; // Último acceso del usuario
   googleId?: string; // ID de Google si está vinculado
+  profilePicture?: string;
 }
 
 export interface UserCreateRequest {
@@ -33,6 +34,7 @@ export interface UserUpdateRequest {
   role?: 'user' | 'admin' | 'gerencia' | 'supervisor';
   isActive?: boolean;
   tenantIds?: string[]; // Actualizar empresas asignadas
+  agendaSharedWith?: string[]; // Usuarios con los que se comparte la agenda
 }
 
 export interface UserFilters {
@@ -84,6 +86,40 @@ export class UsersApiService {
   }
 
   /**
+   * Obtiene todos los usuarios del tenant (todas las páginas) para selectores.
+   * Útil cuando el backend pagina y se necesita la lista completa.
+   */
+  listAll(tenantId?: string, pageSize = 100): Observable<UserOption[]> {
+    return this.listWithFilters({
+      tenantId,
+      page: 1,
+      limit: pageSize,
+    }).pipe(
+      expand((res) => {
+        const pagination = res.pagination;
+        if (!pagination || pagination.page >= pagination.pages) return EMPTY;
+        return this.listWithFilters({
+          tenantId,
+          page: pagination.page + 1,
+          limit: pageSize,
+        });
+      }),
+      reduce(
+        (acc: User[], res) => acc.concat(res.data ?? res.users ?? []),
+        [] as User[]
+      ),
+      map((users) =>
+        users.map((u) => ({
+          _id: u._id || u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+        }))
+      )
+    );
+  }
+
+  /**
    * Obtiene la lista de usuarios con filtros
    */
   listWithFilters(filters: UserFilters = {}): Observable<UserResponse> {
@@ -127,5 +163,12 @@ export class UsersApiService {
    */
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Obtiene los usuarios que han compartido su agenda con el usuario actual
+   */
+  getSharedWithMe(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.baseUrl}/shared-with-me`);
   }
 }

@@ -1,3 +1,51 @@
 // Estilos específicos para el componente de Ingeniería
 
+// Responsive para diálogos en móvil
+:host ::ng-deep {
+  // Asegurar que los selectores no desborden
+  .p-select {
+    max-width: 100%;
+  }
+
+  // Mejorar scroll en diálogos móviles
+  .p-dialog-content {
+    max-height: calc(100vh - 10rem);
+    overflow-y: auto;
+  }
+
+  // En móvil, ajustar el contenido del diálogo
+  @media (max-width: 640px) {
+    .p-dialog {
+      margin: 0.5rem;
+      max-width: calc(100vw - 1rem);
+    }
+
+    .p-dialog-header {
+      padding: 1rem;
+    }
+
+    .p-dialog-content {
+      padding: 1rem;
+    }
+
+    .p-dialog-footer {
+      padding: 0.75rem 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+
+      button {
+        flex: 1;
+        min-width: 100px;
+      }
+    }
+
+    // Ajustar el file upload
+    .p-fileupload-basic {
+      .p-button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+}
 

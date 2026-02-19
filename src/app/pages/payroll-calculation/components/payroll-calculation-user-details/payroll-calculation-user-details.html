@@ -1,0 +1,382 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [header]="'Detalles de Asistencias'"
+  [style]="{ width: '90vw', maxWidth: '1400px' }"
+  (onHide)="onClose()"
+>
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  @if (loading()) {
+  <div class="p-8 text-center">
+    <i class="pi pi-spin pi-spinner text-2xl text-gray-400"></i>
+    <p class="mt-2 text-gray-500 dark:text-gray-400">Cargando asistencias...</p>
+  </div>
+  } @else {
+  <div class="space-y-6">
+    <!-- Información del Usuario -->
+    <div
+      class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-4 border border-blue-200 dark:border-gray-600"
+    >
+      <div class="flex items-center gap-4">
+        <div
+          class="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-2xl shadow-md"
+        >
+          {{ (user?.name?.charAt(0) || 'U').toUpperCase() }}
+        </div>
+        <div class="flex-1">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            {{ user?.name || 'Usuario' }}
+          </h3>
+          <p class="text-sm text-gray-600 dark:text-gray-300">{{ user?.email || '' }}</p>
+          @if (startDate && endDate) {
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Período: {{ formatDateRange(startDate, endDate) }}
+          </p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel de Estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <p-card styleClass="shadow-sm">
+        <ng-template pTemplate="content">
+          <div class="text-center">
+            <div class="flex items-center justify-center mb-2">
+              <i class="pi pi-calendar text-blue-500 text-2xl"></i>
+            </div>
+            <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">
+              {{ statistics().totalDias }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Días Registrados</div>
+          </div>
+        </ng-template>
+      </p-card>
+
+      <p-card styleClass="shadow-sm">
+        <ng-template pTemplate="content">
+          <div class="text-center">
+            <div class="flex items-center justify-center mb-2">
+              <i class="pi pi-clock text-green-500 text-2xl"></i>
+            </div>
+            <div class="text-3xl font-bold text-green-600 dark:text-green-400">
+              {{ formatWorkedHours(statistics().totalHoras) }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Horas Totales</div>
+          </div>
+        </ng-template>
+      </p-card>
+
+      <p-card styleClass="shadow-sm">
+        <ng-template pTemplate="content">
+          <div class="text-center">
+            <div class="flex items-center justify-center mb-2">
+              <i class="pi pi-check-circle text-emerald-500 text-2xl"></i>
+            </div>
+            <div class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+              {{ statistics().diasCompletos }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Días Completos</div>
+          </div>
+        </ng-template>
+      </p-card>
+
+      <p-card styleClass="shadow-sm">
+        <ng-template pTemplate="content">
+          <div class="text-center">
+            <div class="flex items-center justify-center mb-2">
+              <i class="pi pi-exclamation-circle text-amber-500 text-2xl"></i>
+            </div>
+            <div class="text-3xl font-bold text-amber-600 dark:text-amber-400">
+              {{ statistics().diasIncompletos }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Días Incompletos</div>
+          </div>
+        </ng-template>
+      </p-card>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="flex flex-wrap gap-2 justify-end">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-file-excel"
+        class="p-button-success p-button-sm"
+        (click)="downloadIndividualReport()"
+        [disabled]="loading()"
+      >
+        Descargar Excel
+      </button>
+      @if (canEditTimeTracking()) {
+      <button
+        pButton
+        type="button"
+        icon="pi pi-plus"
+        class="p-button-sm"
+        (click)="openAddTimeTrackingDialog('INGRESO')"
+      >
+        Agregar Entrada
+      </button>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-plus"
+        severity="secondary"
+        class="p-button-sm"
+        (click)="openAddTimeTrackingDialog('SALIDA')"
+      >
+        Agregar Salida
+      </button>
+      }
+    </div>
+
+    <!-- Tabla de asistencias -->
+    <p-card styleClass="shadow-sm">
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-list text-blue-500"></i>
+          <span class="text-lg font-semibold text-gray-800 dark:text-white"
+            >Registro de Asistencias</span
+          >
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <p-table
+          [value]="groupedTrackings()"
+          [loading]="loading()"
+          styleClass="p-datatable-sm"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[10, 25, 50]"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} días"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 200px">Fecha</th>
+              <th class="text-center" style="width: 180px">Entrada</th>
+              <th class="text-center" style="width: 180px">Salida</th>
+              <th class="text-center" style="width: 150px">Horas Trabajadas</th>
+              <th class="text-center" style="width: 100px">Estado</th>
+              <th style="width: 300px">Acciones</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-dayData>
+            <tr>
+              <td>
+                <div class="flex flex-col">
+                  <span class="font-semibold text-gray-900 dark:text-white text-base">
+                    {{ formatDate(dayData.date) }}
+                  </span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {{ getDayOfWeek(dayData.date) }}
+                  </span>
+                </div>
+              </td>
+              <td class="text-center">
+                @if (dayData.ingreso) {
+                <div class="flex flex-col items-center gap-2">
+                  <p-tag value="Entrada" severity="success" styleClass="text-xs"></p-tag>
+                  <div
+                    class="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-md"
+                  >
+                    <i class="pi pi-clock text-green-600 dark:text-green-400 text-xs"></i>
+                    <span class="text-sm font-medium text-green-700 dark:text-green-300">
+                      {{ formatTime(dayData.ingreso.date) }}
+                    </span>
+                  </div>
+                </div>
+                } @else {
+                <div class="flex flex-col items-center">
+                  <span class="text-gray-400 text-sm">-</span>
+                  <span class="text-xs text-gray-400 italic">Sin registro</span>
+                </div>
+                }
+              </td>
+              <td class="text-center">
+                @if (getExitForDay(dayData)) {
+                <div class="flex flex-col items-center gap-2">
+                  <p-tag value="Salida" severity="info" styleClass="text-xs"></p-tag>
+                  <div
+                    class="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-md"
+                  >
+                    <i class="pi pi-clock text-blue-600 dark:text-blue-400 text-xs"></i>
+                    <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      {{ formatTime(getExitForDay(dayData)!.date) }}
+                    </span>
+                  </div>
+                  @if (!dayData.salida) {
+                  <span class="text-xs text-yellow-600 dark:text-yellow-400 italic"
+                    >(Día siguiente)</span
+                  >
+                  }
+                </div>
+                } @else {
+                <div class="flex flex-col items-center">
+                  <span class="text-gray-400 text-sm">-</span>
+                  <span class="text-xs text-gray-400 italic">Sin registro</span>
+                </div>
+                }
+              </td>
+              <td class="text-center">
+                @if (hasCompleteAttendance(dayData)) {
+                <div class="flex flex-col items-center">
+                  <span class="text-lg font-bold text-gray-900 dark:text-white">
+                    {{ formatWorkedHours(getWorkedHoursForDay(dayData)) }}
+                  </span>
+                  @if (getWorkedHoursForDay(dayData) >= 8) {
+                  <p-tag value="Completo" severity="success" styleClass="text-xs mt-1"></p-tag>
+                  } @else {
+                  <p-tag value="Parcial" severity="warn" styleClass="text-xs mt-1"></p-tag>
+                  }
+                </div>
+                } @else {
+                <span class="text-gray-400">-</span>
+                }
+              </td>
+              <td class="text-center">
+                @if (hasCompleteAttendance(dayData)) {
+                <p-tag value="Completo" severity="success" styleClass="text-xs"></p-tag>
+                } @else if (dayData.ingreso || dayData.salida) {
+                <p-tag value="Incompleto" severity="warn" styleClass="text-xs"></p-tag>
+                } @else {
+                <p-tag value="Sin registro" severity="danger" styleClass="text-xs"></p-tag>
+                }
+              </td>
+              <td>
+                @if (canEditTimeTracking()) {
+                <div class="flex flex-col gap-2">
+                  <!-- Acciones para Entrada -->
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-400 w-14 shrink-0"
+                      >Entrada:</span
+                    >
+                    <div class="flex gap-1">
+                      @if (dayData.ingreso) {
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-pencil"
+                        class="p-button-text p-button-sm p-button-success"
+                        (click)="openEditTimeTrackingDialog(dayData.ingreso!)"
+                        [pTooltip]="'Editar hora de entrada'"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-trash"
+                        class="p-button-text p-button-danger p-button-sm"
+                        (click)="deleteTimeTracking(dayData.ingreso!)"
+                        [pTooltip]="'Eliminar entrada'"
+                      >
+                        Eliminar
+                      </button>
+                      } @else {
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-plus"
+                        class="p-button-outlined p-button-sm p-button-success"
+                        (click)="openAddTimeTrackingDialog('INGRESO', dayData.date)"
+                        [pTooltip]="'Agregar hora de entrada'"
+                      >
+                        Agregar Entrada
+                      </button>
+                      }
+                    </div>
+                  </div>
+                  <!-- Acciones para Salida -->
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-400 w-14 shrink-0"
+                      >Salida:</span
+                    >
+                    <div class="flex gap-1">
+                      @if (dayData.salida) {
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-pencil"
+                        class="p-button-text p-button-sm p-button-info"
+                        (click)="openEditTimeTrackingDialog(dayData.salida!)"
+                        [pTooltip]="'Editar hora de salida'"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-trash"
+                        class="p-button-text p-button-danger p-button-sm"
+                        (click)="deleteTimeTracking(dayData.salida!)"
+                        [pTooltip]="'Eliminar salida'"
+                      >
+                        Eliminar
+                      </button>
+                      } @else {
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-plus"
+                        class="p-button-outlined p-button-sm p-button-info"
+                        (click)="openAddTimeTrackingDialog('SALIDA', dayData.date)"
+                        [pTooltip]="'Agregar hora de salida'"
+                      >
+                        Agregar Salida
+                      </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+                } @else {
+                <span class="text-sm text-gray-500 dark:text-gray-400">Solo lectura</span>
+                }
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="text-center p-8">
+                <i class="pi pi-calendar-times text-4xl text-gray-400 mb-2"></i>
+                <p class="text-gray-500 dark:text-gray-400">No hay asistencias registradas</p>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </ng-template>
+    </p-card>
+  </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <div class="flex gap-2 justify-end">
+      <button pButton type="button" icon="pi pi-times" (click)="onClose()" severity="secondary">
+        Cerrar
+      </button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Diálogo para agregar/editar marcación -->
+@if (showTimeTrackingDialog()) {
+<app-payroll-calculation-time-tracking-dialog
+  [visible]="showTimeTrackingDialog()"
+  [editingItem]="editingTimeTracking()"
+  [defaultDate]="selectedTimeTrackingDate()"
+  [defaultType]="defaultTrackingType()"
+  [userId]="user?._id || user?.id || ''"
+  (closeDialog)="
+    showTimeTrackingDialog.set(false); editingTimeTracking.set(null); defaultTrackingType.set(null)
+  "
+  (formSubmit)="saveTimeTracking($event)"
+></app-payroll-calculation-time-tracking-dialog>
+}

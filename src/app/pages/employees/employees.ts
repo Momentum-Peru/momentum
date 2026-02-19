@@ -1,4 +1,5 @@
 import { Component, OnInit, signal, inject, computed } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -9,12 +10,17 @@ import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
+import { FileUploadModule } from 'primeng/fileupload';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { EmployeesApiService } from '../../shared/services/employees-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { AreasApiService } from '../../shared/services/areas-api.service';
 import { MenuService } from '../../shared/services/menu.service';
+import { ApisPeruApiService } from '../../shared/services/apisperu-api.service';
+import { WorkShiftsApiService } from '../../shared/services/work-shifts-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
 import {
   Employee,
   CreateEmployeeRequest,
@@ -22,6 +28,7 @@ import {
   AreaInfo,
 } from '../../shared/interfaces/employee.interface';
 import { Area } from '../../shared/interfaces/area.interface';
+import { WorkShift } from '../../shared/interfaces/work-shift.interface';
 import { BANKS, getBankCode } from '../../shared/constants/banks.constants';
 
 @Component({
@@ -38,6 +45,7 @@ import { BANKS, getBankCode } from '../../shared/constants/banks.constants';
     ToastModule,
     ConfirmDialogModule,
     TooltipModule,
+    FileUploadModule,
   ],
   templateUrl: './employees.html',
   styleUrl: './employees.scss',
@@ -49,7 +57,14 @@ export class EmployeesPage implements OnInit {
   private readonly areasApi = inject(AreasApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly workShiftsApi = inject(WorkShiftsApiService);
   private readonly menuService = inject(MenuService);
+  private readonly apisPeruService = inject(ApisPeruApiService);
+  private readonly router = inject(Router);
+
+  // Subject para manejar la autocompletación de DNI y RUC
+  private readonly dniSubject = new Subject<string>();
+  private readonly rucSubject = new Subject<string>();
 
   // Verificar si el usuario tiene permiso de edición para este módulo
   readonly canEdit = computed(() => this.menuService.canEdit('/employees'));
@@ -57,15 +72,13 @@ export class EmployeesPage implements OnInit {
   items = signal<Employee[]>([]);
   users = signal<UserOption[]>([]);
   areas = signal<Area[]>([]);
+  workShifts = signal<WorkShift[]>([]);
   query = signal('');
-  showDialog = signal(false);
+
+  // Vista y detalles
   showViewDialog = signal(false);
-  editing = signal<Employee | null>(null);
   viewing = signal<Employee | null>(null);
   loading = signal(false);
-
-  // Constante de bancos reutilizable
-  readonly banks = BANKS;
 
   // Estado de expansión para vista móvil
   private expandedRowKeys = signal<Set<string>>(new Set());
@@ -96,6 +109,7 @@ export class EmployeesPage implements OnInit {
     this.load();
     this.loadUsers();
     this.loadAreas();
+    this.loadWorkShifts();
   }
 
   load() {
@@ -134,6 +148,17 @@ export class EmployeesPage implements OnInit {
     });
   }
 
+  loadWorkShifts() {
+    this.workShiftsApi.list({ isActive: true }).subscribe({
+      next: (data) => {
+        this.workShifts.set(data);
+      },
+      error: () => {
+        this.toastError('Error al cargar turnos');
+      },
+    });
+  }
+
   // Helpers de accordion móvil
   buildRowKey(item: Employee, index: number): string {
     return item._id ? String(item._id) : `${item.dni}#${index}`;
@@ -156,54 +181,13 @@ export class EmployeesPage implements OnInit {
   }
 
   newItem() {
-    this.editing.set({
-      nombre: '',
-      apellido: '',
-      dni: '',
-      correo: '',
-      telefono: '',
-      direccion: '',
-      cargo: '',
-      userId: undefined,
-      areaId: undefined,
-      accountNumber: '',
-      bank: '',
-      bankCode: '',
-      accountType: undefined,
-    });
-    this.showDialog.set(true);
+    this.router.navigate(['/employees', 'new']);
   }
 
   editItem(item: Employee) {
-    const editedItem = { ...item };
-
-    // Si userId es un objeto (populado), extraer el _id
-    if (
-      editedItem.userId &&
-      typeof editedItem.userId === 'object' &&
-      '_id' in editedItem.userId &&
-      editedItem.userId._id
-    ) {
-      editedItem.userId = editedItem.userId._id;
+    if (item._id) {
+      this.router.navigate(['/employees', 'edit', item._id]);
     }
-
-    // Si areaId es un objeto (populado), extraer el _id
-    if (
-      editedItem.areaId &&
-      typeof editedItem.areaId === 'object' &&
-      '_id' in editedItem.areaId &&
-      editedItem.areaId._id
-    ) {
-      editedItem.areaId = editedItem.areaId._id;
-    }
-
-    this.editing.set(editedItem);
-    this.showDialog.set(true);
-  }
-
-  closeDialog() {
-    this.showDialog.set(false);
-    this.editing.set(null);
   }
 
   viewItem(item: Employee) {
@@ -215,22 +199,9 @@ export class EmployeesPage implements OnInit {
     this.showViewDialog.set(false);
   }
 
-  onEditChange(field: keyof Employee, value: Employee[keyof Employee]) {
-    const current = this.editing();
-    if (current) {
-      this.editing.set({ ...current, [field]: value });
-    }
-  }
-
-  onBankChange(bankName: string) {
-    const current = this.editing();
-    if (current) {
-      const bankCode = getBankCode(bankName);
-      this.editing.set({
-        ...current,
-        bank: bankName || undefined,
-        bankCode: bankCode || undefined,
-      });
+  navigateToSummary(employee: Employee) {
+    if (employee._id) {
+      this.router.navigate(['/employees', employee._id]);
     }
   }
 
@@ -252,22 +223,6 @@ export class EmployeesPage implements OnInit {
     return user?.email || '';
   }
 
-  getUserIdForSelect(employee: Employee): string {
-    if (!employee.userId) return '';
-    if (typeof employee.userId === 'string') {
-      return employee.userId;
-    }
-    return employee.userId._id || '';
-  }
-
-  getAreaIdForSelect(employee: Employee): string {
-    if (!employee.areaId) return '';
-    if (typeof employee.areaId === 'string') {
-      return employee.areaId;
-    }
-    return employee.areaId._id || '';
-  }
-
   getAreaName(areaId: string | AreaInfo | undefined): string {
     if (!areaId) return 'Sin área';
     if (typeof areaId === 'object' && 'nombre' in areaId) {
@@ -277,94 +232,13 @@ export class EmployeesPage implements OnInit {
     return area?.nombre || 'Área no encontrada';
   }
 
-  save() {
-    const item = this.editing();
-    if (!item) return;
-
-    const errors = this.validateForm(item);
-    if (errors.length) {
-      errors.forEach((e) => this.toastError(e));
-      return;
+  getWorkShiftName(workShiftId: string | WorkShift | undefined): string {
+    if (!workShiftId) return 'Sin turno';
+    if (typeof workShiftId === 'object' && 'name' in workShiftId) {
+      return workShiftId.name;
     }
-
-    this.loading.set(true);
-
-    if (item._id) {
-      // Actualizar
-      const updateData: UpdateEmployeeRequest = {
-        nombre: item.nombre,
-        apellido: item.apellido,
-        dni: item.dni,
-        correo: item.correo || undefined,
-        telefono: item.telefono || undefined,
-        direccion: item.direccion || undefined,
-        cargo: item.cargo || undefined,
-        userId: typeof item.userId === 'string' && item.userId.trim() !== '' ? item.userId : undefined,
-        accountNumber: item.accountNumber || undefined,
-        bank: item.bank || undefined,
-        bankCode: item.bankCode || undefined,
-        accountType: item.accountType || undefined,
-      };
-
-      // Manejar areaId: solo incluir si tiene un valor válido
-      const areaIdValue =
-        typeof item.areaId === 'string' && item.areaId.trim() !== ''
-          ? item.areaId
-          : typeof item.areaId === 'object' && item.areaId && '_id' in item.areaId
-          ? item.areaId._id
-          : '';
-
-      // Si hay un valor válido, incluirlo; si es cadena vacía, enviar cadena vacía para limpiar
-      if (areaIdValue) {
-        updateData.areaId = areaIdValue;
-      } else {
-        // Enviar cadena vacía para indicar que se debe limpiar el área
-        updateData.areaId = '';
-      }
-
-      this.employeesApi.update(item._id, updateData).subscribe({
-        next: () => {
-          this.toastSuccess('Empleado actualizado exitosamente');
-          this.closeDialog();
-          this.load();
-        },
-        error: (err) => {
-          const message = err.error?.message || 'Error al actualizar el empleado';
-          this.toastError(message);
-          this.loading.set(false);
-        },
-      });
-    } else {
-      // Crear
-      const createData: CreateEmployeeRequest = {
-        nombre: item.nombre,
-        apellido: item.apellido,
-        dni: item.dni,
-        correo: item.correo || undefined,
-        telefono: item.telefono || undefined,
-        direccion: item.direccion || undefined,
-        cargo: item.cargo || undefined,
-        userId: typeof item.userId === 'string' && item.userId ? item.userId : undefined,
-        areaId: typeof item.areaId === 'string' && item.areaId ? item.areaId : undefined,
-        accountNumber: item.accountNumber || undefined,
-        bank: item.bank || undefined,
-        bankCode: item.bankCode || undefined,
-        accountType: item.accountType || undefined,
-      };
-
-      this.employeesApi.create(createData).subscribe({
-        next: () => {
-          this.toastSuccess('Empleado creado exitosamente');
-          this.closeDialog();
-          this.load();
-        },
-        error: (err) => {
-          const message = err.error?.message || 'Error al crear el empleado';
-          this.toastError(message);
-          this.loading.set(false);
-        },
-      });
-    }
+    const ws = this.workShifts().find((w) => w._id === workShiftId);
+    return ws?.name || 'Turno no encontrado';
   }
 
   remove(item: Employee) {
@@ -393,28 +267,6 @@ export class EmployeesPage implements OnInit {
     });
   }
 
-  validateForm(item: Employee): string[] {
-    const errors: string[] = [];
-
-    if (!item.nombre || item.nombre.trim().length < 2) {
-      errors.push('El nombre debe tener al menos 2 caracteres');
-    }
-
-    if (!item.apellido || item.apellido.trim().length < 2) {
-      errors.push('El apellido debe tener al menos 2 caracteres');
-    }
-
-    if (!item.dni || !/^\d{8}$/.test(item.dni)) {
-      errors.push('El DNI debe tener exactamente 8 dígitos');
-    }
-
-    if (item.correo && item.correo.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.correo)) {
-      errors.push('El correo electrónico no es válido');
-    }
-
-    return errors;
-  }
-
   toastSuccess(message: string) {
     this.messageService.add({
       severity: 'success',
@@ -429,5 +281,17 @@ export class EmployeesPage implements OnInit {
       summary: 'Error',
       detail: message,
     });
+  }
+
+  // Método para descargar archivo
+  downloadFile(url: string) {
+    window.open(url, '_blank');
+  }
+
+  // Método para verificar si un archivo es una imagen
+  isImageFile(url: string): boolean {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const lowerUrl = url.toLowerCase();
+    return imageExtensions.some((ext) => lowerUrl.includes(ext));
   }
 }

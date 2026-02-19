@@ -7,10 +7,14 @@ import {
   computed,
   ViewChild,
   ElementRef,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
+
+// PrimeNG Imports
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -21,18 +25,26 @@ import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { SplitButtonModule } from 'primeng/splitbutton';
+import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
+
+// Services
 import { TimeTrackingApiService } from '../../shared/services/time-tracking-api.service';
 import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { FaceRecognitionApiService } from '../../shared/services/face-recognition-api.service';
+import { GeocodingService } from '../../shared/services/geocoding.service';
+import { UsersApiService } from '../../shared/services/users-api.service';
 import { AuthService } from '../login/services/auth.service';
 import { TenantService } from '../../core/services/tenant.service';
+
+// Interfaces & Models
 import {
   TimeTracking,
   TimeTrackingType,
   Location,
   CreateTimeTrackingRequest,
   UpdateTimeTrackingRequest,
+  TimeTrackingQueryParams,
 } from '../../shared/interfaces/time-tracking.interface';
 import { AttendanceRecord } from '../../shared/interfaces/face-recognition.interface';
 import {
@@ -40,11 +52,31 @@ import {
   FaceDetectionResult,
 } from '../../shared/services/face-detection.service';
 import { ProjectOption, Project } from '../../shared/interfaces/project.interface';
+import {
+  TimeTrackingPdfService,
+  TimeTrackingReportData,
+  TimeTrackingReportUser,
+  TimeTrackingReportMark,
+} from '../../shared/services/time-tracking-pdf.service';
+import { TimeTrackingExcelService } from '../../shared/services/time-tracking-excel.service';
+import JSZip from 'jszip';
 
-/**
- * Componente de Marcación de Hora
- * Principio de Responsabilidad Única: Gestiona la UI y estado de los registros de tiempo
- */
+/** Cargos en duro por nombre completo (Nombre Apellido) normalizado a minúsculas. */
+const CARGO_POR_NOMBRE: Record<string, string> = {
+  'petter marcel torres angulo': 'OPERARIO',
+  'jordan polosefer mendoza anton': 'SSOMA',
+  'jose luis tello ostos': 'CHOFER-ALMACENERO',
+  'elder jasinto lucas andrade': 'OFICIAL MONTAJISTA',
+  'hugo benigno casimiro huaman': 'INGENIERO RESIDENTE',
+  'yerlin torres estela': 'OFICIAL MONTAJISTA',
+  'aldo torres estela': 'AYUDANTE',
+  'rosa chipana llacchua': 'LOGISTICA',
+  'david angel cueva rosales': 'ARQUITECTO',
+  'beltran torres estela': 'JEFE DE PRODUCCION',
+  'nilda nicole nolasco chipana': 'ASIST. ADMINISTRATIVO',
+  'sergio nolasco estela': 'GERENTE GENERAL',
+};
+
 @Component({
   selector: 'app-time-tracking',
   standalone: true,
@@ -61,44 +93,61 @@ import { ProjectOption, Project } from '../../shared/interfaces/project.interfac
     TooltipModule,
     ToastModule,
     ConfirmDialogModule,
+    SplitButtonModule,
   ],
   templateUrl: './time-tracking.html',
   styleUrl: './time-tracking.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [MessageService, ConfirmationService],
 })
 export class TimeTrackingPage implements OnInit {
+  // ...
+  downloadOptions: MenuItem[] = [];
+
   private readonly timeTrackingApi = inject(TimeTrackingApiService);
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly faceRecognitionApi = inject(FaceRecognitionApiService);
   private readonly faceDetection = inject(FaceDetectionService);
+  private readonly geocodingService = inject(GeocodingService);
+  private readonly usersApi = inject(UsersApiService);
   private readonly authService = inject(AuthService);
   private readonly tenantService = inject(TenantService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly timeTrackingPdfService = inject(TimeTrackingPdfService);
+  private readonly timeTrackingExcelService = inject(TimeTrackingExcelService);
+  protected readonly router = inject(Router);
 
   items = signal<TimeTracking[]>([]);
   projects = signal<ProjectOption[]>([]);
+  users = signal<{ _id: string; name: string; email: string }[]>([]);
   query = signal('');
-  filterDate = signal<string | null>(null);
+  startDate = signal<string | null>(null);
+  endDate = signal<string | null>(null);
+  /** Filtro de usuario para gerencia/admin: null = todos */
+  filterUserId = signal<string | null>(null);
   showDialog = signal(false);
   showViewDialog = signal(false);
   showFaceDialog = signal(false);
+  showAddMarkDialog = signal(false);
   editing = signal<TimeTracking | null>(null);
   viewing = signal<TimeTracking | null>(null);
   private expandedRowKeys = signal<Set<string>>(new Set());
+  /** Descargando PDFs por usuario (evita múltiples clics) */
+  downloadingAllPdfs = signal(false);
 
-  // Convertir el observable del usuario a un signal para reactividad
-  // Usar getCurrentUser() como valor inicial para asegurar que tenga el usuario desde localStorage
-  currentUser = toSignal(this.authService.currentUser$, { 
-    initialValue: this.authService.getCurrentUser() 
+  currentUser = toSignal(this.authService.currentUser$, {
+    initialValue: this.authService.getCurrentUser(),
   });
 
-  // Verificar si el usuario puede editar o eliminar marcaciones
-  // Solo admin y gerencia pueden editar/eliminar, los usuarios regulares no
-  canEditOrDelete = computed(() => {
-    const user = this.currentUser();
-    return user?.role === 'admin' || user?.role === 'gerencia';
-  });
+  /** Solo administración puede editar o eliminar marcaciones */
+  canEditOrDelete = computed(() => this.authService.isAdmin());
+
+  /** Gerencia y admin pueden ver marcaciones de todos los usuarios */
+  canViewAllUsers = computed(() => this.authService.isAdminOrGerencia());
+
+  /** Solo admin puede agregar marcación para otros usuarios */
+  canAddForOthers = computed(() => this.authService.isAdmin());
 
   // Estado para marcación con reconocimiento facial
   faceImage = signal<File | null>(null);
@@ -123,28 +172,300 @@ export class TimeTrackingPage implements OnInit {
   private autoCaptureTriggered = signal(false);
   private isDetectionInProgress = false;
 
-  // Filtrado simple por texto
+  /** Lista base aplicando filtro de usuario (gerencia) */
+  private itemsFilteredByUser = computed(() => {
+    const list = this.items();
+    if (!this.canViewAllUsers()) return list;
+    const uid = this.filterUserId();
+    if (!uid) return list;
+    return list.filter((item) => this.getUserId(item) === uid);
+  });
+
   filteredItems = computed(() => {
     const searchQuery = this.query().toLowerCase().trim();
-    const list = this.items()
+    const list = this.itemsFilteredByUser()
       .slice()
       .sort((a, b) => {
         const aDt = new Date(a.date).getTime();
         const bDt = new Date(b.date).getTime();
-        return bDt - aDt; // DESC
+        return bDt - aDt;
       });
-
     if (!searchQuery) return list;
     return list.filter((item) => {
       const dateMatch = item.date?.toLowerCase().includes(searchQuery) ?? false;
       const typeMatch = item.type?.toLowerCase().includes(searchQuery) ?? false;
-      return dateMatch || typeMatch;
+      const userMatch = this.getUserName(item)?.toLowerCase().includes(searchQuery) ?? false;
+      return dateMatch || typeMatch || userMatch;
     });
   });
 
+  /** Opciones para el selector de usuario (gerencia): orden alfabético por nombre, sin correo. */
+  userFilterOptions = computed(() => {
+    const list = [...this.users()].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'es'));
+    const options: { label: string; value: string | null }[] = [
+      { label: 'Todos los usuarios', value: null },
+    ];
+    list.forEach((u) => {
+      options.push({ label: u.name ?? '', value: u._id });
+    });
+    return options;
+  });
+
+  /**
+   * Indica si una marcación de INGRESO es tardanza (después de las 8:15 AM en hora local).
+   * Se considera 15 minutos de tolerancia después de las 8:00 AM.
+   */
+  isTardanza(dateIso: string | undefined): boolean {
+    if (!dateIso) return false;
+    try {
+      const d = new Date(dateIso);
+      if (isNaN(d.getTime())) return false;
+      const minutesSinceMidnight = d.getHours() * 60 + d.getMinutes();
+      return minutesSinceMidnight > 8 * 60 + 15; // después de 8:15 AM (15 min de tolerancia)
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Resumen para dashboard.
+   * - total: total de marcaciones (INGRESO + SALIDA).
+   * - totalIngresos: cantidad de registros tipo INGRESO.
+   * - totalTardanzas: ingresos después de las 8:15 AM.
+   * - diasConAsistencia: días distintos con al menos un INGRESO (para cálculo de faltas).
+   * - faltas: días del rango sin ningún INGRESO.
+   */
+  dashboardStats = computed(() => {
+    const list = this.itemsFilteredByUser();
+    const start = this.startDate();
+    const end = this.endDate();
+    const total = list.length;
+    const totalIngresos = list.filter((item) => item.type === 'INGRESO').length;
+    const totalTardanzas = list.filter(
+      (item) => item.type === 'INGRESO' && this.isTardanza(item.date),
+    ).length;
+    const diasConIngreso = new Set<string>();
+    const userIds = new Set<string>();
+    list.forEach((item) => {
+      if (item.type === 'INGRESO' && item.date) {
+        diasConIngreso.add(item.date.slice(0, 10));
+      }
+      const uid = typeof item.userId === 'string' ? item.userId : item.userId?._id;
+      if (uid) userIds.add(uid);
+    });
+    const diasConAsistencia = diasConIngreso.size;
+    // Contar días en rango excluyendo domingos
+    let diasEnRango = 0;
+    if (start && end) {
+      const s = new Date(start + 'T00:00:00');
+      const e = new Date(end + 'T00:00:00');
+      if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e >= s) {
+        const current = new Date(s);
+        while (current <= e) {
+          // Excluir domingos (getDay() === 0)
+          if (current.getDay() !== 0) {
+            diasEnRango++;
+          }
+          current.setDate(current.getDate() + 1);
+        }
+      }
+    }
+    const faltas = Math.max(0, diasEnRango - diasConAsistencia);
+    return {
+      total,
+      totalIngresos,
+      totalTardanzas,
+      diasConAsistencia,
+      faltas,
+      diasEnRango,
+      usuariosConMarcacion: userIds.size,
+    };
+  });
+
+  /** Marcaciones agrupadas por día (clave YYYY-MM-DD) para vista por días */
+  itemsByDay = computed(() => {
+    const list = this.filteredItems();
+    const map = new Map<string, TimeTracking[]>();
+    list.forEach((item) => {
+      const key = item.date ? item.date.slice(0, 10) : '';
+      if (!key) return;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(item);
+    });
+    map.forEach((arr) =>
+      arr.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+    );
+    const entries = Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+    return entries.map(([date, items]) => ({ date, items }));
+  });
+
+  /** Resumen por usuario para gerencia: asistencias, faltas, detalle por día */
+  summaryByUser = computed(() => {
+    const list = this.itemsFilteredByUser();
+    const start = this.startDate();
+    const end = this.endDate();
+    const filterUid = this.filterUserId();
+    const usersList = this.users();
+    // Contar días en rango excluyendo domingos
+    let diasEnRango = 0;
+    if (start && end) {
+      const s = new Date(start + 'T00:00:00');
+      const e = new Date(end + 'T00:00:00');
+      if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e >= s) {
+        const current = new Date(s);
+        while (current <= e) {
+          // Excluir domingos (getDay() === 0)
+          if (current.getDay() !== 0) {
+            diasEnRango++;
+          }
+          current.setDate(current.getDate() + 1);
+        }
+      }
+    }
+    const byUser = new Map<
+      string,
+      { userName: string; asistencias: Set<string>; items: TimeTracking[] }
+    >();
+    list.forEach((item) => {
+      const uid = this.getUserId(item);
+      if (!uid) return;
+      const name = this.getUserName(item);
+      if (!byUser.has(uid)) {
+        byUser.set(uid, { userName: name, asistencias: new Set(), items: [] });
+      }
+      const row = byUser.get(uid)!;
+      row.items.push(item);
+      if (item.type === 'INGRESO' && item.date) {
+        row.asistencias.add(item.date.slice(0, 10));
+      }
+    });
+    if (filterUid && !byUser.has(filterUid)) {
+      const u = usersList.find((x) => x._id === filterUid);
+      if (u) {
+        byUser.set(filterUid, {
+          userName: u.name,
+          asistencias: new Set(),
+          items: [],
+        });
+      }
+    }
+    const result: {
+      userId: string;
+      userName: string;
+      cargo: string;
+      totalMarcaciones: number;
+      asistencias: number;
+      faltas: number;
+      tardanzas: number;
+      // items: TimeTracking[]; // Removed raw items if not needed, but keeping for now if referenced elsewhere, actually removed from push above so remove here
+      dailyGroups: { date: string; ingresos: TimeTracking[]; salidas: TimeTracking[] }[];
+    }[] = [];
+    byUser.forEach((row, userId) => {
+      const items = row.items.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
+      const asistencias = row.asistencias.size;
+      const faltas = Math.max(0, diasEnRango - asistencias);
+      const tardanzas = items.filter(
+        (item) => item.type === 'INGRESO' && this.isTardanza(item.date),
+      ).length;
+      const dailyGroups: { date: string; ingresos: TimeTracking[]; salidas: TimeTracking[] }[] = [];
+
+      const dayMap = new Map<string, TimeTracking[]>();
+      items.forEach((item) => {
+        const key = item.date ? item.date.slice(0, 10) : '';
+        if (!key) return;
+        if (!dayMap.has(key)) dayMap.set(key, []);
+        dayMap.get(key)!.push(item);
+      });
+
+      // Ordenar días descendente (más reciente primero)
+      const sortedDays = Array.from(dayMap.keys()).sort((a, b) => b.localeCompare(a));
+
+      sortedDays.forEach((date) => {
+        const dayItems = dayMap.get(date)!;
+        // Ordenar items por hora ascendente dentro del día
+        dayItems.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        const ingresos = dayItems.filter(i => i.type === 'INGRESO');
+        const salidas = dayItems.filter(i => i.type === 'SALIDA');
+
+        dailyGroups.push({ date, ingresos, salidas });
+      });
+
+      const cargo = CARGO_POR_NOMBRE[this.normalizeName(row.userName)] ?? '';
+      result.push({
+        userId,
+        userName: row.userName,
+        cargo,
+        totalMarcaciones: items.length,
+        asistencias,
+        faltas,
+        tardanzas,
+        dailyGroups, // New grouped structure
+      });
+    });
+    result.sort((a, b) => a.userName.localeCompare(b.userName));
+    return result;
+  });
+
   ngOnInit() {
+    this.setDefaultDateRange();
+    this.initializeDownloadOptions();
     this.load();
     this.loadProjects();
+    if (this.canViewAllUsers() || this.canAddForOthers()) {
+      this.loadUsers();
+    }
+  }
+
+  private initializeDownloadOptions() {
+    this.downloadOptions = [
+      {
+        label: 'Descargar PDF (Consolidado)',
+        icon: 'pi pi-file-pdf',
+        command: () => this.downloadPdfReport(),
+      },
+      {
+        label: 'Descargar ZIP (PDFs Individuales)',
+        icon: 'pi pi-file-archive',
+        visible: this.canViewAllUsers(),
+        command: () => this.downloadAllPdfsByUser(),
+      },
+      {
+        label: 'Descargar Excel (.xlsx)',
+        icon: 'pi pi-file-excel',
+        command: () => this.downloadExcelReport(),
+      },
+    ];
+  }
+
+  async downloadExcelReport() {
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Excel',
+      detail: 'Generando archivo Excel...',
+    });
+    this.timeTrackingExcelService.exportToExcel(
+      this.summaryByUser(),
+      this.startDate(),
+      this.endDate(),
+    );
+  }
+
+  private setDefaultDateRange() {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+    this.startDate.set(this.formatDateYMD(start));
+    this.endDate.set(this.formatDateYMD(end));
+  }
+
+  private formatDateYMD(d: Date): string {
+    const y = d.getFullYear();
+    const m = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   constructor() {
@@ -193,26 +514,27 @@ export class TimeTrackingPage implements OnInit {
 
   load() {
     const currentUser = this.currentUser();
-    if (!currentUser?.id) {
-      this.items.set([]);
-      return;
+    const filters: TimeTrackingQueryParams = {};
+    if (this.canViewAllUsers()) {
+      // Gerencia y admin: cargar todos los usuarios del tenant seleccionado
+      const tenantId = this.tenantService.tenantId();
+      if (tenantId) filters.tenantId = tenantId;
+    } else {
+      if (!currentUser?.id) {
+        this.items.set([]);
+        return;
+      }
+      filters.userId = currentUser.id;
+      const tenantId = this.tenantService.tenantId();
+      if (tenantId) filters.tenantId = tenantId;
     }
-
-    const filters: {
-      userId: string;
-      startDate?: string;
-      endDate?: string;
-    } = { userId: currentUser.id };
-    const fd = this.filterDate();
-    if (fd) {
-      filters.startDate = fd;
-      filters.endDate = fd;
-    }
+    const start = this.startDate();
+    const end = this.endDate();
+    if (start) filters.startDate = start;
+    if (end) filters.endDate = end;
 
     this.timeTrackingApi.list(filters).subscribe({
-      next: (data) => {
-        this.items.set(data);
-      },
+      next: (data) => this.items.set(data),
       error: () => {
         this.messageService.add({
           severity: 'error',
@@ -223,31 +545,322 @@ export class TimeTrackingPage implements OnInit {
     });
   }
 
-  onFilterDateChange(value: Date | null) {
-    if (!value) {
-      this.filterDate.set(null);
-      this.load();
-      return;
+  /** Opciones para selector de período por mes (desde Enero 2026 hasta el mes actual). */
+  monthPeriodOptions = computed(() => {
+    const options: { label: string; value: string }[] = [];
+    const monthNames = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ];
+    const startYear = 2026;
+    const startMonth = 0; // Enero
+    const now = new Date();
+    const endYear = now.getFullYear();
+    const endMonth = now.getMonth();
+    for (let y = startYear; y <= endYear; y++) {
+      const mStart = y === startYear ? startMonth : 0;
+      const mEnd = y === endYear ? endMonth : 11;
+      for (let m = mStart; m <= mEnd; m++) {
+        const value = `${y}-${(m + 1).toString().padStart(2, '0')}`;
+        options.push({ label: `Período ${monthNames[m]} ${y}`, value });
+      }
     }
-    const y = value.getFullYear();
-    const m = (value.getMonth() + 1).toString().padStart(2, '0');
-    const d = value.getDate().toString().padStart(2, '0');
-    this.filterDate.set(`${y}-${m}-${d}`);
+    return options;
+  });
+
+  /** Devuelve "YYYY-MM" si el rango actual es un mes completo; si no, null. */
+  getSelectedMonthPeriod(): string | null {
+    const start = this.startDate();
+    const end = this.endDate();
+    if (!start || !end || start.length < 7 || end.length < 7) return null;
+    const [sy, sm] = [start.slice(0, 4), start.slice(5, 7)];
+    if (start !== `${sy}-${sm}-01`) return null;
+    const lastDay = new Date(parseInt(sy, 10), parseInt(sm, 10), 0);
+    const lastStr = this.formatDateYMD(lastDay);
+    return end === lastStr ? `${sy}-${sm}` : null;
+  }
+
+  /** Aplica el rango del mes seleccionado (valor "YYYY-MM") y recarga. */
+  onMonthPeriodChange(value: string | null): void {
+    if (!value || value.length < 7) return;
+    const [y, m] = [value.slice(0, 4), value.slice(5, 7)];
+    const year = parseInt(y, 10);
+    const month = parseInt(m, 10);
+    const first = new Date(year, month - 1, 1);
+    const last = new Date(year, month, 0);
+    this.startDate.set(this.formatDateYMD(first));
+    this.endDate.set(this.formatDateYMD(last));
     this.load();
   }
 
-  // Obtener la fecha del filtro como Date para el datepicker
-  getFilterDate = computed(() => {
-    const fd = this.filterDate();
-    if (!fd) return null;
+  onStartDateChange(value: Date | null) {
+    this.startDate.set(value ? this.formatDateYMD(value) : null);
+    this.load();
+  }
+
+  onEndDateChange(value: Date | null) {
+    this.endDate.set(value ? this.formatDateYMD(value) : null);
+    this.load();
+  }
+
+  getStartDateValue = computed(() => this.dateStringToDate(this.startDate()));
+  getEndDateValue = computed(() => this.dateStringToDate(this.endDate()));
+
+  private dateStringToDate(s: string | null): Date | null {
+    if (!s) return null;
     try {
-      const [year, month, day] = fd.split('-').map((x) => parseInt(x, 10));
-      if (!year || !month || !day) return null;
-      return new Date(year, month - 1, day);
+      const [y, m, d] = s.split('-').map((x) => parseInt(x, 10));
+      if (!y || !m || !d) return null;
+      return new Date(y, m - 1, d);
     } catch {
       return null;
     }
-  });
+  }
+
+  /** Normaliza el nombre para búsqueda en CARGO_POR_NOMBRE (minúsculas, sin espacios extra). */
+  private normalizeName(name: string): string {
+    return (name ?? '').trim().toLowerCase();
+  }
+
+  /** Carga todos los usuarios del tenant (todas las páginas) para el filtro de gerencia. */
+  loadUsers() {
+    const tenantId = this.tenantService.tenantId();
+    this.usersApi.listAll(tenantId ?? undefined).subscribe({
+      next: (data) => this.users.set(data),
+      error: () => {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Usuarios',
+          detail: 'No se pudo cargar la lista de usuarios para el filtro',
+        });
+      },
+    });
+  }
+
+  getUserId(item: TimeTracking): string | null {
+    const u = item.userId;
+    if (!u) return null;
+    if (typeof u === 'string') return u;
+    if (typeof u === 'object' && '_id' in u) return u._id;
+    return null;
+  }
+
+  getUserName(item: TimeTracking): string {
+    const u = item.userId;
+    if (!u) return '-';
+    if (typeof u === 'object' && 'name' in u) return u.name ?? u.email ?? '-';
+    return '-';
+  }
+
+
+
+  onFilterUserChange(value: string | null): void {
+    this.filterUserId.set(value ?? null);
+  }
+
+  getFilterUserValue = computed(() => this.filterUserId());
+
+  /** Formatea la hora desde ISO (HH:mm). */
+  private formatTime(dateIso: string | undefined): string {
+    if (!dateIso) return '-';
+    try {
+      const d = new Date(dateIso);
+      if (isNaN(d.getTime())) return '-';
+      const h = d.getHours().toString().padStart(2, '0');
+      const m = d.getMinutes().toString().padStart(2, '0');
+      return `${h}:${m}`;
+    } catch {
+      return '-';
+    }
+  }
+
+  /** Genera y descarga el PDF de reporte de marcaciones para gerencia. */
+  downloadPdfReport(): void {
+    if (!this.canViewAllUsers()) return;
+    const start = this.startDate();
+    const end = this.endDate();
+    if (!start || !end) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Rango requerido',
+        detail: 'Seleccione rango de fechas antes de descargar el PDF',
+      });
+      return;
+    }
+    const stats = this.dashboardStats();
+    const summary = this.summaryByUser();
+    const reportUsers: TimeTrackingReportUser[] = summary.map((u) => ({
+      userName: u.userName,
+      asistencias: u.asistencias,
+      tardanzas: u.tardanzas,
+      faltas: u.faltas,
+      itemsByDay: u.dailyGroups.map((day) => {
+        const sortedItems = [...day.ingresos, ...day.salidas].sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+        return {
+          date: day.date,
+          items: sortedItems.map(
+            (item): TimeTrackingReportMark => ({
+              fecha: day.date,
+              hora: this.formatTime(item.date),
+              tipo: item.type ?? '-',
+              tardanza: item.type === 'INGRESO' && this.isTardanza(item.date),
+              ubicacion: this.formatLocation(item) || '-',
+            }),
+          ),
+        };
+      }),
+    }));
+    const data: TimeTrackingReportData = {
+      startDate: start,
+      endDate: end,
+      kpis: {
+        asistencias: stats.diasConAsistencia,
+        totalTardanzas: stats.totalTardanzas,
+        faltas: stats.faltas,
+      },
+      users: reportUsers,
+    };
+    void this.downloadPdfReportAsync(data, start, end);
+  }
+
+  /** Genera un PDF por usuario y los descarga en un único ZIP. */
+  async downloadAllPdfsByUser(): Promise<void> {
+    if (!this.canViewAllUsers()) return;
+    const start = this.startDate();
+    const end = this.endDate();
+    if (!start || !end) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Rango requerido',
+        detail: 'Seleccione rango de fechas antes de descargar el ZIP',
+      });
+      return;
+    }
+    const summary = this.summaryByUser();
+    if (summary.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Sin usuarios',
+        detail: 'No hay usuarios con datos en el período seleccionado',
+      });
+      return;
+    }
+    this.downloadingAllPdfs.set(true);
+    try {
+      const zip = new JSZip();
+      for (const u of summary) {
+        const reportUser: TimeTrackingReportUser = {
+          userName: u.userName,
+          asistencias: u.asistencias,
+          tardanzas: u.tardanzas,
+          faltas: u.faltas,
+          itemsByDay: u.dailyGroups.map((day) => {
+            const sortedItems = [...day.ingresos, ...day.salidas].sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+            );
+            return {
+              date: day.date,
+              items: sortedItems.map(
+                (item): TimeTrackingReportMark => ({
+                  fecha: day.date,
+                  hora: this.formatTime(item.date),
+                  tipo: item.type ?? '-',
+                  tardanza: item.type === 'INGRESO' && this.isTardanza(item.date),
+                  ubicacion: this.formatLocation(item) || '-',
+                }),
+              ),
+            };
+          }),
+        };
+        const data: TimeTrackingReportData = {
+          startDate: start,
+          endDate: end,
+          kpis: {
+            asistencias: u.asistencias,
+            totalTardanzas: u.tardanzas,
+            faltas: u.faltas,
+          },
+          users: [reportUser],
+        };
+        const blob = await this.timeTrackingPdfService.generateReport(data);
+        const nombreArchivo = this.sanitizeFileName(u.userName);
+        zip.file(`reporte-asistencias_${start}_${end}_${nombreArchivo}.pdf`, blob);
+      }
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `reportes-asistencias_${start}_${end}.zip`;
+      link.click();
+      URL.revokeObjectURL(url);
+      this.messageService.add({
+        severity: 'success',
+        summary: 'ZIP descargado',
+        detail: `Se descargó el ZIP con ${summary.length} reporte(s) de asistencias`,
+      });
+    } catch (err) {
+      console.error(err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo generar el ZIP',
+      });
+    } finally {
+      this.downloadingAllPdfs.set(false);
+    }
+  }
+
+  /** Sanitiza el nombre para usarlo en el nombre del archivo (sin espacios ni caracteres problemáticos). */
+  private sanitizeFileName(name: string): string {
+    return (
+      (name ?? '')
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-zA-Z0-9-_]/g, '')
+        .slice(0, 50) || 'usuario'
+    );
+  }
+
+  private async downloadPdfReportAsync(
+    data: TimeTrackingReportData,
+    start: string,
+    end: string,
+  ): Promise<void> {
+    try {
+      const blob = await this.timeTrackingPdfService.generateReport(data);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `reporte-asistencias_${start}_${end}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      this.messageService.add({
+        severity: 'success',
+        summary: 'PDF descargado',
+        detail: 'El reporte de marcaciones se ha descargado correctamente',
+      });
+    } catch (err) {
+      console.error(err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo generar el PDF',
+      });
+    }
+  }
 
   loadProjects() {
     this.projectsApi.getOptions().subscribe({
@@ -377,10 +990,19 @@ export class TimeTrackingPage implements OnInit {
   }
 
   /**
-   * Formatea la ubicación GPS
+   * Formatea la ubicación: usa la dirección guardada en el registro si existe, sino coordenadas.
    */
-  formatLocation(location?: Location): string {
+  formatLocation(item: { location?: Location; address?: string } | null | undefined): string {
+    if (!item) return '-';
+    if (item.address && item.address.trim()) {
+      return item.address.trim();
+    }
+    const location = item.location;
     if (!location) return '-';
+    return this.formatCoordinates(location);
+  }
+
+  private formatCoordinates(location: Location): string {
     return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
   }
 
@@ -464,6 +1086,7 @@ export class TimeTrackingPage implements OnInit {
       date: item.date,
       type: item.type,
       location: cleanedLocation,
+      address: item.address,
     };
 
     this.timeTrackingApi.update(item._id, payload).subscribe({
@@ -605,6 +1228,94 @@ export class TimeTrackingPage implements OnInit {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  // Diálogo Agregar marcación (solo admin)
+  addingMarkUserId = signal('');
+  addingMarkDate = signal('');
+  addingMarkType = signal<TimeTrackingType>('INGRESO');
+
+  openAddMarkDialog() {
+    this.addingMarkUserId.set(this.currentUser()?.id ?? '');
+    this.addingMarkDate.set('');
+    this.addingMarkType.set('INGRESO');
+    this.showAddMarkDialog.set(true);
+  }
+
+  closeAddMarkDialog() {
+    this.showAddMarkDialog.set(false);
+  }
+
+  getAddMarkDateTime = computed(() => {
+    const s = this.addingMarkDate();
+    if (!s) return '';
+    try {
+      const d = new Date(s);
+      if (isNaN(d.getTime())) return '';
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const h = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      return `${y}-${m}-${day}T${h}:${min}`;
+    } catch {
+      return '';
+    }
+  });
+
+  onAddMarkDateTimeChange(value: string) {
+    if (!value) {
+      this.addingMarkDate.set('');
+      return;
+    }
+    try {
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) this.addingMarkDate.set(d.toISOString());
+    } catch { }
+  }
+
+  saveAddMark() {
+    const userId = this.addingMarkUserId().trim();
+    const date = this.addingMarkDate();
+    const type = this.addingMarkType();
+    if (!userId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Seleccione un usuario',
+      });
+      return;
+    }
+    if (!date) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Indique fecha y hora',
+      });
+      return;
+    }
+    const payload: CreateTimeTrackingRequest = {
+      userId,
+      date,
+      type,
+    };
+    this.timeTrackingApi.create(payload).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Marcación agregada correctamente',
+        });
+        this.load();
+        this.closeAddMarkDialog();
+      },
+      error: (err) =>
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: this.getErrorMessage(err),
+        }),
+    });
   }
 
   // Validación
@@ -779,7 +1490,7 @@ export class TimeTrackingPage implements OnInit {
           enableHighAccuracy: false, // Más rápido, menos preciso (suficiente para marcación)
           timeout: 5000, // Reducido a 5 segundos para respuesta más rápida
           maximumAge: 30000, // Aceptar ubicación cacheada de hasta 30 segundos
-        }
+        },
       );
     });
   }
@@ -819,7 +1530,7 @@ export class TimeTrackingPage implements OnInit {
         severity: 'warn',
         summary: 'Permisos requeridos',
         detail: `Debe tener los permisos de ${missingPermissions.join(
-          ' y '
+          ' y ',
         )} para realizar la marcación.`,
         life: 5000,
       });
@@ -1127,7 +1838,7 @@ export class TimeTrackingPage implements OnInit {
         await this.markAttendanceWithFace();
       },
       'image/jpeg',
-      0.9
+      0.9,
     );
   }
 
@@ -1175,33 +1886,48 @@ export class TimeTrackingPage implements OnInit {
       this.faceRecognitionApi
         .markAttendanceWithDescriptor(image, descriptorArr, tenantId, request)
         .subscribe({
-          next: (attendanceRecord: AttendanceRecord) => {
-            // Obtener el userId del registro de asistencia
+          next: async (attendanceRecord: AttendanceRecord) => {
             const userId =
               typeof attendanceRecord.userId === 'object' &&
-              attendanceRecord.userId !== null &&
-              '_id' in attendanceRecord.userId
+                attendanceRecord.userId !== null &&
+                '_id' in attendanceRecord.userId
                 ? (attendanceRecord.userId as { _id: string })._id
                 : String(attendanceRecord.userId);
 
-            // Crear automáticamente el registro de tiempo
             const timestamp = new Date(attendanceRecord.timestamp);
-            const date = timestamp.toISOString(); // ISO datetime completo
+            const date = timestamp.toISOString();
 
+            const loc = this.currentLocation();
+            let address: string | undefined;
+            if (loc) {
+              try {
+                address = await this.geocodingService.getAddress(loc.latitude, loc.longitude);
+              } catch {
+                address = undefined;
+              }
+            }
             const timeTrackingPayload: CreateTimeTrackingRequest = {
-              userId: userId,
-              date: date,
+              userId,
+              date,
               type: this.markingType(),
               attendanceRecordId: attendanceRecord._id,
-              location: this.currentLocation() || undefined,
+              location: loc ?? undefined,
+              address: address ?? undefined,
             };
 
             this.timeTrackingApi.create(timeTrackingPayload).subscribe({
               next: () => {
+                const userName =
+                  typeof attendanceRecord.userId === 'object' &&
+                    attendanceRecord.userId !== null &&
+                    'name' in attendanceRecord.userId
+                    ? (attendanceRecord.userId as { name: string }).name
+                    : 'Usuario';
+
                 this.messageService.add({
                   severity: 'success',
                   summary: 'Éxito',
-                  detail: `Asistencia marcada correctamente. Confianza: ${(
+                  detail: `Asistencia de ${userName} marcada correctamente. Confianza: ${(
                     (attendanceRecord.confidence || 0) * 100
                   ).toFixed(1)}%`,
                 });

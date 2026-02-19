@@ -9,28 +9,36 @@
       class="w-full"
     />
     @if (canEdit()) {
-    <button
-      pButton
-      type="button"
-      (click)="newItem()"
-      label="Nuevo"
-      icon="pi pi-plus"
-      aria-label="Crear nueva orden"
-      class="w-full xl:w-auto"
-    ></button>
+      <button
+        pButton
+        type="button"
+        (click)="newItem()"
+        label="Nuevo"
+        icon="pi pi-plus"
+        aria-label="Crear nueva orden"
+        class="w-full xl:w-auto"
+      ></button>
     }
   </div>
 
   <!-- Vista Desktop: Tabla normal -->
   <div class="hidden md:block">
-    <p-table [value]="items()">
+    <p-table
+      [value]="items()"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[5, 10, 25]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+      styleClass="p-datatable-sm"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th>Número</th>
-          <th>Cliente</th>
-          <th>Tipo</th>
-          <th>Documentos</th>
-          <th>Fecha Creación</th>
+          <th class="text-left">Número</th>
+          <th class="text-left">Cliente</th>
+          <th class="text-left">Tipo</th>
+          <th class="text-left">Documentos</th>
+          <th class="text-left">Fecha Creación</th>
           <th class="text-right">Acciones</th>
         </tr>
       </ng-template>
@@ -50,7 +58,7 @@
               class="px-2 py-1 rounded-full text-xs font-medium"
               [class]="{
                 'bg-blue-100 text-blue-800': row.type === 'purchase',
-                'bg-green-100 text-green-800': row.type === 'service'
+                'bg-green-100 text-green-800': row.type === 'service',
               }"
             >
               {{ row.type === 'purchase' ? 'Compra' : 'Servicio' }}
@@ -66,7 +74,9 @@
                 type="button"
                 icon="pi pi-upload"
                 label="Documentos"
-                class="p-button-text p-button-sm"
+                [text]="true"
+                severity="info"
+                size="small"
                 (click)="openDocuments(row)"
                 pTooltip="Gestionar documentos"
                 tooltipPosition="top"
@@ -74,32 +84,50 @@
               ></button>
             </div>
           </td>
-          <td>{{ row.createdAt | date : 'dd/MM/yyyy' }}</td>
-          <td class="text-right flex gap-3">
-            <button
-              pButton
-              icon="pi pi-eye"
-              class="p-button-text p-button-sm"
-              pTooltip="Ver detalles"
-              (click)="viewDetails(row)"
-              aria-label="Ver detalles de la orden"
-            ></button>
-            @if (canEdit()) {
-            <button
-              pButton
-              icon="pi pi-pencil"
-              class="p-button-text"
-              (click)="editItem(row)"
-              aria-label="Editar orden"
-            ></button>
-            <button
-              pButton
-              icon="pi pi-trash"
-              class="p-button-text p-button-danger"
-              (click)="remove(row)"
-              aria-label="Eliminar orden"
-            ></button>
-            }
+          <td>{{ row.createdAt | date: 'dd/MM/yyyy' }}</td>
+          <td class="text-right">
+            <div class="flex items-center justify-end gap-2">
+              <button
+                pButton
+                icon="pi pi-eye"
+                [text]="true"
+                severity="info"
+                size="small"
+                pTooltip="Ver detalles"
+                (click)="viewDetails(row)"
+                aria-label="Ver detalles de la orden"
+              ></button>
+              @if (canEdit()) {
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  severity="warn"
+                  size="small"
+                  (click)="editItem(row)"
+                  aria-label="Editar orden"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  [text]="true"
+                  severity="danger"
+                  size="small"
+                  (click)="remove(row)"
+                  aria-label="Eliminar orden"
+                ></button>
+              }
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-8 text-gray-500">
+            <div class="flex flex-col items-center space-y-2">
+              <i class="pi pi-inbox text-2xl text-gray-400"></i>
+              <p>No hay datos disponibles</p>
+            </div>
           </td>
         </tr>
       </ng-template>
@@ -109,181 +137,183 @@
   <!-- Vista Móvil: Accordion desplegable -->
   <div class="md:hidden space-y-3">
     @for (row of items(); track row._id || $index) {
-    <div
-      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
-    >
-      <!-- Header del accordion (siempre visible) -->
-      <button
-        type="button"
-        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-        (click)="toggleRow(row._id)"
+      <div
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
       >
-        <div class="flex-1 text-left min-w-0 pr-4">
-          <div class="font-mono text-sm text-gray-900 dark:text-gray-100 mb-1">
-            {{ row.number }}
-          </div>
-          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate mt-2">
-            {{ row.clientName }}
-          </div>
-          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-            {{ row.clientId }}
-          </div>
-          <div class="mt-2">
-            <span
-              class="px-2 py-1 rounded-full text-xs font-medium"
-              [class]="{
-                'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
-                  row.type === 'purchase',
-                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
-                  row.type === 'service'
-              }"
-            >
-              {{ row.type === 'purchase' ? 'Compra' : 'Servicio' }}
-            </span>
-          </div>
-        </div>
-        <div class="flex-shrink-0">
-          <i
-            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
-            [class.pi-chevron-down]="!isRowExpanded(row._id)"
-            [class.pi-chevron-up]="isRowExpanded(row._id)"
-          ></i>
-        </div>
-      </button>
-
-      <!-- Contenido del accordion (desplegable) -->
-      @if (isRowExpanded(row._id)) {
-      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
-        <div class="px-4 py-4 space-y-4">
-          <!-- Número -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Número
+        <!-- Header del accordion (siempre visible) -->
+        <button
+          type="button"
+          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+          (click)="toggleRow(row._id)"
+        >
+          <div class="flex-1 text-left min-w-0 pr-4">
+            <div class="font-mono text-sm text-gray-900 dark:text-gray-100 mb-1">
+              {{ row.number }}
             </div>
-            <div class="font-mono text-sm text-gray-900 dark:text-gray-100">{{ row.number }}</div>
-          </div>
-
-          <!-- Cliente -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Cliente
-            </div>
-            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words">
+            <div class="font-semibold text-gray-900 dark:text-gray-100 truncate mt-2">
               {{ row.clientName }}
             </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400 break-words mt-1">
+            <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
               {{ row.clientId }}
             </div>
-          </div>
-
-          <!-- Tipo -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Tipo
-            </div>
-            <div>
+            <div class="mt-2">
               <span
                 class="px-2 py-1 rounded-full text-xs font-medium"
                 [class]="{
                   'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
                     row.type === 'purchase',
                   'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
-                    row.type === 'service'
+                    row.type === 'service',
                 }"
               >
                 {{ row.type === 'purchase' ? 'Compra' : 'Servicio' }}
               </span>
             </div>
           </div>
-
-          <!-- Fecha Creación -->
-          @if (row.createdAt) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Fecha Creación
-            </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100">
-              {{ row.createdAt | date : 'dd/MM/yyyy' }}
-            </div>
+          <div class="flex-shrink-0">
+            <i
+              class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+              [class.pi-chevron-down]="!isRowExpanded(row._id)"
+              [class.pi-chevron-up]="isRowExpanded(row._id)"
+            ></i>
           </div>
-          }
+        </button>
 
-          <!-- Fecha Actualización -->
-          @if (row.updatedAt) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Última Actualización
-            </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100">
-              {{ row.updatedAt | date : 'dd/MM/yyyy' }}
-            </div>
-          </div>
-          }
+        <!-- Contenido del accordion (desplegable) -->
+        @if (isRowExpanded(row._id)) {
+          <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+            <div class="px-4 py-4 space-y-4">
+              <!-- Número -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Número
+                </div>
+                <div class="font-mono text-sm text-gray-900 dark:text-gray-100">
+                  {{ row.number }}
+                </div>
+              </div>
 
-          <!-- Documentos -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Documentos
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-              {{ row.documents?.length || 0 }} documentos
-            </div>
-          </div>
+              <!-- Cliente -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Cliente
+                </div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words">
+                  {{ row.clientName }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 break-words mt-1">
+                  {{ row.clientId }}
+                </div>
+              </div>
 
-          <!-- Acciones -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Acciones
-            </div>
-            <div class="flex flex-col gap-2">
-              <button
-                pButton
-                icon="pi pi-upload"
-                label="Gestionar documentos"
-                class="p-button-text p-button-sm w-full justify-start"
-                (click)="openDocuments(row)"
-                aria-label="Gestionar documentos"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-eye"
-                label="Ver detalles"
-                class="p-button-text p-button-sm w-full justify-start"
-                (click)="viewDetails(row)"
-                aria-label="Ver detalles de la orden"
-              ></button>
-              @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                label="Editar"
-                class="p-button-text p-button-sm w-full justify-start"
-                (click)="editItem(row)"
-                aria-label="Editar orden"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                label="Eliminar"
-                class="p-button-text p-button-sm p-button-danger w-full justify-start"
-                (click)="remove(row)"
-                aria-label="Eliminar orden"
-              ></button>
+              <!-- Tipo -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Tipo
+                </div>
+                <div>
+                  <span
+                    class="px-2 py-1 rounded-full text-xs font-medium"
+                    [class]="{
+                      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
+                        row.type === 'purchase',
+                      'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
+                        row.type === 'service',
+                    }"
+                  >
+                    {{ row.type === 'purchase' ? 'Compra' : 'Servicio' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Fecha Creación -->
+              @if (row.createdAt) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Fecha Creación
+                  </div>
+                  <div class="text-sm text-gray-900 dark:text-gray-100">
+                    {{ row.createdAt | date: 'dd/MM/yyyy' }}
+                  </div>
+                </div>
               }
+
+              <!-- Fecha Actualización -->
+              @if (row.updatedAt) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Última Actualización
+                  </div>
+                  <div class="text-sm text-gray-900 dark:text-gray-100">
+                    {{ row.updatedAt | date: 'dd/MM/yyyy' }}
+                  </div>
+                </div>
+              }
+
+              <!-- Documentos -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Documentos
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                  {{ row.documents?.length || 0 }} documentos
+                </div>
+              </div>
+
+              <!-- Acciones -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                  Acciones
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-upload"
+                    label="Gestionar documentos"
+                    class="p-button-text p-button-sm w-full justify-start"
+                    (click)="openDocuments(row)"
+                    aria-label="Gestionar documentos"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    label="Ver detalles"
+                    class="p-button-text p-button-sm w-full justify-start"
+                    (click)="viewDetails(row)"
+                    aria-label="Ver detalles de la orden"
+                  ></button>
+                  @if (canEdit()) {
+                    <button
+                      pButton
+                      icon="pi pi-pencil"
+                      label="Editar"
+                      class="p-button-text p-button-sm w-full justify-start"
+                      (click)="editItem(row)"
+                      aria-label="Editar orden"
+                    ></button>
+                    <button
+                      pButton
+                      icon="pi pi-trash"
+                      label="Eliminar"
+                      class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                      (click)="remove(row)"
+                      aria-label="Eliminar orden"
+                    ></button>
+                  }
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        }
       </div>
-      }
-    </div>
     }
 
     <!-- Estado vacío móvil -->
     @if (items().length === 0) {
-    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-      <i class="pi pi-inbox text-4xl mb-2"></i>
-      <p>No se encontraron órdenes</p>
-    </div>
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <i class="pi pi-inbox text-4xl mb-2"></i>
+        <p>No se encontraron órdenes</p>
+      </div>
     }
   </div>
 
@@ -346,114 +376,114 @@
 
           <!-- Lista de archivos seleccionados -->
           @if (selectedFiles().length > 0) {
-          <div class="space-y-2">
-            <h5 class="font-medium text-gray-800">Archivos seleccionados:</h5>
-            @for (file of selectedFiles(); track file.name) {
-            <div class="flex items-center justify-between p-2 bg-white rounded border">
-              <div class="flex items-center gap-2">
-                <i class="pi pi-file text-blue-500"></i>
-                <span class="text-sm">{{ file.name }}</span>
-                <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
-              </div>
-              <button
-                pButton
-                icon="pi pi-times"
-                class="p-button-text p-button-danger p-button-sm"
-                (click)="removeSelectedFile(file)"
-                aria-label="Eliminar archivo seleccionado"
-              ></button>
-            </div>
-            }
+            <div class="space-y-2">
+              <h5 class="font-medium text-gray-800">Archivos seleccionados:</h5>
+              @for (file of selectedFiles(); track file.name) {
+                <div class="flex items-center justify-between p-2 bg-white rounded border">
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-file text-blue-500"></i>
+                    <span class="text-sm">{{ file.name }}</span>
+                    <span class="text-xs text-gray-500">({{ formatFileSize(file.size) }})</span>
+                  </div>
+                  <button
+                    pButton
+                    icon="pi pi-times"
+                    class="p-button-text p-button-danger p-button-sm"
+                    (click)="removeSelectedFile(file)"
+                    aria-label="Eliminar archivo seleccionado"
+                  ></button>
+                </div>
+              }
 
-            <!-- Botones de acción -->
-            <div class="flex gap-2 pt-2">
-              <button
-                pButton
-                type="button"
-                label="Subir Archivos"
-                icon="pi pi-upload"
-                (click)="uploadSelectedFiles()"
-                [disabled]="selectedFiles().length === 0"
-                class="flex-1"
-                aria-label="Subir archivos seleccionados"
-              ></button>
-              <button
-                pButton
-                type="button"
-                label="Limpiar"
-                icon="pi pi-times"
-                class="p-button-text"
-                (click)="clearSelectedFiles()"
-                [disabled]="selectedFiles().length === 0"
-                aria-label="Limpiar archivos seleccionados"
-              ></button>
+              <!-- Botones de acción -->
+              <div class="flex gap-2 pt-2">
+                <button
+                  pButton
+                  type="button"
+                  label="Subir Archivos"
+                  icon="pi pi-upload"
+                  (click)="uploadSelectedFiles()"
+                  [disabled]="selectedFiles().length === 0"
+                  class="flex-1"
+                  aria-label="Subir archivos seleccionados"
+                ></button>
+                <button
+                  pButton
+                  type="button"
+                  label="Limpiar"
+                  icon="pi pi-times"
+                  class="p-button-text"
+                  (click)="clearSelectedFiles()"
+                  [disabled]="selectedFiles().length === 0"
+                  aria-label="Limpiar archivos seleccionados"
+                ></button>
+              </div>
             </div>
-          </div>
           }
         </div>
       </div>
 
       <!-- Lista de documentos existentes -->
       @if (documentsViewing()?.documents?.length) {
-      <div class="space-y-3">
-        <h4 class="text-lg font-semibold text-gray-800">
-          Documentos Adjuntos ({{ documentsViewing()?.documents?.length }})
-        </h4>
-        <div class="grid gap-3">
-          @for (doc of documentsViewing()?.documents; track $index) {
-          <div
-            class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors gap-3"
-          >
-            <div class="flex items-start sm:items-center gap-4 min-w-0 flex-1 w-full sm:w-auto">
-              <div class="flex-shrink-0">
-                <i [class]="getFileIcon(doc) + ' text-2xl ' + getFileTypeColor(doc)"></i>
+        <div class="space-y-3">
+          <h4 class="text-lg font-semibold text-gray-800">
+            Documentos Adjuntos ({{ documentsViewing()?.documents?.length }})
+          </h4>
+          <div class="grid gap-3">
+            @for (doc of documentsViewing()?.documents; track $index) {
+              <div
+                class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors gap-3"
+              >
+                <div class="flex items-start sm:items-center gap-4 min-w-0 flex-1 w-full sm:w-auto">
+                  <div class="flex-shrink-0">
+                    <i [class]="getFileIcon(doc) + ' text-2xl ' + getFileTypeColor(doc)"></i>
+                  </div>
+                  <div class="min-w-0 flex-1 w-full sm:w-auto">
+                    <p class="font-medium text-gray-900 break-all whitespace-normal">
+                      {{ doc.split('/').pop() }}
+                    </p>
+                    <p class="text-sm text-gray-500 break-all whitespace-normal">{{ doc }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    class="p-button-text p-button-sm"
+                    (click)="viewDocument(doc)"
+                    pTooltip="Ver documento"
+                    tooltipPosition="top"
+                    aria-label="Ver documento"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-download"
+                    class="p-button-text p-button-sm"
+                    (click)="downloadDocument(doc)"
+                    pTooltip="Descargar documento"
+                    tooltipPosition="top"
+                    aria-label="Descargar documento"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-danger p-button-sm"
+                    (click)="removeDocument(doc)"
+                    pTooltip="Eliminar documento"
+                    tooltipPosition="top"
+                    aria-label="Eliminar documento"
+                  ></button>
+                </div>
               </div>
-              <div class="min-w-0 flex-1 w-full sm:w-auto">
-                <p class="font-medium text-gray-900 break-all whitespace-normal">
-                  {{ doc.split('/').pop() }}
-                </p>
-                <p class="text-sm text-gray-500 break-all whitespace-normal">{{ doc }}</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button
-                pButton
-                icon="pi pi-eye"
-                class="p-button-text p-button-sm"
-                (click)="viewDocument(doc)"
-                pTooltip="Ver documento"
-                tooltipPosition="top"
-                aria-label="Ver documento"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-download"
-                class="p-button-text p-button-sm"
-                (click)="downloadDocument(doc)"
-                pTooltip="Descargar documento"
-                tooltipPosition="top"
-                aria-label="Descargar documento"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-text p-button-danger p-button-sm"
-                (click)="removeDocument(doc)"
-                pTooltip="Eliminar documento"
-                tooltipPosition="top"
-                aria-label="Eliminar documento"
-              ></button>
-            </div>
+            }
           </div>
-          }
         </div>
-      </div>
       } @else {
-      <div class="text-center py-12 bg-gray-50 rounded-lg">
-        <i class="pi pi-file text-4xl text-gray-400 mb-3"></i>
-        <p class="text-gray-600 font-medium">No hay documentos adjuntos</p>
-        <p class="text-sm text-gray-500 mt-1">Sube documentos usando el área de arriba</p>
-      </div>
+        <div class="text-center py-12 bg-gray-50 rounded-lg">
+          <i class="pi pi-file text-4xl text-gray-400 mb-3"></i>
+          <p class="text-gray-600 font-medium">No hay documentos adjuntos</p>
+          <p class="text-sm text-gray-500 mt-1">Sube documentos usando el área de arriba</p>
+        </div>
       }
     </div>
 
@@ -461,7 +491,8 @@
       <div class="flex justify-between items-center">
         <div class="text-sm text-gray-500 text-nowrap">
           @if (documentsViewing()?.documents?.length) {
-          {{ documentsViewing()?.documents?.length }} documento(s) adjunto(s) }
+            {{ documentsViewing()?.documents?.length }} documento(s) adjunto(s)
+          }
         </div>
         <button
           pButton
@@ -490,105 +521,106 @@
       </div>
     </ng-template>
     @if (viewingOrder()) {
-    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
-      <!-- Información básica -->
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-info-circle text-blue-500"></i>
-          Información Básica
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Número de Orden</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-mono font-medium">
-              {{ viewingOrder()?.number }}
+      <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+        <!-- Información básica -->
+        <div class="mb-6">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+          >
+            <i class="pi pi-info-circle text-blue-500"></i>
+            Información Básica
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Número de Orden</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 font-mono font-medium">
+                {{ viewingOrder()?.number }}
+              </div>
             </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Tipo</span
-            >
-            <span
-              class="px-2 py-1 rounded-full text-xs font-medium"
-              [class]="{
-                'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
-                  viewingOrder()?.type === 'purchase',
-                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
-                  viewingOrder()?.type === 'service'
-              }"
-            >
-              {{ viewingOrder()?.type === 'purchase' ? 'Compra' : 'Servicio' }}
-            </span>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cliente</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingOrder()?.clientName }}
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Tipo</span
+              >
+              <span
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                [class]="{
+                  'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
+                    viewingOrder()?.type === 'purchase',
+                  'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
+                    viewingOrder()?.type === 'service',
+                }"
+              >
+                {{ viewingOrder()?.type === 'purchase' ? 'Compra' : 'Servicio' }}
+              </span>
             </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >ID Cliente</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-mono text-sm">
-              {{ viewingOrder()?.clientId }}
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Cliente</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ viewingOrder()?.clientName }}
+              </div>
             </div>
-          </div>
-          @if (viewingOrder()?.createdAt) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Creación</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingOrder()?.createdAt | date : 'dd/MM/yyyy HH:mm' }}
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >ID Cliente</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 font-mono text-sm">
+                {{ viewingOrder()?.clientId }}
+              </div>
             </div>
+            @if (viewingOrder()?.createdAt) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Fecha de Creación</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingOrder()?.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                </div>
+              </div>
+            }
+            @if (viewingOrder()?.updatedAt) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Última Actualización</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingOrder()?.updatedAt | date: 'dd/MM/yyyy HH:mm' }}
+                </div>
+              </div>
+            }
           </div>
-          } @if (viewingOrder()?.updatedAt) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Última Actualización</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingOrder()?.updatedAt | date : 'dd/MM/yyyy HH:mm' }}
-            </div>
-          </div>
-          }
         </div>
-      </div>
 
-      <!-- Documentos -->
-      @if (viewingOrder()?.documents?.length) {
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-file text-indigo-500"></i>
-          Documentos Adjuntos
-        </h3>
-        <div class="space-y-2">
-          @for (document of viewingOrder()?.documents; track document) {
-          <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
-            <i class="pi pi-file text-gray-500"></i>
-            <a
-              [href]="document"
-              target="_blank"
-              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+        <!-- Documentos -->
+        @if (viewingOrder()?.documents?.length) {
+          <div>
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
             >
-              <i class="pi pi-external-link text-xs"></i>
-              Ver documento
-            </a>
+              <i class="pi pi-file text-indigo-500"></i>
+              Documentos Adjuntos
+            </h3>
+            <div class="space-y-2">
+              @for (document of viewingOrder()?.documents; track document) {
+                <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
+                  <i class="pi pi-file text-gray-500"></i>
+                  <a
+                    [href]="document"
+                    target="_blank"
+                    class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+                  >
+                    <i class="pi pi-external-link text-xs"></i>
+                    Ver documento
+                  </a>
+                </div>
+              }
+            </div>
           </div>
-          }
-        </div>
+        }
       </div>
-      }
-    </div>
     }
     <ng-template pTemplate="footer">
       <button

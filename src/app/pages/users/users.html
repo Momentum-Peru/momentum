@@ -7,24 +7,24 @@
     <div class="flex flex-col md:flex-row md:items-center gap-4">
       <h1 class="text-2xl font-bold text-gray-800">Gestión de Usuarios</h1>
       @if (stats()) {
-      <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-        <span class="flex items-center gap-1">
-          <i class="pi pi-users text-blue-500"></i>
-          {{ stats()?.total }} total
-        </span>
-        <span class="flex items-center gap-1">
-          <i class="pi pi-check-circle text-green-500"></i>
-          {{ stats()?.active }} activos
-        </span>
-        <span class="flex items-center gap-1">
-          <i class="pi pi-user-minus text-red-500"></i>
-          {{ stats()?.inactive }} inactivos
-        </span>
-        <span class="flex items-center gap-1">
-          <i class="pi pi-shield text-purple-500"></i>
-          {{ stats()?.admins }} administradores
-        </span>
-      </div>
+        <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+          <span class="flex items-center gap-1">
+            <i class="pi pi-users text-blue-500"></i>
+            {{ stats()?.total }} total
+          </span>
+          <span class="flex items-center gap-1">
+            <i class="pi pi-check-circle text-green-500"></i>
+            {{ stats()?.active }} activos
+          </span>
+          <span class="flex items-center gap-1">
+            <i class="pi pi-user-minus text-red-500"></i>
+            {{ stats()?.inactive }} inactivos
+          </span>
+          <span class="flex items-center gap-1">
+            <i class="pi pi-shield text-purple-500"></i>
+            {{ stats()?.admins }} administradores
+          </span>
+        </div>
       }
     </div>
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -33,19 +33,19 @@
         type="button"
         label="Estadísticas"
         icon="pi pi-chart-bar"
-        class="p-button-outlined"
+        [outlined]="true"
         (click)="openStats()"
         aria-label="Ver estadísticas de usuarios"
       ></button>
       @if (canEdit()) {
-      <button
-        pButton
-        type="button"
-        label="Nuevo Usuario"
-        icon="pi pi-user-plus"
-        (click)="newUser()"
-        aria-label="Crear nuevo usuario"
-      ></button>
+        <button
+          pButton
+          type="button"
+          label="Nuevo Usuario"
+          icon="pi pi-user-plus"
+          (click)="newUser()"
+          aria-label="Crear nuevo usuario"
+        ></button>
       }
     </div>
   </div>
@@ -112,7 +112,8 @@
             type="button"
             label="Limpiar"
             icon="pi pi-filter-slash"
-            class="p-button-outlined w-full"
+            [outlined]="true"
+            class="w-full"
             (click)="clearFilters()"
             aria-label="Limpiar filtros"
           ></button>
@@ -128,16 +129,30 @@
       [tableStyle]="{ 'min-width': '50rem' }"
       [paginator]="true"
       [rows]="10"
+      [rowsPerPageOptions]="[5, 10, 25]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
       [responsiveLayout]="'scroll'"
+      styleClass="p-datatable-sm"
     >
       <ng-template pTemplate="header">
         <tr>
-          <th class="whitespace-nowrap">Usuario</th>
-          <th class="whitespace-nowrap">Email</th>
-          <th class="whitespace-nowrap">Rol</th>
-          <th class="whitespace-nowrap">Estado</th>
-          <th class="whitespace-nowrap">Último acceso</th>
-          <th class="whitespace-nowrap text-right">Acciones</th>
+          <th class="text-left whitespace-nowrap">Usuario</th>
+          <th class="text-left whitespace-nowrap">Email</th>
+          <th class="text-left whitespace-nowrap">Rol</th>
+          <th class="text-left whitespace-nowrap">Estado</th>
+          <th class="text-left whitespace-nowrap">Último acceso</th>
+          <th class="text-right whitespace-nowrap">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-8 text-gray-500">
+            <div class="flex flex-col items-center space-y-2">
+              <i class="pi pi-inbox text-2xl text-gray-400"></i>
+              <p>No hay datos disponibles</p>
+            </div>
+          </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-user>
@@ -151,10 +166,10 @@
                 ID: {{ user.id }}
               </div>
               @if (user.googleId) {
-              <div class="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                <i class="pi pi-google text-xs"></i>
-                Google
-              </div>
+                <div class="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                  <i class="pi pi-google text-xs"></i>
+                  Google
+                </div>
               }
             </div>
           </td>
@@ -174,18 +189,18 @@
           </td>
           <td>
             @if (user.isActive) {
-            <p-tag value="Activo" severity="success"></p-tag>
+              <p-tag value="Activo" severity="success"></p-tag>
             } @else {
-            <p-tag value="Inactivo" severity="danger"></p-tag>
+              <p-tag value="Inactivo" severity="danger"></p-tag>
             }
           </td>
           <td>
             @if (user.lastLogin) {
-            <div class="text-sm text-gray-600 dark:text-gray-300">
-              {{ user.lastLogin | date : 'dd/MM/yyyy HH:mm' }}
-            </div>
+              <div class="text-sm text-gray-600 dark:text-gray-300">
+                {{ user.lastLogin | date: 'dd/MM/yyyy HH:mm' }}
+              </div>
             } @else {
-            <span class="text-gray-400 dark:text-gray-500 text-sm">Nunca</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Nunca</span>
             }
           </td>
           <td class="text-right">
@@ -199,30 +214,32 @@
                 aria-label="Ver detalles del usuario"
               ></button>
               @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                class="p-button-text p-button-sm"
-                pTooltip="Editar"
-                (click)="editUser(user)"
-                aria-label="Editar usuario"
-              ></button>
-              <button
-                pButton
-                [icon]="user.isActive ? 'pi pi-user-minus' : 'pi pi-user-plus'"
-                class="p-button-text p-button-sm"
-                [pTooltip]="user.isActive ? 'Desactivar usuario' : 'Activar usuario'"
-                (click)="toggleUserStatus(user)"
-                [attr.aria-label]="user.isActive ? 'Desactivar usuario' : 'Activar usuario'"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-text p-button-sm p-button-danger"
-                pTooltip="Eliminar"
-                (click)="confirmDelete(user)"
-                aria-label="Eliminar usuario"
-              ></button>
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  class="p-button-text p-button-sm"
+                  pTooltip="Editar"
+                  (click)="editUser(user)"
+                  aria-label="Editar usuario"
+                ></button>
+                <button
+                  pButton
+                  [icon]="user.isActive ? 'pi pi-user-minus' : 'pi pi-user-plus'"
+                  class="p-button-text p-button-sm"
+                  [pTooltip]="user.isActive ? 'Desactivar usuario' : 'Activar usuario'"
+                  (click)="toggleUserStatus(user)"
+                  [attr.aria-label]="user.isActive ? 'Desactivar usuario' : 'Activar usuario'"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  [text]="true"
+                  severity="danger"
+                  size="small"
+                  pTooltip="Eliminar"
+                  (click)="confirmDelete(user)"
+                  aria-label="Eliminar usuario"
+                ></button>
               }
             </div>
           </td>
@@ -234,168 +251,177 @@
   <!-- Lista de usuarios - Móvil (accordion) -->
   <div class="md:hidden space-y-3">
     @for (user of users; track user.id || $index) {
-    <div
-      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
-    >
-      <button
-        type="button"
-        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-        (click)="toggleRow(user.id)"
+      <div
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
       >
-        <div class="flex-1 text-left min-w-0 pr-4">
-          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
-            {{ user.name }}
-          </div>
-          <div
-            class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 min-w-0"
-          >
-            <span class="truncate">{{ user.email }}</span>
-            <span>•</span>
-            <span
-              class="px-2 py-0.5 rounded-full text-[10px] font-medium"
-              [class]="getRoleBadgeClass(user.role)"
-            >
-              {{ getRoleLabel(user.role) }}
-            </span>
-            @if (user.isActive) {
-            <span
-              class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800"
-              >Activo</span
-            >
-            } @else {
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800"
-              >Inactivo</span
-            >
-            }
-          </div>
-        </div>
-        <div class="flex-shrink-0">
-          <i
-            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
-            [class.pi-chevron-down]="!isRowExpanded(user.id)"
-            [class.pi-chevron-up]="isRowExpanded(user.id)"
-          ></i>
-        </div>
-      </button>
-
-      @if (isRowExpanded(user.id)) {
-      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
-        <div class="px-4 py-4 space-y-4 text-sm">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                Email
-              </div>
-              <div class="text-gray-900 dark:text-gray-100 break-words">{{ user.email }}</div>
+        <button
+          type="button"
+          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+          (click)="toggleRow(user.id)"
+        >
+          <div class="flex-1 text-left min-w-0 pr-4">
+            <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+              {{ user.name }}
             </div>
-            <div>
-              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                Estado
-              </div>
-              <div class="text-gray-900 dark:text-gray-100">
-                @if (user.isActive) {
-                <p-tag value="Activo" severity="success"></p-tag>
-                } @else {
-                <p-tag value="Inactivo" severity="danger"></p-tag>
-                }
-              </div>
-            </div>
-            <div>
-              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                Rol
-              </div>
-              <div class="text-gray-900 dark:text-gray-100">
+            <div
+              class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 min-w-0"
+            >
+              <span class="truncate">{{ user.email }}</span>
+              <span>•</span>
+              <span
+                class="px-2 py-0.5 rounded-full text-[10px] font-medium"
+                [class]="getRoleBadgeClass(user.role)"
+              >
+                {{ getRoleLabel(user.role) }}
+              </span>
+              @if (user.isActive) {
                 <span
-                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                  [class]="getRoleBadgeClass(user.role)"
+                  class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800"
+                  >Activo</span
                 >
-                  <i class="pi pi-shield mr-1"></i>
-                  {{ getRoleLabel(user.role) }}
-                </span>
-              </div>
-            </div>
-            <div>
-              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                Último acceso
-              </div>
-              <div class="text-gray-900 dark:text-gray-100">
-                @if (user.lastLogin) {
-                {{ user.lastLogin | date : 'dd/MM/yyyy HH:mm' }}
-                } @else {
-                <span class="text-gray-400 dark:text-gray-500">Nunca</span>
-                }
-              </div>
-            </div>
-            @if (user.id) {
-            <div>
-              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                ID
-              </div>
-              <div class="text-gray-900 dark:text-gray-100 break-words text-xs">{{ user.id }}</div>
-            </div>
-            } @if (user.googleId) {
-            <div class="col-span-2">
-              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                Autenticación
-              </div>
-              <div class="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                <i class="pi pi-google"></i>
-                <span>Cuenta vinculada con Google</span>
-              </div>
-            </div>
-            }
-          </div>
-
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Acciones
-            </div>
-            <div class="flex flex-col gap-2">
-              <button
-                pButton
-                icon="pi pi-eye"
-                label="Ver detalles"
-                class="p-button-text p-button-sm w-full justify-start"
-                (click)="viewDetails(user)"
-                aria-label="Ver detalles del usuario"
-              ></button>
-              @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                label="Editar"
-                class="p-button-text p-button-sm w-full justify-start"
-                (click)="editUser(user)"
-                aria-label="Editar usuario"
-              ></button>
-              <button
-                pButton
-                [icon]="user.isActive ? 'pi pi-user-minus' : 'pi pi-user-plus'"
-                [label]="user.isActive ? 'Desactivar' : 'Activar'"
-                class="p-button-text p-button-sm w-full justify-start"
-                (click)="toggleUserStatus(user)"
-                [attr.aria-label]="user.isActive ? 'Desactivar usuario' : 'Activar usuario'"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                label="Eliminar"
-                class="p-button-text p-button-sm p-button-danger w-full justify-start"
-                (click)="confirmDelete(user)"
-                aria-label="Eliminar usuario"
-              ></button>
+              } @else {
+                <span
+                  class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800"
+                  >Inactivo</span
+                >
               }
             </div>
           </div>
-        </div>
+          <div class="flex-shrink-0">
+            <i
+              class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+              [class.pi-chevron-down]="!isRowExpanded(user.id)"
+              [class.pi-chevron-up]="isRowExpanded(user.id)"
+            ></i>
+          </div>
+        </button>
+
+        @if (isRowExpanded(user.id)) {
+          <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+            <div class="px-4 py-4 space-y-4 text-sm">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Email
+                  </div>
+                  <div class="text-gray-900 dark:text-gray-100 break-words">{{ user.email }}</div>
+                </div>
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Estado
+                  </div>
+                  <div class="text-gray-900 dark:text-gray-100">
+                    @if (user.isActive) {
+                      <p-tag value="Activo" severity="success"></p-tag>
+                    } @else {
+                      <p-tag value="Inactivo" severity="danger"></p-tag>
+                    }
+                  </div>
+                </div>
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Rol
+                  </div>
+                  <div class="text-gray-900 dark:text-gray-100">
+                    <span
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                      [class]="getRoleBadgeClass(user.role)"
+                    >
+                      <i class="pi pi-shield mr-1"></i>
+                      {{ getRoleLabel(user.role) }}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Último acceso
+                  </div>
+                  <div class="text-gray-900 dark:text-gray-100">
+                    @if (user.lastLogin) {
+                      {{ user.lastLogin | date: 'dd/MM/yyyy HH:mm' }}
+                    } @else {
+                      <span class="text-gray-400 dark:text-gray-500">Nunca</span>
+                    }
+                  </div>
+                </div>
+                @if (user.id) {
+                  <div>
+                    <div
+                      class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1"
+                    >
+                      ID
+                    </div>
+                    <div class="text-gray-900 dark:text-gray-100 break-words text-xs">
+                      {{ user.id }}
+                    </div>
+                  </div>
+                }
+                @if (user.googleId) {
+                  <div class="col-span-2">
+                    <div
+                      class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1"
+                    >
+                      Autenticación
+                    </div>
+                    <div class="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                      <i class="pi pi-google"></i>
+                      <span>Cuenta vinculada con Google</span>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                  Acciones
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    label="Ver detalles"
+                    class="p-button-text p-button-sm w-full justify-start"
+                    (click)="viewDetails(user)"
+                    aria-label="Ver detalles del usuario"
+                  ></button>
+                  @if (canEdit()) {
+                    <button
+                      pButton
+                      icon="pi pi-pencil"
+                      label="Editar"
+                      class="p-button-text p-button-sm w-full justify-start"
+                      (click)="editUser(user)"
+                      aria-label="Editar usuario"
+                    ></button>
+                    <button
+                      pButton
+                      [icon]="user.isActive ? 'pi pi-user-minus' : 'pi pi-user-plus'"
+                      [label]="user.isActive ? 'Desactivar' : 'Activar'"
+                      class="p-button-text p-button-sm w-full justify-start"
+                      (click)="toggleUserStatus(user)"
+                      [attr.aria-label]="user.isActive ? 'Desactivar usuario' : 'Activar usuario'"
+                    ></button>
+                    <button
+                      pButton
+                      icon="pi pi-trash"
+                      label="Eliminar"
+                      class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                      (click)="confirmDelete(user)"
+                      aria-label="Eliminar usuario"
+                    ></button>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        }
       </div>
-      }
-    </div>
-    } @if (users.length === 0 && !loading()) {
-    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-      <i class="pi pi-inbox text-4xl mb-2"></i>
-      <p>No hay usuarios disponibles</p>
-    </div>
+    }
+    @if (users.length === 0 && !loading()) {
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <i class="pi pi-inbox text-4xl mb-2"></i>
+        <p>No hay usuarios disponibles</p>
+      </div>
     }
   </div>
 
@@ -467,49 +493,49 @@
 
       <!-- Contraseña (solo para nuevos usuarios) -->
       @if (!editing()?._id) {
-      <div>
-        <label
-          for="userPassword"
-          class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
-          >Contraseña</label
-        >
-        <div class="relative">
-          <input
-            id="userPassword"
-            pInputText
-            [type]="showPassword() ? 'text' : 'password'"
-            placeholder="Ingresa una contraseña segura"
-            [ngModel]="editing()?.password"
-            (ngModelChange)="onEditChange('password', $event)"
-            class="w-full pr-10"
-          />
-          <button
-            type="button"
-            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"
-            (click)="togglePassword()"
-            [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+        <div>
+          <label
+            for="userPassword"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Contraseña</label
           >
-            <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-          </button>
+          <div class="relative">
+            <input
+              id="userPassword"
+              pInputText
+              [type]="showPassword() ? 'text' : 'password'"
+              placeholder="Ingresa una contraseña segura"
+              [ngModel]="editing()?.password"
+              (ngModelChange)="onEditChange('password', $event)"
+              class="w-full pr-10"
+            />
+            <button
+              type="button"
+              class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"
+              (click)="togglePassword()"
+              [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            >
+              <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+            </button>
+          </div>
         </div>
-      </div>
       }
 
       <!-- Información adicional para usuarios existentes -->
       @if (editing()?._id) {
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <div class="flex items-start gap-2">
-          <i class="pi pi-info-circle text-blue-600 mt-0.5"></i>
-          <div class="text-sm text-blue-800">
-            <div class="font-medium mb-1">Información adicional:</div>
-            <ul class="space-y-1 text-xs">
-              <li>• Para cambiar la contraseña, el usuario debe usar "Olvidé mi contraseña"</li>
-              <li>• Los cambios de rol se aplicarán inmediatamente</li>
-              <li>• El estado activo/inactivo se puede cambiar desde la tabla</li>
-            </ul>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div class="flex items-start gap-2">
+            <i class="pi pi-info-circle text-blue-600 mt-0.5"></i>
+            <div class="text-sm text-blue-800">
+              <div class="font-medium mb-1">Información adicional:</div>
+              <ul class="space-y-1 text-xs">
+                <li>• Para cambiar la contraseña, el usuario debe usar "Olvidé mi contraseña"</li>
+                <li>• Los cambios de rol se aplicarán inmediatamente</li>
+                <li>• El estado activo/inactivo se puede cambiar desde la tabla</li>
+              </ul>
+            </div>
           </div>
         </div>
-      </div>
       }
     </div>
 
@@ -553,40 +579,40 @@
       </div>
     </ng-template>
     @if (stats()) {
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <p-card>
-        <ng-template pTemplate="content">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-blue-600">{{ stats()?.total }}</div>
-            <div class="text-sm text-gray-600 dark:text-white">Total</div>
-          </div>
-        </ng-template>
-      </p-card>
-      <p-card>
-        <ng-template pTemplate="content">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-green-600">{{ stats()?.active }}</div>
-            <div class="text-sm text-gray-600 dark:text-white">Activos</div>
-          </div>
-        </ng-template>
-      </p-card>
-      <p-card>
-        <ng-template pTemplate="content">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-red-600">{{ stats()?.inactive }}</div>
-            <div class="text-sm text-gray-600 dark:text-white">Inactivos</div>
-          </div>
-        </ng-template>
-      </p-card>
-      <p-card>
-        <ng-template pTemplate="content">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-purple-600">{{ stats()?.admins }}</div>
-            <div class="text-sm text-gray-600 dark:text-white">Administradores</div>
-          </div>
-        </ng-template>
-      </p-card>
-    </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <p-card>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-blue-600">{{ stats()?.total }}</div>
+              <div class="text-sm text-gray-600 dark:text-white">Total</div>
+            </div>
+          </ng-template>
+        </p-card>
+        <p-card>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-green-600">{{ stats()?.active }}</div>
+              <div class="text-sm text-gray-600 dark:text-white">Activos</div>
+            </div>
+          </ng-template>
+        </p-card>
+        <p-card>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-red-600">{{ stats()?.inactive }}</div>
+              <div class="text-sm text-gray-600 dark:text-white">Inactivos</div>
+            </div>
+          </ng-template>
+        </p-card>
+        <p-card>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-purple-600">{{ stats()?.admins }}</div>
+              <div class="text-sm text-gray-600 dark:text-white">Administradores</div>
+            </div>
+          </ng-template>
+        </p-card>
+      </div>
     }
     <ng-template pTemplate="footer">
       <button
@@ -616,118 +642,120 @@
       </div>
     </ng-template>
     @if (viewingUser()) {
-    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
-      <!-- Información básica -->
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-info-circle text-blue-500"></i>
-          Información Básica
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-medium">
-              {{ viewingUser()?.name }}
+      <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+        <!-- Información básica -->
+        <div class="mb-6">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+          >
+            <i class="pi pi-info-circle text-blue-500"></i>
+            Información Básica
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Nombre</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 font-medium">
+                {{ viewingUser()?.name }}
+              </div>
             </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Email</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingUser()?.email }}
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Email</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ viewingUser()?.email }}
+              </div>
             </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >ID de Usuario</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingUser()?.id }}
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >ID de Usuario</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ viewingUser()?.id }}
+              </div>
             </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol</span>
-            <span
-              class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-              [class]="getRoleBadgeClass(viewingUser()?.role || '')"
-            >
-              <i class="pi pi-shield mr-1"></i>
-              {{ getRoleLabel(viewingUser()?.role || '') }}
-            </span>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</span
-            >
-            @if (viewingUser()?.isActive) {
-            <p-tag value="Activo" severity="success"></p-tag>
-            } @else {
-            <p-tag value="Inactivo" severity="danger"></p-tag>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Rol</span
+              >
+              <span
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                [class]="getRoleBadgeClass(viewingUser()?.role || '')"
+              >
+                <i class="pi pi-shield mr-1"></i>
+                {{ getRoleLabel(viewingUser()?.role || '') }}
+              </span>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Estado</span
+              >
+              @if (viewingUser()?.isActive) {
+                <p-tag value="Activo" severity="success"></p-tag>
+              } @else {
+                <p-tag value="Inactivo" severity="danger"></p-tag>
+              }
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Último Acceso</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                @if (viewingUser()?.lastLogin) {
+                  {{ viewingUser()?.lastLogin | date: 'dd/MM/yyyy HH:mm' }}
+                } @else {
+                  <span class="text-gray-500">Nunca</span>
+                }
+              </div>
+            </div>
+            @if (viewingUser()?.googleId) {
+              <div class="md:col-span-2">
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Autenticación</span
+                >
+                <div class="flex items-center gap-2 text-blue-600">
+                  <i class="pi pi-google"></i>
+                  <span>Cuenta vinculada con Google</span>
+                </div>
+              </div>
             }
           </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Último Acceso</span
+        </div>
+
+        <!-- Información adicional -->
+        @if (viewingUser()?.createdAt) {
+          <div class="mb-6">
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
             >
-            <div class="text-gray-900 dark:text-gray-100">
-              @if (viewingUser()?.lastLogin) {
-              {{ viewingUser()?.lastLogin | date : 'dd/MM/yyyy HH:mm' }}
-              } @else {
-              <span class="text-gray-500">Nunca</span>
+              <i class="pi pi-calendar text-green-500"></i>
+              Información de Cuenta
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Fecha de Creación</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingUser()?.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                </div>
+              </div>
+              @if (viewingUser()?.updatedAt) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Última Actualización</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ viewingUser()?.updatedAt | date: 'dd/MM/yyyy HH:mm' }}
+                  </div>
+                </div>
               }
             </div>
           </div>
-          @if (viewingUser()?.googleId) {
-          <div class="md:col-span-2">
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Autenticación</span
-            >
-            <div class="flex items-center gap-2 text-blue-600">
-              <i class="pi pi-google"></i>
-              <span>Cuenta vinculada con Google</span>
-            </div>
-          </div>
-          }
-        </div>
+        }
       </div>
-
-      <!-- Información adicional -->
-      @if (viewingUser()?.createdAt) {
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-calendar text-green-500"></i>
-          Información de Cuenta
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Fecha de Creación</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingUser()?.createdAt | date : 'dd/MM/yyyy HH:mm' }}
-            </div>
-          </div>
-          @if (viewingUser()?.updatedAt) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Última Actualización</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingUser()?.updatedAt | date : 'dd/MM/yyyy HH:mm' }}
-            </div>
-          </div>
-          }
-        </div>
-      </div>
-      }
-    </div>
     }
     <ng-template pTemplate="footer">
       <button

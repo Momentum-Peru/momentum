@@ -1,1 +1,5 @@
-<router-outlet />
+@if (showPermissionsRequired()) {
+  <app-permissions-required />
+} @else {
+  <router-outlet />
+}

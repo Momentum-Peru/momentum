@@ -28,6 +28,8 @@ export interface TimeTracking {
   projectId?: string | Project | null; // opcional
   attendanceRecordId: string | PopulatedAttendanceRecord; // requerido, referencia a registro de asistencia
   location?: Location; // opcional, coordenadas GPS
+  /** Dirección obtenida por geocodificación inversa al registrar la marcación */
+  address?: string;
   createdAt?: string;
   updatedAt?: string;
   // Campos legacy para compatibilidad (deprecated)
@@ -45,15 +47,20 @@ export interface CreateTimeTrackingRequest {
   type: TimeTrackingType; // INGRESO o SALIDA
   userId: string;
   projectId?: string;
-  attendanceRecordId: string; // requerido
+  attendanceRecordId?: string; // opcional - se creará automáticamente si no se proporciona (solo admin/supervisor)
   location?: Location; // opcional
+  /** Dirección obtenida por geocodificación inversa al registrar la marcación */
+  address?: string;
 }
 
 export interface UpdateTimeTrackingRequest {
   date?: string; // ISO datetime completo
   type?: TimeTrackingType;
   projectId?: string;
+  attendanceRecordId?: string; // opcional
   location?: Location;
+  /** Dirección (geocodificación inversa) */
+  address?: string;
 }
 
 export interface TimeTrackingQueryParams {
@@ -63,5 +70,6 @@ export interface TimeTrackingQueryParams {
   endDate?: string;
   type?: TimeTrackingType;
   q?: string;
+  /** Filtrar por tenant (gerencia/admin: solo marcaciones del tenant seleccionado) */
+  tenantId?: string;
 }
-

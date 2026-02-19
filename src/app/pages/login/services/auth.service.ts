@@ -299,6 +299,14 @@ export class AuthService {
     this.currentUserSubject.next(null);
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
+
+    // Limpiar caché de Microsoft (MSAL) para evitar sesiones compartidas entre usuarios
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('msal.')) {
+        localStorage.removeItem(key);
+      }
+    });
+
     this.router.navigate(['/ingreso']);
   }
 

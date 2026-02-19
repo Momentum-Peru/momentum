@@ -41,6 +41,9 @@ import { ClientsApiService, ClientOption } from '../../shared/services/clients-a
 import { CompaniesApiService } from '../../shared/services/companies-api.service';
 import { CompanyOption } from '../../shared/interfaces/company.interface';
 import { AuthService } from '../login/services/auth.service';
+import { ApisPeruApiService } from '../../shared/services/apisperu-api.service';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
 import {
   Lead,
   LeadStatus,
@@ -112,6 +115,10 @@ export class LeadsPage implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly baseUrl = environment.apiUrl;
+  private readonly apisPeruService = inject(ApisPeruApiService);
+
+  // Subject para manejar la autocompletación de taxId
+  private readonly companyTaxIdSubject = new Subject<string>();
 
   // Signals
   viewMode = signal<'list' | 'pipeline'>('pipeline'); // Default to pipeline as requested
@@ -216,6 +223,7 @@ export class LeadsPage implements OnInit {
     this.loadCompanies();
     this.loadCountries();
     this.loadStats();
+    this.setupCompanyTaxIdAutocomplete();
   }
 
   constructor() {
@@ -418,6 +426,121 @@ export class LeadsPage implements OnInit {
       ...cur,
       company: { ...company, [key]: value },
     });
+
+    // Si se cambió el taxId, disparar la autocompletación
+    if (key === 'taxId' && typeof value === 'string') {
+      this.companyTaxIdSubject.next(value);
+    }
+  }
+
+  /**
+   * Configura la autocompletación cuando se ingresa un taxId en company
+   */
+  private setupCompanyTaxIdAutocomplete(): void {
+    this.companyTaxIdSubject
+      .pipe(
+        debounceTime(800), // Esperar 800ms después de que el usuario deje de escribir
+        distinctUntilChanged(), // Solo procesar si el valor cambió
+        switchMap((taxId) => {
+          if (!taxId || taxId.length < 8) {
+            return of(null);
+          }
+
+          // Validar formato: 8 dígitos para DNI, 11 para RUC
+          const isValidFormat = /^\d{8}$/.test(taxId) || /^\d{11}$/.test(taxId);
+          if (!isValidFormat) {
+            return of(null);
+          }
+
+          // Consultar APIsPERU
+          return this.apisPeruService.consultDocument(taxId).pipe(
+            catchError((error) => {
+              // Si falla, no mostrar error (el backend también intentará autocompletar)
+              console.warn('No se pudo autocompletar desde APIsPERU:', error);
+              return of(null);
+            })
+          );
+        })
+      )
+      .subscribe((response) => {
+        if (!response) return;
+
+        const current = this.editing();
+        if (!current) return;
+
+        const company = current.company || {};
+
+        // Autocompletar según el tipo de respuesta (siempre rellenar con nueva consulta)
+        // DNI y RUC son documentos peruanos, establecer país automáticamente
+        const peruCountry = this.countries().find((c) => c.codigo === 'PE');
+        if (peruCountry && !this.selectedCountry()) {
+          this.selectedCountry.set(peruCountry);
+          this.loadProvinces('PE');
+        }
+
+        if ('nombreCompleto' in response || 'nombres' in response) {
+          // Es DNI
+          const dniResponse = response as any;
+          const nombreCompleto = dniResponse.nombreCompleto ||
+            `${dniResponse.nombres} ${dniResponse.apellidoPaterno} ${dniResponse.apellidoMaterno}`.trim();
+
+          // Actualizar ubicación con país Perú
+          const location = current.location || {};
+          location.paisCodigo = 'PE';
+
+          this.editing.set({
+            ...current,
+            company: {
+              ...company,
+              name: nombreCompleto,
+            },
+            location,
+          });
+        } else if ('razonSocial' in response) {
+          // Es RUC
+          const rucResponse = response as any;
+
+          // Construir dirección completa si hay información de ubicación
+          let direccionCompleta: string | undefined = undefined;
+          if (rucResponse.direccion) {
+            const partesDireccion = [
+              rucResponse.direccion,
+              rucResponse.distrito,
+              rucResponse.provincia,
+              rucResponse.departamento,
+            ].filter(Boolean);
+            direccionCompleta = partesDireccion.join(', ') || rucResponse.direccion;
+          }
+
+          // Construir descripción con información adicional
+          let descripcion: string | undefined = undefined;
+          if (rucResponse.estado || rucResponse.condicion) {
+            const partesDesc = [];
+            if (rucResponse.estado) partesDesc.push(`Estado: ${rucResponse.estado}`);
+            if (rucResponse.condicion) partesDesc.push(`Condición: ${rucResponse.condicion}`);
+            if (rucResponse.tipo) partesDesc.push(`Tipo: ${rucResponse.tipo}`);
+            descripcion = partesDesc.join(' | ');
+          }
+
+          // Actualizar ubicación con país Perú y dirección
+          const location = current.location || {};
+          location.paisCodigo = 'PE';
+          if (direccionCompleta) {
+            location.direccion = direccionCompleta;
+          }
+
+          this.editing.set({
+            ...current,
+            company: {
+              ...company,
+              name: rucResponse.razonSocial || rucResponse.nombreComercial || company.name || '',
+              website: rucResponse.website || company.website,
+            },
+            location,
+            notes: descripcion || current.notes,
+          });
+        }
+      });
   }
 
   save() {

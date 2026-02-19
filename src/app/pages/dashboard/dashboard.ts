@@ -1,26 +1,32 @@
-import { Component, inject, OnInit, ChangeDetectionStrategy, computed } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
 import { DashboardDataService } from '../../shared/services/dashboard-data.service';
-import { DashboardApiService } from '../../shared/services/dashboard-api.service';
 import { DashboardKpiCardComponent } from '../../shared/components/dashboard-kpi-card/dashboard-kpi-card.component';
 import { DashboardChartComponent } from '../../shared/components/dashboard-chart/dashboard-chart.component';
 import { DashboardTableComponent } from '../../shared/components/dashboard-table/dashboard-table.component';
 import { DashboardFiltersComponent } from '../../shared/components/dashboard-filters/dashboard-filters.component';
 import { MenuService } from '../../shared/services/menu.service';
 import { AuthService } from '../login/services/auth.service';
-import { GeocodingService } from '../../shared/services/geocoding.service';
-import { signal } from '@angular/core';
+import { MessageService } from 'primeng/api';
 import { TableModule } from 'primeng/table';
+import { PanelModule } from 'primeng/panel';
+import { ButtonModule } from 'primeng/button';
+import { FormsModule } from '@angular/forms';
+import { ToastModule } from 'primeng/toast';
+import { CardModule } from 'primeng/card';
+import { TooltipModule } from 'primeng/tooltip';
 import {
   DashboardFiltersParams,
   DashboardKpi,
-  TimeTrackingByUser,
-  TimeTrackingDetail,
 } from '../../shared/interfaces/dashboard.interface';
-
-type TrackingLocation = NonNullable<TimeTrackingDetail['location']>;
 
 /**
  * Página principal del Dashboard
@@ -32,31 +38,33 @@ type TrackingLocation = NonNullable<TimeTrackingDetail['location']>;
   imports: [
     CommonModule,
     RouterModule,
+    FormsModule,
     TableModule,
+    PanelModule,
+    ButtonModule,
+    ToastModule,
+    CardModule,
+    TooltipModule,
     DashboardKpiCardComponent,
     DashboardChartComponent,
     DashboardTableComponent,
     DashboardFiltersComponent,
   ],
+  providers: [MessageService],
   templateUrl: './dashboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardPage implements OnInit {
   protected readonly dashboardService = inject(DashboardDataService);
-  private readonly dashboardApiService = inject(DashboardApiService);
   private readonly menuService = inject(MenuService);
   private readonly authService = inject(AuthService);
-  private readonly geocodingService = inject(GeocodingService);
+  private readonly messageService = inject(MessageService);
 
-  // Computed para verificar si el usuario es gerencia
+  // Computed para verificar si el usuario es gerencia (permisos ampliados en KPIs/gráficos/tablas)
   protected readonly isGerencia = computed(() => this.authService.isGerencia());
 
-  // Signals para reportes de horas (solo gerencia)
-  protected readonly timeTrackingDetails = signal<TimeTrackingDetail[]>([]);
-  protected readonly timeTrackingByUser = signal<TimeTrackingByUser[]>([]);
-  protected readonly loadingTimeTracking = signal(false);
-  protected readonly locationAddresses = signal<Record<string, string>>({});
-  protected readonly locationLoading = signal<Record<string, boolean>>({});
+  // Guardar los filtros actuales
+  private currentFilters: DashboardFiltersParams = { period: '30d' };
 
   // Mapeo de KPIs a rutas del sistema para verificar permisos
   private readonly kpiRouteMap: Record<string, string> = {
@@ -104,66 +112,24 @@ export class DashboardPage implements OnInit {
   ];
 
   ngOnInit(): void {
-    // Cargar permisos del usuario antes de cargar el dashboard
     this.menuService.loadUserPermissions();
     this.loadDashboard();
   }
 
   /**
    * Carga los datos del dashboard con filtros por defecto
-   * Para gerencia: carga datos agregados de todas las empresas si no hay filtro
    */
   private async loadDashboard(): Promise<void> {
-    const filters: DashboardFiltersParams = {
-      period: '30d',
-    };
-
-    // Para gerencia, no enviar tenantId inicialmente para obtener datos agregados
-    // El interceptor ya maneja esto, pero es bueno ser explícito
+    const filters: DashboardFiltersParams = { period: '30d' };
     await this.dashboardService.loadDashboardData(filters);
-
-    // Si es gerencia, cargar también los reportes de horas
-    if (this.isGerencia()) {
-      await this.loadTimeTrackingReports(filters);
-    }
   }
 
   /**
    * Maneja los cambios en los filtros del dashboard
-   * @param filters Nuevos filtros aplicados
    */
   async onFiltersChanged(filters: DashboardFiltersParams): Promise<void> {
+    this.currentFilters = filters;
     await this.dashboardService.loadDashboardData(filters);
-    // Si es gerencia, cargar también los reportes de horas
-    if (this.isGerencia()) {
-      await this.loadTimeTrackingReports(filters);
-    }
-  }
-
-  /**
-   * Carga los reportes de horas (solo para gerencia)
-   * @param filters Filtros del dashboard
-   */
-  private async loadTimeTrackingReports(filters?: DashboardFiltersParams): Promise<void> {
-    if (!this.isGerencia()) return;
-
-    this.loadingTimeTracking.set(true);
-    try {
-      const [details, byUser] = await Promise.all([
-      this.dashboardApiService.getTimeTrackingDetails(filters).toPromise(),
-      this.dashboardApiService.getTimeTrackingByUser(filters).toPromise(),
-    ]);
-      const parsedDetails = (details as unknown as TimeTrackingDetail[]) || [];
-      this.timeTrackingDetails.set(parsedDetails);
-      this.timeTrackingByUser.set((byUser as unknown as TimeTrackingByUser[]) || []);
-      this.prefetchLocationAddresses(parsedDetails);
-    } catch (error) {
-      console.error('Error al cargar reportes de horas:', error);
-      this.timeTrackingDetails.set([]);
-      this.timeTrackingByUser.set([]);
-    } finally {
-      this.loadingTimeTracking.set(false);
-    }
   }
 
   /**
@@ -252,99 +218,6 @@ export class DashboardPage implements OnInit {
     return this.menuService.hasPermission(requiredRoute);
   }
 
-  /**
-   * Formatea la fecha y hora ISO a formato legible
-   */
-  protected formatDateTime(dateString?: string): string {
-    if (!dateString) return '-';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleString('es-PE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return dateString;
-    }
-  }
+  // Fin de métodos del dashboard principal
 
-  /**
-   * Obtiene el badge class según el tipo de marcación
-   */
-  protected getTypeBadgeClass(type?: string): string {
-    switch (type) {
-      case 'INGRESO':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'SALIDA':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    }
-  }
-
-  protected getLocationLabel(row: TimeTrackingDetail): string {
-    const location = row.location;
-    if (!location) {
-      return '-';
-    }
-    const key = this.buildLocationKey(location);
-    if (this.locationLoading()[key]) {
-      return 'Buscando dirección...';
-    }
-    return this.locationAddresses()[key] ?? this.formatCoordinates(location);
-  }
-
-  private prefetchLocationAddresses(details: TimeTrackingDetail[]): void {
-    details.forEach((detail) => {
-      const location = detail.location;
-      if (!location) {
-        return;
-      }
-      this.resolveLocationAddress(location);
-    });
-  }
-
-  private resolveLocationAddress(location: TrackingLocation): void {
-    const key = this.buildLocationKey(location);
-    if (this.locationAddresses()[key] || this.locationLoading()[key]) {
-      return;
-    }
-
-    this.locationLoading.update((state) => ({
-      ...state,
-      [key]: true,
-    }));
-
-    this.geocodingService
-      .getAddress(location.latitude, location.longitude)
-      .then((address) => {
-        this.locationAddresses.update((state) => ({
-          ...state,
-          [key]: address,
-        }));
-      })
-      .catch(() => {
-        this.locationAddresses.update((state) => ({
-          ...state,
-          [key]: this.formatCoordinates(location),
-        }));
-      })
-      .finally(() => {
-        this.locationLoading.update((state) => {
-          const { [key]: _, ...rest } = state;
-          return rest;
-        });
-      });
-  }
-
-  private buildLocationKey(location: TrackingLocation): string {
-    return `${location.latitude.toFixed(6)},${location.longitude.toFixed(6)}`;
-  }
-
-  private formatCoordinates(location: TrackingLocation): string {
-    return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
-  }
 }

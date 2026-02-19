@@ -59,6 +59,7 @@ import { ConfirmationService } from 'primeng/api';
 })
 export class DocumentFormComponent implements OnInit, OnChanges {
   @Input({ required: true }) document: Document | null = null;
+  @Input() tipo: 'compra' | 'venta' = 'compra'; // Tipo de documento desde el componente padre
   @Output() documentSaved = new EventEmitter<Document | null>();
   @Output() formCancel = new EventEmitter<void>();
 
@@ -259,6 +260,11 @@ export class DocumentFormComponent implements OnInit, OnChanges {
         total: this.document.total,
       });
 
+      // Si el documento tiene tipo, actualizar el input tipo
+      if (this.document.tipo) {
+        this.tipo = this.document.tipo;
+      }
+
       // Si es "Otros", aplicar validación requerida
       if (esOtros) {
         const categoriaOtrosControl = this.documentForm.get('categoriaOtros');
@@ -452,6 +458,7 @@ export class DocumentFormComponent implements OnInit, OnChanges {
       numeroDocumento: formValue.numeroDocumento,
       total: formValue.total,
       documentos: this.existingFiles(),
+      tipo: this.tipo, // Incluir el tipo desde el input
     };
 
     // Solo incluir campos opcionales si tienen valor

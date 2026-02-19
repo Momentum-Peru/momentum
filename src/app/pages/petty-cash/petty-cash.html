@@ -1,0 +1,542 @@
+<div class="petty-cash-page">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <header class="page-header">
+    <h1 class="page-title">Registro de Caja Chica</h1>
+  </header>
+
+  <!-- Vista Administrador -->
+  <section class="section section-admin">
+    <h2 class="section-title">
+      <i class="pi pi-user-edit" aria-hidden="true"></i>
+      Vista Administrador
+    </h2>
+
+    <!-- Dashboard: Saldo + Acciones -->
+    <div class="dashboard-row">
+      <div class="card balance-card">
+        <div class="balance-content">
+          <i class="pi pi-wallet balance-icon" aria-hidden="true"></i>
+          <div class="balance-info">
+            <span class="balance-label">Saldo disponible</span>
+            @if (loadingBalance()) {
+              <span class="balance-value balance-loading">...</span>
+            } @else {
+              <span class="balance-value">S/ {{ balance()?.balance?.toFixed(2) ?? '0.00' }}</span>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="actions-row">
+        <button
+          pButton
+          type="button"
+          class="action-btn action-expense"
+          (click)="openExpenseDialog()"
+          aria-label="Registrar gasto"
+        >
+          <i class="pi pi-arrow-down-right" aria-hidden="true"></i>
+          <span>Registrar Gasto</span>
+        </button>
+        <button
+          pButton
+          type="button"
+          class="action-btn action-recharge"
+          (click)="openRechargeDialog()"
+          aria-label="Recargar caja"
+        >
+          <i class="pi pi-plus-circle" aria-hidden="true"></i>
+          <span>Recargar Caja</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Últimos movimientos (resumen) -->
+    <div class="card movements-preview-card">
+      <h3 class="card-title">
+        <i class="pi pi-list" aria-hidden="true"></i>
+        Últimos movimientos
+      </h3>
+      @if (loadingMovements()) {
+        <div class="loading-block">
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        </div>
+      } @else if (movements().length === 0) {
+        <p class="empty-message">No hay movimientos</p>
+      } @else {
+        <ul class="movements-preview-list">
+          @for (m of movements(); track m._id) {
+            <li class="movement-preview-item">
+              <span
+                class="movement-icon"
+                [class.ingreso]="m.type === 'ingreso'"
+                [class.egreso]="m.type === 'egreso'"
+              >
+                <i
+                  [class]="m.type === 'ingreso' ? 'pi pi-arrow-up-right' : 'pi pi-arrow-down-right'"
+                  aria-hidden="true"
+                ></i>
+              </span>
+              <div class="movement-detail">
+                <span class="movement-desc">{{ m.description }}</span>
+                <span class="movement-meta"
+                  >{{ formatDate(m.createdAt) }}
+                  @if (m.category) {
+                    · <p-tag [value]="m.category" severity="secondary" styleClass="text-xs"></p-tag>
+                  }
+                </span>
+              </div>
+              <span
+                class="movement-amount"
+                [class.ingreso]="m.type === 'ingreso'"
+                [class.egreso]="m.type === 'egreso'"
+              >
+                {{ formatAmount(m.type, m.amount) }}
+              </span>
+              @if (m.status === 'active') {
+                <button
+                  pButton
+                  label="Anular"
+                  class="p-button-text p-button-sm p-button-danger"
+                  (click)="confirmVoid(m)"
+                  [pTooltip]="m.type === 'ingreso' ? 'Anular recarga' : 'Anular gasto'"
+                  tooltipPosition="top"
+                ></button>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </section>
+
+  <!-- Vista Contador: Auditoría de Caja (única vez) — izquierda Gastos + Filtros, derecha Detalle de Movimientos -->
+  <section class="section section-contador">
+    <h2 class="section-title">
+      <i class="pi pi-chart-bar" aria-hidden="true"></i>
+      Vista Contador
+    </h2>
+    <div class="contador-header">
+      <div>
+        <h3 class="contador-audit-title">
+          <i class="pi pi-file-edit" aria-hidden="true"></i>
+          Auditoría de Caja
+        </h3>
+        <p class="section-desc">Revisión de movimientos y comprobantes</p>
+      </div>
+      <p-menu
+        #exportMenu
+        [model]="exportMenuItems"
+        [popup]="true"
+        [appendTo]="'body'"
+        styleClass="p-menu-sm"
+      ></p-menu>
+      <button
+        pButton
+        label="Exportar reporte"
+        icon="pi pi-download"
+        severity="success"
+        (click)="exportMenu.toggle($event)"
+        [disabled]="exportingReport()"
+        aria-label="Exportar reporte"
+        class="btn-export"
+      ></button>
+    </div>
+    <div class="contador-grid">
+      <!-- Columna izquierda: Gastos por categoría + Filtros -->
+      <div class="contador-left">
+        <div class="card stats-card">
+          <h3 class="card-title">
+            <i class="pi pi-chart-bar" aria-hidden="true"></i>
+            Gastos por categoría
+          </h3>
+          @if (loadingStats()) {
+            <div class="loading-block">
+              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+            </div>
+          } @else if (categoryStats().length === 0) {
+            <p class="empty-message">Sin datos en el rango seleccionado</p>
+          } @else {
+            <ul class="stats-list">
+              @for (stat of categoryStats(); track stat.category) {
+                <li class="stats-item">
+                  <span
+                    class="stats-dot"
+                    [class]="'stats-dot-' + getStatDotClass(stat.category)"
+                  ></span>
+                  <span class="stats-category">{{ stat.category }}</span>
+                  <span class="stats-total">S/ {{ stat.total.toFixed(2) }}</span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+        <div class="card filters-card">
+          <h3 class="card-title">
+            <i class="pi pi-filter" aria-hidden="true"></i>
+            Filtros
+          </h3>
+          <div class="contador-filters">
+            <input
+              pInputText
+              [ngModel]="filterQ()"
+              (ngModelChange)="filterQ.set($event); onFilterQChange()"
+              placeholder="Proveedor, concepto..."
+              class="w-full mb-2"
+            />
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 mt-2"
+              >Categoría</label
+            >
+            <p-select
+              [ngModel]="filterCategory()"
+              (ngModelChange)="filterCategory.set($event); applyFilters()"
+              [options]="categoryFilterOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Todas las categorías"
+              [showClear]="true"
+              class="w-full mb-2"
+              styleClass="w-full"
+              appendTo="body"
+              inputId="filterCategory"
+            />
+            <div class="filters-dates contador-dates">
+              <p-datepicker
+                [ngModel]="filterDateFromDate()"
+                (ngModelChange)="onFilterDateFromChange($event)"
+                placeholder="Fecha desde"
+                [showIcon]="true"
+                dateFormat="dd/mm/yy"
+                [appendTo]="'body'"
+                styleClass="w-full"
+                class="w-full filter-date"
+              ></p-datepicker>
+              <p-datepicker
+                [ngModel]="filterDateToDate()"
+                (ngModelChange)="onFilterDateToChange($event)"
+                placeholder="Fecha hasta"
+                [showIcon]="true"
+                dateFormat="dd/mm/yy"
+                [appendTo]="'body'"
+                styleClass="w-full"
+                class="w-full filter-date"
+              ></p-datepicker>
+            </div>
+            <button
+              pButton
+              label="Limpiar filtros"
+              icon="pi pi-times"
+              class="p-button-text p-button-sm w-full mt-2"
+              (click)="clearFilters()"
+              aria-label="Limpiar filtros"
+            ></button>
+          </div>
+        </div>
+      </div>
+      <!-- Columna derecha: Detalle de Movimientos -->
+      <div class="card contador-table-card">
+        <div class="contador-table-header">
+          <h3 class="card-title">Detalle de Movimientos</h3>
+          <span class="contador-registros">{{ totalMovements() }} registros</span>
+        </div>
+
+        <!-- Vista Desktop: Tabla -->
+        <div class="table-wrapper hidden md:block">
+          <p-table
+            [value]="movements()"
+            [loading]="loadingMovements()"
+            styleClass="p-datatable-sm p-datatable-striped"
+            [tableStyle]="{ 'min-width': '50rem' }"
+            [paginator]="true"
+            [first]="(movementsPage() - 1) * movementsLimit()"
+            [rows]="movementsLimit()"
+            [totalRecords]="totalMovements()"
+            (onPage)="onMovementsPageChange($event)"
+            [showCurrentPageReport]="true"
+            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+            [rowsPerPageOptions]="[10, 20, 50]"
+            [paginatorDropdownAppendTo]="'body'"
+            responsiveLayout="scroll"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>FECHA</th>
+                <th>DESCRIPCIÓN</th>
+                <th>CATEGORÍA</th>
+                <th class="text-right">MONTO</th>
+                <th class="col-doc">ARCHIVO</th>
+                <th class="col-actions"></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-row>
+              <tr>
+                <td>{{ formatDate(row.createdAt) }}</td>
+                <td>
+                  <span class="font-medium">{{ row.description }}</span>
+                  <p class="text-muted text-xs">{{ createdByName(row) }}</p>
+                </td>
+                <td>
+                  @if (row.category) {
+                    <p-tag [value]="row.category" severity="secondary"></p-tag>
+                  } @else {
+                    —
+                  }
+                </td>
+                <td class="text-right">
+                  <span
+                    class="amount-cell"
+                    [class.ingreso]="row.type === 'ingreso'"
+                    [class.egreso]="row.type === 'egreso'"
+                  >
+                    {{ formatAmount(row.type, row.amount) }}
+                  </span>
+                </td>
+                <td class="col-doc-cell">
+                  @if (row.receiptAttachmentUrl) {
+                    <a
+                      [href]="row.receiptAttachmentUrl"
+                      target="_blank"
+                      rel="noopener"
+                      class="link-ver-archivo"
+                      aria-label="Ver archivo"
+                    >
+                      <i class="pi pi-file" aria-hidden="true"></i>
+                      <span>Ver archivo</span>
+                    </a>
+                  } @else {
+                    <span class="sin-archivo">—</span>
+                  }
+                </td>
+                <td class="col-actions-cell">
+                  @if (row.status === 'active') {
+                    <button
+                      pButton
+                      label="Anular"
+                      class="p-button-text p-button-sm p-button-danger"
+                      (click)="confirmVoid(row)"
+                      [pTooltip]="row.type === 'ingreso' ? 'Anular recarga' : 'Anular gasto'"
+                      tooltipPosition="top"
+                      aria-label="Anular movimiento"
+                    ></button>
+                  } @else {
+                    <span class="text-muted text-xs">Anulado</span>
+                  }
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="6" class="text-center empty-row">Sin registros</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <!-- Vista Móvil: Tarjetas desplegables -->
+        <div class="md:hidden space-y-3 p-4">
+          @if (loadingMovements()) {
+            <div class="text-center py-8">
+              <i class="pi pi-spin pi-spinner text-2xl text-gray-400"></i>
+              <p class="text-sm text-gray-500 mt-2">Cargando movimientos...</p>
+            </div>
+          } @else if (movements().length === 0) {
+            <div class="text-center py-8 text-gray-500">
+              <i class="pi pi-inbox text-2xl text-gray-400"></i>
+              <p class="text-sm mt-2">Sin registros</p>
+            </div>
+          } @else {
+            @for (row of movements(); track row._id || $index) {
+              <div
+                class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+              >
+                <!-- Header del accordion (siempre visible) -->
+                <button
+                  type="button"
+                  class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                  (click)="toggleRow(row._id)"
+                >
+                  <div class="flex-1 text-left min-w-0 pr-3">
+                    <div class="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm">
+                      {{ row.description }}
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                      <span
+                        class="text-xs font-medium"
+                        [class.text-green-600]="row.type === 'ingreso'"
+                        [class.text-red-600]="row.type === 'egreso'"
+                      >
+                        {{ formatAmount(row.type, row.amount) }}
+                      </span>
+                      @if (row.category) {
+                        <p-tag
+                          [value]="row.category"
+                          severity="secondary"
+                          styleClass="text-xs"
+                        ></p-tag>
+                      }
+                    </div>
+                  </div>
+                  <div class="flex-shrink-0">
+                    <i
+                      class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+                      [class.pi-chevron-down]="!isRowExpanded(row._id)"
+                      [class.pi-chevron-up]="isRowExpanded(row._id)"
+                    ></i>
+                  </div>
+                </button>
+
+                <!-- Contenido del accordion (desplegable) -->
+                @if (isRowExpanded(row._id)) {
+                  <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+                    <div class="px-4 py-3 space-y-3">
+                      <!-- Fecha -->
+                      <div>
+                        <div
+                          class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1"
+                        >
+                          Fecha
+                        </div>
+                        <div class="text-sm text-gray-900 dark:text-gray-100">
+                          {{ formatDate(row.createdAt) }}
+                        </div>
+                      </div>
+
+                      <!-- Creado por -->
+                      <div>
+                        <div
+                          class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1"
+                        >
+                          Creado por
+                        </div>
+                        <div class="text-sm text-gray-900 dark:text-gray-100">
+                          {{ createdByName(row) }}
+                        </div>
+                      </div>
+
+                      <!-- Monto -->
+                      <div>
+                        <div
+                          class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1"
+                        >
+                          Monto
+                        </div>
+                        <div
+                          class="text-sm font-semibold"
+                          [class.text-green-600]="row.type === 'ingreso'"
+                          [class.text-red-600]="row.type === 'egreso'"
+                        >
+                          {{ formatAmount(row.type, row.amount) }}
+                        </div>
+                      </div>
+
+                      <!-- Categoría -->
+                      @if (row.category) {
+                        <div>
+                          <div
+                            class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1"
+                          >
+                            Categoría
+                          </div>
+                          <p-tag [value]="row.category" severity="secondary"></p-tag>
+                        </div>
+                      }
+
+                      <!-- Archivo -->
+                      <div>
+                        <div
+                          class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1"
+                        >
+                          Archivo
+                        </div>
+                        @if (row.receiptAttachmentUrl) {
+                          <a
+                            [href]="row.receiptAttachmentUrl"
+                            target="_blank"
+                            rel="noopener"
+                            class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            <i class="pi pi-file text-xs"></i>
+                            <span>Ver archivo</span>
+                          </a>
+                        } @else {
+                          <span class="text-sm text-gray-400">Sin archivo</span>
+                        }
+                      </div>
+
+                      <!-- Acción -->
+                      <div>
+                        <div
+                          class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2"
+                        >
+                          Acción
+                        </div>
+                        @if (row.status === 'active') {
+                          <button
+                            pButton
+                            label="Anular"
+                            icon="pi pi-times"
+                            class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                            (click)="confirmVoid(row)"
+                          ></button>
+                        } @else {
+                          <span class="text-sm text-gray-500">Anulado</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          }
+
+          <!-- Paginación móvil -->
+          @if (movements().length > 0) {
+            <div
+              class="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700"
+            >
+              <button
+                pButton
+                icon="pi pi-chevron-left"
+                class="p-button-text p-button-sm"
+                [disabled]="movementsPage() === 1"
+                (click)="
+                  onMovementsPageChange({
+                    first: (movementsPage() - 2) * movementsLimit(),
+                    rows: movementsLimit(),
+                  })
+                "
+              ></button>
+              <span class="text-sm text-gray-600 dark:text-gray-400">
+                Página {{ movementsPage() }} de {{ Math.ceil(totalMovements() / movementsLimit()) }}
+              </span>
+              <button
+                pButton
+                icon="pi pi-chevron-right"
+                class="p-button-text p-button-sm"
+                [disabled]="movementsPage() >= Math.ceil(totalMovements() / movementsLimit())"
+                (click)="
+                  onMovementsPageChange({
+                    first: movementsPage() * movementsLimit(),
+                    rows: movementsLimit(),
+                  })
+                "
+              ></button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <app-expense-dialog
+    [visible]="showExpenseDialog()"
+    (closeDialog)="closeExpenseDialog()"
+    (expenseSubmitted)="onExpenseSubmit($any($event))"
+  />
+  <app-recharge-dialog
+    [visible]="showRechargeDialog()"
+    (closeDialog)="closeRechargeDialog()"
+    (rechargeSubmitted)="onRechargeSubmit($any($event))"
+  />
+</div>

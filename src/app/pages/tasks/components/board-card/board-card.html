@@ -1,15 +1,29 @@
 <p-card [style]="{ height: '100%' }" styleClass="h-full hover:shadow-lg transition-shadow">
   <ng-template pTemplate="header">
-    <div class="p-4 bg-gradient-to-r from-blue-500 to-blue-600">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <i class="pi pi-th-large text-white text-xl"></i>
-          <h3 class="text-white font-semibold text-lg truncate">{{ board.title }}</h3>
-        </div>
-        @if (isOwner) {
-        <p-tag value="Propietario" severity="success" [rounded]="true"></p-tag>
-        }
+    <div
+      class="p-4 flex items-center justify-between gap-2 min-w-0"
+      [style.background]="'linear-gradient(to right, ' + previewColor() + ', ' + previewColor() + ')'"
+    >
+      <div class="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+        <!-- <i class="pi pi-th-large text-white text-xl flex-shrink-0"></i> -->
+        <h3
+          class="text-white font-semibold text-sm break-words min-w-0 uppercase"
+          style="word-break: break-word; overflow-wrap: anywhere"
+        >
+          {{ board.title }}
+        </h3>
       </div>
+      @if (isOwner) {
+      <p-button
+        icon="pi pi-palette"
+        [text]="true"
+        [rounded]="true"
+        severity="secondary"
+        (onClick)="openColorPicker($event)"
+        pTooltip="Cambiar color del tablero"
+        styleClass="text-white hover:bg-white/20 flex-shrink-0"
+      ></p-button>
+      }
     </div>
   </ng-template>
 
@@ -58,16 +72,29 @@
         pTooltip="Ver tablero"
         styleClass="responsive-button"
       ></p-button>
-      @if (isOwner) {
+      @if (isOwner || isGerencia) {
       <p-button
         icon="pi pi-pencil"
         label="Editar"
         [text]="true"
         severity="info"
         (onClick)="onEdit($event)"
-        pTooltip="Editar nombre y descripción del tablero"
+        [pTooltip]="isGerencia ? 'Editar tablero (Gerencia)' : 'Editar nombre y descripción del tablero'"
         styleClass="responsive-button"
       ></p-button>
+      }
+      @if (isOwner || isGerencia) {
+      <p-button
+        icon="pi pi-trash"
+        label="Eliminar"
+        [text]="true"
+        severity="danger"
+        (onClick)="onDelete($event)"
+        [pTooltip]="isGerencia ? 'Eliminar tablero (Gerencia)' : 'Eliminar tablero'"
+        styleClass="responsive-button"
+      ></p-button>
+      }
+      @if (isBoardMember() || isGerencia) {
       <p-button
         icon="pi pi-user-plus"
         label="Invitar"
@@ -77,16 +104,56 @@
         pTooltip="Invitar usuario"
         styleClass="responsive-button"
       ></p-button>
-      <p-button
-        icon="pi pi-trash"
-        label="Eliminar"
-        [text]="true"
-        severity="danger"
-        (onClick)="onDelete($event)"
-        pTooltip="Eliminar tablero"
-        styleClass="responsive-button"
-      ></p-button>
       }
     </div>
   </ng-template>
 </p-card>
+
+<!-- Dialog para seleccionar color -->
+<p-dialog
+  [visible]="showColorPicker()"
+  (visibleChange)="showColorPicker.set($event)"
+  [modal]="true"
+  [style]="{ width: '400px' }"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="true"
+  header="Cambiar color del tablero"
+  (onHide)="onColorCancel($event)"
+>
+  <div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Color del tablero</label>
+      <p-colorPicker
+        [(ngModel)]="previewColorValue"
+        (onChange)="onColorChange($event)"
+        [format]="'hex'"
+        [inline]="true"
+      ></p-colorPicker>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex-1">
+        <label class="text-xs text-gray-500 dark:text-gray-400 block mb-1">Vista previa</label>
+        <div
+          class="w-full h-12 rounded-lg border-2 border-gray-300 dark:border-gray-600"
+          [style.background-color]="previewColor()"
+        ></div>
+      </div>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex gap-2 justify-end">
+      <p-button
+        label="Cancelar"
+        [text]="true"
+        severity="secondary"
+        (onClick)="onColorCancel($event)"
+      ></p-button>
+      <p-button
+        label="Aplicar"
+        severity="primary"
+        (onClick)="onColorApply($event)"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

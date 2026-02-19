@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { switchMap, map, catchError } from 'rxjs/operators';
+import { switchMap, map } from 'rxjs/operators';
 import { Payroll, PayrollDetail } from '../models/payroll.model';
 import { environment } from '../../../environments/environment';
 
@@ -42,7 +42,7 @@ interface BackendPayrollDetail {
   pensionSystem?: string;
   pensionContribution?: number;
   essaludContribution?: number;
-  
+
   // New fields
   cargo?: string;
   workedDays?: number;
@@ -55,6 +55,21 @@ interface BackendPayrollDetail {
   pensionCommission?: number;
   fifthCategoryTax?: number;
   firstCategoryTax?: number;
+}
+
+export interface PdfAnalysisResult {
+  details: (Partial<BackendPayrollDetail> & { isNew?: boolean })[];
+  summary: {
+    totalEmployees: number;
+    totalAmount: number;
+    period?: string;
+  };
+  missingEmployees: {
+    dni: string;
+    firstName: string;
+    lastName: string;
+    cargo?: string;
+  }[];
 }
 
 @Injectable({
@@ -102,18 +117,54 @@ export class PayrollService {
       .pipe(map((payroll) => this.transformPayrollResponse(payroll)));
   }
 
+  generatePayroll(dto: { startDate: string; endDate: string }): Observable<Payroll> {
+    return this.http
+      .post<BackendPayroll>(`${this.apiUrl}/payrolls/generate`, dto)
+      .pipe(map((payroll) => this.transformPayrollResponse(payroll)));
+  }
+
+  analyzePdf(file: File, payrollId: string): Observable<PdfAnalysisResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<PdfAnalysisResult>(
+      `${this.apiUrl}/payrolls/${payrollId}/analyze-pdf`,
+      formData
+    );
+  }
+
+  confirmPdfImport(
+    payrollId: string,
+    details: (Partial<BackendPayrollDetail> & { isNew?: boolean })[]
+  ): Observable<Payroll> {
+    return this.http
+      .post<{ count: number; errors: string[] }>(
+        `${this.apiUrl}/payrolls/${payrollId}/import-details`,
+        details
+      )
+      .pipe(
+        switchMap(() => this.getPayrollById(payrollId)),
+        map((p) => p!)
+      );
+  }
+
   uploadPayrollExcel(file: File, type: 'PLANILLA' | 'RXH'): Observable<Payroll> {
     // Step 1: Create payroll with initial data
     const today = new Date();
     const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
     const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
+    const isPdf = file.name.toLowerCase().endsWith('.pdf');
+    const endpoint = isPdf ? 'analyze-pdf' : 'import';
+
     const createPayrollDto = {
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0],
       totalToPay: 0, // Will be updated after import
       status: 'DRAFT',
-      comments: `Planilla ${type} - ${file.name.replace('.xlsx', '').replace('.xls', '')}`,
+      comments: `Planilla ${type} - ${file.name
+        .replace('.xlsx', '')
+        .replace('.xls', '')
+        .replace('.pdf', '')}`,
     };
 
     return this.http.post<BackendPayroll>(`${this.apiUrl}/payrolls`, createPayrollDto).pipe(
@@ -121,7 +172,7 @@ export class PayrollService {
         // Extract ID
         let payrollId = '';
         if (createdPayroll._id) {
-            payrollId = String(createdPayroll._id);
+          payrollId = String(createdPayroll._id);
         }
 
         if (!payrollId) {
@@ -130,13 +181,13 @@ export class PayrollService {
 
         console.log('Planilla creada con ID:', payrollId);
 
-        // Step 2: Import Excel file
+        // Step 2: Import file (Excel or PDF)
         const formData = new FormData();
         formData.append('file', file);
 
         return this.http
           .post<{ count: number; errors: string[] }>(
-            `${this.apiUrl}/payrolls/${payrollId}/import`,
+            `${this.apiUrl}/payrolls/${payrollId}/${endpoint}`,
             formData
           )
           .pipe(
@@ -165,14 +216,14 @@ export class PayrollService {
     updates: Partial<PayrollDetail>
   ): Observable<PayrollDetail> {
     // Map frontend updates to backend format
-    // We can pass the updates directly since we aligned the interface, 
+    // We can pass the updates directly since we aligned the interface,
     // but need to ensure we don't send read-only or mismatched fields if any.
     // The API accepts JSON with the fields.
-    
+
     // For safety, we can clone and clean, or just pass 'updates' if it matches BackendPayrollDetail keys.
     // The key 'amount' from old interface maps to 'totalToPay' or 'totalIncome'?
     // In the model we removed 'amount'. So 'updates' should use 'totalToPay'.
-    
+
     return this.http
       .put<BackendPayrollDetail>(`${this.apiUrl}/payrolls/details/${detailId}`, updates)
       .pipe(map((detail) => this.transformDetailResponse(detail)));
@@ -195,22 +246,37 @@ export class PayrollService {
   private transformPayrollResponse(backendPayroll: BackendPayroll): Payroll {
     const contractType = backendPayroll.details?.[0]?.contractType || 'PLANILLA';
     const startDate = new Date(backendPayroll.startDate);
-    const period = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+    const period = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(
+      2,
+      '0'
+    )}`;
 
     return {
       id: backendPayroll._id,
       tenantId: backendPayroll.tenantId,
-      startDate: typeof backendPayroll.startDate === 'string' ? backendPayroll.startDate : backendPayroll.startDate.toISOString(),
-      endDate: typeof backendPayroll.endDate === 'string' ? backendPayroll.endDate : backendPayroll.endDate.toISOString(),
+      startDate:
+        typeof backendPayroll.startDate === 'string'
+          ? backendPayroll.startDate
+          : backendPayroll.startDate.toISOString(),
+      endDate:
+        typeof backendPayroll.endDate === 'string'
+          ? backendPayroll.endDate
+          : backendPayroll.endDate.toISOString(),
       totalToPay: backendPayroll.totalToPay,
       paymentProof: backendPayroll.paymentProof,
       status: this.mapStatus(backendPayroll.status),
       comments: backendPayroll.comments,
       editedBy: backendPayroll.editedBy,
-      createdAt: backendPayroll.createdAt instanceof Date ? backendPayroll.createdAt.toISOString() : backendPayroll.createdAt,
-      updatedAt: backendPayroll.updatedAt instanceof Date ? backendPayroll.updatedAt.toISOString() : backendPayroll.updatedAt,
+      createdAt:
+        backendPayroll.createdAt instanceof Date
+          ? backendPayroll.createdAt.toISOString()
+          : backendPayroll.createdAt,
+      updatedAt:
+        backendPayroll.updatedAt instanceof Date
+          ? backendPayroll.updatedAt.toISOString()
+          : backendPayroll.updatedAt,
       details: backendPayroll.details?.map((d) => this.transformDetailResponse(d)) || [],
-      
+
       // Frontend derived
       name: backendPayroll.comments || `Planilla ${period}`,
       period: period,
@@ -219,11 +285,13 @@ export class PayrollService {
   }
 
   private transformDetailResponse(backendDetail: BackendPayrollDetail): PayrollDetail {
-    const payrollId = typeof backendDetail.payrollId === 'string'
+    const payrollId =
+      typeof backendDetail.payrollId === 'string'
         ? backendDetail.payrollId
         : (backendDetail.payrollId as { _id: string })?._id || '';
-    
-    const employeeId = typeof backendDetail.employeeId === 'string'
+
+    const employeeId =
+      typeof backendDetail.employeeId === 'string'
         ? backendDetail.employeeId
         : (backendDetail.employeeId as { _id: string })?._id || '';
 
@@ -271,10 +339,14 @@ export class PayrollService {
 
   private mapStatus(backendStatus: string): 'DRAFT' | 'PROCESSED' | 'PAID' | 'APPROVED' {
     switch (backendStatus) {
-      case 'DRAFT': return 'DRAFT';
-      case 'APPROVED': return 'APPROVED';
-      case 'PAID': return 'PAID';
-      default: return 'DRAFT';
+      case 'DRAFT':
+        return 'DRAFT';
+      case 'APPROVED':
+        return 'APPROVED';
+      case 'PAID':
+        return 'PAID';
+      default:
+        return 'DRAFT';
     }
   }
 }

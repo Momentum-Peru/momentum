@@ -75,6 +75,28 @@ export class BoardsApiService {
   }
 
   /**
+   * Obtiene un tablero por ID de área
+   */
+  getByArea(areaId: string): Observable<Board> {
+    this.setLoading(true);
+    this.setError(null);
+
+    return this.http.get<Board>(`${this.baseUrl}/area/${areaId}`).pipe(
+      tap((board) => {
+        this.selectedBoard.set(board);
+        // Verificar si el tablero está en la lista, si no, agregarlo
+        const currentBoards = this.boards();
+        const exists = currentBoards.some((b) => b._id === board._id);
+        if (!exists) {
+          this.boards.set([...currentBoards, board]);
+        }
+      }),
+      tap(() => this.setLoading(false)),
+      tap({ error: (err) => this.handleError(err) })
+    );
+  }
+
+  /**
    * Crea un nuevo tablero
    */
   create(boardData: CreateBoardRequest): Observable<Board> {
@@ -258,6 +280,22 @@ export class BoardsApiService {
         const filteredBoards = currentBoards.filter((board) => board._id !== boardId);
         this.boards.set(filteredBoards);
         // La lista completa se refrescará desde el componente
+      }),
+      tap(() => this.setLoading(false)),
+      tap({ error: (err) => this.handleError(err) })
+    );
+  }
+
+  /**
+   * Obtiene todos los tableros del sistema (solo para gerencia)
+   */
+  getAllForGerencia(): Observable<Board[]> {
+    this.setLoading(true);
+    this.setError(null);
+
+    return this.http.get<Board[]>(`${this.baseUrl}/gerencia/all`).pipe(
+      tap((boards) => {
+        this.boards.set(boards);
       }),
       tap(() => this.setLoading(false)),
       tap({ error: (err) => this.handleError(err) })

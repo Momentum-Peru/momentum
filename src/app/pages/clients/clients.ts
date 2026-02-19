@@ -15,6 +15,9 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { MessageService } from 'primeng/api';
 import { MenuService } from '../../shared/services/menu.service';
+import { ApisPeruApiService } from '../../shared/services/apisperu-api.service';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
 
 interface Contact {
   name: string;
@@ -102,7 +105,11 @@ export class ClientsPage implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly menuService = inject(MenuService);
+  private readonly apisPeruService = inject(ApisPeruApiService);
   private readonly baseUrl = environment.apiUrl;
+
+  // Subject para manejar la autocompletación de taxId
+  private readonly taxIdSubject = new Subject<string>();
 
   // Verificar si el usuario tiene permiso de edición para este módulo
   readonly canEdit = computed(() => this.menuService.canEdit('/clients'));
@@ -133,6 +140,7 @@ export class ClientsPage implements OnInit {
     this.load();
     this.loadCountries();
     this.loadStats();
+    this.setupTaxIdAutocomplete();
   }
 
   constructor() {
@@ -188,6 +196,98 @@ export class ClientsPage implements OnInit {
     const cur = this.editing();
     if (!cur) return;
     this.editing.set({ ...cur, [key]: value });
+
+    // Si se cambió el taxId, disparar la autocompletación
+    if (key === 'taxId' && typeof value === 'string') {
+      this.taxIdSubject.next(value);
+    }
+  }
+
+  /**
+   * Configura la autocompletación cuando se ingresa un taxId
+   */
+  private setupTaxIdAutocomplete(): void {
+    this.taxIdSubject
+      .pipe(
+        debounceTime(800),
+        distinctUntilChanged(),
+        switchMap((taxId) => {
+          if (!taxId || taxId.length < 8) {
+            return of(null);
+          }
+
+          const isValidFormat = /^\d{8}$/.test(taxId) || /^\d{11}$/.test(taxId);
+          if (!isValidFormat) {
+            return of(null);
+          }
+
+          return this.apisPeruService.consultDocument(taxId).pipe(
+            catchError((error) => {
+              console.warn('No se pudo autocompletar desde APIsPERU:', error);
+              return of(null);
+            })
+          );
+        })
+      )
+      .subscribe((response) => {
+        if (!response) return;
+
+        const current = this.editing();
+        if (!current) return;
+
+        // Autocompletar según el tipo de respuesta (siempre rellenar con nueva consulta)
+        // DNI y RUC son documentos peruanos, establecer país automáticamente
+        const peruCountry = this.countries().find((c) => c.codigo === 'PE');
+        if (peruCountry && !this.selectedCountry()) {
+          this.selectedCountry.set(peruCountry);
+          this.loadProvinces('PE');
+        }
+
+        if ('nombreCompleto' in response || 'nombres' in response) {
+          // Es DNI
+          const dniResponse = response as any;
+          const nombreCompleto = dniResponse.nombreCompleto ||
+            `${dniResponse.nombres} ${dniResponse.apellidoPaterno} ${dniResponse.apellidoMaterno}`.trim();
+
+          // Actualizar ubicación con país Perú
+          const ubicacion = current.ubicacion || {};
+          ubicacion.paisCodigo = 'PE';
+
+          this.editing.set({
+            ...current,
+            name: nombreCompleto,
+            ubicacion,
+          });
+        } else if ('razonSocial' in response) {
+          // Es RUC
+          const rucResponse = response as any;
+
+          // Construir dirección completa
+          let direccionCompleta: string | undefined = undefined;
+          if (rucResponse.direccion) {
+            const partesDireccion = [
+              rucResponse.direccion,
+              rucResponse.distrito,
+              rucResponse.provincia,
+              rucResponse.departamento,
+            ].filter(Boolean);
+            direccionCompleta = partesDireccion.join(', ') || rucResponse.direccion;
+          }
+
+          // Actualizar ubicación con país Perú y dirección
+          const ubicacion = current.ubicacion || {};
+          ubicacion.paisCodigo = 'PE';
+          if (direccionCompleta) {
+            ubicacion.direccion = direccionCompleta;
+          }
+
+          this.editing.set({
+            ...current,
+            name: rucResponse.razonSocial || rucResponse.nombreComercial || current.name || '',
+            ubicacion,
+          });
+        }
+      });
   }
   save() {
     const item = this.editing();

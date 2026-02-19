@@ -14,7 +14,8 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { MenuPermissionsApiService } from '../../shared/services/menu-permissions-api.service';
-import { UsersApiService, User } from '../../shared/services/users-api.service';
+import { UsersApiService, User, UserResponse } from '../../shared/services/users-api.service';
+import { forkJoin } from 'rxjs';
 import { MenuService } from '../../shared/services/menu.service';
 import { MenuConfigService } from '../../shared/services/menu-config.service';
 import { TenantService } from '../../core/services/tenant.service';
@@ -229,41 +230,22 @@ export class MenuPermissionsPage implements OnInit {
     console.log('Loading users for tenant:', currentTenantId, 'isGerencia:', isGerencia);
 
     // Obtener usuarios completos con tenantIds para filtrar
-    this.usersApi.listWithFilters({}).subscribe({
-      next: (response) => {
+    // Aumentar el límite para obtener todos los usuarios de una vez
+    this.usersApi.listWithFilters({ limit: 1000 }).subscribe({
+      next: (response: UserResponse & { total?: number; totalPages?: number; page?: number }) => {
         const allUsers = response.data ?? response.users ?? [];
         console.log('Users API response:', allUsers);
 
-        const toUserOption = (user: User): UserOption => ({
-          _id: user._id || user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        });
+        // Verificar si hay más páginas y cargarlas si es necesario
+        const total = response.total;
+        const totalPages = response.totalPages;
 
-        // Para gerencia: mostrar todos los usuarios sin filtrar por tenant
-        // Para otros roles: filtrar por tenant seleccionado
-        if (isGerencia) {
-          console.log('Gerencia: showing all users');
-          const userOptions = allUsers.map(toUserOption);
-          this.users.set(userOptions);
-        } else if (currentTenantId) {
-          const filteredUsers = allUsers.filter((user) => {
-            const tenantIds = user.tenantIds ?? [];
-            if (tenantIds.length === 0) {
-              return true;
-            }
-            return tenantIds.includes(currentTenantId);
-          });
-
-          const userOptions = filteredUsers.map(toUserOption);
-
-          console.log('Filtered users for tenant:', userOptions);
-          this.users.set(userOptions);
+        if (totalPages && totalPages > 1 && typeof total === 'number' && allUsers.length < total) {
+          // Cargar todas las páginas restantes usando forkJoin
+          this.loadAllPagesUsers(totalPages, allUsers, currentTenantId, isGerencia);
         } else {
-          console.log('No tenant selected, showing all users');
-          const userOptions = allUsers.map(toUserOption);
-          this.users.set(userOptions);
+          // Procesar usuarios directamente
+          this.processUsers(allUsers, currentTenantId, isGerencia);
         }
       },
       error: (error: unknown) => {
@@ -276,6 +258,81 @@ export class MenuPermissionsPage implements OnInit {
         });
       },
     });
+  }
+
+  /**
+   * Cargar todas las páginas de usuarios usando forkJoin
+   */
+  private loadAllPagesUsers(
+    totalPages: number,
+    initialUsers: User[],
+    currentTenantId: string | null,
+    isGerencia: boolean
+  ): void {
+    const requests = [];
+
+    // Crear requests para todas las páginas restantes
+    for (let page = 2; page <= totalPages; page++) {
+      requests.push(this.usersApi.listWithFilters({ page, limit: 1000 }));
+    }
+
+    // Ejecutar todas las peticiones en paralelo
+    forkJoin(requests).subscribe({
+      next: (responses: (UserResponse & { total?: number; totalPages?: number; page?: number })[]) => {
+        let allUsers = [...initialUsers];
+
+        // Combinar todos los usuarios de todas las páginas
+        responses.forEach((response) => {
+          const pageUsers = response.users || response.data || [];
+          allUsers = allUsers.concat(pageUsers);
+        });
+
+        // Procesar usuarios
+        this.processUsers(allUsers, currentTenantId, isGerencia);
+      },
+      error: (error: unknown) => {
+        console.error('Error al cargar todas las páginas:', error);
+        // Usar al menos los usuarios iniciales
+        this.processUsers(initialUsers, currentTenantId, isGerencia);
+      },
+    });
+  }
+
+  /**
+   * Procesar usuarios y aplicar filtros según el rol y tenant
+   */
+  private processUsers(allUsers: User[], currentTenantId: string | null, isGerencia: boolean): void {
+    const toUserOption = (user: User): UserOption => ({
+      _id: user._id || user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    });
+
+    // Para gerencia: mostrar todos los usuarios sin filtrar por tenant
+    // Para otros roles: filtrar por tenant seleccionado
+    if (isGerencia) {
+      console.log('Gerencia: showing all users');
+      const userOptions = allUsers.map(toUserOption);
+      this.users.set(userOptions);
+    } else if (currentTenantId) {
+      const filteredUsers = allUsers.filter((user) => {
+        const tenantIds = user.tenantIds ?? [];
+        if (tenantIds.length === 0) {
+          return true;
+        }
+        return tenantIds.includes(currentTenantId);
+      });
+
+      const userOptions = filteredUsers.map(toUserOption);
+
+      console.log('Filtered users for tenant:', userOptions);
+      this.users.set(userOptions);
+    } else {
+      console.log('No tenant selected, showing all users');
+      const userOptions = allUsers.map(toUserOption);
+      this.users.set(userOptions);
+    }
   }
 
   setQuery(value: string) {

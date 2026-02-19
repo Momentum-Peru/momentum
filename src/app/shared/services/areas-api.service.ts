@@ -7,6 +7,7 @@ import {
   CreateAreaRequest,
   UpdateAreaRequest,
   AreaQueryParams,
+  AssignUsersRequest,
 } from '../interfaces/area.interface';
 
 /**
@@ -53,6 +54,13 @@ export class AreasApiService {
   }
 
   /**
+   * Obtiene las áreas asignadas al usuario actual
+   */
+  listMine(): Observable<Area[]> {
+    return this.http.get<Area[]>(`${this.baseUrl}/my-areas`);
+  }
+
+  /**
    * Obtiene un área por ID
    */
   getById(id: string): Observable<Area> {
@@ -85,6 +93,27 @@ export class AreasApiService {
    */
   delete(id: string): Observable<{ deleted: boolean; id: string }> {
     return this.http.delete<{ deleted: boolean; id: string }>(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Asigna usuarios a un área
+   */
+  assignUsers(id: string, request: AssignUsersRequest): Observable<{ success: boolean }> {
+    return this.http.post<{ success: boolean }>(`${this.baseUrl}/${id}/users`, request);
+  }
+
+  /**
+   * Obtiene los usuarios asignados a un área
+   */
+  getAssignedUsers(id: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/${id}/users`);
+  }
+
+  /**
+   * Obtiene todas las áreas con sus usuarios asignados
+   */
+  listWithUsers(): Observable<import('../interfaces/area.interface').AreaWithUsers[]> {
+    return this.http.get<import('../interfaces/area.interface').AreaWithUsers[]>(`${this.baseUrl}/with-users`);
   }
 }
 

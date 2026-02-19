@@ -1,0 +1,78 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import {
+  GerenciaDashboardResponse,
+  GerenciaDashboardQueryParams,
+} from '../interfaces/dashboard-gerencia.interface';
+
+/**
+ * Servicio para obtener datos del Dashboard de Gerencia
+ * Principio de Responsabilidad Única: Solo maneja las llamadas HTTP al endpoint de dashboard-gerencia
+ */
+@Injectable({ providedIn: 'root' })
+export class DashboardGerenciaApiService {
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = environment.apiUrl;
+
+  /**
+   * Obtiene todos los datos del dashboard de gerencia
+   * @param params Parámetros de consulta (startDate, endDate, tenantId, companyId, userId opcionales)
+   * @returns Observable con todos los datos del dashboard de gerencia
+   */
+  getDashboardData(params: GerenciaDashboardQueryParams): Observable<GerenciaDashboardResponse> {
+    const queryParams: Record<string, string> = {
+      startDate: params.startDate,
+      endDate: params.endDate,
+    };
+
+    const tenantId = params['tenantId'];
+    const companyId = params['companyId'];
+    const userId = params['userId'];
+
+    if (tenantId) {
+      queryParams['tenantId'] = tenantId;
+    } else if (companyId) {
+      queryParams['companyId'] = companyId;
+    }
+
+    if (userId) {
+      queryParams['userId'] = userId;
+    }
+
+    return this.http.get<GerenciaDashboardResponse>(`${this.baseUrl}/dashboard-gerencia`, {
+      params: queryParams,
+    });
+  }
+
+  /**
+   * Descarga el PDF del dashboard de gerencia
+   * @param params Parámetros de consulta (startDate, endDate, tenantId, companyId, userId opcionales)
+   * @returns Observable con el blob del PDF
+   */
+  downloadPdf(params: GerenciaDashboardQueryParams): Observable<Blob> {
+    let httpParams = new HttpParams()
+      .set('startDate', params.startDate)
+      .set('endDate', params.endDate);
+
+    const tenantId = params['tenantId'];
+    const companyId = params['companyId'];
+    const userId = params['userId'];
+
+    if (tenantId) {
+      httpParams = httpParams.set('tenantId', tenantId);
+    } else if (companyId) {
+      httpParams = httpParams.set('companyId', companyId);
+    }
+
+    if (userId) {
+      httpParams = httpParams.set('userId', userId);
+    }
+
+    return this.http.get(`${this.baseUrl}/dashboard-gerencia/pdf`, {
+      params: httpParams,
+      responseType: 'blob',
+    });
+  }
+}

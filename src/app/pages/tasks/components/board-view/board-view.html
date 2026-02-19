@@ -1,358 +1,128 @@
-<div class="space-y-4 sm:space-y-6">
-  <!-- Board Header -->
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
-    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-      <div class="flex-1 min-w-0">
-        <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-          <i class="pi pi-th-large text-xl sm:text-2xl text-blue-600 dark:text-blue-400"></i>
-          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white break-words">
-            {{ board.title }}
-          </h1>
-          @if (isOwner) {
-          <p-tag
-            value="Propietario"
-            severity="success"
-            [rounded]="true"
-            styleClass="text-xs sm:text-sm"
-          ></p-tag>
-          }
-        </div>
-        @if (board.description) {
-        <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-2 break-words">
-          {{ board.description }}
-        </p>
-        }
-      </div>
-      <!-- Botones de acción - Ocultos en móviles, visibles en desktop -->
-      <div class="hidden sm:flex gap-2 flex-shrink-0">
-        <!-- Toggle de vista -->
-        <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-          <button
-            (click)="viewMode.set('kanban')"
-            [class]="
-              viewMode() === 'kanban'
-                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-300'
-            "
-            class="px-3 py-1.5 rounded-md font-medium text-sm transition-colors flex items-center gap-2"
-            pTooltip="Vista Kanban"
-          >
-            <i class="pi pi-th-large"></i>
-            <span class="hidden lg:inline">Kanban</span>
-          </button>
-          <button
-            (click)="viewMode.set('list')"
-            [class]="
-              viewMode() === 'list'
-                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-300'
-            "
-            class="px-3 py-1.5 rounded-md font-medium text-sm transition-colors flex items-center gap-2"
-            pTooltip="Vista Lista"
-          >
-            <i class="pi pi-list"></i>
-            <span class="hidden lg:inline">Lista</span>
-          </button>
-        </div>
-        <p-button
-          icon="pi pi-refresh"
-          [text]="true"
-          severity="secondary"
-          (onClick)="onRefresh($event)"
-          [loading]="loading"
-          pTooltip="Actualizar tablero"
-        ></p-button>
-        <p-button
-          icon="pi pi-arrow-left"
-          label="Volver"
-          [text]="true"
-          severity="secondary"
-          (onClick)="onBack($event)"
-          pTooltip="Volver a la lista de tableros"
-        ></p-button>
-        @if (isOwner) {
-        <p-button
-          icon="pi pi-pencil"
-          label="Editar"
-          [text]="true"
-          severity="info"
-          (onClick)="onEdit($event)"
-          pTooltip="Editar tablero"
-        ></p-button>
-        <p-button
-          icon="pi pi-user-plus"
-          label="Invitar"
-          [text]="true"
-          severity="success"
-          (onClick)="onInvite($event)"
-          pTooltip="Invitar usuario"
-        ></p-button>
-        }
-      </div>
-    </div>
+<div class="space-y-6">
+  <!-- Header & Filters -->
+  <div class="flex flex-col gap-4">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <!-- Title -->
+          <div class="flex items-center gap-2">
+             <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ board.title }}</h2>
+             <p-tag *ngIf="board.isArchived" value="Archivado" severity="warn"></p-tag>
+          </div>
+          
+          <!-- Actions -->
+          <div class="flex flex-wrap gap-2">
+              <button 
+                  pButton 
+                  icon="pi pi-filter" 
+                  [outlined]="!hasActiveFilters()"
+                  [severity]="hasActiveFilters() ? 'primary' : 'secondary'"
+                  (click)="toggleFilters()" 
+                  pTooltip="Filtrar tareas"
+                  label="Filtros"
+                  class="p-button-sm"
+              ></button>
+              
+              <button 
+                  pButton 
+                  icon="pi pi-users" 
+                  [outlined]="true"
+                  severity="help"
+                  (click)="showMembersDialog.set(true)"
+                  pTooltip="Ver integrantes"
+                  class="p-button-sm"
+                  label="{{ (board.members?.length || 0) + (board.owner ? 1 : 0) | number }}"
+              ></button>
 
-    <!-- Botones de acción para móviles - Debajo del título -->
-    <div class="flex flex-wrap gap-2 mt-4 sm:hidden">
-      <!-- Toggle de vista para móviles -->
-      <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-        <button
-          (click)="viewMode.set('kanban')"
-          [class]="
-            viewMode() === 'kanban'
-              ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400'
-              : 'text-gray-600 dark:text-gray-300'
-          "
-          class="px-3 py-1.5 rounded-md font-medium text-sm transition-colors flex items-center gap-2"
-        >
-          <i class="pi pi-th-large"></i>
-          <span>Kanban</span>
-        </button>
-        <button
-          (click)="viewMode.set('list')"
-          [class]="
-            viewMode() === 'list'
-              ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400'
-              : 'text-gray-600 dark:text-gray-300'
-          "
-          class="px-3 py-1.5 rounded-md font-medium text-sm transition-colors flex items-center gap-2"
-        >
-          <i class="pi pi-list"></i>
-          <span>Lista</span>
-        </button>
-      </div>
-      <p-button
-        icon="pi pi-refresh"
-        [text]="true"
-        severity="secondary"
-        (onClick)="onRefresh($event)"
-        [loading]="loading"
-        pTooltip="Actualizar tablero"
-        styleClass="flex-1 sm:flex-none"
-      ></p-button>
-      @if (isOwner) {
-      <p-button
-        icon="pi pi-pencil"
-        label="Editar"
-        [text]="true"
-        severity="info"
-        (onClick)="onEdit($event)"
-        pTooltip="Editar tablero"
-        styleClass="flex-1 sm:flex-none"
-      ></p-button>
-      <p-button
-        icon="pi pi-user-plus"
-        label="Invitar"
-        [text]="true"
-        severity="success"
-        (onClick)="onInvite($event)"
-        pTooltip="Invitar usuario"
-        styleClass="flex-1 sm:flex-none"
-      ></p-button>
-      }
-    </div>
+              <button 
+                *ngIf="isOwner"
+                pButton 
+                icon="pi pi-user-plus" 
+                label="Invitar" 
+                class="p-button-sm"
+                (click)="onInvite($event)"
+              ></button>
 
-    <!-- Board Info - Versión Compacta -->
-    <div class="mt-4 sm:mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-      <div class="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
-        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-          <i class="pi pi-user"></i>
-          <span class="font-medium">Propietario:</span>
-          <span class="truncate">{{ board.owner?.name || board.owner?.email || 'Sin nombre' }}</span>
-        </div>
-        <div
-          class="flex items-center gap-2 text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-          (click)="showMembersDialog.set(true)"
-          (keydown.enter)="showMembersDialog.set(true)"
-          (keydown.space)="showMembersDialog.set(true)"
-          tabindex="0"
-          role="button"
-          pTooltip="Ver detalles de integrantes"
-        >
-          <i class="pi pi-users"></i>
-          <span class="font-medium"
-            >{{ (board.members?.length || 0) + 1 }} integrante{{
-              (board.members?.length || 0) + 1 !== 1 ? 's' : ''
-            }}</span
-          >
-        </div>
-        @if (pendingInvitations > 0) {
-        <div
-          class="flex items-center gap-2 text-amber-600 dark:text-amber-400 cursor-pointer hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
-          (click)="showMembersDialog.set(true)"
-          (keydown.enter)="showMembersDialog.set(true)"
-          (keydown.space)="showMembersDialog.set(true)"
-          tabindex="0"
-          role="button"
-          pTooltip="Ver detalles de integrantes"
-        >
-          <i class="pi pi-envelope"></i>
-          <span class="font-medium"
-            >{{ pendingInvitations }} pendiente{{ pendingInvitations !== 1 ? 's' : '' }}</span
-          >
-        </div>
-        }
+              <button 
+                *ngIf="isOwner"
+                pButton 
+                icon="pi pi-cog" 
+                class="p-button-sm p-button-secondary"
+                (click)="onEdit($event)"
+                pTooltip="Configurar tablero"
+              ></button>
+              
+              <button 
+                pButton 
+                icon="pi pi-refresh" 
+                class="p-button-sm p-button-secondary p-button-outlined"
+                (click)="onRefresh($event)"
+                pTooltip="Actualizar"
+              ></button>
+          </div>
       </div>
-    </div>
+      
+      <!-- Filters Panel -->
+      <div *ngIf="showFilters()" class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all mb-4">
+          
+          <!-- Area Filter -->
+          <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Área de Trabajo</label>
+              <p-select 
+                  [options]="areaOptions" 
+                  [ngModel]="filterArea()"
+                  (ngModelChange)="onAreaChange($event)"
+                  placeholder="Todas las áreas" 
+                  styleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11 flex items-center"
+                  [showClear]="true"
+                  appendTo="body"
+              ></p-select>
+          </div>
+
+          <!-- Date Filter -->
+          <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Filtrar por Fecha</label>
+              <p-datePicker 
+                  [ngModel]="filterDate()" 
+                  (ngModelChange)="onDateChange($event)"
+                  placeholder="Selecciona una fecha..." 
+                  dateFormat="dd/mm/yy"
+                  styleClass="w-full"
+                  inputStyleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11"
+                  [showIcon]="true"
+                  iconDisplay="input"
+                  [showButtonBar]="true"
+                  appendTo="body"
+              ></p-datePicker>
+          </div>
+          
+          <!-- Clear Filters -->
+          <div class="col-span-full border-t border-gray-50 dark:border-gray-700 pt-3 flex justify-end" *ngIf="hasActiveFilters()">
+              <button 
+                  pButton 
+                  label="Limpiar todos los filtros" 
+                  icon="pi pi-filter-slash" 
+                  class="p-button-sm p-button-text p-button-danger font-medium hover:bg-red-50" 
+                  (click)="clearFilters()"
+              ></button>
+          </div>
+      </div>
   </div>
 
-  <!-- Task Stats and Create Button -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
-    <div class="flex-1 min-w-0">
-      <app-native-task-stats [stats]="taskStats"></app-native-task-stats>
-    </div>
-    <div class="flex flex-shrink-0 gap-2">
-      <p-button
-        icon="pi pi-filter"
-        [label]="showFilters() ? 'Ocultar Filtros' : 'Filtros'"
-        [text]="true"
-        severity="secondary"
-        (onClick)="toggleFilters()"
-        [styleClass]="
-          hasActiveFilters()
-            ? 'w-full sm:w-auto bg-blue-50 dark:bg-blue-900/20'
-            : 'w-full sm:w-auto'
-        "
-        pTooltip="Filtrar tareas"
-      ></p-button>
-      <p-button
-        icon="pi pi-plus"
-        label="Nueva Tarea"
-        (onClick)="onCreateTask($event)"
-        severity="primary"
-        pTooltip="Crear nueva tarea en este tablero"
-        styleClass="w-full sm:w-auto"
-      ></p-button>
-    </div>
+  <!-- Agenda View (List) -->
+  <div class="mt-2">
+    <app-agenda-activity
+      [tasks]="allTasks"
+      [board]="board"
+      [members]="boardUsers"
+      [currentUser]="currentUser"
+      [areas]="availableAreas"
+      [preselectedAreaId]="filterArea()"
+      (taskCreated)="quickCreateTask.emit($event)"
+      (taskUpdated)="editTask.emit($event)"
+      (taskDeleted)="onDeleteTask($event)"
+      (viewTask)="viewTask.emit($event)"
+      (statusChanged)="onStatusChanged($event)"
+    ></app-agenda-activity>
   </div>
-
-  <!-- Filtros -->
-  @if (showFilters()) {
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Filtros</h3>
-      @if (hasActiveFilters()) {
-      <p-button
-        icon="pi pi-times"
-        label="Limpiar"
-        [text]="true"
-        severity="secondary"
-        size="small"
-        (onClick)="clearFilters()"
-        pTooltip="Limpiar todos los filtros"
-      ></p-button>
-      }
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- Filtro por Asignado a -->
-      <div class="space-y-2">
-        <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Asignado a</div>
-        <p-select
-          [ngModel]="filterAssignedTo()"
-          (ngModelChange)="onAssignedToChange($event)"
-          [options]="availableUsers"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Todos los usuarios"
-          [appendTo]="'body'"
-          styleClass="w-full"
-          [showClear]="true"
-        ></p-select>
-      </div>
-
-      <!-- Filtros de Fecha - Agrupados en 2 columnas -->
-      <div class="grid grid-cols-2 gap-3 md:col-span-2">
-        <!-- Filtro por Fecha Desde -->
-        <div class="space-y-2">
-          <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Fecha y hora desde
-          </div>
-          <div class="relative w-full">
-            <p-datePicker
-              [ngModel]="filterDateFrom()"
-              (ngModelChange)="onDateFromChange($event)"
-              placeholder="Seleccionar fecha y hora"
-              dateFormat="dd/mm/yy"
-              [showTime]="true"
-              [showSeconds]="false"
-              hourFormat="24"
-              styleClass="w-full"
-              inputStyleClass="w-full pr-20"
-              [showIcon]="true"
-              [showButtonBar]="true"
-              [appendTo]="'body'"
-              [showClear]="true"
-            ></p-datePicker>
-          </div>
-        </div>
-
-        <!-- Filtro por Fecha Hasta -->
-        <div class="space-y-2">
-          <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Fecha y hora hasta
-          </div>
-          <div class="relative w-full">
-            <p-datePicker
-              [ngModel]="filterDateTo()"
-              (ngModelChange)="onDateToChange($event)"
-              placeholder="Seleccionar fecha y hora"
-              dateFormat="dd/mm/yy"
-              [showTime]="true"
-              [showSeconds]="false"
-              hourFormat="24"
-              styleClass="w-full"
-              inputStyleClass="w-full pr-20"
-              [showIcon]="true"
-              [showButtonBar]="true"
-              [appendTo]="'body'"
-              [showClear]="true"
-            ></p-datePicker>
-          </div>
-        </div>
-      </div>
-
-      <!-- Filtro por Etiquetas -->
-      <div class="space-y-2 md:col-span-3">
-        <div class="block text-sm font-medium text-gray-700 dark:text-gray-300">Etiquetas</div>
-        <p-multiSelect
-          [ngModel]="filterTags()"
-          (ngModelChange)="onTagsChange($event)"
-          [options]="tagOptions"
-          placeholder="Seleccionar etiquetas"
-          [appendTo]="'body'"
-          styleClass="w-full"
-          [showClear]="true"
-          display="chip"
-        ></p-multiSelect>
-      </div>
-    </div>
-  </div>
-  }
-
-  <!-- Vista según el modo seleccionado -->
-  @if (viewMode() === 'kanban') {
-  <!-- Kanban Board -->
-  <app-native-kanban-board
-    [tasksByStatus]="tasksByStatus"
-    [loading]="loading"
-    (taskStatusChanged)="taskStatusChanged.emit($event)"
-    (editTask)="editTask.emit($event)"
-    (deleteTask)="deleteTask.emit($event)"
-    (viewTask)="viewTask.emit($event)"
-    (createTask)="createTask.emit()"
-  ></app-native-kanban-board>
-  } @else {
-  <!-- List View -->
-  <app-native-task-list
-    [tasksByStatus]="tasksByStatus"
-    [loading]="loading"
-    (taskStatusChanged)="taskStatusChanged.emit($event)"
-    (editTask)="editTask.emit($event)"
-    (deleteTask)="deleteTask.emit($event)"
-    (viewTask)="viewTask.emit($event)"
-    (createTask)="createTask.emit()"
-  ></app-native-task-list>
-  }
 </div>
 
 <!-- Dialog de Detalles de Integrantes -->
@@ -366,18 +136,20 @@
 >
   <div class="space-y-3">
     <div class="space-y-2">
-      <!-- Propietario -->
+      <!-- Propietario (solo si existe) -->
+      @if (board.owner) {
       <div
         class="flex items-center justify-between gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-md"
       >
         <div class="flex items-center gap-2 flex-1 min-w-0">
           <i class="pi pi-user text-green-600 dark:text-green-400"></i>
           <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{
-            board.owner?.name || board.owner?.email || 'Sin nombre'
+            board.owner.name || board.owner.email || 'Sin nombre'
           }}</span>
         </div>
         <p-tag value="Dueño" severity="success" [rounded]="true" styleClass="text-xs"></p-tag>
       </div>
+      }
 
       <!-- Miembros Aceptados -->
       @for (member of (board.members || []); track member._id) {
@@ -386,7 +158,9 @@
       >
         <div class="flex items-center gap-2 flex-1 min-w-0">
           <i class="pi pi-user text-blue-600 dark:text-blue-400"></i>
-          <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{ member?.name || member?.email || 'Sin nombre' }}</span>
+          <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{
+            member?.name || member?.email || 'Sin nombre'
+          }}</span>
         </div>
         <div class="flex items-center gap-2">
           <p-tag value="Aceptado" severity="info" [rounded]="true" styleClass="text-xs"></p-tag>
@@ -451,7 +225,7 @@
     <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
       <div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
         <span>Total aceptados:</span>
-        <span class="font-semibold">{{ (board.members?.length || 0) + 1 }}</span>
+        <span class="font-semibold">{{ (board.members?.length || 0) + (board.owner ? 1 : 0) }}</span>
       </div>
       @if (pendingInvitations > 0) {
       <div

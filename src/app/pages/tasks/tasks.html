@@ -1,54 +1,10 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 mt-4 lg:mt-0">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 sm:p-8 mt-4 lg:mt-0">
   <!-- Header -->
-  <div class="mb-6">
-    <div class="flex items-center flex-wrap gap-4 justify-between">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Tableros de Tareas</h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-1">
-          Organiza tus tareas en tableros colaborativos
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
-        <div class="relative">
-          <p-button
-            icon="pi pi-bell"
-            [text]="true"
-            severity="secondary"
-            (onClick)="openBoardInvitations()"
-            [pTooltip]="
-              pendingInvitationsCount() > 0
-                ? 'Tienes ' + pendingInvitationsCount() + ' invitación(es) pendiente(s)'
-                : 'Ver invitaciones pendientes'
-            "
-          ></p-button>
-          @if (pendingInvitationsCount() > 0) {
-          <span
-            class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
-            >{{ pendingInvitationsCount() }}</span
-          >
-          }
-        </div>
-        <p-button
-          icon="pi pi-refresh"
-          [text]="true"
-          severity="secondary"
-          (onClick)="refreshBoards()"
-          [loading]="boardsService.loading()"
-          pTooltip="Actualizar tableros"
-        ></p-button>
-        <p-button
-          icon="pi pi-plus"
-          label="Nuevo Tablero"
-          (onClick)="openBoardForm()"
-          severity="primary"
-        ></p-button>
-      </div>
-    </div>
-  </div>
+
 
   <!-- Lista de Tableros - Visible solo cuando NO hay un tablero seleccionado (ruta /tasks) -->
   @if (!selectedBoard()) {
-  <div class="mb-6">
+  <div class="mb-8">
     <app-board-list
       [boards]="boardsService.boards()"
       [loading]="boardsService.loading()"
@@ -60,6 +16,7 @@
       (editBoard)="openBoardFormFromList($any($event))"
       (inviteUser)="openBoardInviteFromList($any($event))"
       (deleteBoard)="confirmDeleteBoard($any($event))"
+      (changeColor)="onBoardColorChange($event)"
     ></app-board-list>
   </div>
   }
@@ -75,7 +32,10 @@
       [loading]="tasksService.loading()"
       [availableUsers]="availableUsers()"
       [availableTags]="availableTags()"
+      [availableAreas]="availableAreas()"
+      [availableUsersObjects]="availableUsersAsObjects()"
       [currentUserId]="currentUserId()"
+      [currentUser]="currentUserObject()"
       (back)="onBackToBoards()"
       (edit)="openBoardForm(selectedBoard()!)"
       (invite)="openBoardInvite()"
@@ -85,6 +45,7 @@
       (deleteTask)="confirmDeleteTask($event)"
       (viewTask)="viewTaskDetails($event)"
       (createTask)="openTaskForm()"
+      (quickCreateTask)="onQuickCreateTask($event)"
       (filtersChanged)="onFiltersChanged($event)"
       (removeMember)="onRemoveMember($event)"
       (leaveBoard)="onLeaveBoard($event)"
@@ -143,6 +104,7 @@
   <app-native-task-form
     [task]="selectedTask() || undefined"
     [boardId]="selectedBoard()?._id"
+    [visible]="showTaskForm()"
     (save)="onTaskSave()"
     (formCancel)="closeTaskForm()"
   ></app-native-task-form>

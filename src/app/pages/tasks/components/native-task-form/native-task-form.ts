@@ -5,6 +5,7 @@ import {
   EventEmitter,
   OnInit,
   OnChanges,
+  OnDestroy,
   SimpleChanges,
   inject,
   signal,
@@ -36,6 +37,7 @@ import { AuthService } from '../../../login/services/auth.service';
 import { BoardsApiService } from '../../../../shared/services/boards-api.service';
 import { ProjectsApiService } from '../../../../shared/services/projects-api.service';
 import { ClientsApiService } from '../../../../shared/services/clients-api.service';
+import { AreasApiService } from '../../../../shared/services/areas-api.service'; // Added
 
 // Interfaces
 import {
@@ -48,6 +50,7 @@ import {
 import { User } from '../../../../shared/services/users-api.service';
 import { Board } from '../../../../shared/interfaces/board.interface';
 import { Project } from '../../../../shared/interfaces/project.interface';
+import { Area } from '../../../../shared/interfaces/area.interface'; // Added
 
 // PrimeNG Services
 import { MessageService } from 'primeng/api';
@@ -194,6 +197,22 @@ export class TruncatePipe implements PipeTransform {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Area Field -->
+          <div class="space-y-2">
+            <label for="areaId" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Área
+            </label>
+            <p-select
+              id="areaId"
+              formControlName="areaId"
+              [options]="areaOptions()"
+              placeholder="Selecciona un área"
+              [appendTo]="'body'"
+              styleClass="w-full"
+              [showClear]="true"
+            ></p-select>
+          </div>
+
           <!-- Assigned To Field -->
           <div class="space-y-2">
             <label
@@ -221,7 +240,9 @@ export class TruncatePipe implements PipeTransform {
               Debes seleccionar un usuario.
             </p>
           </div>
+        </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Project Field -->
           <div class="space-y-2">
             <label
@@ -238,26 +259,25 @@ export class TruncatePipe implements PipeTransform {
               [appendTo]="'body'"
               styleClass="w-full"
               [loading]="projectsLoading()"
+              [showClear]="true"
             >
               <ng-template let-project pTemplate="selectedItem">
                 @if (project?.label) {
-                <span class="truncate block w-full" [title]="project.label">
-                  {{ project.label | truncate : 40 }}
-                </span>
+                  <span class="truncate block w-full" [title]="project.label">
+                    {{ project.label | truncate: 40 }}
+                  </span>
                 } @else {
-                <span class="truncate block w-full">Selecciona un proyecto</span>
+                  <span class="truncate block w-full">Selecciona un proyecto</span>
                 }
               </ng-template>
               <ng-template let-project pTemplate="item">
                 <span class="truncate block w-full" [title]="project.label">
-                  {{ project.label | truncate : 40 }}
+                  {{ project.label | truncate: 40 }}
                 </span>
               </ng-template>
             </p-select>
           </div>
-        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Due Date Field -->
           <div class="space-y-2">
             <label for="dueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -293,26 +313,6 @@ export class TruncatePipe implements PipeTransform {
           />
           <p class="text-gray-500 dark:text-gray-400 text-sm">
             Separa múltiples etiquetas con comas
-          </p>
-        </div>
-
-        <!-- Incomplete Reason Field -->
-        <div class="space-y-2">
-          <label
-            for="incompleteReason"
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Razón por la que no se terminó la tarea
-          </label>
-          <textarea
-            id="incompleteReason"
-            formControlName="incompleteReason"
-            rows="3"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-            placeholder="Explica por qué no se pudo terminar la tarea (opcional)"
-          ></textarea>
-          <p class="text-gray-500 dark:text-gray-400 text-sm">
-            Este campo aparece en los detalles y en la tarjeta de la tarea
           </p>
         </div>
 
@@ -374,101 +374,108 @@ export class TruncatePipe implements PipeTransform {
           <div class="space-y-2">
             <!-- Archivos existentes (solo en modo edición) -->
             @if (isEditing() && existingAttachments().length > 0) {
-            <div class="mb-3">
-              <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                Archivos existentes
+              <div class="mb-3">
+                <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                  Archivos existentes
+                </div>
+                @for (attachment of existingAttachments(); track attachment._id || $index) {
+                  <div
+                    class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md mb-2"
+                    [class.opacity-50]="attachmentsToDelete().includes(attachment._id || '')"
+                  >
+                    <i class="pi pi-file text-gray-500"></i>
+                    <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                      {{ attachment.originalName }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ formatFileSize(attachment.size) }}
+                    </span>
+                    <button
+                      type="button"
+                      (click)="removeExistingAttachment(attachment._id || '')"
+                      class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                      [title]="
+                        attachmentsToDelete().includes(attachment._id || '')
+                          ? 'Restaurar archivo'
+                          : 'Eliminar archivo'
+                      "
+                    >
+                      @if (attachmentsToDelete().includes(attachment._id || '')) {
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
+                      } @else {
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      }
+                    </button>
+                  </div>
+                }
               </div>
-              @for (attachment of existingAttachments(); track attachment._id || $index) {
-              <div
-                class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md mb-2"
-                [class.opacity-50]="attachmentsToDelete().includes(attachment._id || '')"
-              >
-                <i class="pi pi-file text-gray-500"></i>
-                <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
-                  {{ attachment.originalName }}
-                </span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ formatFileSize(attachment.size) }}
-                </span>
-                <button
-                  type="button"
-                  (click)="removeExistingAttachment(attachment._id || '')"
-                  class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                  [title]="
-                    attachmentsToDelete().includes(attachment._id || '')
-                      ? 'Restaurar archivo'
-                      : 'Eliminar archivo'
-                  "
-                >
-                  @if (attachmentsToDelete().includes(attachment._id || '')) {
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  } @else {
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                  }
-                </button>
-              </div>
-              }
-            </div>
             }
 
             <!-- Archivos nuevos seleccionados -->
             @if (selectedFiles().length > 0) {
-            <div class="mb-3">
-              <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                Archivos nuevos
+              <div class="mb-3">
+                <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                  Archivos nuevos
+                </div>
+                @for (file of selectedFiles(); track $index) {
+                  <div
+                    class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md mb-2"
+                  >
+                    <i class="pi pi-file text-gray-500"></i>
+                    <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                      {{ file.name }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ formatFileSize(file.size) }}
+                    </span>
+                    <button
+                      type="button"
+                      (click)="removeFile($index)"
+                      class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                      title="Eliminar archivo"
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                }
               </div>
-              @for (file of selectedFiles(); track $index) {
-              <div class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md mb-2">
-                <i class="pi pi-file text-gray-500"></i>
-                <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
-                  {{ file.name }}
-                </span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ formatFileSize(file.size) }}
-                </span>
-                <button
-                  type="button"
-                  (click)="removeFile($index)"
-                  class="px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                  title="Eliminar archivo"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
-              </div>
-              }
-            </div>
             }
             <label
               class="flex flex-col items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200"
               [ngClass]="{
                 'border-blue-500 bg-blue-50 dragging-overlay': isDragging(),
                 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600':
-                  !isDragging()
+                  !isDragging(),
               }"
               (dragover)="onDragOver($event)"
               (dragleave)="onDragLeave($event)"
               (drop)="onDrop($event)"
+              tabindex="0"
+              role="button"
+              [attr.aria-label]="
+                'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos o pega archivos con Ctrl+V'
+              "
             >
               <div class="flex flex-col items-center justify-center pt-5 pb-6">
                 <svg
@@ -495,19 +502,21 @@ export class TruncatePipe implements PipeTransform {
                   [class.dark:text-gray-400]="!isDragging()"
                 >
                   @if (isDragging()) {
-                  <span class="font-semibold">Suelta los archivos aquí</span>
+                    <span class="font-semibold">Suelta los archivos aquí</span>
                   } @else {
-                  <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta }
+                    <span class="font-semibold">Haz clic para subir</span> o arrastra y suelta
+                  }
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  PNG, JPG, PDF, DOC, DOCX (MAX. 20MB). También puedes arrastrar desde WhatsApp
+                  PNG, JPG, PDF, DOC, DOCX, DWG, SKP (MAX. 20MB). También puedes arrastrar desde
+                  WhatsApp o pegar con Ctrl+V
                 </p>
               </div>
               <input
                 type="file"
                 class="hidden"
                 multiple
-                accept="image/*,.pdf,.doc,.docx"
+                accept="image/*,.pdf,.doc,.docx,.dwg,.skp"
                 (change)="onFileSelected($event)"
               />
             </label>
@@ -569,7 +578,7 @@ export class TruncatePipe implements PipeTransform {
             [class.p-invalid]="projectForm.get('name')?.invalid && projectForm.get('name')?.touched"
           />
           @if (projectForm.get('name')?.invalid && projectForm.get('name')?.touched) {
-          <small class="text-red-500">El nombre es requerido (2-100 caracteres)</small>
+            <small class="text-red-500">El nombre es requerido (2-100 caracteres)</small>
           }
         </div>
 
@@ -593,9 +602,9 @@ export class TruncatePipe implements PipeTransform {
             "
           ></textarea>
           @if (projectForm.get('description')?.invalid && projectForm.get('description')?.touched) {
-          <small class="text-red-500"
-            >Si proporcionas una descripción, debe tener entre 10 y 500 caracteres</small
-          >
+            <small class="text-red-500"
+              >Si proporcionas una descripción, debe tener entre 10 y 500 caracteres</small
+            >
           }
         </div>
 
@@ -619,7 +628,7 @@ export class TruncatePipe implements PipeTransform {
             "
           ></p-select>
           @if (projectForm.get('clientId')?.invalid && projectForm.get('clientId')?.touched) {
-          <small class="text-red-500">El cliente es requerido</small>
+            <small class="text-red-500">El cliente es requerido</small>
           }
         </div>
 
@@ -644,7 +653,7 @@ export class TruncatePipe implements PipeTransform {
             "
           ></p-datePicker>
           @if (projectForm.get('startDate')?.invalid && projectForm.get('startDate')?.touched) {
-          <small class="text-red-500">La fecha de inicio es requerida</small>
+            <small class="text-red-500">La fecha de inicio es requerida</small>
           }
         </div>
 
@@ -699,18 +708,20 @@ export class TruncatePipe implements PipeTransform {
     `,
   ],
 })
-export class NativeTaskFormComponent implements OnInit, OnChanges {
+export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly tasksApiService = inject(TasksApiService);
   private readonly usersApiService = inject(UsersApiService);
   private readonly boardsApiService = inject(BoardsApiService);
   private readonly projectsApiService = inject(ProjectsApiService);
   private readonly clientsApiService = inject(ClientsApiService);
+  private readonly areasApiService = inject(AreasApiService); // Added
   private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
 
   @Input() task: Task | undefined;
   @Input() boardId?: string;
+  @Input() visible?: boolean;
   @Output() save = new EventEmitter<Task>();
   @Output() formCancel = new EventEmitter<void>();
 
@@ -725,6 +736,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   public readonly showProjectDialog = signal<boolean>(false);
   public readonly projectFormLoading = signal<boolean>(false);
   public readonly clients = signal<{ _id: string; name: string }[]>([]);
+  public readonly areas = signal<Area[]>([]); // Updated type
+  public readonly areaUsers = signal<string[] | null>(null);
   public readonly subtasks = signal<TaskSubtask[]>([]);
   public readonly selectedFiles = signal<File[]>([]);
   public readonly existingAttachments = signal<TaskAttachment[]>([]);
@@ -732,6 +745,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   public readonly isDragging = signal<boolean>(false);
 
   public readonly isEditing = signal<boolean>(false);
+
+  // Referencia al método onPaste para poder remover el listener
+  private pasteHandler = (event: ClipboardEvent) => this.onPaste(event);
 
   // Options for selects
   public readonly statusOptions = [
@@ -753,10 +769,17 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   public readonly users = computed(() => {
     const allUsersList = this.allUsers();
     const currentBoard = this.board();
+    const areaAllowedUserIds = this.areaUsers(); // Get filtered users by area
 
-    // Si no hay boardId, mostrar todos los usuarios
+    // Filter by Area first if selected
+    let filteredUsers = allUsersList;
+    if (areaAllowedUserIds) {
+      filteredUsers = filteredUsers.filter((u) => areaAllowedUserIds.includes(u.id));
+    }
+
+    // Si no hay boardId o tablero cargado, mostrar usuarios filtrados (posiblemente solo por area)
     if (!this.boardId || !currentBoard) {
-      return allUsersList;
+      return filteredUsers;
     }
 
     // Obtener IDs de usuarios permitidos del board
@@ -786,7 +809,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     }
 
     // Filtrar usuarios que están en la lista permitida
-    return allUsersList.filter((user) => allowedUserIds.has(user.id));
+    return filteredUsers.filter((user) => allowedUserIds.has(user.id));
   });
 
   public readonly userOptions = computed(() => {
@@ -803,14 +826,53 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     }));
   });
 
+  public readonly areaOptions = computed(() => {
+    return this.areas().map((area) => ({
+      label: area.nombre,
+      value: area._id || '',
+    }));
+  });
+
   ngOnInit(): void {
     this.loadUsers();
     this.loadProjects();
     this.loadClients();
+    this.loadAreas(); // Added
+
+    // Subscribe to area changes
+    this.taskForm.get('areaId')?.valueChanges.subscribe((areaId) => {
+      if (areaId) {
+        this.areasApiService.getAssignedUsers(areaId).subscribe({
+          next: (users) => {
+            const userIds = users.map((u) => u._id || u.id);
+            this.areaUsers.set(userIds);
+
+            // If current assignedTo is not in new list, maybe clear it?
+            // Optional, but good UX.
+            const currentAssigned = this.taskForm.get('assignedTo')?.value;
+            if (currentAssigned && !userIds.includes(currentAssigned)) {
+              this.taskForm.patchValue({ assignedTo: null });
+            }
+          },
+          error: () => this.areaUsers.set([]),
+        });
+      } else {
+        this.areaUsers.set(null);
+      }
+    });
     if (this.boardId) {
       this.loadBoard();
     }
     this.initializeForm();
+    // Agregar listener global de paste
+    document.addEventListener('paste', this.pasteHandler);
+  }
+
+  ngOnDestroy(): void {
+    // Remover listener global de paste
+    document.removeEventListener('paste', this.pasteHandler);
+    // Limpiar archivos seleccionados cuando el componente se destruye
+    this.selectedFiles.set([]);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -819,6 +881,15 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     }
     if (changes['boardId'] && this.boardId) {
       this.loadBoard();
+    }
+    // Limpiar archivos cuando el dialog se cierra (visible cambia de true a false)
+    if (changes['visible'] && !changes['visible'].firstChange) {
+      const previousValue = changes['visible'].previousValue;
+      const currentValue = changes['visible'].currentValue;
+      if (previousValue === true && currentValue === false) {
+        // El dialog se cerró, limpiar archivos
+        this.selectedFiles.set([]);
+      }
     }
   }
 
@@ -829,12 +900,13 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     return this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
       description: [''],
-      status: ['Pendiente', [Validators.required]],
-      priority: ['Media', [Validators.required]],
-      assignedTo: [null, [Validators.required]],
-      projectId: [null],
+      status: ['Pendiente', Validators.required],
+      priority: ['Media', Validators.required],
+      assignedTo: ['', Validators.required],
       dueDate: [null],
       tags: [''],
+      projectId: [null],
+      areaId: [null], // Added
       incompleteReason: [''],
     });
   }
@@ -866,6 +938,22 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
           severity: 'error',
           summary: 'Error',
           detail: 'No se pudieron cargar los clientes',
+        });
+      },
+    });
+  }
+
+  private loadAreas(): void {
+    this.areasApiService.listActive().subscribe({
+      next: (areas) => {
+        this.areas.set(areas);
+      },
+      error: (error) => {
+        console.error('Error loading areas:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las áreas',
         });
       },
     });
@@ -966,6 +1054,12 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
           ? (this.task.projectId as { _id?: string })._id
           : this.task.projectId;
 
+      // Extraer el ID del areaId si es un objeto
+      const areaId =
+        typeof this.task.areaId === 'object' && this.task.areaId !== null
+          ? (this.task.areaId as { _id?: string })._id
+          : this.task.areaId;
+
       // Llenar con los datos de la tarea
       this.taskForm.patchValue({
         title: this.task.title,
@@ -974,7 +1068,10 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         priority: this.task.priority,
         assignedTo: assignedToId,
         projectId: projectId || null,
-        dueDate: this.task.dueDate ? new Date(this.task.dueDate) : null,
+        areaId: areaId || null, // Added
+        dueDate: this.task.dueDate
+          ? this.convertUTCDateToLocalDate(new Date(this.task.dueDate))
+          : null,
         tags: Array.isArray(this.task.tags) ? this.task.tags.join(', ') : this.task.tags || '',
         incompleteReason: this.task.incompleteReason || '',
       });
@@ -1037,7 +1134,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   private loadUsers(): void {
     // Si hay un boardId, no cargar usuarios aquí
     // Se extraerán del board cuando se cargue (más eficiente)
-    if (this.boardId) {
+    // Si hay un boardId y no es 'all', no cargar usuarios aquí
+    // Se extraerán del board cuando se cargue (más eficiente)
+    if (this.boardId && this.boardId !== 'all') {
       this.usersLoading.set(false);
       return;
     }
@@ -1068,7 +1167,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
    * También extrae los usuarios del board para evitar llamar al endpoint /users
    */
   private loadBoard(): void {
-    if (!this.boardId) return;
+    if (!this.boardId || this.boardId === 'all') return;
 
     this.boardsApiService
       .getById(this.boardId)
@@ -1174,15 +1273,27 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         return;
       }
 
-      const taskData = {
+      // Normalizar la fecha a UTC preservando la hora seleccionada
+      // El datepicker devuelve fechas en hora local, necesitamos convertir correctamente a UTC
+      let normalizedDueDate: Date | undefined;
+      if (formValue.dueDate) {
+        const dueDate =
+          formValue.dueDate instanceof Date ? formValue.dueDate : new Date(formValue.dueDate);
+        // El objeto Date ya tiene la información de zona horaria correcta
+        // Simplemente usamos toISOString() que convierte correctamente de hora local a UTC
+        // No necesitamos extraer componentes manualmente porque eso causaría problemas de zona horaria
+        normalizedDueDate = dueDate;
+      }
+
+      const taskData: Record<string, unknown> = {
         ...formValue,
         // Solo agregar createdBy si es una nueva tarea
         ...(this.isEditing() ? {} : { createdBy: currentUser.id }),
-        // Agregar boardId si está disponible
-        ...(this.boardId ? { boardId: this.boardId } : {}),
+        // Solo agregar boardId si es un ID real de MongoDB (no "all", que es el filtro de Agenda)
+        ...(this.boardId && this.boardId !== 'all' ? { boardId: this.boardId } : {}),
         // Agregar projectId si está disponible
         ...(formValue.projectId ? { projectId: formValue.projectId } : {}),
-        dueDate: formValue.dueDate ? formValue.dueDate.toISOString() : undefined,
+        dueDate: normalizedDueDate ? normalizedDueDate.toISOString() : undefined,
         tags: formValue.tags
           ? formValue.tags
               .split(',')
@@ -1199,10 +1310,15 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
           .filter((st) => st.title.length > 0),
       };
 
+      // El backend UpdateTaskDto no acepta areaId; quitarlo al actualizar para evitar 400
+      if (this.isEditing()) {
+        delete taskData['areaId'];
+      }
+
       const task = this.task;
       const operation = task
-        ? this.tasksApiService.updateTask(task._id, taskData as UpdateTaskRequest)
-        : this.tasksApiService.createTask(taskData as CreateTaskRequest);
+        ? this.tasksApiService.updateTask(task._id, taskData as unknown as UpdateTaskRequest)
+        : this.tasksApiService.createTask(taskData as unknown as CreateTaskRequest);
 
       operation.pipe(take(1)).subscribe({
         next: async (res) => {
@@ -1252,6 +1368,8 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
    * Maneja la cancelación del formulario
    */
   public onCancel(): void {
+    // Limpiar archivos seleccionados
+    this.selectedFiles.set([]);
     this.formCancel.emit();
   }
 
@@ -1355,6 +1473,42 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
   }
 
   /**
+   * Maneja el evento paste (pegar archivos)
+   */
+  public onPaste(event: ClipboardEvent): void {
+    const items = event.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    // Verificar si hay archivos en el clipboard
+    const hasFiles = Array.from(items).some((item) => item.kind === 'file');
+    if (!hasFiles) {
+      // Si no hay archivos, permitir el comportamiento normal (pegar texto)
+      return;
+    }
+
+    // Si hay archivos, procesarlos y prevenir el comportamiento por defecto
+    if (hasFiles) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const files: File[] = [];
+      for (const item of Array.from(items)) {
+        // Solo procesar archivos (no texto)
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) {
+            files.push(file);
+          }
+        }
+      }
+
+      if (files.length > 0) {
+        this.processDroppedFiles(files);
+      }
+    }
+  }
+
+  /**
    * Procesa los archivos arrastrados o seleccionados
    */
   private processDroppedFiles(files: File[]): void {
@@ -1377,7 +1531,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         severity: 'warn',
         summary: 'Archivos muy grandes',
         detail: `Los siguientes archivos exceden el tamaño máximo de 20MB: ${invalidFiles.join(
-          ', '
+          ', ',
         )}`,
       });
     }
@@ -1420,7 +1574,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
    */
   private async deleteAttachments(taskId: string, attachmentIds: string[]): Promise<void> {
     const deletePromises = attachmentIds.map((attachmentId) =>
-      this.tasksApiService.deleteTaskAttachment(taskId, attachmentId).pipe(take(1)).toPromise()
+      this.tasksApiService.deleteTaskAttachment(taskId, attachmentId).pipe(take(1)).toPromise(),
     );
 
     try {
@@ -1459,7 +1613,9 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
     } else {
       // Limpiar solo los archivos nuevos y la lista de eliminación
       this.selectedFiles.set([]);
-      this.attachmentsToDelete.set([]);
+      if (this.attachmentsToDelete) {
+        this.attachmentsToDelete.set([]);
+      }
     }
 
     this.loading.set(false);
@@ -1478,7 +1634,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
         (progress) => {
           // Opcional: mostrar progreso
           console.log(`Progreso de subida: ${progress}%`);
-        }
+        },
       );
 
       this.messageService.add({
@@ -1528,5 +1684,29 @@ export class NativeTaskFormComponent implements OnInit, OnChanges {
       // Marcar para eliminar
       this.attachmentsToDelete.set([...toDelete, attachmentId]);
     }
+  }
+
+  /**
+   * Convierte una fecha UTC a una fecha local que representa el mismo día y hora
+   * Esto es necesario para que el datepicker muestre correctamente la fecha
+   * sin que se desplace un día debido a la zona horaria
+   */
+  private convertUTCDateToLocalDate(utcDate: Date): Date {
+    // Usar los componentes locales de la fecha para obtener el día calendario que el usuario ve
+    // Cuando una fecha UTC se convierte a hora local, getFullYear(), getMonth(), getDate()
+    // devuelven el día calendario local, no el día UTC
+    // Por ejemplo: 2026-01-27T01:01:00.000Z (UTC) = 26/01/2026 20:01 (hora local UTC-5)
+    // getFullYear() = 2026, getMonth() = 0, getDate() = 26 (día local)
+    const year = utcDate.getFullYear();
+    const month = utcDate.getMonth();
+    const day = utcDate.getDate();
+    const hours = utcDate.getHours();
+    const minutes = utcDate.getMinutes();
+    const seconds = utcDate.getSeconds();
+    const milliseconds = utcDate.getMilliseconds();
+
+    // Crear una nueva fecha local con esos componentes
+    // Esto asegura que el datepicker muestre el mismo día y hora que el usuario ve
+    return new Date(year, month, day, hours, minutes, seconds, milliseconds);
   }
 }

@@ -16,6 +16,24 @@ import { Board } from '../../../../shared/interfaces/board.interface';
   imports: [ProgressSpinnerModule, MessageModule, ButtonModule, BoardCardComponent],
   templateUrl: './board-list.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: [
+    `
+      /* Asegurar que todas las tarjetas en el grid tengan la misma altura */
+      :host ::ng-deep .grid {
+        align-items: stretch;
+      }
+      :host ::ng-deep .grid > div {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      :host ::ng-deep .grid > div > app-board-card {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+    `,
+  ],
 })
 export class BoardListComponent {
   // Inputs usando signal-based inputs (Angular 20)
@@ -31,6 +49,7 @@ export class BoardListComponent {
   readonly editBoard = output<Board>();
   readonly inviteUser = output<Board>();
   readonly deleteBoard = output<Board>();
+  readonly changeColor = output<{ board: Board; color: string }>();
 
   // Método para verificar si un tablero pertenece al usuario actual
   isBoardOwner(board: Board): boolean {

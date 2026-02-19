@@ -79,5 +79,63 @@ export class EmployeesApiService {
   delete(id: string): Observable<{ deleted: boolean; id: string }> {
     return this.http.delete<{ deleted: boolean; id: string }>(`${this.baseUrl}/${id}`);
   }
-}
 
+  /**
+   * Sube un archivo de contrato para un empleado
+   */
+  uploadContrato(id: string, file: File): Observable<Employee> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<Employee>(`${this.baseUrl}/${id}/contratos`, formData);
+  }
+
+  /**
+   * Sube un archivo de antecedentes policiales para un empleado
+   */
+  uploadAntecedentePolicial(id: string, file: File): Observable<Employee> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<Employee>(`${this.baseUrl}/${id}/antecedentes-policiales`, formData);
+  }
+
+  /**
+   * Elimina un archivo de contrato de un empleado
+   */
+  removeContrato(id: string, url: string): Observable<Employee> {
+    const params = new HttpParams().set('url', url);
+    return this.http.delete<Employee>(`${this.baseUrl}/${id}/contratos`, { params });
+  }
+
+  /**
+   * Elimina un archivo de antecedentes policiales de un empleado
+   */
+  removeAntecedentePolicial(id: string, url: string): Observable<Employee> {
+    const params = new HttpParams().set('url', url);
+    return this.http.delete<Employee>(`${this.baseUrl}/${id}/antecedentes-policiales`, { params });
+  }
+
+  /**
+   * Sube una foto de perfil para un empleado
+   */
+  uploadFotoPerfil(id: string, file: File): Observable<Employee> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<Employee>(`${this.baseUrl}/${id}/foto-perfil`, formData);
+  }
+  /**
+   * Sube un archivo de constancia de suspensión de 4ta categoría para un empleado
+   */
+  uploadConstanciaSuspension(id: string, file: File): Observable<Employee> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<Employee>(`${this.baseUrl}/${id}/constancia-suspension`, formData);
+  }
+
+  /**
+   * Elimina un archivo de constancia de suspensión de 4ta categoría de un empleado
+   */
+  removeConstanciaSuspension(id: string, url: string): Observable<Employee> {
+    const params = new HttpParams().set('url', url);
+    return this.http.delete<Employee>(`${this.baseUrl}/${id}/constancia-suspension`, { params });
+  }
+}

@@ -1,131 +1,103 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
-// Interfaces locales para tipado estricto de Google Maps
-interface GoogleMapsGeocoder {
-  geocode(
-    request: { location: { lat: number; lng: number }; language?: string; region?: string },
-    callback: (results: GoogleMapsGeocoderResult[] | null, status: string) => void
-  ): void;
-}
-
-interface GoogleMapsGeocoderResult {
-  formatted_address: string;
-}
-
-interface WindowWithGoogle extends Window {
-  google?: {
-    maps?: {
-      Geocoder: new () => GoogleMapsGeocoder;
-    };
-  };
+interface GeocodeResponse {
+  address: string;
+  latitude: number;
+  longitude: number;
 }
 
 /**
- * Servicio responsable de interactuar con Google Maps JavaScript API
- * para convertir coordenadas en direcciones legibles.
- * Utiliza carga diferida (lazy loading) del script de Google Maps.
+ * Servicio responsable de interactuar con el backend para geocodificación inversa.
+ * El backend usa Nominatim (OpenStreetMap) para convertir coordenadas en direcciones.
+ * Esto evita problemas de CORS y User-Agent que ocurren al llamar directamente desde el navegador.
  */
 @Injectable({ providedIn: 'root' })
 export class GeocodingService {
+  private readonly http = inject(HttpClient);
   private readonly cache = new Map<string, string>();
-  private scriptLoadedPromise: Promise<void> | null = null;
-  private geocoder: GoogleMapsGeocoder | null = null;
+  private readonly baseUrl = environment.apiUrl;
+  private readonly cacheKey = 'geocoding_cache';
+  private readonly cacheExpiry = 7 * 24 * 60 * 60 * 1000; // 7 días en milisegundos
+
+  constructor() {
+    this.loadCacheFromStorage();
+  }
 
   /**
-   * Solicita la dirección para las coordenadas dadas.
-   * Carga el SDK de Google Maps si es necesario.
+   * Carga el caché desde localStorage al inicializar
+   */
+  private loadCacheFromStorage(): void {
+    try {
+      const stored = localStorage.getItem(this.cacheKey);
+      if (stored) {
+        const parsed = JSON.parse(stored) as { data: Record<string, string>; timestamp: number };
+        // Verificar que el caché no esté expirado
+        if (Date.now() - parsed.timestamp < this.cacheExpiry) {
+          Object.entries(parsed.data).forEach(([key, value]) => {
+            this.cache.set(key, value);
+          });
+        } else {
+          // Limpiar caché expirado
+          localStorage.removeItem(this.cacheKey);
+        }
+      }
+    } catch {
+      // Si hay error al cargar, continuar sin caché
+    }
+  }
+
+  /**
+   * Guarda el caché en localStorage
+   */
+  private saveCacheToStorage(): void {
+    try {
+      const data: Record<string, string> = {};
+      this.cache.forEach((value, key) => {
+        data[key] = value;
+      });
+      localStorage.setItem(
+        this.cacheKey,
+        JSON.stringify({
+          data,
+          timestamp: Date.now(),
+        })
+      );
+    } catch {
+      // Si hay error al guardar, continuar sin persistir
+    }
+  }
+
+  /**
+   * Solicita la dirección para las coordenadas dadas usando el endpoint del backend.
    */
   async getAddress(latitude: number, longitude: number): Promise<string> {
     const key = this.buildKey(latitude, longitude);
-    
+
     // Retornar de caché si existe
     if (this.cache.has(key)) {
       return this.cache.get(key)!;
     }
 
     try {
-      await this.loadGoogleMapsScript();
-      const address = await this.geocodeCoordinates(latitude, longitude);
+      const response = await firstValueFrom<GeocodeResponse>(
+        this.http.get<GeocodeResponse>(
+          `${this.baseUrl}/dashboard/geocode/${latitude}/${longitude}`
+        )
+      );
+
+      const address = response.address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
       this.cache.set(key, address);
+      this.saveCacheToStorage();
       return address;
-    } catch (error) {
-      console.error(`[GeocodingService] Error al obtener dirección para ${key}:`, error);
+    } catch {
       // Fallback a coordenadas formateadas
       const fallback = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-      // No guardamos el fallback en caché permanentemente por si fue un error temporal de red,
-      // pero para evitar reintentos infinitos inmediatos, podríamos manejarlo. 
-      // Por ahora, retornamos el fallback sin cachearlo como éxito permanente.
-      // O lo cacheamos para no saturar la API en esta sesión.
-      this.cache.set(key, fallback);
+      // No cachear el fallback para permitir reintentos
       return fallback;
     }
-  }
-
-  /**
-   * Carga el script de Google Maps API dinámicamente
-   */
-  private loadGoogleMapsScript(): Promise<void> {
-    if (this.scriptLoadedPromise) {
-      return this.scriptLoadedPromise;
-    }
-
-    const win = window as unknown as WindowWithGoogle;
-    if (win.google?.maps?.Geocoder) {
-      this.scriptLoadedPromise = Promise.resolve();
-      return this.scriptLoadedPromise;
-    }
-
-    this.scriptLoadedPromise = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      // Incluimos callback=initMap aunque no lo usemos explícitamente, pero es buena práctica.
-      // Usamos loading='async'
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.mapsAPI}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      
-      script.onload = () => resolve();
-      script.onerror = (err) => {
-        this.scriptLoadedPromise = null; // Permitir reintento
-        reject(err);
-      };
-      
-      document.body.appendChild(script);
-    });
-
-    return this.scriptLoadedPromise;
-  }
-
-  /**
-   * Realiza la geocodificación usando la instancia de Geocoder
-   */
-  private geocodeCoordinates(lat: number, lng: number): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const win = window as unknown as WindowWithGoogle;
-      
-      if (!this.geocoder) {
-        if (!win.google?.maps?.Geocoder) {
-          reject(new Error('Google Maps SDK no está disponible.'));
-          return;
-        }
-        this.geocoder = new win.google.maps.Geocoder();
-      }
-
-      this.geocoder!.geocode(
-        { 
-          location: { lat, lng },
-          language: 'es',
-          region: 'PE' // Priorizar Perú
-        },
-        (results, status) => {
-          if (status === 'OK' && results && results.length > 0) {
-            resolve(results[0].formatted_address);
-          } else {
-            reject(new Error(`Geocoding status: ${status}`));
-          }
-        }
-      );
-    });
   }
 
   private buildKey(latitude: number, longitude: number): string {

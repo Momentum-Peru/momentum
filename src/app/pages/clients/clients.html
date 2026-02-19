@@ -7,20 +7,20 @@
     <div class="flex flex-col md:flex-row md:items-center gap-4">
       <h1 class="text-2xl font-bold text-gray-800">Gestión de Clientes</h1>
       @if (stats()) {
-      <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-        <span class="flex items-center gap-1">
-          <i class="pi pi-users text-blue-500"></i>
-          {{ stats()?.total }} total
-        </span>
-        <span class="flex items-center gap-1">
-          <i class="pi pi-map-marker text-green-500"></i>
-          {{ stats()?.withLocation }} con ubicación
-        </span>
-        <span class="flex items-center gap-1">
-          <i class="pi pi-phone text-purple-500"></i>
-          {{ stats()?.withContacts }} con contactos
-        </span>
-      </div>
+        <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+          <span class="flex items-center gap-1">
+            <i class="pi pi-users text-blue-500"></i>
+            {{ stats()?.total }} total
+          </span>
+          <span class="flex items-center gap-1">
+            <i class="pi pi-map-marker text-green-500"></i>
+            {{ stats()?.withLocation }} con ubicación
+          </span>
+          <span class="flex items-center gap-1">
+            <i class="pi pi-phone text-purple-500"></i>
+            {{ stats()?.withContacts }} con contactos
+          </span>
+        </div>
       }
     </div>
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -29,19 +29,19 @@
         type="button"
         label="Estadísticas"
         icon="pi pi-chart-bar"
-        class="p-button-outlined"
+        [outlined]="true"
         (click)="openStats()"
         aria-label="Ver estadísticas"
       ></button>
       @if (canEdit()) {
-      <button
-        pButton
-        type="button"
-        label="Nuevo Cliente"
-        icon="pi pi-plus"
-        (click)="newItem()"
-        aria-label="Crear nuevo cliente"
-      ></button>
+        <button
+          pButton
+          type="button"
+          label="Nuevo Cliente"
+          icon="pi pi-plus"
+          (click)="newItem()"
+          aria-label="Crear nuevo cliente"
+        ></button>
       }
     </div>
   </div>
@@ -51,7 +51,11 @@
     <ng-template pTemplate="content">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label for="searchInput" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Buscar</label>
+          <label
+            for="searchInput"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Buscar</label
+          >
           <input
             id="searchInput"
             pInputText
@@ -62,7 +66,9 @@
           />
         </div>
         <div>
-          <label for="locationFilter" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+          <label
+            for="locationFilter"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
             >Ubicación</label
           >
           <p-select
@@ -70,7 +76,7 @@
             [options]="[
               { label: 'Todos', value: 'all' },
               { label: 'Con ubicación', value: 'with' },
-              { label: 'Sin ubicación', value: 'without' }
+              { label: 'Sin ubicación', value: 'without' },
             ]"
             optionLabel="label"
             optionValue="value"
@@ -88,7 +94,8 @@
             type="button"
             label="Limpiar"
             icon="pi pi-filter-slash"
-            class="p-button-outlined w-full"
+            [outlined]="true"
+            class="w-full"
             (click)="clearFilters()"
             aria-label="Limpiar filtros"
           ></button>
@@ -99,14 +106,32 @@
 
   <!-- Vista Desktop: Tabla normal -->
   <div class="hidden md:block">
-    <p-table [value]="items()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
+    <p-table
+      [value]="items()"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[5, 10, 25]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+      styleClass="p-datatable-sm"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th>Cliente</th>
-          <th>RUC/DNI</th>
-          <th>Ubicación</th>
-          <th>Contactos</th>
+          <th class="text-left">Cliente</th>
+          <th class="text-left">RUC/DNI</th>
+          <th class="text-left">Ubicación</th>
+          <th class="text-left">Contactos</th>
           <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center p-8 text-gray-500">
+            <div class="flex flex-col items-center space-y-2">
+              <i class="pi pi-inbox text-2xl text-gray-400"></i>
+              <p>No hay datos disponibles</p>
+            </div>
+          </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
@@ -117,9 +142,9 @@
                 {{ row.name }}
               </div>
               @if (row._id) {
-              <div class="text-sm text-gray-500 dark:text-gray-400 break-words">
-                ID: {{ row._id }}
-              </div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 break-words">
+                  ID: {{ row._id }}
+                </div>
               }
             </div>
           </td>
@@ -130,27 +155,30 @@
           </td>
           <td>
             @if (row.ubicacion) {
-            <div class="text-sm">
-              @if (row.ubicacion.paisCodigo) {
-              <div class="font-medium break-words text-gray-900 dark:text-gray-100">
-                {{ getCountryName(row.ubicacion.paisCodigo) }}
+              <div class="text-sm">
+                @if (row.ubicacion.paisCodigo) {
+                  <div class="font-medium break-words text-gray-900 dark:text-gray-100">
+                    {{ getCountryName(row.ubicacion.paisCodigo) }}
+                  </div>
+                }
+                @if (row.ubicacion.provinciaCodigo) {
+                  <div class="text-gray-600 dark:text-gray-300 break-words">
+                    {{ getProvinceName(row.ubicacion.provinciaCodigo) }}
+                  </div>
+                }
+                @if (row.ubicacion.distritoCodigo) {
+                  <div class="text-gray-500 dark:text-gray-400 break-words">
+                    {{ getDistrictName(row.ubicacion.distritoCodigo) }}
+                  </div>
+                }
+                @if (row.ubicacion.direccion) {
+                  <div class="text-xs text-gray-400 dark:text-gray-500 mt-1 break-words">
+                    {{ row.ubicacion.direccion }}
+                  </div>
+                }
               </div>
-              } @if (row.ubicacion.provinciaCodigo) {
-              <div class="text-gray-600 dark:text-gray-300 break-words">
-                {{ getProvinceName(row.ubicacion.provinciaCodigo) }}
-              </div>
-              } @if (row.ubicacion.distritoCodigo) {
-              <div class="text-gray-500 dark:text-gray-400 break-words">
-                {{ getDistrictName(row.ubicacion.distritoCodigo) }}
-              </div>
-              } @if (row.ubicacion.direccion) {
-              <div class="text-xs text-gray-400 dark:text-gray-500 mt-1 break-words">
-                {{ row.ubicacion.direccion }}
-              </div>
-              }
-            </div>
             } @else {
-            <span class="text-gray-400 dark:text-gray-500 text-sm">Sin ubicación</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Sin ubicación</span>
             }
           </td>
           <td>
@@ -169,28 +197,34 @@
               <button
                 pButton
                 icon="pi pi-eye"
-                class="p-button-text p-button-sm"
+                [text]="true"
+                severity="info"
+                size="small"
                 pTooltip="Ver detalles"
                 (click)="viewDetails(row)"
                 aria-label="Ver detalles del cliente"
               ></button>
               @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                class="p-button-text p-button-sm"
-                pTooltip="Editar"
-                (click)="editItem(row)"
-                aria-label="Editar cliente"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-text p-button-sm p-button-danger"
-                pTooltip="Eliminar"
-                (click)="confirmDelete(row)"
-                aria-label="Eliminar cliente"
-              ></button>
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  severity="warn"
+                  size="small"
+                  pTooltip="Editar"
+                  (click)="editItem(row)"
+                  aria-label="Editar cliente"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  [text]="true"
+                  severity="danger"
+                  size="small"
+                  pTooltip="Eliminar"
+                  (click)="confirmDelete(row)"
+                  aria-label="Eliminar cliente"
+                ></button>
               }
             </div>
           </td>
@@ -202,152 +236,157 @@
   <!-- Vista Móvil: Accordion desplegable -->
   <div class="md:hidden space-y-3">
     @for (row of items(); track row._id || $index) {
-    <div
-      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
-    >
-      <!-- Header del accordion (siempre visible) -->
-      <button
-        type="button"
-        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-        (click)="toggleRow(row._id)"
+      <div
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
       >
-        <div class="flex-1 text-left min-w-0 pr-4">
-          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
-            {{ row.name }}
-          </div>
-          @if (row.taxId) {
-          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-            RUC/DNI: {{ row.taxId }}
-          </div>
-          }
-        </div>
-        <div class="flex-shrink-0">
-          <i
-            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
-            [class.pi-chevron-down]="!isRowExpanded(row._id)"
-            [class.pi-chevron-up]="isRowExpanded(row._id)"
-          ></i>
-        </div>
-      </button>
-
-      <!-- Contenido del accordion (desplegable) -->
-      @if (isRowExpanded(row._id)) {
-      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
-        <div class="px-4 py-4 space-y-4">
-          <!-- ID -->
-          @if (row._id) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              ID
+        <!-- Header del accordion (siempre visible) -->
+        <button
+          type="button"
+          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+          (click)="toggleRow(row._id)"
+        >
+          <div class="flex-1 text-left min-w-0 pr-4">
+            <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+              {{ row.name }}
             </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">{{ row._id }}</div>
-          </div>
-          }
-
-          <!-- RUC/DNI -->
-          @if (row.taxId) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              RUC/DNI
-            </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
-              {{ row.taxId }}
-            </div>
-          </div>
-          }
-
-          <!-- Ubicación -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Ubicación
-            </div>
-            @if (row.ubicacion) {
-            <div class="text-sm space-y-1">
-              @if (row.ubicacion.paisCodigo) {
-              <div class="font-medium break-words text-gray-900 dark:text-gray-100">
-                {{ getCountryName(row.ubicacion.paisCodigo) }}
+            @if (row.taxId) {
+              <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+                RUC/DNI: {{ row.taxId }}
               </div>
-              } @if (row.ubicacion.provinciaCodigo) {
-              <div class="text-gray-600 dark:text-gray-300 break-words">
-                {{ getProvinceName(row.ubicacion.provinciaCodigo) }}
-              </div>
-              } @if (row.ubicacion.distritoCodigo) {
-              <div class="text-gray-500 dark:text-gray-400 break-words">
-                {{ getDistrictName(row.ubicacion.distritoCodigo) }}
-              </div>
-              } @if (row.ubicacion.direccion) {
-              <div class="text-xs text-gray-400 dark:text-gray-500 mt-1 break-words">
-                {{ row.ubicacion.direccion }}
-              </div>
-              }
-            </div>
-            } @else {
-            <span class="text-gray-400 dark:text-gray-500 text-sm">Sin ubicación</span>
             }
           </div>
-
-          <!-- Contactos -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Contactos
-            </div>
-            <button
-              pButton
-              type="button"
-              label="Ver contactos"
-              icon="pi pi-users"
-              class="p-button-text p-button-sm w-full justify-start"
-              (click)="openContacts(row)"
-              aria-label="Ver contactos del cliente"
-            ></button>
+          <div class="flex-shrink-0">
+            <i
+              class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+              [class.pi-chevron-down]="!isRowExpanded(row._id)"
+              [class.pi-chevron-up]="isRowExpanded(row._id)"
+            ></i>
           </div>
+        </button>
 
-          <!-- Acciones -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Acciones
-            </div>
-            <div class="flex flex-col gap-2">
-              <button
-                pButton
-                icon="pi pi-eye"
-                label="Ver detalles"
-                class="p-button-text p-button-sm w-full justify-start"
-                (click)="viewDetails(row)"
-                aria-label="Ver detalles del cliente"
-              ></button>
-              @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                label="Editar"
-                class="p-button-text p-button-sm w-full justify-start"
-                (click)="editItem(row)"
-                aria-label="Editar cliente"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                label="Eliminar"
-                class="p-button-text p-button-sm p-button-danger w-full justify-start"
-                (click)="confirmDelete(row)"
-                aria-label="Eliminar cliente"
-              ></button>
+        <!-- Contenido del accordion (desplegable) -->
+        @if (isRowExpanded(row._id)) {
+          <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+            <div class="px-4 py-4 space-y-4">
+              <!-- ID -->
+              @if (row._id) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    ID
+                  </div>
+                  <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+                    {{ row._id }}
+                  </div>
+                </div>
               }
+
+              <!-- RUC/DNI -->
+              @if (row.taxId) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    RUC/DNI
+                  </div>
+                  <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+                    {{ row.taxId }}
+                  </div>
+                </div>
+              }
+
+              <!-- Ubicación -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Ubicación
+                </div>
+                @if (row.ubicacion) {
+                  <div class="text-sm space-y-1">
+                    @if (row.ubicacion.paisCodigo) {
+                      <div class="font-medium break-words text-gray-900 dark:text-gray-100">
+                        {{ getCountryName(row.ubicacion.paisCodigo) }}
+                      </div>
+                    }
+                    @if (row.ubicacion.provinciaCodigo) {
+                      <div class="text-gray-600 dark:text-gray-300 break-words">
+                        {{ getProvinceName(row.ubicacion.provinciaCodigo) }}
+                      </div>
+                    }
+                    @if (row.ubicacion.distritoCodigo) {
+                      <div class="text-gray-500 dark:text-gray-400 break-words">
+                        {{ getDistrictName(row.ubicacion.distritoCodigo) }}
+                      </div>
+                    }
+                    @if (row.ubicacion.direccion) {
+                      <div class="text-xs text-gray-400 dark:text-gray-500 mt-1 break-words">
+                        {{ row.ubicacion.direccion }}
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <span class="text-gray-400 dark:text-gray-500 text-sm">Sin ubicación</span>
+                }
+              </div>
+
+              <!-- Contactos -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Contactos
+                </div>
+                <button
+                  pButton
+                  type="button"
+                  label="Ver contactos"
+                  icon="pi pi-users"
+                  class="p-button-text p-button-sm w-full justify-start"
+                  (click)="openContacts(row)"
+                  aria-label="Ver contactos del cliente"
+                ></button>
+              </div>
+
+              <!-- Acciones -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                  Acciones
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    label="Ver detalles"
+                    class="p-button-text p-button-sm w-full justify-start"
+                    (click)="viewDetails(row)"
+                    aria-label="Ver detalles del cliente"
+                  ></button>
+                  @if (canEdit()) {
+                    <button
+                      pButton
+                      icon="pi pi-pencil"
+                      label="Editar"
+                      class="p-button-text p-button-sm w-full justify-start"
+                      (click)="editItem(row)"
+                      aria-label="Editar cliente"
+                    ></button>
+                    <button
+                      pButton
+                      icon="pi pi-trash"
+                      label="Eliminar"
+                      class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                      (click)="confirmDelete(row)"
+                      aria-label="Eliminar cliente"
+                    ></button>
+                  }
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        }
       </div>
-      }
-    </div>
     }
 
     <!-- Paginación móvil (simple) -->
     @if (items().length === 0) {
-    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-      <i class="pi pi-inbox text-4xl mb-2"></i>
-      <p>No hay clientes disponibles</p>
-    </div>
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <i class="pi pi-inbox text-4xl mb-2"></i>
+        <p>No hay clientes disponibles</p>
+      </div>
     }
   </div>
 
@@ -387,7 +426,13 @@
       </p-table>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeContacts()" aria-label="Cerrar"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeContacts()"
+        aria-label="Cerrar"
+      ></button>
     </ng-template>
   </p-dialog>
 
@@ -413,9 +458,10 @@
       <input
         pInputText
         name="clientTaxId"
-        placeholder="RUC/DNI"
+        placeholder="RUC/DNI (se autocompleta automáticamente)"
         [ngModel]="editing()?.taxId"
         (ngModelChange)="onEditChange('taxId', $event)"
+        maxlength="11"
       />
 
       <!-- Sección de Ubicación -->
@@ -425,7 +471,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <!-- País -->
           <div>
-            <label for="countrySelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label
+              for="countrySelect"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >País *</label
             >
             <p-select
@@ -451,7 +499,9 @@
 
           <!-- Provincia -->
           <div>
-            <label for="provinceSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label
+              for="provinceSelect"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Provincia/Estado</label
             >
             <p-select
@@ -480,7 +530,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <!-- Distrito -->
           <div>
-            <label for="districtSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label
+              for="districtSelect"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Distrito/Municipio</label
             >
             <p-select
@@ -507,7 +559,9 @@
 
           <!-- Dirección específica -->
           <div>
-            <label for="addressInput" class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            <label
+              for="addressInput"
+              class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
               >Dirección específica</label
             >
             <input
@@ -523,32 +577,35 @@
 
         <!-- Resumen de ubicación seleccionada -->
         @if (selectedCountry() || selectedProvince() || selectedDistrict()) {
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <h5 class="font-medium text-blue-800 mb-2">Ubicación seleccionada:</h5>
-          <div class="text-sm text-blue-700 space-y-1">
-            @if (selectedCountry()) {
-            <div>
-              <strong>País:</strong> {{ selectedCountry()?.nombre }} ({{
-                selectedCountry()?.codigo
-              }})
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <h5 class="font-medium text-blue-800 mb-2">Ubicación seleccionada:</h5>
+            <div class="text-sm text-blue-700 space-y-1">
+              @if (selectedCountry()) {
+                <div>
+                  <strong>País:</strong> {{ selectedCountry()?.nombre }} ({{
+                    selectedCountry()?.codigo
+                  }})
+                </div>
+              }
+              @if (selectedProvince()) {
+                <div>
+                  <strong>Provincia:</strong> {{ selectedProvince()?.nombre }} ({{
+                    selectedProvince()?.codigo
+                  }})
+                </div>
+              }
+              @if (selectedDistrict()) {
+                <div>
+                  <strong>Distrito:</strong> {{ selectedDistrict()?.nombre }} ({{
+                    selectedDistrict()?.codigo
+                  }})
+                </div>
+              }
+              @if (editing()?.ubicacion?.direccion) {
+                <div><strong>Dirección:</strong> {{ editing()?.ubicacion?.direccion }}</div>
+              }
             </div>
-            } @if (selectedProvince()) {
-            <div>
-              <strong>Provincia:</strong> {{ selectedProvince()?.nombre }} ({{
-                selectedProvince()?.codigo
-              }})
-            </div>
-            } @if (selectedDistrict()) {
-            <div>
-              <strong>Distrito:</strong> {{ selectedDistrict()?.nombre }} ({{
-                selectedDistrict()?.codigo
-              }})
-            </div>
-            } @if (editing()?.ubicacion?.direccion) {
-            <div><strong>Dirección:</strong> {{ editing()?.ubicacion?.direccion }}</div>
-            }
           </div>
-        </div>
         }
       </div>
 
@@ -567,48 +624,54 @@
         </div>
 
         @for (contact of editing()?.contacts; track $index) {
-        <div class="border rounded p-3 mb-2 bg-gray-50">
-          <div class="grid grid-cols-2 gap-2 mb-2">
-            <input
-              pInputText
-              placeholder="Nombre del contacto"
-              [ngModel]="contact.name"
-              (ngModelChange)="updateContact($index, 'name', $event)"
-            />
-            <input
-              pInputText
-              placeholder="Área/Departamento"
-              [ngModel]="contact.area"
-              (ngModelChange)="updateContact($index, 'area', $event)"
-            />
+          <div class="border rounded p-3 mb-2 bg-gray-50">
+            <div class="grid grid-cols-2 gap-2 mb-2">
+              <input
+                pInputText
+                placeholder="Nombre del contacto"
+                [ngModel]="contact.name"
+                (ngModelChange)="updateContact($index, 'name', $event)"
+              />
+              <input
+                pInputText
+                placeholder="Área/Departamento"
+                [ngModel]="contact.area"
+                (ngModelChange)="updateContact($index, 'area', $event)"
+              />
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+              <input
+                pInputText
+                placeholder="Email"
+                [ngModel]="contact.email"
+                (ngModelChange)="updateContact($index, 'email', $event)"
+              />
+              <input
+                pInputText
+                placeholder="Teléfono"
+                [ngModel]="contact.phone"
+                (ngModelChange)="updateContact($index, 'phone', $event)"
+              />
+            </div>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-text p-button-danger p-button-sm"
+              (click)="removeContact($index)"
+              aria-label="Eliminar contacto"
+            ></button>
           </div>
-          <div class="grid grid-cols-2 gap-2 mb-2">
-            <input
-              pInputText
-              placeholder="Email"
-              [ngModel]="contact.email"
-              (ngModelChange)="updateContact($index, 'email', $event)"
-            />
-            <input
-              pInputText
-              placeholder="Teléfono"
-              [ngModel]="contact.phone"
-              (ngModelChange)="updateContact($index, 'phone', $event)"
-            />
-          </div>
-          <button
-            pButton
-            icon="pi pi-trash"
-            class="p-button-text p-button-danger p-button-sm"
-            (click)="removeContact($index)"
-            aria-label="Eliminar contacto"
-          ></button>
-        </div>
         }
       </div>
     </div>
     <ng-template pTemplate="footer">
-      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeDialog()"
+        aria-label="Cancelar"
+      ></button>
       <button pButton label="Guardar" (click)="save()" aria-label="Guardar cliente"></button>
     </ng-template>
   </p-dialog>
@@ -629,43 +692,49 @@
       </div>
     </ng-template>
     @if (stats()) {
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <p-card>
-        <ng-template pTemplate="content">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-blue-600">{{ stats()?.total }}</div>
-            <div class="text-sm text-gray-600">Total</div>
-          </div>
-        </ng-template>
-      </p-card>
-      <p-card>
-        <ng-template pTemplate="content">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-green-600">{{ stats()?.withLocation }}</div>
-            <div class="text-sm text-gray-600">Con Ubicación</div>
-          </div>
-        </ng-template>
-      </p-card>
-      <p-card>
-        <ng-template pTemplate="content">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-red-600">{{ stats()?.withoutLocation }}</div>
-            <div class="text-sm text-gray-600">Sin Ubicación</div>
-          </div>
-        </ng-template>
-      </p-card>
-      <p-card>
-        <ng-template pTemplate="content">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-purple-600">{{ stats()?.withContacts }}</div>
-            <div class="text-sm text-gray-600">Con Contactos</div>
-          </div>
-        </ng-template>
-      </p-card>
-    </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <p-card>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-blue-600">{{ stats()?.total }}</div>
+              <div class="text-sm text-gray-600">Total</div>
+            </div>
+          </ng-template>
+        </p-card>
+        <p-card>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-green-600">{{ stats()?.withLocation }}</div>
+              <div class="text-sm text-gray-600">Con Ubicación</div>
+            </div>
+          </ng-template>
+        </p-card>
+        <p-card>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-red-600">{{ stats()?.withoutLocation }}</div>
+              <div class="text-sm text-gray-600">Sin Ubicación</div>
+            </div>
+          </ng-template>
+        </p-card>
+        <p-card>
+          <ng-template pTemplate="content">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-purple-600">{{ stats()?.withContacts }}</div>
+              <div class="text-sm text-gray-600">Con Contactos</div>
+            </div>
+          </ng-template>
+        </p-card>
+      </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeStats()" aria-label="Cerrar"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeStats()"
+        aria-label="Cerrar"
+      ></button>
     </ng-template>
   </p-dialog>
 
@@ -685,165 +754,174 @@
       </div>
     </ng-template>
     @if (viewingClient()) {
-    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
-      <!-- Información básica -->
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-info-circle text-blue-500"></i>
-          Información Básica
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-medium">
-              {{ viewingClient()?.name }}
+      <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+        <!-- Información básica -->
+        <div class="mb-6">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+          >
+            <i class="pi pi-info-circle text-blue-500"></i>
+            Información Básica
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Nombre</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 font-medium">
+                {{ viewingClient()?.name }}
+              </div>
             </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >RUC/DNI</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingClient()?.taxId || 'No especificado' }}
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >RUC/DNI</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ viewingClient()?.taxId || 'No especificado' }}
+              </div>
             </div>
+            @if (viewingClient()?._id) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >ID del Cliente</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingClient()?._id }}
+                </div>
+              </div>
+            }
           </div>
-          @if (viewingClient()?._id) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >ID del Cliente</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingClient()?._id }}
-            </div>
-          </div>
-          }
         </div>
-      </div>
 
-      <!-- Ubicación -->
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-map-marker text-orange-500"></i>
-          Ubicación
-        </h3>
-        @if (viewingClient()?.ubicacion) {
-        <div class="space-y-2">
-          @if (viewingClient()?.ubicacion?.paisCodigo) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >País</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ getCountryName(viewingClient()?.ubicacion?.paisCodigo ?? '') }}
+        <!-- Ubicación -->
+        <div class="mb-6">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+          >
+            <i class="pi pi-map-marker text-orange-500"></i>
+            Ubicación
+          </h3>
+          @if (viewingClient()?.ubicacion) {
+            <div class="space-y-2">
+              @if (viewingClient()?.ubicacion?.paisCodigo) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >País</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ getCountryName(viewingClient()?.ubicacion?.paisCodigo ?? '') }}
+                  </div>
+                </div>
+              }
+              @if (viewingClient()?.ubicacion?.provinciaCodigo) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Provincia/Estado</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ getProvinceName(viewingClient()?.ubicacion?.provinciaCodigo ?? '') }}
+                  </div>
+                </div>
+              }
+              @if (viewingClient()?.ubicacion?.distritoCodigo) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Distrito/Municipio</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ getDistrictName(viewingClient()?.ubicacion?.distritoCodigo ?? '') }}
+                  </div>
+                </div>
+              }
+              @if (viewingClient()?.ubicacion?.direccion) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Dirección</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ viewingClient()?.ubicacion?.direccion }}
+                  </div>
+                </div>
+              }
             </div>
-          </div>
-          } @if (viewingClient()?.ubicacion?.provinciaCodigo) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Provincia/Estado</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ getProvinceName(viewingClient()?.ubicacion?.provinciaCodigo ?? '') }}
-            </div>
-          </div>
-          } @if (viewingClient()?.ubicacion?.distritoCodigo) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Distrito/Municipio</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ getDistrictName(viewingClient()?.ubicacion?.distritoCodigo ?? '') }}
-            </div>
-          </div>
-          } @if (viewingClient()?.ubicacion?.direccion) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Dirección</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingClient()?.ubicacion?.direccion }}
-            </div>
-          </div>
+          } @else {
+            <div class="text-gray-500 dark:text-gray-400">No se ha especificado ubicación</div>
           }
         </div>
-        } @else {
-        <div class="text-gray-500 dark:text-gray-400">No se ha especificado ubicación</div>
+
+        <!-- Contactos -->
+        <div class="mb-6">
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+          >
+            <i class="pi pi-users text-purple-500"></i>
+            Contactos
+          </h3>
+          @if (viewingClient()?.contacts?.length) {
+            <p-table
+              [value]="viewingClient()?.contacts ?? []"
+              [responsiveLayout]="'stack'"
+              breakpoint="960px"
+              styleClass="p-datatable-sm"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Nombre</th>
+                  <th>Área</th>
+                  <th>Email</th>
+                  <th>Teléfono</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-contact>
+                <tr>
+                  <td class="break-words">{{ contact.name }}</td>
+                  <td class="break-words">{{ contact.area }}</td>
+                  <td class="break-words">{{ contact.email }}</td>
+                  <td class="break-words">{{ contact.phone || '-' }}</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          } @else {
+            <div class="text-gray-500 dark:text-gray-400">No se han especificado contactos</div>
+          }
+        </div>
+
+        <!-- Documentos -->
+        @if (viewingClient()?.documents?.length) {
+          <div>
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+            >
+              <i class="pi pi-file text-indigo-500"></i>
+              Documentos
+            </h3>
+            <div class="space-y-2">
+              @for (document of viewingClient()?.documents; track document) {
+                <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
+                  <i class="pi pi-file text-gray-500"></i>
+                  <a
+                    [href]="document"
+                    target="_blank"
+                    class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+                  >
+                    <i class="pi pi-external-link text-xs"></i>
+                    Ver documento
+                  </a>
+                </div>
+              }
+            </div>
+          </div>
         }
       </div>
-
-      <!-- Contactos -->
-      <div class="mb-6">
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-users text-purple-500"></i>
-          Contactos
-        </h3>
-        @if (viewingClient()?.contacts?.length) {
-        <p-table
-          [value]="viewingClient()?.contacts ?? []"
-          [responsiveLayout]="'stack'"
-          breakpoint="960px"
-          styleClass="p-datatable-sm"
-        >
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Nombre</th>
-              <th>Área</th>
-              <th>Email</th>
-              <th>Teléfono</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-contact>
-            <tr>
-              <td class="break-words">{{ contact.name }}</td>
-              <td class="break-words">{{ contact.area }}</td>
-              <td class="break-words">{{ contact.email }}</td>
-              <td class="break-words">{{ contact.phone || '-' }}</td>
-            </tr>
-          </ng-template>
-        </p-table>
-        } @else {
-        <div class="text-gray-500 dark:text-gray-400">No se han especificado contactos</div>
-        }
-      </div>
-
-      <!-- Documentos -->
-      @if (viewingClient()?.documents?.length) {
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-file text-indigo-500"></i>
-          Documentos
-        </h3>
-        <div class="space-y-2">
-          @for (document of viewingClient()?.documents; track document) {
-          <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
-            <i class="pi pi-file text-gray-500"></i>
-            <a
-              [href]="document"
-              target="_blank"
-              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
-            >
-              <i class="pi pi-external-link text-xs"></i>
-              Ver documento
-            </a>
-          </div>
-          }
-        </div>
-      </div>
-      }
-    </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()" aria-label="Cerrar"></button>
+      <button
+        pButton
+        label="Cerrar"
+        class="p-button-text"
+        (click)="closeDetails()"
+        aria-label="Cerrar"
+      ></button>
     </ng-template>
   </p-dialog>
 </div>

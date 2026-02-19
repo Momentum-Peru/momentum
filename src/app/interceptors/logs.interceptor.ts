@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { tap } from 'rxjs/operators';
 import { AuthService } from '../pages/login/services/auth.service';
 import { LogsApiService } from '../shared/services/logs-api.service';
+import { TenantService } from '../core/services/tenant.service';
 import { environment } from '../../environments/environment';
 
 /**
@@ -14,6 +15,7 @@ import { environment } from '../../environments/environment';
 export const logsInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const logsService = inject(LogsApiService);
+  const tenantService = inject(TenantService);
 
   // Excluir peticiones externas (como Google Maps)
   if (!req.url.startsWith(environment.apiUrl)) {
@@ -139,19 +141,48 @@ export const logsInterceptor: HttpInterceptorFn = (req, next) => {
               detalle['datos'] = bodyCopy;
             }
 
+            // Obtener el tenantId de la petición original o de la respuesta
+            // Esto es necesario porque el interceptor de tenant puede no enviar el header para gerencia
+            let tenantId = req.headers.get('X-Tenant-Id') || tenantService.tenantId();
+            
+            // Si no hay tenantId en los headers, intentar obtenerlo de la respuesta
+            // Por ejemplo, cuando se crea una tarea, la respuesta incluye el tenantId
+            if (!tenantId && response.body) {
+              const body = response.body as { tenantId?: string; data?: { tenantId?: string } };
+              // Intentar obtener tenantId de la respuesta (puede estar en diferentes lugares según el módulo)
+              if (body?.tenantId && typeof body.tenantId === 'string') {
+                tenantId = body.tenantId;
+              } else if (body?.data?.tenantId && typeof body.data.tenantId === 'string') {
+                tenantId = body.data.tenantId;
+              }
+            }
+            
+            // Si aún no hay tenantId y es una petición relacionada con tasks, 
+            // intentar obtenerlo del servicio de tenant si está disponible
+            if (!tenantId && moduleName === 'tasks') {
+              tenantId = tenantService.tenantId();
+            }
+            
             // Registrar el log de forma asíncrona sin bloquear la respuesta
-            logsService
-              .create({
-                modulo: moduleName,
-                userId: userId,
-                detalle: detalle,
-              })
-              .subscribe({
-                error: (error) => {
-                  // No fallar la petición original si falla el log
-                  console.error('[LogsInterceptor] Error al registrar log:', error);
-                },
-              });
+            // Si hay tenantId, incluirlo en los headers de la petición de log
+            const logRequest = tenantId 
+              ? logsService.createWithTenant({
+                  modulo: moduleName,
+                  userId: userId,
+                  detalle: detalle,
+                }, tenantId)
+              : logsService.create({
+                  modulo: moduleName,
+                  userId: userId,
+                  detalle: detalle,
+                });
+            
+            logRequest.subscribe({
+              error: (error) => {
+                // No fallar la petición original si falla el log
+                console.error('[LogsInterceptor] Error al registrar log:', error);
+              },
+            });
           }
         }
       },
@@ -171,17 +202,27 @@ export const logsInterceptor: HttpInterceptorFn = (req, next) => {
           detalle['entityId'] = entityId;
         }
 
-        logsService
-          .create({
-            modulo: moduleName,
-            userId: userId,
-            detalle: detalle,
-          })
-          .subscribe({
-            error: (logError) => {
-              console.error('[LogsInterceptor] Error al registrar log de error:', logError);
-            },
-          });
+        // Obtener el tenantId de la petición original si está disponible
+        const tenantId = req.headers.get('X-Tenant-Id') || tenantService.tenantId();
+        
+        // Si hay tenantId, incluirlo en los headers de la petición de log
+        const logRequest = tenantId 
+          ? logsService.createWithTenant({
+              modulo: moduleName,
+              userId: userId,
+              detalle: detalle,
+            }, tenantId)
+          : logsService.create({
+              modulo: moduleName,
+              userId: userId,
+              detalle: detalle,
+            });
+        
+        logRequest.subscribe({
+          error: (logError) => {
+            console.error('[LogsInterceptor] Error al registrar log de error:', logError);
+          },
+        });
       },
     })
   );
