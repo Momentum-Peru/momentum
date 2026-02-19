@@ -54,6 +54,22 @@ ng e2e
 
 Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
 
+## Deployment to AWS Amplify
+
+This project is configured for deployment on AWS Amplify.
+- [x] Analyze project structure and build requirements
+- [x] Create `amplify.yml` build specification
+- [x] Update documentation for Amplify deployment
+- [x] Verify configuration against project dependencies
+1. **Build Specification**: The `amplify.yml` file in the root directory contains the build settings.
+2. **Output Directory**: The build artifacts are expected in `dist/momentum/browser`.
+3. **Setup Steps**:
+   - Go to the [AWS Amplify Console](https://console.aws.amazon.com/amplify/home).
+   - "Connect app" and select your repository provider (e.g., GitHub).
+   - Select the repository and the branch (e.g., `main`).
+   - Amplify will automatically detect the `amplify.yml` file.
+   - Review and "Save and deploy".
+
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
