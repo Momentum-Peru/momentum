@@ -64,6 +64,6 @@ jobs:
       # Usa la AWS CLI para forzar a CloudFront a refrescar la caché.
       - name: Invalidate CloudFront Cache
         run: |
-          aws cloudfront create-invalidation --distribution-id EDFD256ABC789 --paths "/*"
+          aws cloudfront create-invalidation --distribution-id EGH0ZDJVBXGMH --paths "/*"
         # !! REEMPLAZA 'tu-distribution-id' (ej: E123ABC456DEF)
         # '/*' le dice a CloudFront que invalide todos los archivos.
