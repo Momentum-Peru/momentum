@@ -6,24 +6,48 @@
   <div class="employee-form-container animate-fade-in">
     <div class="form-header">
       <div class="flex items-center gap-4">
-        <button 
-          pButton 
-          icon="pi pi-arrow-left" 
-          class="p-button-rounded p-button-text p-button-plain text-white" 
+        <button
+          pButton
+          icon="pi pi-arrow-left"
+          class="p-button-rounded p-button-text p-button-plain text-white"
           (click)="goBack()"
         ></button>
         <div>
           <h1 class="title">
-            {{ employeeId() ? 'Editar Empleado' + (e().nombre ? ': ' + e().nombre + ' ' + (e().apellido || '') : '') : 'Nuevo Empleado' }}
+            {{
+              employeeId()
+                ? 'Editar Empleado' +
+                  (e().nombre ? ': ' + e().nombre + ' ' + (e().apellido || '') : '')
+                : 'Nuevo Empleado'
+            }}
           </h1>
           <p class="subtitle">
-            {{ employeeId() ? (e().nombre ? 'Actualice la información de ' + e().nombre : 'Actualice la información del colaborador') : 'Complete los campos para registrar la información del colaborador' }}
+            {{
+              employeeId()
+                ? e().nombre
+                  ? 'Actualice la información de ' + e().nombre
+                  : 'Actualice la información del colaborador'
+                : 'Complete los campos para registrar la información del colaborador'
+            }}
           </p>
         </div>
       </div>
       <div class="form-actions">
-        <button pButton label="Cancelar" icon="pi pi-times" class="p-button-text p-button-secondary" (click)="cancel()"></button>
-        <button pButton label="Guardar Colaborador" icon="pi pi-save" class="p-button-success" (click)="save()" [loading]="loading()"></button>
+        <button
+          pButton
+          label="Cancelar"
+          icon="pi pi-times"
+          class="p-button-text p-button-secondary"
+          (click)="cancel()"
+        ></button>
+        <button
+          pButton
+          label="Guardar Colaborador"
+          icon="pi pi-save"
+          class="p-button-success"
+          (click)="save()"
+          [loading]="loading()"
+        ></button>
       </div>
     </div>
 
@@ -31,7 +55,11 @@
       <!-- Sidebar Navigation -->
       <div class="form-sidebar">
         @for (section of sections; track section.id) {
-          <div class="nav-item" [class.active]="activeTab() === section.id" (click)="activeTab.set(section.id)">
+          <div
+            class="nav-item"
+            [class.active]="activeTab() === section.id"
+            (click)="activeTab.set(section.id)"
+          >
             <i [class]="section.icon"></i>
             <span>{{ section.label }}</span>
             @if (activeTab() === section.id) {
@@ -50,60 +78,119 @@
               <!-- Foto de Perfil -->
               <div class="full-width flex flex-col items-center mb-6">
                 <div class="relative group">
-                  <div class="w-32 h-32 rounded-full border-4 border-gray-100 overflow-hidden bg-gray-50 flex items-center justify-center">
+                  <div
+                    class="w-32 h-32 rounded-full border-4 border-gray-100 overflow-hidden bg-gray-50 flex items-center justify-center"
+                  >
                     @if (e().fotoPerfil) {
-                      <img [src]="e().fotoPerfil" alt="Perfil" class="w-full h-full object-cover">
+                      <img [src]="e().fotoPerfil" alt="Perfil" class="w-full h-full object-cover" />
                     } @else {
                       <i class="pi pi-user text-4xl text-gray-300"></i>
                     }
                   </div>
-                  <p-fileUpload #fubauto mode="basic" name="fotoPerfil" accept="image/*" [auto]="true" 
-                    maxFileSize="1000000" (onSelect)="onFotoPerfilSelect($event)" 
-                    chooseIcon="pi pi-camera" 
-                    class="absolute bottom-0 right-0 p-button-rounded shadow-lg">
+                  <p-fileUpload
+                    #fubauto
+                    mode="basic"
+                    name="fotoPerfil"
+                    accept="image/*"
+                    [auto]="true"
+                    maxFileSize="1000000"
+                    (onSelect)="onFotoPerfilSelect($event)"
+                    chooseIcon="pi pi-camera"
+                    class="absolute bottom-0 right-0 p-button-rounded shadow-lg"
+                  >
                   </p-fileUpload>
                 </div>
                 <span class="text-xs text-gray-500 mt-2">Formatos: JPG, PNG. Máx 1MB.</span>
               </div>
 
               <div>
+                <label class="field-label">Tipo de Documento</label>
+                <p-select
+                  [options]="docTypes"
+                  [(ngModel)]="e().tipoDocumento"
+                  class="w-full"
+                  placeholder="Seleccione"
+                  appendTo="body"
+                ></p-select>
+              </div>
+
+              <div>
+                <label class="field-label"
+                  ><span class="text-red-500">*</span> Número de Documento</label
+                >
+                <input
+                  pInputText
+                  [(ngModel)]="e().dni"
+                  class="w-full"
+                  placeholder="12345678"
+                  maxlength="12"
+                />
+                <span class="text-gray-500 text-xs mt-1 block">(único en la empresa)</span>
+              </div>
+
+              <div>
+                <label class="field-label"
+                  ><span class="text-red-500">*</span> Correo Personal</label
+                >
+                <input
+                  pInputText
+                  type="email"
+                  [(ngModel)]="e().correo"
+                  class="w-full"
+                  placeholder="juan@email.com"
+                />
+                <span class="text-gray-500 text-xs mt-1 block">(único en la empresa)</span>
+              </div>
+
+              <div>
                 <label class="field-label">Nombres</label>
-                <input pInputText [(ngModel)]="e().nombre" class="w-full" placeholder="Ej. Juan Pérez">
+                <input
+                  pInputText
+                  [(ngModel)]="e().nombre"
+                  class="w-full"
+                  placeholder="Ej. Juan Pérez"
+                />
               </div>
 
               <div>
                 <label class="field-label">Apellidos</label>
-                <input pInputText [(ngModel)]="e().apellido" class="w-full" placeholder="Ej. García López">
-              </div>
-
-              <div>
-                <label class="field-label">Tipo de Documento</label>
-                <p-select [options]="docTypes" [(ngModel)]="e().tipoDocumento" class="w-full" placeholder="Seleccione"></p-select>
-              </div>
-
-              <div>
-                <label class="field-label">Número de Documento</label>
-                <input pInputText [(ngModel)]="e().dni" class="w-full" placeholder="12345678" maxlength="12">
-              </div>
-
-              <div>
-                <label class="field-label">Correo Personal</label>
-                <input pInputText type="email" [(ngModel)]="e().correo" class="w-full" placeholder="juan@email.com">
+                <input
+                  pInputText
+                  [(ngModel)]="e().apellido"
+                  class="w-full"
+                  placeholder="Ej. García López"
+                />
               </div>
 
               <div>
                 <label class="field-label">Correo Corporativo</label>
-                <input pInputText type="email" [(ngModel)]="e().correoCorporativo" class="w-full" placeholder="juan@empresa.com">
+                <input
+                  pInputText
+                  type="email"
+                  [(ngModel)]="e().correoCorporativo"
+                  class="w-full"
+                  placeholder="juan@empresa.com"
+                />
               </div>
 
               <div>
                 <label class="field-label">Teléfono</label>
-                <input pInputText [(ngModel)]="e().telefono" class="w-full" placeholder="+51 999 999 999">
+                <input
+                  pInputText
+                  [(ngModel)]="e().telefono"
+                  class="w-full"
+                  placeholder="+51 999 999 999"
+                />
               </div>
 
               <div class="full-width">
                 <label class="field-label">Dirección</label>
-                <input pInputText [(ngModel)]="e().direccion" class="w-full" placeholder="Av. Siempre Viva 123, Miraflores">
+                <input
+                  pInputText
+                  [(ngModel)]="e().direccion"
+                  class="w-full"
+                  placeholder="Av. Siempre Viva 123, Miraflores"
+                />
               </div>
             </div>
           </div>
@@ -117,22 +204,44 @@
             <div class="form-grid mb-8">
               <div class="full-width">
                 <label class="field-label">Nombre Completo</label>
-                <input pInputText [(ngModel)]="conyuge().nombre" class="w-full" placeholder="Nombre del cónyuge">
+                <input
+                  pInputText
+                  [(ngModel)]="conyuge().nombre"
+                  class="w-full"
+                  placeholder="Nombre del cónyuge"
+                />
               </div>
               <div>
                 <label class="field-label">Tipo Documento</label>
-                <p-select [options]="docTypes" [(ngModel)]="conyuge().tipoDocumento" class="w-full" placeholder="Seleccione"></p-select>
+                <p-select
+                  [options]="docTypes"
+                  [(ngModel)]="conyuge().tipoDocumento"
+                  class="w-full"
+                  placeholder="Seleccione"
+                  appendTo="body"
+                ></p-select>
               </div>
               <div>
                 <label class="field-label">Número Documento</label>
-                <input pInputText [(ngModel)]="conyuge().numeroDocumento" class="w-full" placeholder="Número">
+                <input
+                  pInputText
+                  [(ngModel)]="conyuge().numeroDocumento"
+                  class="w-full"
+                  placeholder="Número"
+                />
               </div>
             </div>
 
             <!-- Hijos -->
             <div class="flex items-center justify-between mb-4 border-b pb-2">
               <h3 class="text-lg font-bold text-gray-800">Hijos registrados</h3>
-              <button pButton label="Agregar Hijo" icon="pi pi-plus" size="small" (click)="addHijo()"></button>
+              <button
+                pButton
+                label="Agregar Hijo"
+                icon="pi pi-plus"
+                size="small"
+                (click)="addHijo()"
+              ></button>
             </div>
 
             <div class="space-y-4">
@@ -141,27 +250,44 @@
                   <div class="form-grid flex-1">
                     <div class="full-width">
                       <label class="field-label">Nombre Completo</label>
-                      <input pInputText [(ngModel)]="hijo.nombre" class="w-full">
+                      <input pInputText [(ngModel)]="hijo.nombre" class="w-full" />
                     </div>
                     <div>
                       <label class="field-label">Fecha Nacimiento</label>
-                      <p-datepicker [(ngModel)]="hijo.fechaNacimiento" class="w-full" appendTo="body" dateFormat="dd/mm/yy"></p-datepicker>
+                      <p-datepicker
+                        [(ngModel)]="hijo.fechaNacimiento"
+                        class="w-full"
+                        appendTo="body"
+                        dateFormat="dd/mm/yy"
+                      ></p-datepicker>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                       <div>
                         <label class="field-label">Tipo Doc.</label>
-                        <p-select [options]="docTypes" [(ngModel)]="hijo.tipoDocumento" class="w-full"></p-select>
+                        <p-select
+                          [options]="docTypes"
+                          [(ngModel)]="hijo.tipoDocumento"
+                          class="w-full"
+                          appendTo="body"
+                        ></p-select>
                       </div>
                       <div>
                         <label class="field-label">Número</label>
-                        <input pInputText [(ngModel)]="hijo.numeroDocumento" class="w-full">
+                        <input pInputText [(ngModel)]="hijo.numeroDocumento" class="w-full" />
                       </div>
                     </div>
                   </div>
-                  <button pButton icon="pi pi-trash" class="p-button-danger p-button-text" (click)="removeHijo($index)"></button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-danger p-button-text"
+                    (click)="removeHijo($index)"
+                  ></button>
                 </div>
               } @empty {
-                <div class="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-100 text-gray-400">
+                <div
+                  class="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-100 text-gray-400"
+                >
                   No hay hijos registrados para este colaborador
                 </div>
               }
@@ -174,38 +300,91 @@
             <h2 class="section-title">Datos Laborales</h2>
             <div class="form-grid">
               <div>
+                <label class="field-label"
+                  ><span class="text-red-500">*</span> Usuario Asignado</label
+                >
+                <p-select
+                  [options]="users()"
+                  optionLabel="name"
+                  optionValue="_id"
+                  [(ngModel)]="e().userId"
+                  class="w-full"
+                  [showClear]="true"
+                  placeholder="Sin usuario"
+                  appendTo="body"
+                ></p-select>
+                <span class="text-gray-500 text-xs mt-1 block"
+                  >(un usuario solo puede estar vinculado a un empleado)</span
+                >
+              </div>
+
+              <div>
                 <label class="field-label">Tipo de Empleado</label>
-                <p-select [options]="employeeTypes" [(ngModel)]="e().tipoEmpleado" class="w-full"></p-select>
+                <p-select
+                  [options]="employeeTypes"
+                  [(ngModel)]="e().tipoEmpleado"
+                  class="w-full"
+                  appendTo="body"
+                ></p-select>
               </div>
 
               <div>
                 <label class="field-label">Cargo</label>
-                <input pInputText [(ngModel)]="e().cargo" class="w-full" placeholder="Ej. Residente de Obra">
+                <input
+                  pInputText
+                  [(ngModel)]="e().cargo"
+                  class="w-full"
+                  placeholder="Ej. Residente de Obra"
+                />
               </div>
 
               <div>
                 <label class="field-label">Sueldo Básico</label>
-                <p-inputNumber [(ngModel)]="e().sueldoBasico" mode="currency" currency="PEN" locale="es-PE" class="w-full" [min]="0"></p-inputNumber>
+                <p-inputNumber
+                  [(ngModel)]="e().sueldoBasico"
+                  mode="currency"
+                  currency="PEN"
+                  locale="es-PE"
+                  class="w-full"
+                  [min]="0"
+                ></p-inputNumber>
               </div>
 
               <div>
                 <label class="field-label">Área</label>
-                <p-select [options]="areas()" optionLabel="nombre" optionValue="_id" [(ngModel)]="e().areaId" class="w-full" placeholder="Seleccione Área"></p-select>
+                <p-select
+                  [options]="areas()"
+                  optionLabel="nombre"
+                  optionValue="_id"
+                  [(ngModel)]="e().areaId"
+                  class="w-full"
+                  placeholder="Seleccione Área"
+                  appendTo="body"
+                ></p-select>
               </div>
 
               <div>
                 <label class="field-label">Turno de Trabajo</label>
-                <p-select [options]="workShifts()" optionLabel="name" optionValue="_id" [(ngModel)]="e().workShiftId" class="w-full" placeholder="Seleccione Turno"></p-select>
-              </div>
-
-              <div>
-                <label class="field-label">Usuario Asignado</label>
-                <p-select [options]="users()" optionLabel="name" optionValue="_id" [(ngModel)]="e().userId" class="w-full" [showClear]="true" placeholder="Sin usuario"></p-select>
+                <p-select
+                  [options]="workShifts()"
+                  optionLabel="name"
+                  optionValue="_id"
+                  [(ngModel)]="e().workShiftId"
+                  class="w-full"
+                  placeholder="Seleccione Turno"
+                  appendTo="body"
+                ></p-select>
               </div>
 
               <div class="flex items-center gap-2 mt-6">
-                <p-checkbox [(ngModel)]="e().isActive" [binary]="true" inputId="isActive"></p-checkbox>
-                <label for="isActive" class="font-medium text-gray-700 cursor-pointer">Colaborador Activo</label>
+                <p-checkbox
+                  [(ngModel)]="e().isActive"
+                  [binary]="true"
+                  inputId="isActive"
+                ></p-checkbox>
+                <label for="isActive" class="font-medium text-gray-700 cursor-pointer"
+                  >Colaborador Activo</label
+                >
               </div>
 
               @if (e().tipoEmpleado === 'Planilla') {
@@ -215,32 +394,60 @@
                   </div>
                   <div>
                     <label class="field-label">Tipo de Contrato</label>
-                    <p-select [options]="contractTypes" [(ngModel)]="e().tipoContrato" class="w-full"></p-select>
+                    <p-select
+                      [options]="contractTypes"
+                      [(ngModel)]="e().tipoContrato"
+                      class="w-full"
+                      appendTo="body"
+                    ></p-select>
                   </div>
                   <div>
                     <label class="field-label">Fecha Inicio</label>
-                    <p-datepicker [(ngModel)]="e().fechaInicioLabores" class="w-full" appendTo="body"></p-datepicker>
+                    <p-datepicker
+                      [(ngModel)]="e().fechaInicioLabores"
+                      class="w-full"
+                      appendTo="body"
+                    ></p-datepicker>
                   </div>
                   <div>
                     <label class="field-label">Fecha Fin Contrato</label>
-                    <p-datepicker [(ngModel)]="e().fechaFinContrato" class="w-full" appendTo="body"></p-datepicker>
+                    <p-datepicker
+                      [(ngModel)]="e().fechaFinContrato"
+                      class="w-full"
+                      appendTo="body"
+                    ></p-datepicker>
                   </div>
                   <div>
                     <label class="field-label">Sistema Pensionario</label>
-                    <p-select [options]="pensionSystems" [(ngModel)]="e().sistemaPensionario" class="w-full"></p-select>
+                    <p-select
+                      [options]="pensionSystems"
+                      [(ngModel)]="e().sistemaPensionario"
+                      class="w-full"
+                      appendTo="body"
+                    ></p-select>
                   </div>
                   @if (e().sistemaPensionario === 'SPP/AFP') {
                     <div>
                       <label class="field-label">AFP</label>
-                      <p-select [options]="afps" [(ngModel)]="e().afp" class="w-full"></p-select>
+                      <p-select
+                        [options]="afps"
+                        [(ngModel)]="e().afp"
+                        class="w-full"
+                        appendTo="body"
+                      ></p-select>
                     </div>
                     <div>
                       <label class="field-label">Tipo Comisión</label>
-                      <p-select [options]="commissionTypes" [(ngModel)]="e().tipoComision" class="w-full"></p-select>
+                      <p-select
+                        [options]="commissionTypes"
+                        [(ngModel)]="e().tipoComision"
+                        class="w-full"
+                        appendTo="body"
+                      ></p-select>
                     </div>
                     <div>
                       <label class="field-label">CUSPP</label>
-                      <input pInputText [(ngModel)]="e().cuspp" class="w-full">
+                      <input pInputText [(ngModel)]="e().cuspp" class="w-full" />
                     </div>
                   }
                 </div>
@@ -253,11 +460,15 @@
                   </div>
                   <div>
                     <label class="field-label">RUC</label>
-                    <input pInputText [(ngModel)]="e().ruc" class="w-full" maxlength="11">
+                    <input pInputText [(ngModel)]="e().ruc" class="w-full" maxlength="11" />
                   </div>
                   <div>
                     <label class="field-label">Vencimiento Suspensión</label>
-                    <p-datepicker [(ngModel)]="e().fechaVencimientoSuspension" class="w-full" appendTo="body"></p-datepicker>
+                    <p-datepicker
+                      [(ngModel)]="e().fechaVencimientoSuspension"
+                      class="w-full"
+                      appendTo="body"
+                    ></p-datepicker>
                   </div>
                 </div>
               }
@@ -271,26 +482,44 @@
             <div class="form-grid">
               <div>
                 <label class="field-label">Banco</label>
-                <p-select [options]="banks" [(ngModel)]="e().bank" class="w-full" (onChange)="onBankChange($event.value)"></p-select>
+                <p-select
+                  [options]="banks"
+                  [(ngModel)]="e().bank"
+                  class="w-full"
+                  (onChange)="onBankChange($event.value)"
+                  appendTo="body"
+                ></p-select>
               </div>
               <div>
                 <label class="field-label">Tipo de Cuenta</label>
-                <p-select [options]="accountTypes" [(ngModel)]="e().accountType" class="w-full"></p-select>
+                <p-select
+                  [options]="accountTypes"
+                  [(ngModel)]="e().accountType"
+                  class="w-full"
+                  appendTo="body"
+                ></p-select>
               </div>
               <div>
                 <label class="field-label">Número de Cuenta</label>
-                <input pInputText [(ngModel)]="e().accountNumber" class="w-full" placeholder="193-...">
+                <input
+                  pInputText
+                  [(ngModel)]="e().accountNumber"
+                  class="w-full"
+                  placeholder="193-..."
+                />
               </div>
               <div>
                 <label class="field-label">CCI (Interbancario)</label>
-                <input pInputText [(ngModel)]="e().cci" class="w-full" placeholder="002-...">
+                <input pInputText [(ngModel)]="e().cci" class="w-full" placeholder="002-..." />
               </div>
             </div>
 
             <div class="mt-8 p-4 bg-blue-50 border border-blue-100 rounded-xl flex gap-3">
               <i class="pi pi-info-circle text-blue-600 text-xl mt-1"></i>
               <div class="text-sm text-blue-800">
-                <strong>Importante:</strong> Asegúrese de que el número de cuenta y el CCI sean correctos para evitar rechazos en los pagos de nómina. El CCI es obligatorio para transferencias entre bancos distintos.
+                <strong>Importante:</strong> Asegúrese de que el número de cuenta y el CCI sean
+                correctos para evitar rechazos en los pagos de nómina. El CCI es obligatorio para
+                transferencias entre bancos distintos.
               </div>
             </div>
           </div>
@@ -306,23 +535,43 @@
                   <i class="pi pi-file-pdf"></i> Contratos Laborales
                 </h3>
                 <div class="upload-zone" (click)="contratoInput.click()">
-                  <input #contratoInput type="file" hidden multiple (change)="onContratosSelect($event)">
+                  <input
+                    #contratoInput
+                    type="file"
+                    hidden
+                    multiple
+                    (change)="onContratosSelect($event)"
+                  />
                   <i class="pi pi-upload text-3xl text-gray-300 mb-2"></i>
                   <p class="font-medium">Haga clic o arrastre sus archivos aquí</p>
-                  <p class="text-xs text-gray-400 mt-1">Soporta PDF, JPG, PNG (Máx 10MB por archivo)</p>
+                  <p class="text-xs text-gray-400 mt-1">
+                    Soporta PDF, JPG, PNG (Máx 10MB por archivo)
+                  </p>
                 </div>
-                
+
                 <!-- File List -->
                 <div class="file-list">
                   @for (url of e().contratos; track url) {
                     <div class="file-item uploaded">
                       <div class="flex items-center gap-3">
                         <i class="pi pi-check-circle text-green-500"></i>
-                        <span class="text-sm font-medium truncate max-w-[200px]">{{ url | fileName }}</span>
+                        <span class="text-sm font-medium truncate max-w-[200px]">{{
+                          url | fileName
+                        }}</span>
                       </div>
                       <div class="flex gap-2">
-                        <button pButton icon="pi pi-download" class="p-button-text p-button-sm" (click)="download(url)"></button>
-                        <button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm" (click)="removeUrl('contratos', url)"></button>
+                        <button
+                          pButton
+                          icon="pi pi-download"
+                          class="p-button-text p-button-sm"
+                          (click)="download(url)"
+                        ></button>
+                        <button
+                          pButton
+                          icon="pi pi-trash"
+                          class="p-button-text p-button-danger p-button-sm"
+                          (click)="removeUrl('contratos', url)"
+                        ></button>
                       </div>
                     </div>
                   }
@@ -330,9 +579,16 @@
                     <div class="file-item">
                       <div class="flex items-center gap-3">
                         <i class="pi pi-file text-blue-500"></i>
-                        <span class="text-sm font-medium truncate max-w-[200px]">{{ file.name }}</span>
+                        <span class="text-sm font-medium truncate max-w-[200px]">{{
+                          file.name
+                        }}</span>
                       </div>
-                      <button pButton icon="pi pi-times" class="p-button-text p-button-danger p-button-sm" (click)="removeSelectedFile('contratos', file)"></button>
+                      <button
+                        pButton
+                        icon="pi pi-times"
+                        class="p-button-text p-button-danger p-button-sm"
+                        (click)="removeSelectedFile('contratos', file)"
+                      ></button>
                     </div>
                   }
                 </div>
@@ -344,7 +600,13 @@
                   <i class="pi pi-shield"></i> Antecedentes Policiales
                 </h3>
                 <div class="upload-zone" (click)="antecedenteInput.click()">
-                  <input #antecedenteInput type="file" hidden multiple (change)="onAntecedentesSelect($event)">
+                  <input
+                    #antecedenteInput
+                    type="file"
+                    hidden
+                    multiple
+                    (change)="onAntecedentesSelect($event)"
+                  />
                   <i class="pi pi-upload text-3xl text-gray-300 mb-2"></i>
                   <p class="font-medium">Subir certificados de antecedentes</p>
                 </div>
@@ -353,18 +615,32 @@
                     <div class="file-item uploaded">
                       <div class="flex items-center gap-3">
                         <i class="pi pi-check-circle text-green-500"></i>
-                        <span class="text-sm font-medium truncate max-w-[200px]">{{ url | fileName }}</span>
+                        <span class="text-sm font-medium truncate max-w-[200px]">{{
+                          url | fileName
+                        }}</span>
                       </div>
-                      <button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm" (click)="removeUrl('antecedentesPoliciales', url)"></button>
+                      <button
+                        pButton
+                        icon="pi pi-trash"
+                        class="p-button-text p-button-danger p-button-sm"
+                        (click)="removeUrl('antecedentesPoliciales', url)"
+                      ></button>
                     </div>
                   }
                   @for (file of selectedFiles['antecedentesPoliciales']; track file.name) {
                     <div class="file-item">
                       <div class="flex items-center gap-3">
                         <i class="pi pi-file text-blue-500"></i>
-                        <span class="text-sm font-medium truncate max-w-[200px]">{{ file.name }}</span>
+                        <span class="text-sm font-medium truncate max-w-[200px]">{{
+                          file.name
+                        }}</span>
                       </div>
-                      <button pButton icon="pi pi-times" class="p-button-text p-button-danger p-button-sm" (click)="removeSelectedFile('antecedentesPoliciales', file)"></button>
+                      <button
+                        pButton
+                        icon="pi pi-times"
+                        class="p-button-text p-button-danger p-button-sm"
+                        (click)="removeSelectedFile('antecedentesPoliciales', file)"
+                      ></button>
                     </div>
                   }
                 </div>
@@ -377,7 +653,13 @@
                     <i class="pi pi-file"></i> Constancia de Suspensión de Renta
                   </h3>
                   <div class="upload-zone" (click)="constanciaInput.click()">
-                    <input #constanciaInput type="file" hidden multiple (change)="onConstanciaSelect($event)">
+                    <input
+                      #constanciaInput
+                      type="file"
+                      hidden
+                      multiple
+                      (change)="onConstanciaSelect($event)"
+                    />
                     <i class="pi pi-upload text-3xl text-gray-300 mb-2"></i>
                     <p class="font-medium">Subir constancia de suspensión</p>
                   </div>
@@ -386,18 +668,32 @@
                       <div class="file-item uploaded">
                         <div class="flex items-center gap-3">
                           <i class="pi pi-check-circle text-green-500"></i>
-                          <span class="text-sm font-medium truncate max-w-[200px]">{{ url | fileName }}</span>
+                          <span class="text-sm font-medium truncate max-w-[200px]">{{
+                            url | fileName
+                          }}</span>
                         </div>
-                        <button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm" (click)="removeUrl('constanciaSuspensionRenta', url)"></button>
+                        <button
+                          pButton
+                          icon="pi pi-trash"
+                          class="p-button-text p-button-danger p-button-sm"
+                          (click)="removeUrl('constanciaSuspensionRenta', url)"
+                        ></button>
                       </div>
                     }
                     @for (file of selectedFiles['constanciaSuspensionRenta']; track file.name) {
                       <div class="file-item">
                         <div class="flex items-center gap-3">
                           <i class="pi pi-file text-blue-500"></i>
-                          <span class="text-sm font-medium truncate max-w-[200px]">{{ file.name }}</span>
+                          <span class="text-sm font-medium truncate max-w-[200px]">{{
+                            file.name
+                          }}</span>
                         </div>
-                        <button pButton icon="pi pi-times" class="p-button-text p-button-danger p-button-sm" (click)="removeSelectedFile('constanciaSuspensionRenta', file)"></button>
+                        <button
+                          pButton
+                          icon="pi pi-times"
+                          class="p-button-text p-button-danger p-button-sm"
+                          (click)="removeSelectedFile('constanciaSuspensionRenta', file)"
+                        ></button>
                       </div>
                     }
                   </div>
@@ -413,77 +709,264 @@
 
             <!-- Ficha de Tallas EPP -->
             <div class="mb-8">
-               <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">1. Ficha de Tallas para EPP y Uniformes</h3>
-               <div class="form-grid">
-                  <div><label class="field-label">Calzado</label><p-select [options]="shoeSizes" [(ngModel)]="e().tallaCalzado" placeholder="Seleccione" class="w-full" appendTo="body"></p-select></div>
-                  <div><label class="field-label">Camisa/Blusa</label><p-select [options]="clothingSizes" [(ngModel)]="e().tallaCamisa" placeholder="Seleccione" class="w-full" appendTo="body"></p-select></div>
-                  <div><label class="field-label">Pantalón</label><p-select [options]="clothingSizes" [(ngModel)]="e().tallaPantalon" placeholder="Seleccione" class="w-full" appendTo="body"></p-select></div>
-                  <div><label class="field-label">Casco</label><p-select [options]="helmetSizes" [(ngModel)]="e().tallaCasco" placeholder="Seleccione" class="w-full" appendTo="body"></p-select></div>
-                  <div><label class="field-label">Guantes</label><p-select [options]="gloveSizes" [(ngModel)]="e().tallaGuantes" placeholder="Seleccione" class="w-full" appendTo="body"></p-select></div>
-                  <div><label class="field-label">Respirador</label><p-select [options]="respiratorSizes" [(ngModel)]="e().tallaRespirador" placeholder="Seleccione" class="w-full" appendTo="body"></p-select></div>
-                  <div class="flex items-center mt-6">
-                    <p-checkbox [(ngModel)]="e().lentesMedida" [binary]="true" label="Requiere lentes con medida"></p-checkbox>
-                  </div>
-               </div>
+              <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
+                1. Ficha de Tallas para EPP y Uniformes
+              </h3>
+              <div class="form-grid">
+                <div>
+                  <label class="field-label">Calzado</label
+                  ><p-select
+                    [options]="shoeSizes"
+                    [(ngModel)]="e().tallaCalzado"
+                    placeholder="Seleccione"
+                    class="w-full"
+                    appendTo="body"
+                  ></p-select>
+                </div>
+                <div>
+                  <label class="field-label">Camisa/Blusa</label
+                  ><p-select
+                    [options]="clothingSizes"
+                    [(ngModel)]="e().tallaCamisa"
+                    placeholder="Seleccione"
+                    class="w-full"
+                    appendTo="body"
+                  ></p-select>
+                </div>
+                <div>
+                  <label class="field-label">Pantalón</label
+                  ><p-select
+                    [options]="clothingSizes"
+                    [(ngModel)]="e().tallaPantalon"
+                    placeholder="Seleccione"
+                    class="w-full"
+                    appendTo="body"
+                  ></p-select>
+                </div>
+                <div>
+                  <label class="field-label">Casco</label
+                  ><p-select
+                    [options]="helmetSizes"
+                    [(ngModel)]="e().tallaCasco"
+                    placeholder="Seleccione"
+                    class="w-full"
+                    appendTo="body"
+                  ></p-select>
+                </div>
+                <div>
+                  <label class="field-label">Guantes</label
+                  ><p-select
+                    [options]="gloveSizes"
+                    [(ngModel)]="e().tallaGuantes"
+                    placeholder="Seleccione"
+                    class="w-full"
+                    appendTo="body"
+                  ></p-select>
+                </div>
+                <div>
+                  <label class="field-label">Respirador</label
+                  ><p-select
+                    [options]="respiratorSizes"
+                    [(ngModel)]="e().tallaRespirador"
+                    placeholder="Seleccione"
+                    class="w-full"
+                    appendTo="body"
+                  ></p-select>
+                </div>
+                <div class="flex items-center mt-6">
+                  <p-checkbox
+                    [(ngModel)]="e().lentesMedida"
+                    [binary]="true"
+                    label="Requiere lentes con medida"
+                  ></p-checkbox>
+                </div>
+              </div>
             </div>
 
             <!-- Datos Administrativos y Salud -->
             <div class="mb-8">
-               <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">2. Datos Administrativos y de Salud</h3>
-               <div class="form-grid">
-                  <!-- Examen Medico -->
-                  <div class="full-width grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-lg bg-gray-50">
-                    <h4 class="col-span-2 font-semibold text-gray-700">Examen Médico Ocupacional (Anexo 16)</h4>
-                    <div><label class="field-label">Fecha Vencimiento</label><p-datepicker [(ngModel)]="e().examenMedico.fechaVencimiento" class="w-full" appendTo="body"></p-datepicker></div>
-                    <div class="flex items-center mt-6"><p-checkbox [(ngModel)]="e().examenMedico.aptoAltura" [binary]="true" label="Apto para Gran Altura (> 2,500 msnm)"></p-checkbox></div>
+              <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
+                2. Datos Administrativos y de Salud
+              </h3>
+              <div class="form-grid">
+                <!-- Examen Medico -->
+                <div
+                  class="full-width grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-lg bg-gray-50"
+                >
+                  <h4 class="col-span-2 font-semibold text-gray-700">
+                    Examen Médico Ocupacional (Anexo 16)
+                  </h4>
+                  <div>
+                    <label class="field-label">Fecha Vencimiento</label
+                    ><p-datepicker
+                      [(ngModel)]="e().examenMedico.fechaVencimiento"
+                      class="w-full"
+                      appendTo="body"
+                    ></p-datepicker>
                   </div>
-
-                  <!-- SCTR -->
-                  <div class="full-width grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-lg bg-gray-50">
-                    <h4 class="col-span-2 font-semibold text-gray-700">SCTR (Seguro Complementario de Trabajo de Riesgo)</h4>
-                    <div class="flex gap-4 col-span-2">
-                        <p-checkbox [(ngModel)]="e().sctr.salud" [binary]="true" label="Salud"></p-checkbox>
-                        <p-checkbox [(ngModel)]="e().sctr.pension" [binary]="true" label="Pensión"></p-checkbox>
-                    </div>
-                    <div><label class="field-label">Fecha Vencimiento</label><p-datepicker [(ngModel)]="e().sctr.fechaVencimiento" class="w-full" appendTo="body"></p-datepicker></div>
+                  <div class="flex items-center mt-6">
+                    <p-checkbox
+                      [(ngModel)]="e().examenMedico.aptoAltura"
+                      [binary]="true"
+                      label="Apto para Gran Altura (> 2,500 msnm)"
+                    ></p-checkbox>
                   </div>
+                </div>
 
-                  <!-- Contacto Emergencia -->
-                  <div class="full-width grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded-lg bg-gray-50">
-                    <h4 class="col-span-3 font-semibold text-gray-700">Contacto de Emergencia</h4>
-                    <div><label class="field-label">Nombre</label><input pInputText [(ngModel)]="e().contactoEmergencia.nombre" class="w-full" placeholder="Nombre completo"></div>
-                    <div><label class="field-label">Parentesco</label><input pInputText [(ngModel)]="e().contactoEmergencia.parentesco" class="w-full" placeholder="Ej. Esposa, Madre"></div>
-                    <div><label class="field-label">Teléfono</label><input pInputText [(ngModel)]="e().contactoEmergencia.telefono" class="w-full" placeholder="Número de contacto"></div>
+                <!-- SCTR -->
+                <div
+                  class="full-width grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-lg bg-gray-50"
+                >
+                  <h4 class="col-span-2 font-semibold text-gray-700">
+                    SCTR (Seguro Complementario de Trabajo de Riesgo)
+                  </h4>
+                  <div class="flex gap-4 col-span-2">
+                    <p-checkbox
+                      [(ngModel)]="e().sctr.salud"
+                      [binary]="true"
+                      label="Salud"
+                    ></p-checkbox>
+                    <p-checkbox
+                      [(ngModel)]="e().sctr.pension"
+                      [binary]="true"
+                      label="Pensión"
+                    ></p-checkbox>
                   </div>
+                  <div>
+                    <label class="field-label">Fecha Vencimiento</label
+                    ><p-datepicker
+                      [(ngModel)]="e().sctr.fechaVencimiento"
+                      class="w-full"
+                      appendTo="body"
+                    ></p-datepicker>
+                  </div>
+                </div>
 
-                  <div><label class="field-label">Grupo Sanguíneo</label><p-select [options]="bloodTypes" [(ngModel)]="e().grupoSanguineo" placeholder="Seleccione" class="w-full" appendTo="body"></p-select></div>
-                  <div><label class="field-label">Alergias</label><input pInputText [(ngModel)]="e().alergias" class="w-full" placeholder="Especificar si tiene"></div>
-               </div>
+                <!-- Contacto Emergencia -->
+                <div
+                  class="full-width grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded-lg bg-gray-50"
+                >
+                  <h4 class="col-span-3 font-semibold text-gray-700">Contacto de Emergencia</h4>
+                  <div>
+                    <label class="field-label">Nombre</label
+                    ><input
+                      pInputText
+                      [(ngModel)]="e().contactoEmergencia.nombre"
+                      class="w-full"
+                      placeholder="Nombre completo"
+                    />
+                  </div>
+                  <div>
+                    <label class="field-label">Parentesco</label
+                    ><input
+                      pInputText
+                      [(ngModel)]="e().contactoEmergencia.parentesco"
+                      class="w-full"
+                      placeholder="Ej. Esposa, Madre"
+                    />
+                  </div>
+                  <div>
+                    <label class="field-label">Teléfono</label
+                    ><input
+                      pInputText
+                      [(ngModel)]="e().contactoEmergencia.telefono"
+                      class="w-full"
+                      placeholder="Número de contacto"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="field-label">Grupo Sanguíneo</label
+                  ><p-select
+                    [options]="bloodTypes"
+                    [(ngModel)]="e().grupoSanguineo"
+                    placeholder="Seleccione"
+                    class="w-full"
+                    appendTo="body"
+                  ></p-select>
+                </div>
+                <div>
+                  <label class="field-label">Alergias</label
+                  ><input
+                    pInputText
+                    [(ngModel)]="e().alergias"
+                    class="w-full"
+                    placeholder="Especificar si tiene"
+                  />
+                </div>
+              </div>
             </div>
 
             <!-- Documentación de Competencia -->
             <div class="mb-8">
-               <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">3. Documentación de Competencia</h3>
-               <div class="form-grid">
-                  <!-- Licencia -->
-                  <div class="full-width grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded-lg bg-gray-50">
-                    <h4 class="col-span-3 font-semibold text-gray-700">Licencia de Conducir (MTC / Interna)</h4>
-                    <div><label class="field-label">Número</label><input pInputText [(ngModel)]="e().licenciaConducir.numero" class="w-full"></div>
-                    <div><label class="field-label">Categoría</label><input pInputText [(ngModel)]="e().licenciaConducir.categoria" class="w-full"></div>
-                    <div><label class="field-label">Fecha Vencimiento</label><p-datepicker [(ngModel)]="e().licenciaConducir.fechaVencimiento" class="w-full" appendTo="body"></p-datepicker></div>
+              <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
+                3. Documentación de Competencia
+              </h3>
+              <div class="form-grid">
+                <!-- Licencia -->
+                <div
+                  class="full-width grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded-lg bg-gray-50"
+                >
+                  <h4 class="col-span-3 font-semibold text-gray-700">
+                    Licencia de Conducir (MTC / Interna)
+                  </h4>
+                  <div>
+                    <label class="field-label">Número</label
+                    ><input pInputText [(ngModel)]="e().licenciaConducir.numero" class="w-full" />
                   </div>
+                  <div>
+                    <label class="field-label">Categoría</label
+                    ><input
+                      pInputText
+                      [(ngModel)]="e().licenciaConducir.categoria"
+                      class="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label class="field-label">Fecha Vencimiento</label
+                    ><p-datepicker
+                      [(ngModel)]="e().licenciaConducir.fechaVencimiento"
+                      class="w-full"
+                      appendTo="body"
+                    ></p-datepicker>
+                  </div>
+                </div>
 
-                  <!-- Antecedentes -->
-                  <div class="full-width grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-lg bg-gray-50">
-                    <h4 class="col-span-2 font-semibold text-gray-700">Certificados de Antecedentes</h4>
-                    <div class="flex gap-4 flex-wrap col-span-2">
-                        <p-checkbox [(ngModel)]="e().antecedentes.penales" [binary]="true" label="Penales"></p-checkbox>
-                        <p-checkbox [(ngModel)]="e().antecedentes.judiciales" [binary]="true" label="Judiciales"></p-checkbox>
-                        <p-checkbox [(ngModel)]="e().antecedentes.policiales" [binary]="true" label="Policiales"></p-checkbox>
-                    </div>
-                    <div><label class="field-label">Fecha Emisión (Más reciente)</label><p-datepicker [(ngModel)]="e().antecedentes.fechaEmision" class="w-full" appendTo="body"></p-datepicker></div>
+                <!-- Antecedentes -->
+                <div
+                  class="full-width grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-lg bg-gray-50"
+                >
+                  <h4 class="col-span-2 font-semibold text-gray-700">
+                    Certificados de Antecedentes
+                  </h4>
+                  <div class="flex gap-4 flex-wrap col-span-2">
+                    <p-checkbox
+                      [(ngModel)]="e().antecedentes.penales"
+                      [binary]="true"
+                      label="Penales"
+                    ></p-checkbox>
+                    <p-checkbox
+                      [(ngModel)]="e().antecedentes.judiciales"
+                      [binary]="true"
+                      label="Judiciales"
+                    ></p-checkbox>
+                    <p-checkbox
+                      [(ngModel)]="e().antecedentes.policiales"
+                      [binary]="true"
+                      label="Policiales"
+                    ></p-checkbox>
                   </div>
-               </div>
+                  <div>
+                    <label class="field-label">Fecha Emisión (Más reciente)</label
+                    ><p-datepicker
+                      [(ngModel)]="e().antecedentes.fechaEmision"
+                      class="w-full"
+                      appendTo="body"
+                    ></p-datepicker>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         }

@@ -54,8 +54,18 @@
       </ng-template>
       <ng-template pTemplate="body" let-row>
         <tr>
-          <td (click)="navigateToSummary(row)" class="cursor-pointer text-blue-600 font-medium hover:underline">{{ row.nombre }}</td>
-          <td (click)="navigateToSummary(row)" class="cursor-pointer text-blue-600 font-medium hover:underline">{{ row.apellido }}</td>
+          <td
+            (click)="navigateToSummary(row)"
+            class="cursor-pointer text-blue-600 font-medium hover:underline"
+          >
+            {{ row.nombre }}
+          </td>
+          <td
+            (click)="navigateToSummary(row)"
+            class="cursor-pointer text-blue-600 font-medium hover:underline"
+          >
+            {{ row.apellido }}
+          </td>
           <td>{{ row.dni }}</td>
           <td>{{ row.correo || '-' }}</td>
           <td>{{ row.telefono || '-' }}</td>
@@ -373,8 +383,13 @@
             <div class="font-medium text-gray-700 dark:text-white break-words">
               {{ v.direccion }}
               @if (v.geoReferencia && v.geoReferencia.lat && v.geoReferencia.lng) {
-                 <a
-                  [href]="'https://www.google.com/maps/search/?api=1&query=' + v.geoReferencia.lat + ',' + v.geoReferencia.lng"
+                <a
+                  [href]="
+                    'https://www.google.com/maps/search/?api=1&query=' +
+                    v.geoReferencia.lat +
+                    ',' +
+                    v.geoReferencia.lng
+                  "
                   target="_blank"
                   class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs inline-flex items-center gap-1"
                 >
@@ -397,25 +412,33 @@
       <!-- Datos Familiares -->
       @if (v.conyugeConcubino || (v.hijos && v.hijos.length > 0)) {
         <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-            Datos Familiares
-          </h3>
-          
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Datos Familiares</h3>
+
           @if (v.conyugeConcubino) {
             <div class="mb-4">
-              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Cónyuge/Concubino</h4>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded border border-gray-200 dark:border-gray-700">
+              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Cónyuge/Concubino
+              </h4>
+              <div
+                class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded border border-gray-200 dark:border-gray-700"
+              >
                 <div>
                   <span class="block text-xs text-gray-500 dark:text-gray-400">Nombre</span>
-                  <div class="text-sm text-gray-900 dark:text-white">{{ v.conyugeConcubino.nombre || '-' }}</div>
+                  <div class="text-sm text-gray-900 dark:text-white">
+                    {{ v.conyugeConcubino.nombre || '-' }}
+                  </div>
                 </div>
                 <div>
                   <span class="block text-xs text-gray-500 dark:text-gray-400">Tipo Doc.</span>
-                  <div class="text-sm text-gray-900 dark:text-white">{{ v.conyugeConcubino.tipoDocumento || '-' }}</div>
+                  <div class="text-sm text-gray-900 dark:text-white">
+                    {{ v.conyugeConcubino.tipoDocumento || '-' }}
+                  </div>
                 </div>
                 <div>
                   <span class="block text-xs text-gray-500 dark:text-gray-400">N° Documento</span>
-                  <div class="text-sm text-gray-900 dark:text-white">{{ v.conyugeConcubino.numeroDocumento || '-' }}</div>
+                  <div class="text-sm text-gray-900 dark:text-white">
+                    {{ v.conyugeConcubino.numeroDocumento || '-' }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -426,22 +449,38 @@
               <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Hijos</h4>
               <div class="space-y-2">
                 @for (hijo of v.hijos; track $index) {
-                  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded border border-gray-200 dark:border-gray-700">
+                  <div
+                    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded border border-gray-200 dark:border-gray-700"
+                  >
                     <div>
                       <span class="block text-xs text-gray-500 dark:text-gray-400">Nombre</span>
-                      <div class="text-sm text-gray-900 dark:text-white">{{ hijo.nombre || '-' }}</div>
+                      <div class="text-sm text-gray-900 dark:text-white">
+                        {{ hijo.nombre || '-' }}
+                      </div>
                     </div>
                     <div>
-                      <span class="block text-xs text-gray-500 dark:text-gray-400">F. Nacimiento</span>
-                      <div class="text-sm text-gray-900 dark:text-white">{{ hijo.fechaNacimiento ? (hijo.fechaNacimiento | date: 'dd/MM/yyyy') : '-' }}</div>
+                      <span class="block text-xs text-gray-500 dark:text-gray-400"
+                        >F. Nacimiento</span
+                      >
+                      <div class="text-sm text-gray-900 dark:text-white">
+                        {{
+                          hijo.fechaNacimiento ? (hijo.fechaNacimiento | date: 'dd/MM/yyyy') : '-'
+                        }}
+                      </div>
                     </div>
                     <div>
                       <span class="block text-xs text-gray-500 dark:text-gray-400">Tipo Doc.</span>
-                      <div class="text-sm text-gray-900 dark:text-white">{{ hijo.tipoDocumento || '-' }}</div>
+                      <div class="text-sm text-gray-900 dark:text-white">
+                        {{ hijo.tipoDocumento || '-' }}
+                      </div>
                     </div>
                     <div>
-                      <span class="block text-xs text-gray-500 dark:text-gray-400">N° Documento</span>
-                      <div class="text-sm text-gray-900 dark:text-white">{{ hijo.numeroDocumento || '-' }}</div>
+                      <span class="block text-xs text-gray-500 dark:text-gray-400"
+                        >N° Documento</span
+                      >
+                      <div class="text-sm text-gray-900 dark:text-white">
+                        {{ hijo.numeroDocumento || '-' }}
+                      </div>
                     </div>
                   </div>
                 }
@@ -454,48 +493,64 @@
       <!-- Datos Laborales (Personal en Planilla) -->
       @if (v.tipoEmpleado === 'Planilla') {
         <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-            Datos Laborales
-          </h3>
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Datos Laborales</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div>
-               <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo de Contrato</span>
-               <div class="font-medium text-gray-700 dark:text-white">{{ v.tipoContrato || '-' }}</div>
-             </div>
-             <div>
-               <span class="block text-xs text-gray-500 dark:text-white mb-1">Inicio de Labores</span>
-               <div class="font-medium text-gray-700 dark:text-white">{{ v.fechaInicioLabores ? (v.fechaInicioLabores | date: 'dd/MM/yyyy') : '-' }}</div>
-             </div>
-             <div>
-               <span class="block text-xs text-gray-500 dark:text-white mb-1">Fin de Contrato</span>
-               <div class="font-medium text-gray-700 dark:text-white">{{ v.fechaFinContrato ? (v.fechaFinContrato | date: 'dd/MM/yyyy') : '-' }}</div>
-             </div>
-             <div>
-               <span class="block text-xs text-gray-500 dark:text-white mb-1">Sistema Pensionario</span>
-               <div class="font-medium text-gray-700 dark:text-white">{{ v.sistemaPensionario || '-' }}</div>
-             </div>
-             @if (v.sistemaPensionario === 'SPP/AFP') {
-               <div>
-                 <span class="block text-xs text-gray-500 dark:text-white mb-1">AFP</span>
-                 <div class="font-medium text-gray-700 dark:text-white">{{ v.afp || '-' }}</div>
-               </div>
-               <div>
-                 <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo Comisión</span>
-                 <div class="font-medium text-gray-700 dark:text-white">{{ v.tipoComision || '-' }}</div>
-               </div>
-               <div>
-                 <span class="block text-xs text-gray-500 dark:text-white mb-1">CUSPP</span>
-                 <div class="font-medium text-gray-700 dark:text-white">{{ v.cuspp || '-' }}</div>
-               </div>
-             }
-             <div>
-               <span class="block text-xs text-gray-500 dark:text-white mb-1">Centro de Costos</span>
-               <div class="font-medium text-gray-700 dark:text-white">{{ v.centroCostos || '-' }}</div>
-             </div>
-             <div>
-               <span class="block text-xs text-gray-500 dark:text-white mb-1">Proyecto/Obra</span>
-               <div class="font-medium text-gray-700 dark:text-white">{{ v.proyectoObra || '-' }}</div>
-             </div>
+            <div>
+              <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo de Contrato</span>
+              <div class="font-medium text-gray-700 dark:text-white">
+                {{ v.tipoContrato || '-' }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-xs text-gray-500 dark:text-white mb-1"
+                >Inicio de Labores</span
+              >
+              <div class="font-medium text-gray-700 dark:text-white">
+                {{ v.fechaInicioLabores ? (v.fechaInicioLabores | date: 'dd/MM/yyyy') : '-' }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-xs text-gray-500 dark:text-white mb-1">Fin de Contrato</span>
+              <div class="font-medium text-gray-700 dark:text-white">
+                {{ v.fechaFinContrato ? (v.fechaFinContrato | date: 'dd/MM/yyyy') : '-' }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-xs text-gray-500 dark:text-white mb-1"
+                >Sistema Pensionario</span
+              >
+              <div class="font-medium text-gray-700 dark:text-white">
+                {{ v.sistemaPensionario || '-' }}
+              </div>
+            </div>
+            @if (v.sistemaPensionario === 'SPP/AFP') {
+              <div>
+                <span class="block text-xs text-gray-500 dark:text-white mb-1">AFP</span>
+                <div class="font-medium text-gray-700 dark:text-white">{{ v.afp || '-' }}</div>
+              </div>
+              <div>
+                <span class="block text-xs text-gray-500 dark:text-white mb-1">Tipo Comisión</span>
+                <div class="font-medium text-gray-700 dark:text-white">
+                  {{ v.tipoComision || '-' }}
+                </div>
+              </div>
+              <div>
+                <span class="block text-xs text-gray-500 dark:text-white mb-1">CUSPP</span>
+                <div class="font-medium text-gray-700 dark:text-white">{{ v.cuspp || '-' }}</div>
+              </div>
+            }
+            <div>
+              <span class="block text-xs text-gray-500 dark:text-white mb-1">Centro de Costos</span>
+              <div class="font-medium text-gray-700 dark:text-white">
+                {{ v.centroCostos || '-' }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-xs text-gray-500 dark:text-white mb-1">Proyecto/Obra</span>
+              <div class="font-medium text-gray-700 dark:text-white">
+                {{ v.proyectoObra || '-' }}
+              </div>
+            </div>
           </div>
         </div>
       }
@@ -503,53 +558,63 @@
       <!-- Datos para Locadores -->
       @if (v.tipoEmpleado === 'Locador') {
         <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-            Datos de Locador
-          </h3>
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Datos de Locador</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div>
-               <span class="block text-xs text-gray-500 dark:text-white mb-1">RUC</span>
-               <div class="font-medium text-gray-700 dark:text-white">{{ v.ruc || '-' }}</div>
-             </div>
-             <div>
-               <span class="block text-xs text-gray-500 dark:text-white mb-1">Vencimiento Suspensión</span>
-               <div class="font-medium text-gray-700 dark:text-white">{{ v.fechaVencimientoSuspension ? (v.fechaVencimientoSuspension | date: 'dd/MM/yyyy') : '-' }}</div>
-             </div>
+            <div>
+              <span class="block text-xs text-gray-500 dark:text-white mb-1">RUC</span>
+              <div class="font-medium text-gray-700 dark:text-white">{{ v.ruc || '-' }}</div>
+            </div>
+            <div>
+              <span class="block text-xs text-gray-500 dark:text-white mb-1"
+                >Vencimiento Suspensión</span
+              >
+              <div class="font-medium text-gray-700 dark:text-white">
+                {{
+                  v.fechaVencimientoSuspension
+                    ? (v.fechaVencimientoSuspension | date: 'dd/MM/yyyy')
+                    : '-'
+                }}
+              </div>
+            </div>
           </div>
 
           @if (v.constanciaSuspensionRenta && v.constanciaSuspensionRenta.length > 0) {
             <div class="mt-4">
-               <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Constancia de Suspensión (PDF)</h4>
-               <div class="space-y-3">
+              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Constancia de Suspensión (PDF)
+              </h4>
+              <div class="space-y-3">
                 @for (url of v.constanciaSuspensionRenta; track url) {
-                  <div class="bg-gray-50 dark:bg-gray-800 rounded border p-3 flex items-center justify-between">
-                     <div class="flex items-center gap-3 flex-1 min-w-0">
-                       <i class="pi pi-file-pdf text-red-600 text-xl"></i>
-                       <div class="flex-1 min-w-0">
-                         <a
-                           (click)="downloadFile(url)"
-                           (keyup.enter)="downloadFile(url)"
-                           (keyup.space)="downloadFile(url); $event.preventDefault()"
-                           tabindex="0"
-                           role="button"
-                           class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block truncate"
-                           [title]="url"
-                         >
-                           {{ url.split('/').pop() }}
-                         </a>
-                       </div>
-                     </div>
-                     <button
-                       pButton
-                       icon="pi pi-download"
-                       class="p-button-text p-button-sm"
-                       (click)="downloadFile(url)"
-                       pTooltip="Descargar archivo"
-                       aria-label="Descargar archivo"
-                     ></button>
+                  <div
+                    class="bg-gray-50 dark:bg-gray-800 rounded border p-3 flex items-center justify-between"
+                  >
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                      <i class="pi pi-file-pdf text-red-600 text-xl"></i>
+                      <div class="flex-1 min-w-0">
+                        <a
+                          (click)="downloadFile(url)"
+                          (keyup.enter)="downloadFile(url)"
+                          (keyup.space)="downloadFile(url); $event.preventDefault()"
+                          tabindex="0"
+                          role="button"
+                          class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block truncate"
+                          [title]="url"
+                        >
+                          {{ url.split('/').pop() }}
+                        </a>
+                      </div>
+                    </div>
+                    <button
+                      pButton
+                      icon="pi pi-download"
+                      class="p-button-text p-button-sm"
+                      (click)="downloadFile(url)"
+                      pTooltip="Descargar archivo"
+                      aria-label="Descargar archivo"
+                    ></button>
                   </div>
                 }
-               </div>
+              </div>
             </div>
           }
         </div>

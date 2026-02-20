@@ -256,11 +256,12 @@ export class EmployeeFormPage implements OnInit {
         this.loading.set(false);
         console.log('Employee loaded:', mapped);
       },
-      error: () => {
+      error: (error) => {
+        const errorMessage = this.getErrorMessage(error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo cargar el empleado',
+          detail: errorMessage,
         });
         this.router.navigate(['/employees']);
       },
@@ -407,38 +408,58 @@ export class EmployeeFormPage implements OnInit {
     }
 
     const id = this.employeeId();
-    if (id) {
-      // No enviar campos de solo lectura al actualizar (el backend los rechaza)
-      delete data._id;
-      delete data.tenantId;
-      delete data.createdAt;
-      delete data.updatedAt;
-      // La foto se sube por endpoint aparte (uploadFotoPerfil), no en el body del PATCH
+    // No enviar campos de solo lectura al crear o actualizar (el backend los rechaza)
+    delete data._id;
+    delete data.tenantId;
+    delete data.createdAt;
+    delete data.updatedAt;
+
+    // Si fotoPerfil es una data URL (base64), no enviarla en el body
+    // Se subirá por endpoint aparte después de crear/actualizar
+    if (
+      data.fotoPerfil &&
+      typeof data.fotoPerfil === 'string' &&
+      data.fotoPerfil.startsWith('data:')
+    ) {
       delete data.fotoPerfil;
-      // Quitar null de objetos anidados para que pasen la validación
-      ['examenMedico', 'sctr', 'contactoEmergencia', 'licenciaConducir', 'antecedentes'].forEach((key) => {
-        const obj = data[key];
-        if (obj && typeof obj === 'object') {
-          Object.keys(obj).forEach((k) => {
-            if ((obj as Record<string, unknown>)[k] === null) delete (obj as Record<string, unknown>)[k];
-          });
-        }
-      });
     }
+
+    if (id) {
+      // Quitar null de objetos anidados para que pasen la validación
+      ['examenMedico', 'sctr', 'contactoEmergencia', 'licenciaConducir', 'antecedentes'].forEach(
+        (key) => {
+          const obj = data[key];
+          if (obj && typeof obj === 'object') {
+            Object.keys(obj).forEach((k) => {
+              if ((obj as Record<string, unknown>)[k] === null)
+                delete (obj as Record<string, unknown>)[k];
+            });
+          }
+        },
+      );
+    }
+
+    // Log para debugging
+    console.log('📤 Frontend: Datos a enviar:', JSON.stringify(data, null, 2));
+    console.log('📤 Frontend: ID del empleado:', id);
+
     const action = id
       ? this.employeesApi.update(id, data as UpdateEmployeeRequest)
       : this.employeesApi.create(data as CreateEmployeeRequest);
 
     action.subscribe({
       next: (res: Employee) => {
+        console.log('✅ Frontend: Respuesta del servidor:', res);
         const employeeId = res._id!;
         this.uploadSequentially(employeeId);
       },
-      error: () => {
+      error: (error) => {
+        console.error('❌ Frontend: Error al guardar:', error);
+        const errorMessage = this.getErrorMessage(error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Error al guardar el empleado',
+          detail: errorMessage,
         });
         this.loading.set(false);
       },
@@ -484,11 +505,12 @@ export class EmployeeFormPage implements OnInit {
         });
         this.router.navigate(['/employees']);
       },
-      error: () => {
+      error: (error) => {
+        const errorMessage = this.getErrorMessage(error);
         this.messageService.add({
           severity: 'warn',
           summary: 'Advertencia',
-          detail: 'Empleado guardado, pero hubo errores al subir algunos documentos',
+          detail: `Empleado guardado, pero hubo errores: ${errorMessage}`,
         });
         this.router.navigate(['/employees']);
       },
@@ -501,5 +523,68 @@ export class EmployeeFormPage implements OnInit {
 
   goBack() {
     this.router.navigate(['/employees']);
+  }
+
+  /**
+   * Extrae el mensaje de error del backend
+   */
+  private getErrorMessage(error: unknown): string {
+    // Manejar HttpErrorResponse de Angular
+    if (error && typeof error === 'object' && 'error' in error) {
+      const httpError = error as {
+        error?:
+          | {
+              message?: string | string[];
+              statusCode?: number;
+              error?: string;
+            }
+          | string;
+        message?: string;
+        status?: number;
+      };
+
+      // Si error.error es un objeto con message
+      if (httpError.error && typeof httpError.error === 'object' && 'message' in httpError.error) {
+        const message = httpError.error.message;
+        if (Array.isArray(message)) {
+          return message.join(', ');
+        }
+        if (typeof message === 'string') {
+          return message;
+        }
+      }
+
+      // Si error.error es directamente un string
+      if (typeof httpError.error === 'string') {
+        return httpError.error;
+      }
+
+      // Manejar mensaje directo en el nivel superior
+      if (httpError.message && typeof httpError.message === 'string') {
+        return httpError.message;
+      }
+
+      // Manejar error anidado (error.error.error)
+      if (
+        httpError.error &&
+        typeof httpError.error === 'object' &&
+        'error' in httpError.error &&
+        typeof httpError.error.error === 'string'
+      ) {
+        return httpError.error.error;
+      }
+    }
+
+    // Manejar error con propiedad message directa
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
+      return error.message;
+    }
+
+    return 'Error al guardar el empleado';
   }
 }
