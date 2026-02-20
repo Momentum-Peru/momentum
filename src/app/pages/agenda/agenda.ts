@@ -297,6 +297,9 @@ export class AgendaPage implements OnInit {
   transcribing = signal(false);
   /** URL del blob del audio grabado para el reproductor en el modal de voz */
   voicePreviewUrl = signal<string | null>(null);
+  /** Modal para visualizar dibujo en tamaño completo */
+  showDrawingViewerModal = signal(false);
+  drawingViewerUrl = signal<string | null>(null);
 
   /** Filtro por fecha (por defecto hoy). Notas creadas en ese día. */
   filterDate = signal<Date>(new Date());
@@ -1542,6 +1545,18 @@ export class AgendaPage implements OnInit {
     this.noteContent.set('');
     this.editingNoteId.set(null);
     this.editingNoteVoiceUrls.set([]);
+  }
+
+  /** Abre el modal para visualizar un dibujo en tamaño completo */
+  openDrawingViewer(url: string): void {
+    this.drawingViewerUrl.set(url);
+    this.showDrawingViewerModal.set(true);
+  }
+
+  /** Cierra el modal de visualización de dibujo */
+  closeDrawingViewerModal(): void {
+    this.showDrawingViewerModal.set(false);
+    this.drawingViewerUrl.set(null);
   }
 
   /** Guardar nota de voz desde el modal (crear nueva o actualizar existente si editingNoteId). */
