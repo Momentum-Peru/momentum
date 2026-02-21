@@ -31,7 +31,7 @@ export class MenuConfigService {
     { path: '/quotes', label: 'Cotizaciones', icon: 'pi pi-dollar' },
     { path: '/providers', label: 'Proveedores', icon: 'pi pi-building' },
     { path: '/documents', label: 'Documentos', icon: 'pi pi-file' },
-    // { path: '/tasks', label: 'Agenda', icon: 'pi pi-check-square' },
+    { path: '/tasks', label: 'Tareas', icon: 'pi pi-check-square' },
     { path: '/agenda', label: 'Mi agenda', icon: 'pi pi-book' },
     { path: '/contacts', label: 'Mis contactos', icon: 'pi pi-address-book' },
     { path: '/daily-reports', label: 'Reportes diarios', icon: 'pi pi-calendar' },
@@ -89,11 +89,11 @@ export class MenuConfigService {
         label: 'Mi espacio',
         icon: 'pi pi-briefcase',
         items: [
-          // {
-          //   label: 'Agenda',
-          //   icon: 'pi pi-check-square',
-          //   routerLink: '/tasks',
-          // },
+          {
+            label: 'Tareas',
+            icon: 'pi pi-check-square',
+            routerLink: '/tasks',
+          },
           {
             label: 'Mi agenda',
             icon: 'pi pi-book',
