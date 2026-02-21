@@ -1,126 +1,136 @@
 <div class="space-y-6">
   <!-- Header & Filters -->
   <div class="flex flex-col gap-4">
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <!-- Title -->
-          <div class="flex items-center gap-2">
-             <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ board.title }}</h2>
-             <p-tag *ngIf="board.isArchived" value="Archivado" severity="warn"></p-tag>
-          </div>
-          
-          <!-- Actions -->
-          <div class="flex flex-wrap gap-2">
-              <button 
-                  pButton 
-                  icon="pi pi-filter" 
-                  [outlined]="!hasActiveFilters()"
-                  [severity]="hasActiveFilters() ? 'primary' : 'secondary'"
-                  (click)="toggleFilters()" 
-                  pTooltip="Filtrar tareas"
-                  label="Filtros"
-                  class="p-button-sm"
-              ></button>
-              
-              <button 
-                  pButton 
-                  icon="pi pi-users" 
-                  [outlined]="true"
-                  severity="help"
-                  (click)="showMembersDialog.set(true)"
-                  pTooltip="Ver integrantes"
-                  class="p-button-sm"
-                  label="{{ (board.members?.length || 0) + (board.owner ? 1 : 0) | number }}"
-              ></button>
-
-              <button 
-                *ngIf="isOwner"
-                pButton 
-                icon="pi pi-user-plus" 
-                label="Invitar" 
-                class="p-button-sm"
-                (click)="onInvite($event)"
-              ></button>
-
-              <button 
-                *ngIf="isOwner"
-                pButton 
-                icon="pi pi-cog" 
-                class="p-button-sm p-button-secondary"
-                (click)="onEdit($event)"
-                pTooltip="Configurar tablero"
-              ></button>
-              
-              <button 
-                pButton 
-                icon="pi pi-refresh" 
-                class="p-button-sm p-button-secondary p-button-outlined"
-                (click)="onRefresh($event)"
-                pTooltip="Actualizar"
-              ></button>
-          </div>
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <!-- Title -->
+      <div class="flex items-center gap-2">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ board.title }}</h2>
+        <p-tag *ngIf="board.isArchived" value="Archivado" severity="warn"></p-tag>
       </div>
-      
-      <!-- Filters Panel -->
-      <div *ngIf="showFilters()" class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all mb-4">
-          
-          <!-- Area Filter -->
-          <div class="flex flex-col gap-2">
-              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Área de Trabajo</label>
-              <p-select 
-                  [options]="areaOptions" 
-                  [ngModel]="filterArea()"
-                  (ngModelChange)="onAreaChange($event)"
-                  placeholder="Todas las áreas" 
-                  styleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11 flex items-center"
-                  [showClear]="true"
-                  appendTo="body"
-              ></p-select>
-          </div>
 
-          <!-- Date Filter -->
-          <div class="flex flex-col gap-2">
-              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Filtrar por Fecha</label>
-              <p-datePicker 
-                  [ngModel]="filterDate()" 
-                  (ngModelChange)="onDateChange($event)"
-                  placeholder="Selecciona una fecha..." 
-                  dateFormat="dd/mm/yy"
-                  styleClass="w-full"
-                  inputStyleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11"
-                  [showIcon]="true"
-                  iconDisplay="input"
-                  [showButtonBar]="true"
-                  appendTo="body"
-              ></p-datePicker>
-          </div>
-          
-          <!-- Clear Filters -->
-          <div class="col-span-full border-t border-gray-50 dark:border-gray-700 pt-3 flex justify-end" *ngIf="hasActiveFilters()">
-              <button 
-                  pButton 
-                  label="Limpiar todos los filtros" 
-                  icon="pi pi-filter-slash" 
-                  class="p-button-sm p-button-text p-button-danger font-medium hover:bg-red-50" 
-                  (click)="clearFilters()"
-              ></button>
-          </div>
+      <!-- Actions -->
+      <div class="flex flex-wrap gap-2">
+        <button
+          pButton
+          icon="pi pi-filter"
+          [outlined]="!hasActiveFilters()"
+          [severity]="hasActiveFilters() ? 'primary' : 'secondary'"
+          (click)="toggleFilters()"
+          pTooltip="Filtrar tareas"
+          label="Filtros"
+          class="p-button-sm"
+        ></button>
+
+        <button
+          pButton
+          icon="pi pi-users"
+          [outlined]="true"
+          severity="help"
+          (click)="showMembersDialog.set(true)"
+          pTooltip="Ver integrantes"
+          class="p-button-sm"
+          label="{{ (board.members?.length || 0) + (board.owner ? 1 : 0) | number }}"
+        ></button>
+
+        @if (board._id && board._id !== 'all') {
+          <button
+            pButton
+            icon="pi pi-envelope"
+            [outlined]="true"
+            severity="secondary"
+            class="p-button-sm"
+            (click)="openInvitations.emit()"
+            [label]="
+              pendingInvitationsCount > 0
+                ? 'Invitaciones (' + pendingInvitationsCount + ')'
+                : 'Invitaciones'
+            "
+            pTooltip="Ver invitaciones pendientes"
+          ></button>
+        }
+
+        <button
+          *ngIf="canInvite"
+          pButton
+          icon="pi pi-user-plus"
+          label="Invitar"
+          class="p-button-sm"
+          (click)="onInvite($event)"
+          pTooltip="Invitar usuario al tablero"
+        ></button>
+
+        <button
+          *ngIf="isOwner"
+          pButton
+          icon="pi pi-cog"
+          class="p-button-sm p-button-secondary"
+          (click)="onEdit($event)"
+          pTooltip="Configurar tablero"
+        ></button>
+
+        <button
+          pButton
+          icon="pi pi-refresh"
+          class="p-button-sm p-button-secondary p-button-outlined"
+          (click)="onRefresh($event)"
+          pTooltip="Actualizar"
+        ></button>
       </div>
+    </div>
+
+    <!-- Filters Panel (por tablero: fecha, asignado a, etiquetas) -->
+    <div
+      *ngIf="showFilters()"
+      class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all mb-4"
+    >
+      <!-- Date Filter -->
+      <div class="flex flex-col gap-2">
+        <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1"
+          >Filtrar por Fecha</label
+        >
+        <p-datePicker
+          [ngModel]="filterDate()"
+          (ngModelChange)="onDateChange($event)"
+          placeholder="Selecciona una fecha..."
+          dateFormat="dd/mm/yy"
+          styleClass="w-full"
+          inputStyleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11"
+          [showIcon]="true"
+          iconDisplay="input"
+          [showButtonBar]="true"
+          appendTo="body"
+        ></p-datePicker>
+      </div>
+
+      <!-- Clear Filters -->
+      <div
+        class="col-span-full border-t border-gray-50 dark:border-gray-700 pt-3 flex justify-end"
+        *ngIf="hasActiveFilters()"
+      >
+        <button
+          pButton
+          label="Limpiar todos los filtros"
+          icon="pi pi-filter-slash"
+          class="p-button-sm p-button-text p-button-danger font-medium hover:bg-red-50"
+          (click)="clearFilters()"
+        ></button>
+      </div>
+    </div>
   </div>
 
-  <!-- Agenda View (List) -->
+  <!-- Vista de lista de tareas -->
   <div class="mt-2">
     <app-agenda-activity
       [tasks]="allTasks"
       [board]="board"
       [members]="boardUsers"
       [currentUser]="currentUser"
-      [areas]="availableAreas"
-      [preselectedAreaId]="filterArea()"
       (taskCreated)="quickCreateTask.emit($event)"
       (taskUpdated)="editTask.emit($event)"
       (taskDeleted)="onDeleteTask($event)"
       (viewTask)="viewTask.emit($event)"
       (statusChanged)="onStatusChanged($event)"
+      (taskFieldUpdated)="onTaskFieldUpdated($event)"
     ></app-agenda-activity>
   </div>
 </div>
@@ -138,102 +148,104 @@
     <div class="space-y-2">
       <!-- Propietario (solo si existe) -->
       @if (board.owner) {
-      <div
-        class="flex items-center justify-between gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-md"
-      >
-        <div class="flex items-center gap-2 flex-1 min-w-0">
-          <i class="pi pi-user text-green-600 dark:text-green-400"></i>
-          <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{
-            board.owner.name || board.owner.email || 'Sin nombre'
-          }}</span>
+        <div
+          class="flex items-center justify-between gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-md"
+        >
+          <div class="flex items-center gap-2 flex-1 min-w-0">
+            <i class="pi pi-user text-green-600 dark:text-green-400"></i>
+            <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{
+              board.owner.name || board.owner.email || 'Sin nombre'
+            }}</span>
+          </div>
+          <p-tag value="Dueño" severity="success" [rounded]="true" styleClass="text-xs"></p-tag>
         </div>
-        <p-tag value="Dueño" severity="success" [rounded]="true" styleClass="text-xs"></p-tag>
-      </div>
       }
 
       <!-- Miembros Aceptados -->
-      @for (member of (board.members || []); track member._id) {
-      <div
-        class="flex items-center justify-between gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md"
-      >
-        <div class="flex items-center gap-2 flex-1 min-w-0">
-          <i class="pi pi-user text-blue-600 dark:text-blue-400"></i>
-          <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{
-            member?.name || member?.email || 'Sin nombre'
-          }}</span>
+      @for (member of board.members || []; track member._id) {
+        <div
+          class="flex items-center justify-between gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md"
+        >
+          <div class="flex items-center gap-2 flex-1 min-w-0">
+            <i class="pi pi-user text-blue-600 dark:text-blue-400"></i>
+            <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{
+              member?.name || member?.email || 'Sin nombre'
+            }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <p-tag value="Aceptado" severity="info" [rounded]="true" styleClass="text-xs"></p-tag>
+            @if (isOwner) {
+              <p-button
+                icon="pi pi-times"
+                [text]="true"
+                severity="danger"
+                size="small"
+                (onClick)="onRemoveMember(member._id)"
+                pTooltip="Eliminar miembro"
+                styleClass="p-1"
+              ></p-button>
+            } @else if (isCurrentUser(member._id)) {
+              <p-button
+                icon="pi pi-sign-out"
+                label="Salirse"
+                [text]="true"
+                severity="warn"
+                size="small"
+                (onClick)="onLeaveBoard()"
+                pTooltip="Salirse del tablero"
+                styleClass="p-1 text-xs"
+              ></p-button>
+            }
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <p-tag value="Aceptado" severity="info" [rounded]="true" styleClass="text-xs"></p-tag>
-          @if (isOwner) {
-          <p-button
-            icon="pi pi-times"
-            [text]="true"
-            severity="danger"
-            size="small"
-            (onClick)="onRemoveMember(member._id)"
-            pTooltip="Eliminar miembro"
-            styleClass="p-1"
-          ></p-button>
-          } @else if (isCurrentUser(member._id)) {
-          <p-button
-            icon="pi pi-sign-out"
-            label="Salirse"
-            [text]="true"
-            severity="warn"
-            size="small"
-            (onClick)="onLeaveBoard()"
-            pTooltip="Salirse del tablero"
-            styleClass="p-1 text-xs"
-          ></p-button>
-          }
-        </div>
-      </div>
       }
 
       <!-- Invitaciones Pendientes -->
       @for (invitation of getPendingInvitations(); track invitation._id) {
-      <div
-        class="flex items-center justify-between gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-md"
-      >
-        <div class="flex items-center gap-2 flex-1 min-w-0">
-          <i class="pi pi-envelope text-amber-600 dark:text-amber-400"></i>
-          <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{
-            invitation.userId?.name || invitation.userId?.email || 'Sin nombre'
-          }}</span>
+        <div
+          class="flex items-center justify-between gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-md"
+        >
+          <div class="flex items-center gap-2 flex-1 min-w-0">
+            <i class="pi pi-envelope text-amber-600 dark:text-amber-400"></i>
+            <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{
+              invitation.userId?.name || invitation.userId?.email || 'Sin nombre'
+            }}</span>
+          </div>
+          <p-tag value="Pendiente" severity="warn" [rounded]="true" styleClass="text-xs"></p-tag>
         </div>
-        <p-tag value="Pendiente" severity="warn" [rounded]="true" styleClass="text-xs"></p-tag>
-      </div>
       }
     </div>
 
     <!-- Botón para salirse (si es miembro pero no dueño) -->
     @if (!isOwner && isCurrentUserMember()) {
-    <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
-      <p-button
-        icon="pi pi-sign-out"
-        label="Salirse del Tablero"
-        severity="warn"
-        [outlined]="true"
-        (onClick)="onLeaveBoard()"
-        class="w-full"
-        pTooltip="Salirse de este tablero"
-      ></p-button>
-    </div>
+      <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+        <p-button
+          icon="pi pi-sign-out"
+          label="Salirse del Tablero"
+          severity="warn"
+          [outlined]="true"
+          (onClick)="onLeaveBoard()"
+          class="w-full"
+          pTooltip="Salirse de este tablero"
+        ></p-button>
+      </div>
     }
 
     <!-- Resumen -->
     <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
       <div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
         <span>Total aceptados:</span>
-        <span class="font-semibold">{{ (board.members?.length || 0) + (board.owner ? 1 : 0) }}</span>
+        <span class="font-semibold">{{
+          (board.members?.length || 0) + (board.owner ? 1 : 0)
+        }}</span>
       </div>
       @if (pendingInvitations > 0) {
-      <div
-        class="flex items-center justify-between text-xs text-amber-600 dark:text-amber-400 mt-1"
-      >
-        <span>Pendientes:</span>
-        <span class="font-semibold">{{ pendingInvitations }}</span>
-      </div>
+        <div
+          class="flex items-center justify-between text-xs text-amber-600 dark:text-amber-400 mt-1"
+        >
+          <span>Pendientes:</span>
+          <span class="font-semibold">{{ pendingInvitations }}</span>
+        </div>
       }
     </div>
   </div>

@@ -105,27 +105,42 @@ export class TruncatePipe implements PipeTransform {
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
 
-        <!-- Title Field -->
-        <div class="space-y-2">
-          <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Título <span class="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="title"
-            formControlName="title"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-            [class.border-red-500]="
-              taskForm.get('title')?.invalid && taskForm.get('title')?.touched
-            "
-            placeholder="Ingresa el título de la tarea"
-          />
-          <p
-            *ngIf="taskForm.get('title')?.invalid && taskForm.get('title')?.touched"
-            class="text-red-500 text-sm"
-          >
-            El título es requerido y debe tener al menos 3 caracteres.
-          </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Item (jerarquía) -->
+          <div class="space-y-2">
+            <label for="item" class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Item</label
+            >
+            <input
+              type="text"
+              id="item"
+              formControlName="item"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500"
+              placeholder="Ej: 1.2, 3.1"
+            />
+          </div>
+          <!-- Título (Entregable) -->
+          <div class="space-y-2 md:col-span-1">
+            <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Entregable / Título <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="title"
+              formControlName="title"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              [class.border-red-500]="
+                taskForm.get('title')?.invalid && taskForm.get('title')?.touched
+              "
+              placeholder="Descripción del entregable"
+            />
+            <p
+              *ngIf="taskForm.get('title')?.invalid && taskForm.get('title')?.touched"
+              class="text-red-500 text-sm"
+            >
+              El título es requerido y debe tener al menos 3 caracteres.
+            </p>
+          </div>
         </div>
 
         <!-- Description Field -->
@@ -213,6 +228,20 @@ export class TruncatePipe implements PipeTransform {
             ></p-select>
           </div>
 
+          <!-- Ejecutor (texto libre) -->
+          <div class="space-y-2">
+            <label for="ejecutor" class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Ejecute</label
+            >
+            <input
+              type="text"
+              id="ejecutor"
+              formControlName="ejecutor"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500"
+              placeholder="Ej: SERGIO, AXEL Y CRISTHIAN"
+            />
+          </div>
+
           <!-- Assigned To Field -->
           <div class="space-y-2">
             <label
@@ -240,6 +269,38 @@ export class TruncatePipe implements PipeTransform {
               Debes seleccionar un usuario.
             </p>
           </div>
+        </div>
+
+        <!-- Proveedor responsable -->
+        <div class="space-y-2">
+          <label
+            for="proveedorResponsable"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >Proveedor responsable</label
+          >
+          <input
+            type="text"
+            id="proveedorResponsable"
+            formControlName="proveedorResponsable"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500"
+            placeholder="Proveedor externo (opcional)"
+          />
+        </div>
+
+        <!-- Conclusiones -->
+        <div class="space-y-2">
+          <label
+            for="conclusiones"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >Conclusiones</label
+          >
+          <textarea
+            id="conclusiones"
+            formControlName="conclusiones"
+            rows="2"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500"
+            placeholder="Notas o conclusiones sobre la tarea"
+          ></textarea>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -278,11 +339,29 @@ export class TruncatePipe implements PipeTransform {
             </p-select>
           </div>
 
-          <!-- Due Date Field -->
+          <!-- Fecha de Inicio -->
           <div class="space-y-2">
-            <label for="dueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Fecha y Hora Límite
-            </label>
+            <label
+              for="startDate"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Fecha de inicio</label
+            >
+            <p-datePicker
+              id="startDate"
+              formControlName="startDate"
+              placeholder="dd/mm/aaaa"
+              dateFormat="dd/mm/yy"
+              styleClass="w-full"
+              [showIcon]="true"
+              [appendTo]="'body'"
+            ></p-datePicker>
+          </div>
+
+          <!-- Fecha de finalización -->
+          <div class="space-y-2">
+            <label for="dueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Fecha de finalización</label
+            >
             <p-datePicker
               id="dueDate"
               formControlName="dueDate"
@@ -296,6 +375,22 @@ export class TruncatePipe implements PipeTransform {
               [showButtonBar]="true"
               [appendTo]="'body'"
             ></p-datePicker>
+          </div>
+
+          <!-- % Avance -->
+          <div class="space-y-2">
+            <label for="progress" class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >% Avance</label
+            >
+            <input
+              type="number"
+              id="progress"
+              formControlName="progress"
+              min="0"
+              max="100"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="0-100"
+            />
           </div>
         </div>
 
@@ -721,6 +816,13 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
 
   @Input() task: Task | undefined;
   @Input() boardId?: string;
+  /** Si se pasa el tablero desde el padre, se usan sus miembros de inmediato para "Asignar a" */
+  @Input() set boardInput(value: Board | null | undefined) {
+    if (value) {
+      this.board.set(value);
+      this.extractUsersFromBoard(value);
+    }
+  }
   @Input() visible?: boolean;
   @Output() save = new EventEmitter<Task>();
   @Output() formCancel = new EventEmitter<void>();
@@ -764,52 +866,28 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
   ];
 
   /**
-   * Filtra los usuarios basándose en el board (owner, members, invitaciones aceptadas)
+   * Usuarios para "Asignar a": solo los del tablero (owner, members, invitaciones aceptadas)
    */
   public readonly users = computed(() => {
     const allUsersList = this.allUsers();
     const currentBoard = this.board();
-    const areaAllowedUserIds = this.areaUsers(); // Get filtered users by area
 
-    // Filter by Area first if selected
-    let filteredUsers = allUsersList;
-    if (areaAllowedUserIds) {
-      filteredUsers = filteredUsers.filter((u) => areaAllowedUserIds.includes(u.id));
+    // Si hay tablero, solo usuarios del tablero (no filtrar por área)
+    if (this.boardId && this.boardId !== 'all' && currentBoard) {
+      const allowedUserIds = new Set<string>();
+      if (currentBoard.owner?._id) allowedUserIds.add(currentBoard.owner._id);
+      if (currentBoard.members && Array.isArray(currentBoard.members)) {
+        currentBoard.members.forEach((m) => m._id && allowedUserIds.add(m._id));
+      }
+      if (currentBoard.invitations && Array.isArray(currentBoard.invitations)) {
+        currentBoard.invitations.forEach((inv) => {
+          if (inv.status === 'accepted' && inv.userId?._id) allowedUserIds.add(inv.userId._id);
+        });
+      }
+      return allUsersList.filter((u) => allowedUserIds.has(u._id || u.id));
     }
 
-    // Si no hay boardId o tablero cargado, mostrar usuarios filtrados (posiblemente solo por area)
-    if (!this.boardId || !currentBoard) {
-      return filteredUsers;
-    }
-
-    // Obtener IDs de usuarios permitidos del board
-    const allowedUserIds = new Set<string>();
-
-    // Agregar el owner
-    if (currentBoard.owner?._id) {
-      allowedUserIds.add(currentBoard.owner._id);
-    }
-
-    // Agregar los members
-    if (currentBoard.members && Array.isArray(currentBoard.members)) {
-      currentBoard.members.forEach((member) => {
-        if (member._id) {
-          allowedUserIds.add(member._id);
-        }
-      });
-    }
-
-    // Agregar usuarios con invitaciones aceptadas
-    if (currentBoard.invitations && Array.isArray(currentBoard.invitations)) {
-      currentBoard.invitations.forEach((invitation) => {
-        if (invitation.status === 'accepted' && invitation.userId?._id) {
-          allowedUserIds.add(invitation.userId._id);
-        }
-      });
-    }
-
-    // Filtrar usuarios que están en la lista permitida
-    return filteredUsers.filter((user) => allowedUserIds.has(user.id));
+    return allUsersList;
   });
 
   public readonly userOptions = computed(() => {
@@ -898,15 +976,21 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
    */
   private createForm(): FormGroup {
     return this.fb.group({
+      item: [''],
       title: ['', [Validators.required, Validators.minLength(3)]],
       description: [''],
+      ejecutor: [''],
+      proveedorResponsable: [''],
+      conclusiones: [''],
       status: ['Pendiente', Validators.required],
       priority: ['Media', Validators.required],
       assignedTo: ['', Validators.required],
+      startDate: [null],
       dueDate: [null],
+      progress: [null],
       tags: [''],
       projectId: [null],
-      areaId: [null], // Added
+      areaId: [null],
       incompleteReason: [''],
     });
   }
@@ -1060,18 +1144,28 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
           ? (this.task.areaId as { _id?: string })._id
           : this.task.areaId;
 
-      // Llenar con los datos de la tarea
+      const startDate = this.task.startDate
+        ? this.convertUTCDateToLocalDate(new Date(this.task.startDate))
+        : null;
+      const dueDate = this.task.dueDate
+        ? this.convertUTCDateToLocalDate(new Date(this.task.dueDate))
+        : null;
+
       this.taskForm.patchValue({
+        item: this.task.item || '',
         title: this.task.title,
         description: this.task.description,
+        ejecutor: this.task.ejecutor || '',
+        proveedorResponsable: this.task.proveedorResponsable || '',
+        conclusiones: this.task.conclusiones || '',
         status: this.task.status,
         priority: this.task.priority,
         assignedTo: assignedToId,
         projectId: projectId || null,
-        areaId: areaId || null, // Added
-        dueDate: this.task.dueDate
-          ? this.convertUTCDateToLocalDate(new Date(this.task.dueDate))
-          : null,
+        areaId: areaId || null,
+        startDate,
+        dueDate,
+        progress: this.task.progress ?? null,
         tags: Array.isArray(this.task.tags) ? this.task.tags.join(', ') : this.task.tags || '',
         incompleteReason: this.task.incompleteReason || '',
       });
@@ -1094,6 +1188,7 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
       this.taskForm.reset();
       this.taskForm.patchValue({
         status: 'Pendiente',
+        progress: null,
       });
       this.subtasks.set([]);
       this.existingAttachments.set([]);
@@ -1250,7 +1345,11 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
       });
     }
 
-    this.allUsers.set(users);
+    // No mostrar "Sistema" (system@momentum) como opción para asignar
+    const filtered = users.filter(
+      (u) => u._id !== 'system' && (u.email || '').toLowerCase() !== 'system@momentum',
+    );
+    this.allUsers.set(filtered.length > 0 ? filtered : users);
     this.usersLoading.set(false);
   }
 
@@ -1279,21 +1378,30 @@ export class NativeTaskFormComponent implements OnInit, OnChanges, OnDestroy {
       if (formValue.dueDate) {
         const dueDate =
           formValue.dueDate instanceof Date ? formValue.dueDate : new Date(formValue.dueDate);
-        // El objeto Date ya tiene la información de zona horaria correcta
-        // Simplemente usamos toISOString() que convierte correctamente de hora local a UTC
-        // No necesitamos extraer componentes manualmente porque eso causaría problemas de zona horaria
         normalizedDueDate = dueDate;
+      }
+      let normalizedStartDate: Date | undefined;
+      if (formValue.startDate) {
+        const startDate =
+          formValue.startDate instanceof Date ? formValue.startDate : new Date(formValue.startDate);
+        normalizedStartDate = startDate;
       }
 
       const taskData: Record<string, unknown> = {
         ...formValue,
-        // Solo agregar createdBy si es una nueva tarea
+        item: formValue.item?.trim() || undefined,
+        ejecutor: formValue.ejecutor?.trim() || undefined,
+        proveedorResponsable: formValue.proveedorResponsable?.trim() || undefined,
+        conclusiones: formValue.conclusiones?.trim() || undefined,
         ...(this.isEditing() ? {} : { createdBy: currentUser.id }),
-        // Solo agregar boardId si es un ID real de MongoDB (no "all", que es el filtro de Agenda)
         ...(this.boardId && this.boardId !== 'all' ? { boardId: this.boardId } : {}),
-        // Agregar projectId si está disponible
         ...(formValue.projectId ? { projectId: formValue.projectId } : {}),
+        startDate: normalizedStartDate ? normalizedStartDate.toISOString() : undefined,
         dueDate: normalizedDueDate ? normalizedDueDate.toISOString() : undefined,
+        progress:
+          formValue.progress != null && formValue.progress !== ''
+            ? Number(formValue.progress)
+            : undefined,
         tags: formValue.tags
           ? formValue.tags
               .split(',')
