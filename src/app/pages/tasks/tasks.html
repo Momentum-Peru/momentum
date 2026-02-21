@@ -1,56 +1,104 @@
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 sm:p-8 mt-4 lg:mt-0">
-  <!-- Header -->
-
-
-  <!-- Lista de Tableros - Visible solo cuando NO hay un tablero seleccionado (ruta /tasks) -->
+  <!-- Lista de Tableros - Visible cuando NO hay un tablero seleccionado (ruta /tasks) -->
   @if (!selectedBoard()) {
-  <div class="mb-8">
-    <app-board-list
-      [boards]="boardsService.boards()"
-      [loading]="boardsService.loading()"
-      [error]="boardsService.error()"
-      [currentUserId]="currentUserId()"
-      [selectedBoardId]="undefined"
-      (createBoard)="openBoardForm()"
-      (viewBoard)="onViewBoard($any($event))"
-      (editBoard)="openBoardFormFromList($any($event))"
-      (inviteUser)="openBoardInviteFromList($any($event))"
-      (deleteBoard)="confirmDeleteBoard($any($event))"
-      (changeColor)="onBoardColorChange($event)"
-    ></app-board-list>
-  </div>
+    <div class="mb-8">
+      <!-- Opción: Ver todas las tareas (vista consolidada) -->
+      <div class="mb-6">
+        <button
+          type="button"
+          (click)="onViewAllTasks()"
+          class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all text-left group"
+        >
+          <div
+            class="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50"
+          >
+            <i class="pi pi-list text-blue-600 dark:text-blue-400 text-xl"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-gray-900 dark:text-white">Todas las tareas</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              Ver todas las tareas en una sola vista
+            </p>
+          </div>
+          <i class="pi pi-chevron-right text-gray-400 group-hover:text-blue-500"></i>
+        </button>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Mis tableros</h2>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            pButton
+            icon="pi pi-envelope"
+            [label]="
+              pendingInvitationsCount() > 0
+                ? 'Invitaciones (' + pendingInvitationsCount() + ')'
+                : 'Invitaciones'
+            "
+            class="p-button-outlined p-button-secondary"
+            (click)="openBoardInvitations()"
+            pTooltip="Ver invitaciones pendientes a tableros"
+          ></button>
+          <button
+            type="button"
+            pButton
+            icon="pi pi-plus"
+            label="Crear tablero"
+            class="p-button-primary"
+            (click)="openBoardForm()"
+          ></button>
+        </div>
+      </div>
+      <app-board-list
+        [boards]="boardsService.boards()"
+        [loading]="boardsService.loading()"
+        [error]="boardsService.error()"
+        [currentUserId]="currentUserId()"
+        [selectedBoardId]="undefined"
+        (createBoard)="openBoardForm()"
+        (viewBoard)="onViewBoard($any($event))"
+        (editBoard)="openBoardFormFromList($any($event))"
+        (inviteUser)="openBoardInviteFromList($any($event))"
+        (deleteBoard)="confirmDeleteBoard($any($event))"
+        (changeColor)="onBoardColorChange($event)"
+      ></app-board-list>
+    </div>
   }
 
   <!-- Vista de Tablero con Tareas - Visible solo cuando hay un tablero seleccionado (ruta /tasks/:boardId) -->
   @if (selectedBoard()) {
-  <div data-board-view>
-    <app-board-view
-      [board]="selectedBoard()!"
-      [isOwner]="isBoardOwner()"
-      [tasksByStatus]="tasksByStatus()"
-      [taskStats]="taskStats()"
-      [loading]="tasksService.loading()"
-      [availableUsers]="availableUsers()"
-      [availableTags]="availableTags()"
-      [availableAreas]="availableAreas()"
-      [availableUsersObjects]="availableUsersAsObjects()"
-      [currentUserId]="currentUserId()"
-      [currentUser]="currentUserObject()"
-      (back)="onBackToBoards()"
-      (edit)="openBoardForm(selectedBoard()!)"
-      (invite)="openBoardInvite()"
-      (refresh)="onRefreshBoard()"
-      (taskStatusChanged)="onTaskStatusChanged($event)"
-      (editTask)="openTaskForm($event)"
-      (deleteTask)="confirmDeleteTask($event)"
-      (viewTask)="viewTaskDetails($event)"
-      (createTask)="openTaskForm()"
-      (quickCreateTask)="onQuickCreateTask($event)"
-      (filtersChanged)="onFiltersChanged($event)"
-      (removeMember)="onRemoveMember($event)"
-      (leaveBoard)="onLeaveBoard($event)"
-    ></app-board-view>
-  </div>
+    <div data-board-view>
+      <app-board-view
+        [board]="selectedBoard()!"
+        [isOwner]="isBoardOwner()"
+        [canInvite]="canInviteToBoard()"
+        [pendingInvitationsCount]="pendingInvitationsCount()"
+        [tasksByStatus]="tasksByStatus()"
+        [taskStats]="taskStats()"
+        [loading]="tasksService.loading()"
+        [availableUsers]="availableUsers()"
+        [availableTags]="availableTags()"
+        [availableUsersObjects]="availableUsersAsObjects()"
+        [currentUserId]="currentUserId()"
+        [currentUser]="currentUserObject()"
+        (back)="onBackToBoards()"
+        (edit)="openBoardForm(selectedBoard()!)"
+        (invite)="openBoardInvite()"
+        (openInvitations)="openBoardInvitations()"
+        (refresh)="onRefreshBoard()"
+        (taskStatusChanged)="onTaskStatusChanged($event)"
+        (taskFieldUpdated)="onTaskFieldUpdated($event)"
+        (editTask)="openTaskForm($event)"
+        (deleteTask)="confirmDeleteTask($event)"
+        (viewTask)="viewTaskDetails($event)"
+        (createTask)="openTaskForm()"
+        (quickCreateTask)="onQuickCreateTask($event)"
+        (filtersChanged)="onFiltersChanged($event)"
+        (removeMember)="onRemoveMember($event)"
+        (leaveBoard)="onLeaveBoard($event)"
+      ></app-board-view>
+    </div>
   }
 </div>
 
@@ -82,13 +130,13 @@
   header="Invitar Usuario al Tablero"
 >
   @if (invitingBoardFromList() || selectedBoard()) {
-  <app-board-invite
-    [boardId]="(invitingBoardFromList() || selectedBoard())!._id"
-    [loading]="boardInviteLoading"
-    [existingMemberIds]="existingMemberIds()"
-    (invite)="onInviteUser($event)"
-    (cancelled)="closeBoardInvite()"
-  ></app-board-invite>
+    <app-board-invite
+      [boardId]="(invitingBoardFromList() || selectedBoard())!._id"
+      [loading]="boardInviteLoading"
+      [existingMemberIds]="existingMemberIds()"
+      (invite)="onInviteUser($event)"
+      (cancelled)="closeBoardInvite()"
+    ></app-board-invite>
   }
 </p-dialog>
 
@@ -104,6 +152,7 @@
   <app-native-task-form
     [task]="selectedTask() || undefined"
     [boardId]="selectedBoard()?._id"
+    [boardInput]="selectedBoard() ?? null"
     [visible]="showTaskForm()"
     (save)="onTaskSave()"
     (formCancel)="closeTaskForm()"
@@ -127,7 +176,7 @@
 <p-dialog
   [modal]="true"
   [visible]="showBoardInvitations()"
-  (visibleChange)="showBoardInvitations.set($event)"
+  (visibleChange)="onBoardInvitationsVisibleChange($event)"
   [style]="{ width: '90vw', maxWidth: '1200px' }"
   [closable]="true"
   [maximizable]="true"
