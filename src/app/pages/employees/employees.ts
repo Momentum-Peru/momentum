@@ -119,8 +119,9 @@ export class EmployeesPage implements OnInit {
         this.items.set(data);
         this.loading.set(false);
       },
-      error: () => {
-        this.toastError('Error al cargar empleados');
+      error: (error) => {
+        const errorMessage = this.getErrorMessage(error);
+        this.toastError(errorMessage);
         this.loading.set(false);
       },
     });
@@ -258,8 +259,8 @@ export class EmployeesPage implements OnInit {
             this.load();
           },
           error: (err) => {
-            const message = err.error?.message || 'Error al eliminar el empleado';
-            this.toastError(message);
+            const errorMessage = this.getErrorMessage(err);
+            this.toastError(errorMessage);
             this.loading.set(false);
           },
         });
@@ -293,5 +294,68 @@ export class EmployeesPage implements OnInit {
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
     const lowerUrl = url.toLowerCase();
     return imageExtensions.some((ext) => lowerUrl.includes(ext));
+  }
+
+  /**
+   * Extrae el mensaje de error del backend
+   */
+  private getErrorMessage(error: unknown): string {
+    // Manejar HttpErrorResponse de Angular
+    if (error && typeof error === 'object' && 'error' in error) {
+      const httpError = error as {
+        error?:
+          | {
+              message?: string | string[];
+              statusCode?: number;
+              error?: string;
+            }
+          | string;
+        message?: string;
+        status?: number;
+      };
+
+      // Si error.error es un objeto con message
+      if (httpError.error && typeof httpError.error === 'object' && 'message' in httpError.error) {
+        const message = httpError.error.message;
+        if (Array.isArray(message)) {
+          return message.join(', ');
+        }
+        if (typeof message === 'string') {
+          return message;
+        }
+      }
+
+      // Si error.error es directamente un string
+      if (typeof httpError.error === 'string') {
+        return httpError.error;
+      }
+
+      // Manejar mensaje directo en el nivel superior
+      if (httpError.message && typeof httpError.message === 'string') {
+        return httpError.message;
+      }
+
+      // Manejar error anidado (error.error.error)
+      if (
+        httpError.error &&
+        typeof httpError.error === 'object' &&
+        'error' in httpError.error &&
+        typeof httpError.error.error === 'string'
+      ) {
+        return httpError.error.error;
+      }
+    }
+
+    // Manejar error con propiedad message directa
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
+      return error.message;
+    }
+
+    return 'Error al cargar empleados';
   }
 }

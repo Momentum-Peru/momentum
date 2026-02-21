@@ -43,15 +43,27 @@ export interface TaskSubtask {
 
 export interface Task {
   _id: string;
+  /** Ítem jerárquico (ej: 1.2, 3.1) */
+  item?: string;
   title: string;
   description?: string;
+  /** Responsable(s) de ejecución (texto, ej: "SERGIO", "AXEL Y CRISTHIAN") */
+  ejecutor?: string;
+  /** Proveedor externo responsable */
+  proveedorResponsable?: string;
+  /** Conclusiones o notas */
+  conclusiones?: string;
   status: TaskStatus;
   priority: 'Baja' | 'Media' | 'Alta' | 'Crítica';
   assignedTo: string | { _id?: string; name?: string; email?: string; profilePicture?: string }; // User ID o objeto poblado
   assignedToName?: string; // User name for display
   createdBy: string | { _id?: string; name?: string; email?: string; profilePicture?: string }; // User ID o objeto poblado
   createdByName?: string; // User name for display
+  startDate?: Date | string;
   dueDate?: Date | string;
+  completedDate?: Date | string;
+  /** Porcentaje de avance 0-100 */
+  progress?: number;
   tags: string[];
   boardId?: string | { _id?: string; title?: string }; // Board ID (opcional) o objeto poblado
   areaId?: string | { _id?: string; nombre?: string }; // Area ID o objeto poblado
@@ -67,13 +79,19 @@ export interface Task {
 }
 
 export interface CreateTaskRequest {
+  item?: string;
   title: string;
   description?: string;
+  ejecutor?: string;
+  proveedorResponsable?: string;
+  conclusiones?: string;
   status?: TaskStatus;
   priority?: 'Baja' | 'Media' | 'Alta' | 'Crítica';
   assignedTo: string;
   createdBy: string;
+  startDate?: Date | string;
   dueDate?: Date | string;
+  progress?: number;
   tags?: string[];
   boardId?: string;
   areaId?: string;
@@ -84,12 +102,19 @@ export interface CreateTaskRequest {
 }
 
 export interface UpdateTaskRequest {
+  item?: string;
   title?: string;
   description?: string;
+  ejecutor?: string;
+  proveedorResponsable?: string;
+  conclusiones?: string;
   status?: TaskStatus;
   priority?: 'Baja' | 'Media' | 'Alta' | 'Crítica';
   assignedTo?: string;
+  startDate?: Date | string;
   dueDate?: Date | string;
+  completedDate?: Date | string;
+  progress?: number;
   tags?: string[];
   boardId?: string;
   projectId?: string;

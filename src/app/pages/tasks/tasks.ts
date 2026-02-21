@@ -1,4 +1,15 @@
-import { Component, OnInit, AfterViewInit, inject, signal, computed, effect, ViewChildren, QueryList, ElementRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  AfterViewInit,
+  inject,
+  signal,
+  computed,
+  effect,
+  ViewChildren,
+  QueryList,
+  ElementRef,
+} from '@angular/core';
 import { BoardCardComponent } from './components/board-card/board-card';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -43,7 +54,8 @@ import {
   Task,
   DragDropEvent,
   TasksSearchParams,
-  CreateTaskRequest
+  CreateTaskRequest,
+  UpdateTaskRequest,
 } from '../../shared/interfaces/task.interface';
 import { Area } from '../../shared/interfaces/area.interface'; // Added
 
@@ -134,27 +146,14 @@ export class TasksPage implements OnInit, AfterViewInit {
       name: authUser.name,
       email: authUser.email,
       role: authUser.role,
-      profilePicture: authUser.profilePicture
+      profilePicture: authUser.profilePicture,
     } as unknown as User;
   });
 
-  public onQuickCreateTask(data: { title: string, assignedTo: string, dueDate?: Date, areaId?: string }): void {
+  public onQuickCreateTask(data: { title: string; assignedTo: string; dueDate?: Date }): void {
     const board = this.selectedBoard();
     const currentUser = this.currentUserObject();
     if (!board || !currentUser) return;
-
-    let areaId: string | undefined = data.areaId;
-
-    if (!areaId) {
-      const boardArea = board.areaId;
-      if (boardArea) {
-        if (typeof boardArea === 'string') {
-          areaId = boardArea;
-        } else if (typeof boardArea === 'object' && '_id' in boardArea) {
-          areaId = (boardArea as any)._id;
-        }
-      }
-    }
 
     const targetBoardId = board._id === 'all' ? undefined : board._id;
 
@@ -166,7 +165,6 @@ export class TasksPage implements OnInit, AfterViewInit {
       status: 'Pendiente',
       priority: 'Media',
       dueDate: data.dueDate,
-      areaId: areaId
     };
 
     this.tasksService.createTask(payload).subscribe({
@@ -174,7 +172,7 @@ export class TasksPage implements OnInit, AfterViewInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
-          detail: 'Actividad creada correctamente'
+          detail: 'Tarea creada correctamente',
         });
         this.extractTags();
       },
@@ -182,9 +180,9 @@ export class TasksPage implements OnInit, AfterViewInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo crear la actividad'
+          detail: 'No se pudo crear la tarea',
         });
-      }
+      },
     });
   }
 
@@ -194,91 +192,47 @@ export class TasksPage implements OnInit, AfterViewInit {
   });
 
   /**
-   * Usuarios disponibles para el filtro "asignado a"
-   * Solo incluye los usuarios que pertenecen al tablero actual (owner + members)
-   * Y filtra por área si hay una seleccionada
+   * Usuarios disponibles para filtro "asignado a" y asignación: solo los del tablero (owner + members)
    */
   public readonly availableUsers = computed<{ label: string; value: string }[]>(() => {
     const board = this.selectedBoard();
-    if (!board) {
-      return [];
-    }
+    if (!board) return [];
 
-    // Si estamos en "Agenda" (boardId='all'), usar allUsers
     if (board._id === 'all') {
       const users = this.allUsers();
-      const selectedAreaUserIds = this.areaUsers(); // If filtering by specific area
-      const allAreasUserIds = this.allAreaUsers(); // Users from ALL available areas
-
       return users
-        .filter(u => {
-          const userId = u._id || u.id;
-
-          // Si hay un área específica seleccionada, solo mostrar usuarios de esa área
-          if (selectedAreaUserIds && selectedAreaUserIds.length > 0) {
-            return selectedAreaUserIds.includes(userId);
-          }
-
-          // Si NO hay área seleccionada, mostrar usuarios de TODAS las áreas disponibles
-          if (allAreasUserIds && allAreasUserIds.length > 0) {
-            return allAreasUserIds.includes(userId);
-          }
-
-          // Fallback: mostrar todos
-          return true;
-        })
-        .map(u => ({
+        .map((u) => ({
           label: u.name || u.email || 'Sin nombre',
-          value: u._id || u.id
+          value: u._id || u.id,
         }))
-        .filter(u => u.value !== 'system');
+        .filter((u) => u.value && u.value !== 'system');
     }
 
     const uniqueMap = new Map<string, { label: string; value: string }>();
-    const allowedUserIds = this.areaUsers(); // If filtering by area
-
-    // Helper para procesar usuario
+    const isSystem = (id: string | undefined, email: string | undefined) =>
+      id === 'system' || (email || '').toLowerCase() === 'system@momentum';
     const processUser = (u: any) => {
       if (!u) return;
-
       let userId: string | undefined;
       let userData: any = u;
-
       if (typeof u === 'string') {
         userId = u;
-        userData = { _id: u, name: 'Sin nombre', email: '' }; // Minimal info
+        userData = { _id: u, name: 'Sin nombre', email: '' };
       } else if (typeof u === 'object') {
         userId = u._id || u.id;
       }
-
-      if (userId && !uniqueMap.has(userId)) {
-        // Filter logic:
-        // If allowedUserIds is present (area selected), check if user is in it.
-        if (allowedUserIds && !allowedUserIds.includes(userId)) {
-          return;
-        }
-
+      if (userId && !uniqueMap.has(userId) && !isSystem(userId, userData.email)) {
         uniqueMap.set(userId, {
           label: userData.name || userData.email || 'Sin nombre',
-          value: userId
+          value: userId,
         });
       }
     };
-
-    // Agregar el owner
-    if (board.owner) {
-      processUser(board.owner);
-    }
-
-    // Agregar los members
+    if (board.owner) processUser(board.owner);
     if (board.members && Array.isArray(board.members)) {
-      board.members.forEach((member) => {
-        processUser(member);
-      });
+      board.members.forEach((m) => processUser(m));
     }
-
-    // Filter out 'system' user
-    return Array.from(uniqueMap.values()).filter(u => u.value !== 'system');
+    return Array.from(uniqueMap.values());
   });
 
   /**
@@ -290,69 +244,44 @@ export class TasksPage implements OnInit, AfterViewInit {
       return [];
     }
 
-    // Si estamos en "Agenda", usar allUsers filtrados
+    const isSystemUser = (u: User) =>
+      (u._id || u.id) === 'system' || (u.email || '').toLowerCase() === 'system@momentum';
     if (board._id === 'all') {
-      const users = this.allUsers();
-      const selectedAreaUserIds = this.areaUsers();
-      const allAreasUserIds = this.allAreaUsers();
-
-      return users.filter(u => {
-        const userId = u._id || u.id;
-
-        if (selectedAreaUserIds && selectedAreaUserIds.length > 0) {
-          return selectedAreaUserIds.includes(userId);
-        }
-
-        if (allAreasUserIds && allAreasUserIds.length > 0) {
-          return allAreasUserIds.includes(userId);
-        }
-
-        return true;
-      }).filter(u => (u._id || u.id) !== 'system');
+      return this.allUsers().filter((u) => !isSystemUser(u));
     }
 
-    // Para boards normales, extraer usuarios del board
     const uniqueMap = new Map<string, User>();
-    const allowedUserIds = this.areaUsers();
-
     const processUser = (u: any) => {
       if (!u) return;
-
       let userId: string | undefined;
       let userData: any = u;
-
       if (typeof u === 'string') {
         userId = u;
         userData = { _id: u, id: u, name: 'Sin nombre', email: '', role: 'user' };
       } else if (typeof u === 'object') {
         userId = u._id || u.id;
       }
-
-      if (userId && !uniqueMap.has(userId)) {
-        if (allowedUserIds && !allowedUserIds.includes(userId)) {
-          return;
-        }
-
+      if (
+        userId &&
+        !uniqueMap.has(userId) &&
+        userId !== 'system' &&
+        (userData.email || '').toLowerCase() !== 'system@momentum'
+      ) {
         uniqueMap.set(userId, {
           _id: userId,
           id: userId,
           name: userData.name || userData.email || 'Sin nombre',
           email: userData.email || '',
           role: userData.role || 'user',
-          profilePicture: userData.profilePicture
+          profilePicture: userData.profilePicture,
         } as User);
       }
     };
-
-    if (board.owner) {
-      processUser(board.owner);
-    }
-
+    if (board.owner) processUser(board.owner);
     if (board.members && Array.isArray(board.members)) {
-      board.members.forEach(member => processUser(member));
+      board.members.forEach((m) => processUser(m));
     }
-
-    return Array.from(uniqueMap.values()).filter(u => u._id !== 'system' && u.id !== 'system');
+    return Array.from(uniqueMap.values());
   });
 
   /**
@@ -368,7 +297,9 @@ export class TasksPage implements OnInit, AfterViewInit {
     const boardId = this.selectedBoard()?._id;
 
     // Helper para obtener el ID del boardId (puede ser string o objeto populado)
-    const getBoardId = (boardIdValue: string | { _id?: string; title?: string } | undefined): string | undefined => {
+    const getBoardId = (
+      boardIdValue: string | { _id?: string; title?: string } | undefined,
+    ): string | undefined => {
       if (!boardIdValue) return undefined;
       if (typeof boardIdValue === 'string') return boardIdValue;
       if (typeof boardIdValue === 'object' && '_id' in boardIdValue) {
@@ -377,14 +308,15 @@ export class TasksPage implements OnInit, AfterViewInit {
       return undefined;
     };
 
-    const filteredTasks = boardId === 'all'
-      ? tasks
-      : boardId
-        ? tasks.filter((task) => {
-          const taskBoardId = getBoardId(task.boardId);
-          return taskBoardId === boardId;
-        })
-        : [];
+    const filteredTasks =
+      boardId === 'all'
+        ? tasks
+        : boardId
+          ? tasks.filter((task) => {
+              const taskBoardId = getBoardId(task.boardId);
+              return taskBoardId === boardId;
+            })
+          : [];
 
     return {
       pending: filteredTasks.filter((task) => task.status === 'Pendiente'),
@@ -398,7 +330,9 @@ export class TasksPage implements OnInit, AfterViewInit {
     const boardId = this.selectedBoard()?._id;
 
     // Helper para obtener el ID del boardId (puede ser string o objeto populado)
-    const getBoardId = (boardIdValue: string | { _id?: string; title?: string } | undefined): string | undefined => {
+    const getBoardId = (
+      boardIdValue: string | { _id?: string; title?: string } | undefined,
+    ): string | undefined => {
       if (!boardIdValue) return undefined;
       if (typeof boardIdValue === 'string') return boardIdValue;
       if (typeof boardIdValue === 'object' && '_id' in boardIdValue) {
@@ -407,14 +341,15 @@ export class TasksPage implements OnInit, AfterViewInit {
       return undefined;
     };
 
-    const filteredTasks = boardId === 'all'
-      ? tasks
-      : boardId
-        ? tasks.filter((task) => {
-          const taskBoardId = getBoardId(task.boardId);
-          return taskBoardId === boardId;
-        })
-        : [];
+    const filteredTasks =
+      boardId === 'all'
+        ? tasks
+        : boardId
+          ? tasks.filter((task) => {
+              const taskBoardId = getBoardId(task.boardId);
+              return taskBoardId === boardId;
+            })
+          : [];
 
     const now = new Date();
 
@@ -424,7 +359,7 @@ export class TasksPage implements OnInit, AfterViewInit {
       inProgress: filteredTasks.filter((task) => task.status === 'En curso').length,
       completed: filteredTasks.filter((task) => task.status === 'Terminada').length,
       overdue: filteredTasks.filter(
-        (task) => task.dueDate && new Date(task.dueDate) < now && task.status !== 'Terminada'
+        (task) => task.dueDate && new Date(task.dueDate) < now && task.status !== 'Terminada',
       ).length,
     };
   });
@@ -434,6 +369,16 @@ export class TasksPage implements OnInit, AfterViewInit {
     if (board && board._id === 'all') return false; // Virtual board has no owner actions
     const userId = this.currentUserId();
     return board && board.owner ? board.owner._id === userId : false;
+  });
+
+  /** Puede invitar al tablero: owner o miembro aceptado (según backend) */
+  public readonly canInviteToBoard = computed(() => {
+    const board = this.selectedBoard();
+    if (!board || board._id === 'all') return false;
+    const userId = this.currentUserId();
+    if (board.owner && board.owner._id === userId) return true;
+    const isMember = (board.members || []).some((m) => m._id === userId);
+    return isMember;
   });
 
   public readonly existingMemberIds = computed(() => {
@@ -496,49 +441,35 @@ export class TasksPage implements OnInit, AfterViewInit {
       if (rawBoardId) {
         const boardId = String(rawBoardId).trim();
 
-        if (boardId === 'all') { // Agenda
+        if (boardId === 'all') {
+          // Agenda
           this.selectedBoard.set(this.VIRTUAL_BOARD_ALL);
           this.loadBoardTasks('all');
           return;
         }
 
-        // Verificar primero si el tablero está en la lista local
-        const boardInList = this.boardsService.boards().find((b) => b._id === boardId);
-
-        if (boardInList) {
-          this.selectedBoard.set(boardInList);
-          this.loadBoardTasks(boardId);
-        } else {
-          // Si no está en la lista y no es 'all', intentar cargarlo desde el backend
-          if (boardId && boardId !== 'all') {
-            this.boardsService.getById(boardId).subscribe({
-              next: (board) => {
-                this.selectedBoard.set(board);
-                this.loadBoardTasks(boardId);
-              },
-              error: () => {
-                this.messageService.add({
-                  severity: 'error',
-                  summary: 'Error',
-                  detail: 'No tienes acceso a este tablero o no existe',
-                });
-                // Si no se puede cargar, volver a la lista
-                this.router.navigate(['/tasks'], { replaceUrl: true });
-                this.selectedBoard.set(null);
-              },
-            });
-          }
+        // Siempre cargar el tablero con getById para tener owner, members e invitations (para "Asignar a")
+        if (boardId && boardId !== 'all') {
+          this.boardsService.getById(boardId).subscribe({
+            next: (board) => {
+              this.selectedBoard.set(board);
+              this.loadBoardTasks(boardId);
+            },
+            error: () => {
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No tienes acceso a este tablero o no existe',
+              });
+              this.router.navigate(['/tasks'], { replaceUrl: true });
+              this.selectedBoard.set(null);
+            },
+          });
         }
       } else {
-        // Default to "Agenda" instead of clearing
-        if (!this.manuallyShowBoardList()) {
-          // Redirect to 'all' to ensure consistent URL and state
-          this.selectedBoard.set(this.VIRTUAL_BOARD_ALL);
-          this.loadBoardTasks('all');
-        } else {
-          this.selectedBoard.set(null);
-          this.tasksService.clearState();
-        }
+        // Sin boardId: mostrar lista de tableros
+        this.selectedBoard.set(null);
+        this.tasksService.clearState();
       }
     });
 
@@ -681,7 +612,7 @@ export class TasksPage implements OnInit, AfterViewInit {
       error: () => {
         console.error('Error loading areas');
         this.availableAreas.set([]);
-      }
+      },
     });
   }
 
@@ -696,7 +627,7 @@ export class TasksPage implements OnInit, AfterViewInit {
       error: () => {
         console.error('Error loading all users');
         this.allUsers.set([]);
-      }
+      },
     });
   }
 
@@ -720,11 +651,11 @@ export class TasksPage implements OnInit, AfterViewInit {
       return;
     }
 
-    areas.forEach(area => {
+    areas.forEach((area) => {
       if (area._id) {
         this.areasService.getAssignedUsers(area._id).subscribe({
           next: (users) => {
-            users.forEach(u => {
+            users.forEach((u) => {
               const userId = u._id || u.id;
               if (userId) {
                 userIdsSet.add(userId);
@@ -740,7 +671,7 @@ export class TasksPage implements OnInit, AfterViewInit {
             if (completedRequests === totalAreas) {
               this.allAreaUsers.set(Array.from(userIdsSet));
             }
-          }
+          },
         });
       } else {
         completedRequests++;
@@ -883,8 +814,12 @@ export class TasksPage implements OnInit, AfterViewInit {
    * Maneja la visualización de un tablero
    */
   public onViewBoard(board: Board): void {
-    // Navegar a la ruta del tablero
     this.router.navigate(['/tasks', board._id]);
+  }
+
+  /** Abre la vista consolidada "Todas las tareas" (/tasks/all) */
+  public onViewAllTasks(): void {
+    this.router.navigate(['/tasks', 'all']);
   }
 
   /**
@@ -927,6 +862,8 @@ export class TasksPage implements OnInit, AfterViewInit {
 
     if (boardId !== 'all') {
       searchParams.boardId = boardId;
+      // Mostrar todas las tareas del tablero (no filtrar por área)
+      delete searchParams.areaId;
       this.tasksService.getTasks(searchParams).subscribe(this.handleTasksResponse);
     } else {
       // Logic for 'Agenda' (all boards view)
@@ -944,7 +881,7 @@ export class TasksPage implements OnInit, AfterViewInit {
           // Check if areas are already loaded
           const currentAreas = this.availableAreas();
           if (currentAreas.length > 0) {
-            const myAreaIds = currentAreas.map(a => a._id).filter((id): id is string => !!id);
+            const myAreaIds = currentAreas.map((a) => a._id).filter((id): id is string => !!id);
             searchParams.areaId = myAreaIds.length > 0 ? myAreaIds : ['000000000000000000000000'];
             this.tasksService.getTasks(searchParams).subscribe(this.handleTasksResponse);
           } else {
@@ -952,18 +889,19 @@ export class TasksPage implements OnInit, AfterViewInit {
             this.areasService.listMine().subscribe({
               next: (areas) => {
                 this.availableAreas.set(areas);
-                const myAreaIds = areas.map(a => a._id).filter((id): id is string => !!id);
-                searchParams.areaId = myAreaIds.length > 0 ? myAreaIds : ['000000000000000000000000'];
+                const myAreaIds = areas.map((a) => a._id).filter((id): id is string => !!id);
+                searchParams.areaId =
+                  myAreaIds.length > 0 ? myAreaIds : ['000000000000000000000000'];
                 this.tasksService.getTasks(searchParams).subscribe(this.handleTasksResponse);
               },
               error: () => {
                 this.messageService.add({
                   severity: 'error',
                   summary: 'Error',
-                  detail: 'No se pudieron cargar sus áreas para filtrar actividades'
+                  detail: 'No se pudieron cargar sus áreas para filtrar tareas',
                 });
                 // Fallback? Show nothing or try loading without filter (might show nothing anyway if backend protected)
-              }
+              },
             });
           }
         }
@@ -990,27 +928,6 @@ export class TasksPage implements OnInit, AfterViewInit {
    */
   public onFiltersChanged(filters: TasksSearchParams): void {
     this.taskFilters.set(filters);
-
-    // Check if areaId changed to update user list
-    if (filters.areaId) {
-      // Handle potential array from multi-select
-      const areaId = Array.isArray(filters.areaId) ? filters.areaId[0] : filters.areaId;
-      if (areaId) {
-        this.areasService.getAssignedUsers(areaId).subscribe({
-          next: (users) => {
-            // users is object array usually, map to IDs
-            const userIds = users.map(u => u._id || u.id);
-            this.areaUsers.set(userIds);
-          },
-          error: () => {
-            this.areaUsers.set([]);
-          }
-        });
-      }
-    } else {
-      this.areaUsers.set(null);
-    }
-
     const board = this.selectedBoard();
     if (board) {
       this.loadBoardTasks(board._id, filters);
@@ -1133,10 +1050,19 @@ export class TasksPage implements OnInit, AfterViewInit {
   private deleteBoard(id: string): void {
     this.boardsService.delete(id).subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Tablero eliminado' });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Tablero eliminado',
+        });
         this.refreshBoards();
       },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar tablero' })
+      error: () =>
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al eliminar tablero',
+        }),
     });
   }
 
@@ -1170,8 +1096,8 @@ export class TasksPage implements OnInit, AfterViewInit {
 
   private readonly VIRTUAL_BOARD_ALL: Board = {
     _id: 'all',
-    title: 'Agenda',
-    description: 'Vista consolidada de todas las actividades asignadas',
+    title: 'Tareas',
+    description: 'Vista consolidada de todas las tareas asignadas',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     owner: {
@@ -1180,21 +1106,37 @@ export class TasksPage implements OnInit, AfterViewInit {
       email: 'system@momentum',
     },
     members: [],
-
   };
 
   public onTaskStatusChanged(event: DragDropEvent): void {
     this.tasksService.updateTaskStatus(event).subscribe({
+      next: () => {},
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar el estado de la tarea',
+        });
+      },
+    });
+  }
+
+  public onTaskFieldUpdated(event: { task: Task; updates: Partial<UpdateTaskRequest> }): void {
+    this.tasksService.updateTask(event.task._id, event.updates).subscribe({
       next: () => {
-        // Ya se actualiza por signal
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Guardado',
+          detail: 'Cambios guardados',
+        });
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo actualizar el estado de la actividad'
+          detail: 'No se pudieron guardar los cambios',
         });
-      }
+      },
     });
   }
 
@@ -1243,23 +1185,31 @@ export class TasksPage implements OnInit, AfterViewInit {
 
   public confirmDeleteTask(task: Task): void {
     this.confirmationService.confirm({
-      message: '¿Estás seguro de eliminar esta actividad?',
+      message: '¿Estás seguro de eliminar esta tarea?',
       header: 'Confirmar',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
         this.deleteTask(task._id);
-      }
+      },
     });
   }
 
   public deleteTask(taskId: string): void {
     this.tasksService.deleteTask(taskId).subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Actividad eliminada' });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Tarea eliminada',
+        });
       },
       error: () => {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar actividad' });
-      }
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al eliminar tarea',
+        });
+      },
     });
   }
 
@@ -1269,21 +1219,36 @@ export class TasksPage implements OnInit, AfterViewInit {
 
   public closeBoardInvitations(): void {
     this.showBoardInvitations.set(false);
-    this.loadPendingInvitations(); // Recargar contador
+    this.loadPendingInvitations();
+  }
+
+  public onBoardInvitationsVisibleChange(visible: boolean): void {
+    this.showBoardInvitations.set(visible);
+    if (!visible) {
+      this.loadPendingInvitations();
+    }
   }
 
   public onInvitationAccepted(event: any): void {
-    this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Invitación aceptada' });
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: 'Invitación aceptada',
+    });
     this.loadPendingInvitations();
     this.refreshBoards();
   }
 
   public onInvitationRejected(event: any): void {
-    this.messageService.add({ severity: 'info', summary: 'Información', detail: 'Invitación rechazada' });
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Información',
+      detail: 'Invitación rechazada',
+    });
     this.loadPendingInvitations();
   }
 
-  public onRemoveMember(event: { board: Board, memberId: string }): void {
+  public onRemoveMember(event: { board: Board; memberId: string }): void {
     this.confirmationService.confirm({
       message: '¿Estás seguro de eliminar a este miembro del tablero?',
       header: 'Confirmar',
@@ -1291,14 +1256,23 @@ export class TasksPage implements OnInit, AfterViewInit {
       accept: () => {
         this.boardsService.removeMember(event.board._id, event.memberId).subscribe({
           next: () => {
-            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Miembro eliminado' });
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Miembro eliminado',
+            });
             if (this.selectedBoard() && this.selectedBoard()!._id === event.board._id) {
               this.onRefreshBoard();
             }
           },
-          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar al miembro' })
+          error: () =>
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo eliminar al miembro',
+            }),
         });
-      }
+      },
     });
   }
 
@@ -1310,13 +1284,22 @@ export class TasksPage implements OnInit, AfterViewInit {
       accept: () => {
         this.boardsService.leaveBoard(board._id).subscribe({
           next: () => {
-            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Has abandonado el tablero' });
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Has abandonado el tablero',
+            });
             this.onBackToBoards();
             this.refreshBoards();
           },
-          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo abandonar el tablero' })
+          error: () =>
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo abandonar el tablero',
+            }),
         });
-      }
+      },
     });
   }
 
@@ -1332,8 +1315,8 @@ export class TasksPage implements OnInit, AfterViewInit {
   }
 
   equalizeHeaderHeights() {
-    // Implementación simplificada o vacía si no es crítica, 
-    // o restaurar si tengo el código. 
+    // Implementación simplificada o vacía si no es crítica,
+    // o restaurar si tengo el código.
     // Por ahora dejaré vacío para evitar errores si no tengo los refs exactos.
     // Wait, I saw the method calls in constructor.
   }
