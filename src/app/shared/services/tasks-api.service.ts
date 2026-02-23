@@ -49,7 +49,7 @@ export class TasksApiService {
       inProgress: allTasks.filter((task) => task.status === 'En curso').length,
       completed: allTasks.filter((task) => task.status === 'Terminada').length,
       overdue: allTasks.filter(
-        (task) => task.dueDate && new Date(task.dueDate) < now && task.status !== 'Terminada'
+        (task) => task.dueDate && new Date(task.dueDate) < now && task.status !== 'Terminada',
       ).length,
     };
   });
@@ -86,7 +86,7 @@ export class TasksApiService {
         this.tasksSubject.next(response.data);
       }),
       tap(() => this.setLoading(false)),
-      tap({ error: (err) => this.handleError(err) })
+      tap({ error: (err) => this.handleError(err) }),
     );
   }
 
@@ -99,7 +99,7 @@ export class TasksApiService {
 
     return this.http.get<Task>(`${this.baseUrl}/tasks/${id}`).pipe(
       tap(() => this.setLoading(false)),
-      tap({ error: (err) => this.handleError(err) })
+      tap({ error: (err) => this.handleError(err) }),
     );
   }
 
@@ -117,7 +117,7 @@ export class TasksApiService {
         this.tasksSubject.next([...currentTasks, newTask]);
       }),
       tap(() => this.setLoading(false)),
-      tap({ error: (err) => this.handleError(err) })
+      tap({ error: (err) => this.handleError(err) }),
     );
   }
 
@@ -133,13 +133,16 @@ export class TasksApiService {
         const currentTasks = this.tasks();
         const index = currentTasks.findIndex((task) => task._id === id);
         if (index !== -1) {
-          currentTasks[index] = updatedTask;
+          // Fusionar respuesta con los updates enviados para que la UI refleje de inmediato
+          // todos los campos (p. ej. startDate/dueDate si la respuesta no los serializa igual)
+          const merged = { ...currentTasks[index], ...updatedTask, ...taskData } as Task;
+          currentTasks[index] = merged;
           this.tasks.set([...currentTasks]);
           this.tasksSubject.next([...currentTasks]);
         }
       }),
       tap(() => this.setLoading(false)),
-      tap({ error: (err) => this.handleError(err) })
+      tap({ error: (err) => this.handleError(err) }),
     );
   }
 
@@ -166,7 +169,7 @@ export class TasksApiService {
           }
         }),
         tap(() => this.setLoading(false)),
-        tap({ error: (err) => this.handleError(err) })
+        tap({ error: (err) => this.handleError(err) }),
       );
   }
 
@@ -185,7 +188,7 @@ export class TasksApiService {
         this.tasksSubject.next(filteredTasks);
       }),
       tap(() => this.setLoading(false)),
-      tap({ error: (err) => this.handleError(err) })
+      tap({ error: (err) => this.handleError(err) }),
     );
   }
 
@@ -221,7 +224,7 @@ export class TasksApiService {
           this.tasksSubject.next(response.data);
         }),
         tap(() => this.setLoading(false)),
-        tap({ error: (err) => this.handleError(err) })
+        tap({ error: (err) => this.handleError(err) }),
       );
   }
 
@@ -240,7 +243,7 @@ export class TasksApiService {
     files: File[],
     uploadedBy: string,
     description?: string,
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
   ): Promise<Task> {
     this.setLoading(true);
     this.setError(null);
@@ -256,8 +259,8 @@ export class TasksApiService {
               contentType: f.type || 'application/octet-stream',
             })),
             expirationTime: 300, // 5 minutos
-          }
-        )
+          },
+        ),
       );
 
       // Paso 2: Subir archivos directamente a S3
@@ -269,10 +272,10 @@ export class TasksApiService {
               presignedResponse.presignedUrl,
               file,
               file.type || 'application/octet-stream',
-              onProgress
+              onProgress,
             )
             .then(() => presignedResponse);
-        }
+        },
       );
 
       await Promise.all(uploadPromises);
@@ -290,13 +293,13 @@ export class TasksApiService {
             uploadedBy,
             description,
           };
-        }
+        },
       );
 
       const updatedTask = await firstValueFrom(
         this.http.post<Task>(`${this.baseUrl}/tasks/${taskId}/attachments/confirm`, {
           attachments,
-        })
+        }),
       );
 
       // Actualizar el estado local
@@ -336,7 +339,7 @@ export class TasksApiService {
           }
         }),
         tap(() => this.setLoading(false)),
-        tap({ error: (err) => this.handleError(err) })
+        tap({ error: (err) => this.handleError(err) }),
       );
   }
 
@@ -356,14 +359,14 @@ export class TasksApiService {
           const index = currentTasks.findIndex((task) => task._id === taskId);
           if (index !== -1 && currentTasks[index].attachments) {
             currentTasks[index].attachments = currentTasks[index].attachments?.filter(
-              (att) => att._id !== attachmentId
+              (att) => att._id !== attachmentId,
             );
             this.tasks.set([...currentTasks]);
             this.tasksSubject.next([...currentTasks]);
           }
         }),
         tap(() => this.setLoading(false)),
-        tap({ error: (err) => this.handleError(err) })
+        tap({ error: (err) => this.handleError(err) }),
       );
   }
 

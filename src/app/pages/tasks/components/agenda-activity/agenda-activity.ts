@@ -209,27 +209,11 @@ import { User } from '../../../../shared/services/users-api.service';
                 <th class="p-3 text-center w-24">Acciones</th>
               </tr>
             </ng-template>
-            <ng-template pTemplate="body" let-task>
+            <ng-template pTemplate="body" let-task let-rowIndex="rowIndex">
               <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                <!-- Item -->
-                <td
-                  class="p-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50"
-                  (click)="startEdit(task, 'item', $event)"
-                  [class.ring-1]="isEditing(task, 'item')"
-                  [class.ring-blue-400]="isEditing(task, 'item')"
-                >
-                  <ng-container *ngIf="!isEditing(task, 'item')">{{
-                    task.item || '—'
-                  }}</ng-container>
-                  <input
-                    *ngIf="isEditing(task, 'item')"
-                    type="text"
-                    class="inline-edit-input w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-                    [(ngModel)]="editValue"
-                    (blur)="saveEdit(task, 'item')"
-                    (keydown.enter)="saveEdit(task, 'item')"
-                    (keydown.escape)="cancelEdit()"
-                  />
+                <!-- Item: 1, 2, 3 ascendente (no editable) -->
+                <td class="p-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ rowIndex + 1 }}
                 </td>
                 <!-- Entregables (title) -->
                 <td
@@ -450,110 +434,275 @@ import { User } from '../../../../shared/services/users-api.service';
         <div class="md:hidden">
           <div *ngIf="tasks().length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
             <div
-              *ngFor="let task of tasks()"
+              *ngFor="let task of tasks(); let i = index"
               class="p-4 bg-white dark:bg-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors"
             >
-              <div class="flex justify-between items-start mb-3">
-                <div class="flex-1">
-                  <span
-                    *ngIf="task.item"
-                    class="text-xs font-semibold text-gray-500 dark:text-gray-400 mr-2"
-                    >{{ task.item }}</span
+              <!-- Modo edición: mismos campos que la tabla (item no editable, se muestra 1 2 3 ascendente) -->
+              @if (isMobileEditing(task) && mobileEditDraft) {
+                <div class="space-y-3">
+                  <h4
+                    class="text-sm font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-2"
                   >
-                  <h4 class="font-semibold text-gray-900 dark:text-white leading-tight mb-1">
-                    {{ task.title }}
+                    <i class="pi pi-pencil"></i>
+                    Editar tarea
                   </h4>
+                  <div class="grid grid-cols-1 gap-3 text-sm">
+                    <div>
+                      <label class="text-[10px] uppercase font-bold text-gray-500 block mb-1"
+                        >Item</label
+                      >
+                      <span class="block py-2 text-gray-700 dark:text-gray-300 font-medium">{{
+                        i + 1
+                      }}</span>
+                    </div>
+                    <div>
+                      <label class="text-[10px] uppercase font-bold text-gray-500 block mb-1"
+                        >Entregables (título)</label
+                      >
+                      <input
+                        pInputText
+                        [(ngModel)]="mobileEditDraft.title"
+                        class="w-full !text-sm !py-2 !rounded-lg"
+                        placeholder="Título de la tarea"
+                      />
+                    </div>
+                    <div>
+                      <label class="text-[10px] uppercase font-bold text-gray-500 block mb-1"
+                        >Descripción</label
+                      >
+                      <textarea
+                        pInputText
+                        [(ngModel)]="mobileEditDraft.description"
+                        class="w-full !text-sm !py-2 !rounded-lg resize-none"
+                        rows="2"
+                        placeholder="Descripción opcional"
+                      ></textarea>
+                    </div>
+                    <div>
+                      <label class="text-[10px] uppercase font-bold text-gray-500 block mb-1"
+                        >Ejecute</label
+                      >
+                      <input
+                        pInputText
+                        [(ngModel)]="mobileEditDraft.ejecutor"
+                        class="w-full !text-sm !py-2 !rounded-lg"
+                        placeholder="Responsable que ejecuta"
+                      />
+                    </div>
+                    <div>
+                      <label class="text-[10px] uppercase font-bold text-gray-500 block mb-1"
+                        >Proveedor resp.</label
+                      >
+                      <input
+                        pInputText
+                        [(ngModel)]="mobileEditDraft.proveedorResponsable"
+                        class="w-full !text-sm !py-2 !rounded-lg"
+                        placeholder="Proveedor responsable"
+                      />
+                    </div>
+                    <div>
+                      <label class="text-[10px] uppercase font-bold text-gray-500 block mb-1"
+                        >Estatus</label
+                      >
+                      <p-select
+                        [(ngModel)]="mobileEditDraft.status"
+                        [options]="statusOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        styleClass="w-full !text-sm !py-2 !rounded-lg h-10"
+                        [appendTo]="'body'"
+                      ></p-select>
+                    </div>
+                    <div>
+                      <label class="text-[10px] uppercase font-bold text-gray-500 block mb-1"
+                        >% Avance</label
+                      >
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        [(ngModel)]="mobileEditDraft.progress"
+                        class="w-full text-sm py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
+                        placeholder="0-100"
+                      />
+                    </div>
+                    <div>
+                      <label class="text-[10px] uppercase font-bold text-gray-500 block mb-1"
+                        >Conclusiones</label
+                      >
+                      <textarea
+                        pInputText
+                        [(ngModel)]="mobileEditDraft.conclusiones"
+                        class="w-full !text-sm !py-2 !rounded-lg resize-none"
+                        rows="2"
+                        placeholder="Conclusiones o notas"
+                      ></textarea>
+                    </div>
+                    <div>
+                      <label class="text-[10px] uppercase font-bold text-gray-500 block mb-1"
+                        >F. Inicio</label
+                      >
+                      <p-datepicker
+                        [(ngModel)]="mobileEditDraft.startDate"
+                        dateFormat="dd/mm/yy"
+                        styleClass="w-full"
+                        inputStyleClass="w-full !text-sm !py-2 !rounded-lg"
+                        [showIcon]="true"
+                        [appendTo]="'body'"
+                      ></p-datepicker>
+                    </div>
+                    <div>
+                      <label class="text-[10px] uppercase font-bold text-gray-500 block mb-1"
+                        >F. Finalización</label
+                      >
+                      <p-datepicker
+                        [(ngModel)]="mobileEditDraft.dueDate"
+                        dateFormat="dd/mm/yy"
+                        styleClass="w-full"
+                        inputStyleClass="w-full !text-sm !py-2 !rounded-lg"
+                        [showIcon]="true"
+                        [appendTo]="'body'"
+                      ></p-datepicker>
+                    </div>
+                  </div>
                   <div
-                    *ngIf="task.description"
-                    class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2"
+                    class="flex items-center justify-end gap-2 pt-3 border-t border-gray-200 dark:border-gray-600"
                   >
-                    {{ task.description }}
+                    <button
+                      pButton
+                      label="Cancelar"
+                      class="p-button-sm p-button-text !text-xs"
+                      (click)="cancelMobileEdit()"
+                    ></button>
+                    <button
+                      pButton
+                      icon="pi pi-check"
+                      label="Guardar"
+                      class="p-button-sm !text-xs"
+                      (click)="saveMobileEdit(task)"
+                    ></button>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  (click)="toggleStatus(task)"
-                  class="flex-shrink-0 w-8 h-8 rounded border flex items-center justify-center"
-                  [class.bg-green-100]="task.status === 'Terminada'"
-                  [class.text-green-700]="task.status === 'Terminada'"
-                  [class.bg-red-50]="task.status !== 'Terminada'"
-                  [class.text-red-600]="task.status !== 'Terminada'"
-                >
-                  <i *ngIf="task.status === 'Terminada'" class="pi pi-check text-sm"></i>
-                  <i *ngIf="task.status !== 'Terminada'" class="pi pi-times text-sm"></i>
-                </button>
-              </div>
-
-              <div class="grid grid-cols-2 gap-y-2 gap-x-3 mb-4 text-xs">
-                <div>
-                  <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
-                    >Ejecute</span
-                  ><br /><span class="text-gray-700 dark:text-gray-300">{{
-                    task.ejecutor || getName(task.assignedTo) || '—'
-                  }}</span>
-                </div>
-                <div>
-                  <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
-                    >% Avance</span
-                  ><br /><span class="text-gray-700 dark:text-gray-300"
-                    >{{ task.progress ?? 0 }}%</span
+              } @else {
+                <!-- Vista lectura: item 1, 2, 3 ascendente (no editable) -->
+                <div class="flex justify-between items-start mb-3">
+                  <div class="flex-1">
+                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 mr-2"
+                      >#{{ i + 1 }}</span
+                    >
+                    <h4 class="font-semibold text-gray-900 dark:text-white leading-tight mb-1">
+                      {{ task.title }}
+                    </h4>
+                    <div
+                      *ngIf="task.description"
+                      class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2"
+                    >
+                      {{ task.description }}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="toggleStatus(task)"
+                    class="flex-shrink-0 w-8 h-8 rounded border flex items-center justify-center"
+                    [class.bg-green-100]="task.status === 'Terminada'"
+                    [class.text-green-700]="task.status === 'Terminada'"
+                    [class.bg-red-50]="task.status !== 'Terminada'"
+                    [class.text-red-600]="task.status !== 'Terminada'"
                   >
+                    <i *ngIf="task.status === 'Terminada'" class="pi pi-check text-sm"></i>
+                    <i *ngIf="task.status !== 'Terminada'" class="pi pi-times text-sm"></i>
+                  </button>
                 </div>
-                <div>
-                  <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
-                    >F. Inicio</span
-                  ><br /><span class="text-gray-600 dark:text-gray-400">{{
-                    task.startDate ? (task.startDate | date: 'dd/MM/yyyy') : '—'
-                  }}</span>
-                </div>
-                <div>
-                  <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
-                    >F. Finalización</span
-                  ><br /><span class="text-gray-600 dark:text-gray-400">{{
-                    task.dueDate ? (task.dueDate | date: 'dd/MM/yyyy') : '—'
-                  }}</span>
-                </div>
-                <div *ngIf="task.proveedorResponsable" class="col-span-2">
-                  <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
-                    >Proveedor resp.</span
-                  ><br /><span class="text-gray-700 dark:text-gray-300">{{
-                    task.proveedorResponsable
-                  }}</span>
-                </div>
-                <div *ngIf="task.conclusiones" class="col-span-2">
-                  <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
-                    >Conclusiones</span
-                  ><br /><span class="text-gray-600 dark:text-gray-400 line-clamp-2">{{
-                    task.conclusiones
-                  }}</span>
-                </div>
-                <div class="col-span-2">
-                  <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
-                    >Estado</span
-                  ><br /><p-select
-                    [ngModel]="task.status"
-                    (ngModelChange)="onStatusChange(task, $event)"
-                    [options]="statusOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    styleClass="text-[10px] w-full h-7 !border-gray-100 !bg-gray-50/50"
-                    [appendTo]="'body'"
-                  ></p-select>
-                </div>
-              </div>
 
-              <!-- Acciones Mobile -->
-              <div
-                class="flex items-center justify-end gap-2 pt-2 border-t border-gray-50 dark:border-gray-700/50"
-              >
-                <button
-                  pButton
-                  icon="pi pi-trash"
-                  label="Eliminar"
-                  class="p-button-sm p-button-outlined p-button-danger !text-xs !py-1 !px-3"
-                  (click)="confirmDelete(task, $event)"
-                ></button>
-              </div>
+                <div class="grid grid-cols-2 gap-y-2 gap-x-3 mb-4 text-xs">
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
+                      >Ejecute</span
+                    ><br /><span class="text-gray-700 dark:text-gray-300">{{
+                      task.ejecutor || getName(task.assignedTo) || '—'
+                    }}</span>
+                  </div>
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
+                      >% Avance</span
+                    ><br /><span class="text-gray-700 dark:text-gray-300"
+                      >{{ task.progress ?? 0 }}%</span
+                    >
+                  </div>
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
+                      >F. Inicio</span
+                    ><br /><span class="text-gray-600 dark:text-gray-400">{{
+                      task.startDate ? (task.startDate | date: 'dd/MM/yyyy') : '—'
+                    }}</span>
+                  </div>
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
+                      >F. Finalización</span
+                    ><br /><span class="text-gray-600 dark:text-gray-400">{{
+                      task.dueDate ? (task.dueDate | date: 'dd/MM/yyyy') : '—'
+                    }}</span>
+                  </div>
+                  <div *ngIf="task.proveedorResponsable" class="col-span-2">
+                    <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
+                      >Proveedor resp.</span
+                    ><br /><span class="text-gray-700 dark:text-gray-300">{{
+                      task.proveedorResponsable
+                    }}</span>
+                  </div>
+                  <div *ngIf="task.conclusiones" class="col-span-2">
+                    <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
+                      >Conclusiones</span
+                    ><br /><span class="text-gray-600 dark:text-gray-400 line-clamp-2">{{
+                      task.conclusiones
+                    }}</span>
+                  </div>
+                  <div class="col-span-2">
+                    <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
+                      >Estado</span
+                    ><br /><p-select
+                      [ngModel]="task.status"
+                      (ngModelChange)="onStatusChange(task, $event)"
+                      [options]="statusOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      styleClass="text-[10px] w-full h-7 !border-gray-100 !bg-gray-50/50"
+                      [appendTo]="'body'"
+                    ></p-select>
+                  </div>
+                </div>
+
+                <!-- Acciones Mobile -->
+                <div
+                  class="flex items-center justify-end gap-2 pt-2 border-t border-gray-50 dark:border-gray-700/50"
+                >
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    label="Ver"
+                    class="p-button-sm p-button-outlined p-button-info !text-xs !py-1 !px-3"
+                    (click)="viewTaskDetails(task)"
+                    pTooltip="Ver detalles"
+                    tooltipPosition="top"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-pencil"
+                    label="Editar"
+                    class="p-button-sm p-button-outlined p-button-warning !text-xs !py-1 !px-3"
+                    (click)="startMobileEdit(task)"
+                    pTooltip="Editar campos de la tabla"
+                    tooltipPosition="top"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    label="Eliminar"
+                    class="p-button-sm p-button-outlined p-button-danger !text-xs !py-1 !px-3"
+                    (click)="confirmDelete(task, $event)"
+                  ></button>
+                </div>
+              }
             </div>
           </div>
 
@@ -625,6 +774,21 @@ export class AgendaActivityComponent {
   editingTaskId: string | null = null;
   editingField: string | null = null;
   editValue: string | number | Date | null = null;
+
+  // Mobile card edit mode (mismos campos que la tabla)
+  mobileEditingTaskId: string | null = null;
+  mobileEditDraft: Partial<{
+    item: string;
+    title: string;
+    description: string;
+    ejecutor: string;
+    proveedorResponsable: string;
+    status: TaskStatus;
+    progress: number;
+    conclusiones: string;
+    startDate: Date | null;
+    dueDate: Date | null;
+  }> | null = null;
 
   // Form State
   newTaskTitle = '';
@@ -806,6 +970,61 @@ export class AgendaActivityComponent {
 
   editTaskDetails(task: Task) {
     this.taskUpdated.emit(task);
+  }
+
+  /** Entra en modo edición en la tarjeta móvil con los campos de la tabla */
+  startMobileEdit(task: Task) {
+    this.mobileEditingTaskId = task._id;
+    this.mobileEditDraft = {
+      item: task.item ?? '',
+      title: task.title ?? '',
+      description: task.description ?? '',
+      ejecutor: task.ejecutor ?? '',
+      proveedorResponsable: task.proveedorResponsable ?? '',
+      status: task.status,
+      progress: task.progress ?? 0,
+      conclusiones: task.conclusiones ?? '',
+      startDate: task.startDate ? new Date(task.startDate) : null,
+      dueDate: task.dueDate ? new Date(task.dueDate) : null,
+    };
+  }
+
+  /** Guarda la edición móvil y emite los cambios */
+  saveMobileEdit(task: Task) {
+    if (!this.mobileEditDraft || this.mobileEditingTaskId !== task._id) return;
+    const d = this.mobileEditDraft;
+    const updates: Partial<UpdateTaskRequest> = {};
+    // item no se envía: es 1, 2, 3 ascendente y no editable
+    if (d.title !== undefined) updates.title = d.title;
+    if (d.description !== undefined) updates.description = d.description;
+    if (d.ejecutor !== undefined) updates.ejecutor = d.ejecutor;
+    if (d.proveedorResponsable !== undefined) updates.proveedorResponsable = d.proveedorResponsable;
+    if (d.status !== undefined) updates.status = d.status;
+    if (d.progress !== undefined) updates.progress = Number(d.progress);
+    if (d.conclusiones !== undefined) updates.conclusiones = d.conclusiones;
+    if (d.startDate !== undefined)
+      updates.startDate = d.startDate
+        ? d.startDate instanceof Date
+          ? d.startDate.toISOString()
+          : new Date(d.startDate).toISOString()
+        : undefined;
+    if (d.dueDate !== undefined)
+      updates.dueDate = d.dueDate
+        ? d.dueDate instanceof Date
+          ? d.dueDate.toISOString()
+          : new Date(d.dueDate).toISOString()
+        : undefined;
+    this.taskFieldUpdated.emit({ task, updates });
+    this.cancelMobileEdit();
+  }
+
+  cancelMobileEdit() {
+    this.mobileEditingTaskId = null;
+    this.mobileEditDraft = null;
+  }
+
+  isMobileEditing(task: Task): boolean {
+    return this.mobileEditingTaskId === task._id;
   }
 
   confirmDelete(task: Task, event: Event) {
