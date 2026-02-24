@@ -3,7 +3,17 @@
   <p-confirmDialog></p-confirmDialog>
 
   <header class="page-header">
-    <h1 class="page-title">Registro de Caja Chica</h1>
+    <a routerLink="/petty-cash" class="back-link">
+      <i class="pi pi-arrow-left" aria-hidden="true"></i>
+      <span>Volver a cajas chicas</span>
+    </a>
+    <h1 class="page-title">
+      @if (boxName()) {
+        {{ boxName() }}
+      } @else {
+        Registro de Caja Chica
+      }
+    </h1>
   </header>
 
   <!-- Vista Administrador -->
@@ -28,28 +38,30 @@
           </div>
         </div>
       </div>
-      <div class="actions-row">
-        <button
-          pButton
-          type="button"
-          class="action-btn action-expense"
-          (click)="openExpenseDialog()"
-          aria-label="Registrar gasto"
-        >
-          <i class="pi pi-arrow-down-right" aria-hidden="true"></i>
-          <span>Registrar Gasto</span>
-        </button>
-        <button
-          pButton
-          type="button"
-          class="action-btn action-recharge"
-          (click)="openRechargeDialog()"
-          aria-label="Recargar caja"
-        >
-          <i class="pi pi-plus-circle" aria-hidden="true"></i>
-          <span>Recargar Caja</span>
-        </button>
-      </div>
+      @if (canEdit()) {
+        <div class="actions-row">
+          <button
+            pButton
+            type="button"
+            class="action-btn action-expense"
+            (click)="openExpenseDialog()"
+            aria-label="Registrar gasto"
+          >
+            <i class="pi pi-arrow-down-right" aria-hidden="true"></i>
+            <span>Registrar Gasto</span>
+          </button>
+          <button
+            pButton
+            type="button"
+            class="action-btn action-recharge"
+            (click)="openRechargeDialog()"
+            aria-label="Recargar caja"
+          >
+            <i class="pi pi-plus-circle" aria-hidden="true"></i>
+            <span>Recargar Caja</span>
+          </button>
+        </div>
+      }
     </div>
 
     <!-- Últimos movimientos (resumen) -->
@@ -94,7 +106,7 @@
               >
                 {{ formatAmount(m.type, m.amount) }}
               </span>
-              @if (m.status === 'active') {
+              @if (m.status === 'active' && canEdit()) {
                 <button
                   pButton
                   label="Anular"
@@ -125,23 +137,25 @@
         </h3>
         <p class="section-desc">Revisión de movimientos y comprobantes</p>
       </div>
-      <p-menu
-        #exportMenu
-        [model]="exportMenuItems"
-        [popup]="true"
-        [appendTo]="'body'"
-        styleClass="p-menu-sm"
-      ></p-menu>
-      <button
-        pButton
-        label="Exportar reporte"
-        icon="pi pi-download"
-        severity="success"
-        (click)="exportMenu.toggle($event)"
-        [disabled]="exportingReport()"
-        aria-label="Exportar reporte"
-        class="btn-export"
-      ></button>
+      @if (canEdit()) {
+        <p-menu
+          #exportMenu
+          [model]="exportMenuItems"
+          [popup]="true"
+          [appendTo]="'body'"
+          styleClass="p-menu-sm"
+        ></p-menu>
+        <button
+          pButton
+          label="Exportar reporte"
+          icon="pi pi-download"
+          severity="success"
+          (click)="exportMenu.toggle($event)"
+          [disabled]="exportingReport()"
+          aria-label="Exportar reporte"
+          class="btn-export"
+        ></button>
+      }
     </div>
     <div class="contador-grid">
       <!-- Columna izquierda: Gastos por categoría + Filtros -->
@@ -309,7 +323,7 @@
                   }
                 </td>
                 <td class="col-actions-cell">
-                  @if (row.status === 'active') {
+                  @if (row.status === 'active' && canEdit()) {
                     <button
                       pButton
                       label="Anular"
@@ -319,7 +333,7 @@
                       tooltipPosition="top"
                       aria-label="Anular movimiento"
                     ></button>
-                  } @else {
+                  } @else if (row.status !== 'active') {
                     <span class="text-muted text-xs">Anulado</span>
                   }
                 </td>
@@ -471,7 +485,7 @@
                         >
                           Acción
                         </div>
-                        @if (row.status === 'active') {
+                        @if (row.status === 'active' && canEdit()) {
                           <button
                             pButton
                             label="Anular"
@@ -479,7 +493,7 @@
                             class="p-button-text p-button-sm p-button-danger w-full justify-start"
                             (click)="confirmVoid(row)"
                           ></button>
-                        } @else {
+                        } @else if (row.status !== 'active') {
                           <span class="text-sm text-gray-500">Anulado</span>
                         }
                       </div>
