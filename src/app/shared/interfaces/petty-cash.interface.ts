@@ -3,6 +3,15 @@
  * Responsabilidad única: definir tipos de datos del dominio.
  */
 
+export interface PettyCashBox {
+  _id: string;
+  tenantId: string;
+  name: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PettyCashBalance {
   balance: number;
   currency: string;
@@ -59,6 +68,7 @@ export interface CreateRechargeRequest {
 }
 
 export interface MovementQueryParams {
+  boxId?: string;
   q?: string;
   type?: 'ingreso' | 'egreso';
   category?: string;

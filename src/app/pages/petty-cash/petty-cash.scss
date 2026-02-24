@@ -24,6 +24,20 @@
   }
 }
 
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--p-text-muted-color);
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+
+  &:hover {
+    color: var(--p-primary-color);
+  }
+}
+
 .page-title {
   margin: 0;
   font-size: 1.5rem;

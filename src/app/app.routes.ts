@@ -135,7 +135,8 @@ export const routes: Routes = [
       },
       {
         path: 'contacts',
-        loadComponent: () => import('./pages/contacts/contacts.component').then((m) => m.ContactsComponent),
+        loadComponent: () =>
+          import('./pages/contacts/contacts.component').then((m) => m.ContactsComponent),
       },
       {
         path: 'employees',
@@ -203,9 +204,22 @@ export const routes: Routes = [
       },
       {
         path: 'petty-cash',
-        loadComponent: () => import('./pages/petty-cash/petty-cash').then((m) => m.PettyCashPage),
-        canActivate: [MenuPermissionGuard],
-        data: { menuPermission: '/petty-cash' },
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/petty-cash/petty-cash-list').then((m) => m.PettyCashListPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/petty-cash' },
+          },
+          {
+            path: 'box/:boxId',
+            loadComponent: () =>
+              import('./pages/petty-cash/petty-cash').then((m) => m.PettyCashPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/petty-cash' },
+          },
+        ],
       },
       {
         path: 'face-recognition-register',
