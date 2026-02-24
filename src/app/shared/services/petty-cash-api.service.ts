@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  PettyCashBox,
   PettyCashBalance,
   PettyCashMovement,
   PettyCashPaginatedMovements,
@@ -23,23 +24,48 @@ export class PettyCashApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/petty-cash`;
 
-  getBalance(): Observable<PettyCashBalance> {
-    return this.http.get<PettyCashBalance>(`${this.baseUrl}/balance`);
+  getBoxes(): Observable<PettyCashBox[]> {
+    return this.http.get<PettyCashBox[]>(`${this.baseUrl}/boxes`);
   }
 
-  createExpense(dto: CreateExpenseRequest, createdBy: string): Observable<PettyCashMovement> {
-    const params = new HttpParams().set('createdBy', createdBy);
+  createBox(name: string): Observable<PettyCashBox> {
+    return this.http.post<PettyCashBox>(`${this.baseUrl}/boxes`, { name });
+  }
+
+  getBoxById(id: string): Observable<PettyCashBox> {
+    return this.http.get<PettyCashBox>(`${this.baseUrl}/boxes/${id}`);
+  }
+
+  getBalance(boxId?: string): Observable<PettyCashBalance> {
+    let params = new HttpParams();
+    if (boxId) params = params.set('boxId', boxId);
+    return this.http.get<PettyCashBalance>(`${this.baseUrl}/balance`, { params });
+  }
+
+  createExpense(
+    dto: CreateExpenseRequest,
+    createdBy: string,
+    boxId?: string,
+  ): Observable<PettyCashMovement> {
+    let params = new HttpParams().set('createdBy', createdBy);
+    if (boxId) params = params.set('boxId', boxId);
     return this.http.post<PettyCashMovement>(`${this.baseUrl}/movements/expense`, dto, { params });
   }
 
-  createRecharge(dto: CreateRechargeRequest, createdBy: string): Observable<PettyCashMovement> {
-    const params = new HttpParams().set('createdBy', createdBy);
+  createRecharge(
+    dto: CreateRechargeRequest,
+    createdBy: string,
+    boxId?: string,
+  ): Observable<PettyCashMovement> {
+    let params = new HttpParams().set('createdBy', createdBy);
+    if (boxId) params = params.set('boxId', boxId);
     return this.http.post<PettyCashMovement>(`${this.baseUrl}/movements/recharge`, dto, { params });
   }
 
   getMovements(params?: MovementQueryParams): Observable<PettyCashPaginatedMovements> {
     let httpParams = new HttpParams();
     if (params) {
+      if (params.boxId) httpParams = httpParams.set('boxId', params.boxId);
       if (params.q) httpParams = httpParams.set('q', params.q);
       if (params.type) httpParams = httpParams.set('type', params.type);
       if (params.category) httpParams = httpParams.set('category', params.category);
@@ -60,6 +86,7 @@ export class PettyCashApiService {
   getAudit(params?: MovementQueryParams): Observable<PettyCashPaginatedMovements> {
     let httpParams = new HttpParams();
     if (params) {
+      if (params.boxId) httpParams = httpParams.set('boxId', params.boxId);
       if (params.q) httpParams = httpParams.set('q', params.q);
       if (params.type) httpParams = httpParams.set('type', params.type);
       if (params.category) httpParams = httpParams.set('category', params.category);
@@ -80,6 +107,7 @@ export class PettyCashApiService {
   getMovementsPdf(params?: MovementQueryParams): Observable<Blob> {
     let httpParams = new HttpParams();
     if (params) {
+      if (params.boxId) httpParams = httpParams.set('boxId', params.boxId);
       if (params.q) httpParams = httpParams.set('q', params.q);
       if (params.type) httpParams = httpParams.set('type', params.type);
       if (params.category) httpParams = httpParams.set('category', params.category);
@@ -96,10 +124,15 @@ export class PettyCashApiService {
     });
   }
 
-  getStatsByCategory(dateFrom?: string, dateTo?: string): Observable<PettyCashCategoryStat[]> {
+  getStatsByCategory(
+    dateFrom?: string,
+    dateTo?: string,
+    boxId?: string,
+  ): Observable<PettyCashCategoryStat[]> {
     let httpParams = new HttpParams();
     if (dateFrom) httpParams = httpParams.set('dateFrom', dateFrom);
     if (dateTo) httpParams = httpParams.set('dateTo', dateTo);
+    if (boxId) httpParams = httpParams.set('boxId', boxId);
     return this.http.get<PettyCashCategoryStat[]>(`${this.baseUrl}/movements/stats-by-category`, {
       params: httpParams,
     });
