@@ -753,29 +753,14 @@ export class AgendaPage implements OnInit {
     return [created, ...serverList];
   }
 
-  /** Carga todos los usuarios del tenant (todas las páginas) para el selector. */
+  /** Carga todos los usuarios del tenant (todas las páginas) para el selector y "Asignar a". */
   loadUsers(): void {
     const tenantId = this.tenantService.tenantId();
-    if (this.isGerencia()) {
-      this.usersApi.listAll(tenantId ?? undefined).subscribe({
-        next: (opts) => this.userOptions.set(opts),
-        error: () => {},
-      });
-    } else {
-      // Para usuarios normales, iniciamos con el usuario actual.
-      // loadSharedWithMe agregará los compartidos.
-      const currentUser = this.authService.getCurrentUser();
-      if (currentUser) {
-        this.userOptions.set([
-          {
-            _id: currentUser.id,
-            name: currentUser.name,
-            email: currentUser.email,
-            role: currentUser.role,
-          },
-        ]);
-      }
-    }
+    // Todos los usuarios ven la lista completa del tenant en "Asignar a".
+    this.usersApi.listAll(tenantId ?? undefined).subscribe({
+      next: (opts) => this.userOptions.set(opts),
+      error: () => {},
+    });
   }
 
   openCreate(): void {
@@ -1281,8 +1266,8 @@ export class AgendaPage implements OnInit {
             summary: 'Asignar',
             detail:
               ok > 0
-                ? `Asignadas ${ok} nota(s). ${fail} no se pudieron asignar (solo el creador puede asignar).`
-                : 'No se pudo asignar (solo el creador de cada nota puede asignar).',
+                ? `Asignadas ${ok} nota(s). ${fail} no se pudieron asignar (sin permiso para asignar).`
+                : 'No se pudo asignar (sin permiso para asignar esa nota).',
           });
         }
       })
@@ -2284,18 +2269,6 @@ export class AgendaPage implements OnInit {
         role: u.role,
       }));
       this.sharedWithMe.set(options);
-
-      // Si no es gerencia, agregar estos usuarios a userOptions
-      if (!this.isGerencia()) {
-        const current = this.userOptions();
-        const newOptions = [...current];
-        options.forEach((opt) => {
-          if (!newOptions.some((o) => o._id === opt._id)) {
-            newOptions.push(opt);
-          }
-        });
-        this.userOptions.set(newOptions);
-      }
     });
   }
 
