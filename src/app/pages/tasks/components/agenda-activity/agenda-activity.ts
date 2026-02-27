@@ -141,6 +141,9 @@ import { User } from '../../../../shared/services/users-api.service';
               placeholder="Vencimiento"
               [minDate]="today"
               dateFormat="dd/mm/yy"
+              [showTime]="true"
+              [showSeconds]="false"
+              hourFormat="24"
               styleClass="w-full"
               inputStyleClass="w-full h-11 !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none text-sm"
               [appendTo]="'body'"
@@ -367,14 +370,18 @@ import { User } from '../../../../shared/services/users-api.service';
                   [class.ring-blue-400]="isEditing(task, 'startDate')"
                 >
                   <ng-container *ngIf="!isEditing(task, 'startDate')">{{
-                    task.startDate ? (task.startDate | date: 'dd/MM/yyyy') : '—'
+                    task.startDate ? (task.startDate | date: 'dd/MM/yyyy HH:mm') : '—'
                   }}</ng-container>
                   <p-datePicker
                     *ngIf="isEditing(task, 'startDate')"
                     [(ngModel)]="editValue"
                     dateFormat="dd/mm/yy"
+                    [showTime]="true"
+                    [showSeconds]="false"
+                    hourFormat="24"
                     styleClass="w-full text-sm"
                     [showIcon]="true"
+                    [showButtonBar]="true"
                     [appendTo]="'body'"
                     (ngModelChange)="saveDateEdit(task, 'startDate', $event)"
                     (onBlur)="saveDateEdit(task, 'startDate', editValue)"
@@ -389,17 +396,21 @@ import { User } from '../../../../shared/services/users-api.service';
                 >
                   <ng-container *ngIf="!isEditing(task, 'dueDate')">{{
                     task.dueDate
-                      ? (task.dueDate | date: 'dd/MM/yyyy')
+                      ? (task.dueDate | date: 'dd/MM/yyyy HH:mm')
                       : task.completedDate
-                        ? (task.completedDate | date: 'dd/MM/yyyy')
+                        ? (task.completedDate | date: 'dd/MM/yyyy HH:mm')
                         : '—'
                   }}</ng-container>
                   <p-datePicker
                     *ngIf="isEditing(task, 'dueDate')"
                     [(ngModel)]="editValue"
                     dateFormat="dd/mm/yy"
+                    [showTime]="true"
+                    [showSeconds]="false"
+                    hourFormat="24"
                     styleClass="w-full text-sm"
                     [showIcon]="true"
+                    [showButtonBar]="true"
                     [appendTo]="'body'"
                     (ngModelChange)="saveDateEdit(task, 'dueDate', $event)"
                     (onBlur)="saveDateEdit(task, 'dueDate', editValue)"
@@ -545,9 +556,13 @@ import { User } from '../../../../shared/services/users-api.service';
                       <p-datepicker
                         [(ngModel)]="mobileEditDraft.startDate"
                         dateFormat="dd/mm/yy"
+                        [showTime]="true"
+                        [showSeconds]="false"
+                        hourFormat="24"
                         styleClass="w-full"
                         inputStyleClass="w-full !text-sm !py-2 !rounded-lg"
                         [showIcon]="true"
+                        [showButtonBar]="true"
                         [appendTo]="'body'"
                       ></p-datepicker>
                     </div>
@@ -558,9 +573,13 @@ import { User } from '../../../../shared/services/users-api.service';
                       <p-datepicker
                         [(ngModel)]="mobileEditDraft.dueDate"
                         dateFormat="dd/mm/yy"
+                        [showTime]="true"
+                        [showSeconds]="false"
+                        hourFormat="24"
                         styleClass="w-full"
                         inputStyleClass="w-full !text-sm !py-2 !rounded-lg"
                         [showIcon]="true"
+                        [showButtonBar]="true"
                         [appendTo]="'body'"
                       ></p-datepicker>
                     </div>
@@ -633,14 +652,14 @@ import { User } from '../../../../shared/services/users-api.service';
                     <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
                       >F. Inicio</span
                     ><br /><span class="text-gray-600 dark:text-gray-400">{{
-                      task.startDate ? (task.startDate | date: 'dd/MM/yyyy') : '—'
+                      task.startDate ? (task.startDate | date: 'dd/MM/yyyy HH:mm') : '—'
                     }}</span>
                   </div>
                   <div>
                     <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
                       >F. Finalización</span
                     ><br /><span class="text-gray-600 dark:text-gray-400">{{
-                      task.dueDate ? (task.dueDate | date: 'dd/MM/yyyy') : '—'
+                      task.dueDate ? (task.dueDate | date: 'dd/MM/yyyy HH:mm') : '—'
                     }}</span>
                   </div>
                   <div *ngIf="task.proveedorResponsable" class="col-span-2">

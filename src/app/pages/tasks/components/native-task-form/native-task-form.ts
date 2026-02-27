@@ -349,10 +349,14 @@ export class TruncatePipe implements PipeTransform {
             <p-datePicker
               id="startDate"
               formControlName="startDate"
-              placeholder="dd/mm/aaaa"
+              placeholder="Selecciona fecha y hora"
               dateFormat="dd/mm/yy"
+              [showTime]="true"
+              [showSeconds]="false"
+              hourFormat="24"
               styleClass="w-full"
               [showIcon]="true"
+              [showButtonBar]="true"
               [appendTo]="'body'"
             ></p-datePicker>
           </div>

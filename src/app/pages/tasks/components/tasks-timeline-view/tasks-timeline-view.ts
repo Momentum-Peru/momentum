@@ -1,13 +1,30 @@
 import { Component, Input, Output, EventEmitter, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Task } from '../../../../shared/interfaces/task.interface';
+import { User } from '../../../../shared/services/users-api.service';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { ButtonModule } from 'primeng/button';
+import { AvatarModule } from 'primeng/avatar';
+import { TooltipModule } from 'primeng/tooltip';
 
 export type TimelineScale = 'day' | 'week' | 'month';
 
 @Component({
   selector: 'app-tasks-timeline-view',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    InputTextModule,
+    SelectModule,
+    DatePickerModule,
+    ButtonModule,
+    AvatarModule,
+    TooltipModule,
+  ],
   templateUrl: './tasks-timeline-view.html',
   styles: [
     `
@@ -22,9 +39,16 @@ export class TasksTimelineViewComponent {
   @Input() set tasks(value: Task[]) {
     this.tasksInput.set(value || []);
   }
+  @Input() members: User[] = [];
+  @Input() currentUser: User | null = null;
   @Output() viewTask = new EventEmitter<Task>();
+  @Output() taskCreated = new EventEmitter<{ title: string; assignedTo: string; dueDate?: Date }>();
 
   readonly tasksInput = signal<Task[]>([]);
+  newTaskTitle = '';
+  selectedAssignee: User | null = null;
+  selectedDueDate: Date | null = null;
+  today = new Date();
   readonly scale = signal<TimelineScale>('week');
   readonly viewStart = signal<Date>(this.getWeekStart(new Date()));
 
@@ -230,5 +254,28 @@ export class TasksTimelineViewComponent {
     if (typeof a === 'object' && a !== null && 'name' in a)
       return (a as { name?: string }).name || '—';
     return '—';
+  }
+
+  getInitials(name?: string): string {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  }
+
+  createTask(): void {
+    if (!this.newTaskTitle.trim() || !this.selectedAssignee) return;
+    this.taskCreated.emit({
+      title: this.newTaskTitle.trim(),
+      assignedTo:
+        this.selectedAssignee._id ?? (this.selectedAssignee as unknown as { id?: string }).id ?? '',
+      dueDate: this.selectedDueDate ?? undefined,
+    });
+    this.newTaskTitle = '';
+    this.selectedAssignee = null;
+    this.selectedDueDate = null;
   }
 }
