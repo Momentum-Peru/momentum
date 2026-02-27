@@ -18,6 +18,8 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { DialogModule } from 'primeng/dialog';
 import { AgendaActivityComponent } from '../agenda-activity/agenda-activity';
+import { TasksCalendarViewComponent } from '../tasks-calendar-view/tasks-calendar-view';
+import { TasksTimelineViewComponent } from '../tasks-timeline-view/tasks-timeline-view';
 import { User } from '../../../../shared/services/users-api.service';
 import { Board } from '../../../../shared/interfaces/board.interface';
 import {
@@ -45,6 +47,8 @@ import {
     MultiSelectModule,
     DialogModule,
     AgendaActivityComponent,
+    TasksCalendarViewComponent,
+    TasksTimelineViewComponent,
   ],
   templateUrl: './board-view.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -96,8 +100,8 @@ export class BoardViewComponent implements OnInit {
   }>();
   @Output() filtersChanged = new EventEmitter<TasksSearchParams>();
 
-  // Modo de vista
-  public readonly viewMode = signal<'kanban' | 'list'>('list');
+  // Modo de vista: Lista | Calendario | Cronograma (como en Jira)
+  public readonly viewMode = signal<'list' | 'calendar' | 'timeline'>('list');
   public readonly showMembersDialog = signal(false);
 
   // All Tasks Computed for Agenda View
@@ -188,10 +192,10 @@ export class BoardViewComponent implements OnInit {
   }
 
   /**
-   * Cambia el modo de vista
+   * Cambia el modo de vista (Lista, Calendario, Cronograma)
    */
-  public toggleViewMode(): void {
-    this.viewMode.set(this.viewMode() === 'kanban' ? 'list' : 'kanban');
+  public setViewMode(mode: 'list' | 'calendar' | 'timeline'): void {
+    this.viewMode.set(mode);
   }
 
   get pendingInvitations(): number {
