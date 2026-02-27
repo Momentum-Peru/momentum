@@ -118,21 +118,82 @@
     </div>
   </div>
 
-  <!-- Vista de lista de tareas -->
-  <div class="mt-2">
-    <app-agenda-activity
-      [tasks]="allTasks"
-      [board]="board"
-      [members]="boardUsers"
-      [currentUser]="currentUser"
-      (taskCreated)="quickCreateTask.emit($event)"
-      (taskUpdated)="editTask.emit($event)"
-      (taskDeleted)="onDeleteTask($event)"
-      (viewTask)="viewTask.emit($event)"
-      (statusChanged)="onStatusChanged($event)"
-      (taskFieldUpdated)="onTaskFieldUpdated($event)"
-    ></app-agenda-activity>
+  <!-- Pestañas de vista: Lista | Calendario | Cronograma (estilo Jira) -->
+  <div class="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+    <button
+      type="button"
+      class="px-4 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors -mb-px"
+      [class.border-orange-500]="viewMode() === 'list'"
+      [class.text-orange-600]="viewMode() === 'list'"
+      [class.border-transparent]="viewMode() !== 'list'"
+      [class.text-gray-500]="viewMode() !== 'list'"
+      [class.dark:text-gray-400]="viewMode() !== 'list'"
+      (click)="setViewMode('list')"
+    >
+      <i class="pi pi-list"></i>
+      Lista
+    </button>
+    <button
+      type="button"
+      class="px-4 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors -mb-px"
+      [class.border-orange-500]="viewMode() === 'calendar'"
+      [class.text-orange-600]="viewMode() === 'calendar'"
+      [class.border-transparent]="viewMode() !== 'calendar'"
+      [class.text-gray-500]="viewMode() !== 'calendar'"
+      [class.dark:text-gray-400]="viewMode() !== 'calendar'"
+      (click)="setViewMode('calendar')"
+    >
+      <i class="pi pi-calendar"></i>
+      Calendario
+    </button>
+    <button
+      type="button"
+      class="px-4 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors -mb-px"
+      [class.border-orange-500]="viewMode() === 'timeline'"
+      [class.text-orange-600]="viewMode() === 'timeline'"
+      [class.border-transparent]="viewMode() !== 'timeline'"
+      [class.text-gray-500]="viewMode() !== 'timeline'"
+      [class.dark:text-gray-400]="viewMode() !== 'timeline'"
+      (click)="setViewMode('timeline')"
+    >
+      <i class="pi pi-chart-line"></i>
+      Cronograma
+    </button>
   </div>
+
+  <!-- Vista Lista -->
+  @if (viewMode() === 'list') {
+    <div class="mt-2">
+      <app-agenda-activity
+        [tasks]="allTasks"
+        [board]="board"
+        [members]="boardUsers"
+        [currentUser]="currentUser"
+        (taskCreated)="quickCreateTask.emit($event)"
+        (taskUpdated)="editTask.emit($event)"
+        (taskDeleted)="onDeleteTask($event)"
+        (viewTask)="viewTask.emit($event)"
+        (statusChanged)="onStatusChanged($event)"
+        (taskFieldUpdated)="onTaskFieldUpdated($event)"
+      ></app-agenda-activity>
+    </div>
+  }
+
+  <!-- Vista Calendario -->
+  @if (viewMode() === 'calendar') {
+    <app-tasks-calendar-view
+      [tasks]="allTasks"
+      (viewTask)="viewTask.emit($event)"
+    ></app-tasks-calendar-view>
+  }
+
+  <!-- Vista Cronograma -->
+  @if (viewMode() === 'timeline') {
+    <app-tasks-timeline-view
+      [tasks]="allTasks"
+      (viewTask)="viewTask.emit($event)"
+    ></app-tasks-timeline-view>
+  }
 </div>
 
 <!-- Dialog de Detalles de Integrantes -->

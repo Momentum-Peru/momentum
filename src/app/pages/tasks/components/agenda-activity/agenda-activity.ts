@@ -202,7 +202,7 @@ import { User } from '../../../../shared/services/users-api.service';
                 <th class="p-3 min-w-[90px]">Ejecute</th>
                 <th class="p-3 min-w-[90px]">Proveedor resp.</th>
                 <th class="p-3 text-center w-20">Estatus</th>
-                <th class="p-3 text-center w-20">% Avance</th>
+                <th class="p-3 text-center w-20">Progreso</th>
                 <th class="p-3 min-w-[100px]">Conclusiones</th>
                 <th class="p-3 w-26">F. Inicio</th>
                 <th class="p-3 w-26">F. Finalización</th>
@@ -317,7 +317,7 @@ import { User } from '../../../../shared/services/users-api.service';
                     [appendTo]="'body'"
                   ></p-select>
                 </td>
-                <!-- % Avance -->
+                <!-- Progreso -->
                 <td
                   class="p-2 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50"
                   (click)="startEdit(task, 'progress', $event)"
@@ -515,7 +515,7 @@ import { User } from '../../../../shared/services/users-api.service';
                     </div>
                     <div>
                       <label class="text-[10px] uppercase font-bold text-gray-500 block mb-1"
-                        >% Avance</label
+                        >Progreso</label
                       >
                       <input
                         type="number"
@@ -624,7 +624,7 @@ import { User } from '../../../../shared/services/users-api.service';
                   </div>
                   <div>
                     <span class="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500"
-                      >% Avance</span
+                      >Progreso</span
                     ><br /><span class="text-gray-700 dark:text-gray-300"
                       >{{ task.progress ?? 0 }}%</span
                     >
@@ -843,6 +843,16 @@ export class AgendaActivityComponent {
       default:
         return 'info';
     }
+  }
+
+  /** Tarea retrasada: tiene dueDate ya pasada y no está Terminada */
+  isOverdue(task: Task): boolean {
+    if (task.status === 'Terminada') return false;
+    const due = task.dueDate ? new Date(task.dueDate) : null;
+    if (!due || isNaN(due.getTime())) return false;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return due.getTime() < today.getTime();
   }
 
   getStatusClass(status: string): string {
