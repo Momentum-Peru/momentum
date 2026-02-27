@@ -183,7 +183,10 @@
   @if (viewMode() === 'calendar') {
     <app-tasks-calendar-view
       [tasks]="allTasks"
+      [members]="boardUsers"
+      [currentUser]="currentUser"
       (viewTask)="viewTask.emit($event)"
+      (taskCreated)="quickCreateTask.emit($event)"
     ></app-tasks-calendar-view>
   }
 
@@ -191,7 +194,10 @@
   @if (viewMode() === 'timeline') {
     <app-tasks-timeline-view
       [tasks]="allTasks"
+      [members]="boardUsers"
+      [currentUser]="currentUser"
       (viewTask)="viewTask.emit($event)"
+      (taskCreated)="quickCreateTask.emit($event)"
     ></app-tasks-timeline-view>
   }
 </div>
