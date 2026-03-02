@@ -300,6 +300,91 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'purchases',
+        children: [
+          {
+            path: 'requirements',
+            children: [
+              {
+                path: '',
+                loadComponent: () =>
+                  import('./pages/purchases/purchases-requirements.page').then(
+                    (m) => m.PurchasesRequirementsPage,
+                  ),
+                canActivate: [MenuPermissionGuard],
+                data: { menuPermission: '/purchases/requirements' },
+              },
+              {
+                path: 'new',
+                loadComponent: () =>
+                  import('./pages/purchases/purchases-requirement-new.page').then(
+                    (m) => m.PurchasesRequirementNewPage,
+                  ),
+                canActivate: [MenuPermissionGuard],
+                data: { menuPermission: '/purchases/requirements' },
+              },
+              {
+                path: ':id/edit',
+                loadComponent: () =>
+                  import('./pages/purchases/purchases-requirement-edit.page').then(
+                    (m) => m.PurchasesRequirementEditPage,
+                  ),
+                canActivate: [MenuPermissionGuard],
+                data: { menuPermission: '/purchases/requirements' },
+              },
+              {
+                path: ':id/compare',
+                loadComponent: () =>
+                  import('./pages/purchases/purchases-compare.page').then(
+                    (m) => m.PurchasesComparePage,
+                  ),
+                canActivate: [MenuPermissionGuard],
+                data: { menuPermission: '/purchases/requirements' },
+              },
+              {
+                path: ':id/quote',
+                loadComponent: () =>
+                  import('./pages/purchases/purchases-quote-register.page').then(
+                    (m) => m.PurchasesQuoteRegisterPage,
+                  ),
+                canActivate: [MenuPermissionGuard],
+                data: { menuPermission: '/purchases/requirements' },
+              },
+              {
+                path: ':id',
+                loadComponent: () =>
+                  import('./pages/purchases/purchases-requirement-detail.page').then(
+                    (m) => m.PurchasesRequirementDetailPage,
+                  ),
+                canActivate: [MenuPermissionGuard],
+                data: { menuPermission: '/purchases/requirements' },
+              },
+            ],
+          },
+          {
+            path: 'orders',
+            loadComponent: () =>
+              import('./pages/purchases/purchases-orders.page').then((m) => m.PurchasesOrdersPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/purchases/orders' },
+          },
+          {
+            path: 'vouchers',
+            loadComponent: () =>
+              import('./pages/purchases/purchases-vouchers.page').then(
+                (m) => m.PurchasesVouchersPage,
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/purchases/vouchers' },
+          },
+          {
+            path: '',
+            redirectTo: 'requirements',
+            pathMatch: 'full',
+          },
+        ],
+      },
+      {
         path: 'dashboard',
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.DashboardPage),
         data: { menuPermission: '/dashboard' },

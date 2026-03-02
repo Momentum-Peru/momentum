@@ -54,6 +54,9 @@ export class MenuConfigService {
     { path: '/profile', label: 'Mi perfil', icon: 'pi pi-user-edit' },
     { path: '/digital-signature', label: 'Firma digital', icon: 'pi pi-pencil' },
     { path: '/work-shifts', label: 'Turnos', icon: 'pi pi-calendar-times' },
+    { path: '/purchases/requirements', label: 'Requerimientos de compra', icon: 'pi pi-inbox' },
+    { path: '/purchases/orders', label: 'Órdenes de compra', icon: 'pi pi-shopping-cart' },
+    { path: '/purchases/vouchers', label: 'Comprobantes CXP', icon: 'pi pi-file' },
   ];
 
   /**
@@ -186,6 +189,21 @@ export class MenuConfigService {
             label: 'Compras',
             icon: 'pi pi-shopping-cart',
             routerLink: '/documents/compras',
+          },
+          {
+            label: 'Requerimientos de compra',
+            icon: 'pi pi-inbox',
+            routerLink: '/purchases/requirements',
+          },
+          {
+            label: 'Órdenes de compra',
+            icon: 'pi pi-shopping-cart',
+            routerLink: '/purchases/orders',
+          },
+          {
+            label: 'Comprobantes CXP',
+            icon: 'pi pi-file',
+            routerLink: '/purchases/vouchers',
           },
           {
             label: 'Solicitudes de materiales',

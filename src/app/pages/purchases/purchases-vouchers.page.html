@@ -1,0 +1,45 @@
+<div class="p-4 sm:p-6 max-w-6xl mx-auto">
+  <p-toast [life]="5000"></p-toast>
+  <h1 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+    Comprobantes de compra (CXP)
+  </h1>
+  @if (loading()) {
+    <div class="flex justify-center py-12">
+      <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+    </div>
+  } @else {
+    <p-table
+      [value]="vouchers()"
+      styleClass="p-datatable-sm"
+      [tableStyle]="{ 'min-width': '50rem' }"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="text-left">Comprobante</th>
+          <th class="text-left">Proveedor</th>
+          <th class="text-right">Total</th>
+          <th class="text-left">Fecha emisión</th>
+          <th class="text-left">Estado</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center p-8 text-gray-500">
+            No hay comprobantes registrados.
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <span class="font-mono">{{ comprobanteLabel(row) }}</span>
+          </td>
+          <td>{{ providerName(row) }}</td>
+          <td class="text-right">{{ row.importeTotal | currency: 'PEN' }}</td>
+          <td>{{ row.fechaEmision | date: 'dd/MM/yyyy' }}</td>
+          <td><p-tag [value]="row.status" severity="info" /></td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</div>

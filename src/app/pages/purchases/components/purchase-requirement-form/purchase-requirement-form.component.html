@@ -1,0 +1,181 @@
+<form (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="md:col-span-2">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título</label>
+      <input
+        pInputText
+        [(ngModel)]="title"
+        name="title"
+        class="w-full"
+        placeholder="Ej: Requerimiento oficinas"
+        maxlength="200"
+      />
+    </div>
+    <div class="md:col-span-2">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >Descripción</label
+      >
+      <textarea
+        pInputTextarea
+        [(ngModel)]="description"
+        name="description"
+        class="w-full"
+        rows="2"
+        placeholder="Opcional"
+      ></textarea>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >Solicitado por</label
+      >
+      <p-select
+        [options]="users()"
+        [(ngModel)]="requestedBy"
+        name="requestedBy"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Seleccionar"
+        [showClear]="true"
+        styleClass="w-full"
+      />
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >Prioridad</label
+      >
+      <p-select
+        [options]="[
+          { label: 'Baja', value: 'baja' },
+          { label: 'Media', value: 'media' },
+          { label: 'Alta', value: 'alta' },
+          { label: 'Urgente', value: 'urgente' },
+        ]"
+        [(ngModel)]="priority"
+        name="priority"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="w-full"
+      />
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >Proyecto</label
+      >
+      <p-select
+        [options]="projects()"
+        [(ngModel)]="projectId"
+        name="projectId"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Opcional"
+        [showClear]="true"
+        styleClass="w-full"
+      />
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >Fecha límite</label
+      >
+      <p-datePicker
+        [(ngModel)]="dueDate"
+        name="dueDate"
+        [showIcon]="true"
+        dateFormat="dd/mm/yy"
+        styleClass="w-full"
+        placeholder="Opcional"
+      />
+    </div>
+  </div>
+
+  <div>
+    <div class="flex items-center justify-between mb-2">
+      <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Ítems</label>
+      <button
+        pButton
+        type="button"
+        label="Agregar ítem"
+        icon="pi pi-plus"
+        class="p-button-outlined p-button-sm"
+        (click)="addItem()"
+      ></button>
+    </div>
+    <div class="flex flex-col gap-3">
+      @for (item of items; track trackByIndex($index)) {
+        <div
+          class="flex flex-wrap items-end gap-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Descripción</label>
+            <input
+              pInputText
+              [(ngModel)]="item.description"
+              [name]="'itemDesc' + $index"
+              class="w-full"
+              placeholder="Descripción del ítem"
+            />
+          </div>
+          <div class="w-24">
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Cantidad</label>
+            <p-inputNumber
+              [(ngModel)]="item.quantity"
+              [name]="'itemQty' + $index"
+              [min]="0"
+              [showButtons]="false"
+              styleClass="w-full"
+            />
+          </div>
+          <div class="w-28">
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Unidad</label>
+            <input
+              pInputText
+              [(ngModel)]="item.unit"
+              [name]="'itemUnit' + $index"
+              class="w-full"
+              placeholder="UND"
+            />
+          </div>
+          <div class="w-40">
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1"
+              >Centro de costo</label
+            >
+            <p-select
+              [options]="areas()"
+              [(ngModel)]="item.centerCostId"
+              [name]="'itemCenter' + $index"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Opcional"
+              [showClear]="true"
+              styleClass="w-full"
+            />
+          </div>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-trash"
+            class="p-button-text p-button-danger p-button-sm"
+            [disabled]="items.length <= 1"
+            (click)="removeItem($index)"
+          ></button>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="flex flex-wrap gap-2 justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+    <button
+      pButton
+      type="button"
+      [label]="cancelLabel()"
+      class="p-button-text"
+      (click)="onCancel()"
+    ></button>
+    <button
+      pButton
+      type="submit"
+      [label]="saveLabel()"
+      icon="pi pi-check"
+      [loading]="loading()"
+    ></button>
+  </div>
+</form>
