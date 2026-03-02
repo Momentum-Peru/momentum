@@ -57,6 +57,9 @@ export class MenuConfigService {
     { path: '/purchases/requirements', label: 'Requerimientos de compra', icon: 'pi pi-inbox' },
     { path: '/purchases/orders', label: 'Órdenes de compra', icon: 'pi pi-shopping-cart' },
     { path: '/purchases/vouchers', label: 'Comprobantes CXP', icon: 'pi pi-file' },
+    { path: '/logistics/products', label: 'Productos y Servicios', icon: 'pi pi-box' },
+    { path: '/logistics/quotes', label: 'Solicitudes de cotización', icon: 'pi pi-inbox' },
+    { path: '/logistics/deliveries', label: 'Confirmación de entrega', icon: 'pi pi-check-circle' },
   ];
 
   /**
@@ -101,6 +104,11 @@ export class MenuConfigService {
             label: 'Mi agenda',
             icon: 'pi pi-book',
             routerLink: '/agenda',
+          },
+          {
+            label: 'Reuniones',
+            icon: 'pi pi-video',
+            routerLink: '/meetings',
           },
           {
             label: 'Mis contactos',
@@ -176,11 +184,6 @@ export class MenuConfigService {
             routerLink: '/clients',
           },
           {
-            label: 'Proveedores',
-            icon: 'pi pi-building',
-            routerLink: '/providers',
-          },
-          {
             label: 'Ventas',
             icon: 'pi pi-dollar',
             routerLink: '/documents/ventas',
@@ -191,21 +194,6 @@ export class MenuConfigService {
             routerLink: '/documents/compras',
           },
           {
-            label: 'Requerimientos de compra',
-            icon: 'pi pi-inbox',
-            routerLink: '/purchases/requirements',
-          },
-          {
-            label: 'Órdenes de compra',
-            icon: 'pi pi-shopping-cart',
-            routerLink: '/purchases/orders',
-          },
-          {
-            label: 'Comprobantes CXP',
-            icon: 'pi pi-file',
-            routerLink: '/purchases/vouchers',
-          },
-          {
             label: 'Solicitudes de materiales',
             icon: 'pi pi-shopping-bag',
             routerLink: '/material-requests',
@@ -214,6 +202,42 @@ export class MenuConfigService {
             label: 'Caja chica',
             icon: 'pi pi-wallet',
             routerLink: '/petty-cash',
+          },
+        ],
+      },
+      {
+        label: 'Logística',
+        icon: 'pi pi-truck',
+        items: [
+          {
+            label: 'Proveedores',
+            icon: 'pi pi-building',
+            routerLink: '/providers',
+          },
+          {
+            label: 'Productos y Servicios',
+            icon: 'pi pi-box',
+            routerLink: '/logistics/products',
+          },
+          {
+            label: 'Solicitudes de cotización',
+            icon: 'pi pi-inbox',
+            routerLink: '/logistics/quotes',
+          },
+          {
+            label: 'Órdenes de compra',
+            icon: 'pi pi-shopping-cart',
+            routerLink: '/purchases/orders',
+          },
+          {
+            label: 'Confirmación de entrega',
+            icon: 'pi pi-check-circle',
+            routerLink: '/logistics/deliveries',
+          },
+          {
+            label: 'Facturas',
+            icon: 'pi pi-file',
+            routerLink: '/purchases/vouchers',
           },
         ],
       },
