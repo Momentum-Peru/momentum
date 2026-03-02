@@ -1,0 +1,26 @@
+<div class="p-4 sm:p-6 max-w-4xl mx-auto">
+  <p-toast [life]="5000"></p-toast>
+  @if (loading()) {
+    <div class="flex justify-center py-12">
+      <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+    </div>
+  } @else {
+    <div class="flex items-center gap-2 mb-6">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-arrow-left"
+        class="p-button-text"
+        (click)="onCancel()"
+      ></button>
+      <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Editar requerimiento</h1>
+    </div>
+    <app-purchase-requirement-form
+      [initial]="initial()"
+      saveLabel="Guardar"
+      cancelLabel="Cancelar"
+      (save)="onSave($event)"
+      (cancelRequest)="onCancel()"
+    />
+  }
+</div>

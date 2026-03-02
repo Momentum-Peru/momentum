@@ -1,0 +1,152 @@
+<div class="p-4 sm:p-6 space-y-4 max-w-7xl mx-auto">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <div class="flex flex-col gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Proyectos Activos</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Gestione licitaciones en curso y comparaciones de proveedores.
+        </p>
+      </div>
+      @if (canEdit()) {
+        <button
+          pButton
+          type="button"
+          label="Nuevo Proyecto"
+          icon="pi pi-plus"
+          class="flex-shrink-0"
+          (click)="newRequirement()"
+        ></button>
+      }
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="p-input-icon-left w-full sm:w-72">
+        <i class="pi pi-search"></i>
+        <input
+          pInputText
+          type="text"
+          placeholder="Buscar por nombre de proyecto o ID..."
+          [ngModel]="query()"
+          (ngModelChange)="query.set($event)"
+          (keyup.enter)="onSearch()"
+          class="w-full"
+        />
+      </span>
+      <button
+        pButton
+        type="button"
+        [outlined]="statusFilter() !== null"
+        (click)="statusFilter.set(null); loadRequirements()"
+      >
+        Todos los Proyectos
+      </button>
+      <button
+        pButton
+        type="button"
+        [outlined]="statusFilter() !== 'cotizaciones_pendientes'"
+        (click)="statusFilter.set('cotizaciones_pendientes'); loadRequirements()"
+        class="flex items-center gap-1"
+      >
+        Cotizaciones Pendientes
+        <span
+          class="bg-primary text-primary-contrast text-xs font-semibold rounded-full min-w-[1.25rem] h-5 px-1.5 inline-flex items-center justify-center"
+          >{{ countByStatus('cotizaciones_pendientes') }}</span
+        >
+      </button>
+      <button
+        pButton
+        type="button"
+        [outlined]="statusFilter() !== 'listo_para_comparar'"
+        (click)="statusFilter.set('listo_para_comparar'); loadRequirements()"
+      >
+        Listo para comparar
+      </button>
+      <p-select
+        [options]="[
+          { label: 'Más recientes', value: 'desc' },
+          { label: 'Más antiguos', value: 'asc' },
+        ]"
+        [ngModel]="sortOrder()"
+        (ngModelChange)="sortOrder.set($event); loadRequirements()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Orden"
+        styleClass="w-full sm:w-40"
+      />
+      <button
+        pButton
+        type="button"
+        label="Buscar"
+        icon="pi pi-search"
+        class="p-button-outlined"
+        (click)="onSearch()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Limpiar"
+        icon="pi pi-filter-slash"
+        class="p-button-text"
+        (click)="clearFilters()"
+      ></button>
+    </div>
+
+    @if (loading()) {
+      <div class="flex justify-center py-12">
+        <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+      </div>
+    } @else if (requirements().length === 0) {
+      <div
+        class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-12 text-center"
+      >
+        <i class="pi pi-inbox text-5xl text-gray-400 dark:text-gray-500 mb-4"></i>
+        <p class="text-gray-600 dark:text-gray-400">No hay requerimientos de compra.</p>
+        @if (canEdit()) {
+          <button
+            pButton
+            type="button"
+            label="Crear requerimiento"
+            icon="pi pi-plus"
+            class="mt-4"
+            (click)="newRequirement()"
+          ></button>
+        }
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        @for (req of requirements(); track req._id) {
+          <app-purchase-requirement-card
+            [requirement]="req"
+            [quotesCount]="getQuotesCount(req._id)"
+            (view)="onView($event)"
+            (compare)="onCompare($event)"
+            (registerQuote)="onRegisterQuote($event)"
+            (edit)="onEdit($event)"
+            (approve)="onApprove($event)"
+            (reject)="onReject($event)"
+          />
+        }
+        @if (canEdit()) {
+          <div
+            class="rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30 flex flex-col items-center justify-center min-h-[280px] p-6 cursor-pointer hover:border-primary hover:bg-primary-50/30 dark:hover:bg-primary-900/10 transition-colors"
+            (click)="newRequirement()"
+            role="button"
+            tabindex="0"
+            (keydown.enter)="newRequirement()"
+          >
+            <i class="pi pi-plus text-5xl text-primary mb-3"></i>
+            <span class="font-semibold text-gray-900 dark:text-white text-center"
+              >Iniciar Nuevo Proyecto</span
+            >
+            <span class="text-sm text-gray-500 dark:text-gray-400 text-center mt-1"
+              >Crear una nueva solicitud de compra e invitar proveedores.</span
+            >
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

@@ -85,7 +85,7 @@
         icon="pi pi-check"
         (click)="createBox()"
         [loading]="creating()"
-        [disabled]="!newBoxName()?.trim()"
+        [disabled]="!newBoxName().trim()"
       ></button>
     </ng-template>
   </p-dialog>
