@@ -1,0 +1,62 @@
+<!-- Botón hamburguesa móvil -->
+<button
+  class="md:hidden fixed top-2 right-2 z-50 p-2 m-6 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors duration-200"
+  (click)="toggleMenu()"
+  [attr.aria-label]="isMenuOpen() ? 'Cerrar menú' : 'Abrir menú'"
+>
+  <div class="w-6 h-6 flex flex-col justify-center items-center relative">
+    <span
+      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out"
+      [class.rotate-45]="isMenuOpen()"
+      [class.translate-y-0]="isMenuOpen()"
+      [class.-mt-2]="!isMenuOpen()"
+    ></span>
+    <span
+      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out"
+      [class.opacity-0]="isMenuOpen()"
+    ></span>
+    <span
+      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 block w-5 h-0.5 bg-white transition-all duration-300 ease-in-out"
+      [class.-rotate-45]="isMenuOpen()"
+      [class.mt-2]="!isMenuOpen()"
+    ></span>
+  </div>
+</button>
+
+<!-- Overlay móvil -->
+<div
+  class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
+  [class.opacity-0]="!isMenuOpen()"
+  [class.pointer-events-none]="!isMenuOpen()"
+  [class.opacity-100]="isMenuOpen()"
+  [class.pointer-events-auto]="isMenuOpen()"
+  (click)="closeMenu()"
+  tabindex="0"
+  role="button"
+  aria-label="Cerrar menú"
+></div>
+
+<!-- Menú lateral documentación -->
+<nav
+  class="pt-7 fixed md:static top-0 left-0 h-full max-h-screen w-60 bg-black text-white z-50 transform transition-transform duration-300 ease-in-out md:transform-none flex flex-col"
+  [class.-translate-x-full]="!isMenuOpen()"
+  [class.translate-x-0]="isMenuOpen()"
+>
+  <div class="md:hidden flex justify-center items-center p-4 flex-shrink-0">
+    <img width="120" src="/images/logo_b.png" alt="Logo" />
+  </div>
+
+  <div class="px-2 py-2 text-gray-400 text-sm font-medium uppercase tracking-wider">
+    Documentación ERP
+  </div>
+
+  <div class="flex-1 min-h-0 overflow-y-auto flex flex-col space-y-1 p-2 pb-24">
+    <div class="w-full">
+      <p-panelMenu
+        [model]="menuItems()"
+        styleClass="doc-panelmenu"
+        [multiple]="false"
+      ></p-panelMenu>
+    </div>
+  </div>
+</nav>

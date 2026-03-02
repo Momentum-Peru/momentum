@@ -56,6 +56,35 @@ export const routes: Routes = [
     redirectTo: 'landing',
     pathMatch: 'full',
   },
+  // Sección de documentación ERP (layout con menú de documentación)
+  {
+    path: 'docs',
+    loadComponent: () =>
+      import('./layouts/documentation/documentation').then((m) => m.DocumentationLayout),
+    canActivate: [requireAuthGuard, requireTenantGuard],
+    children: [
+      {
+        path: '',
+        redirectTo: 'logistica/proveedores',
+        pathMatch: 'full',
+      },
+      {
+        path: 'logistica',
+        children: [
+          {
+            path: 'proveedores',
+            loadComponent: () =>
+              import('./pages/docs/doc-proveedores.doc-page').then((m) => m.DocProveedoresPage),
+          },
+          {
+            path: 'compras',
+            loadComponent: () =>
+              import('./pages/docs/doc-compras.doc-page').then((m) => m.DocComprasPage),
+          },
+        ],
+      },
+    ],
+  },
   // Rutas protegidas con layout principal
   {
     path: '',

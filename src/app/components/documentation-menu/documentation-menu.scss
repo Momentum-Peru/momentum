@@ -1,0 +1,158 @@
+/* Panel del menú de documentación: transparente para integrarse con el sidebar negro */
+:host ::ng-deep {
+  .doc-panelmenu,
+  .p-panelmenu {
+    background: transparent !important;
+    border: none !important;
+    width: 100%;
+    box-shadow: none !important;
+
+    .p-panelmenu-panel,
+    .p-panelmenu-panel .p-panelmenu-header-content,
+    .p-panelmenu-panel .p-toggleable-content {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    .p-panelmenu-header {
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0.5rem;
+      margin-bottom: 0.25rem;
+      padding: 0 !important;
+
+      .p-panelmenu-header-link {
+        background: transparent !important;
+        border: none !important;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        width: 100%;
+        display: flex;
+        align-items: center;
+
+        .p-panelmenu-header-text,
+        .p-panelmenu-header-icon {
+          color: #ffffff !important;
+        }
+
+        &:hover {
+          background-color: #ffffff !important;
+          .p-panelmenu-header-text,
+          .p-panelmenu-header-icon,
+          span,
+          i,
+          * {
+            color: #000000 !important;
+          }
+        }
+
+        &[aria-expanded='true'] {
+          background-color: rgba(255, 255, 255, 0.15) !important;
+        }
+      }
+    }
+
+    .p-panelmenu-content {
+      background: transparent !important;
+      border: none !important;
+      padding: 0.25rem 0 !important;
+      margin-left: 1rem;
+      box-shadow: none !important;
+
+      .p-menuitem {
+        margin-bottom: 0.125rem;
+
+        .p-menuitem-link {
+          background: transparent !important;
+          border: none !important;
+          padding: 0.625rem 1rem;
+          border-radius: 0.5rem;
+          transition: all 0.2s ease;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          text-decoration: none;
+          position: relative;
+          width: 100%;
+
+          // Estado normal
+          color: rgba(255, 255, 255, 0.9) !important;
+
+          // Igual que en el menú principal: desactivar pointer-events en hijos
+          * {
+            pointer-events: none !important;
+          }
+
+          .p-menuitem-icon,
+          .p-menuitem-text,
+          i,
+          span {
+            color: rgba(255, 255, 255, 0.9) !important;
+            transition: color 0.2s ease;
+          }
+
+          // ITEM ACTIVO (cuando no hay hover)
+          &.p-menuitem-link-active:not(:hover),
+          &[class*='router-link-active']:not(:hover) {
+            background-color: rgba(255, 255, 255, 0.2) !important;
+            color: #ffffff !important;
+            border-left: 4px solid #ffffff !important;
+            padding-left: calc(1rem - 4px) !important;
+            .p-menuitem-icon,
+            .p-menuitem-text,
+            i,
+            span {
+              color: #ffffff !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* Forzar transparencia en todos los wrappers del PanelMenu */
+  .p-panelmenu .p-panelmenu-panel,
+  .p-panelmenu .p-panelmenu-content,
+  .doc-panelmenu .p-panelmenu-panel,
+  .doc-panelmenu .p-panelmenu-content {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+
+nav {
+  max-height: 100vh;
+  overflow: hidden;
+  background: transparent !important;
+  > div.flex-1 {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  }
+}
+
+/* Reglas de hover para submenús, replicando el comportamiento del menú principal
+   pero aplicadas solo al panel de documentación */
+::ng-deep
+  nav.bg-black
+  .doc-panelmenu
+  .p-panelmenu-content
+  .p-menuitem
+  .p-menuitem-link:hover {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+
+  .p-menuitem-icon,
+  .p-menuitem-text,
+  i,
+  span,
+  * {
+    color: #000000 !important;
+    background-color: transparent !important;
+  }
+}
