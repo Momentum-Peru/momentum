@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { InputText } from 'primeng/inputtext';
@@ -75,7 +76,6 @@ interface District {
     Select,
     Tooltip,
     Toast,
-    Checkbox,
     Chip,
     Rating,
     Tag,
@@ -92,6 +92,7 @@ export class ProvidersPage implements OnInit {
   private readonly menuService = inject(MenuService);
   private readonly apisPeruService = inject(ApisPeruApiService);
   private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
   private readonly baseUrl = environment.apiUrl;
 
   // Subject para manejar la autocompletación de taxId
@@ -201,21 +202,11 @@ export class ProvidersPage implements OnInit {
   }
 
   newItem() {
-    this.editing.set({
-      name: '',
-      contacts: [],
-      services: [],
-      ubicacion: {},
-      isActive: true,
-    });
-    this.showDialog.set(true);
-    this.initializeUbicacion();
+    this.router.navigate(['/providers/new']);
   }
 
   editItem(item: Provider) {
-    this.editing.set({ ...item });
-    this.showDialog.set(true);
-    this.initializeUbicacion(item.ubicacion);
+    this.router.navigate(['/providers/edit', item._id]);
   }
 
   closeDialog() {

@@ -1,0 +1,253 @@
+<div class="flex-1 flex flex-col min-h-0">
+  <!-- Calendar Toolbar -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <div class="flex items-center gap-2">
+      <button
+        pButton
+        label="Hoy"
+        class="p-button-outlined p-button-sm px-4 h-8"
+        (click)="goToday()"
+        aria-label="Ir a hoy"
+      ></button>
+      <div
+        class="flex items-center border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden ml-2 shadow-sm bg-white dark:bg-gray-800"
+      >
+        <button
+          pButton
+          icon="pi pi-chevron-left"
+          class="p-button-text p-button-secondary p-button-sm h-8 w-8"
+          (click)="goPrevPeriod()"
+          pTooltip="Período anterior"
+          aria-label="Período anterior"
+        ></button>
+        <button
+          pButton
+          icon="pi pi-chevron-right"
+          class="p-button-text p-button-secondary p-button-sm h-8 w-8"
+          (click)="goNextPeriod()"
+          pTooltip="Período siguiente"
+          aria-label="Período siguiente"
+        ></button>
+      </div>
+      <h3 class="font-bold text-gray-700 dark:text-gray-200 ml-3 text-sm md:text-base">
+        {{ calendarRangeLabel() }}
+      </h3>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- MS Sincro Status -->
+      @if (!msGraphService.isLoggedIn()) {
+        <span
+          class="text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 rounded-full flex items-center gap-1 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors border border-amber-100 dark:border-amber-800"
+          (click)="connectMicrosoft()"
+          role="button"
+          tabindex="0"
+          (keyup.enter)="connectMicrosoft()"
+          (keyup.space)="connectMicrosoft(); $event.preventDefault()"
+        >
+          <i class="pi pi-exclamation-triangle"></i> Conectar Microsoft
+        </span>
+      } @else {
+        <div
+          class="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-full border border-green-100 dark:border-green-800 group/status"
+        >
+          <span class="text-[10px] text-green-600 font-bold flex items-center gap-1">
+            <i class="pi pi-check-circle"></i> Sincronizado
+          </span>
+          <button
+            pButton
+            icon="pi pi-power-off"
+            class="p-button-rounded p-button-text p-button-danger p-[2px] h-5 w-5"
+            (click)="logoutMicrosoft()"
+            pTooltip="Desconectar"
+            aria-label="Desconectar Microsoft"
+          ></button>
+        </div>
+      }
+
+      <!-- Date Picker -->
+      <p-datePicker
+        [ngModel]="filterDate()"
+        (ngModelChange)="onFilterDateChange($event)"
+        dateFormat="dd/mm/yy"
+        [showIcon]="true"
+        [appendTo]="'body'"
+        styleClass="p-datepicker-sm w-36 h-8 text-[11px] border-gray-200 shadow-sm"
+        aria-label="Seleccionar fecha"
+      ></p-datePicker>
+
+      <!-- View Selector -->
+      <p-select
+        [options]="calendarViewOptions"
+        [ngModel]="calendarViewType()"
+        (ngModelChange)="calendarViewType.set($event); onViewTypeChange()"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="p-select-sm w-36 h-8 text-[11px] border-gray-200 shadow-sm"
+        [appendTo]="'body'"
+        aria-label="Tipo de vista"
+      ></p-select>
+
+      <button
+        pButton
+        icon="pi pi-video"
+        label="Reunirse ahora"
+        class="p-button-sm p-button-outlined h-8 border-gray-200 text-gray-700 dark:text-gray-300"
+        (click)="openTeamsCalendar()"
+        aria-label="Reunirse ahora en Teams"
+      ></button>
+      <button
+        pButton
+        icon="pi pi-plus"
+        label="Nuevo"
+        class="p-button-sm bg-[#464EB8] hover:bg-[#3b419a] border-none text-white h-8 px-4 font-bold shadow-md shadow-[#464EB8]/20"
+        (click)="openNewMeeting()"
+        aria-label="Nueva reunión en Teams"
+      ></button>
+    </div>
+  </div>
+
+  @if (!msGraphService.isLoggedIn()) {
+    <!-- Placeholder cuando no está conectado -->
+    <div
+      class="flex-1 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 border-dashed min-h-[400px] p-8"
+    >
+      <i class="pi pi-calendar-plus text-6xl text-gray-400 dark:text-gray-500 mb-4"></i>
+      <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        Conecta tu calendario de Microsoft
+      </h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center max-w-md mb-6">
+        Para ver tus reuniones de Outlook y Teams, conecta tu cuenta de Microsoft.
+      </p>
+      <button
+        pButton
+        label="Conectar Microsoft"
+        icon="pi pi-microsoft"
+        (click)="connectMicrosoft()"
+        class="bg-[#464EB8] hover:bg-[#3b419a] border-none"
+        aria-label="Conectar Microsoft"
+      ></button>
+    </div>
+  } @else {
+    <!-- Main Grid Container -->
+    <div
+      class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm flex flex-col flex-1 relative min-h-0"
+    >
+      <!-- Grid Header (Days) -->
+      <div
+        class="flex border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+      >
+        <div class="w-16 flex-shrink-0 border-r border-gray-100 dark:border-gray-700"></div>
+        <div class="flex-1 flex min-w-0">
+          @for (day of weekDays(); track day.getTime()) {
+            <div
+              class="flex-1 py-1.5 text-center border-r border-gray-100 dark:border-gray-700 last:border-r-0"
+            >
+              <div class="text-[12px] font-black text-[#464EB8]">{{ day.getDate() }}</div>
+              <div class="text-[9px] text-gray-500 uppercase font-black tracking-tighter">
+                {{ day.toLocaleDateString('es', { weekday: 'short' }) }}
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto relative no-scrollbar">
+        @if (loadingMsEvents()) {
+          <div class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-30">
+            <i class="pi pi-spin pi-spinner text-3xl text-[#464EB8]"></i>
+          </div>
+        }
+        <div
+          class="flex relative"
+          [style.height.px]="(CALENDAR_END_HOUR - CALENDAR_START_HOUR + 1) * HOUR_HEIGHT"
+        >
+          <!-- Hours Axis -->
+          <div
+            class="w-16 flex-shrink-0 bg-gray-50/50 dark:bg-gray-800/30 border-r border-gray-100 dark:border-gray-700 z-10"
+          >
+            @for (hour of getCalendarHours(); track hour) {
+              <div
+                class="text-right pr-3 pt-1 text-[10px] text-gray-400 font-black"
+                [style.height.px]="HOUR_HEIGHT"
+              >
+                {{ hour > 12 ? hour - 12 : hour }} {{ hour >= 12 ? 'PM' : 'AM' }}
+              </div>
+            }
+          </div>
+
+          <!-- Days Content Grid -->
+          <div class="flex-1 relative bg-white dark:bg-gray-900/10">
+            <!-- Vertical Column Lines -->
+            <div class="absolute inset-0 flex pointer-events-none z-0">
+              @for (day of weekDays(); track day.getTime()) {
+                <div
+                  class="flex-1 border-r border-gray-100/80 dark:border-gray-700/50 last:border-r-0"
+                ></div>
+              }
+            </div>
+
+            <!-- Horizontal hour lines -->
+            @for (hour of getCalendarHours(); track hour) {
+              <div
+                class="absolute w-full border-t border-gray-100/60 dark:border-gray-700/30 z-0"
+                [style.top.px]="(hour - CALENDAR_START_HOUR) * HOUR_HEIGHT"
+              ></div>
+            }
+
+            <!-- Real-time Indicator -->
+            @if (isTodayVisible()) {
+              <div
+                class="absolute z-40 pointer-events-none flex items-center"
+                [style.top.px]="getCurrentTimeTop()"
+                [style.left]="getTodayLeft()"
+                [style.width]="getEventWidth()"
+              >
+                <div
+                  class="w-2.5 h-2.5 rounded-full bg-red-500 -ml-1.25 shadow-md border-2 border-white dark:border-gray-800"
+                ></div>
+                <div class="flex-1 border-t-2 border-red-500/80"></div>
+              </div>
+            }
+
+            <!-- Events Area -->
+            <div class="absolute inset-0 z-20">
+              @for (event of msEvents(); track event.id) {
+                <div
+                  class="absolute rounded-md border-l-[3px] p-2 shadow-sm transition-all hover:scale-[1.02] hover:shadow-md cursor-pointer overflow-hidden group text-[10px] leading-[1.1]"
+                  [style.top.px]="getEventTop(event.start.dateTime)"
+                  [style.height.px]="getEventHeight(event.start.dateTime, event.end.dateTime)"
+                  [style.left]="getEventLeft(event.start.dateTime)"
+                  [style.width]="getEventWidth()"
+                  [class]="
+                    event.isOnlineMeeting && event.onlineMeetingUrl
+                      ? 'bg-indigo-50/95 border-indigo-400 text-indigo-900 dark:bg-indigo-900/40 dark:text-indigo-100'
+                      : 'bg-blue-50/95 border-blue-400 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100'
+                  "
+                  (click)="openEvent(event)"
+                  (keyup.enter)="openEvent(event)"
+                  (keyup.space)="openEvent(event); $event.preventDefault()"
+                  tabindex="0"
+                  role="button"
+                >
+                  <div class="font-black truncate mb-0.5">{{ event.subject || 'Sin título' }}</div>
+                  <div class="opacity-70 flex items-center gap-1 font-bold text-[9px]">
+                    <i class="pi pi-clock text-[8px]"></i>
+                    {{ formatEventTimeRange(event.start.dateTime, event.end.dateTime) }}
+                  </div>
+                  @if (event.isOnlineMeeting && event.onlineMeetingUrl) {
+                    <div
+                      class="mt-1 font-black text-indigo-600 dark:text-indigo-400 text-[9px] flex items-center gap-1"
+                    >
+                      <i class="pi pi-video text-[9px]"></i> Teams
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

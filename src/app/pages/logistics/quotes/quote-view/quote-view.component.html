@@ -1,0 +1,171 @@
+<div class="p-4 space-y-6 max-w-7xl mx-auto" *ngIf="rfq() as rfqData">
+  
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-4">
+      <button pButton icon="pi pi-arrow-left" class="p-button-rounded p-button-text p-button-secondary" (click)="goBack()"></button>
+      <div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold text-slate-800 m-0">{{ rfqData.code }}</h1>
+          <p-tag [severity]="getStatusSeverity(rfqData.status)" [value]="rfqData.status"></p-tag>
+        </div>
+        <p class="text-sm text-slate-500 m-0 mt-1">{{ rfqData.title }}</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button pButton label="Editar" icon="pi pi-pencil" class="p-button-outlined" [disabled]="rfqData.status === 'Cerrada'" routerLink="/logistics/quotes/edit/{{ rfqData._id }}"></button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Resumen Requerimiento -->
+    <div class="lg:col-span-1 space-y-6">
+      <p-card header="Detalles Generales">
+        <div class="space-y-4">
+          <div>
+            <span class="block text-xs text-slate-500 uppercase font-semibold tracking-wider">Descripción</span>
+            <p class="text-sm text-slate-800 mt-1 whitespace-pre-wrap">{{ rfqData.description }}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <span class="block text-xs text-slate-500 uppercase font-semibold tracking-wider">Fecha Límite</span>
+              <p class="text-sm text-slate-800 mt-1 font-medium">{{ rfqData.deadline ? (rfqData.deadline | date:'dd/MM/yyyy') : 'No especificada' }}</p>
+            </div>
+            <div>
+              <span class="block text-xs text-slate-500 uppercase font-semibold tracking-wider">Costo Referencial</span>
+              <p class="text-sm text-slate-800 mt-1 font-medium">{{ getTotalReferencePrice() | currency:'PEN':'symbol' }}</p>
+            </div>
+          </div>
+          <div *ngIf="rfqData.termsAndConditions">
+            <span class="block text-xs text-slate-500 uppercase font-semibold tracking-wider">Términos</span>
+            <p class="text-sm text-slate-800 mt-1">{{ rfqData.termsAndConditions }}</p>
+          </div>
+        </div>
+      </p-card>
+
+      <p-card header="Ítems Requeridos">
+        <div class="space-y-3">
+          <div *ngFor="let item of rfqData.items" class="p-3 border border-slate-100 rounded-lg bg-slate-50">
+            <div class="flex justify-between items-start">
+              <span class="font-medium text-slate-800 text-sm">
+                {{ $any(item.productId)?.name || 'Producto Desconocido' }}
+              </span>
+              <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">
+                x{{ item.quantity }}
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1" *ngIf="item.notes">{{ item.notes }}</p>
+          </div>
+        </div>
+      </p-card>
+    </div>
+
+    <!-- Comparador de Cotizaciones -->
+    <div class="lg:col-span-2 space-y-6">
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="p-4 border-b flex justify-between items-center bg-slate-50/50 rounded-t-lg">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-chart-bar text-indigo-500 text-xl"></i>
+              <h2 class="text-lg font-bold text-slate-800 m-0">Comparador de Cotizaciones</h2>
+            </div>
+            <button pButton label="Generar O/C" icon="pi pi-file" class="p-button-sm p-button-success" [disabled]="rfqData.status !== 'Cerrada'"></button>
+          </div>
+        </ng-template>
+
+        <ng-template pTemplate="content">
+          <div *ngIf="!rfqData.supplierQuotes || rfqData.supplierQuotes.length === 0" class="text-center py-12 text-slate-500">
+            Aún no se han registrado cotizaciones para este requerimiento.
+          </div>
+
+          <div *ngIf="rfqData.supplierQuotes && rfqData.supplierQuotes.length > 0" class="overflow-x-auto pb-4">
+            <div class="flex gap-4 min-w-max">
+              <!-- Column for each quote -->
+              <div *ngFor="let quote of rfqData.supplierQuotes" class="w-80 border border-slate-200 rounded-xl overflow-hidden flex flex-col bg-white shadow-sm hover:shadow-md transition-shadow">
+                
+                <!-- Provider Header -->
+                <div class="p-4 border-b border-slate-100 bg-slate-50/80">
+                  <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-bold text-slate-800 m-0 text-base line-clamp-2" [title]="$any(quote.providerId)?.name || $any(quote.providerId)?.businessName">
+                      {{ $any(quote.providerId)?.name || $any(quote.providerId)?.businessName }}
+                    </h3>
+                    <p-tag [severity]="getQuoteStatusSeverity(quote.status)" [value]="quote.status" styleClass="text-[10px]"></p-tag>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs text-slate-500">
+                    <i class="pi pi-id-card"></i> {{ $any(quote.providerId)?.ruc || 'Sin RUC' }}
+                  </div>
+                  
+                  <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-white p-2 border border-slate-100 rounded text-center">
+                      <span class="block text-slate-400 mb-0.5">Rating</span>
+                      <span class="font-bold text-slate-700 flex items-center justify-center gap-1">
+                         <i class="pi pi-star-fill text-yellow-400 text-[10px]"></i>
+                         {{ $any(quote.providerId)?.rating || '-' }}
+                      </span>
+                    </div>
+                    <div class="bg-white p-2 border border-slate-100 rounded text-center">
+                      <span class="block text-slate-400 mb-0.5">Entregas a tiempo</span>
+                      <span class="font-bold text-slate-700">{{ $any(quote.providerId)?.metrics?.onTimeDelivery || '-' }}/5</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Quote Details -->
+                <div class="p-4 flex-1">
+                  <div class="flex justify-between items-center mb-4">
+                    <span class="text-sm font-medium text-slate-600">Total Cotizado</span>
+                    <span class="text-lg font-bold text-indigo-600">{{ (quote.totalCost || 0) | currency:'PEN':'symbol' }}</span>
+                  </div>
+                  
+                  <div class="space-y-3 mb-4">
+                    <div class="flex items-start gap-2 text-sm">
+                      <i class="pi pi-calendar text-slate-400 mt-0.5"></i>
+                      <div>
+                        <span class="text-slate-500 block text-xs">Promesa de Entrega</span>
+                        <span class="text-slate-800 font-medium">{{ quote.deadline ? (quote.deadline | date:'dd/MM/yyyy') : 'No especificada' }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p-divider></p-divider>
+
+                  <!-- Items breakdown -->
+                  <div class="mt-4">
+                    <span class="text-xs font-semibold uppercase text-slate-500 tracking-wider mb-2 block">Desglose</span>
+                    <div class="space-y-2">
+                      <div *ngFor="let item of quote.items; let i = index" class="flex justify-between items-center text-sm py-1 border-b border-dashed border-slate-100 last:border-0">
+                        <span class="text-slate-600 truncate mr-2" [title]="$any(rfqData.items[i]?.productId)?.name">Item {{ i + 1 }}</span>
+                        <span class="font-medium text-slate-800 whitespace-nowrap">{{ item.unitPrice | currency:'PEN':'symbol' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                </div>
+
+                <!-- Actions -->
+                <div class="p-4 bg-slate-50 border-t border-slate-100">
+                  <button 
+                    *ngIf="quote.status === 'Pendiente'"
+                    pButton 
+                    label="Seleccionar y Aprobar" 
+                    icon="pi pi-check" 
+                    class="p-button-outlined p-button-success w-full"
+                    (click)="approveQuote(quote)"
+                  ></button>
+                  <div *ngIf="quote.status === 'Aprobada'" class="text-center text-sm font-bold text-green-600 flex items-center justify-center gap-2">
+                    <i class="pi pi-verified"></i> Cotización Elegida
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </p-card>
+    </div>
+  </div>
+</div>
+
+<div class="p-8 text-center" *ngIf="loading()">
+  <i class="pi pi-spin pi-spinner text-3xl text-primary mb-4"></i>
+  <p class="text-slate-500">Cargando detalles...</p>
+</div>

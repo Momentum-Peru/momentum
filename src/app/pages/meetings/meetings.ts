@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject, computed } from '@angular/core';
+import { Component, OnInit, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -17,6 +17,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { MeetingsApiService } from '../../shared/services/meetings-api.service';
 import { MenuService } from '../../shared/services/menu.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
+import { MeetingsCalendarComponent } from './components/meetings-calendar/meetings-calendar.component';
 import {
   Meeting,
   CreateMeetingRequest,
@@ -51,10 +52,12 @@ import {
     CardModule,
     TagModule,
     MultiSelectModule,
+    MeetingsCalendarComponent,
   ],
   templateUrl: './meetings.html',
   styleUrl: './meetings.scss',
   providers: [MessageService, ConfirmationService],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MeetingsPage implements OnInit {
   // Inyección de dependencias siguiendo Dependency Inversion Principle
@@ -66,6 +69,9 @@ export class MeetingsPage implements OnInit {
 
   // Verificar permisos de edición
   readonly canEdit = computed(() => this.menuService.canEdit('/meetings'));
+
+  // Pestaña activa: Calendario (por defecto) o Registros
+  activeTab = signal<'calendar' | 'registros'>('calendar');
 
   // Signals para gestión reactiva de estado
   items = signal<Meeting[]>([]);

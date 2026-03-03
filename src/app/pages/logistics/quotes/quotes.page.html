@@ -1,0 +1,79 @@
+<div class="p-4 space-y-4">
+  <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800 m-0">Solicitudes de Cotización (RFQ)</h1>
+      <p class="text-slate-600 mt-1">Gestión y comparación de cotizaciones con proveedores</p>
+    </div>
+    <div class="mt-4 md:mt-0">
+      <button pButton label="Nueva Solicitud" icon="pi pi-plus" class="p-button-primary" (click)="newItem()"></button>
+    </div>
+  </div>
+
+  <p-card>
+    <p-table
+      #dt
+      [value]="rfqs()"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando del {first} al {last} de {totalRecords} solicitudes"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [globalFilterFields]="['code', 'title', 'description']"
+      responsiveLayout="scroll"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="caption">
+        <div class="flex justify-between items-center">
+          <span class="p-input-icon-left w-full md:w-auto">
+            <i class="pi pi-search"></i>
+            <input
+              pInputText
+              type="text"
+              (input)="dt.filterGlobal($any($event.target).value, 'contains')"
+              placeholder="Buscar por código, título..."
+              class="w-full md:w-80"
+            />
+          </span>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="code">Código <p-sortIcon field="code"></p-sortIcon></th>
+          <th pSortableColumn="title">Título <p-sortIcon field="title"></p-sortIcon></th>
+          <th pSortableColumn="createdAt">Fecha <p-sortIcon field="createdAt"></p-sortIcon></th>
+          <th pSortableColumn="deadline">Plazo Entrega <p-sortIcon field="deadline"></p-sortIcon></th>
+          <th pSortableColumn="status">Estado <p-sortIcon field="status"></p-sortIcon></th>
+          <th class="w-24">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-rfq>
+        <tr>
+          <td class="font-medium text-slate-800">{{ rfq.code }}</td>
+          <td>
+            <div class="font-medium">{{ rfq.title }}</div>
+            <div class="text-xs text-slate-500 truncate max-w-xs">{{ rfq.description }}</div>
+          </td>
+          <td>{{ rfq.createdAt | date:'dd/MM/yyyy' }}</td>
+          <td>{{ rfq.deadline ? (rfq.deadline | date:'dd/MM/yyyy') : '-' }}</td>
+          <td>
+            <p-tag [severity]="getStatusSeverity(rfq.status)" [value]="rfq.status"></p-tag>
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <button pButton icon="pi pi-eye" class="p-button-text p-button-sm p-button-info" (click)="viewItem(rfq)" pTooltip="Ver / Comparar"></button>
+              <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-button-warning" (click)="editItem(rfq)" pTooltip="Editar" [disabled]="rfq.status === 'Cerrada' || rfq.status === 'Cancelada'"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center py-8 text-slate-500">
+            No se encontraron solicitudes de cotización.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</div>
