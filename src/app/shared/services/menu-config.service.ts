@@ -134,14 +134,14 @@ export class MenuConfigService {
         ],
       },
       {
-        label: 'Ventas',
+        label: 'Proyectos',
         icon: 'pi pi-folder',
+        routerLink: '/projects',
+      },
+      {
+        label: 'Ventas',
+        icon: 'pi pi-dollar',
         items: [
-          {
-            label: 'Proyectos',
-            icon: 'pi pi-folder',
-            routerLink: '/projects',
-          },
           {
             label: 'Dashboard',
             icon: 'pi pi-chart-line',

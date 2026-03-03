@@ -191,6 +191,9 @@ export class TasksPage implements OnInit, AfterViewInit {
     return user?.role || '';
   });
 
+  /** True si el usuario es gerencia (puede ver todos los tableros). */
+  public readonly isGerencia = computed(() => this.authService.isGerencia());
+
   /**
    * Usuarios disponibles para filtro "asignado a" y asignación: solo los del tablero (owner + members)
    */
@@ -559,10 +562,13 @@ export class TasksPage implements OnInit, AfterViewInit {
   }
 
   /**
-   * Carga los tableros del usuario
+   * Carga los tableros: todos si es gerencia, solo los propios en caso contrario
    */
   private loadBoards(): void {
-    this.boardsService.getAll().subscribe({
+    const observable = this.isGerencia()
+      ? this.boardsService.getAllForGerencia()
+      : this.boardsService.getAll();
+    observable.subscribe({
       next: (boards) => {
         // Automatic redirection logic removed as per user request
       },
@@ -683,10 +689,13 @@ export class TasksPage implements OnInit, AfterViewInit {
   }
 
   /**
-   * Refresca la lista de tableros
+   * Refresca la lista de tableros (todos para gerencia, propios para el resto)
    */
   public refreshBoards(): void {
-    this.boardsService.getAll().subscribe({
+    const observable = this.isGerencia()
+      ? this.boardsService.getAllForGerencia()
+      : this.boardsService.getAll();
+    observable.subscribe({
       next: () => {
         // Verificar si el tablero seleccionado todavía está en la lista
         const selectedBoardId = this.selectedBoard()?._id;
