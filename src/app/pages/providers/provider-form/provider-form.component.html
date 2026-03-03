@@ -1,0 +1,188 @@
+<div class="p-4 space-y-4 max-w-5xl mx-auto">
+  <p-toast></p-toast>
+  
+  <div class="flex items-center gap-4 mb-6">
+    <button pButton icon="pi pi-arrow-left" class="p-button-rounded p-button-text p-button-secondary" (click)="goBack()"></button>
+    <div class="flex flex-col">
+      <h1 class="text-2xl font-bold text-gray-800 m-0">
+        {{ isEditMode() ? 'Editar Proveedor' : 'Nuevo Proveedor' }}
+      </h1>
+      <p class="text-sm text-gray-500 m-0 mt-1">
+        Completa el formulario para registrar el proveedor.
+      </p>
+    </div>
+  </div>
+
+  <div class="grid gap-6">
+    <!-- Información básica -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-2 p-4 border-b">
+          <i class="pi pi-info-circle text-blue-500 text-xl"></i>
+          <h2 class="text-lg font-semibold m-0 text-slate-800">Información Básica</h2>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+            <input pInputText placeholder="Nombre del proveedor" [ngModel]="editing().name" (ngModelChange)="onEditChange('name', $event)" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo Doc.</label>
+            <p-select [options]="docTypes()" optionLabel="label" optionValue="value" [ngModel]="editing().taxIdType" (ngModelChange)="onEditChange('taxIdType', $event)" placeholder="Tipo" class="w-full"></p-select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Núm. Documento (RUC/DNI)
+              <span class="text-xs text-gray-400 font-normal ml-1">(se autocompleta PE)</span>
+            </label>
+            <input pInputText placeholder="12345678" [ngModel]="editing().taxId" (ngModelChange)="onEditChange('taxId', $event)" class="w-full" maxlength="11" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Sitio Web (opcional)</label>
+            <input pInputText placeholder="https://ejemplo.com" [ngModel]="editing().website" (ngModelChange)="onEditChange('website', $event)" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Calificación</label>
+            <p-rating [ngModel]="editing().rating" (ngModelChange)="onEditChange('rating', $event)"></p-rating>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <textarea pInputText placeholder="Descripción del proveedor..." [ngModel]="editing().description" (ngModelChange)="onEditChange('description', $event)" rows="3" class="w-full"></textarea>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-2 mt-2">
+            <p-checkbox [ngModel]="editing().isActive" (ngModelChange)="onEditChange('isActive', $event)" [binary]="true" inputId="activeCheck"></p-checkbox>
+            <label for="activeCheck" class="text-sm font-medium text-gray-700 cursor-pointer">Proveedor activo</label>
+          </div>
+        </div>
+      </ng-template>
+    </p-card>
+
+    <!-- Rating Metrics Detail (New Logistics Metrics) -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-2 p-4 border-b">
+          <i class="pi pi-star text-yellow-500 text-xl"></i>
+          <h2 class="text-lg font-semibold m-0 text-slate-800">Métricas de Calificación</h2>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="flex flex-col items-center p-4 bg-slate-50 rounded-lg">
+            <span class="text-sm font-medium text-slate-700 mb-2">Entregas a tiempo</span>
+            <p-rating [ngModel]="editing().metrics?.onTimeDelivery || 0" (ngModelChange)="updateMetric('onTimeDelivery', $event)" [stars]="5"></p-rating>
+          </div>
+          <div class="flex flex-col items-center p-4 bg-slate-50 rounded-lg">
+            <span class="text-sm font-medium text-slate-700 mb-2">Entregas completas</span>
+            <p-rating [ngModel]="editing().metrics?.completeDelivery || 0" (ngModelChange)="updateMetric('completeDelivery', $event)" [stars]="5"></p-rating>
+          </div>
+          <div class="flex flex-col items-center p-4 bg-slate-50 rounded-lg">
+            <span class="text-sm font-medium text-slate-700 mb-2">Calificación Interna</span>
+            <p-rating [ngModel]="editing().metrics?.internalRating || 0" (ngModelChange)="updateMetric('internalRating', $event)" [stars]="5"></p-rating>
+          </div>
+        </div>
+      </ng-template>
+    </p-card>
+
+    <!-- Ubicación -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-2 p-4 border-b">
+          <i class="pi pi-map-marker text-orange-500 text-xl"></i>
+          <h2 class="text-lg font-semibold m-0 text-slate-800">Ubicación</h2>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">País *</label>
+            <p-select [options]="countries()" optionLabel="nombre" optionValue="codigo" [ngModel]="selectedCountry()?.codigo" (ngModelChange)="onCountryChange(findCountryByCode($event))" placeholder="Seleccionar país" [showClear]="true" class="w-full"></p-select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Provincia/Estado</label>
+            <p-select [options]="provinces()" optionLabel="nombre" optionValue="codigo" [ngModel]="selectedProvince()?.codigo" (ngModelChange)="onProvinceChange(findProvinceByCode($event))" placeholder="Seleccionar provincia" [showClear]="true" [disabled]="!selectedCountry()" class="w-full"></p-select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Distrito/Municipio</label>
+            <p-select [options]="districts()" optionLabel="nombre" optionValue="codigo" [ngModel]="selectedDistrict()?.codigo" (ngModelChange)="onDistrictChange(findDistrictByCode($event))" placeholder="Seleccionar distrito" [showClear]="true" [disabled]="!selectedProvince()" class="w-full"></p-select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Dirección específica</label>
+            <input pInputText placeholder="Av. Principal 123" [ngModel]="editing().ubicacion?.direccion" (ngModelChange)="onDireccionChange($event)" class="w-full" />
+          </div>
+        </div>
+      </ng-template>
+    </p-card>
+
+    <!-- Servicios -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-2 p-4 border-b">
+          <i class="pi pi-cog text-green-500 text-xl"></i>
+          <h2 class="text-lg font-semibold m-0 text-slate-800">Servicios Ofrecidos *</h2>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <div class="space-y-3">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Servicios (separados por comas)</label>
+          <input pInputText placeholder="Ej: construcción, pintura, electricidad" [ngModel]="editing().services.join(', ')" (ngModelChange)="updateServicesFromText($event)" class="w-full" />
+          @if (editing().services.length) {
+          <div class="flex flex-wrap gap-2 mt-3">
+            @for (service of editing().services; track service) {
+            <p-chip [label]="service"></p-chip>
+            }
+          </div>
+          }
+        </div>
+      </ng-template>
+    </p-card>
+
+    <!-- Contactos -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center justify-between p-4 border-b">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-users text-purple-500 text-xl"></i>
+            <h2 class="text-lg font-semibold m-0 text-slate-800">Contactos *</h2>
+          </div>
+          <button pButton label="Agregar Contacto" icon="pi pi-plus" class="p-button-sm p-button-outlined" (click)="addContact()"></button>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <div class="space-y-4 pt-2">
+          @if(editing().contacts.length === 0){
+             <div class="text-sm text-center text-slate-500 py-4">No hay contactos registrados. Agrega un contacto principal.</div>
+          }
+          @for (contact of editing().contacts; track $index) {
+          <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/50 relative group transition-colors hover:border-blue-200">
+            <button pButton icon="pi pi-times" class="p-button-rounded p-button-danger p-button-text p-button-sm absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" (click)="removeContact($index)" pTooltip="Eliminar contacto"></button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">Nombre</label>
+                <input pInputText placeholder="Ej: Juan Pérez" [ngModel]="contact.name" (ngModelChange)="updateContact($index, 'name', $event)" class="w-full p-inputtext-sm text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">Área / Cargo</label>
+                <input pInputText placeholder="Ej: Ventas" [ngModel]="contact.area" (ngModelChange)="updateContact($index, 'area', $event)" class="w-full p-inputtext-sm text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">Email</label>
+                <input pInputText placeholder="correo@ejemplo.com" [ngModel]="contact.email" (ngModelChange)="updateContact($index, 'email', $event)" class="w-full p-inputtext-sm text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">Teléfono</label>
+                <input pInputText placeholder="+51 987 654 321" [ngModel]="contact.phone" (ngModelChange)="updateContact($index, 'phone', $event)" class="w-full p-inputtext-sm text-sm" />
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+      </ng-template>
+    </p-card>
+
+    <div class="flex items-center justify-end gap-3 mt-4">
+      <button pButton label="Cancelar" icon="pi pi-times" class="p-button-outlined p-button-secondary" (click)="goBack()"></button>
+      <button pButton label="Guardar Proveedor" icon="pi pi-check" class="p-button-primary" (click)="save()"></button>
+    </div>
+  </div>
+</div>
