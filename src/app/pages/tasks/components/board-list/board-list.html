@@ -1,47 +1,48 @@
 <!-- Loading State -->
 @if (loading()) {
-<div class="flex justify-center items-center py-12">
-  <p-progressSpinner styleClass="w-8 h-8" strokeWidth="4"></p-progressSpinner>
-</div>
+  <div class="flex justify-center items-center py-12">
+    <p-progressSpinner styleClass="w-8 h-8" strokeWidth="4"></p-progressSpinner>
+  </div>
 }
 
 <!-- Error State -->
 @if (error() && !loading()) {
-<p-message severity="error" [text]="error()!" class="mb-6"></p-message>
+  <p-message severity="error" [text]="error()!" class="mb-6"></p-message>
 }
 
 <!-- Boards Grid -->
 @if (!loading() && !error() && boards().length > 0) {
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style="align-items: stretch;">
-  @for (board of boards(); track board._id) {
-  <div style="height: 100%; display: flex; flex-direction: column;">
-    <app-board-card
-    [board]="board"
-    [isOwner]="isBoardOwner(board)"
-    [isSelected]="selectedBoardId() === board._id"
-    [currentUserId]="currentUserId()"
-    (view)="viewBoard.emit(board)"
-    (edit)="editBoard.emit(board)"
-    (invite)="inviteUser.emit(board)"
-    (delete)="deleteBoard.emit(board)"
-    (colorChange)="changeColor.emit($event)"
-    ></app-board-card>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style="align-items: stretch">
+    @for (board of boards(); track board._id) {
+      <div style="height: 100%; display: flex; flex-direction: column">
+        <app-board-card
+          [board]="board"
+          [isOwner]="isBoardOwner(board)"
+          [isGerencia]="isGerencia()"
+          [isSelected]="selectedBoardId() === board._id"
+          [currentUserId]="currentUserId()"
+          (view)="viewBoard.emit(board)"
+          (edit)="editBoard.emit(board)"
+          (invite)="inviteUser.emit(board)"
+          (delete)="deleteBoard.emit(board)"
+          (colorChange)="changeColor.emit($event)"
+        ></app-board-card>
+      </div>
+    }
   </div>
-  }
-</div>
 }
 
 <!-- Empty State -->
 @if (!loading() && !error() && boards().length === 0) {
-<div class="text-center py-12">
-  <i class="pi pi-th-large text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-  <h3 class="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">No hay tableros</h3>
-  <p class="text-gray-500 dark:text-gray-500 mb-6">Comienza creando tu primer tablero</p>
-  <p-button
-    icon="pi pi-plus"
-    label="Crear Primer Tablero"
-    (onClick)="createBoard.emit()"
-    severity="primary"
-  ></p-button>
-</div>
+  <div class="text-center py-12">
+    <i class="pi pi-th-large text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+    <h3 class="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">No hay tableros</h3>
+    <p class="text-gray-500 dark:text-gray-500 mb-6">Comienza creando tu primer tablero</p>
+    <p-button
+      icon="pi pi-plus"
+      label="Crear Primer Tablero"
+      (onClick)="createBoard.emit()"
+      severity="primary"
+    ></p-button>
+  </div>
 }
