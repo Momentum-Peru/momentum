@@ -43,6 +43,15 @@
             </td>
             <td class="p-4 text-center">
               <button pButton icon="pi pi-eye" class="p-button-text p-button-sm p-button-info" pTooltip="Ver Detalle"></button>
+              @if (row.status !== 'anulada' && row.status !== 'recibida') {
+                <button 
+                  pButton 
+                  icon="pi pi-box" 
+                  class="p-button-text p-button-sm p-button-warning" 
+                  pTooltip="Recibir Mercadería"
+                  (click)="goToReceive(row._id)">
+                </button>
+              }
             </td>
           </tr>
         </ng-template>

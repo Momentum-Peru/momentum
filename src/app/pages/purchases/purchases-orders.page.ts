@@ -37,6 +37,10 @@ export class PurchasesOrdersPage implements OnInit {
     this.router.navigate(['/purchases/requirements']);
   }
 
+  goToReceive(orderId: string): void {
+    this.router.navigate(['/purchases/receipts/new'], { queryParams: { orderId } });
+  }
+
   providerName(o: PurchaseOrder): string {
     const p = o.providerId;
     return typeof p === 'object' && p?.name ? p.name : '-';
