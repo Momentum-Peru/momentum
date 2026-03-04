@@ -407,6 +407,38 @@ export const routes: Routes = [
             data: { menuPermission: '/purchases/vouchers' },
           },
           {
+            path: 'receipts',
+            children: [
+              {
+                path: '',
+                loadComponent: () =>
+                  import('./pages/purchases/purchases-receipts.page').then(
+                    (m) => m.PurchasesReceiptsPage,
+                  ),
+                canActivate: [MenuPermissionGuard],
+                data: { menuPermission: '/purchases/orders' }, // Usar permiso de orders por ahora
+              },
+              {
+                path: 'new',
+                loadComponent: () =>
+                  import('./pages/purchases/purchases-receipt-register.page').then(
+                    (m) => m.PurchasesReceiptRegisterPage,
+                  ),
+                canActivate: [MenuPermissionGuard],
+                data: { menuPermission: '/purchases/orders' },
+              },
+              {
+                path: ':id',
+                loadComponent: () =>
+                  import('./pages/purchases/purchases-receipt-detail.page').then(
+                    (m) => m.PurchasesReceiptDetailPage,
+                  ),
+                canActivate: [MenuPermissionGuard],
+                data: { menuPermission: '/purchases/orders' },
+              }
+            ]
+          },
+          {
             path: '',
             redirectTo: 'requirements',
             pathMatch: 'full',

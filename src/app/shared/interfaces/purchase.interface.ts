@@ -187,6 +187,7 @@ export interface PurchaseVoucher {
   _id: string;
   providerId: { _id: string; name?: string; taxId?: string } | string;
   purchaseOrderId?: string | { _id: string; number?: string };
+  goodsReceiptIds?: string[] | { _id: string; number?: string }[];
   guideId?: string;
   tipoComprobante: string;
   serie: string;
@@ -217,6 +218,7 @@ export interface PurchaseVoucher {
 export interface RegisterVoucherRequest {
   providerId: string;
   purchaseOrderId?: string;
+  goodsReceiptIds?: string[];
   guideId?: string;
   tipoComprobante: string;
   serie: string;
@@ -238,5 +240,41 @@ export interface RegisterVoucherRequest {
   detractionAmount?: number;
   importeTotal: number;
   rightToTaxCredit?: boolean;
+  notes?: string;
+}
+
+// --- Goods Receipt ---
+
+export interface GoodsReceiptLine {
+  purchaseOrderLineIndex: number;
+  productCode?: string;
+  description: string;
+  quantityReceived: number;
+  unit: string;
+  centerCostId?: string;
+}
+
+export interface GoodsReceipt {
+  _id: string;
+  tenantId?: string;
+  number: string;
+  purchaseOrderId: { _id: string; number?: string; lines?: PurchaseOrderLine[] } | string;
+  providerId: { _id: string; name?: string; taxId?: string } | string;
+  guideNumber?: string;
+  receiptDate: string;
+  lines: GoodsReceiptLine[];
+  status: 'borrador' | 'recibida' | 'anulada';
+  notes?: string;
+  receivedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGoodsReceiptRequest {
+  purchaseOrderId: string;
+  providerId: string;
+  guideNumber?: string;
+  receiptDate: string;
+  lines: GoodsReceiptLine[];
   notes?: string;
 }
