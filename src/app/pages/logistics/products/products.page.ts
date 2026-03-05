@@ -7,13 +7,16 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { ProductsService, Product } from '../../../shared/services/products.service';
 
 @Component({
   selector: 'app-products-page',
   standalone: true,
   imports: [
-    CommonModule, CardModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule
+    CommonModule, CardModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule,
+    IconFieldModule, InputIconModule
   ],
   templateUrl: './products.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

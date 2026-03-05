@@ -13,6 +13,7 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
+import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
 import { PurchasesOrdersApiService } from '../../../shared/services/purchases-orders-api.service';
@@ -22,7 +23,7 @@ import { PurchaseOrder } from '../../../shared/interfaces/purchase.interface';
 @Component({
   selector: 'app-deliveries-page',
   standalone: true,
-  imports: [CommonModule, ButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
+  imports: [CommonModule, ButtonModule, TableModule, TagModule, ToastModule, TooltipModule, CardModule],
   providers: [MessageService],
   templateUrl: './deliveries.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

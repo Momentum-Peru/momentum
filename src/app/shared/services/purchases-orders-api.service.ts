@@ -14,12 +14,10 @@ export class PurchasesOrdersApiService {
   private readonly baseUrl = `${environment.apiUrl}/purchases/orders`;
 
   list(params?: {
-    requirementId?: string;
     providerId?: string;
     status?: string;
   }): Observable<PurchaseOrder[]> {
     let httpParams = new HttpParams();
-    if (params?.requirementId) httpParams = httpParams.set('requirementId', params.requirementId);
     if (params?.providerId) httpParams = httpParams.set('providerId', params.providerId);
     if (params?.status) httpParams = httpParams.set('status', params.status);
     return this.http.get<PurchaseOrder[]>(this.baseUrl, { params: httpParams });
@@ -33,7 +31,15 @@ export class PurchasesOrdersApiService {
     return this.http.post<PurchaseOrder>(this.baseUrl, data);
   }
 
-  getPdf(id: string): Observable<{ url?: string; message: string }> {
-    return this.http.get<{ url?: string; message: string }>(`${this.baseUrl}/${id}/pdf`);
+  getPdf(id: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/${id}/pdf`, { responseType: 'blob' });
+  }
+
+  approveOrder(id: string, userId: string): Observable<PurchaseOrder> {
+    return this.http.post<PurchaseOrder>(`${this.baseUrl}/${id}/approve?approvedBy=${userId}`, {});
+  }
+
+  rejectOrder(id: string, userId: string): Observable<PurchaseOrder> {
+    return this.http.post<PurchaseOrder>(`${this.baseUrl}/${id}/reject?rejectedBy=${userId}`, {});
   }
 }

@@ -30,9 +30,9 @@
       styleClass="p-datatable-sm"
     >
       <ng-template pTemplate="caption">
-        <div class="flex justify-between items-center">
-          <span class="p-input-icon-left w-full md:w-auto">
-            <i class="pi pi-search"></i>
+        <div class="flex justify-between items-center pb-4">
+          <p-iconfield iconPosition="left" class="w-full md:w-auto">
+            <p-inputicon class="pi pi-search"></p-inputicon>
             <input
               pInputText
               type="text"
@@ -40,7 +40,7 @@
               placeholder="Buscar por nombre, categoría..."
               class="w-full md:w-80"
             />
-          </span>
+          </p-iconfield>
         </div>
       </ng-template>
       <ng-template pTemplate="header">

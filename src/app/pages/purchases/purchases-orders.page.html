@@ -1,4 +1,4 @@
-<div class="p-4 sm:p-6 max-w-6xl mx-auto">
+<div class="p-4 sm:p-6">
   <p-toast [life]="5000"></p-toast>
   <div
     class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 text-slate-800"
@@ -8,24 +8,16 @@
         <i class="pi pi-shopping-cart mr-2 text-primary"></i> Órdenes de Compra
       </h1>
       <p class="text-sm text-slate-500 mt-1 m-0">
-        Las órdenes se generan al adjudicar un proyecto en <strong>Proyectos Activos</strong>. Para
-        crear nuevas, vaya a Proyectos y adjudique.
+        Gestione y registre las órdenes de compra para sus proveedores.
       </p>
     </div>
     <div class="flex gap-2 flex-shrink-0">
       <button
         pButton
-        label="Ver Proyectos"
-        icon="pi pi-inbox"
-        class="p-button-outlined"
-        (click)="goToRequirements()"
-      ></button>
-      <button
-        pButton
-        label="Nuevo proyecto"
+        label="Nueva Orden de Compra"
         icon="pi pi-plus"
         class="p-button-primary"
-        (click)="goToNewProject()"
+        (click)="goToNewOrder()"
       ></button>
     </div>
   </div>
@@ -60,10 +52,7 @@
             <td colspan="6" class="text-center py-12 text-slate-500">
               <i class="pi pi-inbox text-4xl mb-4 text-slate-300 block"></i>
               @if (hasTenant()) {
-                No hay órdenes de compra. Para generarlas: vaya a
-                <strong>Proyectos Activos</strong>, abra un proyecto en estado
-                <strong>Listo para comparar</strong>, entre a <strong>Comparar</strong> y haga clic
-                en <strong>Adjudicar</strong> (recomendado o por proveedor).
+                No hay órdenes de compra registradas. Haga clic en <strong>Nueva Orden de Compra</strong> para crear una.
               } @else {
                 Seleccione una empresa en el menú superior para ver las órdenes de compra.
               }
@@ -97,6 +86,29 @@
                 class="p-button-text p-button-sm p-button-info"
                 pTooltip="Ver Detalle"
               ></button>
+              <button
+                pButton
+                icon="pi pi-file-pdf"
+                class="p-button-text p-button-sm p-button-danger"
+                pTooltip="Descargar PDF"
+                (click)="downloadPdf(row._id, row.number)"
+              ></button>
+              @if (row.status === 'pendiente_aprobacion') {
+                <button
+                  pButton
+                  icon="pi pi-check"
+                  class="p-button-text p-button-sm p-button-success"
+                  pTooltip="Aprobar Orden"
+                  (click)="approveOrder(row)"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-times"
+                  class="p-button-text p-button-sm p-button-danger"
+                  pTooltip="Rechazar Orden"
+                  (click)="rejectOrder(row)"
+                ></button>
+              }
               @if (row.status !== 'anulada' && row.status !== 'recibida') {
                 <button
                   pButton

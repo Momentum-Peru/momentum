@@ -61,6 +61,7 @@ export class MenuConfigService {
     { path: '/logistics/products', label: 'Productos y Servicios', icon: 'pi pi-box' },
     { path: '/logistics/quotes', label: 'Solicitudes de cotización', icon: 'pi pi-inbox' },
     { path: '/logistics/deliveries', label: 'Confirmación de entrega', icon: 'pi pi-check-circle' },
+    { path: '/approvals', label: 'Aprobaciones', icon: 'pi pi-check-circle' },
   ];
 
   /**
@@ -337,6 +338,11 @@ export class MenuConfigService {
             label: 'Firma digital',
             icon: 'pi pi-pencil',
             routerLink: '/digital-signature',
+          },
+          {
+            label: 'Aprobaciones',
+            icon: 'pi pi-check-circle',
+            routerLink: '/approvals',
           },
           {
             label: 'Logs del sistema',

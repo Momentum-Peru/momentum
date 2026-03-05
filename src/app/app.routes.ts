@@ -398,6 +398,20 @@ export const routes: Routes = [
             data: { menuPermission: '/purchases/orders' },
           },
           {
+            path: 'orders/new',
+            loadComponent: () =>
+              import('./pages/purchases/purchases-order-form/purchases-order-form.component').then((m) => m.PurchasesOrderFormComponent),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/purchases/orders' },
+          },
+          {
+            path: 'orders/:id/edit',
+            loadComponent: () =>
+              import('./pages/purchases/purchases-order-form/purchases-order-form.component').then((m) => m.PurchasesOrderFormComponent),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/purchases/orders' },
+          },
+          {
             path: 'vouchers',
             loadComponent: () =>
               import('./pages/purchases/purchases-vouchers.page').then(
@@ -472,6 +486,12 @@ export const routes: Routes = [
           import('./pages/menu-permissions/menu-permissions').then((m) => m.MenuPermissionsPage),
         canActivate: [MenuPermissionGuard],
         // data: { menuPermission: '/menu-permissions' },
+      },
+      {
+        path: 'approvals',
+        loadComponent: () =>
+          import('./pages/approvals/approvals.page').then((m) => m.ApprovalsPage),
+        // canActivate: [MenuPermissionGuard], // TODO: Add permissions if necessary
       },
       {
         path: 'providers',
