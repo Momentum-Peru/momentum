@@ -60,6 +60,12 @@
               icon="pi pi-th-large"
               (click)="goCompare()"
             ></button>
+          }
+          @if (
+            req.status === 'borrador' ||
+            req.status === 'listo_para_comparar' ||
+            req.status === 'cotizaciones_pendientes'
+          ) {
             <button
               pButton
               type="button"

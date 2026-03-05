@@ -50,6 +50,14 @@
         <button
           pButton
           type="button"
+          label="Cotizar"
+          icon="pi pi-plus"
+          class="p-button-text p-button-sm"
+          (click)="registerQuote.emit(requirement())"
+        ></button>
+        <button
+          pButton
+          type="button"
           label="Revisar"
           icon="pi pi-arrow-right"
           iconPos="right"
@@ -64,10 +72,18 @@
         <button
           pButton
           type="button"
+          label="Cotizar"
+          icon="pi pi-plus"
+          class="p-button-text p-button-sm text-primary font-medium"
+          (click)="registerQuote.emit(requirement())"
+        ></button>
+        <button
+          pButton
+          type="button"
           label="Detalles"
           icon="pi pi-arrow-right"
           iconPos="right"
-          class="p-button-text p-button-sm text-primary font-medium"
+          class="p-button-text p-button-sm"
           (click)="view.emit(requirement())"
         ></button>
       }
@@ -78,10 +94,18 @@
         <button
           pButton
           type="button"
+          label="Cotizar"
+          icon="pi pi-file-edit"
+          class="p-button-text p-button-sm text-primary font-medium"
+          (click)="registerQuote.emit(requirement())"
+        ></button>
+        <button
+          pButton
+          type="button"
           label="Continuar"
           icon="pi pi-arrow-right"
           iconPos="right"
-          class="p-button-text p-button-sm text-primary font-medium"
+          class="p-button-text p-button-sm"
           (click)="edit.emit(requirement())"
         ></button>
         <div class="flex gap-1 mt-1">

@@ -1,17 +1,50 @@
 <div class="p-4 sm:p-6 max-w-6xl mx-auto">
   <p-toast [life]="5000"></p-toast>
-  <div class="flex items-center justify-between gap-4 mb-6 text-slate-800">
-    <h1 class="text-2xl font-bold m-0"><i class="pi pi-shopping-bag mr-2 text-primary"></i> Órdenes de Compra</h1>
-    <button pButton label="Nueva Orden" icon="pi pi-plus" class="p-button-primary"></button>
+  <div
+    class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 text-slate-800"
+  >
+    <div>
+      <h1 class="text-2xl font-bold m-0">
+        <i class="pi pi-shopping-cart mr-2 text-primary"></i> Órdenes de Compra
+      </h1>
+      <p class="text-sm text-slate-500 mt-1 m-0">
+        Las órdenes se generan al adjudicar un proyecto en <strong>Proyectos Activos</strong>. Para
+        crear nuevas, vaya a Proyectos y adjudique.
+      </p>
+    </div>
+    <div class="flex gap-2 flex-shrink-0">
+      <button
+        pButton
+        label="Ver Proyectos"
+        icon="pi pi-inbox"
+        class="p-button-outlined"
+        (click)="goToRequirements()"
+      ></button>
+      <button
+        pButton
+        label="Nuevo proyecto"
+        icon="pi pi-plus"
+        class="p-button-primary"
+        (click)="goToNewProject()"
+      ></button>
+    </div>
   </div>
-  
+
   @if (loading()) {
     <div class="flex justify-center py-12">
       <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
     </div>
   } @else {
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <p-table [value]="orders()" styleClass="p-datatable-sm" [tableStyle]="{ 'min-width': '50rem' }" [paginator]="true" [rows]="10" [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando del {first} al {last} de {totalRecords} órdenes">
+      <p-table
+        [value]="orders()"
+        styleClass="p-datatable-sm"
+        [tableStyle]="{ 'min-width': '50rem' }"
+        [paginator]="true"
+        [rows]="10"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando del {first} al {last} de {totalRecords} órdenes"
+      >
         <ng-template pTemplate="header">
           <tr class="bg-slate-50 border-b border-slate-200 text-slate-700">
             <th class="p-4 font-semibold text-left">N° Orden</th>
@@ -26,31 +59,52 @@
           <tr>
             <td colspan="6" class="text-center py-12 text-slate-500">
               <i class="pi pi-inbox text-4xl mb-4 text-slate-300 block"></i>
-              No hay órdenes de compra registradas.
+              @if (hasTenant()) {
+                No hay órdenes de compra. Para generarlas: vaya a
+                <strong>Proyectos Activos</strong>, abra un proyecto en estado
+                <strong>Listo para comparar</strong>, entre a <strong>Comparar</strong> y haga clic
+                en <strong>Adjudicar</strong> (recomendado o por proveedor).
+              } @else {
+                Seleccione una empresa en el menú superior para ver las órdenes de compra.
+              }
             </td>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-row>
           <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
             <td class="p-4">
-              <span class="font-mono font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded">{{ row.number }}</span>
+              <span class="font-mono font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded">{{
+                row.number
+              }}</span>
             </td>
             <td class="p-4 text-sm font-medium text-slate-800">{{ providerName(row) }}</td>
-            <td class="p-4 text-right text-sm font-bold text-slate-800">{{ row.totalAmount | currency: 'PEN':'symbol' }}</td>
-            <td class="p-4 text-center text-sm text-slate-600">{{ row.issueDate | date: 'dd/MM/yyyy' }}</td>
-            <td class="p-4 text-center">
-              <p-tag [value]="row.status" [severity]="row.status === 'emitida' ? 'success' : 'info'"></p-tag>
+            <td class="p-4 text-right text-sm font-bold text-slate-800">
+              {{ row.totalAmount | currency: 'PEN' : 'symbol' }}
+            </td>
+            <td class="p-4 text-center text-sm text-slate-600">
+              {{ row.issueDate | date: 'dd/MM/yyyy' }}
             </td>
             <td class="p-4 text-center">
-              <button pButton icon="pi pi-eye" class="p-button-text p-button-sm p-button-info" pTooltip="Ver Detalle"></button>
+              <p-tag
+                [value]="row.status"
+                [severity]="row.status === 'emitida' ? 'success' : 'info'"
+              ></p-tag>
+            </td>
+            <td class="p-4 text-center">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm p-button-info"
+                pTooltip="Ver Detalle"
+              ></button>
               @if (row.status !== 'anulada' && row.status !== 'recibida') {
-                <button 
-                  pButton 
-                  icon="pi pi-box" 
-                  class="p-button-text p-button-sm p-button-warning" 
+                <button
+                  pButton
+                  icon="pi pi-box"
+                  class="p-button-text p-button-sm p-button-warning"
                   pTooltip="Recibir Mercadería"
-                  (click)="goToReceive(row._id)">
-                </button>
+                  (click)="goToReceive(row._id)"
+                ></button>
               }
             </td>
           </tr>

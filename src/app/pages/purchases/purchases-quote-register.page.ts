@@ -132,7 +132,13 @@ export class PurchasesQuoteRegisterPage implements OnInit {
     this.saving.set(true);
     this.quotesApi.register(id, payload).subscribe({
       next: () => {
-        this.router.navigate(['/purchases/requirements', id, 'compare']);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Cotización registrada',
+          detail:
+            'Puede agregar más cotizaciones desde el detalle del proyecto o ir a Comparar cuando esté listo.',
+        });
+        this.router.navigate(['/purchases/requirements', id]);
       },
       error: () => this.saving.set(false),
       complete: () => this.saving.set(false),
