@@ -10,6 +10,7 @@ import { MessageService } from 'primeng/api';
 import { PurchasesOrdersApiService } from '../../shared/services/purchases-orders-api.service';
 import { PurchaseOrder } from '../../shared/interfaces/purchase.interface';
 import { TenantService } from '../../core/services/tenant.service';
+import { AuthService } from '../login/services/auth.service';
 
 @Component({
   selector: 'app-purchases-orders',
@@ -22,6 +23,7 @@ export class PurchasesOrdersPage implements OnInit {
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
   private readonly tenantService = inject(TenantService);
+  private readonly authService = inject(AuthService);
 
   orders = signal<PurchaseOrder[]>([]);
   loading = signal(false);
@@ -54,14 +56,9 @@ export class PurchasesOrdersPage implements OnInit {
     });
   }
 
-  /** Ir al listado de proyectos (requerimientos). Las órdenes se generan al adjudicar desde ahí. */
-  goToRequirements(): void {
-    this.router.navigate(['/purchases/requirements']);
-  }
-
-  /** Ir a crear un nuevo proyecto/requerimiento. Tras cotizar y adjudicar se generarán órdenes que aparecerán aquí. */
-  goToNewProject(): void {
-    this.router.navigate(['/purchases/requirements/new']);
+  /** Ir a crear una nueva orden de compra */
+  goToNewOrder(): void {
+    this.router.navigate(['/purchases/orders/new']);
   }
 
   goToReceive(orderId: string): void {
@@ -71,5 +68,56 @@ export class PurchasesOrdersPage implements OnInit {
   providerName(o: PurchaseOrder): string {
     const p = o.providerId;
     return typeof p === 'object' && p?.name ? p.name : '-';
+  }
+
+  downloadPdf(orderId: string, orderNumber: string): void {
+    this.messageService.add({ severity: 'info', summary: 'Generando PDF', detail: 'Por favor espere...' });
+    this.ordersApi.getPdf(orderId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `orden-compra-${orderNumber || orderId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      },
+      error: (err) => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el PDF' });
+      }
+    });
+  }
+
+  approveOrder(order: PurchaseOrder): void {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+    this.messageService.add({ severity: 'info', summary: 'Aprobando', detail: 'Por favor espere...' });
+    this.ordersApi.approveOrder(order._id || (order as any).id || '', user.id || (user as any)._id).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Aprobada', detail: 'La orden ha sido aprobada.' });
+        this.loadOrders();
+      },
+      error: (err) => {
+        const msg = err?.error?.message || 'Error al aprobar la orden.';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+      }
+    });
+  }
+
+  rejectOrder(order: PurchaseOrder): void {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+    this.messageService.add({ severity: 'info', summary: 'Rechazando', detail: 'Por favor espere...' });
+    this.ordersApi.rejectOrder(order._id || (order as any).id || '', user.id || (user as any)._id).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Rechazada', detail: 'La orden ha sido rechazada.' });
+        this.loadOrders();
+      },
+      error: (err) => {
+        const msg = err?.error?.message || 'Error al rechazar la orden.';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+      }
+    });
   }
 }

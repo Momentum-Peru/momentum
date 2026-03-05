@@ -160,9 +160,13 @@ export interface PurchaseOrder {
 
 export interface CreatePurchaseOrderRequest {
   number?: string;
-  requirementId?: string;
   providerId: string;
+  providerName: string;
+  providerRuc?: string;
+  providerAddress?: string;
   lines: PurchaseOrderLine[];
+  subtotal: number;
+  igvAmount: number;
   totalAmount: number;
   currency?: string;
   exchangeRate?: number;
