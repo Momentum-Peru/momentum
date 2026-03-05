@@ -1,20 +1,29 @@
 <div class="p-4 sm:p-6 max-w-6xl mx-auto">
-  <p-toast></p-toast>
-  
+  <p-toast [life]="5000"></p-toast>
+
   <div class="flex items-center justify-between gap-4 mb-6 text-slate-800">
     <div>
-      <h1 class="text-2xl font-bold m-0"><i class="pi pi-check-circle mr-2 text-primary"></i> Confirmación de Entrega</h1>
-      <p class="text-slate-500 mt-1 text-sm">Recepcione las compras y evalúe al proveedor.</p>
+      <h1 class="text-2xl font-bold m-0">
+        <i class="pi pi-check-circle mr-2 text-primary"></i> Confirmación de Entrega
+      </h1>
+      <p class="text-slate-500 mt-1 text-sm">
+        Recepcione las compras desde las órdenes pendientes. Al hacer clic en &quot;Recibir&quot; se
+        abre el formulario de registro de recepción (guía de remisión).
+      </p>
     </div>
   </div>
-  
+
   @if (loading()) {
     <div class="flex justify-center py-12">
       <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
     </div>
   } @else {
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <p-table [value]="deliveries()" styleClass="p-datatable-sm" [tableStyle]="{ 'min-width': '50rem' }">
+      <p-table
+        [value]="orders()"
+        styleClass="p-datatable-sm"
+        [tableStyle]="{ 'min-width': '50rem' }"
+      >
         <ng-template pTemplate="header">
           <tr class="bg-slate-50 border-b border-slate-200 text-slate-700">
             <th class="p-4 font-semibold text-left">Resguardo / Guía</th>
@@ -29,72 +38,43 @@
           <tr>
             <td colspan="6" class="text-center py-12 text-slate-500">
               <i class="pi pi-inbox text-4xl mb-4 text-slate-300 block"></i>
-              No hay entregas pendientes.
+              @if (hasTenant()) {
+                No hay entregas pendientes. Las órdenes en estado &quot;Emitida&quot; o
+                &quot;Parcial&quot; aparecerán aquí.
+              } @else {
+                Seleccione una empresa en el menú para ver las entregas pendientes.
+              }
             </td>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-row>
           <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-            <td class="p-4 font-mono font-bold text-slate-700">{{ row.id }}</td>
-            <td class="p-4 text-sm font-medium text-slate-800">{{ row.providerName }}</td>
-            <td class="p-4 text-sm font-medium text-slate-500">{{ row.orderNumber }}</td>
-            <td class="p-4 text-center text-sm text-slate-600">{{ row.expectedDate | date: 'dd/MM/yyyy' }}</td>
-            <td class="p-4 text-center">
-              <p-tag [value]="row.status" [severity]="row.status === 'Recibido' ? 'success' : 'warn'"></p-tag>
+            <td class="p-4 font-mono text-sm text-slate-500">—</td>
+            <td class="p-4 text-sm font-medium text-slate-800">{{ providerName(row) }}</td>
+            <td class="p-4">
+              <span class="font-mono font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded">{{
+                row.number
+              }}</span>
+            </td>
+            <td class="p-4 text-center text-sm text-slate-600">
+              {{ expectedDate(row) | date: 'dd/MM/yyyy' }}
             </td>
             <td class="p-4 text-center">
-              <button *ngIf="row.status !== 'Recibido'" pButton icon="pi pi-check" label="Recibir" class="p-button-sm p-button-success" (click)="showEvaluationDialog(row)"></button>
+              <p-tag [value]="statusLabel(row)" [severity]="statusSeverity(row)"></p-tag>
+            </td>
+            <td class="p-4 text-center">
+              <button
+                pButton
+                icon="pi pi-check"
+                label="Recibir"
+                class="p-button-sm p-button-success"
+                pTooltip="Registrar recepción de mercadería"
+                (click)="goToReceive(row._id)"
+              ></button>
             </td>
           </tr>
         </ng-template>
       </p-table>
     </div>
   }
-
-  <!-- Dialog for Reception & Evaluation -->
-  <p-dialog header="Confirmar Entrega y Evaluar" [modal]="true" [(visible)]="evaluationDialog" [style]="{ width: '400px' }">
-    <div class="flex flex-col gap-4 mt-2" *ngIf="selectedDelivery()">
-      
-      <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-        <p class="text-xs text-slate-500 mb-1">Proveedor</p>
-        <p class="font-medium text-slate-800 m-0">{{ selectedDelivery()?.providerName }}</p>
-      </div>
-
-      <div class="flex flex-col gap-2 p-3 border border-slate-200 rounded-lg">
-        <label class="text-sm font-semibold text-slate-800">Evaluación de Entrega (1-5)</label>
-        
-        <div class="flex items-center justify-between">
-          <span class="text-sm text-slate-600 relative group cursor-help">
-            Entrega a tiempo
-            <i class="pi pi-info-circle ml-1 text-slate-400"></i>
-          </span>
-          <p-rating [(ngModel)]="ratingMetrics().onTime" [stars]="5"></p-rating>
-        </div>
-        
-        <div class="flex items-center justify-between">
-          <span class="text-sm text-slate-600 relative group cursor-help">
-            Entrega completa
-            <i class="pi pi-info-circle ml-1 text-slate-400"></i>
-          </span>
-          <p-rating [(ngModel)]="ratingMetrics().complete" [stars]="5"></p-rating>
-        </div>
-
-        <div class="flex items-center justify-between border-t border-slate-100 mt-2 pt-2">
-          <span class="text-sm text-slate-600 relative font-medium group cursor-help">
-            Calificación interna
-            <i class="pi pi-info-circle ml-1 text-slate-400"></i>
-          </span>
-          <p-rating [(ngModel)]="ratingMetrics().internal" [stars]="5"></p-rating>
-        </div>
-      </div>
-      
-    </div>
-    
-    <ng-template pTemplate="footer">
-      <div class="flex justify-end gap-2 mt-4">
-        <button pButton label="Cancelar" icon="pi pi-times" class="p-button-text text-slate-600" (click)="evaluationDialog.set(false)"></button>
-        <button pButton label="Confirmar" icon="pi pi-check" class="p-button-primary" (click)="confirmDelivery()"></button>
-      </div>
-    </ng-template>
-  </p-dialog>
 </div>

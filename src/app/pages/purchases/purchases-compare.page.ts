@@ -7,6 +7,7 @@ import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { PurchasesComparisonApiService } from '../../shared/services/purchases-comparison-api.service';
 import { PurchaseCompareResponse } from '../../shared/interfaces/purchase.interface';
 
@@ -22,11 +23,13 @@ import { PurchaseCompareResponse } from '../../shared/interfaces/purchase.interf
     TagModule,
     ToastModule,
   ],
+  providers: [MessageService],
   templateUrl: './purchases-compare.page.html',
 })
 export class PurchasesComparePage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
   private readonly comparisonApi = inject(PurchasesComparisonApiService);
 
   data = signal<PurchaseCompareResponse | null>(null);
@@ -75,10 +78,26 @@ export class PurchasesComparePage implements OnInit {
       .filter((s) => s.quantity > 0 && s.unitPrice > 0);
     this.adjudicating.set(true);
     this.comparisonApi.adjudicate(requirementId, { selections }).subscribe({
-      next: () => {
+      next: (res: { orders?: unknown[] }) => {
+        const count = res?.orders?.length ?? 0;
+        if (count > 0) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Adjudicación exitosa',
+            detail: `Se generaron ${count} orden(es) de compra. Redirigiendo a Órdenes de compra.`,
+          });
+        }
         this.router.navigate(['/purchases/orders']);
       },
-      error: () => this.adjudicating.set(false),
+      error: (err) => {
+        this.adjudicating.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error al adjudicar',
+          detail:
+            err?.error?.message || err?.message || 'No se pudieron crear las órdenes de compra.',
+        });
+      },
       complete: () => this.adjudicating.set(false),
     });
   }
@@ -131,8 +150,26 @@ export class PurchasesComparePage implements OnInit {
       .filter((s) => s.quantity > 0 && s.unitPrice > 0);
     this.adjudicating.set(true);
     this.comparisonApi.adjudicate(requirementId, { selections }).subscribe({
-      next: () => this.router.navigate(['/purchases/orders']),
-      error: () => this.adjudicating.set(false),
+      next: (res: { orders?: unknown[] }) => {
+        const count = res?.orders?.length ?? 0;
+        if (count > 0) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Adjudicación exitosa',
+            detail: `Se generaron ${count} orden(es) de compra. Redirigiendo a Órdenes de compra.`,
+          });
+        }
+        this.router.navigate(['/purchases/orders']);
+      },
+      error: (err) => {
+        this.adjudicating.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error al adjudicar',
+          detail:
+            err?.error?.message || err?.message || 'No se pudieron crear las órdenes de compra.',
+        });
+      },
       complete: () => this.adjudicating.set(false),
     });
   }
