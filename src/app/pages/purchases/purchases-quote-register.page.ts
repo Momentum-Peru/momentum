@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -44,6 +45,7 @@ import { PurchaseRequirement } from '../../shared/interfaces/purchase.interface'
 export class PurchasesQuoteRegisterPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly requirementsApi = inject(PurchasesRequirementsApiService);
   private readonly quotesApi = inject(PurchasesQuotesApiService);
   private readonly providersService = inject(ProvidersService);
@@ -145,9 +147,14 @@ export class PurchasesQuoteRegisterPage implements OnInit {
     });
   }
 
+  /** Retrocede a la página anterior (ej. Ingresar cotizaciones o detalle del requerimiento). */
   onCancel(): void {
-    const id = this.requirementId();
-    this.router.navigate(id ? ['/purchases/requirements', id] : ['/purchases/requirements']);
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      const id = this.requirementId();
+      this.router.navigate(id ? ['/purchases/requirements', id] : ['/logistics/quote-entry']);
+    }
   }
 
   onSaveDraft(): void {
