@@ -1,0 +1,88 @@
+<div class="p-4 sm:p-6 max-w-6xl mx-auto">
+  <p-toast [life]="5000"></p-toast>
+
+  <div class="flex items-center justify-between gap-4 mb-6 text-slate-800">
+    <div>
+      <h1 class="text-2xl font-bold m-0">
+        <i class="pi pi-pencil mr-2 text-primary"></i> Ingresar cotizaciones
+      </h1>
+      <p class="text-slate-500 mt-1 text-sm">
+        Requerimientos que esperan cotizaciones. Use &quot;Ingresar cotización&quot; para registrar
+        las cotizaciones recibidas (por plataforma o por correo).
+      </p>
+    </div>
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      label="Actualizar"
+      class="p-button-outlined"
+      (click)="load()"
+    ></button>
+  </div>
+
+  @if (loading()) {
+    <div class="flex justify-center py-12">
+      <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+    </div>
+  } @else {
+    <p-card>
+      <p-table
+        [value]="requirements()"
+        styleClass="p-datatable-sm"
+        [tableStyle]="{ 'min-width': '50rem' }"
+      >
+        <ng-template pTemplate="header">
+          <tr class="bg-slate-50 border-b border-slate-200 text-slate-700">
+            <th class="p-4 font-semibold text-left">Requerimiento</th>
+            <th class="p-4 font-semibold text-left">Estado</th>
+            <th class="p-4 font-semibold text-center">Cotizaciones</th>
+            <th class="p-4 font-semibold text-left">Fecha</th>
+            <th class="p-4 font-semibold text-center w-48">Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5" class="text-center py-12 text-slate-500">
+              <i class="pi pi-inbox text-4xl mb-4 text-slate-300 block"></i>
+              No hay requerimientos pendientes de cotización. Los que estén en estado
+              &quot;Cotizaciones pendientes&quot; aparecerán aquí.
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+            <td class="p-4">
+              <span class="font-medium text-slate-800">{{ row.title }}</span>
+              @if (row.description) {
+                <p class="text-sm text-slate-500 mt-0.5 line-clamp-1">{{ row.description }}</p>
+              }
+            </td>
+            <td class="p-4">
+              <p-tag
+                [value]="statusLabel(row.status)"
+                [severity]="statusSeverity(row.status)"
+              ></p-tag>
+            </td>
+            <td class="p-4 text-center">
+              <span class="font-mono text-slate-600">{{ getQuotesCount(row._id) }}</span>
+            </td>
+            <td class="p-4 text-sm text-slate-600">
+              {{ row.createdAt | date: 'dd/MM/yyyy' }}
+            </td>
+            <td class="p-4 text-center">
+              <button
+                pButton
+                icon="pi pi-plus"
+                label="Ingresar cotización"
+                class="p-button-sm p-button-primary"
+                pTooltip="Registrar cotización para este requerimiento"
+                (click)="goToEnterQuote(row._id)"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+  }
+</div>

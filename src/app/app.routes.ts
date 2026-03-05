@@ -400,14 +400,18 @@ export const routes: Routes = [
           {
             path: 'orders/new',
             loadComponent: () =>
-              import('./pages/purchases/purchases-order-form/purchases-order-form.component').then((m) => m.PurchasesOrderFormComponent),
+              import('./pages/purchases/purchases-order-form/purchases-order-form.component').then(
+                (m) => m.PurchasesOrderFormComponent,
+              ),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/purchases/orders' },
           },
           {
             path: 'orders/:id/edit',
             loadComponent: () =>
-              import('./pages/purchases/purchases-order-form/purchases-order-form.component').then((m) => m.PurchasesOrderFormComponent),
+              import('./pages/purchases/purchases-order-form/purchases-order-form.component').then(
+                (m) => m.PurchasesOrderFormComponent,
+              ),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/purchases/orders' },
           },
@@ -449,8 +453,8 @@ export const routes: Routes = [
                   ),
                 canActivate: [MenuPermissionGuard],
                 data: { menuPermission: '/purchases/orders' },
-              }
-            ]
+              },
+            ],
           },
           {
             path: '',
@@ -504,13 +508,19 @@ export const routes: Routes = [
           },
           {
             path: 'new',
-            loadComponent: () => import('./pages/providers/provider-form/provider-form.component').then((m) => m.ProviderFormComponent),
+            loadComponent: () =>
+              import('./pages/providers/provider-form/provider-form.component').then(
+                (m) => m.ProviderFormComponent,
+              ),
           },
           {
             path: 'edit/:id',
-            loadComponent: () => import('./pages/providers/provider-form/provider-form.component').then((m) => m.ProviderFormComponent),
-          }
-        ]
+            loadComponent: () =>
+              import('./pages/providers/provider-form/provider-form.component').then(
+                (m) => m.ProviderFormComponent,
+              ),
+          },
+        ],
       },
       {
         path: 'leads',
@@ -589,17 +599,24 @@ export const routes: Routes = [
             children: [
               {
                 path: '',
-                loadComponent: () => import('./pages/logistics/products/products.page').then((m) => m.ProductsPage),
+                loadComponent: () =>
+                  import('./pages/logistics/products/products.page').then((m) => m.ProductsPage),
               },
               {
                 path: 'new',
-                loadComponent: () => import('./pages/logistics/products/product-form/product-form.component').then((m) => m.ProductFormComponent),
+                loadComponent: () =>
+                  import('./pages/logistics/products/product-form/product-form.component').then(
+                    (m) => m.ProductFormComponent,
+                  ),
               },
               {
                 path: 'edit/:id',
-                loadComponent: () => import('./pages/logistics/products/product-form/product-form.component').then((m) => m.ProductFormComponent),
-              }
-            ]
+                loadComponent: () =>
+                  import('./pages/logistics/products/product-form/product-form.component').then(
+                    (m) => m.ProductFormComponent,
+                  ),
+              },
+            ],
           },
           {
             path: 'quotes',
@@ -608,82 +625,142 @@ export const routes: Routes = [
             children: [
               {
                 path: '',
-                loadComponent: () => import('./pages/logistics/quotes/quotes.page').then((m) => m.QuotesPage),
+                loadComponent: () =>
+                  import('./pages/logistics/quotes/quotes.page').then((m) => m.QuotesPage),
               },
               {
                 path: 'new',
-                loadComponent: () => import('./pages/logistics/quotes/quote-form/quote-form.component').then((m) => m.QuoteFormComponent),
+                loadComponent: () =>
+                  import('./pages/logistics/quotes/quote-form/quote-form.component').then(
+                    (m) => m.QuoteFormComponent,
+                  ),
               },
               {
                 path: 'edit/:id',
-                loadComponent: () => import('./pages/logistics/quotes/quote-form/quote-form.component').then((m) => m.QuoteFormComponent),
+                loadComponent: () =>
+                  import('./pages/logistics/quotes/quote-form/quote-form.component').then(
+                    (m) => m.QuoteFormComponent,
+                  ),
               },
               {
                 path: 'view/:id',
-                loadComponent: () => import('./pages/logistics/quotes/quote-view/quote-view.component').then((m) => m.QuoteViewComponent),
-              }
-            ]
+                loadComponent: () =>
+                  import('./pages/logistics/quotes/quote-view/quote-view.component').then(
+                    (m) => m.QuoteViewComponent,
+                  ),
+              },
+            ],
           },
           {
             path: 'deliveries',
-            loadComponent: () => import('./pages/logistics/deliveries/deliveries.page').then((m) => m.DeliveriesPage),
+            loadComponent: () =>
+              import('./pages/logistics/deliveries/deliveries.page').then((m) => m.DeliveriesPage),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/logistics/deliveries' },
           },
-        ]
+          {
+            path: 'quote-entry',
+            loadComponent: () =>
+              import('./pages/logistics/quote-entry/quote-entry.page').then(
+                (m) => m.QuoteEntryPage,
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/logistics/quote-entry' },
+          },
+          {
+            path: 'send-quote-request',
+            loadComponent: () =>
+              import('./pages/logistics/send-quote-request/send-quote-request.page').then(
+                (m) => m.SendQuoteRequestPage,
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/logistics/send-quote-request' },
+          },
+          {
+            path: 'compare-quotes',
+            loadComponent: () =>
+              import('./pages/logistics/compare-quotes/compare-quotes.page').then(
+                (m) => m.CompareQuotesPage,
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/logistics/compare-quotes' },
+          },
+        ],
       },
       {
         path: 'purchases',
         children: [
           {
             path: 'requirements',
-            loadComponent: () => import('./pages/purchases/purchases-requirements.page').then((m) => m.PurchasesRequirementsPage),
+            loadComponent: () =>
+              import('./pages/purchases/purchases-requirements.page').then(
+                (m) => m.PurchasesRequirementsPage,
+              ),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/purchases/requirements' },
           },
           {
             path: 'requirements/new',
-            loadComponent: () => import('./pages/purchases/purchases-requirement-new.page').then((m) => m.PurchasesRequirementNewPage),
+            loadComponent: () =>
+              import('./pages/purchases/purchases-requirement-new.page').then(
+                (m) => m.PurchasesRequirementNewPage,
+              ),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/purchases/requirements' },
           },
           {
             path: 'requirements/:id',
-            loadComponent: () => import('./pages/purchases/purchases-requirement-detail.page').then((m) => m.PurchasesRequirementDetailPage),
+            loadComponent: () =>
+              import('./pages/purchases/purchases-requirement-detail.page').then(
+                (m) => m.PurchasesRequirementDetailPage,
+              ),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/purchases/requirements' },
           },
           {
             path: 'requirements/:id/edit',
-            loadComponent: () => import('./pages/purchases/purchases-requirement-edit.page').then((m) => m.PurchasesRequirementEditPage),
+            loadComponent: () =>
+              import('./pages/purchases/purchases-requirement-edit.page').then(
+                (m) => m.PurchasesRequirementEditPage,
+              ),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/purchases/requirements' },
           },
           {
             path: 'requirements/:id/quotes/new',
-            loadComponent: () => import('./pages/purchases/purchases-quote-register.page').then((m) => m.PurchasesQuoteRegisterPage),
+            loadComponent: () =>
+              import('./pages/purchases/purchases-quote-register.page').then(
+                (m) => m.PurchasesQuoteRegisterPage,
+              ),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/purchases/requirements' },
           },
           {
             path: 'requirements/:id/compare',
-            loadComponent: () => import('./pages/purchases/purchases-compare.page').then((m) => m.PurchasesComparePage),
+            loadComponent: () =>
+              import('./pages/purchases/purchases-compare.page').then(
+                (m) => m.PurchasesComparePage,
+              ),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/purchases/requirements' },
           },
           {
             path: 'orders',
-            loadComponent: () => import('./pages/purchases/purchases-orders.page').then((m) => m.PurchasesOrdersPage),
+            loadComponent: () =>
+              import('./pages/purchases/purchases-orders.page').then((m) => m.PurchasesOrdersPage),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/purchases/orders' },
           },
           {
             path: 'vouchers',
-            loadComponent: () => import('./pages/purchases/purchases-vouchers.page').then((m) => m.PurchasesVouchersPage),
+            loadComponent: () =>
+              import('./pages/purchases/purchases-vouchers.page').then(
+                (m) => m.PurchasesVouchersPage,
+              ),
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/purchases/vouchers' },
           },
-        ]
+        ],
       },
       {
         path: 'payroll',
