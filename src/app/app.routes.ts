@@ -659,6 +659,15 @@ export const routes: Routes = [
             data: { menuPermission: '/logistics/deliveries' },
           },
           {
+            path: 'quote-entry/enter',
+            loadComponent: () =>
+              import('./pages/logistics/quote-entry/enter-supplier-quote.page').then(
+                (m) => m.EnterSupplierQuotePage,
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/logistics/quote-entry' },
+          },
+          {
             path: 'quote-entry',
             loadComponent: () =>
               import('./pages/logistics/quote-entry/quote-entry.page').then(
