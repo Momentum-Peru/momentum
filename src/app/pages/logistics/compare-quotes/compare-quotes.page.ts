@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -10,19 +10,22 @@ import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
 import { PurchasesRequirementsApiService } from '../../../shared/services/purchases-requirements-api.service';
 import { PurchasesQuotesApiService } from '../../../shared/services/purchases-quotes-api.service';
+import { RfqsService, Rfq } from '../../../shared/services/rfqs.service';
 import { TenantService } from '../../../core/services/tenant.service';
 import { PurchaseRequirement } from '../../../shared/interfaces/purchase.interface';
 
 /**
  * Vista "Comparar cotizaciones" del flujo de logística.
- * Lista requerimientos de compra que tienen cotizaciones y están listos para comparar.
- * Cada fila permite ir a la vista existente de comparación por requerimiento.
+ * Dos secciones:
+ * 1. Solicitudes de cotización (RFQ) enviadas: con al menos una cotización ingresada, para comparar ofertas por proveedor.
+ * 2. Requerimientos de compra: listos para comparar (sistema compras) y generar orden.
  */
 @Component({
   selector: 'app-compare-quotes-page',
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     ButtonModule,
     TableModule,
     TagModule,
@@ -37,31 +40,49 @@ import { PurchaseRequirement } from '../../../shared/interfaces/purchase.interfa
 export class CompareQuotesPage implements OnInit {
   private readonly requirementsApi = inject(PurchasesRequirementsApiService);
   private readonly quotesApi = inject(PurchasesQuotesApiService);
+  private readonly rfqsService = inject(RfqsService);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
   private readonly tenantService = inject(TenantService);
 
+  // ── Sección 1: RFQs (solicitudes enviadas con cotizaciones para comparar) ──
+  rfqs = signal<Rfq[]>([]);
+  loadingRfqs = signal<boolean>(true);
+
+  // ── Sección 2: Requerimientos de compra ───────────────────────────────────
   requirements = signal<PurchaseRequirement[]>([]);
   quotesCountByRequirement = signal<Record<string, number>>({});
-  loading = signal<boolean>(true);
+  loadingRequirements = signal<boolean>(true);
 
   ngOnInit(): void {
-    this.load();
+    this.loadRfqs();
+    this.loadRequirements();
   }
 
-  load(): void {
+  loadRfqs(): void {
+    this.loadingRfqs.set(true);
+    this.rfqsService.getRfqs().subscribe({
+      next: (list) => {
+        // Mostrar RFQs enviadas (Publicada) o cerradas (Cerrada): desde aquí se abre la vista para comparar cotizaciones
+        const forCompare = list.filter((r) => r.status === 'Publicada' || r.status === 'Cerrada');
+        this.rfqs.set(forCompare);
+      },
+      error: () => this.loadingRfqs.set(false),
+      complete: () => this.loadingRfqs.set(false),
+    });
+  }
+
+  goToRfqCompare(rfqId: string): void {
+    this.router.navigate(['/logistics/quotes/view', rfqId]);
+  }
+
+  loadRequirements(): void {
     if (!this.tenantService.tenantId()) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Empresa no seleccionada',
-        detail: 'Seleccione una empresa para ver los requerimientos listos para comparar.',
-      });
       this.requirements.set([]);
-      this.loading.set(false);
+      this.loadingRequirements.set(false);
       return;
     }
-
-    this.loading.set(true);
+    this.loadingRequirements.set(true);
     this.requirementsApi
       .list({
         status: 'listo_para_comparar',
@@ -78,8 +99,13 @@ export class CompareQuotesPage implements OnInit {
           const msg = err?.error?.message || err?.message || 'Error al cargar requerimientos.';
           this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
         },
-        complete: () => this.loading.set(false),
+        complete: () => this.loadingRequirements.set(false),
       });
+  }
+
+  load(): void {
+    this.loadRfqs();
+    this.loadRequirements();
   }
 
   private loadQuotesCounts(ids: string[]): void {
@@ -126,6 +152,13 @@ export class CompareQuotesPage implements OnInit {
     if (status === 'borrador') return 'secondary';
     if (status === 'adjudicado' || status === 'cerrado') return 'success';
     return 'info';
+  }
+
+  rfqStatusSeverity(status: string): 'success' | 'info' | 'warn' | 'secondary' | 'danger' {
+    if (status === 'Publicada') return 'info';
+    if (status === 'Cerrada') return 'success';
+    if (status === 'Cancelada') return 'danger';
+    return 'secondary';
   }
 
   goToCompare(requirementId: string): void {
