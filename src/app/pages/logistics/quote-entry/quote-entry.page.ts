@@ -10,13 +10,15 @@ import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
 import { PurchasesRequirementsApiService } from '../../../shared/services/purchases-requirements-api.service';
 import { PurchasesQuotesApiService } from '../../../shared/services/purchases-quotes-api.service';
+import { RfqsService, Rfq } from '../../../shared/services/rfqs.service';
 import { TenantService } from '../../../core/services/tenant.service';
 import { PurchaseRequirement } from '../../../shared/interfaces/purchase.interface';
 
 /**
  * Vista "Ingresar cotizaciones" del flujo de logística.
- * Lista requerimientos de compra pendientes de cargar cotizaciones (o que permiten agregar más).
- * Cada fila permite ir al formulario existente de registro de cotización por requerimiento.
+ * Muestra dos secciones:
+ * 1. RFQs en estado "Publicada" (solicitudes enviadas a proveedores que esperan respuesta).
+ * 2. Requerimientos de compra (sistema Purchases) en borrador o cotizaciones_pendientes.
  */
 @Component({
   selector: 'app-quote-entry-page',
@@ -37,49 +39,71 @@ import { PurchaseRequirement } from '../../../shared/interfaces/purchase.interfa
 export class QuoteEntryPage implements OnInit {
   private readonly requirementsApi = inject(PurchasesRequirementsApiService);
   private readonly quotesApi = inject(PurchasesQuotesApiService);
+  private readonly rfqsService = inject(RfqsService);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
   private readonly tenantService = inject(TenantService);
 
+  // ── Sección 1: RFQs enviadas ──────────────────────────────────────────────
+  rfqs = signal<Rfq[]>([]);
+  loadingRfqs = signal<boolean>(true);
+
+  // ── Sección 2: Requerimientos de compra ──────────────────────────────────
   requirements = signal<PurchaseRequirement[]>([]);
   quotesCountByRequirement = signal<Record<string, number>>({});
-  loading = signal<boolean>(true);
+  loadingRequirements = signal<boolean>(true);
 
   ngOnInit(): void {
-    this.load();
+    this.loadRfqs();
+    this.loadRequirements();
+  }
+
+  // ── Carga de RFQs ─────────────────────────────────────────────────────────
+
+  loadRfqs(): void {
+    this.loadingRfqs.set(true);
+    this.rfqsService.getRfqs().subscribe({
+      next: (list) => {
+        // Solo las que ya fueron enviadas a proveedores y esperan respuesta
+        this.rfqs.set(list.filter((r) => r.status === 'Publicada'));
+      },
+      error: () => this.loadingRfqs.set(false),
+      complete: () => this.loadingRfqs.set(false),
+    });
+  }
+
+  goToRfqView(rfqId: string): void {
+    this.router.navigate(['/logistics/quotes/view', rfqId]);
+  }
+
+  // ── Carga de Requerimientos de compra ─────────────────────────────────────
+
+  loadRequirements(): void {
+    if (!this.tenantService.tenantId()) {
+      this.loadingRequirements.set(false);
+      return;
+    }
+    this.loadingRequirements.set(true);
+    this.requirementsApi.list({ sortBy: 'createdAt', sortOrder: 'desc' }).subscribe({
+      next: (list) => {
+        const eligible = list.filter(
+          (r) => r.status === 'borrador' || r.status === 'cotizaciones_pendientes',
+        );
+        this.requirements.set(eligible);
+        this.loadQuotesCounts(eligible.map((r) => r._id));
+      },
+      error: (err) => {
+        this.requirements.set([]);
+        const msg = err?.error?.message || err?.message || 'Error al cargar requerimientos.';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+      },
+      complete: () => this.loadingRequirements.set(false),
+    });
   }
 
   load(): void {
-    if (!this.tenantService.tenantId()) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Empresa no seleccionada',
-        detail: 'Seleccione una empresa para ver los requerimientos pendientes de cotización.',
-      });
-      this.requirements.set([]);
-      this.loading.set(false);
-      return;
-    }
-
-    this.loading.set(true);
-    this.requirementsApi
-      .list({
-        status: 'cotizaciones_pendientes',
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      })
-      .subscribe({
-        next: (list) => {
-          this.requirements.set(list);
-          this.loadQuotesCounts(list.map((r) => r._id));
-        },
-        error: (err) => {
-          this.requirements.set([]);
-          const msg = err?.error?.message || err?.message || 'Error al cargar requerimientos.';
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
-        },
-        complete: () => this.loading.set(false),
-      });
+    this.loadRfqs();
+    this.loadRequirements();
   }
 
   private loadQuotesCounts(ids: string[]): void {
@@ -109,10 +133,14 @@ export class QuoteEntryPage implements OnInit {
     return this.quotesCountByRequirement()[id] ?? 0;
   }
 
-  statusLabel(status: string): string {
+  rfqItemsLabel(rfq: Rfq): string {
+    return `${rfq.items?.length ?? 0} ítem(s)`;
+  }
+
+  requirementStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       borrador: 'Borrador',
-      cotizaciones_pendientes: 'Cotizaciones pendientes',
+      cotizaciones_pendientes: 'Cot. pendientes',
       listo_para_comparar: 'Listo para comparar',
       adjudicado: 'Adjudicado',
       cerrado: 'Cerrado',
@@ -120,12 +148,15 @@ export class QuoteEntryPage implements OnInit {
     return labels[status] ?? status;
   }
 
-  statusSeverity(status: string): 'success' | 'info' | 'warn' | 'secondary' {
+  requirementStatusSeverity(status: string): 'success' | 'info' | 'warn' | 'secondary' {
     if (status === 'cotizaciones_pendientes') return 'warn';
     if (status === 'listo_para_comparar') return 'info';
     if (status === 'borrador') return 'secondary';
-    if (status === 'adjudicado' || status === 'cerrado') return 'success';
-    return 'info';
+    return 'success';
+  }
+
+  goToEnterQuotePage(): void {
+    this.router.navigate(['/logistics/quote-entry/enter']);
   }
 
   goToEnterQuote(requirementId: string): void {

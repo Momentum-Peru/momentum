@@ -7,82 +7,177 @@
         <i class="pi pi-pencil mr-2 text-primary"></i> Ingresar cotizaciones
       </h1>
       <p class="text-slate-500 mt-1 text-sm">
-        Requerimientos que esperan cotizaciones. Use &quot;Ingresar cotización&quot; para registrar
-        las cotizaciones recibidas (por plataforma o por correo).
+        Ingrese aquí las cotizaciones que le enviaron los proveedores. Una vez ingresadas, podrá
+        compararlas y generar la orden de compra.
       </p>
     </div>
-    <button
-      pButton
-      type="button"
-      icon="pi pi-refresh"
-      label="Actualizar"
-      class="p-button-outlined"
-      (click)="load()"
-    ></button>
+    <div class="flex gap-2 flex-wrap">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-refresh"
+        label="Actualizar"
+        class="p-button-outlined"
+        (click)="load()"
+      ></button>
+    </div>
   </div>
 
-  @if (loading()) {
-    <div class="flex justify-center py-12">
-      <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
-    </div>
-  } @else {
-    <p-card>
-      <p-table
-        [value]="requirements()"
-        styleClass="p-datatable-sm"
-        [tableStyle]="{ 'min-width': '50rem' }"
-      >
-        <ng-template pTemplate="header">
-          <tr class="bg-slate-50 border-b border-slate-200 text-slate-700">
-            <th class="p-4 font-semibold text-left">Requerimiento</th>
-            <th class="p-4 font-semibold text-left">Estado</th>
-            <th class="p-4 font-semibold text-center">Cotizaciones</th>
-            <th class="p-4 font-semibold text-left">Fecha</th>
-            <th class="p-4 font-semibold text-center w-48">Acciones</th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="5" class="text-center py-12 text-slate-500">
-              <i class="pi pi-inbox text-4xl mb-4 text-slate-300 block"></i>
-              No hay requerimientos pendientes de cotización. Los que estén en estado
-              &quot;Cotizaciones pendientes&quot; aparecerán aquí.
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-row>
-          <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-            <td class="p-4">
-              <span class="font-medium text-slate-800">{{ row.title }}</span>
-              @if (row.description) {
-                <p class="text-sm text-slate-500 mt-0.5 line-clamp-1">{{ row.description }}</p>
-              }
-            </td>
-            <td class="p-4">
-              <p-tag
-                [value]="statusLabel(row.status)"
-                [severity]="statusSeverity(row.status)"
-              ></p-tag>
-            </td>
-            <td class="p-4 text-center">
-              <span class="font-mono text-slate-600">{{ getQuotesCount(row._id) }}</span>
-            </td>
-            <td class="p-4 text-sm text-slate-600">
-              {{ row.createdAt | date: 'dd/MM/yyyy' }}
-            </td>
-            <td class="p-4 text-center">
-              <button
-                pButton
-                icon="pi pi-plus"
-                label="Ingresar cotización"
-                class="p-button-sm p-button-primary"
-                pTooltip="Registrar cotización para este requerimiento"
-                (click)="goToEnterQuote(row._id)"
-              ></button>
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </p-card>
-  }
+  <!-- ── Sección 1: Solicitudes enviadas (RFQs Publicadas) ──────────────── -->
+  <div class="mb-8">
+    <h2 class="text-lg font-semibold text-slate-700 mb-3 flex items-center gap-2">
+      <i class="pi pi-send text-primary"></i>
+      Solicitudes enviadas a proveedores
+      <span class="text-sm font-normal text-slate-500">(en espera de respuesta del proveedor)</span>
+    </h2>
+
+    @if (loadingRfqs()) {
+      <div class="flex justify-center py-8">
+        <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+      </div>
+    } @else {
+      <p-card>
+        <p-table
+          [value]="rfqs()"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '50rem' }"
+        >
+          <ng-template pTemplate="header">
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-700">
+              <th class="p-4 font-semibold text-left">Solicitud</th>
+              <th class="p-4 font-semibold text-left">Ítems</th>
+              <th class="p-4 font-semibold text-left">Vencimiento</th>
+              <th class="p-4 font-semibold text-center w-52">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="4" class="text-center py-10 text-slate-500">
+                <i class="pi pi-inbox text-3xl mb-3 text-slate-300 block"></i>
+                No hay solicitudes enviadas esperando cotización.
+                <br />
+                <span class="text-sm"
+                  >Envíe solicitudes desde
+                  <a
+                    class="text-primary hover:underline cursor-pointer"
+                    (click)="goToEnterQuotePage()"
+                    >Solicitar cotización a proveedor</a
+                  >.</span
+                >
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-rfq>
+            <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+              <td class="p-4">
+                <span class="font-medium text-slate-800">{{ rfq.title }}</span>
+                @if (rfq.description) {
+                  <p class="text-sm text-slate-500 mt-0.5 line-clamp-1">{{ rfq.description }}</p>
+                }
+              </td>
+              <td class="p-4 text-sm text-slate-600">
+                {{ rfqItemsLabel(rfq) }}
+              </td>
+              <td class="p-4 text-sm text-slate-600">
+                {{ rfq.deadline ? (rfq.deadline | date: 'dd/MM/yyyy') : '—' }}
+              </td>
+              <td class="p-4 text-center">
+                <button
+                  pButton
+                  icon="pi pi-plus"
+                  label="Ingresar cotización"
+                  class="p-button-sm p-button-primary"
+                  pTooltip="Ver solicitud e ingresar la cotización recibida del proveedor"
+                  (click)="goToRfqView(rfq._id)"
+                ></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+    }
+  </div>
+
+  <!-- ── Sección 2: Requerimientos de compra (sistema Purchases) ──────────── -->
+  <div>
+    <h2 class="text-lg font-semibold text-slate-700 mb-3 flex items-center gap-2">
+      <i class="pi pi-file-edit text-primary"></i>
+      Requerimientos de compra pendientes
+      <span class="text-sm font-normal text-slate-500">(sistema de compras)</span>
+    </h2>
+
+    @if (loadingRequirements()) {
+      <div class="flex justify-center py-8">
+        <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+      </div>
+    } @else {
+      <p-card>
+        <div class="flex justify-end mb-3">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-plus"
+            label="Ingresar cotización del proveedor"
+            class="p-button-sm p-button-primary"
+            (click)="goToEnterQuotePage()"
+          ></button>
+        </div>
+        <p-table
+          [value]="requirements()"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '50rem' }"
+        >
+          <ng-template pTemplate="header">
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-700">
+              <th class="p-4 font-semibold text-left">Requerimiento</th>
+              <th class="p-4 font-semibold text-left">Estado</th>
+              <th class="p-4 font-semibold text-center">Cotizaciones</th>
+              <th class="p-4 font-semibold text-left">Fecha</th>
+              <th class="p-4 font-semibold text-center w-48">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="5" class="text-center py-10 text-slate-500">
+                <i class="pi pi-inbox text-3xl mb-3 text-slate-300 block"></i>
+                No hay requerimientos de compra activos en estado borrador o pendientes.
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+              <td class="p-4">
+                <span class="font-medium text-slate-800">{{ row.title }}</span>
+                @if (row.description) {
+                  <p class="text-sm text-slate-500 mt-0.5 line-clamp-1">{{ row.description }}</p>
+                }
+              </td>
+              <td class="p-4">
+                <p-tag
+                  [value]="requirementStatusLabel(row.status)"
+                  [severity]="requirementStatusSeverity(row.status)"
+                ></p-tag>
+              </td>
+              <td class="p-4 text-center">
+                <span class="font-mono text-slate-600">{{ getQuotesCount(row._id) }}</span>
+              </td>
+              <td class="p-4 text-sm text-slate-600">
+                {{ row.createdAt | date: 'dd/MM/yyyy' }}
+              </td>
+              <td class="p-4 text-center">
+                <button
+                  pButton
+                  icon="pi pi-plus"
+                  label="Ingresar cotización"
+                  class="p-button-sm p-button-outlined"
+                  pTooltip="Registrar cotización para este requerimiento"
+                  (click)="goToEnterQuote(row._id)"
+                ></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+    }
+  </div>
 </div>

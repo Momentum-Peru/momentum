@@ -1,0 +1,438 @@
+<div class="p-4 sm:p-6 max-w-6xl mx-auto">
+  <p-toast [life]="5000"></p-toast>
+
+  <!-- Breadcrumb -->
+  <nav class="flex text-sm text-slate-500 gap-1 mb-4">
+    <a routerLink="/logistics/quote-entry" class="hover:text-primary">Ingresar cotizaciones</a>
+    <span>/</span>
+    <span class="font-medium text-slate-700">Nueva cotización del proveedor</span>
+  </nav>
+
+  <div class="flex items-center gap-2 mb-1">
+    <button
+      pButton
+      type="button"
+      icon="pi pi-arrow-left"
+      class="p-button-text p-button-sm"
+      (click)="onCancel()"
+    ></button>
+    <h1 class="text-2xl font-bold m-0 text-slate-800">Ingresar cotización del proveedor</h1>
+  </div>
+  <p class="text-slate-500 mt-1 mb-6 text-sm ml-10">
+    Registre los datos de la cotización que le envió el proveedor. Seleccione primero la solicitud
+    correspondiente y complete los campos. Al guardar, la cotización quedará disponible para
+    comparar y generar la orden de compra.
+  </p>
+
+  @if (loadingRequirements()) {
+    <div class="flex justify-center py-12">
+      <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Columna izquierda: formulario principal -->
+      <div class="lg:col-span-2 space-y-4">
+        <!-- PASO 1: Solicitud de cotización -->
+        <p-card>
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
+              <span
+                class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold flex-shrink-0"
+                >1</span
+              >
+              <span class="font-semibold text-slate-700 uppercase text-xs tracking-wide"
+                >Solicitud de cotización</span
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Seleccione el requerimiento <span class="text-red-500">*</span>
+              </label>
+              <p-select
+                [options]="requirementOptions()"
+                [(ngModel)]="selectedRequirementId"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Elija la solicitud de cotización..."
+                [showClear]="true"
+                styleClass="w-full"
+                (onChange)="onRequirementChange($event.value)"
+              ></p-select>
+              <p class="text-xs text-slate-400 mt-1">
+                Aparecen solicitudes en estado "Borrador" (sin cotizaciones aún) y "Cotizaciones
+                pendientes".
+              </p>
+            </div>
+          </div>
+        </p-card>
+
+        @if (loadingRequirement()) {
+          <div class="flex justify-center py-8">
+            <i class="pi pi-spin pi-spinner text-2xl text-primary"></i>
+          </div>
+        }
+
+        @if (requirement(); as req) {
+          <!-- PASO 2: Proveedor -->
+          <p-card>
+            <div class="flex flex-col gap-4">
+              <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
+                <span
+                  class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  >2</span
+                >
+                <span class="font-semibold text-slate-700 uppercase text-xs tracking-wide"
+                  >Datos del proveedor</span
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                  Proveedor que envió la cotización <span class="text-red-500">*</span>
+                </label>
+                <p-select
+                  [options]="providers()"
+                  [(ngModel)]="providerId"
+                  name="providerId"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Elegir proveedor..."
+                  [showClear]="true"
+                  [filter]="true"
+                  filterBy="label"
+                  styleClass="w-full"
+                ></p-select>
+                <a
+                  routerLink="/providers"
+                  target="_blank"
+                  class="text-xs text-primary hover:underline mt-1 inline-block"
+                >
+                  <i class="pi pi-external-link mr-1"></i>¿No aparece el proveedor? Agregar nuevo
+                </a>
+              </div>
+            </div>
+          </p-card>
+
+          <!-- PASO 3: Ítems cotizados -->
+          <p-card>
+            <div class="flex flex-col gap-4">
+              <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
+                <span
+                  class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  >3</span
+                >
+                <span class="font-semibold text-slate-700 uppercase text-xs tracking-wide"
+                  >Precios por ítem</span
+                >
+              </div>
+
+              @if (requirementItems().length === 0) {
+                <p class="text-sm text-slate-500">Este requerimiento no tiene ítems definidos.</p>
+              } @else {
+                <!-- Cabecera de tabla -->
+                <div
+                  class="hidden sm:grid grid-cols-12 gap-2 text-xs font-semibold text-slate-500 uppercase px-1"
+                >
+                  <div class="col-span-5">Descripción</div>
+                  <div class="col-span-2 text-center">Cant.</div>
+                  <div class="col-span-2 text-right">Precio unit.</div>
+                  <div class="col-span-2">Marca/Modelo</div>
+                  <div class="col-span-1 text-center">IGV</div>
+                </div>
+                <p-divider styleClass="my-0"></p-divider>
+                @for (line of lines; track line.requirementItemIndex) {
+                  <div
+                    class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center py-2 border-b border-slate-100 last:border-0"
+                  >
+                    <div class="sm:col-span-5">
+                      <span class="text-sm font-medium text-slate-800 block">
+                        {{ requirementItems()[line.requirementItemIndex]?.description }}
+                      </span>
+                      @if (requirementItems()[line.requirementItemIndex]?.specifications) {
+                        <span class="text-xs text-slate-400 block">
+                          {{ requirementItems()[line.requirementItemIndex]?.specifications }}
+                        </span>
+                      }
+                    </div>
+                    <div class="sm:col-span-2 text-center">
+                      <span class="text-sm text-slate-600 font-mono">
+                        {{ line.quantity }}
+                        {{ requirementItems()[line.requirementItemIndex]?.unit }}
+                      </span>
+                    </div>
+                    <div class="sm:col-span-2">
+                      <p-inputNumber
+                        [(ngModel)]="line.unitPrice"
+                        [name]="'price_' + line.requirementItemIndex"
+                        [min]="0"
+                        [minFractionDigits]="2"
+                        placeholder="0.00"
+                        styleClass="w-full"
+                        inputStyleClass="text-right"
+                      ></p-inputNumber>
+                    </div>
+                    <div class="sm:col-span-2">
+                      <input
+                        pInputText
+                        [(ngModel)]="line.brandOrModel"
+                        [name]="'brand_' + line.requirementItemIndex"
+                        class="w-full"
+                        placeholder="ej. Samsung"
+                      />
+                    </div>
+                    <div class="sm:col-span-1 flex justify-center">
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="line.includesIgv"
+                        [name]="'igv_' + line.requirementItemIndex"
+                        class="w-4 h-4 cursor-pointer"
+                        title="¿Incluye IGV?"
+                      />
+                    </div>
+                  </div>
+                }
+                <p class="text-xs text-slate-400 mt-1">
+                  <i class="pi pi-info-circle mr-1"></i>Marque la casilla si el precio unitario ya
+                  incluye IGV.
+                </p>
+              }
+            </div>
+          </p-card>
+
+          <!-- PASO 4: Resumen económico y condiciones -->
+          <p-card>
+            <div class="flex flex-col gap-5">
+              <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
+                <span
+                  class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  >4</span
+                >
+                <span class="font-semibold text-slate-700 uppercase text-xs tracking-wide"
+                  >Condiciones comerciales</span
+                >
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">
+                    Monto total (S/ con IGV) <span class="text-red-500">*</span>
+                  </label>
+                  <p-inputNumber
+                    [(ngModel)]="totalAmount"
+                    name="totalAmount"
+                    [min]="0"
+                    [minFractionDigits]="2"
+                    placeholder="0.00"
+                    styleClass="w-full"
+                    inputStyleClass="text-right font-mono"
+                  ></p-inputNumber>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1"
+                    >Plazo de entrega (días)</label
+                  >
+                  <p-inputNumber
+                    [(ngModel)]="deliveryDays"
+                    name="deliveryDays"
+                    [min]="0"
+                    placeholder="ej. 14"
+                    styleClass="w-full"
+                  ></p-inputNumber>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1"
+                    >Condiciones de pago</label
+                  >
+                  <input
+                    pInputText
+                    [(ngModel)]="paymentTerms"
+                    name="paymentTerms"
+                    class="w-full"
+                    placeholder="ej. Neto 45, 50% adelanto"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Garantía</label>
+                  <input
+                    pInputText
+                    [(ngModel)]="warranty"
+                    name="warranty"
+                    class="w-full"
+                    placeholder="ej. 1 año de garantía del fabricante"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1"
+                  >Validez de la oferta</label
+                >
+                <p-datePicker
+                  [(ngModel)]="validUntil"
+                  name="validUntil"
+                  [showIcon]="true"
+                  dateFormat="dd/mm/yy"
+                  [minDate]="today"
+                  styleClass="w-full"
+                ></p-datePicker>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1"
+                  >Notas / Comentarios</label
+                >
+                <textarea
+                  pInputTextarea
+                  [(ngModel)]="notes"
+                  name="notes"
+                  class="w-full"
+                  rows="3"
+                  placeholder="Condiciones especiales, incoterms, observaciones del proveedor..."
+                ></textarea>
+              </div>
+            </div>
+          </p-card>
+
+          <!-- PASO 5: Archivos adjuntos -->
+          <p-card>
+            <div class="flex flex-col gap-4">
+              <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
+                <span
+                  class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  >5</span
+                >
+                <span class="font-semibold text-slate-700 uppercase text-xs tracking-wide"
+                  >Documentos adjuntos</span
+                >
+              </div>
+              <p class="text-sm text-slate-500">
+                Suba el PDF u otros archivos que le envió el proveedor (cotización formal, propuesta
+                técnica, etc.).
+              </p>
+              <p-fileUpload
+                name="quoteFiles"
+                [multiple]="true"
+                [maxFileSize]="10000000"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                chooseLabel="Seleccionar archivos"
+                [showUploadButton]="false"
+                [showCancelButton]="false"
+                mode="advanced"
+                [auto]="false"
+                (onSelect)="onFilesSelected($event)"
+              >
+                <ng-template pTemplate="empty">
+                  <div class="text-center py-4 text-slate-400">
+                    <i class="pi pi-upload text-3xl mb-2 block"></i>
+                    <span class="text-sm">Arrastre aquí los archivos o use el botón</span>
+                  </div>
+                </ng-template>
+              </p-fileUpload>
+              <p class="text-xs text-slate-400">
+                PDF, Word, Excel, imágenes — máx. 10 MB por archivo.
+              </p>
+            </div>
+          </p-card>
+
+          <!-- Botones de acción -->
+          <div class="flex flex-wrap gap-2 pt-2 pb-6">
+            <button
+              pButton
+              type="button"
+              label="Cancelar"
+              icon="pi pi-times"
+              class="p-button-outlined"
+              (click)="onCancel()"
+            ></button>
+            <button
+              pButton
+              type="button"
+              label="Registrar cotización"
+              icon="pi pi-check"
+              [loading]="saving() || uploadingFiles()"
+              [disabled]="!isFormValid()"
+              (click)="onSubmit()"
+            ></button>
+          </div>
+        }
+      </div>
+
+      <!-- Columna derecha: panel informativo -->
+      <div class="space-y-4">
+        <!-- Resumen del requerimiento -->
+        @if (requirement(); as req) {
+          <p-card header="Solicitud seleccionada">
+            <div class="space-y-2">
+              <p class="font-semibold text-slate-800">{{ req.title }}</p>
+              @if (req.description) {
+                <p class="text-sm text-slate-500">{{ req.description }}</p>
+              }
+              <p class="text-xs text-slate-400 font-mono">Ref: {{ req._id.slice(-8) }}</p>
+              @if (req.dueDate) {
+                <p class="text-sm flex items-center gap-1 text-slate-600">
+                  <i class="pi pi-calendar"></i>
+                  Fecha límite: {{ req.dueDate | date: 'dd/MM/yyyy' }}
+                </p>
+              }
+              <div class="mt-2">
+                <p class="text-xs font-semibold text-slate-500 uppercase mb-1">Ítems solicitados</p>
+                <ul class="space-y-1">
+                  @for (item of requirementItems(); track $index) {
+                    <li class="text-sm text-slate-700 flex gap-1">
+                      <i class="pi pi-minus text-slate-300 mt-1 flex-shrink-0 text-xs"></i>
+                      <span
+                        >{{ item.description }} —
+                        <span class="font-mono">{{ item.quantity }} {{ item.unit }}</span></span
+                      >
+                    </li>
+                  }
+                </ul>
+              </div>
+            </div>
+          </p-card>
+
+          <!-- Cotizaciones ya ingresadas -->
+          <p-card [header]="'Cotizaciones recibidas (' + existingQuotes().length + ')'">
+            @for (q of existingQuotes(); track q._id) {
+              <div
+                class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0"
+              >
+                <span class="text-sm text-slate-700">{{ getProviderName(q) }}</span>
+                <span class="font-mono font-medium text-slate-800">{{
+                  q.totalAmount | currency: 'PEN' : 'symbol' : '1.2-2'
+                }}</span>
+              </div>
+            }
+            @if (existingQuotes().length === 0) {
+              <p class="text-sm text-slate-400 py-2">Aún no hay cotizaciones ingresadas.</p>
+            }
+            @if (needMoreQuotes() > 0) {
+              <div
+                class="mt-3 p-2 rounded bg-amber-50 border border-amber-200 flex items-start gap-2"
+              >
+                <i class="pi pi-info-circle text-amber-500 mt-0.5 flex-shrink-0"></i>
+                <p class="text-xs text-amber-700">
+                  Se recomiendan al menos 2 cotizaciones para poder comparar. Faltan
+                  {{ needMoreQuotes() }}.
+                </p>
+              </div>
+            }
+          </p-card>
+        } @else {
+          <!-- Instrucciones cuando no hay requerimiento seleccionado -->
+          <p-card>
+            <div class="text-center py-6 text-slate-400">
+              <i class="pi pi-arrow-circle-left text-4xl mb-3 block"></i>
+              <p class="text-sm">
+                Seleccione una solicitud de cotización para ver los detalles e ingresar la
+                cotización del proveedor.
+              </p>
+            </div>
+          </p-card>
+        }
+      </div>
+    </div>
+  }
+</div>

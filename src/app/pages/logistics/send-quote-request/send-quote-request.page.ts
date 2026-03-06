@@ -11,16 +11,16 @@ import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { FormsModule } from '@angular/forms';
 import { ListboxModule } from 'primeng/listbox';
-import { PurchasesRequirementsApiService } from '../../../shared/services/purchases-requirements-api.service';
-import { PurchasesQuotesApiService } from '../../../shared/services/purchases-quotes-api.service';
+import { RfqsService, Rfq } from '../../../shared/services/rfqs.service';
 import { ProvidersService, Provider } from '../../../shared/services/providers.service';
-import { TenantService } from '../../../core/services/tenant.service';
-import { PurchaseRequirement } from '../../../shared/interfaces/purchase.interface';
 
 /**
- * Vista para enviar la solicitud de cotización a uno o más proveedores.
- * Lista requerimientos que pueden ser enviados; al hacer clic en "Enviar a proveedor"
- * se abre un diálogo para elegir proveedores y enviar (por ahora abre el cliente de correo).
+ * Vista "Solicitar cotización a proveedor".
+ * Lista las solicitudes de cotización (RFQ) en estado Borrador — aquellas que
+ * el equipo de logística creó en "Solicitudes de cotización" pero aún no han
+ * sido enviadas a ningún proveedor.
+ * Desde aquí se seleccionan proveedores y se abre el cliente de correo con el
+ * detalle de la solicitud; al enviar, el RFQ pasa a estado "Publicada".
  */
 @Component({
   selector: 'app-send-quote-request-page',
@@ -42,22 +42,18 @@ import { PurchaseRequirement } from '../../../shared/interfaces/purchase.interfa
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SendQuoteRequestPage implements OnInit {
-  private readonly requirementsApi = inject(PurchasesRequirementsApiService);
-  private readonly quotesApi = inject(PurchasesQuotesApiService);
+  private readonly rfqsService = inject(RfqsService);
   private readonly providersService = inject(ProvidersService);
-  private readonly router = inject(Router);
+  readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
-  private readonly tenantService = inject(TenantService);
 
-  requirements = signal<PurchaseRequirement[]>([]);
-  quotesCountByRequirement = signal<Record<string, number>>({});
+  rfqs = signal<Rfq[]>([]);
   providers = signal<Provider[]>([]);
   loading = signal<boolean>(true);
 
   /** Diálogo "Enviar a proveedor" */
   dialogVisible = signal<boolean>(false);
-  selectedRequirement = signal<PurchaseRequirement | null>(null);
-  /** Selección en el listbox (para ngModel) */
+  selectedRfq = signal<Rfq | null>(null);
   selectedProviderList: Provider[] = [];
   sending = signal<boolean>(false);
 
@@ -66,32 +62,18 @@ export class SendQuoteRequestPage implements OnInit {
   }
 
   load(): void {
-    if (!this.tenantService.tenantId()) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Empresa no seleccionada',
-        detail: 'Seleccione una empresa para ver los requerimientos.',
-      });
-      this.requirements.set([]);
-      this.loading.set(false);
-      return;
-    }
-
     this.loading.set(true);
-    this.requirementsApi.list({ sortBy: 'createdAt', sortOrder: 'desc' }).subscribe({
+    this.rfqsService.getRfqs().subscribe({
       next: (list) => {
-        const canSend = list.filter(
-          (r) => r.status === 'borrador' || r.status === 'cotizaciones_pendientes',
-        );
-        this.requirements.set(canSend);
-        this.loadQuotesCounts(canSend.map((r) => r._id));
+        // Mostramos Aprobadas (listas para enviar) y Publicadas (ya enviadas, pueden reenviarse)
+        this.rfqs.set(list.filter((r) => r.status === 'Aprobada' || r.status === 'Publicada'));
       },
       error: (err) => {
-        this.requirements.set([]);
+        this.rfqs.set([]);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: err?.error?.message || err?.message || 'Error al cargar requerimientos.',
+          detail: err?.error?.message || 'Error al cargar solicitudes de cotización.',
         });
       },
       complete: () => this.loading.set(false),
@@ -103,81 +85,49 @@ export class SendQuoteRequestPage implements OnInit {
     });
   }
 
-  private loadQuotesCounts(ids: string[]): void {
-    const counts: Record<string, number> = {};
-    if (ids.length === 0) {
-      this.quotesCountByRequirement.set(counts);
-      return;
-    }
-    let done = 0;
-    ids.forEach((id) => {
-      this.quotesApi.listByRequirement(id).subscribe({
-        next: (quotes) => {
-          counts[id] = quotes?.length ?? 0;
-          done++;
-          if (done === ids.length) this.quotesCountByRequirement.set(counts);
-        },
-        error: () => {
-          counts[id] = 0;
-          done++;
-          if (done === ids.length) this.quotesCountByRequirement.set(counts);
-        },
-      });
-    });
-  }
-
-  getQuotesCount(id: string): number {
-    return this.quotesCountByRequirement()[id] ?? 0;
-  }
-
-  statusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      borrador: 'Borrador',
-      cotizaciones_pendientes: 'Cotizaciones pendientes',
-      listo_para_comparar: 'Listo para comparar',
-      adjudicado: 'Adjudicado',
-      cerrado: 'Cerrado',
-    };
-    return labels[status] ?? status;
-  }
-
-  statusSeverity(status: string): 'success' | 'info' | 'warn' | 'secondary' {
-    if (status === 'borrador') return 'secondary';
-    if (status === 'cotizaciones_pendientes') return 'warn';
-    return 'info';
-  }
-
-  openSendDialog(req: PurchaseRequirement): void {
-    this.selectedRequirement.set(req);
+  openSendDialog(rfq: Rfq): void {
+    this.selectedRfq.set(rfq);
     this.selectedProviderList = [];
     this.dialogVisible.set(true);
   }
 
   closeDialog(): void {
     this.dialogVisible.set(false);
-    this.selectedRequirement.set(null);
+    this.selectedRfq.set(null);
     this.selectedProviderList = [];
   }
 
-  /** Construye el cuerpo del correo con el detalle del requerimiento. */
-  private buildEmailBody(req: PurchaseRequirement): string {
+  viewRfq(rfq: Rfq): void {
+    this.router.navigate(['/logistics/quotes/view', rfq._id]);
+  }
+
+  private buildEmailBody(rfq: Rfq): string {
     const items =
-      req.items
-        ?.map((it, i) => `${i + 1}. ${it.description} - Cantidad: ${it.quantity} ${it.unit}`)
+      rfq.items
+        ?.map((it, i) => {
+          const name = typeof it.productId === 'object' ? (it.productId as any).name : 'Ítem';
+          return `${i + 1}. ${name} — Cantidad: ${it.quantity}${it.notes ? ` (${it.notes})` : ''}`;
+        })
         .join('\n') ?? '';
+
     return (
-      `Solicitud de cotización: ${req.title}\n\n` +
-      (req.description ? `${req.description}\n\n` : '') +
+      `Solicitud de cotización: ${rfq.title}\n\n` +
+      (rfq.description ? `${rfq.description}\n\n` : '') +
       'Ítems solicitados:\n' +
       items +
-      '\n\nPor favor envíe su cotización a este correo o ingrese a la plataforma Momentum.'
+      (rfq.deadline
+        ? `\n\nFecha límite: ${new Date(rfq.deadline).toLocaleDateString('es-PE')}`
+        : '') +
+      (rfq.termsAndConditions ? `\n\nTérminos y condiciones:\n${rfq.termsAndConditions}` : '') +
+      '\n\nPor favor, envíe su cotización respondiendo este correo o ingresando al sistema Momentum.'
     );
   }
 
   sendToProviders(): void {
-    const req = this.selectedRequirement();
+    const rfq = this.selectedRfq();
     const providers = this.selectedProviderList;
-    if (!req || providers.length === 0) {
+
+    if (!rfq || providers.length === 0) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Seleccione proveedores',
@@ -187,8 +137,8 @@ export class SendQuoteRequestPage implements OnInit {
     }
 
     this.sending.set(true);
-    const body = encodeURIComponent(this.buildEmailBody(req));
-    const subject = encodeURIComponent(`Solicitud de cotización: ${req.title}`);
+    const body = encodeURIComponent(this.buildEmailBody(rfq));
+    const subject = encodeURIComponent(`Solicitud de cotización: ${rfq.code} — ${rfq.title}`);
 
     const emails: string[] = [];
     providers.forEach((p) => {
@@ -197,19 +147,27 @@ export class SendQuoteRequestPage implements OnInit {
     });
 
     if (emails.length > 0) {
-      const mailto = `mailto:${emails.join(',')}?subject=${subject}&body=${body}`;
-      window.location.href = mailto;
+      window.location.href = `mailto:${emails.join(',')}?subject=${subject}&body=${body}`;
       this.messageService.add({
         severity: 'success',
         summary: 'Correo preparado',
-        detail: `Se abrió su cliente de correo con ${emails.length} destinatario(s). Si algún proveedor no tiene email asignado, agregue el destinatario manualmente.`,
+        detail: `Cliente de correo abierto con ${emails.length} destinatario(s).`,
       });
     } else {
       this.messageService.add({
         severity: 'info',
         summary: 'Sin correo de contacto',
         detail:
-          'Los proveedores seleccionados no tienen email en su ficha. Puede copiar el detalle y enviar por otro medio, o agregar el contacto en Proveedores.',
+          'Los proveedores seleccionados no tienen email registrado. Agréguelo en la ficha del proveedor.',
+      });
+    }
+
+    // Publicar el RFQ: Aprobada → Publicada (queda en la lista con el nuevo estado)
+    if (rfq._id && rfq.status === 'Aprobada') {
+      this.rfqsService.publishRfq(rfq._id).subscribe({
+        next: (updated) => {
+          this.rfqs.update((list) => list.map((r) => (r._id === updated._id ? updated : r)));
+        },
       });
     }
 
@@ -217,7 +175,11 @@ export class SendQuoteRequestPage implements OnInit {
     this.closeDialog();
   }
 
-  goToRequirementDetail(id: string): void {
-    this.router.navigate(['/purchases/requirements', id]);
+  getStatusSeverity(status: string): 'secondary' | 'info' | 'success' | 'danger' | 'warn' {
+    if (status === 'Borrador') return 'secondary';
+    if (status === 'Publicada') return 'info';
+    if (status === 'Cerrada') return 'success';
+    if (status === 'Cancelada') return 'danger';
+    return 'secondary';
   }
 }
