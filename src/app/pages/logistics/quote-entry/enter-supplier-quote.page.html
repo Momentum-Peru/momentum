@@ -1,11 +1,11 @@
 <div class="p-4 sm:p-6 max-w-6xl mx-auto">
-  <p-toast [life]="5000"></p-toast>
+  <p-toast></p-toast>
 
   <!-- Breadcrumb -->
   <nav class="flex text-sm text-slate-500 gap-1 mb-4">
-    <a routerLink="/logistics/quote-entry" class="hover:text-primary">Ingresar cotizaciones</a>
+    <a routerLink="/logistics/quote-entry" class="hover:text-primary">Cotizaciones de Proveedores</a>
     <span>/</span>
-    <span class="font-medium text-slate-700">Nueva cotización del proveedor</span>
+    <span class="font-medium text-slate-700">Nueva cotización</span>
   </nav>
 
   <div class="flex items-center gap-2 mb-1">
@@ -19,12 +19,10 @@
     <h1 class="text-2xl font-bold m-0 text-slate-800">Ingresar cotización del proveedor</h1>
   </div>
   <p class="text-slate-500 mt-1 mb-6 text-sm ml-10">
-    Registre los datos de la cotización que le envió el proveedor. Seleccione primero la solicitud
-    correspondiente y complete los campos. Al guardar, la cotización quedará disponible para
-    comparar y generar la orden de compra.
+    Registre los datos de la cotización que le envió el proveedor basada en una Solicitud de Cotización (RFQ).
   </p>
 
-  @if (loadingRequirements()) {
+  @if (loadingRfqs()) {
     <div class="flex justify-center py-12">
       <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
     </div>
@@ -41,39 +39,35 @@
                 >1</span
               >
               <span class="font-semibold text-slate-700 uppercase text-xs tracking-wide"
-                >Solicitud de cotización</span
+                >Solicitud de Cotización (RFQ)</span
               >
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">
-                Seleccione el requerimiento <span class="text-red-500">*</span>
+                Seleccione la solicitud enviada <span class="text-red-500">*</span>
               </label>
               <p-select
-                [options]="requirementOptions()"
-                [(ngModel)]="selectedRequirementId"
+                [options]="rfqOptions()"
+                [(ngModel)]="selectedRfqId"
                 optionLabel="label"
                 optionValue="value"
-                placeholder="Elija la solicitud de cotización..."
+                placeholder="Elija el RFQ..."
                 [showClear]="true"
                 styleClass="w-full"
-                (onChange)="onRequirementChange($event.value)"
+                (onChange)="onRfqChange($event.value)"
               ></p-select>
-              <p class="text-xs text-slate-400 mt-1">
-                Aparecen solicitudes en estado "Borrador" (sin cotizaciones aún) y "Cotizaciones
-                pendientes".
-              </p>
             </div>
           </div>
         </p-card>
 
-        @if (loadingRequirement()) {
+        @if (loadingRfq()) {
           <div class="flex justify-center py-8">
             <i class="pi pi-spin pi-spinner text-2xl text-primary"></i>
           </div>
         }
 
-        @if (requirement(); as req) {
-          <!-- PASO 2: Proveedor -->
+        @if (rfq(); as currentRfq) {
+          <!-- PASO 2: Proveedor y Moneda -->
           <p-card>
             <div class="flex flex-col gap-4">
               <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
@@ -82,32 +76,47 @@
                   >2</span
                 >
                 <span class="font-semibold text-slate-700 uppercase text-xs tracking-wide"
-                  >Datos del proveedor</span
+                  >Datos Generales</span
                 >
               </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  Proveedor que envió la cotización <span class="text-red-500">*</span>
-                </label>
-                <p-select
-                  [options]="providers()"
-                  [(ngModel)]="providerId"
-                  name="providerId"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="Elegir proveedor..."
-                  [showClear]="true"
-                  [filter]="true"
-                  filterBy="label"
-                  styleClass="w-full"
-                ></p-select>
-                <a
-                  routerLink="/providers"
-                  target="_blank"
-                  class="text-xs text-primary hover:underline mt-1 inline-block"
-                >
-                  <i class="pi pi-external-link mr-1"></i>¿No aparece el proveedor? Agregar nuevo
-                </a>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                      Proveedor <span class="text-red-500">*</span>
+                    </label>
+                    <p-select
+                      [options]="providers()"
+                      [(ngModel)]="providerId"
+                      name="providerId"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Elegir proveedor..."
+                      [showClear]="true"
+                      [filter]="true"
+                      filterBy="label"
+                      styleClass="w-full"
+                    ></p-select>
+                    <a
+                      routerLink="/providers"
+                      target="_blank"
+                      class="text-xs text-primary hover:underline mt-1 inline-block"
+                    >
+                      <i class="pi pi-external-link mr-1"></i>Nuevo proveedor
+                    </a>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Moneda <span class="text-red-500">*</span></label>
+                    <p-select
+                      [options]="currencyOptions"
+                      [(ngModel)]="currency"
+                      name="currency"
+                      optionLabel="label"
+                      optionValue="value"
+                      styleClass="w-full"
+                    ></p-select>
+                  </div>
               </div>
             </div>
           </p-card>
@@ -125,46 +134,42 @@
                 >
               </div>
 
-              @if (requirementItems().length === 0) {
+              @if (rfqItems().length === 0) {
                 <p class="text-sm text-slate-500">Este requerimiento no tiene ítems definidos.</p>
               } @else {
                 <!-- Cabecera de tabla -->
                 <div
                   class="hidden sm:grid grid-cols-12 gap-2 text-xs font-semibold text-slate-500 uppercase px-1"
                 >
-                  <div class="col-span-5">Descripción</div>
+                  <div class="col-span-4">Producto / Servicio</div>
                   <div class="col-span-2 text-center">Cant.</div>
                   <div class="col-span-2 text-right">Precio unit.</div>
                   <div class="col-span-2">Marca/Modelo</div>
-                  <div class="col-span-1 text-center">IGV</div>
+                  <div class="col-span-2 text-center">Inc. IGV</div>
                 </div>
                 <p-divider styleClass="my-0"></p-divider>
-                @for (line of lines; track line.requirementItemIndex) {
+                @for (line of lines; track $index) {
                   <div
-                    class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center py-2 border-b border-slate-100 last:border-0"
+                    class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center py-3 border-b border-slate-100 last:border-0"
                   >
-                    <div class="sm:col-span-5">
+                    <div class="sm:col-span-4">
                       <span class="text-sm font-medium text-slate-800 block">
-                        {{ requirementItems()[line.requirementItemIndex]?.description }}
+                        {{ line.description }}
                       </span>
-                      @if (requirementItems()[line.requirementItemIndex]?.specifications) {
-                        <span class="text-xs text-slate-400 block">
-                          {{ requirementItems()[line.requirementItemIndex]?.specifications }}
-                        </span>
-                      }
                     </div>
                     <div class="sm:col-span-2 text-center">
                       <span class="text-sm text-slate-600 font-mono">
-                        {{ line.quantity }}
-                        {{ requirementItems()[line.requirementItemIndex]?.unit }}
+                        {{ line.quantity }} {{ line.unit }}
                       </span>
                     </div>
                     <div class="sm:col-span-2">
-                      <p-inputNumber
+                       <p-inputNumber
                         [(ngModel)]="line.unitPrice"
-                        [name]="'price_' + line.requirementItemIndex"
+                        [name]="'price_' + $index"
                         [min]="0"
                         [minFractionDigits]="2"
+                        [maxFractionDigits]="2"
+                        (ngModelChange)="onLinePriceChange(line)"
                         placeholder="0.00"
                         styleClass="w-full"
                         inputStyleClass="text-right"
@@ -174,26 +179,24 @@
                       <input
                         pInputText
                         [(ngModel)]="line.brandOrModel"
-                        [name]="'brand_' + line.requirementItemIndex"
-                        class="w-full"
-                        placeholder="ej. Samsung"
+                        [name]="'brand_' + $index"
+                        class="w-full text-sm"
+                        placeholder="ej. 3M"
                       />
                     </div>
-                    <div class="sm:col-span-1 flex justify-center">
+                    <div class="sm:col-span-2 flex justify-center items-center gap-2">
                       <input
                         type="checkbox"
                         [(ngModel)]="line.includesIgv"
-                        [name]="'igv_' + line.requirementItemIndex"
+                        (ngModelChange)="onLinePriceChange(line)"
+                        [name]="'igv_' + $index"
                         class="w-4 h-4 cursor-pointer"
                         title="¿Incluye IGV?"
                       />
+                      <span class="text-xs text-slate-500 font-mono">{{ line.totalPrice | number:'1.2-2' }}</span>
                     </div>
                   </div>
                 }
-                <p class="text-xs text-slate-400 mt-1">
-                  <i class="pi pi-info-circle mr-1"></i>Marque la casilla si el precio unitario ya
-                  incluye IGV.
-                </p>
               }
             </div>
           </p-card>
@@ -207,40 +210,54 @@
                   >4</span
                 >
                 <span class="font-semibold text-slate-700 uppercase text-xs tracking-wide"
-                  >Condiciones comerciales</span
+                  >Condiciones y Totales</span
                 >
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1">
-                    Monto total (S/ con IGV) <span class="text-red-500">*</span>
-                  </label>
-                  <p-inputNumber
-                    [(ngModel)]="totalAmount"
-                    name="totalAmount"
-                    [min]="0"
-                    [minFractionDigits]="2"
-                    placeholder="0.00"
-                    styleClass="w-full"
-                    inputStyleClass="text-right font-mono"
-                  ></p-inputNumber>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1"
-                    >Plazo de entrega (días)</label
-                  >
-                  <p-inputNumber
-                    [(ngModel)]="deliveryDays"
-                    name="deliveryDays"
-                    [min]="0"
-                    placeholder="ej. 14"
-                    styleClass="w-full"
-                  ></p-inputNumber>
-                </div>
+              <!-- Totales -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Subtotal</label>
+                    <p-inputNumber
+                      [(ngModel)]="subtotal"
+                      name="subtotal"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      styleClass="w-full"
+                      inputStyleClass="text-right font-mono"
+                    ></p-inputNumber>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">IGV (18%)</label>
+                    <p-inputNumber
+                      [(ngModel)]="igv"
+                      name="igv"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      styleClass="w-full"
+                      inputStyleClass="text-right font-mono"
+                    ></p-inputNumber>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-primary uppercase tracking-wider mb-1">TOTAL ({{ currency }}) *</label>
+                    <p-inputNumber
+                      [(ngModel)]="totalCost"
+                      name="totalCost"
+                      [min]="0"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      styleClass="w-full"
+                      inputStyleClass="text-right font-mono font-bold"
+                    ></p-inputNumber>
+                  </div>
+                  <div class="md:col-span-3 text-right">
+                       <label class="inline-flex items-center gap-2 text-xs text-slate-500 cursor-pointer">
+                           <input type="checkbox" [(ngModel)]="autoCalculateTotal" class="w-3 h-3"> Calcular automáticamente
+                       </label>
+                  </div>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-slate-700 mb-1"
                     >Condiciones de pago</label
@@ -250,46 +267,42 @@
                     [(ngModel)]="paymentTerms"
                     name="paymentTerms"
                     class="w-full"
-                    placeholder="ej. Neto 45, 50% adelanto"
+                    placeholder="ej. Contado, 30 días"
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1">Garantía</label>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Plazo de Entrega</label>
                   <input
                     pInputText
-                    [(ngModel)]="warranty"
-                    name="warranty"
+                    [(ngModel)]="deliveryTime"
+                    name="deliveryTime"
                     class="w-full"
-                    placeholder="ej. 1 año de garantía del fabricante"
+                    placeholder="ej. 5 días, Inmediato"
                   />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Validez (días)</label>
+                  <p-inputNumber
+                    [(ngModel)]="validityDays"
+                    name="validityDays"
+                    class="w-full"
+                    styleClass="w-full"
+                    placeholder="ej. 15"
+                  ></p-inputNumber>
                 </div>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1"
-                  >Validez de la oferta</label
-                >
-                <p-datePicker
-                  [(ngModel)]="validUntil"
-                  name="validUntil"
-                  [showIcon]="true"
-                  dateFormat="dd/mm/yy"
-                  [minDate]="today"
-                  styleClass="w-full"
-                ></p-datePicker>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1"
-                  >Notas / Comentarios</label
+                  >Notas / Comentarios / Garantía</label
                 >
                 <textarea
                   pInputTextarea
                   [(ngModel)]="notes"
                   name="notes"
                   class="w-full"
-                  rows="3"
-                  placeholder="Condiciones especiales, incoterms, observaciones del proveedor..."
+                  rows="2"
+                  placeholder="Incluye transporte, garantía de 1 año..."
                 ></textarea>
               </div>
             </div>
@@ -304,19 +317,15 @@
                   >5</span
                 >
                 <span class="font-semibold text-slate-700 uppercase text-xs tracking-wide"
-                  >Documentos adjuntos</span
+                  >Documento de cotización</span
                 >
               </div>
-              <p class="text-sm text-slate-500">
-                Suba el PDF u otros archivos que le envió el proveedor (cotización formal, propuesta
-                técnica, etc.).
-              </p>
               <p-fileUpload
                 name="quoteFiles"
                 [multiple]="true"
                 [maxFileSize]="10000000"
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                chooseLabel="Seleccionar archivos"
+                chooseLabel="Cargar archivos"
                 [showUploadButton]="false"
                 [showCancelButton]="false"
                 mode="advanced"
@@ -325,14 +334,11 @@
               >
                 <ng-template pTemplate="empty">
                   <div class="text-center py-4 text-slate-400">
-                    <i class="pi pi-upload text-3xl mb-2 block"></i>
-                    <span class="text-sm">Arrastre aquí los archivos o use el botón</span>
+                    <i class="pi pi-file-pdf text-3xl mb-2 block"></i>
+                    <span class="text-sm cursor-pointer">Arrastre aquí la cotización en PDF</span>
                   </div>
                 </ng-template>
               </p-fileUpload>
-              <p class="text-xs text-slate-400">
-                PDF, Word, Excel, imágenes — máx. 10 MB por archivo.
-              </p>
             </div>
           </p-card>
 
@@ -349,7 +355,7 @@
             <button
               pButton
               type="button"
-              label="Registrar cotización"
+              label="Registrar Cotización"
               icon="pi pi-check"
               [loading]="saving() || uploadingFiles()"
               [disabled]="!isFormValid()"
@@ -362,31 +368,22 @@
       <!-- Columna derecha: panel informativo -->
       <div class="space-y-4">
         <!-- Resumen del requerimiento -->
-        @if (requirement(); as req) {
-          <p-card header="Solicitud seleccionada">
+        @if (rfq(); as currentRfq) {
+          <p-card header="RFQ Seleccionada">
             <div class="space-y-2">
-              <p class="font-semibold text-slate-800">{{ req.title }}</p>
-              @if (req.description) {
-                <p class="text-sm text-slate-500">{{ req.description }}</p>
+              <p class="font-semibold text-slate-800">{{ currentRfq.title }}</p>
+              <p class="text-xs text-slate-500 font-mono">{{ currentRfq.code }}</p>
+              @if (currentRfq.description) {
+                <p class="text-sm text-slate-500 border-l-2 border-slate-200 pl-2 mt-2">{{ currentRfq.description }}</p>
               }
-              <p class="text-xs text-slate-400 font-mono">Ref: {{ req._id.slice(-8) }}</p>
-              @if (req.dueDate) {
-                <p class="text-sm flex items-center gap-1 text-slate-600">
-                  <i class="pi pi-calendar"></i>
-                  Fecha límite: {{ req.dueDate | date: 'dd/MM/yyyy' }}
-                </p>
-              }
-              <div class="mt-2">
-                <p class="text-xs font-semibold text-slate-500 uppercase mb-1">Ítems solicitados</p>
-                <ul class="space-y-1">
-                  @for (item of requirementItems(); track $index) {
-                    <li class="text-sm text-slate-700 flex gap-1">
-                      <i class="pi pi-minus text-slate-300 mt-1 flex-shrink-0 text-xs"></i>
-                      <span
-                        >{{ item.description }} —
-                        <span class="font-mono">{{ item.quantity }} {{ item.unit }}</span></span
-                      >
-                    </li>
+              <div class="mt-4 border-t border-slate-100 pt-3">
+                <p class="text-xs font-semibold text-slate-500 uppercase mb-2">Resumen de ítems solicitados</p>
+                <ul class="space-y-2">
+                  @for (item of rfqItems(); track $index) {
+                     <li class="text-sm text-slate-700 flex justify-between bg-slate-50 p-2 rounded">
+                       <span class="truncate pr-2 w-3/4 text-xs">{{ $any(item.productId).name || item.notes }}</span>
+                       <span class="font-mono font-medium flex-shrink-0 text-xs text-primary">{{ item.quantity }} {{ $any(item.productId).unitOfMeasure || 'und' }}</span>
+                     </li>
                   }
                 </ul>
               </div>
@@ -394,19 +391,19 @@
           </p-card>
 
           <!-- Cotizaciones ya ingresadas -->
-          <p-card [header]="'Cotizaciones recibidas (' + existingQuotes().length + ')'">
+          <p-card [header]="'Cotizaciones Registradas (' + existingQuotes().length + ')'">
             @for (q of existingQuotes(); track q._id) {
               <div
                 class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0"
               >
-                <span class="text-sm text-slate-700">{{ getProviderName(q) }}</span>
-                <span class="font-mono font-medium text-slate-800">{{
-                  q.totalAmount | currency: 'PEN' : 'symbol' : '1.2-2'
+                <span class="text-sm text-slate-700 truncate w-3/4">{{ getProviderName(q) }}</span>
+                <span class="font-mono font-medium text-slate-800 text-xs">{{
+                  q.totalCost | currency: (q.currency || 'PEN') : 'symbol' : '1.2-2'
                 }}</span>
               </div>
             }
             @if (existingQuotes().length === 0) {
-              <p class="text-sm text-slate-400 py-2">Aún no hay cotizaciones ingresadas.</p>
+              <p class="text-sm text-slate-400 py-2">Ningún proveedor ha enviado cotización aún.</p>
             }
             @if (needMoreQuotes() > 0) {
               <div
@@ -414,20 +411,18 @@
               >
                 <i class="pi pi-info-circle text-amber-500 mt-0.5 flex-shrink-0"></i>
                 <p class="text-xs text-amber-700">
-                  Se recomiendan al menos 2 cotizaciones para poder comparar. Faltan
-                  {{ needMoreQuotes() }}.
+                  Ideal tener 2+ cotizaciones para Cuadro Comparativo. Faltan {{ needMoreQuotes() }}.
                 </p>
               </div>
             }
           </p-card>
         } @else {
-          <!-- Instrucciones cuando no hay requerimiento seleccionado -->
+          <!-- Instrucciones -->
           <p-card>
             <div class="text-center py-6 text-slate-400">
-              <i class="pi pi-arrow-circle-left text-4xl mb-3 block"></i>
+              <i class="pi pi-arrow-circle-left text-4xl mb-3 block opacity-50"></i>
               <p class="text-sm">
-                Seleccione una solicitud de cotización para ver los detalles e ingresar la
-                cotización del proveedor.
+                Seleccione un RFQ para ver el detalle de los ítems a cotizar y validar la información registrada.
               </p>
             </div>
           </p-card>

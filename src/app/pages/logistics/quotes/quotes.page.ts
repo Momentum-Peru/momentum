@@ -61,7 +61,7 @@ export class QuotesPage implements OnInit {
   }
 
   viewItem(item: Rfq) {
-    this.router.navigate(['/logistics/quotes/view', item._id]);
+    this.router.navigate(['/logistics/quotes/view', item._id], { queryParams: { mode: 'detail' } });
   }
 
   editItem(item: Rfq) {

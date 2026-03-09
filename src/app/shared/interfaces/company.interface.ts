@@ -12,6 +12,7 @@ export interface Company {
     phone?: string;
     website?: string;
     address?: string;
+    logo?: string;
     isActive: boolean;
     createdAt?: string;
     updatedAt?: string;
@@ -32,6 +33,7 @@ export interface CreateCompanyRequest {
     phone?: string;
     website?: string;
     address?: string;
+    logo?: string;
     isActive?: boolean;
 }
 
@@ -44,6 +46,7 @@ export interface UpdateCompanyRequest {
     phone?: string;
     website?: string;
     address?: string;
+    logo?: string;
     isActive?: boolean;
 }
 

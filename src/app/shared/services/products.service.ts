@@ -7,6 +7,8 @@ export interface Product {
     _id?: string;
     name: string;
     type: 'bien' | 'servicio';
+    code?: string;
+    unitOfMeasure: string;
     category?: string;
     description?: string;
     basePrice?: number;

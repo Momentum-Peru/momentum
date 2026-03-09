@@ -60,11 +60,7 @@ export class MenuConfigService {
     { path: '/purchases/vouchers', label: 'Comprobantes CXP', icon: 'pi pi-file' },
     { path: '/logistics/products', label: 'Productos y Servicios', icon: 'pi pi-box' },
     { path: '/logistics/quotes', label: 'Solicitudes de cotización', icon: 'pi pi-inbox' },
-    {
-      path: '/logistics/send-quote-request',
-      label: 'Solicitar cotización a proveedor',
-      icon: 'pi pi-send',
-    },
+
     { path: '/logistics/quote-entry', label: 'Ingresar cotizaciones', icon: 'pi pi-pencil' },
     { path: '/logistics/compare-quotes', label: 'Comparar cotizaciones', icon: 'pi pi-compare' },
     { path: '/logistics/deliveries', label: 'Confirmación de entrega', icon: 'pi pi-check-circle' },
@@ -238,11 +234,7 @@ export class MenuConfigService {
             icon: 'pi pi-inbox',
             routerLink: '/logistics/quotes',
           },
-          {
-            label: 'Solicitar cotización a proveedor',
-            icon: 'pi pi-send',
-            routerLink: '/logistics/send-quote-request',
-          },
+
           {
             label: 'Ingresar cotizaciones',
             icon: 'pi pi-pencil',
@@ -365,6 +357,11 @@ export class MenuConfigService {
             label: 'Aprobaciones',
             icon: 'pi pi-check-circle',
             routerLink: '/approvals',
+          },
+          {
+            label: 'Empresas',
+            icon: 'pi pi-building',
+            routerLink: '/companies',
           },
           {
             label: 'Logs del sistema',

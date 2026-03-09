@@ -80,7 +80,7 @@ export class RfqsService {
     return this.http.delete<{ deleted: boolean }>(`${this.baseUrl}/rfqs/${id}`);
   }
 
-  /** Aprueba la RFQ (Borrador → Aprobada). Permite que aparezca en "Solicitar cotización a proveedor". */
+  /** Aprueba la RFQ (Borrador → Aprobada). Esto permite que sea publicada y enviada a los proveedores. */
   approveRfq(id: string): Observable<Rfq> {
     return this.http.post<Rfq>(`${this.baseUrl}/rfqs/${id}/approve`, {});
   }

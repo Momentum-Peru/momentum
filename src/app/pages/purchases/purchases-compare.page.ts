@@ -134,6 +134,11 @@ export class PurchasesComparePage implements OnInit {
     if (!d || !requirementId) return;
     const quote = d.quotes.find((q) => q.quoteId === quoteId);
     if (!quote) return;
+    
+    // Check if items are mostly services or products
+    const hasProducts = d.items.some(i => i.unit !== 'SERV' && i.unit !== 'UND'); // Heuristic
+    const typeLabel = hasProducts ? 'Orden de Compra' : 'Orden de Servicio';
+
     const selections = d.items
       .map((_, idx) => {
         const line = quote.linesByItemIndex?.[String(idx)] ?? quote.linesByItemIndex?.[idx];
@@ -176,5 +181,10 @@ export class PurchasesComparePage implements OnInit {
 
   exportCompare(): void {
     // Placeholder: podría generar PDF/Excel
+  }
+
+  getOrderTypeLabel(d: any): string {
+    const hasService = d.items.some((i: any) => i.unit?.toUpperCase() === 'SERV');
+    return hasService ? 'Generar Orden de Servicio' : 'Generar Orden de Compra';
   }
 }

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { requireAuthGuard, publicGuard } from './guards/auth.guard';
 import { MenuPermissionGuard } from './guards/menu-permission.guard';
 import { requireTenantGuard } from './guards/tenant.guard';
+// rebuild trigger
 import { permissionsGuard } from './guards/permissions.guard';
 
 export const routes: Routes = [
@@ -492,6 +493,13 @@ export const routes: Routes = [
         // data: { menuPermission: '/menu-permissions' },
       },
       {
+        path: 'companies',
+        loadComponent: () =>
+          import('./pages/companies/companies.page').then((m) => m.CompaniesPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/companies' },
+      },
+      {
         path: 'approvals',
         loadComponent: () =>
           import('./pages/approvals/approvals.page').then((m) => m.ApprovalsPage),
@@ -659,7 +667,7 @@ export const routes: Routes = [
             data: { menuPermission: '/logistics/deliveries' },
           },
           {
-            path: 'quote-entry/enter',
+            path: 'quote-entry/new',
             loadComponent: () =>
               import('./pages/logistics/quote-entry/enter-supplier-quote.page').then(
                 (m) => m.EnterSupplierQuotePage,
@@ -676,15 +684,7 @@ export const routes: Routes = [
             canActivate: [MenuPermissionGuard],
             data: { menuPermission: '/logistics/quote-entry' },
           },
-          {
-            path: 'send-quote-request',
-            loadComponent: () =>
-              import('./pages/logistics/send-quote-request/send-quote-request.page').then(
-                (m) => m.SendQuoteRequestPage,
-              ),
-            canActivate: [MenuPermissionGuard],
-            data: { menuPermission: '/logistics/send-quote-request' },
-          },
+          // Send-quote-request was removed
           {
             path: 'compare-quotes',
             loadComponent: () =>

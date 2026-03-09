@@ -13,7 +13,8 @@ import { FormsModule } from '@angular/forms';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { DatePickerModule } from 'primeng/datepicker';
 import { TextareaModule } from 'primeng/textarea';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { RfqsService, Rfq, SupplierQuote, RfqItem } from '../../../../shared/services/rfqs.service';
 import { SupplierQuotesApiService } from '../../../../shared/services/supplier-quotes-api.service';
 import { ProvidersService, Provider } from '../../../../shared/services/providers.service';
@@ -45,8 +46,9 @@ interface PriceLineEntry {
     InputNumberModule,
     DatePickerModule,
     TextareaModule,
+    ConfirmDialogModule,
   ],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './quote-view.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -55,12 +57,14 @@ export class QuoteViewComponent implements OnInit {
   private readonly supplierQuotesApi = inject(SupplierQuotesApiService);
   private readonly providersService = inject(ProvidersService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
   rfq = signal<Rfq | null>(null);
   loading = signal<boolean>(true);
   approvingQuoteId = signal<string | null>(null);
+  mode = signal<'detail' | 'compare'>('detail');
 
   // ── Publicar / Enviar a proveedores ──────────────────────────────────────
   publishing = signal<boolean>(false);
@@ -77,6 +81,11 @@ export class QuoteViewComponent implements OnInit {
       } else {
         this.goBack();
       }
+    });
+
+    this.route.queryParamMap.subscribe((params) => {
+      const m = params.get('mode');
+      this.mode.set(m === 'compare' ? 'compare' : 'detail');
     });
   }
 
@@ -98,7 +107,7 @@ export class QuoteViewComponent implements OnInit {
     this.router.navigate(['/logistics/quotes']);
   }
 
-  // ── Aprobar RFQ (Borrador → Aprobada) ────────────────────────────────────
+  // ── Aprobar RFQ (Borrador → Publicada) ────────────────────────────────────
 
   approveRfq(): void {
     const rfq = this.rfq();
@@ -106,14 +115,13 @@ export class QuoteViewComponent implements OnInit {
     this.publishing.set(true);
     this.rfqsService.approveRfq(rfq._id).subscribe({
       next: (updated) => {
-        this.rfq.set(updated);
         this.messageService.add({
           severity: 'success',
-          summary: 'Solicitud aprobada',
-          detail:
-            'La solicitud pasó a "Aprobada" y ya aparece en "Solicitar cotización a proveedor".',
+          summary: 'Solicitud enviada',
+          detail: 'La solicitud se aprobó y se enviaron los correos a los proveedores.',
         });
         this.publishing.set(false);
+        setTimeout(() => this.goBack(), 1500); // Redirect back
       },
       error: (err) => {
         this.messageService.add({
@@ -124,112 +132,6 @@ export class QuoteViewComponent implements OnInit {
         this.publishing.set(false);
       },
     });
-  }
-
-  // ── Publicar RFQ (Aprobada → Publicada, al enviar correos) ───────────────
-
-  publishRfq(): void {
-    const rfq = this.rfq();
-    if (!rfq?._id) return;
-    this.rfqsService.publishRfq(rfq._id).subscribe({
-      next: (updated) => this.rfq.set(updated),
-    });
-  }
-
-  // ── Enviar solicitud a proveedores por correo ────────────────────────────
-
-  openSendDialog(): void {
-    this.selectedSendProviders = [];
-    this.loadingProviders.set(true);
-    this.sendDialogVisible.set(true);
-    this.providersService.getProviders({ isActive: true }).subscribe({
-      next: (list) => {
-        this.allProviders.set(list);
-        // Preselect providers that already have supplier quotes
-        const rfq = this.rfq();
-        if (rfq?.supplierQuotes?.length) {
-          const linkedIds = new Set(
-            rfq.supplierQuotes.map((sq) => {
-              const p = sq.providerId;
-              return typeof p === 'object' ? ((p as any)._id ?? '') : String(p);
-            }),
-          );
-          this.selectedSendProviders = list.filter((p) => p._id && linkedIds.has(p._id));
-        }
-        this.loadingProviders.set(false);
-      },
-      error: () => this.loadingProviders.set(false),
-    });
-  }
-
-  closeSendDialog(): void {
-    this.sendDialogVisible.set(false);
-    this.selectedSendProviders = [];
-  }
-
-  sendToProviders(): void {
-    const rfq = this.rfq();
-    const providers = this.selectedSendProviders;
-
-    if (!rfq || providers.length === 0) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Sin proveedores',
-        detail: 'Seleccione al menos un proveedor para enviar la solicitud.',
-      });
-      return;
-    }
-
-    const items = (rfq.items ?? [])
-      .map((it, i) => {
-        const name = typeof it.productId === 'object' ? (it.productId as any).name : 'Ítem';
-        return `${i + 1}. ${name} — Cantidad: ${it.quantity}${it.notes ? ' (${it.notes})' : ''}`;
-      })
-      .join('\n');
-
-    const body = encodeURIComponent(
-      `Solicitud de cotización: ${rfq.title}\n\n` +
-        (rfq.description ? `${rfq.description}\n\n` : '') +
-        'Ítems solicitados:\n' +
-        items +
-        (rfq.deadline
-          ? `\n\nFecha límite para recepción: ${new Date(rfq.deadline).toLocaleDateString('es-PE')}`
-          : '') +
-        (rfq.termsAndConditions ? `\n\nTérminos y condiciones:\n${rfq.termsAndConditions}` : '') +
-        '\n\nPor favor, envíe su cotización respondiendo este correo o ingrese al sistema Momentum.',
-    );
-    const subject = encodeURIComponent(`Solicitud de cotización: ${rfq.code} — ${rfq.title}`);
-
-    const emails: string[] = [];
-    providers.forEach((p) => {
-      const contact = p.contacts?.find((c) => c.email);
-      if (contact?.email) emails.push(contact.email);
-    });
-
-    if (emails.length > 0) {
-      window.location.href = `mailto:${emails.join(',')}?subject=${subject}&body=${body}`;
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Correo preparado',
-        detail: `Cliente de correo abierto con ${emails.length} destinatario(s).`,
-      });
-    } else {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Sin correo de contacto',
-        detail:
-          'Los proveedores seleccionados no tienen email registrado. Agregue el contacto en la ficha del proveedor.',
-      });
-    }
-
-    // Si el RFQ aún está en borrador, publicarlo
-    if (rfq.status === 'Borrador' && rfq._id) {
-      this.rfqsService.publishRfq(rfq._id).subscribe({
-        next: (updated) => this.rfq.set(updated),
-      });
-    }
-
-    this.closeSendDialog();
   }
 
   // ── Ingresar precios de cotización del proveedor ─────────────────────────
@@ -322,15 +224,43 @@ export class QuoteViewComponent implements OnInit {
 
   approveQuote(quote: SupplierQuote) {
     if (!quote._id) return;
+
+    this.confirmationService.confirm({
+      message: `
+          <div class="space-y-2 text-slate-700">
+            <p>Se aprobará la cotización de <strong>${this.getProviderName(quote)}</strong>.</p>
+            <ul class="list-disc pl-5 text-sm text-slate-600">
+               <li>Se generará automáticamente la <strong>Orden de Compra/Servicio</strong>.</li>
+               <li>Se enviará un correo al proveedor con la OC adjunta en PDF.</li>
+               <li>Si el proveedor no tiene usuario, se creará uno y se enviarán las credenciales.</li>
+            </ul>
+            <p class="font-bold mt-2">¿Desea continuar?</p>
+          </div>
+      `,
+      header: 'Confirmar Aprobación y Generación de OC',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, Aprobar y Generar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-success',
+      rejectButtonStyleClass: 'p-button-text',
+      accept: () => {
+        this.executeApproveOrder(quote._id!);
+      }
+    });
+  }
+
+  executeApproveOrder(quoteId: string) {
     const rfqId = this.rfq()?._id;
     if (!rfqId) return;
-    this.approvingQuoteId.set(quote._id);
-    this.supplierQuotesApi.update(quote._id, { status: 'Aprobada' }).subscribe({
-      next: () => {
+    this.approvingQuoteId.set(quoteId);
+
+    this.supplierQuotesApi.approveAndGenerateOrder(quoteId).subscribe({
+      next: (res) => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Cotización aprobada',
-          detail: 'La cotización del proveedor ha sido aprobada.',
+          summary: 'Orden Generada',
+          detail: `La Orden ${res.orderNumber || ''} fue generada y enviada correctamente.`,
+          life: 5000,
         });
         this.loadRfq(rfqId);
         this.approvingQuoteId.set(null);
@@ -339,7 +269,7 @@ export class QuoteViewComponent implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: err.error?.message || 'No se pudo aprobar la cotización.',
+          detail: err.error?.message || 'No se pudo aprobar y generar la orden.',
         });
         this.approvingQuoteId.set(null);
       },
@@ -394,5 +324,17 @@ export class QuoteViewComponent implements OnInit {
       return (p as any).name || (p as any).businessName || 'Proveedor';
     }
     return 'Proveedor';
+  }
+
+  get rfqType(): 'bien' | 'servicio' {
+    const rfq = this.rfq();
+    if (!rfq?.items?.length) return 'bien';
+    // Se asume que productId está poblado con { name, type, ... }
+    return (rfq.items[0].productId as any)?.type || 'bien';
+  }
+
+  get hasPricedQuotes(): boolean {
+    const quotes = this.rfq()?.supplierQuotes;
+    return !!quotes?.some(q => (q.totalCost ?? 0) > 0);
   }
 }

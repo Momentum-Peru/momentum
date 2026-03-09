@@ -73,7 +73,7 @@ export class CompareQuotesPage implements OnInit {
   }
 
   goToRfqCompare(rfqId: string): void {
-    this.router.navigate(['/logistics/quotes/view', rfqId]);
+    this.router.navigate(['/logistics/quotes/view', rfqId], { queryParams: { mode: 'compare' } });
   }
 
   loadRequirements(): void {

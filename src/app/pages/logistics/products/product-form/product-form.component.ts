@@ -31,6 +31,7 @@ export class ProductFormComponent implements OnInit {
     editing = signal<Product>({
         name: '',
         type: 'bien',
+        unitOfMeasure: 'unidad',
         isActive: true,
     });
 
@@ -39,6 +40,18 @@ export class ProductFormComponent implements OnInit {
     productTypes = [
         { label: 'Bien', value: 'bien' },
         { label: 'Servicio', value: 'servicio' }
+    ];
+
+    unitOptions = [
+        { label: 'Unidad', value: 'unidad' },
+        { label: 'Ciento', value: 'ciento' },
+        { label: 'Docena', value: 'docena' },
+        { label: 'Litros', value: 'litros' },
+        { label: 'Galones', value: 'galones' },
+        { label: 'mm', value: 'mm' },
+        { label: 'ml', value: 'ml' },
+        { label: 'Kg', value: 'kg' },
+        { label: 'Global', value: 'global' },
     ];
 
     ngOnInit() {
@@ -73,7 +86,9 @@ export class ProductFormComponent implements OnInit {
 
         const payload: Omit<Product, '_id' | 'createdAt' | 'updatedAt'> = {
             name: item.name,
+            code: item.code,
             type: item.type,
+            unitOfMeasure: item.unitOfMeasure,
             category: item.category,
             description: item.description,
             basePrice: item.basePrice,
