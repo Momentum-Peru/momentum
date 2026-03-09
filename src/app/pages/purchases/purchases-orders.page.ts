@@ -6,7 +6,8 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { PurchasesOrdersApiService } from '../../shared/services/purchases-orders-api.service';
 import { PurchaseOrder } from '../../shared/interfaces/purchase.interface';
 import { TenantService } from '../../core/services/tenant.service';
@@ -15,13 +16,23 @@ import { AuthService } from '../login/services/auth.service';
 @Component({
   selector: 'app-purchases-orders',
   standalone: true,
-  imports: [CommonModule, ButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
+  imports: [
+    CommonModule,
+    ButtonModule,
+    TableModule,
+    TagModule,
+    ToastModule,
+    TooltipModule,
+    ConfirmDialogModule,
+  ],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './purchases-orders.page.html',
 })
 export class PurchasesOrdersPage implements OnInit {
   private readonly ordersApi = inject(PurchasesOrdersApiService);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   private readonly tenantService = inject(TenantService);
   private readonly authService = inject(AuthService);
 
@@ -71,7 +82,11 @@ export class PurchasesOrdersPage implements OnInit {
   }
 
   downloadPdf(orderId: string, orderNumber: string): void {
-    this.messageService.add({ severity: 'info', summary: 'Generando PDF', detail: 'Por favor espere...' });
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Generando PDF',
+      detail: 'Por favor espere...',
+    });
     this.ordersApi.getPdf(orderId).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
@@ -84,40 +99,74 @@ export class PurchasesOrdersPage implements OnInit {
         document.body.removeChild(a);
       },
       error: (err) => {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el PDF' });
-      }
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo generar el PDF',
+        });
+      },
     });
   }
 
   approveOrder(order: PurchaseOrder): void {
     const user = this.authService.getCurrentUser();
     if (!user) return;
-    this.messageService.add({ severity: 'info', summary: 'Aprobando', detail: 'Por favor espere...' });
-    this.ordersApi.approveOrder(order._id || (order as any).id || '', user.id || (user as any)._id).subscribe({
-      next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Aprobada', detail: 'La orden ha sido aprobada.' });
-        this.loadOrders();
+
+    this.confirmationService.confirm({
+      message: `¿Está seguro de aprobar la orden de compra <strong>${order.number}</strong>? Una vez aprobada se notificará al proveedor.`,
+      header: 'Confirmar aprobación',
+      icon: 'pi pi-check-circle',
+      acceptLabel: 'Sí, aprobar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Aprobando',
+          detail: 'Por favor espere...',
+        });
+        const orderId = order._id || (order as any).id || '';
+        const userId = user.id || (user as any)._id;
+        this.ordersApi.approveOrder(orderId, userId).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Aprobada',
+              detail: 'La orden ha sido aprobada.',
+            });
+            this.loadOrders();
+          },
+          error: (err) => {
+            const msg = err?.error?.message || 'Error al aprobar la orden.';
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+          },
+        });
       },
-      error: (err) => {
-        const msg = err?.error?.message || 'Error al aprobar la orden.';
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
-      }
     });
   }
 
   rejectOrder(order: PurchaseOrder): void {
     const user = this.authService.getCurrentUser();
     if (!user) return;
-    this.messageService.add({ severity: 'info', summary: 'Rechazando', detail: 'Por favor espere...' });
-    this.ordersApi.rejectOrder(order._id || (order as any).id || '', user.id || (user as any)._id).subscribe({
-      next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Rechazada', detail: 'La orden ha sido rechazada.' });
-        this.loadOrders();
-      },
-      error: (err) => {
-        const msg = err?.error?.message || 'Error al rechazar la orden.';
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
-      }
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Rechazando',
+      detail: 'Por favor espere...',
     });
+    this.ordersApi
+      .rejectOrder(order._id || (order as any).id || '', user.id || (user as any)._id)
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Rechazada',
+            detail: 'La orden ha sido rechazada.',
+          });
+          this.loadOrders();
+        },
+        error: (err) => {
+          const msg = err?.error?.message || 'Error al rechazar la orden.';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+        },
+      });
   }
 }

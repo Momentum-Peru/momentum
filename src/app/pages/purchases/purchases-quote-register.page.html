@@ -1,17 +1,17 @@
 <div class="p-4 sm:p-6 max-w-6xl mx-auto">
   <p-toast [life]="5000"></p-toast>
 
-    <nav class="flex text-sm text-gray-500 dark:text-gray-400 gap-1 mb-2">
-      <a routerLink="/purchases/requirements" class="hover:text-primary">Proyectos</a>
-      <span>/</span>
-      @if (requirement(); as req) {
-        <a [routerLink]="['/purchases/requirements', req._id]" class="hover:text-primary">{{
-          req.number || req.title
-        }}</a>
-      }
-      <span>/</span>
-      <span class="font-medium text-gray-900 dark:text-white">Nueva Cotización</span>
-    </nav>
+  <nav class="flex text-sm text-gray-500 dark:text-gray-400 gap-1 mb-2">
+    <a routerLink="/purchases/requirements" class="hover:text-primary">Proyectos</a>
+    <span>/</span>
+    @if (requirement(); as req) {
+      <a [routerLink]="['/purchases/requirements', req._id]" class="hover:text-primary">{{
+        req.number || req.title
+      }}</a>
+    }
+    <span>/</span>
+    <span class="font-medium text-gray-900 dark:text-white">Nueva Cotización</span>
+  </nav>
 
   <div class="flex items-center gap-2 mb-2">
     <button
@@ -230,7 +230,9 @@
         @if (requirement(); as req) {
           <p-tag value="Fase de licitación" severity="warn" class="mb-2"></p-tag>
           <p class="font-medium text-gray-900 dark:text-white">{{ req.title }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ref: {{ req.number || req._id.slice(-8) }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Ref: {{ req.number || req._id.slice(-8) }}
+          </p>
           @if (req.dueDate) {
             <p class="text-sm mt-2 flex items-center gap-1">
               <i class="pi pi-calendar"></i>Fecha Límite: {{ req.dueDate | date: 'dd MMM, yyyy' }}
