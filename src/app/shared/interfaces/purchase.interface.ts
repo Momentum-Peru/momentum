@@ -24,6 +24,7 @@ export interface PurchaseRequirementItem {
 export interface PurchaseRequirement {
   _id: string;
   tenantId?: string;
+  number?: string;
   title: string;
   description?: string;
   items: PurchaseRequirementItem[];

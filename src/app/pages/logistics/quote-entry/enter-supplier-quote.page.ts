@@ -7,7 +7,7 @@ import {
   computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -21,31 +21,24 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { DividerModule } from 'primeng/divider';
 import { MessageService } from 'primeng/api';
-import { PurchasesRequirementsApiService } from '../../../shared/services/purchases-requirements-api.service';
-import { PurchasesQuotesApiService } from '../../../shared/services/purchases-quotes-api.service';
+import { SupplierQuotesApiService } from '../../../shared/services/supplier-quotes-api.service';
+import { RfqsService, Rfq, RfqItem } from '../../../shared/services/rfqs.service';
 import { ProvidersService } from '../../../shared/services/providers.service';
 import { UploadService } from '../../../shared/services/upload.service';
 import { TenantService } from '../../../core/services/tenant.service';
-import {
-  PurchaseRequirement,
-  PurchaseRequirementItem,
-  RegisterQuoteRequest,
-} from '../../../shared/interfaces/purchase.interface';
+import { SupplierQuote, SupplierQuoteItem } from '../../../shared/interfaces/supplier-quote.interface';
 
 interface QuoteLine {
-  requirementItemIndex: number;
-  unitPrice: number;
+  productId: string;
+  description: string;
+  unit: string;
   quantity: number;
+  unitPrice: number;
+  totalPrice: number;
   includesIgv: boolean;
   brandOrModel: string;
 }
 
-/**
- * Vista "Ingresar cotización del proveedor" del flujo de logística.
- * Permite al usuario de logística seleccionar la solicitud de cotización
- * e ingresar todos los datos de la cotización que envió el proveedor
- * (proveedor, montos por ítem, plazos, condiciones y archivos adjuntos).
- */
 @Component({
   selector: 'app-enter-supplier-quote-page',
   standalone: true,
@@ -70,54 +63,72 @@ interface QuoteLine {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EnterSupplierQuotePage implements OnInit {
-  private readonly requirementsApi = inject(PurchasesRequirementsApiService);
-  private readonly quotesApi = inject(PurchasesQuotesApiService);
+  private readonly rfqsService = inject(RfqsService);
+  private readonly quotesApi = inject(SupplierQuotesApiService);
   private readonly providersService = inject(ProvidersService);
   private readonly uploadService = inject(UploadService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly messageService = inject(MessageService);
   private readonly tenantService = inject(TenantService);
 
   // ── Carga inicial ──────────────────────────────────────────────────────────
-  loadingRequirements = signal(true);
-  loadingRequirement = signal(false);
+  loadingRfqs = signal(true);
+  loadingRfq = signal(false);
 
-  requirementOptions = signal<{ label: string; value: string }[]>([]);
-  selectedRequirementId: string | null = null;
-  requirement = signal<PurchaseRequirement | null>(null);
-  existingQuotes = signal<{ providerId: unknown; totalAmount: number; _id: string }[]>([]);
+  rfqOptions = signal<{ label: string; value: string }[]>([]);
+  selectedRfqId: string | null = null;
+  rfq = signal<Rfq | null>(null);
+  existingQuotes = signal<SupplierQuote[]>([]);
   providers = signal<{ label: string; value: string }[]>([]);
+
+  currencyOptions = [
+    { label: 'Soles (PEN)', value: 'PEN' },
+    { label: 'Dólares (USD)', value: 'USD' }
+  ];
 
   // ── Campos del formulario ──────────────────────────────────────────────────
   providerId: string | null = null;
-  totalAmount = 0;
-  deliveryDays: number | null = null;
-  validUntil: Date | null = null;
+  currency = 'PEN';
+  subtotal = 0;
+  igv = 0;
+  totalCost = 0;
+  deliveryTime = '';
+  validityDays: number | null = null;
   paymentTerms = '';
-  warranty = '';
   notes = '';
   lines: QuoteLine[] = [];
   pendingFiles: File[] = [];
 
+  // Configuración de cálculos
+  autoCalculateTotal = true;
+
   // ── Estado ────────────────────────────────────────────────────────────────
   saving = signal(false);
   uploadingFiles = signal(false);
-  readonly today = new Date();
 
-  requirementItems = computed<PurchaseRequirementItem[]>(() => this.requirement()?.items ?? []);
-
+  rfqItems = computed<RfqItem[]>(() => this.rfq()?.items ?? []);
   needMoreQuotes = computed(() => Math.max(0, 2 - this.existingQuotes().length));
 
   ngOnInit(): void {
-    this.loadRequirements();
+    this.loadRfqs();
     this.loadProviders();
+
+    // Ver si venimos con un RFQ desde la URL
+    this.route.queryParamMap.subscribe(params => {
+      const rfqId = params.get('rfqId');
+      if (rfqId) {
+        this.selectedRfqId = rfqId;
+        this.onRfqChange(rfqId);
+      }
+    });
   }
 
   // ── Carga de datos ─────────────────────────────────────────────────────────
 
-  private loadRequirements(): void {
+  private loadRfqs(): void {
     if (!this.tenantService.tenantId()) {
-      this.loadingRequirements.set(false);
+      this.loadingRfqs.set(false);
       this.messageService.add({
         severity: 'warn',
         summary: 'Empresa no seleccionada',
@@ -125,20 +136,17 @@ export class EnterSupplierQuotePage implements OnInit {
       });
       return;
     }
-    this.loadingRequirements.set(true);
-    // Cargamos todos y filtramos localmente porque el back solo admite un
-    // status a la vez. Se muestran 'borrador' y 'cotizaciones_pendientes':
-    // - 'borrador': solicitud creada/enviada a proveedor pero aún sin cotización ingresada
-    // - 'cotizaciones_pendientes': ya tiene al menos una cotización pero puede recibir más
-    this.requirementsApi.list({ sortBy: 'createdAt', sortOrder: 'desc' }).subscribe({
+    this.loadingRfqs.set(true);
+    this.rfqsService.getRfqs().subscribe({
       next: (list) => {
+        // Mostrar solo RFQs enviadas a proveedores (Publicada)
         const eligible = list.filter(
-          (r) => r.status === 'borrador' || r.status === 'cotizaciones_pendientes',
+          (r) => r.status === 'Publicada',
         );
-        this.requirementOptions.set(
+        this.rfqOptions.set(
           eligible.map((r) => ({
-            label: r.title,
-            value: r._id,
+            label: `[${r.code}] ${r.title}`,
+            value: r._id!,
           })),
         );
       },
@@ -149,7 +157,7 @@ export class EnterSupplierQuotePage implements OnInit {
           detail: 'No se pudieron cargar las solicitudes de cotización.',
         });
       },
-      complete: () => this.loadingRequirements.set(false),
+      complete: () => this.loadingRfqs.set(false),
     });
   }
 
@@ -162,30 +170,36 @@ export class EnterSupplierQuotePage implements OnInit {
     });
   }
 
-  onRequirementChange(id: string | null): void {
-    this.selectedRequirementId = id;
-    this.requirement.set(null);
+  onRfqChange(id: string | null): void {
+    this.selectedRfqId = id;
+    this.rfq.set(null);
     this.lines = [];
     this.existingQuotes.set([]);
     if (!id) return;
 
-    this.loadingRequirement.set(true);
-    this.requirementsApi.getById(id).subscribe({
+    this.loadingRfq.set(true);
+    this.rfqsService.getRfq(id).subscribe({
       next: (r) => {
-        this.requirement.set(r);
-        this.lines = (r.items ?? []).map((item, i) => ({
-          requirementItemIndex: i,
-          unitPrice: 0,
-          quantity: item.quantity,
-          includesIgv: true,
-          brandOrModel: '',
-        }));
+        this.rfq.set(r);
+        this.lines = (r.items ?? []).map((item) => {
+          const prod: any = item.productId || {};
+          return {
+            productId: prod._id || '',
+            description: prod.name || item.notes || 'Ítem',
+            unit: prod.unitOfMeasure || 'und',
+            quantity: item.quantity,
+            unitPrice: 0,
+            totalPrice: 0,
+            includesIgv: true, // Default in Peru
+            brandOrModel: '',
+          };
+        });
       },
-      complete: () => this.loadingRequirement.set(false),
+      complete: () => this.loadingRfq.set(false),
     });
 
-    this.quotesApi.listByRequirement(id).subscribe({
-      next: (list) => this.existingQuotes.set(list as any),
+    this.quotesApi.list(undefined, id).subscribe({
+      next: (list) => this.existingQuotes.set(list),
     });
   }
 
@@ -211,17 +225,51 @@ export class EnterSupplierQuotePage implements OnInit {
     this.uploadingFiles.set(false);
   }
 
+  // ── Cálculos ────────────────────────────────────────────────────────────────
+
+  onLinePriceChange(line: QuoteLine) {
+    line.totalPrice = line.unitPrice * line.quantity;
+    if (this.autoCalculateTotal) {
+      this.calculateTotalsForm();
+    }
+  }
+
+  calculateTotalsForm() {
+    // Suma de líneas
+    const sum = this.lines.reduce((acc, l) => acc + (l.totalPrice || 0), 0);
+
+    // Si todos incluyen IGV, subtotal = sum / 1.18
+    // Si ninguno incluye IGV, subtotal = sum
+    // Dado que puede ser mixto, un acercamiento simplificado:
+    let totalIgv = 0;
+    let totalSinIgv = 0;
+
+    for (const line of this.lines) {
+      if (line.includesIgv) {
+        totalSinIgv += line.totalPrice / 1.18;
+        totalIgv += line.totalPrice - (line.totalPrice / 1.18);
+      } else {
+        totalSinIgv += line.totalPrice;
+        totalIgv += line.totalPrice * 0.18;
+      }
+    }
+
+    this.subtotal = parseFloat(totalSinIgv.toFixed(2));
+    this.igv = parseFloat(totalIgv.toFixed(2));
+    this.totalCost = parseFloat((totalSinIgv + totalIgv).toFixed(2));
+  }
+
   // ── Envío del formulario ───────────────────────────────────────────────────
 
-  getProviderName(q: { providerId: unknown }): string {
-    const p = q?.providerId;
-    if (p && typeof p === 'object' && (p as { name?: string }).name)
-      return (p as { name: string }).name;
+  getProviderName(q: SupplierQuote): string {
+    const p = q.providerId;
+    if (p && typeof p === 'object')
+      return (p as any).businessName || (p as any).name || '-';
     return '-';
   }
 
   isFormValid(): boolean {
-    return !!(this.selectedRequirementId && this.providerId && this.totalAmount > 0);
+    return !!(this.selectedRfqId && this.providerId && this.totalCost > 0);
   }
 
   async onSubmit(): Promise<void> {
@@ -234,31 +282,47 @@ export class EnterSupplierQuotePage implements OnInit {
       return;
     }
 
-    const payload: RegisterQuoteRequest = {
+    const currentRfq = this.rfq();
+    if (!currentRfq) return;
+
+    let projectId: string | undefined;
+    if (currentRfq.projectId) {
+      projectId = typeof currentRfq.projectId === 'string' ? currentRfq.projectId : currentRfq.projectId._id;
+    }
+
+    const payload: Partial<SupplierQuote> = {
+      projectId,
       providerId: this.providerId!,
-      lines: this.lines.map((l) => ({
-        requirementItemIndex: l.requirementItemIndex,
-        unitPrice: l.unitPrice,
+      rfqId: this.selectedRfqId!,
+      items: this.lines.map((l) => ({
+        productId: l.productId,
         quantity: l.quantity,
+        unitPrice: l.unitPrice,
+        totalPrice: l.totalPrice,
         includesIgv: l.includesIgv,
         brandOrModel: l.brandOrModel || undefined,
       })),
-      totalAmount: this.totalAmount,
-      deliveryDays: this.deliveryDays ?? undefined,
-      validUntil: this.validUntil ? this.validUntil.toISOString().split('T')[0] : undefined,
-      notes: this.notes || undefined,
+      currency: this.currency,
+      subtotal: this.subtotal,
+      igv: this.igv,
+      totalCost: this.totalCost,
+      deliveryTime: this.deliveryTime || undefined,
+      validityDays: this.validityDays ?? undefined,
       paymentTerms: this.paymentTerms || undefined,
-      warranty: this.warranty || undefined,
+      notes: this.notes || undefined,
+      status: 'Pendiente'
     };
 
     this.saving.set(true);
-    this.quotesApi.register(this.selectedRequirementId!, payload).subscribe({
+    this.quotesApi.create(payload).subscribe({
       next: async (quote) => {
-        await this.uploadFiles(quote._id);
+        if (quote._id) {
+          await this.uploadFiles(quote._id);
+        }
         this.messageService.add({
           severity: 'success',
           summary: 'Cotización registrada',
-          detail: 'La cotización fue ingresada correctamente. Puede ingresar más o ir a comparar.',
+          detail: 'La cotización fue ingresada correctamente.',
         });
         setTimeout(() => this.router.navigate(['/logistics/quote-entry']), 1500);
       },

@@ -22,8 +22,16 @@
             <input pInputText placeholder="Ej: Laptop Lenovo Thinkpad" [ngModel]="editing().name" (ngModelChange)="onEditChange('name', $event)" class="w-full" />
           </div>
           <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Código</label>
+            <input pInputText placeholder="Ej: PROD-001" [ngModel]="editing().code" (ngModelChange)="onEditChange('code', $event)" class="w-full" />
+          </div>
+          <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">Tipo *</label>
             <p-select [options]="productTypes" optionLabel="label" optionValue="value" [ngModel]="editing().type" (ngModelChange)="onEditChange('type', $event)" class="w-full"></p-select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Unidad de Medida *</label>
+            <p-select [options]="unitOptions" optionLabel="label" optionValue="value" [ngModel]="editing().unitOfMeasure" (ngModelChange)="onEditChange('unitOfMeasure', $event)" class="w-full"></p-select>
           </div>
           <div class="md:col-span-2">
             <label class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>

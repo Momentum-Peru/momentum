@@ -45,8 +45,10 @@
       </ng-template>
       <ng-template pTemplate="header">
         <tr>
+          <th pSortableColumn="code">Código <p-sortIcon field="code"></p-sortIcon></th>
           <th pSortableColumn="name">Nombre <p-sortIcon field="name"></p-sortIcon></th>
           <th pSortableColumn="type">Tipo <p-sortIcon field="type"></p-sortIcon></th>
+          <th pSortableColumn="unitOfMeasure">Ud. Med. <p-sortIcon field="unitOfMeasure"></p-sortIcon></th>
           <th pSortableColumn="category">Categoría <p-sortIcon field="category"></p-sortIcon></th>
           <th pSortableColumn="basePrice">Precio Ref. <p-sortIcon field="basePrice"></p-sortIcon></th>
           <th pSortableColumn="isActive">Estado <p-sortIcon field="isActive"></p-sortIcon></th>
@@ -55,21 +57,26 @@
       </ng-template>
       <ng-template pTemplate="body" let-product>
         <tr>
+          <td class="text-slate-500 font-mono text-xs">{{ product.code || '-' }}</td>
           <td class="font-medium text-slate-800">
             {{ product.name }}
-            <div class="text-xs text-slate-500 font-normal truncate max-w-xs" *ngIf="product.description">
-              {{ product.description }}
-            </div>
+            @if (product.description) {
+              <div class="text-xs text-slate-500 font-normal truncate max-w-xs">
+                {{ product.description }}
+              </div>
+            }
           </td>
           <td>
             <p-tag [severity]="getTypeSeverity(product.type)" [value]="product.type === 'bien' ? 'Bien' : 'Servicio'"></p-tag>
           </td>
+          <td class="capitalize">{{ product.unitOfMeasure }}</td>
           <td>{{ product.category || '-' }}</td>
           <td>
-            <ng-container *ngIf="product.basePrice; else noPrice">
+            @if (product.basePrice) {
               {{ product.basePrice | currency:'PEN':'symbol':'1.2-2' }}
-            </ng-container>
-            <ng-template #noPrice>-</ng-template>
+            } @else {
+              -
+            }
           </td>
           <td>
             <span
@@ -95,7 +102,7 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="6" class="text-center py-8 text-slate-500">
+          <td colspan="8" class="text-center py-8 text-slate-500">
             No se encontraron productos o servicios.
           </td>
         </tr>

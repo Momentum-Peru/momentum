@@ -1,0 +1,294 @@
+<div class="p-4 space-y-4 mt-5 overflow-x-hidden">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Título -->
+  <div class="mb-4">
+    <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">Empresas (Tenants)</h1>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <input
+      pInputText
+      placeholder="Buscar por nombre, código o RUC..."
+      [ngModel]="query()"
+      (ngModelChange)="setQuery($event)"
+      name="searchQuery"
+      class="flex-1 min-w-[200px]"
+    />
+    <p-select
+      [options]="filterActiveOptions"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="filterActive()"
+      (ngModelChange)="setFilterActive($event)"
+      placeholder="Filtrar por estado"
+      class="w-full xl:w-auto"
+      [appendTo]="'body'"
+    ></p-select>
+    <button
+      pButton
+      type="button"
+      (click)="newItem()"
+      label="Nueva Empresa"
+      icon="pi pi-plus"
+      class="w-full xl:w-auto"
+    ></button>
+  </div>
+
+  <!-- Vista Desktop: Tabla -->
+  <div class="hidden md:block">
+    <p-table
+      [value]="filteredItems()"
+      [scrollable]="true"
+      scrollHeight="60vh"
+      styleClass="p-datatable-sm"
+      [loading]="loading()"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Logo</th>
+          <th>Nombre</th>
+          <th>Código</th>
+          <th>RUC</th>
+          <th>Estado</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <ng-container *ngIf="row.logo; else noLogo">
+              <img [src]="row.logo" alt="Logo de {{row.name}}" class="h-10 object-contain rounded" />
+            </ng-container>
+            <ng-template #noLogo>
+              <div class="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-gray-500">
+                <i class="pi pi-building"></i>
+              </div>
+            </ng-template>
+          </td>
+          <td>
+            <span class="font-medium text-gray-900 dark:text-white">{{ row.name }}</span>
+          </td>
+          <td>
+            <span class="text-gray-700 dark:text-white">{{ row.code || '-' }}</span>
+          </td>
+          <td>
+            <span class="text-gray-700 dark:text-white">{{ row.taxId || '-' }}</span>
+          </td>
+          <td>
+            <p-toggleButton
+              [ngModel]="row.isActive"
+              (click)="toggleActive(row, $event)"
+              [disabled]="loading()"
+              onLabel="Activa"
+              offLabel="Inactiva"
+              class="text-sm"
+            ></p-toggleButton>
+          </td>
+          <td class="text-right">
+            <button
+              pButton
+              icon="pi pi-eye"
+              class="p-button-text"
+              (click)="viewItem(row)"
+              pTooltip="Ver detalles"
+              tooltipPosition="top"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-text"
+              (click)="editItem(row)"
+              pTooltip="Editar"
+              tooltipPosition="top"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-text p-button-danger"
+              (click)="remove(row)"
+              pTooltip="Eliminar"
+              tooltipPosition="top"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center py-8 text-gray-500">No se encontraron empresas</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil: Lista tipo tarjetas -->
+  <div class="md:hidden space-y-3">
+    @for (row of filteredItems(); track row._id || $index; let i = $index) { @let key = buildRowKey(row, i);
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+      <div
+        class="p-4 flex items-center justify-between cursor-pointer"
+        (click)="toggleRowByKey(key)"
+      >
+        <div class="flex-1 min-w-0 pr-2">
+          <div class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <ng-container *ngIf="row.logo; else noLogoMob">
+              <img [src]="row.logo" alt="Logo" class="h-6 w-6 object-contain rounded" />
+            </ng-container>
+            <ng-template #noLogoMob>
+              <i class="pi pi-building text-gray-500"></i>
+            </ng-template>
+            {{ row.name }}
+          </div>
+          @if (row.taxId) {
+          <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">RUC: {{ row.taxId }}</div>
+          }
+        </div>
+        <div class="flex items-center gap-2">
+          <span
+            [class]="
+              row.isActive
+                ? 'px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                : 'px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+            "
+          >
+            {{ row.isActive ? 'Activa' : 'Inactiva' }}
+          </span>
+          <i
+            [class]="
+              isRowExpandedByKey(key)
+                ? 'pi pi-chevron-up text-gray-500'
+                : 'pi pi-chevron-down text-gray-500'
+            "
+          ></i>
+        </div>
+      </div>
+
+      @if (isRowExpandedByKey(key)) {
+      <div class="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex gap-2 pt-2">
+          <button pButton icon="pi pi-eye" label="Ver" class="p-button-text flex-1" (click)="viewItem(row)"></button>
+          <button pButton icon="pi pi-pencil" label="Editar" class="p-button-text flex-1" (click)="editItem(row)"></button>
+          <button pButton icon="pi pi-trash" label="Eliminar" class="p-button-text p-button-danger flex-1" (click)="remove(row)"></button>
+        </div>
+      </div>
+      }
+    </div>
+    } @empty {
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">No se encontraron empresas</div>
+    }
+  </div>
+
+  <!-- Diálogo de creación/edición -->
+  <p-dialog
+    [(visible)]="showDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '42rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    appendTo="body"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold">{{ editing()?._id ? 'Editar empresa' : 'Nueva empresa' }}</span>
+    </ng-template>
+
+    <div class="space-y-4" *ngIf="editing() as e">
+      <div>
+        <label for="name" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Nombre *</label>
+        <input id="name" pInputText [ngModel]="e.name" (ngModelChange)="onEditChange('name', $event)" class="w-full" required />
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="code" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Código</label>
+          <input id="code" pInputText [ngModel]="e.code" (ngModelChange)="onEditChange('code', $event)" class="w-full" />
+        </div>
+        <div>
+          <label for="taxId" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Identificación Fiscal (RUC)</label>
+          <input id="taxId" pInputText [ngModel]="e.taxId" (ngModelChange)="onEditChange('taxId', $event)" class="w-full" />
+        </div>
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Email</label>
+          <input id="email" type="email" pInputText [ngModel]="e.email" (ngModelChange)="onEditChange('email', $event)" class="w-full" />
+        </div>
+        <div>
+          <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Teléfono</label>
+          <input id="phone" pInputText [ngModel]="e.phone" (ngModelChange)="onEditChange('phone', $event)" class="w-full" />
+        </div>
+        <div class="md:col-span-2">
+          <label for="address" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Dirección</label>
+          <input id="address" pInputText [ngModel]="e.address" (ngModelChange)="onEditChange('address', $event)" class="w-full" />
+        </div>
+        <div class="md:col-span-2">
+          <label for="website" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Sitio Web</label>
+          <input id="website" pInputText [ngModel]="e.website" (ngModelChange)="onEditChange('website', $event)" class="w-full" />
+        </div>
+        <div class="md:col-span-2">
+          <label for="logo" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">URL del Logo de Empresa</label>
+          <div class="flex items-center gap-2">
+            <input id="logo" pInputText [ngModel]="e.logo" (ngModelChange)="onEditChange('logo', $event)" placeholder="https://ejemplo.com/logo.png" class="w-full" />
+            <ng-container *ngIf="e.logo">
+              <img [src]="e.logo" class="h-10 w-10 object-contain rounded border bg-white" />
+            </ng-container>
+          </div>
+          <small class="text-xs text-gray-500">Pega aquí la URL directa hacia la imagen del logo.</small>
+        </div>
+      </div>
+
+      <div>
+        <label for="description" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Descripción</label>
+        <textarea id="description" pTextarea [ngModel]="e.description" (ngModelChange)="onEditChange('description', $event)" rows="3" class="w-full"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
+        <p-toggleButton [ngModel]="e.isActive" (ngModelChange)="onEditChange('isActive', $event)" onLabel="Activa" offLabel="Inactiva"></p-toggleButton>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()"></button>
+      <button pButton label="Guardar" (click)="save()" [disabled]="loading()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo de visualización -->
+  <p-dialog
+    [(visible)]="showViewDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '42rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    appendTo="body"
+  >
+    <ng-template pTemplate="header">
+      <span class="font-semibold">Detalles de Empresa</span>
+    </ng-template>
+
+    <div class="space-y-4" *ngIf="viewing() as v">
+      <div class="flex items-center gap-4 mb-4" *ngIf="v.logo">
+        <img [src]="v.logo" alt="Logo de {{v.name}}" class="h-16 w-16 object-contain rounded border bg-white p-1" />
+        <h2 class="text-xl font-bold">{{ v.name }}</h2>
+      </div>
+      <h2 class="text-xl font-bold mb-4" *ngIf="!v.logo">{{ v.name }}</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><span class="block text-xs text-gray-500 dark:text-white mb-1">Código</span><div class="font-medium text-gray-700 dark:text-white">{{ v.code || '-' }}</div></div>
+        <div><span class="block text-xs text-gray-500 dark:text-white mb-1">RUC</span><div class="font-medium text-gray-700 dark:text-white">{{ v.taxId || '-' }}</div></div>
+        <div><span class="block text-xs text-gray-500 dark:text-white mb-1">Email</span><div class="font-medium text-gray-700 dark:text-white">{{ v.email || '-' }}</div></div>
+        <div><span class="block text-xs text-gray-500 dark:text-white mb-1">Teléfono</span><div class="font-medium text-gray-700 dark:text-white">{{ v.phone || '-' }}</div></div>
+        <div class="md:col-span-2"><span class="block text-xs text-gray-500 dark:text-white mb-1">Dirección</span><div class="font-medium text-gray-700 dark:text-white">{{ v.address || '-' }}</div></div>
+        <div class="md:col-span-2 border-t pt-4">
+          <span class="block text-xs text-gray-500 dark:text-white mb-1">Logo URL</span>
+          <div class="font-medium text-blue-600 truncate"><a [href]="v.logo" target="_blank">{{ v.logo || '-' }}</a></div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button pButton label="Cerrar" (click)="closeViewDialog()"></button>
+    </ng-template>
+  </p-dialog>
+</div>

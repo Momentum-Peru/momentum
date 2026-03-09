@@ -120,7 +120,7 @@
           <button
             pButton
             type="button"
-            label="Adjudicar Compra"
+            [label]="getOrderTypeLabel(d)"
             icon="pi pi-check"
             [loading]="adjudicating()"
             (click)="adjudicateWithQuote(rec.quoteId)"
@@ -185,7 +185,7 @@
               <button
                 pButton
                 type="button"
-                label="Adjudicar Compra"
+                [label]="getOrderTypeLabel(d)"
                 icon="pi pi-check"
                 [loading]="adjudicating()"
                 [outlined]="!isRecommendedQuote(q.quoteId)"

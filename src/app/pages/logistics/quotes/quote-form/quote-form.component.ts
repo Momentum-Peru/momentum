@@ -51,7 +51,7 @@ export class QuoteFormComponent implements OnInit {
     description = signal<string>('');
     deadline = signal<Date | null>(null);
     termsAndConditions = signal<string>('');
-    rfqItems = signal<{ productId: Product | null, quantity: number, notes: string }[]>([]);
+    rfqItems = signal<{ typeFilter: 'bien' | 'servicio' | null, productId: Product | null, quantity: number, notes: string }[]>([]);
     selectedProviderIds = signal<string[]>([]);
 
     // Catalogs
@@ -60,11 +60,16 @@ export class QuoteFormComponent implements OnInit {
     projects = signal<Project[]>([]);
     selectedProjectId = signal<string | null>(null);
 
+    productTypes = [
+        { label: 'Bien', value: 'bien' },
+        { label: 'Servicio', value: 'servicio' }
+    ];
+
     // Quick Creation Modals
     showProjectDialog = signal<boolean>(false);
     newProject = signal({ name: '', description: '' });
     showProductDialog = signal<boolean>(false);
-    newProduct = signal<{ name: string, type: 'bien' | 'servicio' }>({ name: '', type: 'bien' });
+    newProduct = signal<{ name: string, type: 'bien' | 'servicio', unitOfMeasure: string }>({ name: '', type: 'bien', unitOfMeasure: 'unidad' });
 
     showProviderDialog = signal<boolean>(false);
     newProvider = signal({ name: '', taxIdType: 'RUC', taxId: '', contactName: '', email: '', phone: '' });
@@ -105,6 +110,11 @@ export class QuoteFormComponent implements OnInit {
         this.projectsService.listActive().subscribe(data => this.projects.set(data));
     }
 
+    getFilteredProducts(typeFilter: 'bien' | 'servicio' | null): Product[] {
+        if (!typeFilter) return this.products();
+        return this.products().filter(p => p.type === typeFilter);
+    }
+
     loadRfq(id: string) {
         this.rfqsService.getRfq(id).subscribe({
             next: (rfq) => {
@@ -117,11 +127,15 @@ export class QuoteFormComponent implements OnInit {
                 }
 
                 // Map items back
-                const items = rfq.items.map(i => ({
-                    productId: typeof i.productId === 'object' ? i.productId as Product : this.products().find(p => p._id === i.productId) || null,
-                    quantity: i.quantity,
-                    notes: i.notes || ''
-                }));
+                const items = rfq.items.map(i => {
+                    const prod = typeof i.productId === 'object' ? i.productId as Product : this.products().find(p => p._id === i.productId) || null;
+                    return {
+                        typeFilter: prod?.type || null,
+                        productId: prod,
+                        quantity: i.quantity,
+                        notes: i.notes || ''
+                    };
+                });
                 this.rfqItems.set(items);
 
                 // Disable editing items or providers if it's already published to prevent mismatch?
@@ -151,7 +165,7 @@ export class QuoteFormComponent implements OnInit {
     }
 
     addRfqItem() {
-        this.rfqItems.update(items => [...items, { productId: null, quantity: 1, notes: '' }]);
+        this.rfqItems.update(items => [...items, { typeFilter: 'bien', productId: null, quantity: 1, notes: '' }]);
     }
 
     removeRfqItem(index: number) {
@@ -165,13 +179,16 @@ export class QuoteFormComponent implements OnInit {
         this.rfqItems.update(items => {
             const newItems = [...items];
             newItems[index] = { ...newItems[index], [field]: value };
+            if (field === 'typeFilter') {
+                newItems[index].productId = null; // reset selection when type changes
+            }
             return newItems;
         });
     }
 
     // Quick Creation Handlers
     openNewProduct() {
-        this.newProduct.set({ name: '', type: 'bien' });
+        this.newProduct.set({ name: '', type: 'bien', unitOfMeasure: 'unidad' });
         this.showProductDialog.set(true);
     }
 
