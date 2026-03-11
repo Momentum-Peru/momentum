@@ -40,6 +40,7 @@ import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
 import { CompaniesApiService } from '../../shared/services/companies-api.service';
 import { CompanyOption } from '../../shared/interfaces/company.interface';
+import { TenantService } from '../../core/services/tenant.service';
 import { AuthService } from '../login/services/auth.service';
 import { ApisPeruApiService } from '../../shared/services/apisperu-api.service';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
@@ -113,6 +114,7 @@ export class LeadsPage implements OnInit {
   private readonly confirmationService = inject(ConfirmationService);
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
+  private readonly tenantService = inject(TenantService);
   private readonly router = inject(Router);
   private readonly baseUrl = environment.apiUrl;
   private readonly apisPeruService = inject(ApisPeruApiService);
@@ -367,11 +369,12 @@ export class LeadsPage implements OnInit {
 
   newItem() {
     this.editing.set({
-      name: '',
+      name: '', // Se autocompletará con el nombre del contacto al guardar
       contact: { name: '', email: '', phone: '' },
       status: 'NEW',
       source: 'OTHER',
       assignedTo: '',
+      companyId: this.tenantService.tenantId() || '', // Autoseleccionar tenant
     });
     this.showDialog.set(true);
     this.resetLocation();
@@ -559,14 +562,15 @@ export class LeadsPage implements OnInit {
       return;
     }
 
-    // Después de la validación, sabemos que name y contact existen
-    // Hacer type narrowing explícito para TypeScript
-    const name = item.name;
+    // Después de la validación, sabemos que contact existe
     const contact = item.contact;
 
-    if (!name || !contact) {
+    if (!contact) {
       return;
     }
+
+    // Si no hay nombre de lead, usar el nombre del contacto
+    const name = item.name && item.name.trim() !== '' ? item.name : contact.name;
 
     // Ahora TypeScript sabe que name y contact no son undefined
     if (item._id) {
@@ -605,7 +609,7 @@ export class LeadsPage implements OnInit {
       });
     } else {
       // Crear nuevo lead - solo campos permitidos en CreateLeadRequest
-      // Después de la validación y el check anterior, sabemos que name y contact existen
+      // Después de la validación y el check anterior, sabemos que contact existen
       const createPayload: CreateLeadRequest = {
         name,
         contact,
@@ -920,17 +924,23 @@ export class LeadsPage implements OnInit {
   private validateForm(item: Partial<Lead>): string[] {
     const errors: string[] = [];
 
-    if (!item.name || item.name.trim() === '') {
-      errors.push('El nombre del lead es requerido');
-    }
+    // Nombre del lead ya no es obligatorio en formulario, se genera auto
+    // if (!item.name || item.name.trim() === '') {
+    //   errors.push('El nombre del lead es requerido');
+    // }
 
     if (!item.contact?.name || item.contact.name.trim() === '') {
       errors.push('El nombre del contacto es requerido');
     }
 
-    if (!item.contact?.email || item.contact.email.trim() === '') {
-      errors.push('El email del contacto es requerido');
-    } else if (!this.isValidEmail(item.contact.email)) {
+    // Email ya no es obligatorio
+    // if (!item.contact?.email || item.contact.email.trim() === '') {
+    //   errors.push('El email del contacto es requerido');
+    // } else if (!this.isValidEmail(item.contact.email)) {
+    //   errors.push('El email del contacto no tiene un formato válido');
+    // }
+
+    if (item.contact?.email && !this.isValidEmail(item.contact.email)) {
       errors.push('El email del contacto no tiene un formato válido');
     }
 
@@ -939,7 +949,7 @@ export class LeadsPage implements OnInit {
     }
 
     if (!item.companyId || item.companyId.trim() === '') {
-      errors.push('Debe seleccionar una empresa de Momentum');
+      errors.push('Debe seleccionar una empresa de Momentum (Verifique su tenant seleccionado)');
     }
 
     return errors;
