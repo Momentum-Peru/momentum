@@ -1,1 +1,10 @@
-// Estilos específicos para companies-crm si es necesario
+// Logo: zona minimalista
+.logo-drop-zone {
+  .p-fileupload .p-fileupload-filename {
+    display: none;
+  }
+  .p-fileupload .p-button {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+}

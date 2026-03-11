@@ -11,14 +11,13 @@ export class SupplierQuotesApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
 
-  /**
-   * Lista todas las cotizaciones de proveedores
-   * @param projectId Opcional: Filtrar por proyecto
-   */
-  list(projectId?: string): Observable<SupplierQuote[]> {
+  list(projectId?: string, rfqId?: string): Observable<SupplierQuote[]> {
     let params = new HttpParams();
     if (projectId) {
       params = params.set('projectId', projectId);
+    }
+    if (rfqId) {
+      params = params.set('rfqId', rfqId);
     }
     return this.http.get<SupplierQuote[]>(`${this.baseUrl}/supplier-quotes`, { params });
   }
@@ -42,6 +41,13 @@ export class SupplierQuotesApiService {
    */
   getById(id: string): Observable<SupplierQuote> {
     return this.http.get<SupplierQuote>(`${this.baseUrl}/supplier-quotes/${id}`);
+  }
+
+  /**
+   * Aprueba la cotización y genera automáticamente la Orden de Compra/Servicio
+   */
+  approveAndGenerateOrder(id: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/supplier-quotes/${id}/approve-order`, {});
   }
 }
 

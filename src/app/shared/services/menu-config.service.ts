@@ -21,6 +21,7 @@ export class MenuConfigService {
   // Configuración centralizada de todas las rutas del sistema
   private readonly routesConfig: RouteConfig[] = [
     { path: '/dashboard', label: 'Inicio', icon: 'pi pi-home' },
+    { path: '/docs', label: 'Documentación', icon: 'pi pi-book' },
     { path: '/projects/dashboard', label: 'Dashboard de proyectos', icon: 'pi pi-chart-line' },
     { path: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
     { path: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
@@ -54,6 +55,16 @@ export class MenuConfigService {
     { path: '/profile', label: 'Mi perfil', icon: 'pi pi-user-edit' },
     { path: '/digital-signature', label: 'Firma digital', icon: 'pi pi-pencil' },
     { path: '/work-shifts', label: 'Turnos', icon: 'pi pi-calendar-times' },
+    { path: '/purchases/requirements', label: 'Requerimientos de compra', icon: 'pi pi-inbox' },
+    { path: '/purchases/orders', label: 'Órdenes de compra', icon: 'pi pi-shopping-cart' },
+    { path: '/purchases/vouchers', label: 'Comprobantes CXP', icon: 'pi pi-file' },
+    { path: '/logistics/products', label: 'Productos y Servicios', icon: 'pi pi-box' },
+    { path: '/logistics/quotes', label: 'Solicitudes de cotización', icon: 'pi pi-inbox' },
+
+    { path: '/logistics/quote-entry', label: 'Ingresar cotizaciones', icon: 'pi pi-pencil' },
+    { path: '/logistics/compare-quotes', label: 'Comparar cotizaciones', icon: 'pi pi-compare' },
+    { path: '/logistics/deliveries', label: 'Confirmación de entrega', icon: 'pi pi-check-circle' },
+    { path: '/approvals', label: 'Aprobaciones', icon: 'pi pi-check-circle' },
   ];
 
   /**
@@ -86,6 +97,11 @@ export class MenuConfigService {
         routerLink: '/dashboard',
       },
       {
+        label: 'Documentación',
+        icon: 'pi pi-book',
+        routerLink: '/docs',
+      },
+      {
         label: 'Mi espacio',
         icon: 'pi pi-briefcase',
         items: [
@@ -98,6 +114,11 @@ export class MenuConfigService {
             label: 'Mi agenda',
             icon: 'pi pi-book',
             routerLink: '/agenda',
+          },
+          {
+            label: 'Reuniones',
+            icon: 'pi pi-video',
+            routerLink: '/meetings',
           },
           {
             label: 'Mis contactos',
@@ -117,14 +138,14 @@ export class MenuConfigService {
         ],
       },
       {
-        label: 'Ventas',
+        label: 'Proyectos',
         icon: 'pi pi-folder',
+        routerLink: '/projects',
+      },
+      {
+        label: 'Ventas',
+        icon: 'pi pi-dollar',
         items: [
-          {
-            label: 'Proyectos',
-            icon: 'pi pi-folder',
-            routerLink: '/projects',
-          },
           {
             label: 'Dashboard',
             icon: 'pi pi-chart-line',
@@ -173,11 +194,6 @@ export class MenuConfigService {
             routerLink: '/clients',
           },
           {
-            label: 'Proveedores',
-            icon: 'pi pi-building',
-            routerLink: '/providers',
-          },
-          {
             label: 'Ventas',
             icon: 'pi pi-dollar',
             routerLink: '/documents/ventas',
@@ -196,6 +212,53 @@ export class MenuConfigService {
             label: 'Caja chica',
             icon: 'pi pi-wallet',
             routerLink: '/petty-cash',
+          },
+        ],
+      },
+      {
+        label: 'Logística',
+        icon: 'pi pi-truck',
+        items: [
+          {
+            label: 'Proveedores',
+            icon: 'pi pi-building',
+            routerLink: '/providers',
+          },
+          {
+            label: 'Productos y Servicios',
+            icon: 'pi pi-box',
+            routerLink: '/logistics/products',
+          },
+          {
+            label: 'Solicitudes de cotización',
+            icon: 'pi pi-inbox',
+            routerLink: '/logistics/quotes',
+          },
+
+          {
+            label: 'Ingresar cotizaciones',
+            icon: 'pi pi-pencil',
+            routerLink: '/logistics/quote-entry',
+          },
+          {
+            label: 'Comparar cotizaciones',
+            icon: 'pi pi-compare',
+            routerLink: '/logistics/compare-quotes',
+          },
+          {
+            label: 'Órdenes de compra',
+            icon: 'pi pi-shopping-cart',
+            routerLink: '/purchases/orders',
+          },
+          {
+            label: 'Confirmación de entrega',
+            icon: 'pi pi-check-circle',
+            routerLink: '/logistics/deliveries',
+          },
+          {
+            label: 'Facturas',
+            icon: 'pi pi-file',
+            routerLink: '/purchases/vouchers',
           },
         ],
       },
@@ -289,6 +352,16 @@ export class MenuConfigService {
             label: 'Firma digital',
             icon: 'pi pi-pencil',
             routerLink: '/digital-signature',
+          },
+          {
+            label: 'Aprobaciones',
+            icon: 'pi pi-check-circle',
+            routerLink: '/approvals',
+          },
+          {
+            label: 'Empresas',
+            icon: 'pi pi-building',
+            routerLink: '/companies',
           },
           {
             label: 'Logs del sistema',

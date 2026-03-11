@@ -25,7 +25,9 @@
       </div>
 
       <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Mis tableros</h2>
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+          {{ isGerencia() ? 'Todos los tableros' : 'Mis tableros' }}
+        </h2>
         <div class="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -55,6 +57,7 @@
         [loading]="boardsService.loading()"
         [error]="boardsService.error()"
         [currentUserId]="currentUserId()"
+        [isGerencia]="isGerencia()"
         [selectedBoardId]="undefined"
         (createBoard)="openBoardForm()"
         (viewBoard)="onViewBoard($any($event))"

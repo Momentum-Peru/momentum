@@ -1,0 +1,66 @@
+<div class="card p-4 max-w-4xl mx-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold">Registrar Recepción de Mercadería</h2>
+    <div class="text-sm text-gray-500" *ngIf="order()">
+      OC: <span class="font-mono font-bold text-gray-800">{{ order()?.number }}</span>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-6">
+    
+    <!-- Cabecera -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="flex flex-col gap-2">
+        <label class="font-semibold text-sm">Fecha de Recepción</label>
+        <p-datepicker formControlName="receiptDate" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body"></p-datepicker>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label class="font-semibold text-sm">N° Guía de Remisión</label>
+        <input pInputText formControlName="guideNumber" placeholder="Ej. T001-000123" />
+      </div>
+      <div class="flex flex-col gap-2 col-span-2">
+        <label class="font-semibold text-sm">Notas</label>
+        <textarea pInputTextarea formControlName="notes" rows="2" class="w-full border rounded p-2"></textarea>
+      </div>
+    </div>
+
+    <!-- Detalle -->
+    <div class="border rounded-lg overflow-hidden">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-gray-50 text-gray-700 font-semibold border-b">
+          <tr>
+            <th class="p-3">Código</th>
+            <th class="p-3">Descripción</th>
+            <th class="p-3 w-24 text-center">Und.</th>
+            <th class="p-3 w-32 text-right">Solicitado</th>
+            <th class="p-3 w-32 text-right">A Recibir</th>
+          </tr>
+        </thead>
+        <tbody formArrayName="lines">
+          <tr *ngFor="let item of linesArray.controls; let i = index" [formGroupName]="i" class="border-b last:border-0 hover:bg-gray-50">
+            <td class="p-3 text-gray-600">{{ item.get('productCode')?.value || '-' }}</td>
+            <td class="p-3 font-medium">{{ item.get('description')?.value }}</td>
+            <td class="p-3 text-center text-gray-600">{{ item.get('unit')?.value }}</td>
+            <td class="p-3 text-right font-mono">{{ item.get('maxQuantity')?.value }}</td>
+            <td class="p-3 text-right">
+              <p-inputNumber 
+                formControlName="quantityReceived" 
+                [min]="0" 
+                [max]="item.get('maxQuantity')?.value" 
+                [showButtons]="false"
+                inputStyleClass="w-full text-right p-1 border rounded" 
+                styleClass="w-full">
+              </p-inputNumber>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-3 pt-4 border-t">
+      <button pButton type="button" label="Cancelar" class="p-button-secondary p-button-outlined" (click)="cancel()"></button>
+      <button pButton type="submit" label="Registrar Recepción" class="p-button-primary" [loading]="loading()"></button>
+    </div>
+  </form>
+</div>

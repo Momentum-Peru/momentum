@@ -1,0 +1,431 @@
+<p-toast [life]="5000"></p-toast>
+<p-confirmDialog [style]="{ width: '450px' }" rejectButtonStyleClass="p-button-text p-button-secondary"></p-confirmDialog>
+
+<div class="p-4 space-y-6 max-w-7xl mx-auto" *ngIf="rfq() as rfqData">
+  <!-- Cabecera -->
+  <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+    <div class="flex items-center gap-4">
+      <button
+        pButton
+        icon="pi pi-arrow-left"
+        class="p-button-rounded p-button-text p-button-secondary"
+        (click)="goBack()"
+      ></button>
+      <div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <h1 class="text-2xl font-bold text-slate-800 m-0">{{ rfqData.code }}</h1>
+          <p-tag [severity]="getStatusSeverity(rfqData.status)" [value]="rfqData.status"></p-tag>
+        </div>
+        <p class="text-sm text-slate-500 m-0 mt-1">{{ rfqData.title }}</p>
+      </div>
+    </div>
+
+    <!-- Acciones según estado -->
+    <div class="flex gap-2 flex-wrap">
+      <!-- Borrador: solo aprobar (primer paso) -->
+      @if (rfqData.status === 'Borrador') {
+        <button
+          pButton
+          label="Aprobar solicitud"
+          icon="pi pi-check"
+          class="p-button-success"
+          [loading]="publishing()"
+          (click)="approveRfq()"
+          pTooltip="Aprueba la solicitud para que pueda ser enviada a proveedores"
+        ></button>
+      }
+      <button
+        pButton
+        label="Editar"
+        icon="pi pi-pencil"
+        class="p-button-outlined"
+        [disabled]="rfqData.status === 'Cerrada' || rfqData.status === 'Cancelada'"
+        [routerLink]="['/logistics/quotes/edit', rfqData._id]"
+      ></button>
+    </div>
+  </div>
+
+  <!-- Alerta de estado Borrador -->
+  @if (rfqData.status === 'Borrador') {
+    <div class="flex items-start gap-3 p-4 rounded-lg bg-amber-50 border border-amber-200">
+      <i class="pi pi-exclamation-triangle text-amber-500 text-xl flex-shrink-0 mt-0.5"></i>
+      <div>
+        <p class="font-semibold text-amber-800 m-0">Esta solicitud está en borrador</p>
+        <p class="text-sm text-amber-700 mt-1 m-0">
+          Al <strong>"Aprobar solicitud"</strong>, se enviará el requerimiento de cotización por correo electrónico a todos los proveedores seleccionados automáticamente.
+        </p>
+      </div>
+    </div>
+  }
+  <!-- Alerta de estado Publicada/Aprobada -->
+  @if (rfqData.status === 'Publicada') {
+    <div class="flex items-start gap-3 p-4 rounded-lg bg-blue-50 border border-blue-200">
+      <i class="pi pi-check-circle text-blue-500 text-xl flex-shrink-0 mt-0.5"></i>
+      <div>
+        <p class="font-semibold text-blue-800 m-0">Solicitud enviada a proveedores</p>
+        <p class="text-sm text-blue-700 mt-1 m-0">
+          La solicitud ha sido enviada con éxito. En esta vista podrá ingresar y comparar las cotizaciones de los proveedores conforme las reciba.
+        </p>
+      </div>
+    </div>
+  }
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Columna izquierda: detalles + ítems -->
+    <div class="lg:col-span-1 space-y-6">
+      <p-card header="Detalles Generales">
+        <div class="space-y-4">
+          <div>
+            <span class="block text-xs text-slate-500 uppercase font-semibold tracking-wider"
+              >Descripción</span
+            >
+            <p class="text-sm text-slate-800 mt-1 whitespace-pre-wrap">{{ rfqData.description }}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <span class="block text-xs text-slate-500 uppercase font-semibold tracking-wider"
+                >Fecha Límite</span
+              >
+              <p class="text-sm text-slate-800 mt-1 font-medium">
+                {{ rfqData.deadline ? (rfqData.deadline | date: 'dd/MM/yyyy') : 'No especificada' }}
+              </p>
+            </div>
+            <div>
+              <span class="block text-xs text-slate-500 uppercase font-semibold tracking-wider"
+                >Costo Referencial</span
+              >
+              <p class="text-sm text-slate-800 mt-1 font-medium">
+                {{ getTotalReferencePrice() | currency: 'PEN' : 'symbol' }}
+              </p>
+            </div>
+          </div>
+          <div *ngIf="rfqData.termsAndConditions">
+            <span class="block text-xs text-slate-500 uppercase font-semibold tracking-wider"
+              >Términos</span
+            >
+            <p class="text-sm text-slate-800 mt-1">{{ rfqData.termsAndConditions }}</p>
+          </div>
+        </div>
+      </p-card>
+
+      <p-card header="Ítems Requeridos">
+        <div class="space-y-3">
+          <div
+            *ngFor="let item of rfqData.items"
+            class="p-3 border border-slate-100 rounded-lg bg-slate-50"
+          >
+            <div class="flex justify-between items-start">
+              <span class="font-medium text-slate-800 text-sm">
+                {{ $any(item.productId)?.name || 'Producto Desconocido' }}
+              </span>
+              <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">
+                x{{ item.quantity }}
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1" *ngIf="item.notes">{{ item.notes }}</p>
+          </div>
+        </div>
+      </p-card>
+    </div>
+
+    <!-- Columna derecha: cotizaciones de proveedores -->
+    <div class="lg:col-span-2 space-y-6">
+      <p-card>
+        <ng-template pTemplate="header">
+          <div
+            class="p-4 border-b flex justify-between items-center bg-slate-50/50 rounded-t-lg flex-wrap gap-2"
+          >
+            <div class="flex items-center gap-2">
+              <i class="pi pi-chart-bar text-indigo-500 text-xl"></i>
+              <h2 class="text-lg font-bold text-slate-800 m-0">
+                @if (mode() === 'detail') { Proveedores Invitados }
+                @if (mode() === 'compare') { Comparativa de Precios }
+              </h2>
+              @if (rfqData.supplierQuotes?.length) {
+                <span class="text-sm text-slate-500"
+                  >({{ rfqData.supplierQuotes!.length }})</span
+                >
+              }
+            </div>
+          </div>
+        </ng-template>
+
+        <ng-template pTemplate="content">
+          <!-- Sin cotizaciones -->
+          <div
+            *ngIf="!rfqData.supplierQuotes || rfqData.supplierQuotes.length === 0"
+            class="text-center py-12 text-slate-500"
+          >
+            <i class="pi pi-inbox text-4xl mb-4 block text-slate-300"></i>
+            <p class="font-medium">Aún no se han registrado cotizaciones.</p>
+            @if (rfqData.status === 'Borrador') {
+              <p class="text-sm mt-1">Primero publique y envíe la solicitud a los proveedores.</p>
+            } @else {
+              <p class="text-sm mt-1">
+                Cuando los proveedores respondan, sus cotizaciones aparecerán aquí.
+              </p>
+            }
+          </div>
+
+          <!-- MODO DETALLE: LISTA SIMPLE DE PROVEEDORES -->
+          @if (mode() === 'detail' && rfqData.supplierQuotes && rfqData.supplierQuotes.length > 0) {
+            <div class="flex flex-col gap-3">
+              <div *ngFor="let quote of rfqData.supplierQuotes" class="flex items-center justify-between p-4 border border-slate-100 rounded-lg bg-white hover:bg-slate-50 transition-colors shadow-sm">
+                 <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-lg border border-indigo-100">
+                       {{ getProviderName(quote).charAt(0) | uppercase }}
+                    </div>
+                    <div>
+                       <h3 class="font-semibold text-slate-800 m-0 text-base">{{ getProviderName(quote) }}</h3>
+                       <div class="flex items-center gap-2 mt-1">
+                         <span class="text-xs text-slate-500">RUC: {{ $any(quote.providerId)?.ruc || '-' }}</span>
+                         <span *ngIf="quote.totalCost" class="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded border border-green-200">
+                            {{ quote.totalCost | currency: 'PEN' : 'symbol' }}
+                         </span>
+                       </div>
+                    </div>
+                 </div>
+                 <div class="flex items-center gap-3">
+                   <p-tag [severity]="getQuoteStatusSeverity(quote.status)" [value]="quote.status"></p-tag>
+                   <button 
+                      pButton 
+                      icon="pi pi-pencil" 
+                      class="p-button-text p-button-secondary p-button-rounded" 
+                      pTooltip="Ingresar/Editar Cotización"
+                      (click)="openPriceDialog(quote)"
+                   ></button>
+                 </div>
+              </div>
+            </div>
+          }
+
+          <!-- MODO COMPARE: TARJETAS DE COTIZACIONES (Solo con precios) -->
+          @if (mode() === 'compare' && rfqData.supplierQuotes && rfqData.supplierQuotes.length > 0) {
+            <div class="overflow-x-auto pb-4">
+              <div class="flex gap-4 min-w-max">
+                 <!-- Filtrar en el template es limitado, usamos ng-container con if -->
+                 <ng-container *ngFor="let quote of rfqData.supplierQuotes">
+                   <!-- Mostrar solo si tiene totalCost > 0 -->
+                   @if (quote.totalCost && quote.totalCost > 0) {
+                    <div
+                      class="w-80 border border-slate-200 rounded-xl overflow-hidden flex flex-col bg-white shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <!-- Cabecera del proveedor -->
+                      <div class="p-4 border-b border-slate-100 bg-slate-50/80">
+                        <div class="flex justify-between items-start mb-2">
+                          <h3
+                            class="font-bold text-slate-800 m-0 text-base line-clamp-2"
+                            [title]="getProviderName(quote)"
+                          >
+                            {{ getProviderName(quote) }}
+                          </h3>
+                          <p-tag
+                            [severity]="getQuoteStatusSeverity(quote.status)"
+                            [value]="quote.status"
+                            styleClass="text-[10px]"
+                          ></p-tag>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-slate-500">
+                          <i class="pi pi-id-card"></i>
+                          {{ $any(quote.providerId)?.ruc || $any(quote.providerId)?.taxId || 'Sin RUC' }}
+                        </div>
+                      </div>
+      
+                      <!-- Detalles de la cotización -->
+                      <div class="p-4 flex-1">
+                        <div class="flex justify-between items-center mb-4">
+                          <span class="text-sm font-medium text-slate-600">Total Cotizado</span>
+                          <span class="text-lg font-bold text-indigo-600">
+                            {{ quote.totalCost || 0 | currency: 'PEN' : 'symbol' }}
+                          </span>
+                        </div>
+                        <div class="space-y-3 mb-4">
+                          <div class="flex items-start gap-2 text-sm">
+                            <i class="pi pi-calendar text-slate-400 mt-0.5"></i>
+                            <div>
+                              <span class="text-slate-500 block text-xs">Promesa de Entrega</span>
+                              <span class="text-slate-800 font-medium">
+                                {{
+                                  quote.deadline
+                                    ? (quote.deadline | date: 'dd/MM/yyyy')
+                                    : 'No especificada'
+                                }}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <p-divider></p-divider>
+                        <div class="mt-4">
+                          <span
+                            class="text-xs font-semibold uppercase text-slate-500 tracking-wider mb-2 block"
+                            >Desglose</span
+                          >
+                          <div class="space-y-2">
+                            <div
+                              *ngFor="let item of quote.items; let i = index"
+                              class="flex justify-between items-center text-sm py-1 border-b border-dashed border-slate-100 last:border-0"
+                            >
+                              <span
+                                class="text-slate-600 truncate mr-2"
+                                [title]="$any(rfqData.items[i]?.productId)?.name"
+                              >
+                                {{ $any(rfqData.items[i]?.productId)?.name || 'Ítem ' + (i + 1) }}
+                              </span>
+                              <span class="font-medium text-slate-800 whitespace-nowrap">
+                                {{ item.unitPrice | currency: 'PEN' : 'symbol' }}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+      
+                      <!-- Acciones -->
+                      <div class="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-2">
+                        <button
+                          *ngIf="quote.status === 'Pendiente'"
+                          pButton
+                          [label]="rfqType === 'bien' ? 'Aprobar y generar OC' : 'Aprobar y generar OS'"
+                          icon="pi pi-check"
+                          class="p-button-outlined p-button-success w-full"
+                          [loading]="approvingQuoteId() === quote._id"
+                          [disabled]="!!approvingQuoteId()"
+                          (click)="approveQuote(quote)"
+                        ></button>
+                        <div
+                          *ngIf="quote.status === 'Aprobada'"
+                          class="text-center text-sm font-bold text-green-600 flex items-center justify-center gap-2"
+                        >
+                          <i class="pi pi-verified"></i> Cotización Elegida
+                        </div>
+                      </div>
+                    </div>
+                   }
+                 </ng-container>
+              </div>
+
+              <!-- Mensaje si no hay datos para comparar -->
+              <div *ngIf="!hasPricedQuotes" class="text-center py-8 text-slate-400 bg-slate-50 rounded-lg border border-slate-100 border-dashed">
+                <i class="pi pi-filter-slash text-2xl mb-2"></i>
+                <p>No hay cotizaciones con precios ingresados para comparar.</p>
+                <button pButton label="Volver al detalle para ingresar precios" class="p-button-link" (click)="goBack()"></button>
+              </div>
+            </div>
+          }
+        </ng-template>
+      </p-card>
+    </div>
+  </div>
+</div>
+
+<!-- Cargando -->
+<div class="p-8 text-center" *ngIf="loading()">
+  <i class="pi pi-spin pi-spinner text-3xl text-primary mb-4"></i>
+  <p class="text-slate-500">Cargando detalles...</p>
+</div>
+
+<!-- Diálogo: ingresar precios de cotización del proveedor -->
+<p-dialog
+  [header]="'Ingresar cotización — ' + getProviderName(editingQuote()!)"
+  [modal]="true"
+  [(visible)]="priceDialogVisible"
+  [style]="{ width: '560px' }"
+  (onHide)="closePriceDialog()"
+  *ngIf="editingQuote()"
+>
+  <div class="flex flex-col gap-5 mt-2">
+    <p class="text-sm text-slate-600 m-0">
+      Complete los precios enviados por el proveedor. El total se calcula automáticamente.
+    </p>
+
+    <!-- Tabla de ítems -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 text-slate-500 text-xs uppercase">
+            <th class="pb-2 text-left font-semibold">Producto</th>
+            <th class="pb-2 text-center font-semibold w-16">Cant.</th>
+            <th class="pb-2 text-right font-semibold w-32">P. Unitario (S/)</th>
+            <th class="pb-2 text-right font-semibold w-28">Total (S/)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let line of priceLines()" class="border-b border-slate-100 last:border-0">
+            <td class="py-2 pr-3 text-slate-800">{{ line.productName }}</td>
+            <td class="py-2 text-center text-slate-600">{{ line.quantity }}</td>
+            <td class="py-1 text-right">
+              <p-inputNumber
+                [(ngModel)]="line.unitPrice"
+                [min]="0"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                mode="decimal"
+                (ngModelChange)="onUnitPriceChange(line)"
+                styleClass="w-full text-right"
+                inputStyleClass="text-right w-full"
+              ></p-inputNumber>
+            </td>
+            <td class="py-2 text-right font-medium text-slate-800">
+              {{ line.totalPrice | number: '1.2-2' }}
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="border-t-2 border-slate-300">
+            <td colspan="3" class="pt-3 text-right font-bold text-slate-700">Total cotizado:</td>
+            <td class="pt-3 text-right font-bold text-indigo-700 text-base">
+              S/ {{ priceTotalCost | number: '1.2-2' }}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Fecha de entrega y notas -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide"
+          >Fecha de entrega prometida</label
+        >
+        <p-datepicker
+          [(ngModel)]="priceDeadline"
+          [minDate]="today"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          styleClass="w-full"
+          [appendTo]="'body'"
+        ></p-datepicker>
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide"
+          >Notas / Condiciones</label
+        >
+        <textarea
+          pTextarea
+          [(ngModel)]="priceNotes"
+          rows="3"
+          placeholder="Términos de pago, condiciones especiales..."
+          class="w-full text-sm"
+        ></textarea>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="closePriceDialog()"
+    ></button>
+    <button
+      pButton
+      label="Guardar cotización"
+      icon="pi pi-save"
+      class="p-button-primary"
+      [loading]="savingPrices()"
+      [disabled]="priceTotalCost === 0"
+      (click)="savePrices()"
+    ></button>
+  </ng-template>
+</p-dialog>

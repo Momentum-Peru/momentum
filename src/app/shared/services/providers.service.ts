@@ -21,6 +21,7 @@ export interface Provider {
   _id?: string;
   name: string;
   address?: string;
+  taxIdType?: string;
   taxId?: string;
   ubicacion?: Ubicacion;
   contacts: Contact[];
@@ -36,6 +37,11 @@ export interface Provider {
     pais: { codigo: string; nombre: string; nombreCompleto: string };
     provincia?: { codigo: string; nombre: string; tipo: string };
     distrito?: { codigo: string; nombre: string; tipo: string };
+  };
+  metrics?: {
+    onTimeDelivery?: number;
+    completeDelivery?: number;
+    internalRating?: number;
   };
 }
 

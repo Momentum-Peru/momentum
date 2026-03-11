@@ -1,0 +1,146 @@
+<p-card class="h-full flex flex-col">
+  <ng-template pTemplate="header">
+    <div
+      class="flex items-center justify-between gap-2 p-3 border-b border-gray-200 dark:border-gray-700"
+    >
+      <span class="text-xs font-mono text-gray-500 dark:text-gray-400"
+        >#{{ requirement()._id.slice(-6) }}</span
+      >
+      <p-tag
+        [value]="statusLabel(requirement().status)"
+        [severity]="statusSeverity(requirement().status)"
+        class="text-xs"
+      />
+    </div>
+  </ng-template>
+  <div class="flex flex-col gap-2 flex-1">
+    <h3 class="font-semibold text-gray-900 dark:text-white line-clamp-2">
+      {{ requirement().title }}
+    </h3>
+    @if (requirement().description) {
+      <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+        {{ requirement().description }}
+      </p>
+    }
+    <div class="flex items-center gap-2 flex-wrap">
+      <p-tag [value]="priorityLabel(requirement().priority)" severity="secondary" class="text-xs" />
+      @if (quotesCount() > 0) {
+        <span class="text-xs text-gray-500 dark:text-gray-400">
+          <i class="pi pi-file-edit mr-1"></i>{{ quotesCount() }} cotización(es)
+        </span>
+      }
+    </div>
+    <p class="text-xs text-gray-500 dark:text-gray-400">
+      <i class="pi pi-calendar mr-1"></i>
+      @if (requirement().status === 'borrador' && !requirement().dueDate) {
+        No publicado
+      } @else if (requirement().dueDate) {
+        Vence: {{ daysUntilDue(requirement().dueDate) }}
+      } @else {
+        —
+      }
+    </p>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex flex-col gap-2">
+      @if (requirement().status === 'listo_para_comparar') {
+        <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+          <i class="pi pi-file-edit"></i>{{ quotesCount() }} Cotizaciones Recibidas
+        </p>
+        <button
+          pButton
+          type="button"
+          label="Cotizar"
+          icon="pi pi-plus"
+          class="p-button-text p-button-sm"
+          (click)="registerQuote.emit(requirement())"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Revisar"
+          icon="pi pi-arrow-right"
+          iconPos="right"
+          class="p-button-text p-button-sm text-primary font-medium"
+          (click)="compare.emit(requirement())"
+        ></button>
+      }
+      @if (requirement().status === 'cotizaciones_pendientes') {
+        <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+          <i class="pi pi-clock"></i>{{ quotesCount() }}/4 Recibidas
+        </p>
+        <button
+          pButton
+          type="button"
+          label="Cotizar"
+          icon="pi pi-plus"
+          class="p-button-text p-button-sm text-primary font-medium"
+          (click)="registerQuote.emit(requirement())"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Detalles"
+          icon="pi pi-arrow-right"
+          iconPos="right"
+          class="p-button-text p-button-sm"
+          (click)="view.emit(requirement())"
+        ></button>
+      }
+      @if (requirement().status === 'borrador') {
+        <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+          <i class="pi pi-pencil"></i>Editando
+        </p>
+        <button
+          pButton
+          type="button"
+          label="Cotizar"
+          icon="pi pi-file-edit"
+          class="p-button-text p-button-sm text-primary font-medium"
+          (click)="registerQuote.emit(requirement())"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Continuar"
+          icon="pi pi-arrow-right"
+          iconPos="right"
+          class="p-button-text p-button-sm"
+          (click)="edit.emit(requirement())"
+        ></button>
+        <div class="flex gap-1 mt-1">
+          <button
+            pButton
+            type="button"
+            label="Aprobar"
+            icon="pi pi-check"
+            class="p-button-text p-button-sm p-button-success"
+            (click)="approve.emit(requirement())"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Rechazar"
+            icon="pi pi-times"
+            class="p-button-text p-button-sm p-button-danger"
+            (click)="reject.emit(requirement())"
+          ></button>
+        </div>
+      }
+      @if (
+        requirement().status !== 'listo_para_comparar' &&
+        requirement().status !== 'cotizaciones_pendientes' &&
+        requirement().status !== 'borrador'
+      ) {
+        <button
+          pButton
+          type="button"
+          label="Ver"
+          icon="pi pi-eye"
+          class="p-button-text p-button-sm"
+          (click)="view.emit(requirement())"
+        ></button>
+      }
+    </div>
+  </ng-template>
+</p-card>
