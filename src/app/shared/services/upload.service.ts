@@ -4,14 +4,24 @@ import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class UploadService {
-    private readonly http = inject(HttpClient);
-    private readonly baseUrl = environment.apiUrl;
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = environment.apiUrl;
 
-    upload(entity: 'clients' | 'requirements' | 'tdrs' | 'quotes' | 'orders' | 'payrolls' | 'engineering', id: string, file: File) {
-        const form = new FormData();
-        form.append('file', file);
-        return this.http.post<string>(`${this.baseUrl}/${entity}/${id}/documents`, form);
-    }
+  upload(
+    entity:
+      | 'clients'
+      | 'requirements'
+      | 'tdrs'
+      | 'quotes'
+      | 'orders'
+      | 'payrolls'
+      | 'engineering'
+      | 'supplier-quotes',
+    id: string,
+    file: File,
+  ) {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<string>(`${this.baseUrl}/${entity}/${id}/documents`, form);
+  }
 }
-
-

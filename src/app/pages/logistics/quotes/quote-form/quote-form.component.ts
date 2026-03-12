@@ -26,6 +26,7 @@ import { ProductsService, Product } from '../../../../shared/services/products.s
 import { ProvidersService, Provider } from '../../../../shared/services/providers.service';
 import { ProjectsApiService } from '../../../../shared/services/projects-api.service';
 import { Project } from '../../../../shared/interfaces/project.interface';
+import { ClientsApiService, ClientOption } from '../../../../shared/services/clients-api.service';
 
 @Component({
   selector: 'app-quote-form',
@@ -53,6 +54,7 @@ export class QuoteFormComponent implements OnInit {
   private readonly productsService = inject(ProductsService);
   private readonly providersService = inject(ProvidersService);
   private readonly projectsService = inject(ProjectsApiService);
+  private readonly clientsService = inject(ClientsApiService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -82,6 +84,7 @@ export class QuoteFormComponent implements OnInit {
   products = signal<Product[]>([]);
   providers = signal<Provider[]>([]);
   projects = signal<Project[]>([]);
+  clients = signal<ClientOption[]>([]);
   selectedProjectId = signal<string | null>(null);
 
   productTypes = [
@@ -91,7 +94,13 @@ export class QuoteFormComponent implements OnInit {
 
   // Quick Creation Modals
   showProjectDialog = signal<boolean>(false);
-  newProject = signal({ name: '', description: '' });
+  newProject = signal({
+    name: '',
+    description: '',
+    clientId: '',
+    startDate: null as Date | null,
+    status: 'EN_EJECUCION',
+  });
 
   showProviderDialog = signal<boolean>(false);
   newProvider = signal({
@@ -139,6 +148,7 @@ export class QuoteFormComponent implements OnInit {
 
   loadCatalogs(newProductId?: string) {
     // Solo productos y proveedores activos
+    this.clientsService.list().subscribe((data) => this.clients.set(data));
     this.productsService.getProducts({ isActive: true }).subscribe((data) => {
       this.products.set(data);
       if (newProductId && data?.length) {
@@ -325,19 +335,27 @@ export class QuoteFormComponent implements OnInit {
   }
 
   openNewProject() {
-    this.newProject.set({ name: '', description: '' });
+    this.newProject.set({
+      name: '',
+      description: '',
+      clientId: '',
+      startDate: null,
+      status: 'EN_EJECUCION',
+    });
     this.showProjectDialog.set(true);
   }
 
   saveNewProject() {
     const payload = this.newProject();
-    if (!payload.name) return;
+    if (!payload.name || !payload.clientId || !payload.startDate) return;
 
     this.projectsService
       .create({
         name: payload.name,
         description: payload.description,
-        status: 'EN_EJECUCION',
+        clientId: payload.clientId,
+        startDate: (payload.startDate as Date).toISOString(),
+        status: payload.status as Project['status'],
       } as Partial<Project>)
       .subscribe({
         next: (project) => {

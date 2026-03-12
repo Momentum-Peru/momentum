@@ -26,7 +26,10 @@ import { RfqsService, Rfq, RfqItem } from '../../../shared/services/rfqs.service
 import { ProvidersService } from '../../../shared/services/providers.service';
 import { UploadService } from '../../../shared/services/upload.service';
 import { TenantService } from '../../../core/services/tenant.service';
-import { SupplierQuote, SupplierQuoteItem } from '../../../shared/interfaces/supplier-quote.interface';
+import {
+  SupplierQuote,
+  SupplierQuoteItem,
+} from '../../../shared/interfaces/supplier-quote.interface';
 
 interface QuoteLine {
   productId: string;
@@ -84,7 +87,7 @@ export class EnterSupplierQuotePage implements OnInit {
 
   currencyOptions = [
     { label: 'Soles (PEN)', value: 'PEN' },
-    { label: 'Dólares (USD)', value: 'USD' }
+    { label: 'Dólares (USD)', value: 'USD' },
   ];
 
   // ── Campos del formulario ──────────────────────────────────────────────────
@@ -115,7 +118,7 @@ export class EnterSupplierQuotePage implements OnInit {
     this.loadProviders();
 
     // Ver si venimos con un RFQ desde la URL
-    this.route.queryParamMap.subscribe(params => {
+    this.route.queryParamMap.subscribe((params) => {
       const rfqId = params.get('rfqId');
       if (rfqId) {
         this.selectedRfqId = rfqId;
@@ -140,9 +143,7 @@ export class EnterSupplierQuotePage implements OnInit {
     this.rfqsService.getRfqs().subscribe({
       next: (list) => {
         // Mostrar solo RFQs enviadas a proveedores (Publicada)
-        const eligible = list.filter(
-          (r) => r.status === 'Publicada',
-        );
+        const eligible = list.filter((r) => r.status === 'Publicada');
         this.rfqOptions.set(
           eligible.map((r) => ({
             label: `[${r.code}] ${r.title}`,
@@ -215,7 +216,7 @@ export class EnterSupplierQuotePage implements OnInit {
     const uploads = this.pendingFiles.map(
       (file) =>
         new Promise<void>((resolve) => {
-          this.uploadService.upload('quotes', quoteId, file).subscribe({
+          this.uploadService.upload('supplier-quotes', quoteId, file).subscribe({
             next: () => resolve(),
             error: () => resolve(),
           });
@@ -247,7 +248,7 @@ export class EnterSupplierQuotePage implements OnInit {
     for (const line of this.lines) {
       if (line.includesIgv) {
         totalSinIgv += line.totalPrice / 1.18;
-        totalIgv += line.totalPrice - (line.totalPrice / 1.18);
+        totalIgv += line.totalPrice - line.totalPrice / 1.18;
       } else {
         totalSinIgv += line.totalPrice;
         totalIgv += line.totalPrice * 0.18;
@@ -263,8 +264,7 @@ export class EnterSupplierQuotePage implements OnInit {
 
   getProviderName(q: SupplierQuote): string {
     const p = q.providerId;
-    if (p && typeof p === 'object')
-      return (p as any).businessName || (p as any).name || '-';
+    if (p && typeof p === 'object') return (p as any).businessName || (p as any).name || '-';
     return '-';
   }
 
@@ -287,7 +287,8 @@ export class EnterSupplierQuotePage implements OnInit {
 
     let projectId: string | undefined;
     if (currentRfq.projectId) {
-      projectId = typeof currentRfq.projectId === 'string' ? currentRfq.projectId : currentRfq.projectId._id;
+      projectId =
+        typeof currentRfq.projectId === 'string' ? currentRfq.projectId : currentRfq.projectId._id;
     }
 
     const payload: Partial<SupplierQuote> = {
@@ -310,7 +311,7 @@ export class EnterSupplierQuotePage implements OnInit {
       validityDays: this.validityDays ?? undefined,
       paymentTerms: this.paymentTerms || undefined,
       notes: this.notes || undefined,
-      status: 'Pendiente'
+      status: 'Pendiente',
     };
 
     this.saving.set(true);

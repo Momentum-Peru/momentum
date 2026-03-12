@@ -26,9 +26,8 @@ export interface SupplierQuote {
   deadline?: string | Date;
   status?: SupplierQuoteStatus;
   documentUrl?: string;
+  documents?: string[];
   notes?: string;
   createdAt?: string;
   updatedAt?: string;
 }
-
-
