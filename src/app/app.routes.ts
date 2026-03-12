@@ -532,7 +532,17 @@ export const routes: Routes = [
       },
       {
         path: 'leads',
-        loadComponent: () => import('./pages/leads/leads').then((m) => m.LeadsPage),
+        loadComponent: () =>
+          import('./pages/crm-contacts/crm-contacts.page').then((m) => m.CrmContactsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/leads' },
+      },
+      {
+        path: 'leads/:id',
+        loadComponent: () =>
+          import('./pages/crm-contact-detail/crm-contact-detail.page').then(
+            (m) => m.CrmContactDetailPage,
+          ),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/leads' },
       },

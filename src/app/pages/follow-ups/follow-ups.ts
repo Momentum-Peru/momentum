@@ -17,7 +17,7 @@ import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { DatePickerModule } from 'primeng/datepicker';
 import { FollowUpsApiService } from '../../shared/services/follow-ups-api.service';
-import { LeadsApiService } from '../../shared/services/leads-api.service';
+import { ContactsCrmApiService } from '../../shared/services/contacts-crm-api.service';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
@@ -29,7 +29,8 @@ import {
   UpdateFollowUpRequest,
   FollowUpQueryParams,
 } from '../../shared/interfaces/follow-up.interface';
-import { Lead } from '../../shared/interfaces/lead.interface';
+import { ContactCrm } from '../../shared/interfaces/contact-crm.interface';
+import { LeadsApiService } from '../../shared/services/leads-api.service';
 import {
   PresignedUrlRequest,
   AudioAnalysisRequest,
@@ -63,6 +64,7 @@ import { firstValueFrom } from 'rxjs';
 })
 export class FollowUpsPage implements OnInit {
   private readonly followUpsApi = inject(FollowUpsApiService);
+  private readonly contactsCrmApi = inject(ContactsCrmApiService);
   private readonly leadsApi = inject(LeadsApiService);
   private readonly clientsApi = inject(ClientsApiService);
   private readonly usersApi = inject(UsersApiService);
@@ -71,7 +73,7 @@ export class FollowUpsPage implements OnInit {
   private readonly route = inject(ActivatedRoute); // Injected Route
 
   // Signals
-  selectedLeadId = signal<string | null>(null);
+  selectedContactId = signal<string | null>(null);
   items = signal<FollowUp[]>([]);
   query = signal<string>('');
   statusFilter = signal<FollowUpStatus | ''>('');
@@ -92,7 +94,7 @@ export class FollowUpsPage implements OnInit {
   recordedChunks: Blob[] = [];
 
   // Selectores
-  leads = signal<Lead[]>([]);
+  contacts = signal<ContactCrm[]>([]);
   clients = signal<ClientOption[]>([]);
   users = signal<UserOption[]>([]);
 
@@ -194,20 +196,19 @@ export class FollowUpsPage implements OnInit {
   // Flags para controlar carga lazy
   private usersLoaded = signal<boolean>(false);
   private clientsLoaded = signal<boolean>(false);
-  private leadsLoaded = signal<boolean>(false);
+  private contactsLoaded = signal<boolean>(false);
 
   ngOnInit() {
-    // Cargar leads y usuarios inmediatamente
-    this.loadLeads();
+    this.loadContacts();
     this.loadUsers();
+    this.load();
 
-    // Verificar si hay parámetros de navegación para seleccionar lead automáticamente
     this.route.queryParams.subscribe((params) => {
-      if (params['leadId']) {
-        this.selectedLeadId.set(params['leadId']);
+      if (params['contactId']) {
+        this.selectedContactId.set(params['contactId']);
         this.load();
         if (params['action'] === 'new') {
-          this.newItem(params['leadId']);
+          this.newItem(undefined, params['contactId']);
         }
       }
     });
@@ -219,15 +220,9 @@ export class FollowUpsPage implements OnInit {
   }
 
   load() {
-    const leadId = this.selectedLeadId();
-    if (!leadId) {
-      this.items.set([]);
-      return;
-    }
-
-    const params: FollowUpQueryParams = {
-      leadId: leadId,
-    };
+    const params: FollowUpQueryParams = {};
+    const contactId = this.selectedContactId();
+    if (contactId) params.contactId = contactId;
     const status = this.statusFilter();
     if (status !== '') params.status = status;
     const type = this.typeFilter();
@@ -237,8 +232,16 @@ export class FollowUpsPage implements OnInit {
       next: (followUps) => {
         // Ordenar de más nuevos a más antiguos por createdAt o scheduledDate
         const sorted = followUps.sort((a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.scheduledDate).getTime();
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.scheduledDate).getTime();
+          const dateA = a.createdAt
+            ? new Date(a.createdAt).getTime()
+            : a.scheduledDate
+              ? new Date(a.scheduledDate).getTime()
+              : 0;
+          const dateB = b.createdAt
+            ? new Date(b.createdAt).getTime()
+            : b.scheduledDate
+              ? new Date(b.scheduledDate).getTime()
+              : 0;
           return dateB - dateA; // Más reciente primero
         });
         this.items.set(sorted);
@@ -254,8 +257,8 @@ export class FollowUpsPage implements OnInit {
     });
   }
 
-  onLeadSelected(leadId: string | null) {
-    this.selectedLeadId.set(leadId);
+  onContactSelected(contactId: string | null) {
+    this.selectedContactId.set(contactId);
     this.clearFilters();
     this.load();
   }
@@ -274,10 +277,10 @@ export class FollowUpsPage implements OnInit {
     });
   }
 
-  loadLeads() {
-    this.leadsApi.list().subscribe({
-      next: (leads) => this.leads.set(leads),
-      error: () => this.leads.set([]),
+  loadContacts() {
+    this.contactsCrmApi.list().subscribe({
+      next: (contacts) => this.contacts.set(contacts),
+      error: () => this.contacts.set([]),
     });
   }
 
@@ -297,36 +300,28 @@ export class FollowUpsPage implements OnInit {
     this.load();
   }
 
-  newItem(preselectedLeadId?: string) {
-    const leadId = preselectedLeadId || this.selectedLeadId();
-    if (!leadId) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'Debes seleccionar un lead primero',
-      });
-      return;
-    }
+  newItem(preselectedLeadId?: string, preselectedContactId?: string) {
+    const leadId = preselectedLeadId || undefined;
+    const contactId = preselectedContactId || this.selectedContactId() || undefined;
 
-    // Cargar datos si no se han cargado antes
+    if (!this.contactsLoaded()) {
+      this.loadContacts();
+      this.contactsLoaded.set(true);
+    }
     if (!this.clientsLoaded()) {
       this.loadClients();
       this.clientsLoaded.set(true);
     }
-    if (!this.leadsLoaded()) {
-      this.loadLeads();
-      this.leadsLoaded.set(true);
-    }
 
-    // Preparar el objeto de edición antes de abrir el diálogo
     const newEditing: Partial<FollowUp> = {
       title: '',
       description: '',
-      type: 'CALL',
+      type: 'NOTE',
       status: 'SCHEDULED',
       scheduledDate: new Date().toISOString(),
       userId: '',
-      leadId: leadId,
+      leadId: leadId ?? undefined,
+      contactId: contactId ?? undefined,
     };
     this.editing.set(newEditing);
     this.showDialog.set(true);
@@ -391,23 +386,19 @@ export class FollowUpsPage implements OnInit {
       return;
     }
 
-    // Generar título automático si no existe
-    const title =
-      item.title ||
-      `Seguimiento - ${this.getTypeLabel(
-        item.type || 'CALL'
-      )} - ${new Date().toLocaleDateString()}`;
+    const title = item.title?.trim() || `Seguimiento ${new Date().toLocaleDateString()}`;
 
     if (item._id) {
       const updatePayload: UpdateFollowUpRequest = {
-        title: title,
-        description: item.description,
+        title: title || undefined,
+        description: item.description ?? undefined,
         type: item.type,
         status: item.status,
         scheduledDate: item.scheduledDate,
-        leadId: item.leadId,
+        leadId: item.leadId || undefined,
+        contactId: item.contactId || undefined,
         clientId: item.clientId,
-        userId: item.userId,
+        userId: item.userId || undefined,
         attachments: item.attachments,
         outcome: item.outcome,
         nextFollowUpDate: item.nextFollowUpDate,
@@ -432,14 +423,15 @@ export class FollowUpsPage implements OnInit {
       });
     } else {
       const createPayload: CreateFollowUpRequest = {
-        title: title,
-        description: item.description!,
-        type: item.type!,
+        title: title || undefined,
+        description: item.description ?? undefined,
+        type: item.type,
         status: item.status,
-        scheduledDate: item.scheduledDate!,
-        leadId: item.leadId,
+        scheduledDate: item.scheduledDate ?? new Date().toISOString(),
+        leadId: item.leadId || undefined,
+        contactId: item.contactId || this.selectedContactId() || undefined,
         clientId: item.clientId,
-        userId: item.userId!,
+        userId: item.userId || undefined,
         attachments: item.attachments,
         outcome: item.outcome,
         nextFollowUpDate: item.nextFollowUpDate,
@@ -507,7 +499,7 @@ export class FollowUpsPage implements OnInit {
   }
 
   getStatusSeverity(
-    status: FollowUpStatus
+    status: FollowUpStatus,
   ): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' {
     return this.statusColors[status] || 'info';
   }
@@ -518,14 +510,6 @@ export class FollowUpsPage implements OnInit {
     }
     const user = this.users().find((u) => u._id === id);
     return user ? user.name : id;
-  }
-
-  getLeadName(id: string | undefined): string {
-    if (!id) {
-      return '-';
-    }
-    const lead = this.leads().find((l) => l._id === id);
-    return lead ? lead.name : id;
   }
 
   getClientName(id: string | undefined): string {
@@ -562,30 +546,9 @@ export class FollowUpsPage implements OnInit {
     return index !== -1 ? index + 1 : 0;
   }
 
-  private validateForm(item: Partial<FollowUp>): string[] {
-    const errors: string[] = [];
-
-    if (!item.description || item.description.trim() === '') {
-      errors.push('La descripción del seguimiento es requerida');
-    }
-
-    if (!item.type) {
-      errors.push('El tipo de seguimiento es requerido');
-    }
-
-    if (!item.scheduledDate) {
-      errors.push('La fecha programada es requerida');
-    }
-
-    if (!item.userId || item.userId.trim() === '') {
-      errors.push('Debe asignar el seguimiento a un usuario');
-    }
-
-    if (!item.leadId) {
-      errors.push('Debe asociar el seguimiento a un lead');
-    }
-
-    return errors;
+  private validateForm(_item: Partial<FollowUp>): string[] {
+    // Ningún campo es obligatorio; validación mínima solo para formato si se desea en el futuro
+    return [];
   }
 
   private getErrorMessage(error: unknown): string {
@@ -724,7 +687,7 @@ export class FollowUpsPage implements OnInit {
       };
 
       const presignedResponse = await firstValueFrom(
-        this.leadsApi.getPresignedUrlForAudio(currentEditing.leadId, presignedRequest)
+        this.leadsApi.getPresignedUrlForAudio(currentEditing.leadId, presignedRequest),
       );
 
       // 2. Upload S3
@@ -746,7 +709,7 @@ export class FollowUpsPage implements OnInit {
       };
 
       const analysisResult = await firstValueFrom(
-        this.leadsApi.analyzeAudio(currentEditing.leadId, analysisRequest)
+        this.leadsApi.analyzeAudio(currentEditing.leadId, analysisRequest),
       );
 
       this.audioAnalysisResult.set(analysisResult);

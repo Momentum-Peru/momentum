@@ -5,18 +5,18 @@
   <!-- Header con estadísticas -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div class="flex flex-col md:flex-row md:items-center gap-4">
-      <h1 class="text-2xl font-bold text-gray-800">Gestión de Leads</h1>
+      <h1 class="text-2xl font-bold text-gray-800">Gestión de Contactos</h1>
       @if (stats()) {
-      <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-        <span class="flex items-center gap-1">
-          <i class="pi pi-users text-blue-500"></i>
-          {{ stats()?.total }} total
-        </span>
-        <span class="flex items-center gap-1">
-          <i class="pi pi-dollar text-green-500"></i>
-          ${{ stats()?.totalValue | number : '1.0-0' }}
-        </span>
-      </div>
+        <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+          <span class="flex items-center gap-1">
+            <i class="pi pi-users text-blue-500"></i>
+            {{ stats()?.total }} total
+          </span>
+          <span class="flex items-center gap-1">
+            <i class="pi pi-dollar text-green-500"></i>
+            ${{ stats()?.totalValue | number: '1.0-0' }}
+          </span>
+        </div>
       }
     </div>
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -154,9 +154,9 @@
                 {{ row.name }}
               </div>
               @if (row.company?.name) {
-              <div class="text-sm text-gray-500 dark:text-gray-400 break-words">
-                {{ row.company?.name }}
-              </div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 break-words">
+                  {{ row.company?.name }}
+                </div>
               }
             </div>
           </td>
@@ -169,9 +169,9 @@
                 {{ row.contact.email }}
               </div>
               @if (row.contact.phone) {
-              <div class="text-gray-400 dark:text-gray-500 text-xs break-words">
-                {{ row.contact.phone }}
-              </div>
+                <div class="text-gray-400 dark:text-gray-500 text-xs break-words">
+                  {{ row.contact.phone }}
+                </div>
               }
             </div>
           </td>
@@ -194,11 +194,11 @@
           </td>
           <td>
             @if (row.estimatedValue) {
-            <span class="font-medium text-gray-900 dark:text-gray-100">
-              ${{ row.estimatedValue | number : '1.0-0' }}
-            </span>
+              <span class="font-medium text-gray-900 dark:text-gray-100">
+                ${{ row.estimatedValue | number: '1.0-0' }}
+              </span>
             } @else {
-            <span class="text-gray-400 dark:text-gray-500 text-sm">-</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">-</span>
             }
           </td>
           <td>
@@ -225,14 +225,14 @@
                 aria-label="Editar lead"
               ></button>
               @if (row.status !== 'CONVERTED') {
-              <button
-                pButton
-                icon="pi pi-check-circle"
-                class="p-button-text p-button-sm p-button-success"
-                pTooltip="Convertir a Cliente"
-                (click)="openConvertDialog(row)"
-                aria-label="Convertir lead a cliente"
-              ></button>
+                <button
+                  pButton
+                  icon="pi pi-check-circle"
+                  class="p-button-text p-button-sm p-button-success"
+                  pTooltip="Convertir a Cliente"
+                  (click)="openConvertDialog(row)"
+                  aria-label="Convertir lead a cliente"
+                ></button>
               }
               <button
                 pButton
@@ -252,178 +252,179 @@
   <!-- Vista Móvil: Accordion desplegable -->
   <div class="md:hidden space-y-3">
     @for (row of items(); track row._id || $index) {
-    <div
-      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
-    >
-      <!-- Header del accordion -->
-      <button
-        type="button"
-        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-        (click)="toggleRow(row._id)"
+      <div
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
       >
-        <div class="flex-1 text-left min-w-0 pr-4">
-          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
-            {{ row.name }}
-          </div>
-          @if (row.contact.email) {
-          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-            {{ row.contact.email }}
-          </div>
-          }
-          <div class="flex items-center gap-2 mt-1">
-            <p-tag
-              [value]="getStatusLabel(row.status)"
-              [severity]="statusColors[row.status] || 'info'"
-              styleClass="text-xs"
-            ></p-tag>
-            @if (row.estimatedValue) {
-            <span class="text-xs text-gray-500 dark:text-gray-400">
-              ${{ row.estimatedValue | number : '1.0-0' }}
-            </span>
-            }
-          </div>
-        </div>
-        <div class="flex-shrink-0">
-          <i
-            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
-            [class.pi-chevron-down]="!isRowExpanded(row._id)"
-            [class.pi-chevron-up]="isRowExpanded(row._id)"
-          ></i>
-        </div>
-      </button>
-
-      <!-- Contenido del accordion -->
-      @if (isRowExpanded(row._id)) {
-      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
-        <div class="px-4 py-4 space-y-4">
-          <!-- Contacto -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Contacto
+        <!-- Header del accordion -->
+        <button
+          type="button"
+          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+          (click)="toggleRow(row._id)"
+        >
+          <div class="flex-1 text-left min-w-0 pr-4">
+            <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+              {{ row.name }}
             </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
-              {{ row.contact.name }}
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
-              {{ row.contact.email }}
-            </div>
-            @if (row.contact.phone) {
-            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
-              {{ row.contact.phone }}
-            </div>
-            }
-          </div>
-
-          <!-- Empresa del Lead -->
-          @if (row.company?.name) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Empresa
-            </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
-              {{ row.company?.name }}
-            </div>
-          </div>
-          }
-
-          <!-- Empresa Momentum -->
-          @if (row.companyId) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Empresa Momentum
-            </div>
-            <div
-              class="text-sm text-gray-900 dark:text-gray-100 break-words flex items-center gap-1"
-            >
-              <i class="pi pi-building"></i>
-              {{ getCompanyName(row.companyId) }}
-            </div>
-          </div>
-          }
-
-          <!-- Estado y Origen -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                Estado
+            @if (row.contact.email) {
+              <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+                {{ row.contact.email }}
               </div>
+            }
+            <div class="flex items-center gap-2 mt-1">
               <p-tag
                 [value]="getStatusLabel(row.status)"
                 [severity]="statusColors[row.status] || 'info'"
                 styleClass="text-xs"
               ></p-tag>
-            </div>
-            <div>
-              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                Origen
-              </div>
-              <div class="text-sm text-gray-900 dark:text-gray-100">
-                {{ getSourceLabel(row.source) }}
-              </div>
-            </div>
-          </div>
-
-          <!-- Asignado a -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Asignado a
-            </div>
-            <div class="text-sm text-gray-900 dark:text-gray-100">
-              {{ getUserName(row.assignedTo) }}
-            </div>
-          </div>
-
-          <!-- Acciones -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Acciones
-            </div>
-            <div class="flex flex-col gap-2 justify-start">
-              <button
-                pButton
-                icon="pi pi-eye"
-                label="Ver detalles"
-                class="p-button-text p-button-sm w-full"
-                (click)="viewDetails(row)"
-                aria-label="Ver detalles del lead"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-pencil"
-                label="Editar"
-                class="p-button-text p-button-sm w-full"
-                (click)="editItem(row)"
-                aria-label="Editar lead"
-              ></button>
-              @if (row.status !== 'CONVERTED') {
-              <button
-                pButton
-                icon="pi pi-check-circle"
-                label="Convertir a Cliente"
-                class="p-button-text p-button-sm p-button-success w-full justify-start"
-                (click)="openConvertDialog(row)"
-                aria-label="Convertir lead a cliente"
-              ></button>
+              @if (row.estimatedValue) {
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  ${{ row.estimatedValue | number: '1.0-0' }}
+                </span>
               }
-              <button
-                pButton
-                icon="pi pi-trash"
-                label="Eliminar"
-                class="p-button-text p-button-sm p-button-danger w-full justify-start"
-                (click)="remove(row)"
-                aria-label="Eliminar lead"
-              ></button>
             </div>
           </div>
-        </div>
+          <div class="flex-shrink-0">
+            <i
+              class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+              [class.pi-chevron-down]="!isRowExpanded(row._id)"
+              [class.pi-chevron-up]="isRowExpanded(row._id)"
+            ></i>
+          </div>
+        </button>
+
+        <!-- Contenido del accordion -->
+        @if (isRowExpanded(row._id)) {
+          <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+            <div class="px-4 py-4 space-y-4">
+              <!-- Contacto -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Contacto
+                </div>
+                <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+                  {{ row.contact.name }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+                  {{ row.contact.email }}
+                </div>
+                @if (row.contact.phone) {
+                  <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+                    {{ row.contact.phone }}
+                  </div>
+                }
+              </div>
+
+              <!-- Empresa del Lead -->
+              @if (row.company?.name) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Empresa
+                  </div>
+                  <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
+                    {{ row.company?.name }}
+                  </div>
+                </div>
+              }
+
+              <!-- Empresa Momentum -->
+              @if (row.companyId) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Empresa Momentum
+                  </div>
+                  <div
+                    class="text-sm text-gray-900 dark:text-gray-100 break-words flex items-center gap-1"
+                  >
+                    <i class="pi pi-building"></i>
+                    {{ getCompanyName(row.companyId) }}
+                  </div>
+                </div>
+              }
+
+              <!-- Estado y Origen -->
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Estado
+                  </div>
+                  <p-tag
+                    [value]="getStatusLabel(row.status)"
+                    [severity]="statusColors[row.status] || 'info'"
+                    styleClass="text-xs"
+                  ></p-tag>
+                </div>
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                    Origen
+                  </div>
+                  <div class="text-sm text-gray-900 dark:text-gray-100">
+                    {{ getSourceLabel(row.source) }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Asignado a -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Asignado a
+                </div>
+                <div class="text-sm text-gray-900 dark:text-gray-100">
+                  {{ getUserName(row.assignedTo) }}
+                </div>
+              </div>
+
+              <!-- Acciones -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                  Acciones
+                </div>
+                <div class="flex flex-col gap-2 justify-start">
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    label="Ver detalles"
+                    class="p-button-text p-button-sm w-full"
+                    (click)="viewDetails(row)"
+                    aria-label="Ver detalles del lead"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-pencil"
+                    label="Editar"
+                    class="p-button-text p-button-sm w-full"
+                    (click)="editItem(row)"
+                    aria-label="Editar lead"
+                  ></button>
+                  @if (row.status !== 'CONVERTED') {
+                    <button
+                      pButton
+                      icon="pi pi-check-circle"
+                      label="Convertir a Cliente"
+                      class="p-button-text p-button-sm p-button-success w-full justify-start"
+                      (click)="openConvertDialog(row)"
+                      aria-label="Convertir lead a cliente"
+                    ></button>
+                  }
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    label="Eliminar"
+                    class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                    (click)="remove(row)"
+                    aria-label="Eliminar lead"
+                  ></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
       </div>
-      }
-    </div>
-    } @if (items().length === 0) {
-    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-      <i class="pi pi-inbox text-4xl mb-2"></i>
-      <p>No hay leads disponibles</p>
-    </div>
+    }
+    @if (items().length === 0) {
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <i class="pi pi-inbox text-4xl mb-2"></i>
+        <p>No hay leads disponibles</p>
+      </div>
     }
   </div>
 
@@ -905,390 +906,399 @@
       </div>
     </ng-template>
     @if (viewingLead()) {
-    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg space-y-6">
-      <!-- Información básica -->
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-info-circle text-blue-500"></i>
-          Información Básica
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-medium">
-              {{ viewingLead()?.name }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</span
-            >
-            <div class="flex items-center gap-2">
-              <p-tag
-                [value]="getStatusLabel(viewingLead()?.status || 'NEW')"
-                [severity]="getStatusSeverity(viewingLead()?.status || 'NEW')"
-              ></p-tag>
-              @if (viewingLead()?.status && viewingLead()!.status !== 'CONVERTED') {
-              <p-select
-                [options]="getValidNextStatuses(viewingLead()!.status)"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Cambiar estado"
-                [appendTo]="'body'"
-                styleClass="text-xs"
-                (ngModelChange)="onStatusChange($event)"
-                [showClear]="false"
-              ></p-select>
-              }
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Origen</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ getSourceLabel(viewingLead()?.source || 'OTHER') }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Empresa Momentum</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              <i class="pi pi-building mr-1"></i>
-              {{ getCompanyName(viewingLead()?.companyId) }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Asignado a</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ getUserName(viewingLead()?.assignedTo) }}
-            </div>
-          </div>
-          @if (viewingLead()?.estimatedValue) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Valor Estimado</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-medium">
-              ${{ viewingLead()?.estimatedValue | number : '1.0-0' }}
-            </div>
-          </div>
-          }
-        </div>
-      </div>
-
-      <!-- Contacto -->
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-user text-purple-500"></i>
-          Información de Contacto
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingLead()?.contact?.name }}
-            </div>
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Email</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingLead()?.contact?.email }}
-            </div>
-          </div>
-          @if (viewingLead()?.contact?.phone) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Teléfono</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingLead()?.contact?.phone }}
-            </div>
-          </div>
-          } @if (viewingLead()?.contact?.position) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Cargo</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingLead()?.contact?.position }}
-            </div>
-          </div>
-          } @if (viewingLead()?.contact?.department) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Departamento</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingLead()?.contact?.department }}
-            </div>
-          </div>
-          }
-        </div>
-      </div>
-
-      <!-- Empresa -->
-      @if (viewingLead()?.company) {
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-building text-orange-500"></i>
-          Información de Empresa
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          @if (viewingLead()?.company?.name) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingLead()?.company?.name }}
-            </div>
-          </div>
-          } @if (viewingLead()?.company?.taxId) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >RUC/DNI</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingLead()?.company?.taxId }}
-            </div>
-          </div>
-          } @if (viewingLead()?.company?.sector) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Sector</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingLead()?.company?.sector }}
-            </div>
-          </div>
-          } @if (viewingLead()?.company?.companySize) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Tamaño</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingLead()?.company?.companySize }}
-            </div>
-          </div>
-          } @if (viewingLead()?.company?.website) {
-          <div class="md:col-span-2">
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Sitio Web</span
-            >
-            <a
-              [href]="viewingLead()?.company?.website"
-              target="_blank"
-              class="text-blue-600 hover:text-blue-800 dark:text-blue-400"
-            >
-              {{ viewingLead()?.company?.website }}
-            </a>
-          </div>
-          }
-        </div>
-      </div>
-      }
-
-      <!-- Ubicación -->
-      @if (viewingLead()?.location) {
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-map-marker text-green-500"></i>
-          Ubicación
-        </h3>
-        <div class="space-y-2">
-          @if (viewingLead()?.location?.paisCodigo) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >País</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ getCountryName(viewingLead()?.location?.paisCodigo || '') }}
-            </div>
-          </div>
-          } @if (viewingLead()?.location?.provinciaCodigo) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Provincia</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ getProvinceName(viewingLead()?.location?.provinciaCodigo || '') }}
-            </div>
-          </div>
-          } @if (viewingLead()?.location?.distritoCodigo) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Distrito</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ getDistrictName(viewingLead()?.location?.distritoCodigo || '') }}
-            </div>
-          </div>
-          } @if (viewingLead()?.location?.direccion) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Dirección</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">
-              {{ viewingLead()?.location?.direccion }}
-            </div>
-          </div>
-          }
-        </div>
-      </div>
-      }
-
-      <!-- Notas -->
-      @if (viewingLead()?.notes) {
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-file-edit text-indigo-500"></i>
-          Notas
-        </h3>
-        <div class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
-          {{ viewingLead()?.notes }}
-        </div>
-      </div>
-      }
-
-      <!-- Fotos -->
-      @if (normalizeToArray(viewingLead()?.photos).length > 0) {
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-image text-pink-500"></i>
-          Fotos
-        </h3>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          @for (photo of normalizeToArray(viewingLead()?.photos); track $index) {
-          <div
-            class="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity border border-gray-200 dark:border-gray-600"
-            (click)="openPhotoModal(normalizeToArray(viewingLead()?.photos), $index)"
-            (keyup.enter)="openPhotoModal(normalizeToArray(viewingLead()?.photos), $index)"
-            (keyup.space)="openPhotoModal(normalizeToArray(viewingLead()?.photos), $index)"
-            tabindex="0"
-            role="button"
-            aria-label="Ver foto"
-          >
-            <img
-              [src]="photo"
-              class="w-full h-full object-cover"
-              alt="Foto del lead"
-              loading="lazy"
-            />
-            @if (normalizeToArray(viewingLead()?.photos).length > 1 && $index === 0) {
-            <div
-              class="absolute top-1 left-1 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
-            >
-              {{ normalizeToArray(viewingLead()?.photos).length }} fotos
-            </div>
-            }
-          </div>
-          }
-        </div>
-      </div>
-      }
-
-      <!-- Seguimientos -->
-      <div>
-        <div class="flex items-center justify-between mb-4">
+      <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg space-y-6">
+        <!-- Información básica -->
+        <div>
           <h3
-            class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
           >
-            <i class="pi pi-calendar-plus text-purple-500"></i>
-            Seguimientos
+            <i class="pi pi-info-circle text-blue-500"></i>
+            Información Básica
           </h3>
-          <button
-            pButton
-            icon="pi pi-plus"
-            label="Nuevo Seguimiento"
-            class="p-button-sm"
-            (click)="openFollowUpDialog()"
-            aria-label="Crear nuevo seguimiento"
-          ></button>
-        </div>
-        @if (leadFollowUps().length === 0) {
-        <div class="text-center py-4 text-gray-500 dark:text-gray-400">
-          <i class="pi pi-calendar-times text-2xl mb-2"></i>
-          <p>No hay seguimientos registrados</p>
-        </div>
-        } @else {
-        <div class="space-y-3">
-          @for (followUp of leadFollowUps(); track followUp._id || $index) {
-          <div
-            class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
-          >
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-center gap-2 mb-2">
-                  <h4 class="font-semibold text-gray-900 dark:text-gray-100">
-                    {{ followUp.title }}
-                  </h4>
-                  <p-tag
-                    [value]="getFollowUpTypeLabel(followUp.type)"
-                    severity="info"
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Nombre</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 font-medium">
+                {{ viewingLead()?.name }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Estado</span
+              >
+              <div class="flex items-center gap-2">
+                <p-tag
+                  [value]="getStatusLabel(viewingLead()?.status || 'NEW')"
+                  [severity]="getStatusSeverity(viewingLead()?.status || 'NEW')"
+                ></p-tag>
+                @if (viewingLead()?.status && viewingLead()!.status !== 'CONVERTED') {
+                  <p-select
+                    [options]="getValidNextStatuses(viewingLead()!.status)"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Cambiar estado"
+                    [appendTo]="'body'"
                     styleClass="text-xs"
-                  ></p-tag>
-                  <p-tag
-                    [value]="getFollowUpStatusLabel(followUp.status)"
-                    [severity]="
-                      followUp.status === 'COMPLETED'
-                        ? 'success'
-                        : followUp.status === 'CANCELLED'
-                        ? 'danger'
-                        : 'warn'
-                    "
-                    styleClass="text-xs"
-                  ></p-tag>
-                </div>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  {{ followUp.description }}
-                </p>
-                <div class="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-500">
-                  <span>
-                    <i class="pi pi-calendar mr-1"></i>
-                    {{ followUp.scheduledDate | date : 'dd/MM/yyyy HH:mm' }}
-                  </span>
-                  <span>
-                    <i class="pi pi-user mr-1"></i>
-                    {{ getUserName(followUp.userId) }}
-                  </span>
-                </div>
-                @if (followUp.outcome) {
-                <div
-                  class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm text-gray-700 dark:text-gray-300"
-                >
-                  <strong>Resultado:</strong> {{ followUp.outcome }}
-                </div>
+                    (ngModelChange)="onStatusChange($event)"
+                    [showClear]="false"
+                  ></p-select>
                 }
               </div>
             </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Origen</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ getSourceLabel(viewingLead()?.source || 'OTHER') }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Empresa Momentum</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                <i class="pi pi-building mr-1"></i>
+                {{ getCompanyName(viewingLead()?.companyId) }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Asignado a</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ getUserName(viewingLead()?.assignedTo) }}
+              </div>
+            </div>
+            @if (viewingLead()?.estimatedValue) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Valor Estimado</span
+                >
+                <div class="text-gray-900 dark:text-gray-100 font-medium">
+                  ${{ viewingLead()?.estimatedValue | number: '1.0-0' }}
+                </div>
+              </div>
+            }
           </div>
+        </div>
+
+        <!-- Contacto -->
+        <div>
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+          >
+            <i class="pi pi-user text-purple-500"></i>
+            Información de Contacto
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Nombre</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ viewingLead()?.contact?.name }}
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Email</span
+              >
+              <div class="text-gray-900 dark:text-gray-100">
+                {{ viewingLead()?.contact?.email }}
+              </div>
+            </div>
+            @if (viewingLead()?.contact?.phone) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Teléfono</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingLead()?.contact?.phone }}
+                </div>
+              </div>
+            }
+            @if (viewingLead()?.contact?.position) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Cargo</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingLead()?.contact?.position }}
+                </div>
+              </div>
+            }
+            @if (viewingLead()?.contact?.department) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Departamento</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">
+                  {{ viewingLead()?.contact?.department }}
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Empresa -->
+        @if (viewingLead()?.company) {
+          <div>
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+            >
+              <i class="pi pi-building text-orange-500"></i>
+              Información de Empresa
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              @if (viewingLead()?.company?.name) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Nombre</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ viewingLead()?.company?.name }}
+                  </div>
+                </div>
+              }
+              @if (viewingLead()?.company?.taxId) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >RUC/DNI</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ viewingLead()?.company?.taxId }}
+                  </div>
+                </div>
+              }
+              @if (viewingLead()?.company?.sector) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Sector</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ viewingLead()?.company?.sector }}
+                  </div>
+                </div>
+              }
+              @if (viewingLead()?.company?.companySize) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Tamaño</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ viewingLead()?.company?.companySize }}
+                  </div>
+                </div>
+              }
+              @if (viewingLead()?.company?.website) {
+                <div class="md:col-span-2">
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Sitio Web</span
+                  >
+                  <a
+                    [href]="viewingLead()?.company?.website"
+                    target="_blank"
+                    class="text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                  >
+                    {{ viewingLead()?.company?.website }}
+                  </a>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Ubicación -->
+        @if (viewingLead()?.location) {
+          <div>
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+            >
+              <i class="pi pi-map-marker text-green-500"></i>
+              Ubicación
+            </h3>
+            <div class="space-y-2">
+              @if (viewingLead()?.location?.paisCodigo) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >País</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ getCountryName(viewingLead()?.location?.paisCodigo || '') }}
+                  </div>
+                </div>
+              }
+              @if (viewingLead()?.location?.provinciaCodigo) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Provincia</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ getProvinceName(viewingLead()?.location?.provinciaCodigo || '') }}
+                  </div>
+                </div>
+              }
+              @if (viewingLead()?.location?.distritoCodigo) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Distrito</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ getDistrictName(viewingLead()?.location?.distritoCodigo || '') }}
+                  </div>
+                </div>
+              }
+              @if (viewingLead()?.location?.direccion) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Dirección</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">
+                    {{ viewingLead()?.location?.direccion }}
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Notas -->
+        @if (viewingLead()?.notes) {
+          <div>
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+            >
+              <i class="pi pi-file-edit text-indigo-500"></i>
+              Notas
+            </h3>
+            <div class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+              {{ viewingLead()?.notes }}
+            </div>
+          </div>
+        }
+
+        <!-- Fotos -->
+        @if (normalizeToArray(viewingLead()?.photos).length > 0) {
+          <div>
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+            >
+              <i class="pi pi-image text-pink-500"></i>
+              Fotos
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              @for (photo of normalizeToArray(viewingLead()?.photos); track $index) {
+                <div
+                  class="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity border border-gray-200 dark:border-gray-600"
+                  (click)="openPhotoModal(normalizeToArray(viewingLead()?.photos), $index)"
+                  (keyup.enter)="openPhotoModal(normalizeToArray(viewingLead()?.photos), $index)"
+                  (keyup.space)="openPhotoModal(normalizeToArray(viewingLead()?.photos), $index)"
+                  tabindex="0"
+                  role="button"
+                  aria-label="Ver foto"
+                >
+                  <img
+                    [src]="photo"
+                    class="w-full h-full object-cover"
+                    alt="Foto del lead"
+                    loading="lazy"
+                  />
+                  @if (normalizeToArray(viewingLead()?.photos).length > 1 && $index === 0) {
+                    <div
+                      class="absolute top-1 left-1 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-lg"
+                    >
+                      {{ normalizeToArray(viewingLead()?.photos).length }} fotos
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Seguimientos -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"
+            >
+              <i class="pi pi-calendar-plus text-purple-500"></i>
+              Seguimientos
+            </h3>
+            <button
+              pButton
+              icon="pi pi-plus"
+              label="Nuevo Seguimiento"
+              class="p-button-sm"
+              (click)="openFollowUpDialog()"
+              aria-label="Crear nuevo seguimiento"
+            ></button>
+          </div>
+          @if (leadFollowUps().length === 0) {
+            <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+              <i class="pi pi-calendar-times text-2xl mb-2"></i>
+              <p>No hay seguimientos registrados</p>
+            </div>
+          } @else {
+            <div class="space-y-3">
+              @for (followUp of leadFollowUps(); track followUp._id || $index) {
+                <div
+                  class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
+                >
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-2">
+                        <h4 class="font-semibold text-gray-900 dark:text-gray-100">
+                          {{ followUp.title }}
+                        </h4>
+                        <p-tag
+                          [value]="getFollowUpTypeLabel(followUp.type)"
+                          severity="info"
+                          styleClass="text-xs"
+                        ></p-tag>
+                        <p-tag
+                          [value]="getFollowUpStatusLabel(followUp.status)"
+                          [severity]="
+                            followUp.status === 'COMPLETED'
+                              ? 'success'
+                              : followUp.status === 'CANCELLED'
+                                ? 'danger'
+                                : 'warn'
+                          "
+                          styleClass="text-xs"
+                        ></p-tag>
+                      </div>
+                      <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        {{ followUp.description }}
+                      </p>
+                      <div class="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-500">
+                        <span>
+                          <i class="pi pi-calendar mr-1"></i>
+                          {{ followUp.scheduledDate | date: 'dd/MM/yyyy HH:mm' }}
+                        </span>
+                        <span>
+                          <i class="pi pi-user mr-1"></i>
+                          {{ getUserName(followUp.userId) }}
+                        </span>
+                      </div>
+                      @if (followUp.outcome) {
+                        <div
+                          class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm text-gray-700 dark:text-gray-300"
+                        >
+                          <strong>Resultado:</strong> {{ followUp.outcome }}
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
           }
         </div>
-        }
       </div>
-    </div>
     }
     <ng-template pTemplate="footer">
       <div class="flex items-center justify-between w-full">
@@ -1329,31 +1339,31 @@
       </div>
     </ng-template>
     @if (convertingLead()) {
-    <div class="space-y-4">
-      <p class="text-gray-700 dark:text-gray-300">
-        Selecciona el cliente al que se convertirá el lead
-        <strong>{{ convertingLead()?.name }}</strong>
-      </p>
-      <div>
-        <label
-          for="convertClientSelect"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >
-          Cliente *
-        </label>
-        <p-select
-          id="convertClientSelect"
-          [options]="clients()"
-          optionLabel="name"
-          optionValue="_id"
-          placeholder="Seleccionar cliente"
-          [appendTo]="'body'"
-          class="w-full"
-          [ngModel]="selectedClientId()"
-          (ngModelChange)="selectedClientId.set($event)"
-        ></p-select>
+      <div class="space-y-4">
+        <p class="text-gray-700 dark:text-gray-300">
+          Selecciona el cliente al que se convertirá el lead
+          <strong>{{ convertingLead()?.name }}</strong>
+        </p>
+        <div>
+          <label
+            for="convertClientSelect"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Cliente *
+          </label>
+          <p-select
+            id="convertClientSelect"
+            [options]="clients()"
+            optionLabel="name"
+            optionValue="_id"
+            placeholder="Seleccionar cliente"
+            [appendTo]="'body'"
+            class="w-full"
+            [ngModel]="selectedClientId()"
+            (ngModelChange)="selectedClientId.set($event)"
+          ></p-select>
+        </div>
       </div>
-    </div>
     }
     <ng-template pTemplate="footer">
       <button
@@ -1391,59 +1401,63 @@
       </div>
     </ng-template>
     @if (stats()) {
-    <div class="space-y-4">
-      <!-- Totales -->
-      <div class="grid grid-cols-2 gap-4">
-        <p-card>
-          <ng-template pTemplate="content">
-            <div class="text-center">
-              <div class="text-2xl font-bold text-blue-600">{{ stats()?.total }}</div>
-              <div class="text-sm text-gray-600 dark:text-white">Total</div>
-            </div>
-          </ng-template>
-        </p-card>
-        <p-card>
-          <ng-template pTemplate="content">
-            <div class="text-center">
-              <div class="text-2xl font-bold text-green-600">
-                ${{ stats()?.totalValue | number : '1.0-0' }}
+      <div class="space-y-4">
+        <!-- Totales -->
+        <div class="grid grid-cols-2 gap-4">
+          <p-card>
+            <ng-template pTemplate="content">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">{{ stats()?.total }}</div>
+                <div class="text-sm text-gray-600 dark:text-white">Total</div>
               </div>
-              <div class="text-sm text-gray-600 dark:text-white">Valor Total</div>
-            </div>
-          </ng-template>
-        </p-card>
-      </div>
+            </ng-template>
+          </p-card>
+          <p-card>
+            <ng-template pTemplate="content">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">
+                  ${{ stats()?.totalValue | number: '1.0-0' }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-white">Valor Total</div>
+              </div>
+            </ng-template>
+          </p-card>
+        </div>
 
-      <!-- Por Estado -->
-      <div>
-        <h4 class="text-lg font-semibold mb-3">Por Estado</h4>
-        <div class="grid grid-cols-2 gap-2">
-          @for (status of statusOptions; track status.value) {
-          <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ status.label }}</span>
-            <span class="font-medium text-gray-900 dark:text-gray-100">
-              {{ getStatusCount(status.value) }}
-            </span>
+        <!-- Por Estado -->
+        <div>
+          <h4 class="text-lg font-semibold mb-3">Por Estado</h4>
+          <div class="grid grid-cols-2 gap-2">
+            @for (status of statusOptions; track status.value) {
+              <div
+                class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
+              >
+                <span class="text-sm text-gray-700 dark:text-gray-300">{{ status.label }}</span>
+                <span class="font-medium text-gray-900 dark:text-gray-100">
+                  {{ getStatusCount(status.value) }}
+                </span>
+              </div>
+            }
           </div>
-          }
+        </div>
+
+        <!-- Por Origen -->
+        <div>
+          <h4 class="text-lg font-semibold mb-3">Por Origen</h4>
+          <div class="grid grid-cols-2 gap-2">
+            @for (source of sourceOptions; track source.value) {
+              <div
+                class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
+              >
+                <span class="text-sm text-gray-700 dark:text-gray-300">{{ source.label }}</span>
+                <span class="font-medium text-gray-900 dark:text-gray-100">
+                  {{ getSourceCount(source.value) }}
+                </span>
+              </div>
+            }
+          </div>
         </div>
       </div>
-
-      <!-- Por Origen -->
-      <div>
-        <h4 class="text-lg font-semibold mb-3">Por Origen</h4>
-        <div class="grid grid-cols-2 gap-2">
-          @for (source of sourceOptions; track source.value) {
-          <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ source.label }}</span>
-            <span class="font-medium text-gray-900 dark:text-gray-100">
-              {{ getSourceCount(source.value) }}
-            </span>
-          </div>
-          }
-        </div>
-      </div>
-    </div>
     }
     <ng-template pTemplate="footer">
       <button
@@ -1484,37 +1498,37 @@
     <div class="relative flex items-center justify-center min-h-[400px] max-h-[70vh]">
       <!-- Botón anterior -->
       @if (photoModalCurrentIndex() > 0) {
-      <button
-        pButton
-        icon="pi pi-chevron-left"
-        class="p-button-rounded p-button-text absolute left-2 z-10 bg-white bg-opacity-80 hover:bg-opacity-100"
-        (click)="previousPhoto()"
-        pTooltip="Anterior"
-        aria-label="Foto anterior"
-      ></button>
+        <button
+          pButton
+          icon="pi pi-chevron-left"
+          class="p-button-rounded p-button-text absolute left-2 z-10 bg-white bg-opacity-80 hover:bg-opacity-100"
+          (click)="previousPhoto()"
+          pTooltip="Anterior"
+          aria-label="Foto anterior"
+        ></button>
       }
 
       <!-- Foto actual -->
       <div class="w-full h-full flex items-center justify-center">
         @if (photoModalUrls()[photoModalCurrentIndex()]) {
-        <img
-          [src]="photoModalUrls()[photoModalCurrentIndex()]"
-          class="max-w-full max-h-[70vh] object-contain rounded"
-          alt="Foto del lead"
-        />
+          <img
+            [src]="photoModalUrls()[photoModalCurrentIndex()]"
+            class="max-w-full max-h-[70vh] object-contain rounded"
+            alt="Foto del lead"
+          />
         }
       </div>
 
       <!-- Botón siguiente -->
       @if (photoModalCurrentIndex() < photoModalUrls().length - 1) {
-      <button
-        pButton
-        icon="pi pi-chevron-right"
-        class="p-button-rounded p-button-text absolute right-2 z-10 bg-white bg-opacity-80 hover:bg-opacity-100"
-        (click)="nextPhoto()"
-        pTooltip="Siguiente"
-        aria-label="Foto siguiente"
-      ></button>
+        <button
+          pButton
+          icon="pi pi-chevron-right"
+          class="p-button-rounded p-button-text absolute right-2 z-10 bg-white bg-opacity-80 hover:bg-opacity-100"
+          (click)="nextPhoto()"
+          pTooltip="Siguiente"
+          aria-label="Foto siguiente"
+        ></button>
       }
     </div>
   </p-dialog>
