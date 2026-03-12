@@ -46,7 +46,7 @@ export class MenuConfigService {
     { path: '/users', label: 'Usuarios', icon: 'pi pi-users' },
     { path: '/menu-permissions', label: 'Permisos', icon: 'pi pi-shield' },
     { path: '/user-tenants-assignment', label: 'Asignación de empresas', icon: 'pi pi-building' },
-    { path: '/leads', label: 'Leads', icon: 'pi pi-user-plus' },
+    { path: '/leads', label: 'Contactos', icon: 'pi pi-user-plus' },
     { path: '/follow-ups', label: 'Seguimientos', icon: 'pi pi-calendar-plus' },
     { path: '/companies-crm', label: 'Empresas Momentum', icon: 'pi pi-building' },
     { path: '/logs', label: 'Logs del sistema', icon: 'pi pi-list' },
@@ -293,7 +293,7 @@ export class MenuConfigService {
         icon: 'pi pi-sitemap',
         items: [
           {
-            label: 'Leads',
+            label: 'Contactos',
             icon: 'pi pi-user-plus',
             routerLink: '/leads',
           },
