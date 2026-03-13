@@ -20,6 +20,7 @@ import { FollowUpsApiService } from '../../shared/services/follow-ups-api.servic
 import { ContactsCrmApiService } from '../../shared/services/contacts-crm-api.service';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
+import { AgendaApiService } from '../../shared/services/agenda-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import {
   FollowUp,
@@ -71,6 +72,7 @@ export class FollowUpsPage implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly route = inject(ActivatedRoute); // Injected Route
+  private readonly agendaApi = inject(AgendaApiService);
 
   // Signals
   selectedContactId = signal<string | null>(null);
@@ -99,8 +101,18 @@ export class FollowUpsPage implements OnInit {
   users = signal<UserOption[]>([]);
 
   // Opciones de enums
-  typeOptions: { label: string; value: FollowUpType | '' }[] = [
+  // Usar una lista para filtros (incluye "Todos") y otra para el formulario (sin "Todos")
+  typeFilterOptions: { label: string; value: FollowUpType | '' }[] = [
     { label: 'Todos', value: '' },
+    { label: 'Llamada', value: 'CALL' },
+    { label: 'Email', value: 'EMAIL' },
+    { label: 'Reunión', value: 'MEETING' },
+    { label: 'Nota', value: 'NOTE' },
+    { label: 'Propuesta', value: 'PROPOSAL' },
+    { label: 'Otro', value: 'OTHER' },
+  ];
+
+  typeOptions: { label: string; value: FollowUpType }[] = [
     { label: 'Llamada', value: 'CALL' },
     { label: 'Email', value: 'EMAIL' },
     { label: 'Reunión', value: 'MEETING' },
@@ -204,12 +216,19 @@ export class FollowUpsPage implements OnInit {
     this.load();
 
     this.route.queryParams.subscribe((params) => {
-      if (params['contactId']) {
-        this.selectedContactId.set(params['contactId']);
+      const leadId = params['leadId'] as string | undefined;
+      const contactId = params['contactId'] as string | undefined;
+
+      if (contactId) {
+        this.selectedContactId.set(contactId);
+      }
+
+      if (leadId || contactId) {
         this.load();
-        if (params['action'] === 'new') {
-          this.newItem(undefined, params['contactId']);
-        }
+      }
+
+      if (params['action'] === 'new') {
+        this.newItem(leadId, contactId);
       }
     });
   }
@@ -588,19 +607,20 @@ export class FollowUpsPage implements OnInit {
 
   // ========== MÉTODOS DE GRABACIÓN Y ANÁLISIS DE AUDIO ==========
 
-  openAudioAnalysisDialog() {
+  async openAudioAnalysisDialog() {
     const currentEditing = this.editing();
-    // Validar que haya un lead seleccionado para asociar el análisis
-    if (!currentEditing?.leadId) {
+    // Validar que haya un seguimiento en edición
+    if (!currentEditing) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Requerido',
-        detail: 'Debes seleccionar un Lead antes de grabar audio',
+        detail: 'Debes crear o editar un seguimiento antes de grabar audio',
       });
       return;
     }
     this.showAudioAnalysisDialog.set(true);
     this.audioAnalysisResult.set(null);
+    await this.startRecording();
   }
 
   closeAudioAnalysisDialog() {
@@ -668,63 +688,27 @@ export class FollowUpsPage implements OnInit {
   async processRecordedAudio() {
     if (this.recordedChunks.length === 0) return;
 
-    const currentEditing = this.editing();
-    if (!currentEditing?.leadId) return;
-
     const audioBlob = new Blob(this.recordedChunks, { type: 'audio/webm;codecs=opus' });
     const fileName = `followup-recording-${Date.now()}.webm`;
     const audioFile = new File([audioBlob], fileName, { type: 'audio/webm;codecs=opus' });
     this.recordedChunks = [];
 
     try {
-      this.uploadingAudio.set(true);
-
-      // 1. Presigned URL (Usamos LeadsApiService porque el endpoint está ahí por ahora)
-      const presignedRequest: PresignedUrlRequest = {
-        fileName: fileName,
-        contentType: 'audio/webm',
-        expirationTime: 3600,
-      };
-
-      const presignedResponse = await firstValueFrom(
-        this.leadsApi.getPresignedUrlForAudio(currentEditing.leadId, presignedRequest),
-      );
-
-      // 2. Upload S3
-      const uploadResponse = await fetch(presignedResponse.presignedUrl, {
-        method: 'PUT',
-        body: audioFile,
-        headers: { 'Content-Type': 'audio/webm' },
-      });
-
-      if (!uploadResponse.ok) throw new Error('Error al subir audio');
-
-      // 3. Analyze
-      this.uploadingAudio.set(false);
       this.analyzingAudio.set(true);
 
-      const analysisRequest: AudioAnalysisRequest = {
-        audioUrl: presignedResponse.publicUrl,
-        leadId: currentEditing.leadId,
-      };
-
-      const analysisResult = await firstValueFrom(
-        this.leadsApi.analyzeAudio(currentEditing.leadId, analysisRequest),
-      );
-
-      this.audioAnalysisResult.set(analysisResult);
+      // Usar el mismo servicio de transcripción que Agenda (Whisper)
+      const result = await firstValueFrom(this.agendaApi.transcribe(audioFile));
       this.analyzingAudio.set(false);
 
-      // 4. Autocompletar campos del seguimiento
-      this.applyAnalysisToForm(analysisResult);
+      // Autocompletar descripción con la transcripción literal
+      this.applyTranscriptionToForm(result?.text ?? '');
 
       this.messageService.add({
         severity: 'success',
-        summary: 'Análisis completado',
-        detail: 'Se han completado la descripción y resultado automáticamente.',
+        summary: 'Transcripción completada',
+        detail: 'La descripción se ha rellenado con lo que se grabó.',
       });
     } catch (error) {
-      this.uploadingAudio.set(false);
       this.analyzingAudio.set(false);
       this.messageService.add({
         severity: 'error',
@@ -758,6 +742,18 @@ export class FollowUpsPage implements OnInit {
     });
 
     // Cerrar el modal de análisis ya que los datos se pasaron al form
+    this.closeAudioAnalysisDialog();
+  }
+
+  applyTranscriptionToForm(text: string) {
+    const cur = this.editing();
+    if (!cur) return;
+
+    this.editing.set({
+      ...cur,
+      description: text,
+    });
+
     this.closeAudioAnalysisDialog();
   }
 }
