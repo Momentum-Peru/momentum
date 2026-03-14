@@ -283,7 +283,7 @@ export class FollowUpsPage implements OnInit {
   }
 
   loadUsers() {
-    this.usersApi.list().subscribe({
+    this.usersApi.listAllForSelect().subscribe({
       next: (users) => this.users.set(users),
       error: () => this.users.set([]),
     });
