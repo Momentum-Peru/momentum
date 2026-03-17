@@ -29,8 +29,6 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
-import { TasksApiService } from '../../shared/services/tasks-api.service';
-import { BoardsApiService } from '../../shared/services/boards-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { AreasApiService } from '../../shared/services/areas-api.service';
 import { ProfileApiService } from '../../shared/services/profile-api.service';
@@ -41,7 +39,6 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom, of, timer } from 'rxjs';
 import { tap, map, catchError, finalize, switchMap } from 'rxjs/operators';
 import { ContactsService, Contact } from '../../shared/services/contacts.service';
-import { Board } from '../../shared/interfaces/board.interface';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import {
   AgendaNote,
@@ -50,13 +47,12 @@ import {
   AgendaNoteUser,
   AgendaNoteExternal,
 } from '../../shared/interfaces/agenda-note.interface';
-import { Task, TaskStatus } from '../../shared/interfaces/task.interface';
 import { AgendaApiService, PresignedUrlResponse } from '../../shared/services/agenda-api.service';
 
-const TASK_STATUS_OPTIONS: { label: string; value: TaskStatus }[] = [
-  { label: 'Pendiente', value: 'Pendiente' },
-  { label: 'En curso', value: 'En curso' },
-  { label: 'Terminada', value: 'Terminada' },
+const AGENDA_STATUS_OPTIONS: { label: string; value: AgendaNoteStatus }[] = [
+  { label: 'Pendiente', value: 'pendiente' },
+  { label: 'En curso', value: 'en_proceso' },
+  { label: 'Terminada', value: 'terminado' },
 ];
 
 @Component({
@@ -89,8 +85,6 @@ const TASK_STATUS_OPTIONS: { label: string; value: TaskStatus }[] = [
   providers: [MessageService, ConfirmationService],
 })
 export class AgendaPage implements OnInit {
-  private readonly tasksApi = inject(TasksApiService);
-  private readonly boardsApi = inject(BoardsApiService);
   private readonly usersApi = inject(UsersApiService);
   private readonly profileApi = inject(ProfileApiService);
   private readonly areasApi = inject(AreasApiService);
@@ -130,22 +124,18 @@ export class AgendaPage implements OnInit {
 
   constructor() { }
 
-  /** True si el usuario actual está asignado a la tarea. */
-  isAssignedToMe(item: Task | AgendaNote): boolean {
+  /** True si el usuario actual está asignado a la nota. */
+  isAssignedToMe(item: AgendaNote): boolean {
     const userId = this.authService.getCurrentUser()?.id;
     if (!userId) return false;
-    if ('assignedTo' in item && Array.isArray(item.assignedTo)) {
-      return (item.assignedTo as (AgendaNoteUser | string)[]).some((a) =>
-        typeof a === 'string' ? a === userId : a._id === userId,
-      );
-    }
-    const task = item as Task;
-    const aid = this.getTaskAssigneeId(task);
-    return aid === userId;
+    const assigned = item.assignedTo ?? [];
+    return assigned.some((a) =>
+      typeof a === 'string' ? a === userId : a._id === userId,
+    );
   }
 
   /** True si el usuario actual es el creador. */
-  isCreator(item: Task | AgendaNote): boolean {
+  isCreator(item: AgendaNote): boolean {
     const userId = this.authService.getCurrentUser()?.id;
     if (!userId) return false;
     const createdBy = item.createdBy;
@@ -154,12 +144,12 @@ export class AgendaPage implements OnInit {
   }
 
   /** True si el usuario puede editar por completo. */
-  canEditFull(item: Task | AgendaNote): boolean {
+  canEditFull(item: AgendaNote): boolean {
     return this.canEdit() && (this.authService.isGerencia() || this.isCreator(item));
   }
 
   /** True si el usuario puede editar el estado. */
-  canEditStatus(item: Task | AgendaNote): boolean {
+  canEditStatus(item: AgendaNote): boolean {
     return this.canEditFull(item) || this.isAssignedToMe(item);
   }
 
@@ -168,56 +158,49 @@ export class AgendaPage implements OnInit {
     return this.authService.isGerencia();
   }
 
-  isOverdue(item: Task | AgendaNote): boolean {
-    const dueAt = 'dueAt' in item ? item.dueAt : (item as Task).dueDate;
+  isOverdue(item: AgendaNote): boolean {
+    const dueAt = item.dueAt;
     const status = item.status;
-    if (!dueAt || status === 'terminado' || status === 'Terminada') return false;
+    if (!dueAt || status === 'terminado') return false;
     return new Date(dueAt).getTime() < Date.now();
   }
 
-  getRowClass(item: Task | AgendaNote): string {
+  getRowClass(item: AgendaNote): string {
     const status = item.status;
-    if (status === 'terminado' || status === 'Terminada') return 'row-finished';
+    if (status === 'terminado') return 'row-finished';
     if (this.isOverdue(item)) return 'row-overdue';
-    if (status === 'pendiente' || status === 'Pendiente') return 'row-pending';
+    if (status === 'pendiente') return 'row-pending';
     return '';
   }
 
-  getStatusClass(status: AgendaNoteStatus | TaskStatus | undefined): string {
+  getStatusClass(status: AgendaNoteStatus | undefined): string {
     switch (status) {
       case 'pendiente':
-      case 'Pendiente':
         return 'text-yellow-600';
       case 'en_proceso':
-      case 'En curso':
         return 'text-blue-600';
       case 'terminado':
-      case 'Terminada':
         return 'text-emerald-600';
       default:
         return '';
     }
   }
 
-  getStatusLabel(status: AgendaNoteStatus | TaskStatus | undefined): string {
+  getStatusLabel(status: AgendaNoteStatus | undefined): string {
     switch (status) {
       case 'pendiente':
-      case 'Pendiente':
         return 'Pendiente';
       case 'en_proceso':
-      case 'En curso':
         return 'En curso';
       case 'terminado':
-      case 'Terminada':
         return 'Terminada';
       default:
         return status ?? '';
     }
   }
 
-  getContentSummary(item: Task | AgendaNote): string {
-    if ('title' in item) return (item as Task).title ?? '';
-    return (item as AgendaNote).content ?? '';
+  getContentSummary(item: AgendaNote): string {
+    return item.content ?? '';
   }
 
   getTypeIcon(_type?: string): string {
@@ -225,12 +208,10 @@ export class AgendaPage implements OnInit {
   }
 
   /** Fecha de vencimiento en ISO string. */
-  getDueDate(item: Task | AgendaNote): string | undefined {
-    let raw: string | Date | null | undefined;
-    if ('dueDate' in item) raw = (item as Task).dueDate;
-    else raw = (item as AgendaNote).dueAt;
+  getDueDate(item: AgendaNote): string | undefined {
+    const raw = item.dueAt;
     if (raw == null) return undefined;
-    return typeof raw === 'string' ? raw : raw.toISOString();
+    return typeof raw === 'string' ? raw : new Date(raw).toISOString();
   }
 
   /** Indica si el navegador soporta la API nativa de compartir. */
@@ -246,17 +227,13 @@ export class AgendaPage implements OnInit {
 
   /** Construye el texto a compartir según el tipo de nota (solo contenido, sin URL de la página). */
 
-  tasks = signal<Task[]>([]);
-  boards = signal<Board[]>([]);
-  loadingBoards = signal(false);
-
-  createSelectedBoardId = signal<string | null>(null);
+  notes = signal<AgendaNote[]>([]);
 
   loading = signal(false);
   step = signal(1);
   noteContent = signal('');
   createDueAt = signal<Date | null>(null);
-  currentNote = signal<Task | null>(null);
+  currentNote = signal<AgendaNote | null>(null);
   userOptions = signal<UserOption[]>([]);
   showCreateOptions = signal(false);
   showCreateDialog = signal(false);
@@ -304,7 +281,7 @@ export class AgendaPage implements OnInit {
   detailEditContent = signal('');
   /** Fecha/hora de vencimiento en edición en el detalle. */
   detailEditDueAt = signal<Date | null>(null);
-  detailEditStatus = signal<TaskStatus>('Pendiente');
+  detailEditStatus = signal<AgendaNoteStatus>('pendiente');
   /** ID de la nota que se está editando (regrabar voz o reemplazar dibujo). */
   editingNoteId = signal<string | null>(null);
   /** URLs de audio actuales al regrabar (para eliminarlas al guardar). */
@@ -321,13 +298,13 @@ export class AgendaPage implements OnInit {
 
   /** Modal de acciones centralizado. */
   showActionsModal = signal(false);
-  selectedActionNote = signal<Task | null>(null);
+  selectedActionNote = signal<AgendaNote | null>(null);
 
   // --- Inline Editing State ---
   inlineEditingId = signal<string | null>(null);
   inlineEditContent = signal('');
   inlineEditDueAt = signal<Date | null>(null);
-  inlineEditStatus = signal<TaskStatus>('Pendiente');
+  inlineEditStatus = signal<AgendaNoteStatus>('pendiente');
 
   // Sharing Modal
   showShareModal = signal(false);
@@ -337,7 +314,7 @@ export class AgendaPage implements OnInit {
 
   pendingContactAssignment = signal<{ name: string; email?: string; phone?: string } | null>(null);
 
-  readonly statusOptions = TASK_STATUS_OPTIONS;
+  readonly statusOptions = AGENDA_STATUS_OPTIONS;
 
   @ViewChild('canvasEl') canvasRef?: ElementRef<HTMLCanvasElement>;
 
@@ -402,39 +379,39 @@ export class AgendaPage implements OnInit {
 
   /**
    * Vista Agrupada para Gerencia en "Actividades".
-   * Retorna array de grupos: { user: UserOption, tasks: Task[] }
+   * Retorna array de grupos: { user: UserOption, notes: AgendaNote[] }
    * Incluye un grupo para "Sin Asignar".
    */
   groupedActivities = computed(() => {
     if (this.activeTab() !== 'activities' || !this.authService.isGerencia()) return [];
     if (this.selectedUserId()) return [];
 
-    const allTasks = this.tasks();
+    const allNotes = this.notes();
     const users = this.userOptions();
     const query = this.searchQuery().toLowerCase().trim();
 
-    let filtered = allTasks;
+    let filtered = allNotes;
     if (query) {
-      filtered = allTasks.filter((t) => t.title?.toLowerCase().includes(query));
+      filtered = allNotes.filter((n) => n.content?.toLowerCase().includes(query));
     }
 
-    const groups = new Map<string, Task[]>();
-    const unassigned: Task[] = [];
+    const groups = new Map<string, AgendaNote[]>();
+    const unassigned: AgendaNote[] = [];
 
-    filtered.forEach((task) => {
-      const userId = this.getTaskAssigneeId(task);
+    filtered.forEach((note) => {
+      const userId = this.getNoteAssigneeId(note);
       if (!userId) {
-        unassigned.push(task);
+        unassigned.push(note);
       } else {
         if (!groups.has(userId)) groups.set(userId, []);
-        groups.get(userId)!.push(task);
+        groups.get(userId)!.push(note);
       }
     });
 
-    const result: { user: UserOption | null; notes: Task[] }[] = [];
+    const result: { user: UserOption | null; notes: AgendaNote[] }[] = [];
     const currentUserId = this.authService.getCurrentUser()?.id;
 
-    const usersWithTasks = users
+    const usersWithNotes = users
       .filter((u) => groups.has(u._id))
       .sort((a, b) => {
         if (a._id === currentUserId) return -1;
@@ -442,7 +419,7 @@ export class AgendaPage implements OnInit {
         return (a.name || '').localeCompare(b.name || '');
       });
 
-    usersWithTasks.forEach((u) => {
+    usersWithNotes.forEach((u) => {
       result.push({ user: u, notes: groups.get(u._id)! });
     });
 
@@ -456,10 +433,12 @@ export class AgendaPage implements OnInit {
     return result;
   });
 
-  getTaskAssigneeId(task: Task): string | null {
-    const a = task.assignedTo;
-    if (!a) return null;
-    return typeof a === 'string' ? a : a._id ?? null;
+  /** Primer usuario asignado (para agrupar/vista). */
+  getNoteAssigneeId(note: AgendaNote): string | null {
+    const a = note.assignedTo;
+    if (!a?.length) return null;
+    const first = a[0];
+    return typeof first === 'string' ? first : first._id ?? null;
   }
 
   /**
@@ -470,11 +449,11 @@ export class AgendaPage implements OnInit {
     const isGerencia = this.authService.isGerencia();
     if (isGerencia && !this.selectedUserId()) return [];
 
-    const allTasks = this.tasks();
+    const allNotes = this.notes();
     const query = this.searchQuery().toLowerCase().trim();
     let list = query
-      ? allTasks.filter((t) => t.title?.toLowerCase().includes(query))
-      : [...allTasks];
+      ? allNotes.filter((n) => n.content?.toLowerCase().includes(query))
+      : [...allNotes];
 
     return list.sort((a, b) => {
       const t1 = new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
@@ -497,9 +476,8 @@ export class AgendaPage implements OnInit {
   // Vamos a usar displayedNotes() en el HTML principal.
 
   ngOnInit(): void {
-    this.loadTasks();
+    this.loadNotes();
     this.loadUsers();
-    this.loadBoards();
     this.loadSharedWithMe();
     this.loadGlobalContacts();
 
@@ -530,39 +508,30 @@ export class AgendaPage implements OnInit {
   }
 
   loadNotes(): void {
-    this.loadTasks();
-  }
-
-  loadTasks(): void {
     this.loading.set(true);
-    const params = this.buildTasksParams();
-    this.tasksApi
-      .getTasks(params)
+    const filters = this.buildAgendaFilters();
+    this.agendaApi
+      .list(filters)
       .subscribe({
-        next: (res) => this.tasks.set(res.data ?? []),
+        next: (notes) => this.notes.set(notes),
         error: () => {
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'No se pudieron cargar las tareas',
+            detail: 'No se pudieron cargar las notas de agenda',
           });
         },
       })
       .add(() => this.loading.set(false));
   }
 
-  private buildTasksParams(): import('../../shared/interfaces/task.interface').TasksSearchParams {
+  private buildAgendaFilters(): import('../../shared/services/agenda-api.service').AgendaListFilters {
     const isGerencia = this.authService.isGerencia();
     const selectedUser = this.selectedUserId();
-    const params: import('../../shared/interfaces/task.interface').TasksSearchParams = {
-      limit: 500,
-    };
     if (isGerencia && selectedUser) {
-      params.assignedTo = selectedUser;
-    } else if (!isGerencia) {
-      params.assignedTo = this.authService.getCurrentUser()?.id ?? '';
+      return { createdBy: selectedUser };
     }
-    return params;
+    return { forUser: true };
   }
 
   selectUser(userId: string | null): void {
@@ -578,16 +547,6 @@ export class AgendaPage implements OnInit {
     });
   }
 
-  loadBoards(): void {
-    this.loadingBoards.set(true);
-    (this.authService.isGerencia() ? this.boardsApi.getAllForGerencia() : this.boardsApi.getAll())
-      .subscribe({
-        next: (boards) => this.boards.set(boards ?? []),
-        error: () => this.loadingBoards.set(false),
-      })
-      .add(() => this.loadingBoards.set(false));
-  }
-
   /** Carga todos los usuarios del tenant (todas las páginas) para el selector y "Asignar a". */
   loadUsers(): void {
     const tenantId = this.tenantService.tenantId();
@@ -600,41 +559,13 @@ export class AgendaPage implements OnInit {
 
   openCreate(): void {
     this.clearCreateFields();
-    this.createSelectedBoardId.set(null);
     this.createAssignUserId.set(null);
     this.showCreateDialog.set(true);
   }
 
-  onCreateBoardChange(boardId: string | null): void {
-    this.createSelectedBoardId.set(boardId);
-    this.createAssignUserId.set(null);
-  }
-
-  /** Usuarios del tablero seleccionado (owner + members) para asignar. */
-  createAssigneeOptions = computed(() => {
-    const boardId = this.createSelectedBoardId();
-    if (!boardId) return [];
-    const board = this.boards().find((b) => b._id === boardId);
-    if (!board) return [];
-    const owner = board.owner;
-    const members = board.members ?? [];
-    const map = new Map<string, { _id: string; name?: string; email?: string }>();
-    if (owner?._id) {
-      map.set(owner._id, { _id: owner._id, name: owner.name ?? undefined, email: owner.email ?? undefined });
-    }
-    members.forEach((m) => {
-      if (m._id && !map.has(m._id)) {
-        map.set(m._id, { _id: m._id, name: m.name ?? undefined, email: m.email ?? undefined });
-      }
-    });
-    return Array.from(map.values()).sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
-  });
-
-  canCreateTask = computed(() => {
-    const boardId = this.createSelectedBoardId();
-    const assigneeId = this.createAssignUserId();
-    const title = this.noteContent().trim();
-    return !!boardId && !!assigneeId && title.length > 0;
+  canCreateNote = computed(() => {
+    const content = this.noteContent().trim();
+    return content.length > 0;
   });
 
   closeCreate(): void {
@@ -653,44 +584,77 @@ export class AgendaPage implements OnInit {
   private clearCreateFields(): void {
     this.noteContent.set('');
     this.createDueAt.set(null);
-    this.createSelectedBoardId.set(null);
     this.createAssignUserId.set(null);
     this.pendingContactAssignment.set(null);
   }
 
-  saveTask(): void {
-    const boardId = this.createSelectedBoardId();
-    const assigneeId = this.createAssignUserId();
-    const title = this.noteContent().trim();
-    const createdBy = this.authService.getCurrentUser()?.id;
-
-    if (!boardId || !assigneeId || !title || !createdBy) {
+  saveNote(): void {
+    const content = this.noteContent().trim();
+    if (!content) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Datos incompletos',
-        detail: 'Selecciona tablero, responsable y escribe un título.',
+        detail: 'Escribe el contenido de la actividad.',
       });
       return;
     }
 
     this.saving.set(true);
-    this.tasksApi
-      .createTask({
-        title,
-        assignedTo: assigneeId,
-        createdBy,
-        boardId,
-        status: 'Pendiente',
-        priority: 'Media',
-        dueDate: this.createDueAt()?.toISOString(),
+    const dueAtIso = this.createDueAt()?.toISOString();
+    const assigneeId = this.createAssignUserId();
+    const pendingContact = this.pendingContactAssignment();
+
+    this.agendaApi
+      .create({
+        type: 'text',
+        content,
+        status: 'pendiente',
+        dueAt: dueAtIso ?? undefined,
       })
+      .pipe(
+        switchMap((note) => {
+          const userIds: string[] = [];
+          const externalContacts: { name: string; email: string; phone?: string }[] = [];
+
+          if (assigneeId && !assigneeId.startsWith('ext_')) {
+            userIds.push(assigneeId);
+          }
+          if (assigneeId?.startsWith('ext_')) {
+            const contactId = assigneeId.split('_')[1];
+            const contact = this.globalContacts().find((c) => c._id === contactId);
+            if (contact) {
+              externalContacts.push({
+                name: contact.name,
+                email: contact.email ?? '',
+                phone: contact.phone,
+              });
+            }
+          }
+          if (pendingContact) {
+            externalContacts.push({
+              name: pendingContact.name,
+              email: pendingContact.email ?? '',
+              phone: pendingContact.phone,
+            });
+          }
+
+          if (userIds.length > 0 || externalContacts.length > 0) {
+            return this.agendaApi.assign(note._id, {
+              userIds,
+              dueAt: dueAtIso,
+              externalContacts: externalContacts.length > 0 ? externalContacts : undefined,
+            });
+          }
+          return of(note);
+        }),
+      )
       .subscribe({
-        next: (task) => {
-          this.tasks.update((prev) => [task, ...prev]);
+        next: (note) => {
+          this.notes.update((prev) => [note, ...prev]);
           this.messageService.add({
             severity: 'success',
             summary: 'Actividad creada',
-            detail: 'La tarea se creó en el tablero seleccionado.',
+            detail: 'La nota se creó correctamente.',
           });
           this.closeCreate();
         },
@@ -707,10 +671,10 @@ export class AgendaPage implements OnInit {
       .add(() => this.saving.set(false));
   }
 
-  canGoNext = computed(() => this.canCreateTask());
+  canGoNext = computed(() => this.canCreateNote());
 
   nextStep(): void {
-    if (this.canCreateTask()) this.saveTask();
+    if (this.canCreateNote()) this.saveNote();
   }
 
   prevStep(): void {
@@ -722,12 +686,12 @@ export class AgendaPage implements OnInit {
     return res.blob();
   }
 
-  /** Id del usuario asignado. */
-  getAssignedSingleId(note: Task): string | null {
-    return this.getTaskAssigneeId(note);
+  /** Id del primer usuario asignado (para selector). */
+  getAssignedSingleId(note: AgendaNote): string | null {
+    return this.getNoteAssigneeId(note);
   }
 
-  toggleSelectNote(note: Task): void {
+  toggleSelectNote(note: AgendaNote): void {
     const id = String(note._id);
     this.selectedNoteIds.update((set) => {
       const next = new Set(set);
@@ -764,12 +728,12 @@ export class AgendaPage implements OnInit {
   }
 
   /** Abre el modal de asignación para una sola nota (desde el select de la fila). */
-  openAssignModalForNote(note: Task | AgendaNote, userId: string | null): void {
+  openAssignModalForNote(note: AgendaNote, userId: string | null): void {
     if (!note._id) return;
     if (userId == null) {
-      this.tasksApi.updateTask(note._id, { assignedTo: '' }).subscribe({
+      this.agendaApi.assign(note._id, { userIds: [] }).subscribe({
         next: () => {
-          this.loadTasks();
+          this.loadNotes();
           this.messageService.add({
             severity: 'success',
             summary: 'Asignado',
@@ -878,16 +842,26 @@ export class AgendaPage implements OnInit {
     const dueAtIso = dueAt ? dueAt.toISOString() : undefined;
     this.bulkAssigning.set(true);
 
-    // Tasks solo soportan assignedTo (usuario), no contactos externos
-    const assigneeId = targetId?.startsWith('ext_') ? null : targetId;
+    const userIds: string[] = [];
+    const externalContacts: { name: string; email: string; phone?: string }[] = [];
+    if (targetId && !targetId.startsWith('ext_')) {
+      userIds.push(targetId);
+    } else if (targetId?.startsWith('ext_')) {
+      const contactId = targetId.split('_')[1];
+      const contact = this.globalContacts().find((c) => c._id === contactId);
+      if (contact) {
+        externalContacts.push({
+          name: contact.name,
+          email: contact.email ?? '',
+          phone: contact.phone,
+        });
+      }
+    }
 
     const assignWithRetry = (id: string) =>
       firstValueFrom(
-        this.tasksApi
-          .updateTask(id, {
-            assignedTo: assigneeId ?? '',
-            dueDate: dueAtIso,
-          })
+        this.agendaApi
+          .assign(id, { userIds, dueAt: dueAtIso, externalContacts })
           .pipe(
             map(() => true),
             catchError(() => of(false)),
@@ -897,14 +871,14 @@ export class AgendaPage implements OnInit {
       .then((results) => {
         const ok = results.filter(Boolean).length;
         const fail = results.length - ok;
-        this.loadTasks();
+        this.loadNotes();
         this.closeAssignModal();
         if (ids.length > 1) {
           this.clearSelection();
           this.bulkAssignUserId.set(null);
         }
         if (fail === 0 && ids.length === 1 && this.currentNote()?._id === ids[0]) {
-          this.tasksApi.getTaskById(ids[0]).subscribe((updated) => this.currentNote.set(updated));
+          this.agendaApi.getById(ids[0]).subscribe((updated) => this.currentNote.set(updated));
         }
         if (fail === 0) {
           this.messageService.add({
@@ -930,11 +904,11 @@ export class AgendaPage implements OnInit {
   }
 
   /** Asignar o cambiar la persona asignada (abre modal con vencimiento). */
-  onAssignChange(note: Task | AgendaNote, targetId: string | null): void {
+  onAssignChange(note: AgendaNote, targetId: string | null): void {
     if (!targetId || targetId.startsWith('ext_')) {
-      this.tasksApi.updateTask(note._id, { assignedTo: '' }).subscribe({
+      this.agendaApi.assign(note._id, { userIds: [] }).subscribe({
         next: (updated) => {
-          this.tasks.update((list) => list.map((t) => (t._id === updated._id ? updated : t)));
+          this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
           if (this.currentNote()?._id === updated._id) this.currentNote.set(updated);
           this.messageService.add({
             severity: 'success',
@@ -948,11 +922,10 @@ export class AgendaPage implements OnInit {
     this.openAssignModalForNote(note, targetId);
   }
 
-  onStatusChange(note: Task | AgendaNote, status: TaskStatus | AgendaNoteStatus): void {
-    const taskStatus = status === 'pendiente' ? 'Pendiente' : status === 'en_proceso' ? 'En curso' : status === 'terminado' ? 'Terminada' : (status as TaskStatus);
-    this.tasksApi.updateTask(note._id, { status: taskStatus }).subscribe({
+  onStatusChange(note: AgendaNote, status: AgendaNoteStatus): void {
+    this.agendaApi.update(note._id, { status }).subscribe({
       next: (updated) => {
-        this.tasks.update((list) => list.map((t) => (t._id === updated._id ? updated : t)));
+        this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
         if (this.currentNote()?._id === updated._id) {
           this.currentNote.set(updated);
         }
@@ -974,20 +947,20 @@ export class AgendaPage implements OnInit {
     });
   }
 
-  shareNoteFromNote(note: Task | AgendaNote, channel: 'email' | 'whatsapp'): void {
-    this.tasksApi.getTaskById(note._id).subscribe({
+  shareNoteFromNote(note: AgendaNote, channel: 'email' | 'whatsapp'): void {
+    this.agendaApi.getById(note._id).subscribe({
       next: (full) => {
         this.currentNote.set(full);
         this.shareNote(channel);
       },
       error: () => {
-        this.currentNote.set(note as Task);
+        this.currentNote.set(note);
         this.shareNote(channel);
       },
     });
   }
 
-  shareNoteNative(note: Task | AgendaNote): void {
+  shareNoteNative(note: AgendaNote): void {
     const shareText = this.generateTaskShareMessage(note, true); // Ensure we use the message generator
 
     if (navigator.share) {
@@ -1012,7 +985,7 @@ export class AgendaPage implements OnInit {
   }
 
   /** Items del menú Compartir (Correo, WhatsApp) para una nota. */
-  getShareMenuItems(note: Task): MenuItem[] {
+  getShareMenuItems(note: AgendaNote): MenuItem[] {
     return [
       {
         label: 'Correo',
@@ -1027,7 +1000,7 @@ export class AgendaPage implements OnInit {
     ];
   }
 
-  openTeamsForNote(note: Task): void {
+  openTeamsForNote(note: AgendaNote): void {
     this.currentNote.set(note);
     this.openTeamsLink();
   }
@@ -1035,7 +1008,7 @@ export class AgendaPage implements OnInit {
   /**
    * Genera el mensaje de texto para compartir (solo texto y detalles, sin URL de la página).
    */
-  private generateTaskShareMessage(note: Task | AgendaNote, _includeLink = true): string {
+  private generateTaskShareMessage(note: AgendaNote, _includeLink = true): string {
     let msg = `Tienes una nueva tarea en la plataforma Momentum\n\n`;
     msg += `📝 Descripción: ${this.getContentSummary(note) || 'Sin contenido'}\n`;
     msg += `📊 Estado: ${this.getStatusLabel(note.status)}\n`;
@@ -1050,7 +1023,7 @@ export class AgendaPage implements OnInit {
     return msg;
   }
 
-  shareNote(channel: 'email' | 'whatsapp', note?: Task | AgendaNote): void {
+  shareNote(channel: 'email' | 'whatsapp', note?: AgendaNote): void {
     const noteToShare = note || this.currentNote();
     console.log('[Agenda] shareNote called', { channel, note: noteToShare });
 
@@ -1059,16 +1032,13 @@ export class AgendaPage implements OnInit {
       return;
     }
 
-    const isExternal =
-      'assignedExternal' in noteToShare &&
-      ((noteToShare as AgendaNote).assignedExternal?.length ?? 0) > 0;
+    const isExternal = (noteToShare.assignedExternal?.length ?? 0) > 0;
     const shareMessage = this.generateTaskShareMessage(noteToShare, !isExternal);
 
     // Abrimos el destino inmediatamente
     if (channel === 'whatsapp') {
       const encodedMsg = encodeURIComponent(shareMessage);
-      const phone =
-        ('assignedExternal' in noteToShare && (noteToShare as AgendaNote).assignedExternal?.[0]?.phone) || '';
+      const phone = noteToShare.assignedExternal?.[0]?.phone || '';
       const cleanPhone = phone.replace(/[^0-9]/g, '');
       const url = cleanPhone
         ? `https://wa.me/${cleanPhone}?text=${encodedMsg}`
@@ -1080,8 +1050,7 @@ export class AgendaPage implements OnInit {
     } else if (channel === 'email') {
       const subject = encodeURIComponent('Detalles de actividad agenda');
       const body = encodeURIComponent(shareMessage);
-      const email =
-        ('assignedExternal' in noteToShare && (noteToShare as AgendaNote).assignedExternal?.[0]?.email) || '';
+      const email = noteToShare.assignedExternal?.[0]?.email || '';
       const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
 
       console.log('[Agenda] Opening Email URL:', mailtoUrl);
@@ -1294,19 +1263,19 @@ export class AgendaPage implements OnInit {
     return typeof window !== 'undefined' && window.innerWidth < 768;
   }
 
-  /** Abre el modal de detalle con la tarea indicada. */
-  openDetailModal(note: Task): void {
+  /** Abre el modal de detalle con la nota indicada. */
+  openDetailModal(note: AgendaNote): void {
     this.currentNote.set(note);
     this.detailEditContent.set(this.getContentSummary(note));
     const due = this.getDueDate(note);
     this.detailEditDueAt.set(due ? new Date(due) : null);
-    this.detailEditStatus.set((note.status as TaskStatus) ?? 'Pendiente');
+    this.detailEditStatus.set(note.status ?? 'pendiente');
     this.detailEditMode.set(false);
     this.showDetailDialog.set(true);
   }
 
-  viewNote(note: Task): void {
-    const noteAny = note as unknown as { isMicrosoftEvent?: boolean; onlineMeetingUrl?: string; webLink?: string };
+  viewNote(note: AgendaNote): void {
+    const noteAny = note as { isMicrosoftEvent?: boolean; onlineMeetingUrl?: string; webLink?: string };
     if (noteAny.isMicrosoftEvent && (noteAny.onlineMeetingUrl || noteAny.webLink)) {
       window.open(noteAny.onlineMeetingUrl || noteAny.webLink!, '_blank');
       return;
@@ -1319,32 +1288,32 @@ export class AgendaPage implements OnInit {
     this.openDetailModal(note);
   }
 
-  startInlineEdit(note: Task | AgendaNote): void {
+  startInlineEdit(note: AgendaNote): void {
     this.inlineEditingId.set(note._id);
     this.inlineEditContent.set(this.getContentSummary(note));
     const due = this.getDueDate(note);
     this.inlineEditDueAt.set(due ? new Date(due) : null);
-    this.inlineEditStatus.set((note.status as TaskStatus) ?? 'Pendiente');
+    this.inlineEditStatus.set(note.status ?? 'pendiente');
   }
 
   cancelInlineEdit(): void {
     this.inlineEditingId.set(null);
     this.inlineEditContent.set('');
     this.inlineEditDueAt.set(null);
-    this.inlineEditStatus.set('Pendiente');
+    this.inlineEditStatus.set('pendiente');
   }
 
-  saveInlineEdit(note: Task | AgendaNote): void {
+  saveInlineEdit(note: AgendaNote): void {
     const content = this.inlineEditContent().trim();
     const dueAt = this.inlineEditDueAt()?.toISOString();
-    const status = this.inlineEditStatus() as TaskStatus;
+    const status = this.inlineEditStatus();
 
     this.saving.set(true);
-    this.tasksApi
-      .updateTask(note._id, { title: content, dueDate: dueAt, status })
+    this.agendaApi
+      .update(note._id, { content, dueAt: dueAt ?? undefined, status })
       .subscribe({
         next: (updated) => {
-          this.tasks.update((list) => list.map((t) => (t._id === updated._id ? updated : t)));
+          this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
           this.messageService.add({
             severity: 'success',
             summary: 'Guardado',
@@ -1369,11 +1338,7 @@ export class AgendaPage implements OnInit {
     const note = this.currentNote();
     if (!note) return;
     this.detailEditMode.set(true);
-    if (
-      this.isTaskNote(note) &&
-      (note as AgendaNote).type === 'drawing' &&
-      (note as AgendaNote).drawingUrl?.length
-    ) {
+    if (note.type === 'drawing' && note.drawingUrl?.length) {
       setTimeout(() => this.loadDetailDrawingImage(), 200);
     }
   }
@@ -1387,7 +1352,7 @@ export class AgendaPage implements OnInit {
     const note = this.currentNote();
     if (!note) return;
     const canvas = this.detailCanvasRef?.nativeElement;
-    if (!this.isTaskNote(note) || !(note as AgendaNote).drawingUrl?.length || !canvas) return;
+    if (!note.drawingUrl?.length || !canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const img = new Image();
@@ -1444,20 +1409,20 @@ export class AgendaPage implements OnInit {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (this.isTaskNote(note) && (note as AgendaNote).drawingUrl?.length) {
+    if (note.drawingUrl?.length) {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      img.src = (note as AgendaNote).drawingUrl![0];
+      img.src = note.drawingUrl![0];
     }
   }
 
-  saveDetailText(note: Task): void {
-    const title = this.detailEditContent().trim();
-    this.tasksApi.updateTask(note._id, { title }).subscribe({
+  saveDetailText(note: AgendaNote): void {
+    const content = this.detailEditContent().trim();
+    this.agendaApi.update(note._id, { content }).subscribe({
       next: (updated) => {
         this.currentNote.set(updated);
-        this.tasks.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
+        this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
         this.detailEditMode.set(false);
         this.messageService.add({
           severity: 'success',
@@ -1475,13 +1440,13 @@ export class AgendaPage implements OnInit {
     });
   }
 
-  saveDetailDueAt(note: Task): void {
+  saveDetailDueAt(note: AgendaNote): void {
     const dueAt = this.detailEditDueAt();
-    const dueDate = dueAt ? dueAt.toISOString() : undefined;
-    this.tasksApi.updateTask(note._id, { dueDate }).subscribe({
+    const dueAtIso = dueAt ? dueAt.toISOString() : undefined;
+    this.agendaApi.update(note._id, { dueAt: dueAtIso ?? undefined }).subscribe({
       next: (updated) => {
         this.currentNote.set(updated);
-        this.tasks.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
+        this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
         this.messageService.add({
           severity: 'success',
           summary: 'Guardado',
@@ -1498,22 +1463,18 @@ export class AgendaPage implements OnInit {
     });
   }
 
-  getStatusSeverity(status: AgendaNoteStatus | TaskStatus | undefined): 'secondary' | 'info' | 'success' {
-    if (status === 'terminado' || status === 'Terminada') return 'success';
-    if (status === 'en_proceso' || status === 'En curso') return 'info';
+  getStatusSeverity(status: AgendaNoteStatus | undefined): 'secondary' | 'info' | 'success' {
+    if (status === 'terminado') return 'success';
+    if (status === 'en_proceso') return 'info';
     return 'secondary';
   }
 
-  isTaskNote(item: Task | AgendaNote): item is AgendaNote {
-    return 'type' in item;
+  getNoteVoiceUrls(note: AgendaNote): string[] | undefined {
+    return note.voiceUrl;
   }
 
-  getNoteVoiceUrls(note: Task | AgendaNote): string[] | undefined {
-    return this.isTaskNote(note) ? note.voiceUrl : undefined;
-  }
-
-  getNoteDrawingUrls(note: Task | AgendaNote): string[] | undefined {
-    return this.isTaskNote(note) ? note.drawingUrl : undefined;
+  getNoteDrawingUrls(note: AgendaNote): string[] | undefined {
+    return note.drawingUrl;
   }
 
   startRerecordVoice(note: AgendaNote): void {
@@ -1568,23 +1529,23 @@ export class AgendaPage implements OnInit {
   }
 
   /** Guardar todo en modo edición del detalle. */
-  saveDetailAll(note: Task): void {
+  saveDetailAll(note: AgendaNote): void {
     this.saving.set(true);
     const content = this.detailEditContent().trim();
     const dueAt = this.detailEditDueAt();
     const dueAtIso = dueAt ? dueAt.toISOString() : undefined;
-    const status = this.detailEditStatus() as TaskStatus;
+    const status = this.detailEditStatus();
 
-    this.tasksApi
-      .updateTask(note._id, {
-        title: content,
-        dueDate: dueAtIso,
+    this.agendaApi
+      .update(note._id, {
+        content,
+        dueAt: dueAtIso ?? undefined,
         status,
       })
       .subscribe({
         next: (updated) => {
           this.currentNote.set(updated);
-          this.tasks.update((list) => list.map((t) => (t._id === updated._id ? updated : t)));
+          this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
           this.detailEditMode.set(false);
           this.messageService.add({
             severity: 'success',
@@ -1603,7 +1564,7 @@ export class AgendaPage implements OnInit {
       .add(() => this.saving.set(false));
   }
 
-  deleteNote(note: Task | AgendaNote): void {
+  deleteNote(note: AgendaNote): void {
     this.confirmationService.confirm({
       message: '¿Eliminar esta nota?',
       header: 'Confirmar',
@@ -1611,9 +1572,9 @@ export class AgendaPage implements OnInit {
       acceptLabel: 'Sí',
       rejectLabel: 'No',
       accept: () => {
-        this.tasksApi.deleteTask(note._id).subscribe({
+        this.agendaApi.delete(note._id).subscribe({
           next: () => {
-            this.loadTasks();
+            this.loadNotes();
             if (this.currentNote()?._id === note._id) {
               this.showDetailDialog.set(false);
               this.currentNote.set(null);
@@ -1670,7 +1631,7 @@ export class AgendaPage implements OnInit {
   }
 
   /** Genera las acciones disponibles para una tarea/nota en el menú contextual. */
-  getNoteMenu(note: Task): MenuItem[] {
+  getNoteMenu(note: AgendaNote): MenuItem[] {
     const actions: MenuItem[] = [
       {
         label: 'Ver detalle',
@@ -1683,7 +1644,7 @@ export class AgendaPage implements OnInit {
       {
         label: 'Cambiar Estado',
         icon: 'pi pi-check-circle',
-        items: TASK_STATUS_OPTIONS.map((opt) => ({
+        items: this.statusOptions.map((opt) => ({
           label: opt.label,
           icon: note.status === opt.value ? 'pi pi-check text-primary' : '',
           command: () => this.onStatusChange(note, opt.value),
@@ -1726,7 +1687,7 @@ export class AgendaPage implements OnInit {
   }
 
   /** Abre el modal de acciones (asignar, compartir, editar, eliminar). En desktop el clic en la fila no abre modal. */
-  openActions(note: Task): void {
+  openActions(note: AgendaNote): void {
     this.openDetailModal(note);
   }
 
@@ -1899,11 +1860,10 @@ export class AgendaPage implements OnInit {
       .subscribe({
         next: (updated: AgendaNote | null) => {
           if (updated) {
-            const task = updated as unknown as Task;
-            this.currentNote.set(task);
-            this.tasks.update((list) => list.map((n) => (n._id === task._id ? task : n)));
-            if (this.selectedActionNote()?._id === task._id) {
-              this.selectedActionNote.set(task);
+            this.currentNote.set(updated);
+            this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
+            if (this.selectedActionNote()?._id === updated._id) {
+              this.selectedActionNote.set(updated);
             }
           }
           this.messageService.add({
@@ -1942,12 +1902,11 @@ export class AgendaPage implements OnInit {
       })
       .subscribe({
         next: (updated: AgendaNote) => {
-          const task = updated as unknown as Task;
-          this.currentNote.set(task);
-          this.tasks.update((list) => list.map((n) => (n._id === task._id ? task : n)));
-          if (this.selectedActionNote()?._id === task._id) {
-            this.selectedActionNote.set(task);
-          }
+          this.currentNote.set(updated);
+            this.notes.update((list) => list.map((n) => (n._id === updated._id ? updated : n)));
+            if (this.selectedActionNote()?._id === updated._id) {
+              this.selectedActionNote.set(updated);
+            }
           this.messageService.add({
             severity: 'success',
             summary: 'Actualizado',

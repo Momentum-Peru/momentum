@@ -445,44 +445,9 @@
       <!-- Información Básica -->
       <div>
         <h4 class="text-lg font-semibold mb-3">Información Básica</h4>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label
-              for="leadName"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Nombre del Lead *
-            </label>
-            <input
-              id="leadName"
-              name="leadName"
-              pInputText
-              placeholder="Nombre del lead"
-              [ngModel]="editing()?.name"
-              (ngModelChange)="onEditChange('name', $event)"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label
-              for="leadCompany"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Empresa Momentum *
-            </label>
-            <p-select
-              id="leadCompany"
-              [options]="getCompanyFilterOptions()"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="editing()?.companyId"
-              (ngModelChange)="onEditChange('companyId', $event)"
-              placeholder="Seleccionar empresa Momentum"
-              [appendTo]="'body'"
-              class="w-full"
-            ></p-select>
-          </div>
-        </div>
+        <!-- Nombre del Lead eliminado (se autogenera) -->
+        <!-- Empresa Momentum eliminada (se autoselecciona) -->
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
           <div>
             <label
@@ -505,6 +470,7 @@
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+          @if (editing()?._id) {
           <div>
             <label
               for="leadStatus"
@@ -523,6 +489,7 @@
               class="w-full"
             ></p-select>
           </div>
+          }
           <div>
             <label
               for="leadSource"
@@ -607,7 +574,7 @@
               for="contactEmail"
               class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
-              Email de Contacto *
+              Email de Contacto
             </label>
             <input
               id="contactEmail"
