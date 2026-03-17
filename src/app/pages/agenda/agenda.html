@@ -660,7 +660,7 @@
   </ng-template>
 </p-dialog>
 
-<!-- Diálogo crear tarea (actividad en agenda = Task) -->
+<!-- Diálogo crear nota de agenda -->
 <p-dialog
   [(visible)]="showCreateDialog"
   (onHide)="closeCreate()"
@@ -673,52 +673,7 @@
 >
   <div class="space-y-4">
     <div>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tablero</label>
-      <p-select
-        [options]="boards()"
-        optionLabel="title"
-        optionValue="_id"
-        [ngModel]="createSelectedBoardId()"
-        (ngModelChange)="onCreateBoardChange($event)"
-        placeholder="Seleccionar tablero"
-        [filter]="true"
-        filterBy="title"
-        styleClass="w-full"
-        [appendTo]="'body'"
-      >
-        <ng-template #item let-board>
-          <div class="flex items-center gap-2">
-            <i class="pi pi-th-large text-gray-400"></i>
-            <span>{{ board.title }}</span>
-          </div>
-        </ng-template>
-      </p-select>
-    </div>
-    <div>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asignar a</label>
-      <p-select
-        [options]="createAssigneeOptions()"
-        optionLabel="name"
-        optionValue="_id"
-        [ngModel]="createAssignUserId()"
-        (ngModelChange)="createAssignUserId.set($event)"
-        placeholder="Seleccionar responsable"
-        [filter]="true"
-        filterBy="name,email"
-        styleClass="w-full"
-        [appendTo]="'body'"
-        [disabled]="!createSelectedBoardId()"
-      >
-        <ng-template #item let-user>
-          <div class="flex items-center gap-2">
-            <i class="pi pi-user text-gray-400"></i>
-            <span>{{ user.name || user.email }}</span>
-          </div>
-        </ng-template>
-      </p-select>
-    </div>
-    <div>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título</label>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contenido</label>
       <textarea
         pTextarea
         [autoResize]="true"
@@ -728,6 +683,32 @@
         [ngModel]="noteContent()"
         (ngModelChange)="noteContent.set($event)"
       ></textarea>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asignar a (opcional)</label>
+      <p-select
+        [options]="assigneeOptions()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="createAssignUserId()"
+        (ngModelChange)="createAssignUserId.set($event)"
+        placeholder="Seleccionar responsable"
+        [filter]="true"
+        filterBy="name,email"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        [showClear]="true"
+      >
+        <ng-template #item let-opt>
+          <div class="flex items-center gap-2">
+            <i class="pi pi-user text-gray-400"></i>
+            <span>{{ opt.name || opt.email }}</span>
+            @if (opt.isExternal) {
+              <span class="text-[10px] text-gray-500">(Ext)</span>
+            }
+          </div>
+        </ng-template>
+      </p-select>
     </div>
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
@@ -755,8 +736,8 @@
       icon="pi pi-check"
       iconPos="right"
       [loading]="saving()"
-      [disabled]="!canCreateTask()"
-      (click)="saveTask()"
+      [disabled]="!canCreateNote()"
+      (click)="saveNote()"
     ></button>
   </ng-template>
 </p-dialog>
