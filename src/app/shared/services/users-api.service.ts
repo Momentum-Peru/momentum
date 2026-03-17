@@ -65,7 +65,7 @@ export class UsersApiService {
   private readonly baseUrl = `${environment.apiUrl}/users`;
 
   /**
-   * Obtiene la lista de usuarios para el selector
+   * Obtiene la lista de usuarios para el selector (paginado por defecto: primera página, 10 elementos).
    * @param tenantId Opcional: Filtrar usuarios por tenantId
    */
   list(tenantId?: string): Observable<UserOption[]> {
@@ -80,8 +80,30 @@ export class UsersApiService {
           name: user.name,
           email: user.email,
           role: user.role,
-        }))
-      )
+        })),
+      ),
+    );
+  }
+
+  /**
+   * Obtiene todos los usuarios para selectores (una sola petición con límite alto).
+   * Usar en formularios donde se necesita la lista completa con buscador en el selector.
+   */
+  listAllForSelect(tenantId?: string, limit = 2000): Observable<UserOption[]> {
+    return this.listWithFilters({
+      tenantId,
+      page: 1,
+      limit,
+    }).pipe(
+      map((res) => {
+        const list = res.data ?? res.users ?? [];
+        return list.map((u) => ({
+          _id: u._id || u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+        }));
+      }),
     );
   }
 
@@ -104,18 +126,15 @@ export class UsersApiService {
           limit: pageSize,
         });
       }),
-      reduce(
-        (acc: User[], res) => acc.concat(res.data ?? res.users ?? []),
-        [] as User[]
-      ),
+      reduce((acc: User[], res) => acc.concat(res.data ?? res.users ?? []), [] as User[]),
       map((users) =>
         users.map((u) => ({
           _id: u._id || u.id,
           name: u.name,
           email: u.email,
           role: u.role,
-        }))
-      )
+        })),
+      ),
     );
   }
 

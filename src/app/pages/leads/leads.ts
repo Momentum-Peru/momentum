@@ -461,9 +461,9 @@ export class LeadsPage implements OnInit {
               // Si falla, no mostrar error (el backend también intentará autocompletar)
               console.warn('No se pudo autocompletar desde APIsPERU:', error);
               return of(null);
-            })
+            }),
           );
-        })
+        }),
       )
       .subscribe((response) => {
         if (!response) return;
@@ -484,7 +484,8 @@ export class LeadsPage implements OnInit {
         if ('nombreCompleto' in response || 'nombres' in response) {
           // Es DNI
           const dniResponse = response as any;
-          const nombreCompleto = dniResponse.nombreCompleto ||
+          const nombreCompleto =
+            dniResponse.nombreCompleto ||
             `${dniResponse.nombres} ${dniResponse.apellidoPaterno} ${dniResponse.apellidoMaterno}`.trim();
 
           // Actualizar ubicación con país Perú
@@ -852,7 +853,7 @@ export class LeadsPage implements OnInit {
   }
 
   getStatusSeverity(
-    status: LeadStatus
+    status: LeadStatus,
   ): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' {
     return this.statusColors[status] || 'info';
   }
@@ -1000,7 +1001,7 @@ export class LeadsPage implements OnInit {
           event.previousContainer.data,
           event.container.data,
           event.previousIndex,
-          event.currentIndex
+          event.currentIndex,
         );
 
         // Llamar a la API
@@ -1010,7 +1011,7 @@ export class LeadsPage implements OnInit {
           severity: 'warn',
           summary: 'Movimiento no permitido',
           detail: `No se puede mover de ${this.getStatusLabel(lead.status)} a ${this.getStatusLabel(
-            targetStatus
+            targetStatus,
           )}`,
         });
       }
@@ -1040,7 +1041,8 @@ export class LeadsPage implements OnInit {
   /**
    * Obtiene el nombre del tipo de seguimiento
    */
-  getFollowUpTypeLabel(type: string): string {
+  getFollowUpTypeLabel(type: string | undefined): string {
+    if (type == null || type === '') return '—';
     const types: Record<string, string> = {
       CALL: 'Llamada',
       EMAIL: 'Email',
@@ -1055,7 +1057,8 @@ export class LeadsPage implements OnInit {
   /**
    * Obtiene el nombre del estado de seguimiento
    */
-  getFollowUpStatusLabel(status: string): string {
+  getFollowUpStatusLabel(status: string | undefined): string {
+    if (status == null || status === '') return '—';
     const statuses: Record<string, string> = {
       SCHEDULED: 'Programado',
       COMPLETED: 'Completado',
@@ -1144,7 +1147,7 @@ export class LeadsPage implements OnInit {
         severity: 'error',
         summary: 'Transición inválida',
         detail: `No se puede cambiar de ${this.getStatusLabel(lead.status)} a ${this.getStatusLabel(
-          newStatus
+          newStatus,
         )}`,
       });
       return;

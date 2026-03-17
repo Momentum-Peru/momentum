@@ -162,6 +162,7 @@ export interface PurchaseOrder {
 export interface CreatePurchaseOrderRequest {
   number?: string;
   providerId: string;
+  createdBy?: string;
   providerName: string;
   providerRuc?: string;
   providerAddress?: string;

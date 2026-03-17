@@ -1,0 +1,462 @@
+<div class="p-4 space-y-4">
+  <p-toast [life]="4000"></p-toast>
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <button
+        pButton
+        type="button"
+        label="Volver a Contactos"
+        icon="pi pi-arrow-left"
+        class="p-button-text mb-2"
+        (click)="goBack()"
+      ></button>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">
+        {{ contact()?.name || 'Contacto' }}
+      </h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        Detalle completo del contacto y sus seguimientos.
+      </p>
+    </div>
+    <div class="flex flex-col sm:flex-row gap-2">
+      <button
+        pButton
+        type="button"
+        label="Nuevo seguimiento rápido"
+        icon="pi pi-plus"
+        (click)="createQuickFollowUp()"
+        aria-label="Crear nuevo seguimiento para este contacto"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Editar contacto"
+        icon="pi pi-pencil"
+        class="p-button-secondary"
+        (click)="openEditContact()"
+        aria-label="Editar datos del contacto"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Ir a Seguimientos"
+        icon="pi pi-external-link"
+        class="p-button-outlined"
+        routerLink="/follow-ups"
+      ></button>
+    </div>
+  </div>
+
+  <!-- Información del contacto -->
+  <p-card>
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-3 px-3 py-2">
+        <div
+          class="h-10 w-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold"
+        >
+          {{ (contact()?.name || '?').charAt(0).toUpperCase() }}
+        </div>
+        <div>
+          <div class="font-semibold text-gray-800 dark:text-gray-100">
+            {{ contact()?.name || 'Sin nombre' }}
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">ID: {{ contact()?._id }}</div>
+        </div>
+      </div>
+    </ng-template>
+    <ng-template pTemplate="content">
+      @if (loadingContact()) {
+        <div class="py-8 text-center text-gray-500 dark:text-gray-400">
+          Cargando información del contacto...
+        </div>
+      } @else if (!contact()) {
+        <div class="py-8 text-center text-gray-500 dark:text-gray-400">
+          No se encontró el contacto.
+        </div>
+      } @else {
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div class="text-xs font-semibold text-gray-500 uppercase mb-1">Datos básicos</div>
+            <div class="space-y-1 text-sm">
+              <div>
+                <span class="font-medium text-gray-700 dark:text-gray-300">Nombre: </span>
+                <span class="text-gray-800 dark:text-gray-100">
+                  {{ contact()?.name || 'Sin nombre' }}
+                </span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700 dark:text-gray-300">Teléfono: </span>
+                <span class="text-gray-800 dark:text-gray-100">
+                  {{ contact()?.phone || contact()?.mobile || '—' }}
+                </span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700 dark:text-gray-300">Email: </span>
+                <span class="text-gray-800 dark:text-gray-100">
+                  {{ contact()?.email || '—' }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-semibold text-gray-500 uppercase mb-1">
+              Relación y seguimiento
+            </div>
+            <div class="space-y-1 text-sm">
+              <div>
+                <span class="font-medium text-gray-700 dark:text-gray-300">Cliente: </span>
+                <span class="text-gray-800 dark:text-gray-100">
+                  {{ contact()?.clientId || '—' }}
+                </span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700 dark:text-gray-300">Principal: </span>
+                <span class="text-gray-800 dark:text-gray-100">
+                  {{ contact()?.isPrimary ? 'Sí' : 'No' }}
+                </span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700 dark:text-gray-300"
+                  >Último seguimiento:
+                </span>
+                <span class="text-gray-800 dark:text-gray-100">
+                  {{
+                    contact()?.lastFollowUpDate
+                      ? (contact()?.lastFollowUpDate | date: 'short')
+                      : '—'
+                  }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </ng-template>
+  </p-card>
+
+  <!-- Seguimientos del contacto -->
+  <p-card>
+    <ng-template pTemplate="header">
+      <div class="flex items-center justify-between gap-2 px-3 py-2">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-calendar-plus text-blue-500"></i>
+          <span class="font-semibold text-gray-800 dark:text-gray-100">
+            Seguimientos de este contacto
+          </span>
+        </div>
+        @if (followUps().length > 0) {
+          <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-300">
+            <span class="inline-flex items-center gap-1">
+              <i class="pi pi-list"></i>
+              {{ followUps().length }} en total
+            </span>
+            <span class="hidden md:inline">•</span>
+            <span class="inline-flex items-center gap-1">
+              <i class="pi pi-clock"></i>
+              Último:
+              {{
+                followUps()[0].scheduledDate || followUps()[0].createdAt | date: 'dd/MM/yyyy HH:mm'
+              }}
+            </span>
+          </div>
+        }
+      </div>
+    </ng-template>
+    <ng-template pTemplate="content">
+      @if (loadingFollowUps()) {
+        <div class="py-8 text-center text-gray-500 dark:text-gray-400">
+          Cargando seguimientos...
+        </div>
+      } @else if (followUps().length === 0) {
+        <div class="py-8 text-center text-gray-500 dark:text-gray-400">
+          No hay seguimientos para este contacto. Puedes crear uno rápido con el botón de arriba.
+        </div>
+      } @else {
+        <p-table
+          [value]="followUps()"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[5, 10, 20]"
+          styleClass="p-datatable-sm"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Título</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+              <th class="text-right">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td class="align-top">
+                <div class="font-medium text-gray-900 dark:text-gray-100">
+                  {{ row.title || 'Seguimiento' }}
+                </div>
+                <div class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+                  Usuario:
+                  <span class="font-medium">{{ getUserName(row.userId) }}</span>
+                  · Tipo:
+                  <span>{{ getTypeLabel(row.type) }}</span>
+                  · Estado:
+                  <span>{{ getStatusLabel(row.status) }}</span>
+                </div>
+                <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 line-clamp-2">
+                  {{ row.description || 'Sin descripción' }}
+                </div>
+                <div
+                  *ngIf="row.outcome"
+                  class="mt-1 text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2"
+                >
+                  <span class="font-semibold">Resultado:</span>
+                  <span class="ml-1">{{ row.outcome }}</span>
+                </div>
+              </td>
+              <td class="align-top">
+                {{ getTypeLabel(row.type) }}
+              </td>
+              <td class="align-top">
+                <p-tag
+                  [value]="getStatusLabel(row.status)"
+                  [severity]="
+                    row.status === 'COMPLETED'
+                      ? 'success'
+                      : row.status === 'SCHEDULED'
+                        ? 'warn'
+                        : 'danger'
+                  "
+                ></p-tag>
+              </td>
+              <td class="align-top">
+                <div class="text-sm text-gray-800 dark:text-gray-100">
+                  {{
+                    row.scheduledDate
+                      ? (row.scheduledDate | date: 'dd/MM/yyyy HH:mm')
+                      : row.createdAt
+                        ? (row.createdAt | date: 'dd/MM/yyyy HH:mm')
+                        : '—'
+                  }}
+                </div>
+              </td>
+              <td class="align-top text-right">
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-pencil"
+                  class="p-button-text p-button-sm"
+                  (click)="openEditFollowUp(row)"
+                  aria-label="Editar seguimiento"
+                ></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+    </ng-template>
+  </p-card>
+
+  <!-- Diálogo edición de contacto -->
+  <p-dialog
+    [visible]="showEditContactDialog()"
+    (visibleChange)="showEditContactDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '32rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    header="Editar contacto"
+  >
+    @if (editingContact()) {
+      <div class="space-y-3 pt-2">
+        <div>
+          <label for="editName" class="block text-sm font-medium text-gray-700 mb-1">
+            Nombre
+          </label>
+          <input id="editName" pInputText class="w-full" [(ngModel)]="editingContact()!.name" />
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label for="editPhone" class="block text-sm font-medium text-gray-700 mb-1">
+              Teléfono
+            </label>
+            <input id="editPhone" pInputText class="w-full" [(ngModel)]="editingContact()!.phone" />
+          </div>
+          <div>
+            <label for="editMobile" class="block text-sm font-medium text-gray-700 mb-1">
+              Móvil
+            </label>
+            <input
+              id="editMobile"
+              pInputText
+              class="w-full"
+              [(ngModel)]="editingContact()!.mobile"
+            />
+          </div>
+        </div>
+        <div>
+          <label for="editEmail" class="block text-sm font-medium text-gray-700 mb-1">
+            Email
+          </label>
+          <input id="editEmail" pInputText class="w-full" [(ngModel)]="editingContact()!.email" />
+        </div>
+        <div>
+          <label for="editNotes" class="block text-sm font-medium text-gray-700 mb-1">
+            Notas
+          </label>
+          <textarea
+            id="editNotes"
+            pTextarea
+            rows="3"
+            class="w-full"
+            [(ngModel)]="editingContact()!.notes"
+          ></textarea>
+        </div>
+      </div>
+    }
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="showEditContactDialog.set(false)"
+      ></button>
+      <button pButton label="Guardar" (click)="saveContact()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo edición de seguimiento -->
+  <p-dialog
+    [visible]="showEditFollowUpDialog()"
+    (visibleChange)="showEditFollowUpDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '36rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    header="Editar seguimiento"
+  >
+    @if (editingFollowUp()) {
+      <div class="space-y-3 pt-2">
+        <div>
+          <label for="editFuTitle" class="block text-sm font-medium text-gray-700 mb-1">
+            Título
+          </label>
+          <input
+            id="editFuTitle"
+            pInputText
+            class="w-full"
+            [ngModel]="editingFollowUp()!.title"
+            (ngModelChange)="onEditFollowUpChange('title', $event)"
+          />
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label for="editFuType" class="block text-sm font-medium text-gray-700 mb-1">
+              Tipo
+            </label>
+            <p-select
+              id="editFuType"
+              [options]="typeOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="editingFollowUp()!.type"
+              (ngModelChange)="onEditFollowUpChange('type', $event)"
+              class="w-full"
+            ></p-select>
+          </div>
+          <div>
+            <label for="editFuStatus" class="block text-sm font-medium text-gray-700 mb-1">
+              Estado
+            </label>
+            <p-select
+              id="editFuStatus"
+              [options]="statusOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="editingFollowUp()!.status"
+              (ngModelChange)="onEditFollowUpChange('status', $event)"
+              class="w-full"
+            ></p-select>
+          </div>
+          <div>
+            <label for="editFuUser" class="block text-sm font-medium text-gray-700 mb-1">
+              Usuario
+            </label>
+            <p-select
+              id="editFuUser"
+              [options]="users()"
+              optionLabel="name"
+              optionValue="_id"
+              [ngModel]="editingFollowUp()!.userId"
+              (ngModelChange)="onEditFollowUpChange('userId', $event)"
+              class="w-full"
+            ></p-select>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label for="editFuDate" class="block text-sm font-medium text-gray-700 mb-1">
+              Fecha programada
+            </label>
+            <p-datepicker
+              id="editFuDate"
+              [ngModel]="getEditScheduledDate()"
+              (ngModelChange)="onEditFollowUpDateChange($event, 'scheduledDate')"
+              [showTime]="true"
+              [hourFormat]="'24'"
+              class="w-full"
+            ></p-datepicker>
+          </div>
+          <div>
+            <label for="editFuNextDate" class="block text-sm font-medium text-gray-700 mb-1">
+              Próximo seguimiento
+            </label>
+            <p-datepicker
+              id="editFuNextDate"
+              [ngModel]="getEditNextFollowUpDate()"
+              (ngModelChange)="onEditFollowUpDateChange($event, 'nextFollowUpDate')"
+              [showTime]="true"
+              [hourFormat]="'24'"
+              class="w-full"
+            ></p-datepicker>
+          </div>
+        </div>
+        <div>
+          <label for="editFuDescription" class="block text-sm font-medium text-gray-700 mb-1">
+            Descripción
+          </label>
+          <textarea
+            id="editFuDescription"
+            pTextarea
+            rows="3"
+            class="w-full"
+            [ngModel]="editingFollowUp()!.description"
+            (ngModelChange)="onEditFollowUpChange('description', $event)"
+          ></textarea>
+        </div>
+        <div>
+          <label for="editFuOutcome" class="block text-sm font-medium text-gray-700 mb-1">
+            Resultado
+          </label>
+          <textarea
+            id="editFuOutcome"
+            pTextarea
+            rows="3"
+            class="w-full"
+            [ngModel]="editingFollowUp()!.outcome"
+            (ngModelChange)="onEditFollowUpChange('outcome', $event)"
+          ></textarea>
+        </div>
+      </div>
+    }
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="showEditFollowUpDialog.set(false)"
+      ></button>
+      <button pButton label="Guardar" (click)="saveFollowUp()"></button>
+    </ng-template>
+  </p-dialog>
+</div>
