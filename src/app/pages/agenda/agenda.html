@@ -65,16 +65,36 @@
           />
         </p-iconfield>
 
-        <!-- Botón Nueva Tarea -->
+        <!-- Botones crear actividad: Texto, Voz, Dibujo -->
         @if (canEdit()) {
-          <button
-            pButton
-            type="button"
-            label="Nueva Tarea"
-            icon="pi pi-plus"
-            class="w-full md:w-auto"
-            (click)="openCreate()"
-          ></button>
+          <div class="flex flex-wrap gap-2 w-full md:w-auto">
+            <button
+              pButton
+              type="button"
+              label="Texto"
+              icon="pi pi-plus"
+              class="flex-1 md:flex-none"
+              (click)="openCreate('text')"
+            ></button>
+            <button
+              pButton
+              type="button"
+              label="Voz"
+              icon="pi pi-microphone"
+              [outlined]="true"
+              class="flex-1 md:flex-none"
+              (click)="openRecordForNewVoice()"
+            ></button>
+            <button
+              pButton
+              type="button"
+              label="Dibujo"
+              icon="pi pi-pencil"
+              [outlined]="true"
+              class="flex-1 md:flex-none"
+              (click)="openCreate('drawing')"
+            ></button>
+          </div>
         }
       </div>
     } @else {
@@ -664,7 +684,7 @@
 <p-dialog
   [(visible)]="showCreateDialog"
   (onHide)="closeCreate()"
-  header="Nueva actividad"
+  [header]="createType() === 'drawing' ? 'Nueva actividad (dibujo)' : 'Nueva actividad (texto)'"
   [modal]="true"
   [dismissableMask]="true"
   [style]="{ width: 'min(90vw, 560px)' }"
@@ -672,18 +692,52 @@
   class="agenda-dialog"
 >
   <div class="space-y-4">
-    <div>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contenido</label>
-      <textarea
-        pTextarea
-        [autoResize]="true"
-        rows="3"
-        class="w-full"
-        placeholder="Descripción de la actividad..."
-        [ngModel]="noteContent()"
-        (ngModelChange)="noteContent.set($event)"
-      ></textarea>
-    </div>
+    @if (createType() === 'text') {
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Contenido</label
+        >
+        <textarea
+          pTextarea
+          [autoResize]="true"
+          rows="3"
+          class="w-full"
+          placeholder="Descripción de la actividad..."
+          [ngModel]="noteContent()"
+          (ngModelChange)="noteContent.set($event)"
+        ></textarea>
+      </div>
+    }
+    @if (createType() === 'drawing') {
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Dibuja tu actividad</label
+        >
+        <div class="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+          <canvas
+            #canvasEl
+            width="512"
+            height="320"
+            class="w-full cursor-crosshair block touch-none"
+            (mousedown)="onCanvasMouseDown($event)"
+            (mousemove)="onCanvasMouseMove($event)"
+            (mouseup)="onCanvasMouseUp()"
+            (mouseleave)="onCanvasMouseLeave()"
+          ></canvas>
+        </div>
+        <div class="flex gap-2 mt-2">
+          <button
+            pButton
+            type="button"
+            label="Limpiar"
+            icon="pi pi-eraser"
+            [outlined]="true"
+            size="small"
+            (click)="clearDrawing()"
+          ></button>
+        </div>
+      </div>
+    }
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asignar a (opcional)</label>
       <p-select
@@ -773,6 +827,51 @@
       <div>
         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Audio</p>
         <audio [src]="url" controls class="w-full max-w-full"></audio>
+      </div>
+    }
+    @if (!editingNoteId()) {
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Asignar a (opcional)</label
+        >
+        <p-select
+          [options]="assigneeOptions()"
+          optionLabel="name"
+          optionValue="id"
+          [ngModel]="createAssignUserId()"
+          (ngModelChange)="createAssignUserId.set($event)"
+          placeholder="Seleccionar responsable"
+          [filter]="true"
+          filterBy="name,email"
+          styleClass="w-full"
+          [appendTo]="'body'"
+          [showClear]="true"
+        >
+          <ng-template #item let-opt>
+            <div class="flex items-center gap-2">
+              <i class="pi pi-user text-gray-400"></i>
+              <span>{{ opt.name || opt.email }}</span>
+              @if (opt.isExternal) {
+                <span class="text-[10px] text-gray-500">(Ext)</span>
+              }
+            </div>
+          </ng-template>
+        </p-select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >Vencimiento</label
+        >
+        <p-datepicker
+          [ngModel]="createDueAt()"
+          (ngModelChange)="createDueAt.set($event)"
+          [showTime]="true"
+          dateFormat="dd/mm/yy"
+          hourFormat="24"
+          [appendTo]="'body'"
+          styleClass="w-full"
+          placeholder="Opcional"
+        ></p-datepicker>
       </div>
     }
   </div>

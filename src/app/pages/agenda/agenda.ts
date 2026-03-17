@@ -36,7 +36,7 @@ import { AuthService } from '../login/services/auth.service';
 import { MenuService } from '../../shared/services/menu.service';
 import { TenantService } from '../../core/services/tenant.service';
 import { Router, ActivatedRoute } from '@angular/router';
-import { firstValueFrom, of, timer } from 'rxjs';
+import { firstValueFrom, of, timer, from, forkJoin } from 'rxjs';
 import { tap, map, catchError, finalize, switchMap } from 'rxjs/operators';
 import { ContactsService, Contact } from '../../shared/services/contacts.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
@@ -239,7 +239,6 @@ export class AgendaPage implements OnInit {
   showCreateDialog = signal(false);
   /** Usuario a asignar al crear una nueva nota (texto, voz o dibujo). */
   createAssignUserId = signal<string | null>(null);
-  selectedType = signal<AgendaNoteType | null>(null);
   showDetailDialog = signal(false);
   saving = signal(false);
   recording = signal(false);
@@ -557,15 +556,23 @@ export class AgendaPage implements OnInit {
     });
   }
 
-  openCreate(): void {
+  /** Tipo de nota a crear: 'text' o 'drawing'. */
+  createType = signal<AgendaNoteType>('text');
+
+  openCreate(type: AgendaNoteType = 'text'): void {
+    this.createType.set(type);
     this.clearCreateFields();
     this.createAssignUserId.set(null);
+    this.pendingDrawingDataUrl.set(null);
     this.showCreateDialog.set(true);
   }
 
   canCreateNote = computed(() => {
-    const content = this.noteContent().trim();
-    return content.length > 0;
+    const type = this.createType();
+    if (type === 'drawing') {
+      return this.pendingDrawingDataUrl() != null;
+    }
+    return this.noteContent().trim().length > 0;
   });
 
   closeCreate(): void {
@@ -589,12 +596,23 @@ export class AgendaPage implements OnInit {
   }
 
   saveNote(): void {
+    const type = this.createType();
     const content = this.noteContent().trim();
-    if (!content) {
+    const drawingDataUrl = this.pendingDrawingDataUrl();
+
+    if (type === 'text' && !content) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Datos incompletos',
         detail: 'Escribe el contenido de la actividad.',
+      });
+      return;
+    }
+    if (type === 'drawing' && !drawingDataUrl) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Datos incompletos',
+        detail: 'Dibuja algo antes de guardar.',
       });
       return;
     }
@@ -604,6 +622,101 @@ export class AgendaPage implements OnInit {
     const assigneeId = this.createAssignUserId();
     const pendingContact = this.pendingContactAssignment();
 
+    const doAssign = (note: AgendaNote) => {
+      const userIds: string[] = [];
+      const externalContacts: { name: string; email: string; phone?: string }[] = [];
+      if (assigneeId && !assigneeId.startsWith('ext_')) userIds.push(assigneeId);
+      if (assigneeId?.startsWith('ext_')) {
+        const contactId = assigneeId.split('_')[1];
+        const contact = this.globalContacts().find((c) => c._id === contactId);
+        if (contact) {
+          externalContacts.push({
+            name: contact.name,
+            email: contact.email ?? '',
+            phone: contact.phone,
+          });
+        }
+      }
+      if (pendingContact) {
+        externalContacts.push({
+          name: pendingContact.name,
+          email: pendingContact.email ?? '',
+          phone: pendingContact.phone,
+        });
+      }
+      if (userIds.length > 0 || externalContacts.length > 0) {
+        return this.agendaApi.assign(note._id, {
+          userIds,
+          dueAt: dueAtIso,
+          externalContacts: externalContacts.length > 0 ? externalContacts : undefined,
+        });
+      }
+      return of(note);
+    };
+
+    if (type === 'drawing' && drawingDataUrl) {
+      this.agendaApi
+        .create({
+          type: 'drawing',
+          content: 'Dibujo',
+          status: 'pendiente',
+          dueAt: dueAtIso ?? undefined,
+        })
+        .pipe(
+          switchMap((note) =>
+            from(
+              this.dataUrlToBlob(drawingDataUrl).then((blob) => {
+                const file = new File(
+                  [blob],
+                  `dibujo-${Date.now()}.png`,
+                  { type: 'image/png' },
+                );
+                return firstValueFrom(
+                  this.agendaApi.generateDrawingPresignedUrl(
+                    note._id,
+                    file.name,
+                    file.type,
+                    3600,
+                  ),
+                ).then((res) =>
+                  this.agendaApi
+                    .uploadFileToS3(res.presignedUrl, file, file.type)
+                    .then(() =>
+                      firstValueFrom(
+                        this.agendaApi.confirmDrawingUpload(note._id, res.publicUrl),
+                      ),
+                    )
+                    .then(() => note),
+                );
+              }),
+            ),
+          ),
+          switchMap((note) => doAssign(note)),
+        )
+        .subscribe({
+          next: (note) => {
+            this.notes.update((prev) => [note, ...prev]);
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Dibujo creado',
+              detail: 'La actividad se creó correctamente.',
+            });
+            this.closeCreate();
+          },
+          error: (err: unknown) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail:
+                (err as { error?: { message?: string } })?.error?.message ??
+                'No se pudo crear la actividad',
+            });
+          },
+        })
+        .add(() => this.saving.set(false));
+      return;
+    }
+
     this.agendaApi
       .create({
         type: 'text',
@@ -611,43 +724,7 @@ export class AgendaPage implements OnInit {
         status: 'pendiente',
         dueAt: dueAtIso ?? undefined,
       })
-      .pipe(
-        switchMap((note) => {
-          const userIds: string[] = [];
-          const externalContacts: { name: string; email: string; phone?: string }[] = [];
-
-          if (assigneeId && !assigneeId.startsWith('ext_')) {
-            userIds.push(assigneeId);
-          }
-          if (assigneeId?.startsWith('ext_')) {
-            const contactId = assigneeId.split('_')[1];
-            const contact = this.globalContacts().find((c) => c._id === contactId);
-            if (contact) {
-              externalContacts.push({
-                name: contact.name,
-                email: contact.email ?? '',
-                phone: contact.phone,
-              });
-            }
-          }
-          if (pendingContact) {
-            externalContacts.push({
-              name: pendingContact.name,
-              email: pendingContact.email ?? '',
-              phone: pendingContact.phone,
-            });
-          }
-
-          if (userIds.length > 0 || externalContacts.length > 0) {
-            return this.agendaApi.assign(note._id, {
-              userIds,
-              dueAt: dueAtIso,
-              externalContacts: externalContacts.length > 0 ? externalContacts : undefined,
-            });
-          }
-          return of(note);
-        }),
-      )
+      .pipe(switchMap((note) => doAssign(note)))
       .subscribe({
         next: (note) => {
           this.notes.update((prev) => [note, ...prev]);
@@ -1171,14 +1248,180 @@ export class AgendaPage implements OnInit {
     this.drawingViewerUrl.set(null);
   }
 
-  /** La agenda usa solo tareas. Voz/dibujo no disponibles. */
+  /** Guarda la nota de voz: crea nueva o actualiza existente. */
   saveFromVoiceModal(): void {
-    this.closeVoiceConfirmModal();
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Actividad',
-      detail: 'Usa "Nueva actividad" para crear tareas.',
-    });
+    const content = this.noteContent().trim();
+    const voiceFile = this.pendingVoiceFile();
+    const noteId = this.editingNoteId();
+
+    if (!content && !voiceFile) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Datos incompletos',
+        detail: 'Transcripción o audio requerido.',
+      });
+      return;
+    }
+
+    this.saving.set(true);
+    const dueAtIso = this.createDueAt()?.toISOString();
+    const assigneeId = this.createAssignUserId();
+    const pendingContact = this.pendingContactAssignment();
+
+    if (noteId) {
+      this.agendaApi
+        .update(noteId, { content: content || undefined })
+        .pipe(
+          switchMap((updated) => {
+            this.notes.update((list) =>
+              list.map((n) => (n._id === updated._id ? updated : n)),
+            );
+            if (voiceFile) {
+              return from(this.uploadVoiceFileToNote(noteId, voiceFile)).pipe(
+                switchMap(() =>
+                  this.agendaApi.getById(noteId),
+                ),
+              );
+            }
+            return of(updated);
+          }),
+          switchMap((note) => {
+            const oldUrls = this.editingNoteVoiceUrls();
+            if (oldUrls.length === 0) return of(note);
+            return forkJoin(
+              oldUrls.map((url) => this.agendaApi.removeVoice(noteId, url)),
+            ).pipe(
+              map((results) => (results.length > 0 ? results[results.length - 1] : note)),
+              catchError(() => of(note)),
+            );
+          }),
+          switchMap((note) => {
+            const userIds: string[] = [];
+            const externalContacts: { name: string; email: string; phone?: string }[] = [];
+            if (assigneeId && !assigneeId.startsWith('ext_')) userIds.push(assigneeId);
+            if (assigneeId?.startsWith('ext_')) {
+              const contactId = assigneeId.split('_')[1];
+              const contact = this.globalContacts().find((c) => c._id === contactId);
+              if (contact) {
+                externalContacts.push({
+                  name: contact.name,
+                  email: contact.email ?? '',
+                  phone: contact.phone,
+                });
+              }
+            }
+            if (pendingContact) {
+              externalContacts.push({
+                name: pendingContact.name,
+                email: pendingContact.email ?? '',
+                phone: pendingContact.phone,
+              });
+            }
+            if (userIds.length > 0 || externalContacts.length > 0) {
+              return this.agendaApi.assign(note._id, {
+                userIds,
+                dueAt: dueAtIso,
+                externalContacts: externalContacts.length > 0 ? externalContacts : undefined,
+              });
+            }
+            return of(note);
+          }),
+        )
+        .subscribe({
+          next: (note) => {
+            this.notes.update((list) =>
+              list.map((n) => (n._id === note._id ? note : n)),
+            );
+            this.currentNote.set(note);
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Nota de voz actualizada',
+              detail: 'Cambios guardados correctamente.',
+            });
+            this.closeVoiceConfirmModal();
+          },
+          error: (err: unknown) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail:
+                (err as { error?: { message?: string } })?.error?.message ??
+                'No se pudo guardar',
+            });
+          },
+        })
+        .add(() => this.saving.set(false));
+    } else {
+      this.agendaApi
+        .create({
+          type: 'voice',
+          content: content || 'Nota de voz',
+          status: 'pendiente',
+          dueAt: dueAtIso ?? undefined,
+        })
+        .pipe(
+          switchMap((note) => {
+            if (voiceFile) {
+              return from(this.uploadVoiceFileToNote(note._id, voiceFile)).pipe(
+                switchMap(() => this.agendaApi.getById(note._id)),
+              );
+            }
+            return of(note);
+          }),
+          switchMap((note) => {
+            const userIds: string[] = [];
+            const externalContacts: { name: string; email: string; phone?: string }[] = [];
+            if (assigneeId && !assigneeId.startsWith('ext_')) userIds.push(assigneeId);
+            if (assigneeId?.startsWith('ext_')) {
+              const contactId = assigneeId.split('_')[1];
+              const contact = this.globalContacts().find((c) => c._id === contactId);
+              if (contact) {
+                externalContacts.push({
+                  name: contact.name,
+                  email: contact.email ?? '',
+                  phone: contact.phone,
+                });
+              }
+            }
+            if (pendingContact) {
+              externalContacts.push({
+                name: pendingContact.name,
+                email: pendingContact.email ?? '',
+                phone: pendingContact.phone,
+              });
+            }
+            if (userIds.length > 0 || externalContacts.length > 0) {
+              return this.agendaApi.assign(note._id, {
+                userIds,
+                dueAt: dueAtIso,
+                externalContacts: externalContacts.length > 0 ? externalContacts : undefined,
+              });
+            }
+            return of(note);
+          }),
+        )
+        .subscribe({
+          next: (note) => {
+            this.notes.update((prev) => [note, ...prev]);
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Nota de voz creada',
+              detail: 'La actividad se creó correctamente.',
+            });
+            this.closeVoiceConfirmModal();
+          },
+          error: (err: unknown) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail:
+                (err as { error?: { message?: string } })?.error?.message ??
+                'No se pudo crear la actividad',
+            });
+          },
+        })
+        .add(() => this.saving.set(false));
+    }
   }
 
   private async uploadVoiceFileToNote(noteId: string, voiceFile: File): Promise<void> {
@@ -1482,6 +1725,20 @@ export class AgendaPage implements OnInit {
     this.editingNoteVoiceUrls.set(note.voiceUrl ?? []);
     this.noteContent.set(note.content ?? '');
     this.showDetailDialog.set(false);
+    this.showVoiceRerecordDialog.set(true);
+    setTimeout(() => this.startRecording(), 300);
+  }
+
+  /** Abre el flujo para grabar una nueva nota de voz (crear desde cero). */
+  openRecordForNewVoice(): void {
+    this.editingNoteId.set(null);
+    this.editingNoteVoiceUrls.set([]);
+    this.noteContent.set('');
+    this.pendingVoiceFile.set(null);
+    this.createAssignUserId.set(null);
+    this.createDueAt.set(null);
+    this.pendingContactAssignment.set(null);
+    this.showCreateDialog.set(false);
     this.showVoiceRerecordDialog.set(true);
     setTimeout(() => this.startRecording(), 300);
   }
