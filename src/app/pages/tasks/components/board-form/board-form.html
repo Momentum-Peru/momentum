@@ -35,11 +35,36 @@
       name="description"
       placeholder="Descripción del tablero (opcional)"
       class="w-full"
-      rows="4"
+      rows="3"
       maxlength="1000"
     ></textarea>
     <small class="text-gray-500 dark:text-gray-400">
       {{ (formData.description || '').length }}/1000 caracteres
+    </small>
+  </div>
+
+  <!-- Selector de área -->
+  <div>
+    <label
+      for="boardArea"
+      class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+    >
+      Área
+    </label>
+    <p-select
+      id="boardArea"
+      [(ngModel)]="formData.areaId"
+      name="areaId"
+      [options]="areaOptions"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Selecciona un área (opcional)"
+      [showClear]="true"
+      styleClass="w-full"
+      appendTo="body"
+    ></p-select>
+    <small class="text-gray-500 dark:text-gray-400">
+      El área organiza este tablero dentro de un departamento
     </small>
   </div>
 
@@ -58,4 +83,3 @@
     ></p-button>
   </div>
 </form>
-

@@ -52,45 +52,33 @@
   <!-- Items del menú -->
   <div class="flex-1 min-h-0 overflow-y-auto flex flex-col space-y-1 p-2 pb-24">
     @if (isLoadingPermissions()) {
-    <!-- Estado de carga -->
-    <div class="text-center py-8">
-      <i class="pi pi-spin pi-spinner text-4xl text-gray-400 mb-3"></i>
-      <p class="text-gray-300 text-sm">Cargando permisos...</p>
-    </div>
+      <div class="text-center py-8">
+        <i class="pi pi-spin pi-spinner text-4xl text-gray-400 mb-3"></i>
+        <p class="text-gray-300 text-sm">Cargando permisos...</p>
+      </div>
     } @else if (hasAnyPermission()) {
-    <!-- Items directos (sin submenús) -->
-    @for (item of directMenuItems(); track getRouterLink(item) || item.label) {
-    <a
-      [routerLink]="getRouterLink(item)"
-      routerLinkActive="menu-item-active"
-      [routerLinkActiveOptions]="{ exact: false }"
-      class="menu-item-link flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-white"
-      (click)="closeMenu()"
-    >
-      <i [class]="item.icon + ' text-lg transition-transform duration-200 menu-item-icon'"></i>
-      <span class="font-medium menu-item-text">{{ item.label }}</span>
-      @if (getRouterLink(item) && isActiveRoute(getRouterLink(item))) {
-      <i class="pi pi-check ml-auto text-sm"></i>
+      @for (item of sidebarItems(); track item.routerLink) {
+        <a
+          [routerLink]="item.routerLink"
+          class="menu-item-link flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-white"
+          [class.menu-item-active]="item.isHub ? isGroupActive(item.hubKey) : isActiveRoute(item.routerLink)"
+          [routerLinkActive]="item.isHub ? '' : 'menu-item-active'"
+          [routerLinkActiveOptions]="{ exact: item.routerLink === '/dashboard' }"
+          (click)="closeMenu()"
+        >
+          <i [class]="item.icon + ' text-lg transition-transform duration-200 menu-item-icon'"></i>
+          <span class="font-medium menu-item-text">{{ item.label }}</span>
+          @if (item.isHub) {
+            <i class="pi pi-angle-right ml-auto text-xs opacity-50"></i>
+          }
+        </a>
       }
-    </a>
-    }
-
-    <!-- PanelMenu de PrimeNG con submenús -->
-    @if (submenuItems().length > 0) {
-    <div class="w-full">
-      <p-panelMenu
-        [model]="submenuItems()"
-        [styleClass]="'custom-panelmenu'"
-        [multiple]="false"
-        (onPanelToggle)="onPanelToggle()"
-      ></p-panelMenu>
-    </div>
-    } } @else {
-    <div class="text-center py-8">
-      <i class="pi pi-lock text-4xl text-gray-400 mb-3"></i>
-      <p class="text-gray-300 text-sm">Sin permisos de acceso</p>
-      <p class="text-gray-400 text-xs mt-1">Contacta al administrador</p>
-    </div>
+    } @else {
+      <div class="text-center py-8">
+        <i class="pi pi-lock text-4xl text-gray-400 mb-3"></i>
+        <p class="text-gray-300 text-sm">Sin permisos de acceso</p>
+        <p class="text-gray-400 text-xs mt-1">Contacta al administrador</p>
+      </div>
     }
   </div>
 

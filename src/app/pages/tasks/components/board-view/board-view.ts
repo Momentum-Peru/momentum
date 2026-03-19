@@ -55,6 +55,7 @@ import {
 })
 export class BoardViewComponent implements OnInit {
   @Input({ required: true }) board!: Board;
+  @Input() areaName: string | null = null;
   @Input() isOwner = false;
   @Input() canInvite = false;
   @Input() pendingInvitationsCount = 0;

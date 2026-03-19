@@ -216,6 +216,23 @@
         </div>
       </div>
     </div>
+    <!-- Botón regresar al hub padre -->
+    @if (parentHub(); as hub) {
+    <div class="px-2 sm:px-4 lg:px-6 xl:px-10 mb-3">
+      <button
+        type="button"
+        (click)="goToParentHub()"
+        class="group inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:-translate-x-1 hover:shadow-md"
+        [style.background]="hub.colorLight"
+        [style.color]="hub.colorPrimary"
+      >
+        <i class="pi pi-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
+        <i [class]="hub.icon + ' text-sm'"></i>
+        <span>{{ hub.label }}</span>
+      </button>
+    </div>
+    }
+
     <!-- Contenido de la página -->
     <div class="pt-0 flex-1 overflow-y-auto overflow-x-hidden">
       <router-outlet />

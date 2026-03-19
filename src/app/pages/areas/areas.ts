@@ -235,8 +235,8 @@ export class AreasPage implements OnInit {
       // Actualizar
       const updateData: UpdateAreaRequest = {
         nombre: item.nombre,
-        codigo: item.codigo || undefined,
-        descripcion: item.descripcion || undefined,
+        codigo: item.codigo ?? '',
+        descripcion: item.descripcion ?? '',
         isActive: item.isActive,
       };
 

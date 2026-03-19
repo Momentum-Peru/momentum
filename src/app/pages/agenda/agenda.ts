@@ -7,6 +7,7 @@ import {
   ViewChild,
   ElementRef,
   effect,
+  HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -301,9 +302,26 @@ export class AgendaPage implements OnInit {
 
   // --- Inline Editing State ---
   inlineEditingId = signal<string | null>(null);
+  inlineEditingNote = signal<AgendaNote | null>(null);
   inlineEditContent = signal('');
   inlineEditDueAt = signal<Date | null>(null);
   inlineEditStatus = signal<AgendaNoteStatus>('pendiente');
+
+  @HostListener('document:mousedown', ['$event'])
+  onDocumentMouseDown(event: MouseEvent): void {
+    if (!this.inlineEditingId()) return;
+    const target = event.target as HTMLElement;
+    // Dentro del propio row de edición
+    if (target.closest('[data-inline-edit]')) return;
+    // Dentro de un portal PrimeNG (overlay, select, datepicker) anclado al body
+    let el: Element | null = target;
+    while (el && el.parentElement !== document.body) {
+      el = el.parentElement;
+    }
+    if (el && (el.hasAttribute('data-pc-name') || el.classList.contains('p-overlay') || el.classList.contains('p-component'))) return;
+    const note = this.inlineEditingNote();
+    if (note) this.saveInlineEdit(note);
+  }
 
   // Sharing Modal
   showShareModal = signal(false);
@@ -317,12 +335,116 @@ export class AgendaPage implements OnInit {
 
   @ViewChild('canvasEl') canvasRef?: ElementRef<HTMLCanvasElement>;
 
-  /** Solo Actividades; Reuniones está en /meetings (Mi espacio > Reuniones) */
-  tabs: { label: string; value: string; icon: string }[] = [
-    { label: 'Actividades', value: 'activities', icon: 'pi pi-list' },
+  /** Usuarios ordenados para los botones de selección (sin transformar el nombre). */
+  agendaUserButtons = computed(() => {
+    const raw = this.userOptions();
+    const currentUserId = this.authService.getCurrentUser()?.id;
+
+    const uniqueMap = new Map<string, UserOption>();
+    raw.forEach((u) => { if (!uniqueMap.has(u._id)) uniqueMap.set(u._id, u); });
+
+    return Array.from(uniqueMap.values()).sort((a, b) => {
+      if (a._id === currentUserId) return -1;
+      if (b._id === currentUserId) return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  });
+
+  getInitials(name: string): string {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  }
+
+  private readonly AVATAR_COLORS = [
+    { bg: 'bg-violet-500', border: 'border-violet-500', hex: '#8b5cf6' },
+    { bg: 'bg-blue-500',   border: 'border-blue-500',   hex: '#3b82f6' },
+    { bg: 'bg-emerald-500',border: 'border-emerald-500',hex: '#10b981' },
+    { bg: 'bg-amber-500',  border: 'border-amber-500',  hex: '#f59e0b' },
+    { bg: 'bg-rose-500',   border: 'border-rose-500',   hex: '#f43f5e' },
+    { bg: 'bg-cyan-500',   border: 'border-cyan-500',   hex: '#06b6d4' },
+    { bg: 'bg-orange-500', border: 'border-orange-500', hex: '#f97316' },
+    { bg: 'bg-teal-500',   border: 'border-teal-500',   hex: '#14b8a6' },
   ];
 
-  activeTab = signal<string>('activities');
+  private getUserColorIndex(userId: string): number {
+    const hash = userId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return hash % this.AVATAR_COLORS.length;
+  }
+
+  getUserAvatarBg(userId: string): string {
+    return this.AVATAR_COLORS[this.getUserColorIndex(userId)].bg;
+  }
+
+  getUserAvatarBorder(userId: string): string {
+    return this.AVATAR_COLORS[this.getUserColorIndex(userId)].border;
+  }
+
+  /** Todas las notas del tenant, cargadas al inicio solo para calcular contadores por usuario. */
+  allNotesForCounts = signal<AgendaNote[]>([]);
+
+  /** Conteo de notas por creador (createdBy), que es el mismo filtro que usa la API al seleccionar un usuario. */
+  userNoteCounts = computed((): Record<string, number> => {
+    const counts: Record<string, number> = {};
+    this.allNotesForCounts().forEach((note) => {
+      const cb = note.createdBy;
+      const creatorId = typeof cb === 'string' ? cb : (cb as AgendaNoteUser)?._id;
+      if (creatorId) counts[creatorId] = (counts[creatorId] || 0) + 1;
+    });
+    return counts;
+  });
+
+  selectUserToggle(userId: string): void {
+    if (this.selectedUserId() === userId) {
+      this.selectUser(null);
+    } else {
+      this.selectUser(userId);
+    }
+  }
+
+  tabs: { label: string; value: string; icon: string; activeClass: string; inactiveClass: string; badgeActiveClass: string; badgeInactiveClass: string }[] = [
+    {
+      label: 'Todas', value: 'all', icon: 'pi pi-list',
+      activeClass: 'bg-black text-white shadow-md',
+      inactiveClass: 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700',
+      badgeActiveClass: 'bg-white/25 text-white',
+      badgeInactiveClass: 'bg-gray-100 dark:bg-gray-700 text-gray-500',
+    },
+    {
+      label: 'Pendiente', value: 'pendiente', icon: 'pi pi-clock',
+      activeClass: 'bg-amber-500 text-white shadow-md shadow-amber-200 dark:shadow-amber-900',
+      inactiveClass: 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700',
+      badgeActiveClass: 'bg-white/30 text-white',
+      badgeInactiveClass: 'bg-gray-100 dark:bg-gray-700 text-gray-500',
+    },
+    {
+      label: 'En curso', value: 'en_proceso', icon: 'pi pi-sync',
+      activeClass: 'bg-blue-500 text-white shadow-md shadow-blue-200 dark:shadow-blue-900',
+      inactiveClass: 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700',
+      badgeActiveClass: 'bg-white/30 text-white',
+      badgeInactiveClass: 'bg-gray-100 dark:bg-gray-700 text-gray-500',
+    },
+    {
+      label: 'Terminada', value: 'terminado', icon: 'pi pi-check-circle',
+      activeClass: 'bg-emerald-500 text-white shadow-md shadow-emerald-200 dark:shadow-emerald-900',
+      inactiveClass: 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700',
+      badgeActiveClass: 'bg-white/30 text-white',
+      badgeInactiveClass: 'bg-gray-100 dark:bg-gray-700 text-gray-500',
+    },
+  ];
+
+  activeTab = signal<string>('all');
+
+  tabCounts = computed((): Record<string, number> => {
+    const notes = this.notes();
+    return {
+      all: notes.length,
+      pendiente: notes.filter((n) => n.status === 'pendiente').length,
+      en_proceso: notes.filter((n) => n.status === 'en_proceso').length,
+      terminado: notes.filter((n) => n.status === 'terminado').length,
+    };
+  });
 
   searchQuery = signal('');
 
@@ -382,16 +504,17 @@ export class AgendaPage implements OnInit {
    * Incluye un grupo para "Sin Asignar".
    */
   groupedActivities = computed(() => {
-    if (this.activeTab() !== 'activities' || !this.authService.isGerencia()) return [];
+    if (!this.authService.isGerencia()) return [];
     if (this.selectedUserId()) return [];
 
     const allNotes = this.notes();
     const users = this.userOptions();
     const query = this.searchQuery().toLowerCase().trim();
+    const tab = this.activeTab();
 
-    let filtered = allNotes;
+    let filtered = tab !== 'all' ? allNotes.filter((n) => n.status === tab) : allNotes.filter((n) => n.status !== 'terminado');
     if (query) {
-      filtered = allNotes.filter((n) => n.content?.toLowerCase().includes(query));
+      filtered = filtered.filter((n) => n.content?.toLowerCase().includes(query));
     }
 
     const groups = new Map<string, AgendaNote[]>();
@@ -444,15 +567,17 @@ export class AgendaPage implements OnInit {
    * Vista Simple para Empleados (o cuando se filtra por usuario en Gerencia).
    */
   flatActivities = computed(() => {
-    if (this.activeTab() !== 'activities') return [];
     const isGerencia = this.authService.isGerencia();
     if (isGerencia && !this.selectedUserId()) return [];
 
     const allNotes = this.notes();
     const query = this.searchQuery().toLowerCase().trim();
-    let list = query
-      ? allNotes.filter((n) => n.content?.toLowerCase().includes(query))
-      : [...allNotes];
+    const tab = this.activeTab();
+
+    let list = tab !== 'all' ? allNotes.filter((n) => n.status === tab) : allNotes.filter((n) => n.status !== 'terminado');
+    if (query) {
+      list = list.filter((n) => n.content?.toLowerCase().includes(query));
+    }
 
     return list.sort((a, b) => {
       const t1 = new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
@@ -476,6 +601,7 @@ export class AgendaPage implements OnInit {
 
   ngOnInit(): void {
     this.loadNotes();
+    this.loadAllNotesForCounts();
     this.loadUsers();
     this.loadSharedWithMe();
     this.loadGlobalContacts();
@@ -522,6 +648,14 @@ export class AgendaPage implements OnInit {
         },
       })
       .add(() => this.loading.set(false));
+  }
+
+  /** Carga todas las notas del tenant (sin filtro de usuario) para calcular contadores. */
+  loadAllNotesForCounts(): void {
+    this.agendaApi.list({ forUser: true }).subscribe({
+      next: (notes) => this.allNotesForCounts.set(notes),
+      error: () => {},
+    });
   }
 
   private buildAgendaFilters(): import('../../shared/services/agenda-api.service').AgendaListFilters {
@@ -811,6 +945,7 @@ export class AgendaPage implements OnInit {
       this.agendaApi.assign(note._id, { userIds: [] }).subscribe({
         next: () => {
           this.loadNotes();
+          this.loadAllNotesForCounts();
           this.messageService.add({
             severity: 'success',
             summary: 'Asignado',
@@ -949,6 +1084,7 @@ export class AgendaPage implements OnInit {
         const ok = results.filter(Boolean).length;
         const fail = results.length - ok;
         this.loadNotes();
+        this.loadAllNotesForCounts();
         this.closeAssignModal();
         if (ids.length > 1) {
           this.clearSelection();
@@ -1533,6 +1669,7 @@ export class AgendaPage implements OnInit {
 
   startInlineEdit(note: AgendaNote): void {
     this.inlineEditingId.set(note._id);
+    this.inlineEditingNote.set(note);
     this.inlineEditContent.set(this.getContentSummary(note));
     const due = this.getDueDate(note);
     this.inlineEditDueAt.set(due ? new Date(due) : null);
@@ -1541,12 +1678,24 @@ export class AgendaPage implements OnInit {
 
   cancelInlineEdit(): void {
     this.inlineEditingId.set(null);
+    this.inlineEditingNote.set(null);
     this.inlineEditContent.set('');
     this.inlineEditDueAt.set(null);
     this.inlineEditStatus.set('pendiente');
   }
 
+  onInlineStatusChange(note: AgendaNote, value: AgendaNoteStatus): void {
+    this.inlineEditStatus.set(value);
+    this.saveInlineEdit(note);
+  }
+
+  onInlineDateChange(note: AgendaNote, value: Date | null): void {
+    this.inlineEditDueAt.set(value);
+    this.saveInlineEdit(note);
+  }
+
   saveInlineEdit(note: AgendaNote): void {
+    if (this.inlineEditingId() !== note._id) return; // evitar doble guardado
     const content = this.inlineEditContent().trim();
     const dueAt = this.inlineEditDueAt()?.toISOString();
     const status = this.inlineEditStatus();
@@ -1832,6 +1981,7 @@ export class AgendaPage implements OnInit {
         this.agendaApi.delete(note._id).subscribe({
           next: () => {
             this.loadNotes();
+            this.loadAllNotesForCounts();
             if (this.currentNote()?._id === note._id) {
               this.showDetailDialog.set(false);
               this.currentNote.set(null);

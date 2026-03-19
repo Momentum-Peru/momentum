@@ -14,6 +14,27 @@ export interface RouteConfig {
   canActivate?: string[];
 }
 
+export interface HubSectionItem {
+  label: string;
+  icon: string;
+  routerLink: string;
+  description?: string;
+}
+
+export interface HubSection {
+  key: string;
+  label: string;
+  icon: string;
+  description: string;
+  hubPath: string;
+  colorFrom: string;
+  colorTo: string;
+  colorPrimary: string;
+  colorLight: string;
+  relatedRoutes: string[];
+  items: HubSectionItem[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -405,5 +426,175 @@ export class MenuConfigService {
       this.routesConfig.push(config);
       this.routesConfig.sort((a, b) => a.path.localeCompare(b.path));
     }
+  }
+
+  private readonly hubSections: HubSection[] = [
+    {
+      key: 'mi-espacio',
+      label: 'Mi espacio',
+      icon: 'pi pi-briefcase',
+      description: 'Tu espacio personal de trabajo y productividad',
+      hubPath: '/hub/mi-espacio',
+      colorFrom: '#1D4ED8',
+      colorTo: '#1E3A8A',
+      colorPrimary: '#3B82F6',
+      colorLight: '#DBEAFE',
+      relatedRoutes: ['/tasks', '/agenda', '/meetings', '/contacts', '/daily-reports', '/time-tracking'],
+      items: [
+        { label: 'Tareas', icon: 'pi pi-check-square', routerLink: '/tasks', description: 'Gestiona tus tareas pendientes' },
+        { label: 'Mi agenda', icon: 'pi pi-book', routerLink: '/agenda', description: 'Organiza tu calendario' },
+        { label: 'Reuniones', icon: 'pi pi-video', routerLink: '/meetings', description: 'Gestiona tus reuniones' },
+        { label: 'Mis contactos', icon: 'pi pi-address-book', routerLink: '/contacts', description: 'Tu libreta de contactos' },
+        { label: 'Reportes diarios', icon: 'pi pi-calendar', routerLink: '/daily-reports', description: 'Reportes de actividades' },
+        { label: 'Marcación de hora', icon: 'pi pi-clock', routerLink: '/time-tracking', description: 'Control de asistencia' },
+      ],
+    },
+    {
+      key: 'ventas',
+      label: 'Ventas',
+      icon: 'pi pi-dollar',
+      description: 'Gestión del pipeline de ventas y seguimiento comercial',
+      hubPath: '/hub/ventas',
+      colorFrom: '#047857',
+      colorTo: '#065F46',
+      colorPrimary: '#10B981',
+      colorLight: '#D1FAE5',
+      relatedRoutes: ['/projects/dashboard', '/requirements', '/quotes', '/tdrs', '/orders'],
+      items: [
+        { label: 'Dashboard', icon: 'pi pi-chart-line', routerLink: '/projects/dashboard', description: 'Métricas de ventas' },
+        { label: 'Requerimientos', icon: 'pi pi-inbox', routerLink: '/requirements', description: 'Solicitudes de clientes' },
+        { label: 'Cotizaciones', icon: 'pi pi-dollar', routerLink: '/quotes', description: 'Propuestas económicas' },
+        { label: 'TDRs', icon: 'pi pi-file', routerLink: '/tdrs', description: 'Términos de referencia' },
+        { label: 'Órdenes', icon: 'pi pi-shopping-cart', routerLink: '/orders', description: 'Órdenes de venta' },
+      ],
+    },
+    {
+      key: 'ingenieria',
+      label: 'Ingeniería',
+      icon: 'pi pi-cog',
+      description: 'Documentación técnica y gestión de proyectos de ingeniería',
+      hubPath: '/hub/ingenieria',
+      colorFrom: '#6D28D9',
+      colorTo: '#4C1D95',
+      colorPrimary: '#8B5CF6',
+      colorLight: '#EDE9FE',
+      relatedRoutes: ['/engineering'],
+      items: [
+        { label: 'Documentación', icon: 'pi pi-file-edit', routerLink: '/engineering', description: 'Documentos técnicos' },
+      ],
+    },
+    {
+      key: 'administracion',
+      label: 'Administración',
+      icon: 'pi pi-building',
+      description: 'Gestión administrativa y financiera de la empresa',
+      hubPath: '/hub/administracion',
+      colorFrom: '#B45309',
+      colorTo: '#92400E',
+      colorPrimary: '#F59E0B',
+      colorLight: '#FEF3C7',
+      relatedRoutes: ['/clients', '/documents', '/material-requests', '/petty-cash'],
+      items: [
+        { label: 'Clientes', icon: 'pi pi-briefcase', routerLink: '/clients', description: 'Gestión de clientes' },
+        { label: 'Ventas', icon: 'pi pi-dollar', routerLink: '/documents/ventas', description: 'Documentos de venta' },
+        { label: 'Compras', icon: 'pi pi-shopping-cart', routerLink: '/documents/compras', description: 'Documentos de compra' },
+        { label: 'Solicitudes de materiales', icon: 'pi pi-shopping-bag', routerLink: '/material-requests', description: 'Solicitudes internas' },
+        { label: 'Caja chica', icon: 'pi pi-wallet', routerLink: '/petty-cash', description: 'Gastos menores' },
+      ],
+    },
+    {
+      key: 'logistica',
+      label: 'Logística',
+      icon: 'pi pi-truck',
+      description: 'Gestión de proveedores, compras y cadena de suministro',
+      hubPath: '/hub/logistica',
+      colorFrom: '#B91C1C',
+      colorTo: '#7F1D1D',
+      colorPrimary: '#EF4444',
+      colorLight: '#FEE2E2',
+      relatedRoutes: ['/providers', '/logistics', '/purchases'],
+      items: [
+        { label: 'Proveedores', icon: 'pi pi-building', routerLink: '/providers', description: 'Gestión de proveedores' },
+        { label: 'Productos y Servicios', icon: 'pi pi-box', routerLink: '/logistics/products', description: 'Catálogo de productos' },
+        { label: 'Solicitudes de cotización', icon: 'pi pi-inbox', routerLink: '/logistics/quotes', description: 'Solicitudes de precios' },
+        { label: 'Ingresar cotizaciones', icon: 'pi pi-pencil', routerLink: '/logistics/quote-entry', description: 'Registro de cotizaciones' },
+        { label: 'Comparar cotizaciones', icon: 'pi pi-arrows-h', routerLink: '/logistics/compare-quotes', description: 'Análisis comparativo' },
+        { label: 'Órdenes de compra', icon: 'pi pi-shopping-cart', routerLink: '/purchases/orders', description: 'Órdenes a proveedores' },
+        { label: 'Confirmación de entrega', icon: 'pi pi-check-circle', routerLink: '/logistics/deliveries', description: 'Control de entregas' },
+        { label: 'Facturas', icon: 'pi pi-file', routerLink: '/purchases/vouchers', description: 'Comprobantes de pago' },
+      ],
+    },
+    {
+      key: 'rrhh',
+      label: 'Recursos Humanos',
+      icon: 'pi pi-users',
+      description: 'Gestión del talento humano y nómina de empleados',
+      hubPath: '/hub/rrhh',
+      colorFrom: '#0F766E',
+      colorTo: '#134E4A',
+      colorPrimary: '#14B8A6',
+      colorLight: '#CCFBF1',
+      relatedRoutes: ['/employees', '/payroll', '/payroll-calculation', '/tickets'],
+      items: [
+        { label: 'Empleados', icon: 'pi pi-user', routerLink: '/employees', description: 'Gestión de empleados' },
+        { label: 'Planillas y pagos', icon: 'pi pi-wallet', routerLink: '/payroll', description: 'Nómina de empleados' },
+        { label: 'Cálculo de planilla', icon: 'pi pi-calculator', routerLink: '/payroll-calculation', description: 'Cálculo de haberes' },
+        { label: 'Tickets', icon: 'pi pi-ticket', routerLink: '/tickets', description: 'Solicitudes internas' },
+      ],
+    },
+    {
+      key: 'crm',
+      label: 'CRM',
+      icon: 'pi pi-sitemap',
+      description: 'Gestión de relaciones con clientes y seguimiento comercial',
+      hubPath: '/hub/crm',
+      colorFrom: '#BE185D',
+      colorTo: '#831843',
+      colorPrimary: '#EC4899',
+      colorLight: '#FCE7F3',
+      relatedRoutes: ['/leads', '/follow-ups', '/companies-crm'],
+      items: [
+        { label: 'Contactos', icon: 'pi pi-user-plus', routerLink: '/leads', description: 'Leads y prospectos' },
+        { label: 'Seguimientos', icon: 'pi pi-calendar-plus', routerLink: '/follow-ups', description: 'Actividades de seguimiento' },
+        { label: 'Empresas', icon: 'pi pi-building', routerLink: '/companies-crm', description: 'Empresas y cuentas' },
+      ],
+    },
+    {
+      key: 'configuracion',
+      label: 'Configuración',
+      icon: 'pi pi-sliders-h',
+      description: 'Configuración del sistema, usuarios y permisos',
+      hubPath: '/hub/configuracion',
+      colorFrom: '#374151',
+      colorTo: '#111827',
+      colorPrimary: '#6B7280',
+      colorLight: '#F3F4F6',
+      relatedRoutes: ['/users', '/menu-permissions', '/user-tenants-assignment', '/areas', '/work-shifts', '/face-recognition-register', '/profile', '/digital-signature', '/approvals', '/companies', '/logs'],
+      items: [
+        { label: 'Usuarios', icon: 'pi pi-users', routerLink: '/users', description: 'Gestión de usuarios' },
+        { label: 'Permisos', icon: 'pi pi-shield', routerLink: '/menu-permissions', description: 'Control de accesos' },
+        { label: 'Asignación de empresas', icon: 'pi pi-building', routerLink: '/user-tenants-assignment', description: 'Empresas por usuario' },
+        { label: 'Áreas', icon: 'pi pi-sitemap', routerLink: '/areas', description: 'Estructura organizacional' },
+        { label: 'Turnos', icon: 'pi pi-calendar-times', routerLink: '/work-shifts', description: 'Horarios de trabajo' },
+        { label: 'Registro facial', icon: 'pi pi-id-card', routerLink: '/face-recognition-register', description: 'Biometría facial' },
+        { label: 'Mi perfil', icon: 'pi pi-user-edit', routerLink: '/profile', description: 'Datos personales' },
+        { label: 'Firma digital', icon: 'pi pi-pencil', routerLink: '/digital-signature', description: 'Firma electrónica' },
+        { label: 'Aprobaciones', icon: 'pi pi-check-circle', routerLink: '/approvals', description: 'Flujos de aprobación' },
+        { label: 'Empresas', icon: 'pi pi-building', routerLink: '/companies', description: 'Empresas del sistema' },
+        { label: 'Logs del sistema', icon: 'pi pi-list', routerLink: '/logs', description: 'Auditoría del sistema' },
+      ],
+    },
+  ];
+
+  getHubSections(): HubSection[] {
+    return this.hubSections;
+  }
+
+  getHubSection(key: string): HubSection | undefined {
+    return this.hubSections.find(s => s.key === key);
+  }
+
+  getHubSectionByLabel(label: string): HubSection | undefined {
+    return this.hubSections.find(s => s.label.toLowerCase() === label.toLowerCase());
   }
 }
