@@ -51,6 +51,7 @@ export interface UpdateBoardRequest {
   title?: string;
   description?: string;
   color?: string;
+  areaId?: string | null;
 }
 
 export interface InviteUserRequest {

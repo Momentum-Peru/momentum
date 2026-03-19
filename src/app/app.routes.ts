@@ -810,6 +810,11 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'hub/:section',
+        loadComponent: () =>
+          import('./pages/menu-hub/menu-hub').then((m) => m.MenuHubPage),
+      },
+      {
         path: '**',
         redirectTo: 'dashboard',
         pathMatch: 'full',

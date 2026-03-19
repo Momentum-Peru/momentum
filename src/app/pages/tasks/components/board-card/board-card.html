@@ -29,13 +29,11 @@
 
   <ng-template pTemplate="content">
     <div class="flex flex-col gap-4">
-      @if (board.description) {
-      <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">
-        {{ board.description }}
-      </p>
-      } @else {
-      <p class="text-gray-400 dark:text-gray-500 text-sm italic">Sin descripción</p>
-      }
+      <div class="h-[2.625rem] overflow-hidden">
+        <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 leading-[1.3125rem]">
+          {{ board.description || ' ' }}
+        </p>
+      </div>
 
       <div class="flex flex-col gap-2">
         <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">

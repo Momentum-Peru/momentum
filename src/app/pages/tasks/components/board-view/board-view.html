@@ -1,6 +1,22 @@
 <div class="space-y-6">
   <!-- Header & Filters -->
   <div class="flex flex-col gap-4">
+    <!-- Back button -->
+    <div>
+      <button
+        type="button"
+        class="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-150"
+        (click)="back.emit()"
+      >
+        <i class="pi pi-arrow-left text-xs transition-transform duration-150 group-hover:-translate-x-0.5"></i>
+        @if (areaName) {
+          Regresar a {{ areaName }}
+        } @else {
+          Regresar
+        }
+      </button>
+    </div>
+
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <!-- Title -->
       <div class="flex items-center gap-2">

@@ -73,8 +73,16 @@ import {
       @if (task) {
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <!-- Header -->
-          <div class="mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <div class="flex items-center gap-3 mb-6">
+            <button
+              type="button"
+              (click)="onClose()"
+              class="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-white transition-all duration-200"
+            >
+              <i class="pi pi-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
+              Regresar
+            </button>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">
               Detalles de la Tarea
             </h2>
           </div>
