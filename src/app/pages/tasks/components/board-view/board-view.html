@@ -97,8 +97,77 @@
     <!-- Filters Panel (por tablero: fecha, asignado a, etiquetas) -->
     <div
       *ngIf="showFilters()"
-      class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all mb-4"
+      class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col gap-5 transition-all mb-4"
     >
+      <!-- User Filter -->
+      <div class="flex flex-col gap-2">
+        <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Filtrar por Usuario</label>
+        <div class="flex flex-wrap gap-2">
+          <!-- Todos -->
+          <button
+            type="button"
+            (click)="onAssignedToChange(null)"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors"
+            [class.bg-indigo-600]="!filterAssignedTo()"
+            [class.text-white]="!filterAssignedTo()"
+            [class.border-indigo-600]="!filterAssignedTo()"
+            [class.bg-white]="!!filterAssignedTo()"
+            [class.text-gray-600]="!!filterAssignedTo()"
+            [class.border-gray-200]="!!filterAssignedTo()"
+          >Todos</button>
+
+          <!-- Usuario logueado -->
+          <button
+            *ngIf="currentUserId"
+            type="button"
+            (click)="onAssignedToChange(currentUserId)"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors flex items-center gap-1"
+            [class.bg-blue-600]="filterAssignedTo() === currentUserId"
+            [class.text-white]="filterAssignedTo() === currentUserId"
+            [class.border-blue-600]="filterAssignedTo() === currentUserId"
+            [class.bg-white]="filterAssignedTo() !== currentUserId"
+            [class.text-gray-600]="filterAssignedTo() !== currentUserId"
+            [class.border-gray-200]="filterAssignedTo() !== currentUserId"
+          >
+            <i class="pi pi-user text-[10px]"></i>
+            {{ currentUserName }}
+          </button>
+
+          <!-- Sin asignar -->
+          <button
+            type="button"
+            (click)="onAssignedToChange('none')"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors flex items-center gap-1"
+            [class.bg-gray-600]="filterAssignedTo() === 'none'"
+            [class.text-white]="filterAssignedTo() === 'none'"
+            [class.border-gray-600]="filterAssignedTo() === 'none'"
+            [class.bg-white]="filterAssignedTo() !== 'none'"
+            [class.text-gray-600]="filterAssignedTo() !== 'none'"
+            [class.border-gray-200]="filterAssignedTo() !== 'none'"
+          >
+            <i class="pi pi-user-minus text-[10px]"></i>
+            Sin asignar
+          </button>
+
+          <!-- Separador visual -->
+          <div *ngIf="otherUsers().length > 0" class="w-px bg-gray-200 dark:bg-gray-600 self-stretch mx-1"></div>
+
+          <!-- Otros usuarios -->
+          <button
+            *ngFor="let user of otherUsers()"
+            type="button"
+            (click)="onAssignedToChange(user.value)"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors"
+            [class.bg-violet-600]="filterAssignedTo() === user.value"
+            [class.text-white]="filterAssignedTo() === user.value"
+            [class.border-violet-600]="filterAssignedTo() === user.value"
+            [class.bg-white]="filterAssignedTo() !== user.value"
+            [class.text-gray-600]="filterAssignedTo() !== user.value"
+            [class.border-gray-200]="filterAssignedTo() !== user.value"
+          >{{ user.label }}</button>
+        </div>
+      </div>
+
       <!-- Date Filter -->
       <div class="flex flex-col gap-2">
         <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1"
@@ -109,7 +178,7 @@
           (ngModelChange)="onDateChange($event)"
           placeholder="Selecciona una fecha..."
           dateFormat="dd/mm/yy"
-          styleClass="w-full"
+          styleClass="w-full sm:w-64"
           inputStyleClass="w-full !border-gray-200 !rounded-xl !bg-gray-50/50 hover:!bg-gray-50 focus:!bg-white transition-all shadow-none h-11"
           [showIcon]="true"
           iconDisplay="input"
@@ -120,7 +189,7 @@
 
       <!-- Clear Filters -->
       <div
-        class="col-span-full border-t border-gray-50 dark:border-gray-700 pt-3 flex justify-end"
+        class="border-t border-gray-50 dark:border-gray-700 pt-3 flex justify-end"
         *ngIf="hasActiveFilters()"
       >
         <button

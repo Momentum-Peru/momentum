@@ -259,6 +259,11 @@ export class AgendaPage implements OnInit {
   /** ID del usuario seleccionado para filtrar agenda (sólo gerencia). */
   selectedUserId = signal<string | null>(null);
 
+  /** Filtro especial: actividades sin responsable asignado. */
+  readonly unassignedFilterId = 'unassigned';
+
+  readonly isUnassignedSelected = computed(() => this.selectedUserId() === this.unassignedFilterId);
+
   /** Query de búsqueda para el panel lateral de usuarios. */
   userSearchQuery = signal('');
 
@@ -348,6 +353,25 @@ export class AgendaPage implements OnInit {
       if (b._id === currentUserId) return 1;
       return (a.name || '').localeCompare(b.name || '');
     });
+  });
+
+  /** Botón superior: usuario actual (sin el texto "Yo"). */
+  currentAgendaUserOption = computed(() => {
+    const currentUserId = this.authService.getCurrentUser()?.id;
+    if (!currentUserId) return null;
+    return this.agendaUserButtons().find((u) => u._id === currentUserId) ?? null;
+  });
+
+  /** Botones inferiores: el resto de usuarios (sin incluir usuario actual). */
+  otherAgendaUserOptions = computed(() => {
+    const currentUserId = this.authService.getCurrentUser()?.id;
+    if (!currentUserId) return this.agendaUserButtons();
+    return this.agendaUserButtons().filter((u) => u._id !== currentUserId);
+  });
+
+  /** Conteo de actividades sin responsable (para el pill de filtro). */
+  unassignedNotesCount = computed(() => {
+    return this.allNotesForCounts().filter((note) => this.getNoteAssigneeId(note) === null).length;
   });
 
   getInitials(name: string): string {
@@ -485,12 +509,13 @@ export class AgendaPage implements OnInit {
   isViewingOther = computed(() => {
     const selected = this.selectedUserId();
     const current = this.authService.getCurrentUser()?.id;
-    return !!selected && selected !== current;
+    return !!selected && selected !== current && !this.isUnassignedSelected();
   });
 
   selectedUserName = computed(() => {
     const selected = this.selectedUserId();
     if (!selected) return null;
+    if (selected === this.unassignedFilterId) return 'Sin Asignar';
     const user = this.userOptions().find((u) => u._id === selected);
     return user?.name || null;
   });
@@ -579,6 +604,10 @@ export class AgendaPage implements OnInit {
       list = list.filter((n) => n.content?.toLowerCase().includes(query));
     }
 
+    if (this.selectedUserId() === this.unassignedFilterId) {
+      list = list.filter((note) => this.getNoteAssigneeId(note) === null);
+    }
+
     return list.sort((a, b) => {
       const t1 = new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
       const t2 = new Date(b.updatedAt ?? b.createdAt ?? 0).getTime();
@@ -662,6 +691,9 @@ export class AgendaPage implements OnInit {
     const isGerencia = this.authService.isGerencia();
     const selectedUser = this.selectedUserId();
     if (isGerencia && selectedUser) {
+      // Para "Actividades sin Asignar" pedimos la lista base y filtramos en el frontend.
+      // (El backend no expone un filtro directo para "assignedTo vacío" en este endpoint.)
+      if (selectedUser === this.unassignedFilterId) return { forUser: true };
       return { createdBy: selectedUser };
     }
     return { forUser: true };

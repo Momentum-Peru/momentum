@@ -6,6 +6,7 @@ import {
   ChangeDetectionStrategy,
   signal,
   OnInit,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -21,6 +22,7 @@ import { AgendaActivityComponent } from '../agenda-activity/agenda-activity';
 import { TasksCalendarViewComponent } from '../tasks-calendar-view/tasks-calendar-view';
 import { TasksTimelineViewComponent } from '../tasks-timeline-view/tasks-timeline-view';
 import { User } from '../../../../shared/services/users-api.service';
+import { AuthService } from '../../../login/services/auth.service';
 import { Board } from '../../../../shared/interfaces/board.interface';
 import {
   Task,
@@ -185,6 +187,22 @@ export class BoardViewComponent implements OnInit {
    */
   public get tagOptions(): { label: string; value: string }[] {
     return this.availableTags.map((tag) => ({ label: tag, value: tag }));
+  }
+
+  /**
+   * Nombre del usuario logueado (para el botón de filtro)
+   */
+  public get currentUserName(): string {
+    if (this.currentUser?.name) return this.currentUser.name;
+    const fromList = this.availableUsers.find((u) => u.value === this.currentUserId);
+    return fromList?.label || '';
+  }
+
+  /**
+   * Usuarios del tablero excluyendo al usuario logueado (para los botones de filtro)
+   */
+  public otherUsers(): { label: string; value: string }[] {
+    return this.availableUsers.filter((u) => u.value !== this.currentUserId);
   }
 
   ngOnInit(): void {
