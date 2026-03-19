@@ -282,37 +282,10 @@ import { User } from '../../../../shared/services/users-api.service';
                   />
                 </td>
                 <!-- Estatus -->
-                <td
-                  class="p-2 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50"
-                  (click)="startEdit(task, 'status', $event)"
-                  [class.ring-1]="isEditing(task, 'status')"
-                  [class.ring-blue-400]="isEditing(task, 'status')"
-                >
-                  <ng-container *ngIf="!isEditing(task, 'status')">
-                    <button
-                      type="button"
-                      (click)="toggleStatus(task); $event.stopPropagation()"
-                      class="inline-flex items-center justify-center w-8 h-8 rounded border transition-colors"
-                      [class.bg-green-100]="task.status === 'Terminada'"
-                      [class.text-green-700]="task.status === 'Terminada'"
-                      [class.border-green-300]="task.status === 'Terminada'"
-                      [class.bg-red-50]="task.status !== 'Terminada'"
-                      [class.text-red-600]="task.status !== 'Terminada'"
-                      [class.border-red-200]="task.status !== 'Terminada'"
-                      [pTooltip]="
-                        task.status === 'Terminada'
-                          ? 'Completado (clic para pendiente)'
-                          : 'Pendiente (clic para completado)'
-                      "
-                    >
-                      <i *ngIf="task.status === 'Terminada'" class="pi pi-check text-sm"></i>
-                      <i *ngIf="task.status !== 'Terminada'" class="pi pi-times text-sm"></i>
-                    </button>
-                  </ng-container>
+                <td class="p-2 text-center">
                   <p-select
-                    *ngIf="isEditing(task, 'status')"
-                    [ngModel]="editValue"
-                    (ngModelChange)="editValue = $event; saveEdit(task, 'status')"
+                    [ngModel]="task.status"
+                    (ngModelChange)="onStatusChange(task, $event)"
                     [options]="statusOptions"
                     optionLabel="label"
                     optionValue="value"
