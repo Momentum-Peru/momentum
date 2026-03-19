@@ -1,72 +1,233 @@
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 sm:p-8 mt-4 lg:mt-0">
-  <!-- Lista de Tableros - Visible cuando NO hay un tablero seleccionado (ruta /tasks) -->
   @if (!selectedBoard()) {
-    <div class="mb-8">
-      <!-- Opción: Ver todas las tareas (vista consolidada) -->
-      <div class="mb-6">
-        <button
-          type="button"
-          (click)="onViewAllTasks()"
-          class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all text-left group"
-        >
-          <div
-            class="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50"
-          >
-            <i class="pi pi-list text-blue-600 dark:text-blue-400 text-xl"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h3 class="font-semibold text-gray-900 dark:text-white">Todas las tareas</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-              Ver todas las tareas en una sola vista
-            </p>
-          </div>
-          <i class="pi pi-chevron-right text-gray-400 group-hover:text-blue-500"></i>
-        </button>
-      </div>
 
-      <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
-          {{ isGerencia() ? 'Todos los tableros' : 'Mis tableros' }}
-        </h2>
-        <div class="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            pButton
-            icon="pi pi-envelope"
-            [label]="
-              pendingInvitationsCount() > 0
-                ? 'Invitaciones (' + pendingInvitationsCount() + ')'
-                : 'Invitaciones'
-            "
-            class="p-button-outlined p-button-secondary"
-            (click)="openBoardInvitations()"
-            pTooltip="Ver invitaciones pendientes a tableros"
-          ></button>
-          <button
-            type="button"
-            pButton
-            icon="pi pi-plus"
-            label="Crear tablero"
-            class="p-button-primary"
-            (click)="openBoardForm()"
-          ></button>
+    <!-- ═══════════════════════════════════════════════════════
+         FASE 1: Selección de Área (sin área seleccionada)
+         ═══════════════════════════════════════════════════════ -->
+    @if (selectedArea() === null) {
+      <div class="mb-8 animate-fade-in">
+
+        <!-- Header -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Tareas</h1>
+            <p class="text-gray-500 text-sm mt-1">Selecciona un área para ver sus tableros</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              pButton
+              icon="pi pi-envelope"
+              [label]="pendingInvitationsCount() > 0 ? 'Invitaciones (' + pendingInvitationsCount() + ')' : 'Invitaciones'"
+              class="p-button-outlined p-button-secondary"
+              (click)="openBoardInvitations()"
+              pTooltip="Ver invitaciones pendientes a tableros"
+            ></button>
+          </div>
         </div>
+
+        <!-- Accesos rápidos -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          <!-- Todas las tareas -->
+          <button
+            type="button"
+            (click)="onViewAllTasks()"
+            class="group flex items-center gap-4 p-5 rounded-2xl border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50/40 transition-all text-left"
+          >
+            <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center group-hover:bg-blue-500 transition-colors flex-shrink-0">
+              <i class="pi pi-list text-blue-600 group-hover:text-white text-xl transition-colors"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 group-hover:text-blue-700">Todas las tareas</h3>
+              <p class="text-sm text-gray-400">Vista consolidada de todas las áreas</p>
+            </div>
+            <i class="pi pi-arrow-right text-gray-300 group-hover:text-blue-500 transition-colors"></i>
+          </button>
+
+          <!-- Todos los tableros -->
+          <button
+            type="button"
+            (click)="onSelectArea('all')"
+            class="group flex items-center gap-4 p-5 rounded-2xl border-2 border-dashed border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/40 transition-all text-left"
+          >
+            <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-500 transition-colors flex-shrink-0">
+              <i class="pi pi-th-large text-emerald-600 group-hover:text-white text-xl transition-colors"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 group-hover:text-emerald-700">Todos los tableros</h3>
+              <p class="text-sm text-gray-400">Ver todos los tableros sin filtrar</p>
+            </div>
+            <i class="pi pi-arrow-right text-gray-300 group-hover:text-emerald-500 transition-colors"></i>
+          </button>
+        </div>
+
+        <!-- Título sección áreas -->
+        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">Áreas</h2>
+
+        @if (boardsService.loading()) {
+          <div class="flex justify-center py-16">
+            <i class="pi pi-spin pi-spinner text-3xl text-gray-300"></i>
+          </div>
+        } @else if (availableAreas().length === 0) {
+          <div class="text-center py-16 text-gray-400">
+            <i class="pi pi-inbox text-5xl mb-4 block"></i>
+            <p class="font-medium">No tienes áreas asignadas</p>
+            <p class="text-sm mt-1">Contacta al administrador para que te asigne un área</p>
+          </div>
+        } @else {
+          <!-- Grid de cards de áreas -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            @for (area of availableAreas(); track area._id; let i = $index) {
+              <button
+                type="button"
+                (click)="onSelectArea(area)"
+                class="group text-left rounded-2xl border-2 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400"
+                [style.borderColor]="getAreaColor(i).border"
+                [style.background]="'white'"
+              >
+                <!-- Color strip top -->
+                <div
+                  class="h-2 w-full transition-all duration-300 group-hover:h-3"
+                  [style.background]="getAreaColor(i).icon"
+                ></div>
+
+                <div class="p-5">
+                  <!-- Ícono + nombre -->
+                  <div class="flex items-start gap-3 mb-4">
+                    <div
+                      class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
+                      [style.background]="getAreaColor(i).iconBg"
+                    >
+                      <i class="pi pi-sitemap text-xl" [style.color]="getAreaColor(i).icon"></i>
+                    </div>
+                    <div class="flex-1 min-w-0 pt-1">
+                      <h3
+                        class="font-semibold text-gray-900 leading-tight truncate text-base"
+                        [title]="area.nombre"
+                      >{{ area.nombre }}</h3>
+                      @if (area.codigo) {
+                        <span class="text-xs font-mono text-gray-400">{{ area.codigo }}</span>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Descripción -->
+                  @if (area.descripcion) {
+                    <p class="text-sm text-gray-400 leading-relaxed line-clamp-2 mb-4">{{ area.descripcion }}</p>
+                  }
+
+                  <!-- Footer: conteo de tableros + flecha -->
+                  <div class="flex items-center justify-between">
+                    <span
+                      class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+                      [style.background]="getAreaColor(i).iconBg"
+                      [style.color]="getAreaColor(i).icon"
+                    >
+                      <i class="pi pi-table text-xs"></i>
+                      {{ boardCountForArea(area._id!) }}
+                      {{ boardCountForArea(area._id!) === 1 ? 'tablero' : 'tableros' }}
+                    </span>
+                    <i
+                      class="pi pi-arrow-right text-sm opacity-0 group-hover:opacity-100 transition-all duration-200 -translate-x-2 group-hover:translate-x-0"
+                      [style.color]="getAreaColor(i).icon"
+                    ></i>
+                  </div>
+                </div>
+              </button>
+            }
+
+            <!-- Card: Sin área -->
+            @if (boardsWithoutArea().length > 0) {
+              <button
+                type="button"
+                (click)="onSelectArea('all')"
+                class="group text-left rounded-2xl border-2 border-dashed border-gray-200 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-gray-400"
+              >
+                <div class="p-5">
+                  <div class="flex items-start gap-3 mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110">
+                      <i class="pi pi-inbox text-xl text-gray-400"></i>
+                    </div>
+                    <div class="flex-1 min-w-0 pt-1">
+                      <h3 class="font-semibold text-gray-700 leading-tight text-base">Sin área</h3>
+                      <span class="text-xs text-gray-400">Tableros sin clasificar</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-500">
+                      <i class="pi pi-table text-xs"></i>
+                      {{ boardsWithoutArea().length }}
+                      {{ boardsWithoutArea().length === 1 ? 'tablero' : 'tableros' }}
+                    </span>
+                    <i class="pi pi-arrow-right text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                  </div>
+                </div>
+              </button>
+            }
+          </div>
+        }
       </div>
-      <app-board-list
-        [boards]="boardsService.boards()"
-        [loading]="boardsService.loading()"
-        [error]="boardsService.error()"
-        [currentUserId]="currentUserId()"
-        [isGerencia]="isGerencia()"
-        [selectedBoardId]="undefined"
-        (createBoard)="openBoardForm()"
-        (viewBoard)="onViewBoard($any($event))"
-        (editBoard)="openBoardFormFromList($any($event))"
-        (inviteUser)="openBoardInviteFromList($any($event))"
-        (deleteBoard)="confirmDeleteBoard($any($event))"
-        (changeColor)="onBoardColorChange($event)"
-      ></app-board-list>
-    </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════
+         FASE 2: Lista de tableros del área seleccionada
+         ═══════════════════════════════════════════════════════ -->
+    @if (selectedArea() !== null) {
+      <div class="mb-8 animate-fade-in">
+
+        <!-- Header con breadcrumb -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              (click)="goBackToAreas()"
+              class="group flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+            >
+              <i class="pi pi-arrow-left text-xs group-hover:-translate-x-0.5 transition-transform"></i>
+              Áreas
+            </button>
+            <i class="pi pi-angle-right text-gray-300 text-xs"></i>
+            <h2 class="text-lg font-bold text-gray-900">
+              {{ selectedArea() === 'all' ? 'Todos los tableros' : $any(selectedArea()).nombre }}
+            </h2>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              pButton
+              icon="pi pi-envelope"
+              [label]="pendingInvitationsCount() > 0 ? 'Invitaciones (' + pendingInvitationsCount() + ')' : 'Invitaciones'"
+              class="p-button-outlined p-button-secondary"
+              (click)="openBoardInvitations()"
+            ></button>
+            <button
+              type="button"
+              pButton
+              icon="pi pi-plus"
+              label="Crear tablero"
+              class="p-button-primary"
+              (click)="openBoardForm()"
+            ></button>
+          </div>
+        </div>
+
+        <app-board-list
+          [boards]="selectedArea() === 'all' ? boardsService.boards() : filteredBoards()"
+          [loading]="boardsService.loading()"
+          [error]="boardsService.error()"
+          [currentUserId]="currentUserId()"
+          [isGerencia]="isGerencia()"
+          [selectedBoardId]="undefined"
+          (createBoard)="openBoardForm()"
+          (viewBoard)="onViewBoard($any($event))"
+          (editBoard)="openBoardFormFromList($any($event))"
+          (inviteUser)="openBoardInviteFromList($any($event))"
+          (deleteBoard)="confirmDeleteBoard($any($event))"
+          (changeColor)="onBoardColorChange($event)"
+        ></app-board-list>
+      </div>
+    }
+
   }
 
   <!-- Vista de Tablero con Tareas - Visible solo cuando hay un tablero seleccionado (ruta /tasks/:boardId) -->
@@ -74,6 +235,7 @@
     <div data-board-view>
       <app-board-view
         [board]="selectedBoard()!"
+        [areaName]="selectedBoardAreaName()"
         [isOwner]="isBoardOwner()"
         [canInvite]="canInviteToBoard()"
         [pendingInvitationsCount]="pendingInvitationsCount()"
@@ -118,6 +280,8 @@
     [board]="isEditingBoard() ? editingBoardFromList() || selectedBoard() || null : null"
     [loading]="boardFormLoading"
     [visible]="showBoardForm()"
+    [areas]="availableAreas()"
+    [defaultAreaId]="defaultAreaId"
     (save)="onBoardSave($event)"
     (cancelled)="closeBoardForm()"
   ></app-board-form>

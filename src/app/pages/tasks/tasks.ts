@@ -129,6 +129,9 @@ export class TasksPage implements OnInit, AfterViewInit {
   public readonly allAreaUsers = signal<string[]>([]); // Added: User IDs from ALL available areas
   private readonly processedTaskId = signal<string | null>(null);
 
+  /** Área seleccionada para filtrar tableros. null = mostrar cards de áreas. 'all' = todos los tableros */
+  public readonly selectedArea = signal<Area | 'all' | null>(null);
+
   @ViewChildren(BoardCardComponent) boardCards!: QueryList<BoardCardComponent>;
 
   // Computed
@@ -367,6 +370,65 @@ export class TasksPage implements OnInit, AfterViewInit {
     };
   });
 
+  /** Tableros filtrados según el área seleccionada */
+  public readonly filteredBoards = computed<Board[]>(() => {
+    const area = this.selectedArea();
+    const boards = this.boardsService.boards();
+    if (area === 'all') return boards;
+    if (!area) return boards;
+    return boards.filter(b => {
+      if (!b.areaId) return false;
+      const id = typeof b.areaId === 'string' ? b.areaId : b.areaId._id;
+      return id === area._id;
+    });
+  });
+
+  /** Tableros sin área asignada */
+  public readonly boardsWithoutArea = computed<Board[]>(() =>
+    this.boardsService.boards().filter(b => !b.areaId)
+  );
+
+  /** Número de tableros por área (para mostrar en las cards) */
+  public boardCountForArea(areaId: string): number {
+    return this.boardsService.boards().filter(b => {
+      if (!b.areaId) return false;
+      const id = typeof b.areaId === 'string' ? b.areaId : b.areaId._id;
+      return id === areaId;
+    }).length;
+  }
+
+  /** Selecciona un área para mostrar sus tableros */
+  public onSelectArea(area: Area | 'all'): void {
+    this.selectedArea.set(area);
+  }
+
+  /** Vuelve a la vista de selección de áreas */
+  public goBackToAreas(): void {
+    this.selectedArea.set(null);
+  }
+
+  /** ID de área por defecto al crear tablero desde una vista de área */
+  public get defaultAreaId(): string | undefined {
+    const area = this.selectedArea();
+    if (!area || area === 'all') return undefined;
+    return area._id;
+  }
+
+  private readonly AREA_COLORS = [
+    { bg: '#EFF6FF', border: '#BFDBFE', iconBg: '#DBEAFE', icon: '#2563EB' },
+    { bg: '#F0FDF4', border: '#BBF7D0', iconBg: '#D1FAE5', icon: '#059669' },
+    { bg: '#F5F3FF', border: '#DDD6FE', iconBg: '#EDE9FE', icon: '#7C3AED' },
+    { bg: '#FFFBEB', border: '#FDE68A', iconBg: '#FEF3C7', icon: '#D97706' },
+    { bg: '#FEF2F2', border: '#FECACA', iconBg: '#FEE2E2', icon: '#DC2626' },
+    { bg: '#F0FDFA', border: '#99F6E4', iconBg: '#CCFBF1', icon: '#0D9488' },
+    { bg: '#FDF4FF', border: '#F0ABFC', iconBg: '#FAE8FF', icon: '#A21CAF' },
+    { bg: '#FFF7ED', border: '#FED7AA', iconBg: '#FFEDD5', icon: '#EA580C' },
+  ];
+
+  public getAreaColor(index: number) {
+    return this.AREA_COLORS[index % this.AREA_COLORS.length];
+  }
+
   public readonly isBoardOwner = computed(() => {
     const board = this.selectedBoard();
     if (board && board._id === 'all') return false; // Virtual board has no owner actions
@@ -396,6 +458,14 @@ export class TasksPage implements OnInit, AfterViewInit {
 
   public readonly pendingInvitationsCount = computed(() => {
     return this.pendingInvitations().length;
+  });
+
+  public readonly selectedBoardAreaName = computed(() => {
+    const board = this.selectedBoard();
+    if (!board?.areaId) return null;
+    const areaId = typeof board.areaId === 'string' ? board.areaId : (board.areaId as any)._id;
+    const area = this.availableAreas().find(a => a._id === areaId);
+    return area?.nombre ?? null;
   });
 
   constructor() {
@@ -614,6 +684,14 @@ export class TasksPage implements OnInit, AfterViewInit {
     areasObservable.subscribe({
       next: (areas) => {
         this.availableAreas.set(areas);
+        // Si viene un areaId en query params (e.g. al regresar desde un tablero), pre-seleccionar
+        const areaId = this.route.snapshot.queryParamMap.get('areaId');
+        if (areaId) {
+          const match = areas.find(a => a._id === areaId);
+          if (match) this.selectedArea.set(match);
+          // Limpiar el query param de la URL sin recargar
+          this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+        }
       },
       error: () => {
         console.error('Error loading areas');
@@ -973,10 +1051,15 @@ export class TasksPage implements OnInit, AfterViewInit {
   }
 
   /**
-   * Vuelve a la lista de tableros
+   * Vuelve a la lista de tableros del área correspondiente
    */
   public onBackToBoards(): void {
-    this.router.navigate(['/tasks']);
+    const board = this.selectedBoard();
+    let areaId: string | null = null;
+    if (board?.areaId) {
+      areaId = typeof board.areaId === 'string' ? board.areaId : (board.areaId as any)._id;
+    }
+    this.router.navigate(['/tasks'], areaId ? { queryParams: { areaId } } : {});
     this.manuallyShowBoardList.set(true);
     this.selectedBoard.set(null);
   }

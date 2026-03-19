@@ -3,141 +3,146 @@
   <p-confirmDialog></p-confirmDialog>
 
   <!-- Header -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-        <i class="pi pi-book text-primary"></i>
-        {{ isViewingOther() ? 'Agenda de ' + selectedUserName() : 'Mi agenda' }}
-      </h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        {{
-          isViewingOther()
-            ? 'Visualizando las actividades programadas para ' + selectedUserName()
-            : 'Gestiona tus tareas y reuniones diarias con facilidad.'
-        }}
-      </p>
-    </div>
-    <div class="flex flex-wrap items-center gap-3 sm:ml-auto">
-      <!-- Selector de Agenda -->
-      <p-select
-        [options]="sortedUserOptions()"
-        [ngModel]="selectedUserId()"
-        (ngModelChange)="selectUser($event)"
-        optionLabel="name"
-        optionValue="_id"
-        placeholder="Seleccionar Agenda"
-        [filter]="true"
-        filterBy="name,email"
-        [showClear]="true"
-        styleClass="w-full sm:w-64"
-        [appendTo]="'body'"
-      >
-        <ng-template #item let-user>
-          <div class="flex items-center gap-2">
-            <i class="pi pi-user text-gray-400"></i>
-            <span>{{ user.name || user.email }}</span>
-            @if (user._id === authService.getCurrentUser()?.id) {
-              <span class="text-[10px] font-bold bg-primary/10 text-primary px-1 py-0.5 rounded"
-                >TÚ</span
-              >
-            }
-          </div>
-        </ng-template>
-      </p-select>
-
-    </div>
+  <div>
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+      <i class="pi pi-book text-primary"></i>
+      {{ isViewingOther() ? 'Agenda de ' + selectedUserName() : 'Mi agenda' }}
+    </h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      {{
+        isViewingOther()
+          ? 'Visualizando las actividades programadas para ' + selectedUserName()
+          : 'Gestiona tus tareas y reuniones diarias con facilidad.'
+      }}
+    </p>
   </div>
 
-  <div class="flex flex-col min-h-0">
-    <!-- Top Bar: Buscador y Filtros -->
-    @if (!isViewingOther()) {
-      <div class="flex flex-col md:flex-row gap-3 mb-6 items-end md:items-center">
-        <!-- Buscador -->
-        <p-iconfield class="flex-1 w-full">
-          <p-inputicon class="pi pi-search" />
-          <input
-            pInputText
-            type="text"
-            placeholder="Buscar por contenido..."
-            class="w-full"
-            [ngModel]="searchQuery()"
-            (ngModelChange)="searchQuery.set($event)"
-          />
-        </p-iconfield>
+  <!-- Selector de agenda: botones por usuario -->
+  @if (agendaUserButtons().length > 1) {
+    <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar md:flex-wrap md:overflow-visible">
 
-        <!-- Botones crear actividad: Texto, Voz, Dibujo -->
-        @if (canEdit()) {
-          <div class="flex flex-wrap gap-2 w-full md:w-auto">
-            <button
-              pButton
-              type="button"
-              label="Texto"
-              icon="pi pi-plus"
-              class="flex-1 md:flex-none"
-              (click)="openCreate('text')"
-            ></button>
-            <button
-              pButton
-              type="button"
-              label="Voz"
-              icon="pi pi-microphone"
-              [outlined]="true"
-              class="flex-1 md:flex-none"
-              (click)="openRecordForNewVoice()"
-            ></button>
-            <button
-              pButton
-              type="button"
-              label="Dibujo"
-              icon="pi pi-pencil"
-              [outlined]="true"
-              class="flex-1 md:flex-none"
-              (click)="openCreate('drawing')"
-            ></button>
-          </div>
-        }
-      </div>
-    } @else {
-      <!-- Buscador simplificado para vista compartida -->
-      <div class="flex gap-3 mb-6 items-center">
-        <p-iconfield class="flex-1">
-          <p-inputicon class="pi pi-search" />
-          <input
-            pInputText
-            type="text"
-            placeholder="Filtrar actividades de {{ selectedUserName() }}..."
-            class="w-full"
-            [ngModel]="searchQuery()"
-            (ngModelChange)="searchQuery.set($event)"
-          />
-        </p-iconfield>
+      <!-- Pill "Todos" solo para gerencia (vista agrupada) -->
+      @if (isGerencia()) {
         <button
-          pButton
-          icon="pi pi-refresh"
-          [text]="true"
-          [rounded]="true"
-          (click)="loadNotes()"
-          pTooltip="Refrescar"
-        ></button>
-      </div>
-    }
+          type="button"
+          class="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border transition-all"
+          [ngClass]="!selectedUserId()
+            ? 'bg-gray-800 text-white border-gray-800 shadow-sm'
+            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'"
+          (click)="selectUser(null)"
+        >
+          <i class="pi pi-users text-xs"></i>
+          <span>Todos</span>
+          @if (notes().length > 0) {
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+              [ngClass]="!selectedUserId() ? 'bg-white/25 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'">
+              {{ notes().length }}
+            </span>
+          }
+        </button>
+      }
 
-    <!-- Tabs Navigation -->
+      <!-- Un pill por usuario -->
+      @for (user of agendaUserButtons(); track user._id) {
+        @let isSelected = selectedUserId() === user._id || (!selectedUserId() && !isGerencia() && user._id === authService.getCurrentUser()?.id);
+        @let isCurrentUser = user._id === authService.getCurrentUser()?.id;
+        <button
+          type="button"
+          class="flex-shrink-0 flex items-center gap-2 pl-1 pr-3 py-1 rounded-full text-sm font-medium border transition-all"
+          [ngClass]="isSelected
+            ? ['bg-white dark:bg-gray-800 border-2 shadow-sm', getUserAvatarBorder(user._id)]
+            : ['bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700']"
+          (click)="selectUserToggle(user._id)"
+        >
+          <!-- Avatar con iniciales -->
+          <span
+            class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+            [ngClass]="getUserAvatarBg(user._id)"
+          >{{ getInitials(user.name || user.email) }}</span>
+
+          <!-- Nombre + conteo -->
+          @let count = userNoteCounts()[user._id] || 0;
+          <span [ngClass]="isSelected ? 'text-gray-900 dark:text-white font-semibold' : ''">
+            {{ isCurrentUser ? 'Yo' : user.name || user.email }}
+          </span>
+          <span
+            class="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+            [ngClass]="isSelected
+              ? [getUserAvatarBg(user._id), 'text-white']
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-500'"
+          >{{ count }}</span>
+        </button>
+      }
+    </div>
+  }
+
+  <div class="flex flex-col min-h-0">
+    <!-- Top Bar: Buscador y Botones -->
+    <div class="flex flex-col md:flex-row gap-3 mb-6 items-end md:items-center">
+      <!-- Buscador -->
+      <p-iconfield class="flex-1 w-full">
+        <p-inputicon class="pi pi-search" />
+        <input
+          pInputText
+          type="text"
+          [placeholder]="isViewingOther() ? 'Filtrar actividades de ' + selectedUserName() + '...' : 'Buscar por contenido...'"
+          class="w-full"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+      </p-iconfield>
+
+      <!-- Botones crear actividad: Texto, Voz, Dibujo -->
+      @if (canEdit()) {
+        <div class="flex flex-wrap gap-2 w-full md:w-auto">
+          <button
+            pButton
+            type="button"
+            label="Texto"
+            icon="pi pi-plus"
+            class="flex-1 md:flex-none"
+            (click)="openCreate('text')"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Voz"
+            icon="pi pi-microphone"
+            [outlined]="true"
+            class="flex-1 md:flex-none"
+            (click)="openRecordForNewVoice()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Dibujo"
+            icon="pi pi-pencil"
+            [outlined]="true"
+            class="flex-1 md:flex-none"
+            (click)="openCreate('drawing')"
+          ></button>
+        </div>
+      }
+    </div>
+
+    <!-- Tabs Navigation por Estado -->
     <div
       class="flex overflow-x-auto pb-2 mb-4 border-b border-gray-200 dark:border-gray-700 no-scrollbar gap-2"
     >
       @for (tab of tabs; track tab.value) {
         <button
           class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap"
-          [ngClass]="
-            activeTab() === tab.value
-              ? 'bg-primary text-white shadow-md shadow-primary/20'
-              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-          "
+          [ngClass]="activeTab() === tab.value ? tab.activeClass : tab.inactiveClass"
           (click)="activeTab.set(tab.value)"
         >
           <i [class]="tab.icon"></i>
           {{ tab.label }}
+          @if (tabCounts()[tab.value] > 0) {
+            <span
+              class="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+              [ngClass]="activeTab() === tab.value ? tab.badgeActiveClass : tab.badgeInactiveClass"
+            >{{ tabCounts()[tab.value] }}</span>
+          }
         </button>
       }
     </div>
@@ -192,62 +197,39 @@
                       <p-table [value]="group.notes" [rows]="10" styleClass="p-datatable-sm">
                         <ng-template pTemplate="header">
                           <tr>
-                            <th
-                              class="w-12 text-center text-[10px] font-bold text-gray-400 uppercase"
-                            >
-                              #
-                            </th>
-                            <th class="text-[10px] font-bold text-gray-400 uppercase">Actividad</th>
-                            <th
-                              class="w-40 text-[10px] font-bold text-gray-400 uppercase text-center"
-                            >
-                              Vencimiento
-                            </th>
-                            <th
-                              class="w-32 text-[10px] font-bold text-gray-400 uppercase text-center"
-                            >
-                              Estado
-                            </th>
+                            <th class="w-12 text-center text-[10px] font-bold text-gray-400">#</th>
+                            <th class="text-[10px] font-bold text-gray-400">Actividad</th>
+                            <th class="w-40 text-[10px] font-bold text-gray-400 text-center">Vencimiento</th>
+                            <th class="w-32 text-[10px] font-bold text-gray-400 text-center">Estado</th>
                             <th class="w-20"></th>
                           </tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-note let-rowIndex="rowIndex">
                           <tr
-                            class="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer"
+                            class="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer align-top"
+                            [attr.data-inline-edit]="inlineEditingId() === note._id ? '' : null"
                             (click)="viewNote(note)"
                           >
-                            <td class="text-center font-bold text-gray-400 text-xs">
+                            <td class="text-center font-bold text-gray-400 text-xs pt-3">
                               {{ rowIndex + 1 }}
                             </td>
                             <td>
                               @if (inlineEditingId() === note._id) {
-                                <div
-                                  class="flex flex-col gap-2 p-1"
-                                  (click)="$event.stopPropagation()"
-                                >
+                                <div class="flex flex-col gap-2 p-1" (click)="$event.stopPropagation()">
                                   <textarea
                                     pTextarea
                                     [autoResize]="true"
-                                    rows="2"
+                                    rows="3"
                                     class="w-full text-xs"
                                     [ngModel]="inlineEditContent()"
                                     (ngModelChange)="inlineEditContent.set($event)"
-                                  ></textarea>
+                                          ></textarea>
                                 </div>
                               } @else {
-                                <div class="flex items-center gap-2 group/cell">
-                                  <i
-                                    [class]="getTypeIcon() + ' text-gray-400 text-[10px]'"
-                                  ></i>
-                                  <span
-                                    class="text-xs font-medium text-gray-700 dark:text-gray-200 line-clamp-2"
-                                  >
-                                    {{ getContentSummary(note) }}
-                                  </span>
+                                <div class="flex items-start gap-2 group/cell py-1">
+                                  <span class="text-xs font-medium text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words">{{ getContentSummary(note) }}</span>
                                   @if (canEditFull(note)) {
-                                    <i
-                                      class="pi pi-pencil text-[10px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-auto"
-                                    ></i>
+                                    <i class="pi pi-pencil text-[10px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-auto flex-shrink-0 mt-0.5"></i>
                                   }
                                 </div>
                               }
@@ -257,7 +239,7 @@
                                 <div class="flex flex-col gap-1" (click)="$event.stopPropagation()">
                                   <p-datepicker
                                     [ngModel]="inlineEditDueAt()"
-                                    (ngModelChange)="inlineEditDueAt.set($event)"
+                                    (ngModelChange)="onInlineDateChange(note, $event)"
                                     [showTime]="true"
                                     dateFormat="dd/mm/yy"
                                     hourFormat="24"
@@ -267,69 +249,34 @@
                                 </div>
                               } @else {
                                 @if (getDueDate(note)) {
-                                  <span
-                                    class="text-[10px] font-medium"
-                                    [ngClass]="{ 'text-red-500': isOverdue(note) }"
-                                  >
+                                  <span class="text-[10px] font-medium" [ngClass]="{ 'text-red-500': isOverdue(note) }">
                                     {{ formatDueAt(getDueDate(note)!) }}
                                   </span>
                                 } @else {
                                   <span class="text-[10px] text-gray-400">—</span>
                                 }
-                                @if (canEditFull(note)) {
-                                  <i
-                                    class="pi pi-pencil text-[9px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-1"
-                                  ></i>
-                                }
                               }
                             </td>
                             <td class="text-center">
                               @if (inlineEditingId() === note._id) {
-                                <div
-                                  class="flex items-center gap-1"
-                                  (click)="$event.stopPropagation()"
-                                >
+                                <div (click)="$event.stopPropagation()">
                                   <p-select
                                     [options]="statusOptions"
                                     [ngModel]="inlineEditStatus()"
-                                    (ngModelChange)="inlineEditStatus.set($event)"
+                                    (ngModelChange)="onInlineStatusChange(note, $event)"
                                     optionLabel="label"
                                     optionValue="value"
                                     styleClass="w-full h-8 text-[10px]"
                                     [appendTo]="'body'"
                                   ></p-select>
-                                  <div class="flex flex-col gap-1.5 w-24 px-1">
-                                    <button
-                                      pButton
-                                      label="Guardar"
-                                      icon="pi pi-check"
-                                      size="small"
-                                      class="h-7 text-[10px] w-full px-3"
-                                      [loading]="saving()"
-                                      (click)="saveInlineEdit(note)"
-                                    ></button>
-                                    <button
-                                      pButton
-                                      label="Cancelar"
-                                      icon="pi pi-times"
-                                      size="small"
-                                      class="p-button-secondary h-7 text-[10px] w-full px-3"
-                                      (click)="cancelInlineEdit()"
-                                    ></button>
-                                  </div>
                                 </div>
                               } @else {
                                 <span
-                                  class="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full"
+                                  class="text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full"
                                   [ngClass]="getStatusClass(note.status)"
                                 >
                                   {{ getStatusLabel(note.status) }}
                                 </span>
-                                @if (canEditFull(note)) {
-                                  <i
-                                    class="pi pi-pencil text-[9px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-1"
-                                  ></i>
-                                }
                               }
                             </td>
                             <td class="text-right">
@@ -383,25 +330,19 @@
                   <p-table [value]="flatActivities()" [rows]="20" styleClass="p-datatable-sm">
                     <ng-template pTemplate="header">
                       <tr>
-                        <th class="w-12 text-center text-[10px] font-bold text-gray-400 uppercase">
-                          #
-                        </th>
-                        <th class="text-[10px] font-bold text-gray-400 uppercase">Actividad</th>
-                        <th class="w-40 text-[10px] font-bold text-gray-400 uppercase text-center">
-                          Vencimiento
-                        </th>
-                        <th class="w-32 text-[10px] font-bold text-gray-400 uppercase text-center">
-                          Estado
-                        </th>
+                        <th class="w-12 text-center text-[10px] font-bold text-gray-400">#</th>
+                        <th class="text-[10px] font-bold text-gray-400">Actividad</th>
+                        <th class="w-40 text-[10px] font-bold text-gray-400 text-center">Vencimiento</th>
+                        <th class="w-32 text-[10px] font-bold text-gray-400 text-center">Estado</th>
                         <th class="w-20"></th>
                       </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-note let-rowIndex="rowIndex">
                       <tr
-                        class="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer"
+                        class="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer align-top"
                         (click)="viewNote(note)"
                       >
-                        <td class="text-center font-bold text-gray-400 text-xs">
+                        <td class="text-center font-bold text-gray-400 text-xs pt-3">
                           {{ rowIndex + 1 }}
                         </td>
                         <td>
@@ -410,26 +351,17 @@
                               <textarea
                                 pTextarea
                                 [autoResize]="true"
-                                rows="2"
+                                rows="3"
                                 class="w-full text-xs"
                                 [ngModel]="inlineEditContent()"
                                 (ngModelChange)="inlineEditContent.set($event)"
-                              ></textarea>
+                                  ></textarea>
                             </div>
                           } @else {
-                            <div class="flex items-center gap-2 group/cell">
-                              <i
-                                [class]="getTypeIcon() + ' text-gray-400 text-[10px]'"
-                              ></i>
-                              <span
-                                class="text-xs font-medium text-gray-700 dark:text-gray-200 line-clamp-2"
-                              >
-                                {{ getContentSummary(note) }}
-                              </span>
+                            <div class="flex items-start gap-2 group/cell py-1">
+                              <span class="text-xs font-medium text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words">{{ getContentSummary(note) }}</span>
                               @if (canEditFull(note)) {
-                                <i
-                                  class="pi pi-pencil text-[10px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-auto"
-                                ></i>
+                                <i class="pi pi-pencil text-[10px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-auto flex-shrink-0 mt-0.5"></i>
                               }
                             </div>
                           }
@@ -439,7 +371,7 @@
                             <div class="flex flex-col gap-1" (click)="$event.stopPropagation()">
                               <p-datepicker
                                 [ngModel]="inlineEditDueAt()"
-                                (ngModelChange)="inlineEditDueAt.set($event)"
+                                (ngModelChange)="onInlineDateChange(note, $event)"
                                 [showTime]="true"
                                 dateFormat="dd/mm/yy"
                                 hourFormat="24"
@@ -449,66 +381,34 @@
                             </div>
                           } @else {
                             @if (getDueDate(note)) {
-                              <span
-                                class="text-[10px] font-medium"
-                                [ngClass]="{ 'text-red-500': isOverdue(note) }"
-                              >
+                              <span class="text-[10px] font-medium" [ngClass]="{ 'text-red-500': isOverdue(note) }">
                                 {{ formatDueAt(getDueDate(note)!) }}
                               </span>
                             } @else {
                               <span class="text-[10px] text-gray-400">—</span>
                             }
-                            @if (canEditFull(note)) {
-                              <i
-                                class="pi pi-pencil text-[9px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-1"
-                              ></i>
-                            }
                           }
                         </td>
                         <td class="text-center">
                           @if (inlineEditingId() === note._id) {
-                            <div class="flex items-center gap-1" (click)="$event.stopPropagation()">
+                            <div (click)="$event.stopPropagation()">
                               <p-select
                                 [options]="statusOptions"
                                 [ngModel]="inlineEditStatus()"
-                                (ngModelChange)="inlineEditStatus.set($event)"
+                                (ngModelChange)="onInlineStatusChange(note, $event)"
                                 optionLabel="label"
                                 optionValue="value"
                                 styleClass="w-full h-8 text-[10px]"
                                 [appendTo]="'body'"
                               ></p-select>
-                              <div class="flex flex-col gap-1.5 w-24 px-1">
-                                <button
-                                  pButton
-                                  label="Guardar"
-                                  icon="pi pi-check"
-                                  size="small"
-                                  class="h-7 text-[10px] w-full px-3"
-                                  [loading]="saving()"
-                                  (click)="saveInlineEdit(note)"
-                                ></button>
-                                <button
-                                  pButton
-                                  label="Cancelar"
-                                  icon="pi pi-times"
-                                  size="small"
-                                  class="p-button-secondary h-7 text-[10px] w-full px-3"
-                                  (click)="cancelInlineEdit()"
-                                ></button>
-                              </div>
                             </div>
                           } @else {
                             <span
-                              class="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full"
+                              class="text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full"
                               [ngClass]="getStatusClass(note.status)"
                             >
                               {{ getStatusLabel(note.status) }}
                             </span>
-                            @if (canEditFull(note)) {
-                              <i
-                                class="pi pi-pencil text-[9px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-1"
-                              ></i>
-                            }
                           }
                         </td>
                         <td class="text-right">
@@ -565,7 +465,7 @@
           <i [class]="getTypeIcon() + ' text-gray-500 text-sm'"></i>
         </div>
         <span
-          class="text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded bg-gray-50 dark:bg-gray-700/50"
+          class="text-[10px] font-bold tracking-wider px-2 py-1 rounded bg-gray-50 dark:bg-gray-700/50"
           [ngClass]="getStatusClass(note.status)"
         >
           {{ getStatusLabel(note.status) }}
@@ -584,7 +484,7 @@
     </div>
 
     <div class="flex-1 mb-4">
-      <p class="text-gray-800 dark:text-white font-medium text-sm line-clamp-4 leading-relaxed">
+      <p class="text-gray-800 dark:text-white font-medium text-sm whitespace-pre-wrap break-words leading-relaxed">
         {{ getContentSummary(note) || 'Sin contenido' }}
       </p>
     </div>

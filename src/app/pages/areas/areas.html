@@ -231,7 +231,9 @@
 
   <!-- Diálogo de creación/edición -->
   <p-dialog
-    [(visible)]="showDialog"
+    [visible]="showDialog()"
+    (visibleChange)="showDialog.set($event)"
+    (onHide)="closeDialog()"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '42rem' }"
     [draggable]="false"
@@ -245,7 +247,8 @@
       </span>
     </ng-template>
 
-    <div class="space-y-4" *ngIf="editing() as e">
+    @if (editing(); as e) {
+    <div class="space-y-4">
       <div>
         <label for="nombre" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">
           Nombre *
@@ -313,6 +316,7 @@
         ></p-toggleButton>
       </div>
     </div>
+    }
 
     <ng-template pTemplate="footer">
       <button pButton label="Cancelar" class="p-button-text" (click)="closeDialog()" aria-label="Cancelar"></button>
@@ -322,7 +326,9 @@
 
   <!-- Diálogo de visualización (solo lectura) -->
   <p-dialog
-    [(visible)]="showViewDialog"
+    [visible]="showViewDialog()"
+    (visibleChange)="showViewDialog.set($event)"
+    (onHide)="closeViewDialog()"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '42rem' }"
     [draggable]="false"
@@ -334,7 +340,8 @@
       <span class="font-semibold">Ver detalles del área</span>
     </ng-template>
 
-    <div class="space-y-4" *ngIf="viewing() as v">
+    @if (viewing(); as v) {
+    <div class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <span class="block text-xs text-gray-500 dark:text-white mb-1">Nombre</span>
@@ -379,6 +386,7 @@
       </div>
       }
     </div>
+    }
 
     <ng-template pTemplate="footer">
       <button pButton label="Cerrar" (click)="closeViewDialog()" aria-label="Cerrar"></button>
@@ -387,7 +395,8 @@
 
   <!-- Diálogo de asignación de usuarios -->
   <p-dialog
-    [(visible)]="showUsersDialog"
+    [visible]="showUsersDialog()"
+    (visibleChange)="showUsersDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '42rem' }"
     [draggable]="false"
@@ -442,10 +451,12 @@
           </p-multiSelect>
         </div>
 
-        <div *ngIf="loadingUsers()" class="flex items-center justify-center py-4">
+        @if (loadingUsers()) {
+        <div class="flex items-center justify-center py-4">
           <i class="pi pi-spin pi-spinner text-2xl text-primary"></i>
           <span class="ml-2 text-gray-600 dark:text-gray-400">Procesando...</span>
         </div>
+        }
       </div>
     </div>
 
