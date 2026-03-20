@@ -1,0 +1,10 @@
+/* Etiqueta del botón "Ver detalles" en una sola línea (PrimeNG envuelve el texto en .p-button-label) */
+:host ::ng-deep .crm-contact-detail-btn {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+
+  .p-button-label {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}

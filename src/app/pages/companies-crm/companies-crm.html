@@ -4,7 +4,7 @@
 
   <!-- Header -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-    <h1 class="text-2xl font-bold text-gray-800">Gestión de Empresas Momentum</h1>
+    <h1 class="text-2xl font-bold text-gray-800">Empresas del CRM</h1>
     @if (canEdit()) {
       <button
         pButton
@@ -30,7 +30,7 @@
           <input
             id="companySearch"
             pInputText
-            placeholder="Nombre, código, RUC..."
+            placeholder="Nombre, RUC..."
             [ngModel]="query()"
             (ngModelChange)="setQuery($event)"
             class="w-full"
@@ -77,8 +77,7 @@
         <tr>
           <th style="width: 3rem"></th>
           <th>Nombre</th>
-          <th>Código</th>
-          <th>RUC/DNI</th>
+          <th>RUC</th>
           <th>Email</th>
           <th>Teléfono</th>
           <th>Estado</th>
@@ -112,11 +111,6 @@
                 </div>
               }
             </div>
-          </td>
-          <td>
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-              {{ row.code || '-' }}
-            </span>
           </td>
           <td>
             <span class="text-sm text-gray-600 dark:text-gray-400">
@@ -222,11 +216,6 @@
               <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
                 {{ row.name }}
               </div>
-              @if (row.code) {
-                <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-                  Código: {{ row.code }}
-                </div>
-              }
               <div class="flex items-center gap-2 mt-1">
                 @if (row.isActive) {
                   <p-tag value="Activa" severity="success" styleClass="text-xs"></p-tag>
@@ -260,7 +249,7 @@
                 }
                 @if (row.taxId) {
                   <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
-                    RUC/DNI: {{ row.taxId }}
+                    RUC: {{ row.taxId }}
                   </div>
                 }
                 @if (row.email) {
@@ -446,36 +435,21 @@
           </div>
           <div>
             <label
-              for="companyCode"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Código
-            </label>
-            <input
-              id="companyCode"
-              pInputText
-              placeholder="Código único"
-              [ngModel]="editing()?.code"
-              (ngModelChange)="onEditChange('code', $event)"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label
               for="companyTaxId"
               class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
-              RUC/DNI
-              <span class="text-xs text-gray-500 ml-1">(se autocompleta automáticamente)</span>
+              RUC *
+              <span class="text-xs text-gray-500 ml-1">(11 dígitos; se autocompleta)</span>
             </label>
             <input
               id="companyTaxId"
               pInputText
-              placeholder="20123456789 o 12345678"
+              placeholder="20123456789"
               [ngModel]="editing()?.taxId"
               (ngModelChange)="onEditChange('taxId', $event)"
               class="w-full"
               maxlength="11"
+              inputmode="numeric"
             />
           </div>
           <div class="md:col-span-2">
@@ -488,7 +462,7 @@
             <textarea
               id="companyDescription"
               pTextarea
-              placeholder="Descripción de la empresa"
+              placeholder="Opcional · descripción de la empresa"
               [ngModel]="editing()?.description"
               (ngModelChange)="onEditChange('description', $event)"
               [rows]="3"
@@ -512,8 +486,10 @@
             <input
               id="companyEmail"
               pInputText
-              type="email"
-              placeholder="contacto@ejemplo.com"
+              type="text"
+              inputmode="email"
+              autocomplete="email"
+              placeholder="contacto@ejemplo.com (opcional)"
               [ngModel]="editing()?.email"
               (ngModelChange)="onEditChange('email', $event)"
               class="w-full"
@@ -529,7 +505,7 @@
             <input
               id="companyPhone"
               pInputText
-              placeholder="+51 987654321"
+              placeholder="Opcional · ej. +51 987654321"
               [ngModel]="editing()?.phone"
               (ngModelChange)="onEditChange('phone', $event)"
               class="w-full"
@@ -545,7 +521,7 @@
             <input
               id="companyWebsite"
               pInputText
-              placeholder="https://www.ejemplo.com"
+              placeholder="Opcional · https://www.ejemplo.com"
               [ngModel]="editing()?.website"
               (ngModelChange)="onEditChange('website', $event)"
               class="w-full"
@@ -561,7 +537,7 @@
             <input
               id="companyAddress"
               pInputText
-              placeholder="Av. Principal 123, Lima"
+              placeholder="Opcional · Av. Principal 123, Lima"
               [ngModel]="editing()?.address"
               (ngModelChange)="onEditChange('address', $event)"
               class="w-full"
@@ -650,18 +626,10 @@
                 {{ viewingCompany()?.name }}
               </div>
             </div>
-            @if (viewingCompany()?.code) {
-              <div>
-                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >Código</span
-                >
-                <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.code }}</div>
-              </div>
-            }
             @if (viewingCompany()?.taxId) {
               <div>
                 <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >RUC/DNI</span
+                  >RUC</span
                 >
                 <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.taxId }}</div>
               </div>

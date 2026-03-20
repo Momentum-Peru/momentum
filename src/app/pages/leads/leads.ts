@@ -38,9 +38,8 @@ import { FollowUpsApiService } from '../../shared/services/follow-ups-api.servic
 import { UsersApiService } from '../../shared/services/users-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
-import { CompaniesApiService } from '../../shared/services/companies-api.service';
+import { CrmCompaniesApiService } from '../../shared/services/crm-companies-api.service';
 import { CompanyOption } from '../../shared/interfaces/company.interface';
-import { TenantService } from '../../core/services/tenant.service';
 import { AuthService } from '../login/services/auth.service';
 import { ApisPeruApiService } from '../../shared/services/apisperu-api.service';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
@@ -109,12 +108,11 @@ export class LeadsPage implements OnInit {
   private readonly followUpsApi = inject(FollowUpsApiService);
   private readonly usersApi = inject(UsersApiService);
   private readonly clientsApi = inject(ClientsApiService);
-  private readonly companiesApi = inject(CompaniesApiService);
+  private readonly crmCompaniesApi = inject(CrmCompaniesApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
-  private readonly tenantService = inject(TenantService);
   private readonly router = inject(Router);
   private readonly baseUrl = environment.apiUrl;
   private readonly apisPeruService = inject(ApisPeruApiService);
@@ -195,12 +193,19 @@ export class LeadsPage implements OnInit {
   sourceOptions: { label: string; value: LeadSource | '' }[] = [
     { label: 'Todos', value: '' },
     { label: 'Sitio Web', value: 'WEBSITE' },
-    { label: 'Referencia', value: 'REFERRAL' },
-    { label: 'Redes Sociales', value: 'SOCIAL_MEDIA' },
+    { label: 'Referido', value: 'REFERRAL' },
+    { label: 'Redes sociales', value: 'SOCIAL_MEDIA' },
     { label: 'Email', value: 'EMAIL' },
     { label: 'Teléfono', value: 'PHONE' },
     { label: 'Evento', value: 'EVENT' },
-    { label: 'Otro', value: 'OTHER' },
+    { label: 'Otros', value: 'OTHER' },
+  ];
+
+  /** Origen al crear lead: solo las opciones que pide negocio (valores API sin cambiar). */
+  readonly leadFormSourceOptions: { label: string; value: LeadSource }[] = [
+    { label: 'Referido', value: 'REFERRAL' },
+    { label: 'Redes sociales', value: 'SOCIAL_MEDIA' },
+    { label: 'Otros', value: 'OTHER' },
   ];
 
   statusColors: Record<
@@ -289,7 +294,7 @@ export class LeadsPage implements OnInit {
   }
 
   loadCompanies() {
-    this.companiesApi.listActiveAsOptions().subscribe({
+    this.crmCompaniesApi.listActiveAsOptions().subscribe({
       next: (companies) => this.companies.set(companies),
       error: () => this.companies.set([]),
     });
@@ -370,18 +375,26 @@ export class LeadsPage implements OnInit {
   newItem() {
     this.editing.set({
       name: '', // Se autocompletará con el nombre del contacto al guardar
-      contact: { name: '', email: '', phone: '' },
+      contact: { name: '', lastName: '', email: '', phone: '' },
       status: 'NEW',
       source: 'OTHER',
       assignedTo: '',
-      companyId: this.tenantService.tenantId() || '', // Autoseleccionar tenant
+      companyId: '',
     });
     this.showDialog.set(true);
     this.resetLocation();
   }
 
   editItem(item: Lead) {
-    this.editing.set({ ...item });
+    const { name: firstNames, lastName } = this.splitContactName(item.contact?.name ?? '');
+    this.editing.set({
+      ...item,
+      contact: {
+        ...item.contact,
+        name: firstNames,
+        lastName,
+      },
+    });
     this.showDialog.set(true);
     this.initializeLocation(item.location);
   }
@@ -570,15 +583,18 @@ export class LeadsPage implements OnInit {
       return;
     }
 
-    // Si no hay nombre de lead, usar el nombre del contacto
-    const name = item.name && item.name.trim() !== '' ? item.name : contact.name;
+    const contactPayload = this.buildContactForPersistence(contact);
+
+    // Si no hay nombre de lead, usar el nombre completo del contacto
+    const name =
+      item.name && item.name.trim() !== '' ? item.name.trim() : contactPayload.name;
 
     // Ahora TypeScript sabe que name y contact no son undefined
     if (item._id) {
       // Actualizar lead existente - solo campos permitidos en UpdateLeadRequest
       const updatePayload: UpdateLeadRequest = {
         name,
-        contact,
+        contact: contactPayload,
         company: item.company,
         location: item.location,
         status: item.status,
@@ -613,7 +629,7 @@ export class LeadsPage implements OnInit {
       // Después de la validación y el check anterior, sabemos que contact existen
       const createPayload: CreateLeadRequest = {
         name,
-        contact,
+        contact: contactPayload,
         company: item.company,
         location: item.location,
         status: item.status || 'NEW',
@@ -866,21 +882,10 @@ export class LeadsPage implements OnInit {
   }
 
   getCompanyFilterOptions() {
-    const allCompanies = this.companies();
-
-    // Filtrar por acceso del usuario si tiene tenantIds definidos
-    const user = this.auth.getCurrentUser();
-    if (!user || typeof user !== 'object' || !('tenantIds' in user)) {
-      return allCompanies.map((c) => ({ label: c.name, value: c._id }));
-    }
-
-    const tenantIds = (user as { tenantIds?: string[] }).tenantIds;
-    const filteredCompanies =
-      !tenantIds || tenantIds.length === 0
-        ? allCompanies
-        : allCompanies.filter((c) => tenantIds.includes(c._id));
-
-    return filteredCompanies.map((c) => ({ label: c.name, value: c._id }));
+    return [
+      { label: 'Todas', value: '' },
+      ...this.companies().map((c) => ({ label: c.name, value: c._id })),
+    ];
   }
 
   getCompanyName(id: string | undefined): string {
@@ -904,6 +909,17 @@ export class LeadsPage implements OnInit {
   getSourceLabel(source: LeadSource): string {
     const option = this.sourceOptions.find((o) => o.value === source);
     return option ? option.label : source;
+  }
+
+  /**
+   * En alta solo 3 orígenes; en edición todas las opciones (histórico puede ser WEBSITE, etc.).
+   */
+  getSourceOptionsForDialog(): { label: string; value: LeadSource }[] {
+    if (this.editing()?._id) {
+      return this.sourceOptions
+        .filter((o): o is { label: string; value: LeadSource } => o.value !== '');
+    }
+    return this.leadFormSourceOptions;
   }
 
   toggleRow(rowId: string | undefined) {
@@ -930,8 +946,21 @@ export class LeadsPage implements OnInit {
     //   errors.push('El nombre del lead es requerido');
     // }
 
-    if (!item.contact?.name || item.contact.name.trim() === '') {
-      errors.push('El nombre del contacto es requerido');
+    const nombres = item.contact?.name?.trim() ?? '';
+    if (!nombres) {
+      errors.push('Los nombres del contacto son obligatorios');
+    }
+    const fullName = this.combineContactNames(nombres, item.contact?.lastName);
+    if (fullName.length < 2) {
+      errors.push('El nombre completo del contacto debe tener al menos 2 caracteres');
+    }
+    if (fullName.length > 100) {
+      errors.push('El nombre completo del contacto no puede exceder 100 caracteres');
+    }
+
+    const phone = item.contact?.phone?.trim() ?? '';
+    if (phone && (phone.length < 5 || phone.length > 20)) {
+      errors.push('Si ingresa teléfono, debe tener entre 5 y 20 caracteres');
     }
 
     // Email ya no es obligatorio
@@ -950,10 +979,47 @@ export class LeadsPage implements OnInit {
     }
 
     if (!item.companyId || item.companyId.trim() === '') {
-      errors.push('Debe seleccionar una empresa de Momentum (Verifique su tenant seleccionado)');
+      errors.push('Debe seleccionar una empresa del CRM (configure empresas en Empresas del CRM)');
+    }
+
+    if (!item.source) {
+      errors.push('Indique de dónde proviene el lead');
     }
 
     return errors;
+  }
+
+  /**
+   * Separa un nombre completo guardado en BD en nombres + apellidos (último espacio).
+   * Al editar, el usuario puede ajustar ambos campos.
+   */
+  private splitContactName(full: string): { name: string; lastName: string } {
+    const t = full.trim();
+    if (!t) return { name: '', lastName: '' };
+    const idx = t.lastIndexOf(' ');
+    if (idx <= 0) return { name: t, lastName: '' };
+    return {
+      name: t.slice(0, idx).trim(),
+      lastName: t.slice(idx + 1).trim(),
+    };
+  }
+
+  private combineContactNames(first: string, last?: string): string {
+    return [first.trim(), (last ?? '').trim()].filter((p) => p.length > 0).join(' ').trim();
+  }
+
+  /** Objeto contacto listo para API (sin `lastName`, `name` ya fusionado). */
+  private buildContactForPersistence(contact: LeadContact): Omit<LeadContact, 'lastName'> {
+    const name = this.combineContactNames(contact.name, contact.lastName);
+    const email = contact.email?.trim();
+    const phone = contact.phone?.trim();
+    return {
+      name,
+      ...(email ? { email } : {}),
+      ...(phone ? { phone } : {}),
+      ...(contact.position?.trim() ? { position: contact.position.trim() } : {}),
+      ...(contact.department?.trim() ? { department: contact.department.trim() } : {}),
+    };
   }
 
   private isValidEmail(email: string): boolean {

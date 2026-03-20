@@ -507,19 +507,51 @@ export class FollowUpsPage implements OnInit {
     });
   }
 
-  getTypeLabel(type: FollowUpType): string {
+  getContactName(id: string | undefined): string {
+    if (!id) return '—';
+    return this.contacts().find((c) => c._id === id)?.name ?? '—';
+  }
+
+  getTypeColorClass(type?: FollowUpType): string {
+    const map: Record<string, string> = {
+      CALL: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400',
+      EMAIL: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400',
+      MEETING: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400',
+      NOTE: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400',
+      PROPOSAL: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400',
+      OTHER: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+    };
+    return type ? (map[type] ?? 'bg-gray-100 text-gray-500') : 'bg-gray-100 text-gray-500';
+  }
+
+  getTypeIcon(type?: FollowUpType): string {
+    const map: Record<string, string> = {
+      CALL: 'pi pi-phone',
+      EMAIL: 'pi pi-envelope',
+      MEETING: 'pi pi-users',
+      NOTE: 'pi pi-file-edit',
+      PROPOSAL: 'pi pi-file',
+      OTHER: 'pi pi-ellipsis-h',
+    };
+    return type ? (map[type] ?? 'pi pi-circle') : 'pi pi-circle';
+  }
+
+  getTypeLabel(type: FollowUpType | undefined): string {
+    if (!type) return '—';
     const option = this.typeOptions.find((o) => o.value === type);
     return option ? option.label : type;
   }
 
-  getStatusLabel(status: FollowUpStatus): string {
+  getStatusLabel(status: FollowUpStatus | undefined): string {
+    if (!status) return '—';
     const option = this.statusOptions.find((o) => o.value === status);
     return option ? option.label : status;
   }
 
   getStatusSeverity(
-    status: FollowUpStatus,
+    status: FollowUpStatus | undefined,
   ): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' {
+    if (!status) return 'secondary';
     return this.statusColors[status] || 'info';
   }
 

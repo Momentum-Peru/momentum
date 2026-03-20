@@ -102,7 +102,7 @@
           <label
             for="leadCompanyFilter"
             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >Empresa Momentum</label
+            >Empresa CRM</label
           >
           <p-select
             id="leadCompanyFilter"
@@ -140,7 +140,7 @@
           <th>Contacto</th>
           <th>Estado</th>
           <th>Origen</th>
-          <th>Empresa Momentum</th>
+          <th>Empresa CRM</th>
           <th>Valor Estimado</th>
           <th>Asignado a</th>
           <th class="text-right">Acciones</th>
@@ -326,11 +326,11 @@
                 </div>
               }
 
-              <!-- Empresa Momentum -->
+              <!-- Empresa CRM -->
               @if (row.companyId) {
                 <div>
                   <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                    Empresa Momentum
+                    Empresa CRM
                   </div>
                   <div
                     class="text-sm text-gray-900 dark:text-gray-100 break-words flex items-center gap-1"
@@ -446,9 +446,28 @@
       <div>
         <h4 class="text-lg font-semibold mb-3">Información Básica</h4>
         <!-- Nombre del Lead eliminado (se autogenera) -->
-        <!-- Empresa Momentum eliminada (se autoselecciona) -->
-
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+          <div>
+            <label
+              for="leadCrmCompany"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Empresa CRM *
+            </label>
+            <p-select
+              id="leadCrmCompany"
+              [options]="companies()"
+              optionLabel="name"
+              optionValue="_id"
+              [ngModel]="editing()?.companyId"
+              (ngModelChange)="onEditChange('companyId', $event)"
+              placeholder="Seleccionar empresa del CRM"
+              [appendTo]="'body'"
+              [filter]="true"
+              filterPlaceholder="Buscar..."
+              class="w-full"
+            ></p-select>
+          </div>
           <div>
             <label
               for="leadAssignedTo"
@@ -469,46 +488,47 @@
             ></p-select>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-          @if (editing()?._id) {
-          <div>
-            <label
-              for="leadStatus"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Estado
-            </label>
-            <p-select
-              id="leadStatus"
-              [options]="getStatusOptionsForEdit()"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="editing()?.status"
-              (ngModelChange)="onEditChange('status', $event)"
-              [appendTo]="'body'"
-              class="w-full"
-            ></p-select>
-          </div>
-          }
-          <div>
-            <label
-              for="leadSource"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Origen
-            </label>
-            <p-select
-              id="leadSource"
-              [options]="sourceOptions"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="editing()?.source"
-              (ngModelChange)="onEditChange('source', $event)"
-              [appendTo]="'body'"
-              class="w-full"
-            ></p-select>
-          </div>
+        <div class="mt-3">
+          <label
+            for="leadSource"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            ¿De dónde proviene el contacto? *
+          </label>
+          <p-select
+            id="leadSource"
+            [options]="getSourceOptionsForDialog()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="editing()?.source"
+            (ngModelChange)="onEditChange('source', $event)"
+            [placeholder]="editing()?._id ? 'Origen del lead' : 'Selecciona: Referido, Redes sociales u Otros'"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
         </div>
+        @if (editing()?._id) {
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+            <div>
+              <label
+                for="leadStatus"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                Estado
+              </label>
+              <p-select
+                id="leadStatus"
+                [options]="getStatusOptionsForEdit()"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="editing()?.status"
+                (ngModelChange)="onEditChange('status', $event)"
+                [appendTo]="'body'"
+                class="w-full"
+              ></p-select>
+            </div>
+          </div>
+        }
         <div class="mt-3">
           <label
             for="leadEstimatedValue"
@@ -550,20 +570,23 @@
 
       <!-- Información de Contacto -->
       <div class="border-t pt-4">
-        <h4 class="text-lg font-semibold mb-3">Información de Contacto *</h4>
+        <h4 class="text-lg font-semibold mb-1">Información de Contacto</h4>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+          Datos de la persona de contacto. Solo <strong>nombres</strong> son obligatorios.
+        </p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label
               for="contactName"
               class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
-              Nombre del Contacto *
+              Nombres *
             </label>
             <input
               id="contactName"
               name="contactName"
               pInputText
-              placeholder="Nombre completo"
+              placeholder="Ej. Juan Carlos"
               [ngModel]="editing()?.contact?.name"
               (ngModelChange)="onContactChange('name', $event)"
               class="w-full"
@@ -571,19 +594,19 @@
           </div>
           <div>
             <label
-              for="contactEmail"
+              for="contactLastName"
               class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
-              Email de Contacto
+              Apellidos
+              <span class="text-xs text-gray-400 font-normal ml-1">(opcional)</span>
             </label>
             <input
-              id="contactEmail"
-              name="contactEmail"
+              id="contactLastName"
+              name="contactLastName"
               pInputText
-              type="email"
-              placeholder="email@ejemplo.com"
-              [ngModel]="editing()?.contact?.email"
-              (ngModelChange)="onContactChange('email', $event)"
+              placeholder="Ej. Pérez García"
+              [ngModel]="editing()?.contact?.lastName"
+              (ngModelChange)="onContactChange('lastName', $event)"
               class="w-full"
             />
           </div>
@@ -592,7 +615,8 @@
               for="contactPhone"
               class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
-              Teléfono de Contacto
+              Teléfono
+              <span class="text-xs text-gray-400 font-normal ml-1">(opcional)</span>
             </label>
             <input
               id="contactPhone"
@@ -601,6 +625,25 @@
               placeholder="+51 987654321"
               [ngModel]="editing()?.contact?.phone"
               (ngModelChange)="onContactChange('phone', $event)"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label
+              for="contactEmail"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Correo
+              <span class="text-xs text-gray-400 font-normal ml-1">(opcional)</span>
+            </label>
+            <input
+              id="contactEmail"
+              name="contactEmail"
+              pInputText
+              type="email"
+              placeholder="correo@ejemplo.com"
+              [ngModel]="editing()?.contact?.email"
+              (ngModelChange)="onContactChange('email', $event)"
               class="w-full"
             />
           </div>
@@ -924,7 +967,7 @@
             </div>
             <div>
               <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >Empresa Momentum</span
+                >Empresa CRM</span
               >
               <div class="text-gray-900 dark:text-gray-100">
                 <i class="pi pi-building mr-1"></i>
