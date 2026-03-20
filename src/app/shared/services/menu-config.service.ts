@@ -70,6 +70,7 @@ export class MenuConfigService {
     { path: '/leads', label: 'Contactos', icon: 'pi pi-user-plus' },
     { path: '/follow-ups', label: 'Seguimientos', icon: 'pi pi-calendar-plus' },
     { path: '/companies-crm', label: 'Empresas Momentum', icon: 'pi pi-building' },
+    { path: '/crm-stats', label: 'Estadísticas CRM', icon: 'pi pi-chart-bar' },
     { path: '/logs', label: 'Logs del sistema', icon: 'pi pi-list' },
     { path: '/payroll', label: 'Planillas y pagos', icon: 'pi pi-wallet' },
     { path: '/payroll-calculation', label: 'Cálculo de planilla', icon: 'pi pi-calculator' },
@@ -552,11 +553,12 @@ export class MenuConfigService {
       colorTo: '#831843',
       colorPrimary: '#EC4899',
       colorLight: '#FCE7F3',
-      relatedRoutes: ['/leads', '/follow-ups', '/companies-crm'],
+      relatedRoutes: ['/leads', '/follow-ups', '/companies-crm', '/crm-stats'],
       items: [
         { label: 'Contactos', icon: 'pi pi-user-plus', routerLink: '/leads', description: 'Leads y prospectos' },
         { label: 'Seguimientos', icon: 'pi pi-calendar-plus', routerLink: '/follow-ups', description: 'Actividades de seguimiento' },
         { label: 'Empresas', icon: 'pi pi-building', routerLink: '/companies-crm', description: 'Empresas y cuentas' },
+        { label: 'Estadísticas', icon: 'pi pi-chart-bar', routerLink: '/crm-stats', description: 'KPIs y métricas del CRM' },
       ],
     },
     {
