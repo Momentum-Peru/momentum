@@ -3,6 +3,8 @@
  * Diferente del Contact existente que es para Google Contacts
  */
 
+export type ContactSource = 'REFERRAL' | 'SOCIAL_MEDIA' | 'OTHER';
+
 export interface ContactCrm {
   _id?: string;
   name?: string;
@@ -13,6 +15,7 @@ export interface ContactCrm {
   department?: string;
   clientId?: string;
   isPrimary?: boolean;
+  source?: ContactSource;
   notes?: string;
   assignedTo?: string;
   lastFollowUpDate?: string;
@@ -29,6 +32,7 @@ export interface CreateContactCrmRequest {
   department?: string;
   clientId?: string;
   isPrimary?: boolean;
+  source?: ContactSource;
   notes?: string;
   assignedTo?: string;
 }
@@ -40,7 +44,9 @@ export interface UpdateContactCrmRequest {
   mobile?: string;
   position?: string;
   department?: string;
+  clientId?: string;
   isPrimary?: boolean;
+  source?: ContactSource;
   notes?: string;
   assignedTo?: string;
 }

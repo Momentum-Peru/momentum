@@ -59,7 +59,14 @@
                 </div>
                 <div>
                    <h3 class="font-bold text-gray-800 dark:text-gray-100 truncate w-40" [pTooltip]="contact.name">{{ contact.name }}</h3>
-                   <span class="text-xs text-gray-500 dark:text-gray-400 block truncate w-40">{{ contact.role || 'Sin cargo' }}</span>
+                   <span class="text-xs text-gray-500 dark:text-gray-400 block truncate w-40">
+                     {{ contact.role || 'Sin cargo' }}
+                   </span>
+                   @if (contact.source) {
+                     <span class="text-xs text-primary-600 dark:text-primary-400 block truncate w-40 mt-0.5">
+                       {{ getContactSourceLabel(contact.source) }}
+                     </span>
+                   }
                 </div>
               </div>
 
@@ -125,6 +132,19 @@
      <div class="field">
         <label for="name" class="font-bold block mb-2">Nombre Completo *</label>
         <input pInputText id="name" [(ngModel)]="form.name" required autofocus />
+     </div>
+     <div class="field">
+        <label for="contactSource" class="font-bold block mb-2">¿De dónde viene? *</label>
+        <p-select
+          inputId="contactSource"
+          [options]="contactSourceOptions"
+          optionLabel="label"
+          optionValue="value"
+          [(ngModel)]="form.source"
+          placeholder="Seleccione origen"
+          [appendTo]="'body'"
+          class="w-full"
+        ></p-select>
      </div>
      <div class="field">
         <label for="email" class="font-bold block mb-2">Correo Electrónico</label>

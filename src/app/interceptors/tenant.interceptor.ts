@@ -16,13 +16,16 @@ export const tenantInterceptor: HttpInterceptorFn = (req, next) => {
 
   // Excepciones: auth y companies no requieren X-Tenant-Id
   const isAuth = req.url.includes('/auth/');
-  const isCompanies = req.url.includes('/companies');
+  // Importante: `/crm/companies` contiene el substring `/companies`,
+  // así que no podemos excluirlo por substring.
+  const isPlatformCompaniesOnly =
+    req.url.includes('/companies') && !req.url.includes('/crm/companies');
 
   if (!isInternalRequest) {
     return next(req);
   }
 
-  if (isAuth || isCompanies) {
+  if (isAuth || isPlatformCompaniesOnly) {
     return next(req);
   }
 

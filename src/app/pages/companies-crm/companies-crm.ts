@@ -24,22 +24,20 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { TextareaModule } from 'primeng/textarea';
 import { TagModule } from 'primeng/tag';
 import { FileUploadModule } from 'primeng/fileupload';
-import { CompaniesApiService } from '../../shared/services/companies-api.service';
-import { AuthService } from '../../pages/login/services/auth.service';
+import { CrmCompaniesApiService } from '../../shared/services/crm-companies-api.service';
 import { MenuService } from '../../shared/services/menu.service';
 import { ApisPeruApiService } from '../../shared/services/apisperu-api.service';
 import {
-  Company,
-  CreateCompanyRequest,
-  UpdateCompanyRequest,
+  CrmCompany,
+  CreateCrmCompanyRequest,
+  UpdateCrmCompanyRequest,
   CompanyQueryParams,
 } from '../../shared/interfaces/company.interface';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { Subject, of } from 'rxjs';
 
 /**
- * Componente para la gestión de Empresas de Momentum
- * Principio de Responsabilidad Única: Solo maneja la UI y coordinación para empresas de Momentum
+ * Empresas del CRM (colección propia; no confundir con `/companies` de la plataforma).
  */
 @Component({
   selector: 'app-companies-crm',
@@ -67,10 +65,9 @@ import { Subject, of } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CompaniesCrmPage implements OnInit {
-  private readonly companiesApi = inject(CompaniesApiService);
+  private readonly crmCompaniesApi = inject(CrmCompaniesApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
-  private readonly auth = inject(AuthService);
   private readonly menuService = inject(MenuService);
   private readonly apisPeruService = inject(ApisPeruApiService);
 
@@ -81,13 +78,13 @@ export class CompaniesCrmPage implements OnInit {
   readonly canEdit = computed(() => this.menuService.canEdit('/companies-crm'));
 
   // Signals
-  items = signal<Company[]>([]);
+  items = signal<CrmCompany[]>([]);
   query = signal<string>('');
   isActiveFilter = signal<boolean | null>(null);
   showDialog = signal<boolean>(false);
   showDetailsDialog = signal<boolean>(false);
-  editing = signal<Partial<Company> | null>(null);
-  viewingCompany = signal<Company | null>(null);
+  editing = signal<Partial<CrmCompany> | null>(null);
+  viewingCompany = signal<CrmCompany | null>(null);
   expandedRows = signal<Set<string>>(new Set());
   /** Archivo de logo seleccionado para subir (no enviado aún) */
   selectedLogoFile = signal<File | null>(null);
@@ -124,20 +121,17 @@ export class CompaniesCrmPage implements OnInit {
         debounceTime(800), // Esperar 800ms después de que el usuario deje de escribir
         distinctUntilChanged(), // Solo procesar si el valor cambió
         switchMap((taxId) => {
-          if (!taxId || taxId.length < 8) {
+          if (!taxId || taxId.length < 11) {
             return of(null);
           }
 
-          // Validar formato: 8 dígitos para DNI, 11 para RUC
-          const isValidFormat = /^\d{8}$/.test(taxId) || /^\d{11}$/.test(taxId);
-          if (!isValidFormat) {
+          const isRuc = /^\d{11}$/.test(taxId);
+          if (!isRuc) {
             return of(null);
           }
 
-          // Consultar APIsPERU
           return this.apisPeruService.consultDocument(taxId).pipe(
             catchError((error) => {
-              // Si falla, no mostrar error (el backend también intentará autocompletar)
               console.warn('No se pudo autocompletar desde APIsPERU:', error);
               return of(null);
             }),
@@ -150,23 +144,20 @@ export class CompaniesCrmPage implements OnInit {
         const current = this.editing();
         if (!current) return;
 
-        // Autocompletar según el tipo de respuesta (siempre rellenar con nueva consulta)
-        if ('nombreCompleto' in response || 'nombres' in response) {
-          // Es DNI
-          const dniResponse = response as any;
-          const nombreCompleto =
-            dniResponse.nombreCompleto ||
-            `${dniResponse.nombres} ${dniResponse.apellidoPaterno} ${dniResponse.apellidoMaterno}`.trim();
+        if ('razonSocial' in response) {
+          const rucResponse = response as {
+            razonSocial?: string;
+            nombreComercial?: string;
+            direccion?: string;
+            distrito?: string;
+            provincia?: string;
+            departamento?: string;
+            telefonos?: string[];
+            estado?: string;
+            condicion?: string;
+            tipo?: string;
+          };
 
-          this.editing.set({
-            ...current,
-            name: nombreCompleto,
-          });
-        } else if ('razonSocial' in response) {
-          // Es RUC
-          const rucResponse = response as any;
-
-          // Construir dirección completa
           let direccionCompleta: string | undefined = undefined;
           if (rucResponse.direccion) {
             const partesDireccion = [
@@ -178,16 +169,14 @@ export class CompaniesCrmPage implements OnInit {
             direccionCompleta = partesDireccion.join(', ') || rucResponse.direccion;
           }
 
-          // Obtener teléfono si está disponible
           const telefono =
             rucResponse.telefonos && rucResponse.telefonos.length > 0
               ? rucResponse.telefonos[0]
               : undefined;
 
-          // Construir descripción con información adicional
           let descripcion: string | undefined = undefined;
           if (rucResponse.estado || rucResponse.condicion) {
-            const partesDesc = [];
+            const partesDesc: string[] = [];
             if (rucResponse.estado) partesDesc.push(`Estado: ${rucResponse.estado}`);
             if (rucResponse.condicion) partesDesc.push(`Condición: ${rucResponse.condicion}`);
             if (rucResponse.tipo) partesDesc.push(`Tipo: ${rucResponse.tipo}`);
@@ -210,19 +199,9 @@ export class CompaniesCrmPage implements OnInit {
     if (this.query()) params.search = this.query();
     if (this.isActiveFilter() !== null) params.isActive = this.isActiveFilter()!;
 
-    this.companiesApi.list(params).subscribe({
+    this.crmCompaniesApi.list(params).subscribe({
       next: (companies) => {
-        const user = this.auth.getCurrentUser();
-        if (!user || typeof user !== 'object' || !('tenantIds' in user)) {
-          this.items.set(companies);
-          return;
-        }
-        const tenantIds = (user as { tenantIds?: string[] }).tenantIds;
-        const filtered =
-          !tenantIds || tenantIds.length === 0
-            ? companies
-            : (companies || []).filter((c: { _id?: string }) => c._id && tenantIds.includes(c._id));
-        this.items.set(filtered);
+        this.items.set(companies ?? []);
       },
       error: (error) => {
         console.error('Error loading companies:', error);
@@ -256,7 +235,6 @@ export class CompaniesCrmPage implements OnInit {
     this.logoPreviewUrl.set(null);
     this.editing.set({
       name: '',
-      code: '',
       taxId: '',
       description: '',
       email: '',
@@ -269,14 +247,14 @@ export class CompaniesCrmPage implements OnInit {
     this.showDialog.set(true);
   }
 
-  editItem(item: Company) {
+  editItem(item: CrmCompany) {
     this.selectedLogoFile.set(null);
     this.logoPreviewUrl.set(item.logo || null);
     this.editing.set({ ...item });
     this.showDialog.set(true);
   }
 
-  viewDetails(item: Company) {
+  viewDetails(item: CrmCompany) {
     this.viewingCompany.set(item);
     this.showDetailsDialog.set(true);
   }
@@ -354,7 +332,7 @@ export class CompaniesCrmPage implements OnInit {
     this.showDetailsDialog.set(false);
   }
 
-  onEditChange<K extends keyof Company>(key: K, value: Company[K]) {
+  onEditChange<K extends keyof CrmCompany>(key: K, value: CrmCompany[K]) {
     const cur = this.editing();
     if (!cur) return;
     this.editing.set({ ...cur, [key]: value });
@@ -381,26 +359,17 @@ export class CompaniesCrmPage implements OnInit {
       return;
     }
 
-    const updatePayload: UpdateCompanyRequest = {
-      name: item.name,
-      code: item.code,
-      taxId: item.taxId,
-      description: item.description,
-      email: item.email,
-      phone: item.phone,
-      website: item.website,
-      address: item.address,
-      isActive: item.isActive,
-    };
+    const updatePayload = this.buildUpdatePayload(item);
     const logoFile = this.selectedLogoFile();
 
     if (item._id) {
       // Actualizar empresa existente
       if (logoFile) {
-        this.companiesApi.uploadLogo(item._id, logoFile).subscribe({
+        this.crmCompaniesApi.uploadLogo(item._id, logoFile).subscribe({
           next: () => {
-            updatePayload.logo = undefined;
-            this.companiesApi.update(item._id!, updatePayload).subscribe({
+            const patch = { ...updatePayload };
+            delete patch.logo;
+            this.crmCompaniesApi.update(item._id!, patch).subscribe({
               next: () => {
                 this.messageService.add({
                   severity: 'success',
@@ -428,8 +397,12 @@ export class CompaniesCrmPage implements OnInit {
           },
         });
       } else {
-        updatePayload.logo = item.logo;
-        this.companiesApi.update(item._id, updatePayload).subscribe({
+        const patch = { ...updatePayload };
+        const logoUrl = this.trimOrUndefined(item.logo);
+        if (logoUrl !== undefined) {
+          patch.logo = logoUrl;
+        }
+        this.crmCompaniesApi.update(item._id, patch).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',
@@ -449,22 +422,11 @@ export class CompaniesCrmPage implements OnInit {
         });
       }
     } else {
-      // Crear nueva empresa
-      const createPayload: CreateCompanyRequest = {
-        name: item.name!,
-        code: item.code,
-        taxId: item.taxId,
-        description: item.description,
-        email: item.email,
-        phone: item.phone,
-        website: item.website,
-        address: item.address,
-        isActive: item.isActive ?? true,
-      };
-      this.companiesApi.create(createPayload).subscribe({
+      const createPayload = this.buildCreatePayload(item);
+      this.crmCompaniesApi.create(createPayload).subscribe({
         next: (company) => {
           if (logoFile && company._id) {
-            this.companiesApi.uploadLogo(company._id, logoFile).subscribe({
+            this.crmCompaniesApi.uploadLogo(company._id, logoFile).subscribe({
               next: () => {
                 this.messageService.add({
                   severity: 'success',
@@ -503,7 +465,7 @@ export class CompaniesCrmPage implements OnInit {
     }
   }
 
-  remove(item: Company) {
+  remove(item: CrmCompany) {
     if (!item._id) return;
 
     this.confirmationService.confirm({
@@ -513,7 +475,7 @@ export class CompaniesCrmPage implements OnInit {
       acceptLabel: 'Sí, eliminar',
       rejectLabel: 'Cancelar',
       accept: () => {
-        this.companiesApi.delete(item._id!).subscribe({
+        this.crmCompaniesApi.delete(item._id!).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',
@@ -534,10 +496,10 @@ export class CompaniesCrmPage implements OnInit {
     });
   }
 
-  activate(item: Company) {
+  activate(item: CrmCompany) {
     if (!item._id) return;
 
-    this.companiesApi.activate(item._id).subscribe({
+    this.crmCompaniesApi.activate(item._id).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
@@ -556,10 +518,10 @@ export class CompaniesCrmPage implements OnInit {
     });
   }
 
-  deactivate(item: Company) {
+  deactivate(item: CrmCompany) {
     if (!item._id) return;
 
-    this.companiesApi.deactivate(item._id).subscribe({
+    this.crmCompaniesApi.deactivate(item._id).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
@@ -602,7 +564,7 @@ export class CompaniesCrmPage implements OnInit {
     ];
   }
 
-  private validateForm(item: Partial<Company>): string[] {
+  private validateForm(item: Partial<CrmCompany>): string[] {
     const errors: string[] = [];
 
     if (!item.name || item.name.trim() === '') {
@@ -613,11 +575,88 @@ export class CompaniesCrmPage implements OnInit {
       errors.push('El nombre debe tener entre 2 y 120 caracteres');
     }
 
-    if (item.email && !this.isValidEmail(item.email)) {
+    const ruc = item.taxId?.trim() ?? '';
+    if (!ruc) {
+      errors.push('El RUC es obligatorio');
+    } else if (!/^\d{11}$/.test(ruc)) {
+      errors.push('El RUC debe tener exactamente 11 dígitos');
+    }
+
+    const email = this.trimOrUndefined(item.email);
+    if (email !== undefined && !this.isValidEmail(email)) {
       errors.push('El email no tiene un formato válido');
     }
 
+    const phone = this.trimOrUndefined(item.phone);
+    if (phone !== undefined && (phone.length < 5 || phone.length > 20)) {
+      errors.push('Si ingresa teléfono, debe tener entre 5 y 20 caracteres');
+    }
+
+    const website = this.trimOrUndefined(item.website);
+    if (website !== undefined && (website.length < 5 || website.length > 200)) {
+      errors.push('Si ingresa sitio web, debe tener entre 5 y 200 caracteres');
+    }
+
+    const address = this.trimOrUndefined(item.address);
+    if (address !== undefined && (address.length < 5 || address.length > 200)) {
+      errors.push('Si ingresa dirección, debe tener entre 5 y 200 caracteres');
+    }
+
+    const description = this.trimOrUndefined(item.description);
+    if (description !== undefined && description.length > 500) {
+      errors.push('La descripción no puede exceder 500 caracteres');
+    }
+
     return errors;
+  }
+
+  /**
+   * Solo obligatorios: nombre y RUC. El resto se envía solo si tiene texto (evita "" en el API).
+   */
+  private buildCreatePayload(item: Partial<CrmCompany>): CreateCrmCompanyRequest {
+    const payload: CreateCrmCompanyRequest = {
+      name: item.name!.trim(),
+      taxId: item.taxId!.trim(),
+      isActive: item.isActive ?? true,
+    };
+    const d = this.trimOrUndefined(item.description);
+    if (d !== undefined) payload.description = d;
+    const e = this.trimOrUndefined(item.email);
+    if (e !== undefined) payload.email = e;
+    const p = this.trimOrUndefined(item.phone);
+    if (p !== undefined) payload.phone = p;
+    const w = this.trimOrUndefined(item.website);
+    if (w !== undefined) payload.website = w;
+    const a = this.trimOrUndefined(item.address);
+    if (a !== undefined) payload.address = a;
+    return payload;
+  }
+
+  private buildUpdatePayload(item: Partial<CrmCompany>): UpdateCrmCompanyRequest {
+    const payload: UpdateCrmCompanyRequest = {
+      name: item.name!.trim(),
+      taxId: item.taxId!.trim(),
+    };
+    if (item.isActive !== undefined) {
+      payload.isActive = item.isActive;
+    }
+    const d = this.trimOrUndefined(item.description);
+    if (d !== undefined) payload.description = d;
+    const e = this.trimOrUndefined(item.email);
+    if (e !== undefined) payload.email = e;
+    const p = this.trimOrUndefined(item.phone);
+    if (p !== undefined) payload.phone = p;
+    const w = this.trimOrUndefined(item.website);
+    if (w !== undefined) payload.website = w;
+    const a = this.trimOrUndefined(item.address);
+    if (a !== undefined) payload.address = a;
+    return payload;
+  }
+
+  private trimOrUndefined(value: string | undefined): string | undefined {
+    if (value === undefined || value === null) return undefined;
+    const t = String(value).trim();
+    return t.length > 0 ? t : undefined;
   }
 
   private isValidEmail(email: string): boolean {
@@ -627,9 +666,16 @@ export class CompaniesCrmPage implements OnInit {
 
   private getErrorMessage(error: unknown): string {
     if (error && typeof error === 'object' && 'error' in error) {
-      const httpError = error as { error?: { message?: string; error?: string }; message?: string };
-      if (httpError.error?.message) {
-        return String(httpError.error.message);
+      const httpError = error as {
+        error?: { message?: string | string[]; error?: string };
+        message?: string;
+      };
+      const msg = httpError.error?.message;
+      if (Array.isArray(msg)) {
+        return msg.map(String).join('. ');
+      }
+      if (msg) {
+        return String(msg);
       }
       if (httpError.error?.error) {
         return String(httpError.error.error);
