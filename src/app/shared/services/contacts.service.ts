@@ -3,6 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+/** Origen del contacto (misma semántica que en leads). */
+export type ContactSource = 'REFERRAL' | 'SOCIAL_MEDIA' | 'OTHER';
+
 export interface Contact {
     _id: string;
     name: string;
@@ -10,6 +13,7 @@ export interface Contact {
     phone?: string;
     company?: string;
     role?: string;
+    source?: ContactSource;
     tenantId: string;
     createdAt: string;
     updatedAt: string;
@@ -21,6 +25,7 @@ export interface CreateContactPayload {
     phone?: string;
     company?: string;
     role?: string;
+    source?: ContactSource;
 }
 
 export interface UpdateContactPayload extends Partial<CreateContactPayload> { }

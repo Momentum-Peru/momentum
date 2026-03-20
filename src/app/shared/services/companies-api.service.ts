@@ -12,8 +12,8 @@ import {
 } from '../interfaces/company.interface';
 
 /**
- * Servicio para gestionar Empresas de Momentum del CRM
- * Principio de Responsabilidad Única: Solo maneja las llamadas HTTP al endpoint de companies
+ * Empresas de la plataforma (`/companies`).
+ * Para el CRM usar {@link CrmCompaniesApiService} (`/crm/companies`).
  */
 @Injectable({ providedIn: 'root' })
 export class CompaniesApiService {

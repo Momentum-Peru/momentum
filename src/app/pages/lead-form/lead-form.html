@@ -170,6 +170,29 @@
           }
         </div>
 
+        <!-- Campo Procedencia del contacto -->
+        <div class="space-y-2">
+          <label for="leadSource" class="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <i class="pi pi-question-circle text-gray-500"></i>
+            ¿Cómo nos conociste?
+          </label>
+          <p-select
+            inputId="leadSource"
+            formControlName="source"
+            [options]="sourceOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Selecciona una opción"
+            styleClass="w-full"
+            [class.p-invalid]="isFieldInvalid('source')"
+          ></p-select>
+          @if (isFieldInvalid('source')) {
+          <small class="text-red-500 text-xs">
+            {{ getFieldError('source') }}
+          </small>
+          }
+        </div>
+
         <!-- Switch Tiene Empresa -->
         <div class="flex items-center justify-between gap-4 py-2 border-t border-gray-100 mt-2">
           <div class="flex flex-col">

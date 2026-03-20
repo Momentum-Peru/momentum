@@ -578,6 +578,13 @@ export const routes: Routes = [
         data: { menuPermission: '/companies-crm' },
       },
       {
+        path: 'crm-stats',
+        loadComponent: () =>
+          import('./pages/crm-stats/crm-stats.page').then((m) => m.CrmStatsPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/crm-stats' },
+      },
+      {
         path: 'user-tenants-assignment',
         loadComponent: () =>
           import('./pages/user-tenants-assignment/user-tenants-assignment').then(

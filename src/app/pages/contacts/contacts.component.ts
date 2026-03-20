@@ -3,10 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
 import { DialogModule } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { ContactsService, Contact, CreateContactPayload } from '../../shared/services/contacts.service';
+import {
+    ContactsService,
+    Contact,
+    CreateContactPayload,
+    ContactSource,
+} from '../../shared/services/contacts.service';
 import { Router } from '@angular/router';
 
 @Component({
@@ -17,8 +23,9 @@ import { Router } from '@angular/router';
         FormsModule,
         ButtonModule,
         InputTextModule,
+        SelectModule,
         DialogModule,
-        TooltipModule
+        TooltipModule,
     ],
     templateUrl: './contacts.html',
 })
@@ -42,8 +49,15 @@ export class ContactsComponent implements OnInit {
         email: '',
         phone: '',
         company: '',
-        role: ''
+        role: '',
+        source: 'OTHER',
     };
+
+    readonly contactSourceOptions: { label: string; value: ContactSource }[] = [
+        { label: 'Referido', value: 'REFERRAL' },
+        { label: 'Redes sociales', value: 'SOCIAL_MEDIA' },
+        { label: 'Otros', value: 'OTHER' },
+    ];
 
     ngOnInit() {
         this.loadContacts();
@@ -79,7 +93,8 @@ export class ContactsComponent implements OnInit {
             email: contact.email || '',
             phone: contact.phone || '',
             company: contact.company || '',
-            role: contact.role || ''
+            role: contact.role || '',
+            source: contact.source || 'OTHER',
         };
         this.showDialog = true;
     }
@@ -89,8 +104,16 @@ export class ContactsComponent implements OnInit {
     }
 
     saveContact() {
-        if (!this.form.name) {
+        if (!this.form.name?.trim()) {
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'El nombre es obligatorio' });
+            return;
+        }
+        if (!this.form.source) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Indique de dónde viene el contacto',
+            });
             return;
         }
 
@@ -137,6 +160,12 @@ export class ContactsComponent implements OnInit {
         if (!contact.phone) return;
         const phone = contact.phone.replace(/[^0-9]/g, '');
         window.open(`https://wa.me/${phone}`, '_blank');
+    }
+
+    getContactSourceLabel(value: ContactSource | undefined): string {
+        if (!value) return '';
+        const opt = this.contactSourceOptions.find((o) => o.value === value);
+        return opt?.label ?? value;
     }
 
     openAgendaModal(contact: Contact) {

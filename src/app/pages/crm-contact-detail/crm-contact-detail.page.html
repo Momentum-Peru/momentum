@@ -1,462 +1,821 @@
-<div class="p-4 space-y-4">
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
   <p-toast [life]="4000"></p-toast>
 
-  <!-- Header -->
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-    <div>
+  <!-- ══════════════════════════════════════════════════════════════
+       PANEL IZQUIERDO — Identidad + Info Clave
+  ══════════════════════════════════════════════════════════════ -->
+  <aside class="w-72 shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col overflow-y-auto">
+
+    <!-- Top bar -->
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
       <button
         pButton
         type="button"
-        label="Volver a Contactos"
         icon="pi pi-arrow-left"
-        class="p-button-text mb-2"
+        label="Contactos"
+        class="p-button-text p-button-sm text-gray-600 dark:text-gray-300 px-0"
         (click)="goBack()"
       ></button>
-      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">
-        {{ contact()?.name || 'Contacto' }}
-      </h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400">
-        Detalle completo del contacto y sus seguimientos.
-      </p>
     </div>
-    <div class="flex flex-col sm:flex-row gap-2">
-      <button
-        pButton
-        type="button"
-        label="Nuevo seguimiento rápido"
-        icon="pi pi-plus"
-        (click)="createQuickFollowUp()"
-        aria-label="Crear nuevo seguimiento para este contacto"
-      ></button>
-      <button
-        pButton
-        type="button"
-        label="Editar contacto"
-        icon="pi pi-pencil"
-        class="p-button-secondary"
-        (click)="openEditContact()"
-        aria-label="Editar datos del contacto"
-      ></button>
-      <button
-        pButton
-        type="button"
-        label="Ir a Seguimientos"
-        icon="pi pi-external-link"
-        class="p-button-outlined"
-        routerLink="/follow-ups"
-      ></button>
-    </div>
-  </div>
 
-  <!-- Información del contacto -->
-  <p-card>
-    <ng-template pTemplate="header">
-      <div class="flex items-center gap-3 px-3 py-2">
-        <div
-          class="h-10 w-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold"
-        >
-          {{ (contact()?.name || '?').charAt(0).toUpperCase() }}
-        </div>
-        <div>
-          <div class="font-semibold text-gray-800 dark:text-gray-100">
-            {{ contact()?.name || 'Sin nombre' }}
+    @if (loadingContact()) {
+      <div class="flex-1 flex items-center justify-center text-gray-400">
+        <i class="pi pi-spin pi-spinner text-2xl"></i>
+      </div>
+    } @else if (contact()) {
+
+      <!-- Avatar + nombre -->
+      <div class="px-5 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
+        <div class="flex flex-col items-center text-center gap-2">
+          <div class="w-16 h-16 rounded-full bg-blue-600 text-white text-xl font-bold flex items-center justify-center shadow-md select-none">
+            {{ initials() }}
           </div>
-          <div class="text-xs text-gray-500 dark:text-gray-400">ID: {{ contact()?._id }}</div>
+          <!-- Nombre inline editable -->
+          @if (editingField() === 'name') {
+            <input
+              pInputText
+              class="text-center font-bold text-gray-900 text-lg w-full border-b-2 border-blue-500 bg-transparent focus:outline-none"
+              [ngModel]="editingValue()"
+              (ngModelChange)="editingValue.set($event)"
+              (keydown)="onFieldKeydown($event, 'name')"
+              (blur)="saveField('name')"
+              autofocus
+            />
+          } @else {
+            <h2
+              class="text-lg font-bold text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 transition-colors leading-tight"
+              (click)="startEdit('name', contact()?.name)"
+              pTooltip="Clic para editar"
+              tooltipPosition="right"
+            >
+              {{ contact()?.name || 'Sin nombre' }}
+            </h2>
+          }
+
+          <!-- Empresa vinculada -->
+          @if (linkedClient()) {
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{ linkedClient()!.name }}</span>
+          }
+
+          <!-- Source badge -->
+          @if (contact()?.source) {
+            <p-tag
+              [value]="getSourceLabel(contact()?.source)"
+              [severity]="getSourceSeverity(contact()?.source)"
+              styleClass="text-xs"
+            ></p-tag>
+          }
+        </div>
+
+        <!-- Email + teléfono quick links -->
+        <div class="mt-4 space-y-2">
+          @if (contact()?.email) {
+            <div class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <i class="pi pi-envelope text-gray-400 text-xs"></i>
+              <span class="flex-1 truncate">{{ contact()?.email }}</span>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-copy"
+                class="p-button-text p-button-sm p-0 w-6 h-6"
+                pTooltip="Copiar"
+                (click)="copyToClipboard(contact()?.email)"
+              ></button>
+            </div>
+          }
+          @if (contact()?.phone || contact()?.mobile) {
+            <div class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <i class="pi pi-phone text-gray-400 text-xs"></i>
+              <span class="flex-1">{{ contact()?.phone || contact()?.mobile }}</span>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-copy"
+                class="p-button-text p-button-sm p-0 w-6 h-6"
+                pTooltip="Copiar teléfono"
+                (click)="copyToClipboard(contact()?.phone || contact()?.mobile)"
+              ></button>
+            </div>
+          }
+        </div>
+
+        <!-- Acciones rápidas (HubSpot-style) -->
+        <div class="grid grid-cols-3 gap-y-4 gap-x-2 mt-5 px-2">
+
+          <!-- Seguimiento -->
+          <button
+            type="button"
+            class="flex flex-col items-center gap-1.5 group"
+            (click)="quickFollowUp('NOTE')"
+            pTooltip="Nuevo seguimiento"
+            tooltipPosition="bottom"
+          >
+            <div class="w-11 h-11 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md transition-all group-hover:scale-110 group-hover:shadow-lg">
+              <i class="pi pi-calendar-plus text-base"></i>
+            </div>
+            <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Seguimiento</span>
+          </button>
+
+          <!-- Llamada -->
+          <button
+            type="button"
+            class="flex flex-col items-center gap-1.5 group"
+            (click)="callContact()"
+            pTooltip="Llamar"
+            tooltipPosition="bottom"
+          >
+            <div class="w-11 h-11 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center shadow-md transition-all group-hover:scale-110 group-hover:shadow-lg">
+              <i class="pi pi-phone text-base"></i>
+            </div>
+            <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Llamada</span>
+          </button>
+
+          <!-- Email -->
+          <button
+            type="button"
+            class="flex flex-col items-center gap-1.5 group"
+            (click)="emailContact()"
+            pTooltip="Enviar email"
+            tooltipPosition="bottom"
+          >
+            <div class="w-11 h-11 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center shadow-md transition-all group-hover:scale-110 group-hover:shadow-lg">
+              <i class="pi pi-envelope text-base"></i>
+            </div>
+            <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Correo</span>
+          </button>
+
+          <!-- Nota -->
+          <button
+            type="button"
+            class="flex flex-col items-center gap-1.5 group"
+            (click)="quickFollowUp('CALL')"
+            pTooltip="Registrar llamada"
+            tooltipPosition="bottom"
+          >
+            <div class="w-11 h-11 rounded-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center shadow-md transition-all group-hover:scale-110 group-hover:shadow-lg">
+              <i class="pi pi-file-edit text-base"></i>
+            </div>
+            <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Nota</span>
+          </button>
+
+          <!-- Copiar info -->
+          <button
+            type="button"
+            class="flex flex-col items-center gap-1.5 group"
+            (click)="copyToClipboard(contact()?.phone || contact()?.mobile || contact()?.email)"
+            pTooltip="Copiar teléfono o correo"
+            tooltipPosition="bottom"
+          >
+            <div class="w-11 h-11 rounded-full bg-gray-500 hover:bg-gray-600 text-white flex items-center justify-center shadow-md transition-all group-hover:scale-110 group-hover:shadow-lg">
+              <i class="pi pi-copy text-base"></i>
+            </div>
+            <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Copiar</span>
+          </button>
+
         </div>
       </div>
-    </ng-template>
-    <ng-template pTemplate="content">
-      @if (loadingContact()) {
-        <div class="py-8 text-center text-gray-500 dark:text-gray-400">
-          Cargando información del contacto...
+
+      <!-- Información Clave -->
+      <div class="flex-1 px-4 py-4 space-y-1">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Información clave</span>
         </div>
-      } @else if (!contact()) {
-        <div class="py-8 text-center text-gray-500 dark:text-gray-400">
-          No se encontró el contacto.
+
+        <!-- Correo -->
+        <div class="group py-2 border-b border-gray-50 dark:border-gray-800">
+          <div class="text-[11px] font-medium text-gray-400 uppercase mb-0.5">Correo</div>
+          @if (editingField() === 'email') {
+            <input
+              pInputText
+              class="w-full text-sm border-b border-blue-400 bg-transparent focus:outline-none py-0.5"
+              [ngModel]="editingValue()"
+              (ngModelChange)="editingValue.set($event)"
+              (keydown)="onFieldKeydown($event, 'email')"
+              (blur)="saveField('email')"
+              autofocus
+            />
+          } @else {
+            <div
+              class="text-sm text-gray-800 dark:text-gray-200 cursor-pointer hover:text-blue-600 flex items-center gap-1 group/field"
+              (click)="startEdit('email', contact()?.email)"
+            >
+              <span class="flex-1">{{ contact()?.email || '—' }}</span>
+              <i class="pi pi-pencil text-[10px] text-gray-300 group-hover/field:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </div>
+          }
         </div>
-      } @else {
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <div class="text-xs font-semibold text-gray-500 uppercase mb-1">Datos básicos</div>
-            <div class="space-y-1 text-sm">
-              <div>
-                <span class="font-medium text-gray-700 dark:text-gray-300">Nombre: </span>
-                <span class="text-gray-800 dark:text-gray-100">
-                  {{ contact()?.name || 'Sin nombre' }}
-                </span>
-              </div>
-              <div>
-                <span class="font-medium text-gray-700 dark:text-gray-300">Teléfono: </span>
-                <span class="text-gray-800 dark:text-gray-100">
-                  {{ contact()?.phone || contact()?.mobile || '—' }}
-                </span>
-              </div>
-              <div>
-                <span class="font-medium text-gray-700 dark:text-gray-300">Email: </span>
-                <span class="text-gray-800 dark:text-gray-100">
-                  {{ contact()?.email || '—' }}
-                </span>
-              </div>
+
+        <!-- Teléfono -->
+        <div class="group py-2 border-b border-gray-50 dark:border-gray-800">
+          <div class="text-[11px] font-medium text-gray-400 uppercase mb-0.5">Teléfono</div>
+          @if (editingField() === 'phone') {
+            <input
+              pInputText
+              class="w-full text-sm border-b border-blue-400 bg-transparent focus:outline-none py-0.5"
+              [ngModel]="editingValue()"
+              (ngModelChange)="editingValue.set($event)"
+              (keydown)="onFieldKeydown($event, 'phone')"
+              (blur)="saveField('phone')"
+              autofocus
+            />
+          } @else {
+            <div
+              class="text-sm text-gray-800 dark:text-gray-200 cursor-pointer hover:text-blue-600 flex items-center gap-1 group/field"
+              (click)="startEdit('phone', contact()?.phone)"
+            >
+              <span class="flex-1">{{ contact()?.phone || '—' }}</span>
+              <i class="pi pi-pencil text-[10px] text-gray-300 group-hover/field:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </div>
+          }
+        </div>
+
+        <!-- Cargo -->
+        <div class="group py-2 border-b border-gray-50 dark:border-gray-800">
+          <div class="text-[11px] font-medium text-gray-400 uppercase mb-0.5">Cargo</div>
+          @if (editingField() === 'position') {
+            <input
+              pInputText
+              class="w-full text-sm border-b border-blue-400 bg-transparent focus:outline-none py-0.5"
+              [ngModel]="editingValue()"
+              (ngModelChange)="editingValue.set($event)"
+              (keydown)="onFieldKeydown($event, 'position')"
+              (blur)="saveField('position')"
+              autofocus
+            />
+          } @else {
+            <div
+              class="text-sm text-gray-800 dark:text-gray-200 cursor-pointer hover:text-blue-600 flex items-center gap-1 group/field"
+              (click)="startEdit('position', contact()?.position)"
+            >
+              <span class="flex-1">{{ contact()?.position || '—' }}</span>
+              <i class="pi pi-pencil text-[10px] text-gray-300 group-hover/field:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </div>
+          }
+        </div>
+
+        <!-- Departamento -->
+        <div class="group py-2 border-b border-gray-50 dark:border-gray-800">
+          <div class="text-[11px] font-medium text-gray-400 uppercase mb-0.5">Departamento</div>
+          @if (editingField() === 'department') {
+            <input
+              pInputText
+              class="w-full text-sm border-b border-blue-400 bg-transparent focus:outline-none py-0.5"
+              [ngModel]="editingValue()"
+              (ngModelChange)="editingValue.set($event)"
+              (keydown)="onFieldKeydown($event, 'department')"
+              (blur)="saveField('department')"
+              autofocus
+            />
+          } @else {
+            <div
+              class="text-sm text-gray-800 dark:text-gray-200 cursor-pointer hover:text-blue-600 flex items-center gap-1 group/field"
+              (click)="startEdit('department', contact()?.department)"
+            >
+              <span class="flex-1">{{ contact()?.department || '—' }}</span>
+              <i class="pi pi-pencil text-[10px] text-gray-300 group-hover/field:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </div>
+          }
+        </div>
+
+        <!-- Procedencia -->
+        <div class="group py-2 border-b border-gray-50 dark:border-gray-800">
+          <div class="text-[11px] font-medium text-gray-400 uppercase mb-0.5">Procedencia</div>
+          @if (editingField() === 'source') {
+            <p-select
+              [options]="sourceOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="editingSourceValue()"
+              (ngModelChange)="saveSource($event)"
+              [appendTo]="'body'"
+              styleClass="w-full text-sm"
+            ></p-select>
+          } @else {
+            <div
+              class="text-sm text-gray-800 dark:text-gray-200 cursor-pointer hover:text-blue-600 flex items-center gap-1 group/field"
+              (click)="startEditSource()"
+            >
+              <span class="flex-1">{{ getSourceLabel(contact()?.source) }}</span>
+              <i class="pi pi-pencil text-[10px] text-gray-300 group-hover/field:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </div>
+          }
+        </div>
+
+        <!-- Asignado a -->
+        <div class="py-2 border-b border-gray-50 dark:border-gray-800">
+          <div class="text-[11px] font-medium text-gray-400 uppercase mb-0.5">Asignado a</div>
+          <div class="text-sm text-gray-800 dark:text-gray-200">{{ getUserName(contact()?.assignedTo) }}</div>
+        </div>
+
+        <!-- Fecha de creación -->
+        <div class="py-2">
+          <div class="text-[11px] font-medium text-gray-400 uppercase mb-0.5">Fecha de creación</div>
+          <div class="text-sm text-gray-800 dark:text-gray-200">{{ formatDate(contact()?.createdAt) }}</div>
+        </div>
+      </div>
+    }
+  </aside>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       CENTRO — Tabs + Contenido
+  ══════════════════════════════════════════════════════════════ -->
+  <main class="flex-1 min-w-0 flex flex-col overflow-hidden">
+
+    <!-- Tab bar -->
+    <div class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center px-6 shrink-0">
+      <button
+        type="button"
+        class="px-4 py-3 text-sm font-medium border-b-2 transition-colors"
+        [class.border-blue-600]="activeTab() === 'info'"
+        [class.text-blue-600]="activeTab() === 'info'"
+        [class.border-transparent]="activeTab() !== 'info'"
+        [class.text-gray-500]="activeTab() !== 'info'"
+        (click)="setTab('info')"
+      >
+        Información
+      </button>
+      <button
+        type="button"
+        class="px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5"
+        [class.border-blue-600]="activeTab() === 'seguimientos'"
+        [class.text-blue-600]="activeTab() === 'seguimientos'"
+        [class.border-transparent]="activeTab() !== 'seguimientos'"
+        [class.text-gray-500]="activeTab() !== 'seguimientos'"
+        (click)="setTab('seguimientos')"
+      >
+        Seguimientos
+        @if (followUpCounts().total > 0) {
+          <span class="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">
+            {{ followUpCounts().total }}
+          </span>
+        }
+      </button>
+    </div>
+
+    <!-- Tab content -->
+    <div class="flex-1 overflow-y-auto p-6 space-y-4">
+
+      <!-- ── TAB: INFORMACIÓN ── -->
+      @if (activeTab() === 'info') {
+
+        <!-- Perfil del contacto -->
+        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-100">Perfil del contacto</h3>
+          </div>
+          <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4 text-sm">
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Empresa vinculada</div>
+              <div class="text-gray-800 dark:text-gray-200">{{ linkedClient()?.name || '—' }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Cargo</div>
+              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.position || '—' }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Departamento</div>
+              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.department || '—' }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Correo</div>
+              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.email || '—' }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Teléfono</div>
+              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.phone || '—' }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Móvil</div>
+              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.mobile || '—' }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Procedencia</div>
+              @if (contact()?.source) {
+                <p-tag [value]="getSourceLabel(contact()?.source)" [severity]="getSourceSeverity(contact()?.source)" styleClass="text-xs"></p-tag>
+              } @else {
+                <span class="text-gray-400">—</span>
+              }
             </div>
           </div>
-          <div>
-            <div class="text-xs font-semibold text-gray-500 uppercase mb-1">
-              Relación y seguimiento
-            </div>
-            <div class="space-y-1 text-sm">
-              <div>
-                <span class="font-medium text-gray-700 dark:text-gray-300">Cliente: </span>
-                <span class="text-gray-800 dark:text-gray-100">
-                  {{ contact()?.clientId || '—' }}
-                </span>
+        </div>
+
+        <!-- Notas -->
+        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-100">Notas</h3>
+            @if (editingField() !== 'notes') {
+              <button
+                pButton
+                type="button"
+                icon="pi pi-pencil"
+                class="p-button-text p-button-sm"
+                (click)="startEdit('notes', contact()?.notes)"
+              ></button>
+            }
+          </div>
+          <div class="p-5">
+            @if (editingField() === 'notes') {
+              <textarea
+                pTextarea
+                rows="4"
+                class="w-full text-sm"
+                [ngModel]="editingValue()"
+                (ngModelChange)="editingValue.set($event)"
+              ></textarea>
+              <div class="flex gap-2 mt-2">
+                <button pButton type="button" label="Guardar" class="p-button-sm" (click)="saveField('notes')"></button>
+                <button pButton type="button" label="Cancelar" class="p-button-text p-button-sm" (click)="cancelEdit()"></button>
               </div>
-              <div>
-                <span class="font-medium text-gray-700 dark:text-gray-300">Principal: </span>
-                <span class="text-gray-800 dark:text-gray-100">
-                  {{ contact()?.isPrimary ? 'Sí' : 'No' }}
-                </span>
-              </div>
-              <div>
-                <span class="font-medium text-gray-700 dark:text-gray-300"
-                  >Último seguimiento:
-                </span>
-                <span class="text-gray-800 dark:text-gray-100">
-                  {{
-                    contact()?.lastFollowUpDate
-                      ? (contact()?.lastFollowUpDate | date: 'short')
-                      : '—'
-                  }}
-                </span>
-              </div>
-            </div>
+            } @else {
+              <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                {{ contact()?.notes || 'Sin notas. Haz clic en el lápiz para agregar.' }}
+              </p>
+            }
           </div>
         </div>
       }
-    </ng-template>
-  </p-card>
 
-  <!-- Seguimientos del contacto -->
-  <p-card>
-    <ng-template pTemplate="header">
-      <div class="flex items-center justify-between gap-2 px-3 py-2">
-        <div class="flex items-center gap-2">
-          <i class="pi pi-calendar-plus text-blue-500"></i>
-          <span class="font-semibold text-gray-800 dark:text-gray-100">
-            Seguimientos de este contacto
-          </span>
+      <!-- ── TAB: SEGUIMIENTOS ── -->
+      @if (activeTab() === 'seguimientos') {
+
+        <!-- Botón nuevo + mini form -->
+        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-100">Seguimientos</h3>
+            <button
+              pButton
+              type="button"
+              [label]="showNewFollowUpForm() ? 'Cancelar' : '+ Nuevo seguimiento'"
+              [class]="showNewFollowUpForm() ? 'p-button-text p-button-sm' : 'p-button-sm'"
+              (click)="toggleNewFollowUpForm()"
+            ></button>
+          </div>
+
+          @if (showNewFollowUpForm()) {
+            <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-blue-50 dark:bg-blue-950/30 space-y-3">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="md:col-span-3">
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Título</label>
+                  <input pInputText class="w-full" placeholder="Ej. Llamada de seguimiento" [(ngModel)]="newFuTitle" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
+                  <p-select [options]="typeOptions" optionLabel="label" optionValue="value"
+                    [ngModel]="newFuType()" (ngModelChange)="newFuType.set($event)"
+                    [appendTo]="'body'" class="w-full"></p-select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Estado</label>
+                  <p-select [options]="statusOptions" optionLabel="label" optionValue="value"
+                    [ngModel]="newFuStatus()" (ngModelChange)="newFuStatus.set($event)"
+                    [appendTo]="'body'" class="w-full"></p-select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Asignar a</label>
+                  <p-select [options]="users()" optionLabel="name" optionValue="_id"
+                    [ngModel]="newFuUserId()" (ngModelChange)="newFuUserId.set($event)"
+                    placeholder="Usuario" [appendTo]="'body'" class="w-full"></p-select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Fecha programada</label>
+                  <p-datepicker [ngModel]="newFuDate()" (ngModelChange)="newFuDate.set($event)"
+                    [showTime]="true" [hourFormat]="'24'" [appendTo]="'body'" class="w-full"></p-datepicker>
+                </div>
+                <div class="md:col-span-3">
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Descripción</label>
+                  <textarea pTextarea rows="2" class="w-full" placeholder="Descripción del seguimiento..." [(ngModel)]="newFuDescription"></textarea>
+                </div>
+              </div>
+              <div class="flex justify-end gap-2">
+                <button pButton type="button" label="Cancelar" class="p-button-text p-button-sm" (click)="toggleNewFollowUpForm()"></button>
+                <button pButton type="button" label="Guardar seguimiento" class="p-button-sm"
+                  [loading]="savingFollowUp()" (click)="createFollowUp()"></button>
+              </div>
+            </div>
+          }
+
+          <!-- Lista de seguimientos (timeline) -->
+          @if (loadingFollowUps()) {
+            <div class="py-10 text-center text-gray-400">
+              <i class="pi pi-spin pi-spinner text-2xl"></i>
+            </div>
+          } @else if (followUps().length === 0) {
+            <div class="py-10 text-center text-gray-400 space-y-2">
+              <i class="pi pi-calendar-times text-3xl block"></i>
+              <p class="text-sm">No hay seguimientos. Crea el primero con el botón de arriba.</p>
+            </div>
+          } @else {
+            <ul class="divide-y divide-gray-50 dark:divide-gray-800">
+              @for (fu of followUps(); track fu._id) {
+                <li class="px-5 py-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <!-- Icono tipo -->
+                  <div class="shrink-0 w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                    <i [class]="getTypeIcon(fu.type) + ' text-gray-500 text-sm'"></i>
+                  </div>
+                  <!-- Contenido -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between gap-2">
+                      <div>
+                        <span class="font-medium text-sm text-gray-900 dark:text-gray-100">
+                          {{ fu.title || getTypeLabel(fu.type) }}
+                        </span>
+                        <p-tag
+                          [value]="getStatusLabel(fu.status)"
+                          [severity]="getStatusSeverity(fu.status)"
+                          styleClass="text-[10px] ml-2"
+                        ></p-tag>
+                      </div>
+                      <div class="flex items-center gap-1 shrink-0">
+                        <button pButton type="button" icon="pi pi-pencil"
+                          class="p-button-text p-button-sm p-0 w-7 h-7" (click)="openEditFollowUp(fu)"></button>
+                        <button pButton type="button" icon="pi pi-trash"
+                          class="p-button-text p-button-sm p-button-danger p-0 w-7 h-7" (click)="deleteFollowUp(fu)"></button>
+                      </div>
+                    </div>
+                    @if (fu.description) {
+                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ fu.description }}</p>
+                    }
+                    @if (fu.outcome) {
+                      <p class="text-xs text-green-700 dark:text-green-400 mt-1 line-clamp-1">
+                        <strong>Resultado:</strong> {{ fu.outcome }}
+                      </p>
+                    }
+                    <div class="flex items-center gap-3 mt-1.5 text-[11px] text-gray-400">
+                      @if (fu.scheduledDate) {
+                        <span><i class="pi pi-calendar mr-1"></i>{{ formatDateTime(fu.scheduledDate) }}</span>
+                      }
+                      @if (fu.userId) {
+                        <span><i class="pi pi-user mr-1"></i>{{ getUserName(fu.userId) }}</span>
+                      }
+                    </div>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
         </div>
-        @if (followUps().length > 0) {
-          <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-300">
-            <span class="inline-flex items-center gap-1">
-              <i class="pi pi-list"></i>
-              {{ followUps().length }} en total
-            </span>
-            <span class="hidden md:inline">•</span>
-            <span class="inline-flex items-center gap-1">
-              <i class="pi pi-clock"></i>
-              Último:
-              {{
-                followUps()[0].scheduledDate || followUps()[0].createdAt | date: 'dd/MM/yyyy HH:mm'
-              }}
-            </span>
+      }
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       PANEL DERECHO — Empresas + Resumen seguimientos
+  ══════════════════════════════════════════════════════════════ -->
+  <aside class="w-72 shrink-0 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col overflow-y-auto">
+
+    <!-- Empresas -->
+    <div class="border-b border-gray-200 dark:border-gray-800">
+      <div class="flex items-center justify-between px-4 py-3">
+        <span class="font-semibold text-sm text-gray-800 dark:text-gray-100">
+          Empresas {{ linkedClient() ? '(1)' : '(0)' }}
+        </span>
+        <div class="flex items-center gap-1">
+          <button
+            pButton
+            type="button"
+            label="+ Agregar"
+            class="p-button-text p-button-sm text-blue-600 px-1"
+            (click)="openLinkCompany()"
+          ></button>
+        </div>
+      </div>
+
+      <div class="px-4 pb-4 space-y-3">
+        @if (linkedClient()) {
+          <!-- Empresa vinculada -->
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 space-y-1">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
+                  {{ linkedClient()!.name.charAt(0).toUpperCase() }}
+                </div>
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ linkedClient()!.name }}</span>
+              </div>
+              <span class="text-[10px] bg-blue-100 text-blue-700 font-semibold px-1.5 py-0.5 rounded">Principal</span>
+            </div>
+            <button
+              pButton
+              type="button"
+              label="Desvincular"
+              class="p-button-text p-button-sm text-gray-400 text-xs px-0 pt-1"
+              (click)="unlinkCompany()"
+            ></button>
+          </div>
+        } @else {
+          <div class="text-center py-4 text-gray-400">
+            <i class="pi pi-building text-2xl block mb-1 opacity-40"></i>
+            <p class="text-xs">Sin empresa vinculada</p>
           </div>
         }
-      </div>
-    </ng-template>
-    <ng-template pTemplate="content">
-      @if (loadingFollowUps()) {
-        <div class="py-8 text-center text-gray-500 dark:text-gray-400">
-          Cargando seguimientos...
-        </div>
-      } @else if (followUps().length === 0) {
-        <div class="py-8 text-center text-gray-500 dark:text-gray-400">
-          No hay seguimientos para este contacto. Puedes crear uno rápido con el botón de arriba.
-        </div>
-      } @else {
-        <p-table
-          [value]="followUps()"
-          [paginator]="true"
-          [rows]="10"
-          [rowsPerPageOptions]="[5, 10, 20]"
-          styleClass="p-datatable-sm"
-        >
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Título</th>
-              <th>Tipo</th>
-              <th>Estado</th>
-              <th>Fecha</th>
-              <th class="text-right">Acciones</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-row>
-            <tr>
-              <td class="align-top">
-                <div class="font-medium text-gray-900 dark:text-gray-100">
-                  {{ row.title || 'Seguimiento' }}
-                </div>
-                <div class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
-                  Usuario:
-                  <span class="font-medium">{{ getUserName(row.userId) }}</span>
-                  · Tipo:
-                  <span>{{ getTypeLabel(row.type) }}</span>
-                  · Estado:
-                  <span>{{ getStatusLabel(row.status) }}</span>
-                </div>
-                <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 line-clamp-2">
-                  {{ row.description || 'Sin descripción' }}
-                </div>
-                <div
-                  *ngIf="row.outcome"
-                  class="mt-1 text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2"
-                >
-                  <span class="font-semibold">Resultado:</span>
-                  <span class="ml-1">{{ row.outcome }}</span>
-                </div>
-              </td>
-              <td class="align-top">
-                {{ getTypeLabel(row.type) }}
-              </td>
-              <td class="align-top">
-                <p-tag
-                  [value]="getStatusLabel(row.status)"
-                  [severity]="
-                    row.status === 'COMPLETED'
-                      ? 'success'
-                      : row.status === 'SCHEDULED'
-                        ? 'warn'
-                        : 'danger'
-                  "
-                ></p-tag>
-              </td>
-              <td class="align-top">
-                <div class="text-sm text-gray-800 dark:text-gray-100">
-                  {{
-                    row.scheduledDate
-                      ? (row.scheduledDate | date: 'dd/MM/yyyy HH:mm')
-                      : row.createdAt
-                        ? (row.createdAt | date: 'dd/MM/yyyy HH:mm')
-                        : '—'
-                  }}
-                </div>
-              </td>
-              <td class="align-top text-right">
-                <button
-                  pButton
-                  type="button"
-                  icon="pi pi-pencil"
-                  class="p-button-text p-button-sm"
-                  (click)="openEditFollowUp(row)"
-                  aria-label="Editar seguimiento"
-                ></button>
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
-      }
-    </ng-template>
-  </p-card>
 
-  <!-- Diálogo edición de contacto -->
-  <p-dialog
-    [visible]="showEditContactDialog()"
-    (visibleChange)="showEditContactDialog.set($event)"
-    [modal]="true"
-    [style]="{ width: '95vw', maxWidth: '32rem' }"
-    [draggable]="false"
-    [resizable]="false"
-    header="Editar contacto"
-  >
-    @if (editingContact()) {
-      <div class="space-y-3 pt-2">
-        <div>
-          <label for="editName" class="block text-sm font-medium text-gray-700 mb-1">
-            Nombre
-          </label>
-          <input id="editName" pInputText class="w-full" [(ngModel)]="editingContact()!.name" />
+        <!-- Crear nueva empresa -->
+        <button
+          pButton
+          type="button"
+          icon="pi pi-plus"
+          label="Nueva empresa"
+          class="p-button-outlined p-button-sm w-full"
+          (click)="openNewCompany()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- Seguimientos resumen -->
+    <div class="border-b border-gray-200 dark:border-gray-800">
+      <div class="flex items-center justify-between px-4 py-3">
+        <span class="font-semibold text-sm text-gray-800 dark:text-gray-100">
+          Seguimientos ({{ followUpCounts().total }})
+        </span>
+        <button
+          pButton
+          type="button"
+          label="+ Nuevo"
+          class="p-button-text p-button-sm text-blue-600 px-1"
+          (click)="setTab('seguimientos'); showNewFollowUpForm.set(true)"
+        ></button>
+      </div>
+      <div class="px-4 pb-4 space-y-2">
+        <div class="flex items-center justify-between text-sm py-1 border-b border-gray-50 dark:border-gray-800">
+          <span class="text-gray-500 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span>
+            Programados
+          </span>
+          <span class="font-semibold text-gray-800 dark:text-gray-200">{{ followUpCounts().scheduled }}</span>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label for="editPhone" class="block text-sm font-medium text-gray-700 mb-1">
-              Teléfono
-            </label>
-            <input id="editPhone" pInputText class="w-full" [(ngModel)]="editingContact()!.phone" />
+        <div class="flex items-center justify-between text-sm py-1">
+          <span class="text-gray-500 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
+            Completados
+          </span>
+          <span class="font-semibold text-gray-800 dark:text-gray-200">{{ followUpCounts().completed }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Próximo seguimiento -->
+    @if (followUps().length > 0) {
+      @let nextFu = followUps()[0];
+      <div class="px-4 py-4">
+        <div class="text-[11px] font-semibold text-gray-400 uppercase mb-2">Último registro</div>
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm space-y-1">
+          <div class="flex items-center gap-2">
+            <i [class]="getTypeIcon(nextFu.type) + ' text-gray-500 text-xs'"></i>
+            <span class="font-medium text-gray-800 dark:text-gray-100">{{ nextFu.title || getTypeLabel(nextFu.type) }}</span>
           </div>
-          <div>
-            <label for="editMobile" class="block text-sm font-medium text-gray-700 mb-1">
-              Móvil
-            </label>
-            <input
-              id="editMobile"
-              pInputText
-              class="w-full"
-              [(ngModel)]="editingContact()!.mobile"
-            />
-          </div>
-        </div>
-        <div>
-          <label for="editEmail" class="block text-sm font-medium text-gray-700 mb-1">
-            Email
-          </label>
-          <input id="editEmail" pInputText class="w-full" [(ngModel)]="editingContact()!.email" />
-        </div>
-        <div>
-          <label for="editNotes" class="block text-sm font-medium text-gray-700 mb-1">
-            Notas
-          </label>
-          <textarea
-            id="editNotes"
-            pTextarea
-            rows="3"
-            class="w-full"
-            [(ngModel)]="editingContact()!.notes"
-          ></textarea>
+          @if (nextFu.description) {
+            <p class="text-xs text-gray-500 line-clamp-2">{{ nextFu.description }}</p>
+          }
+          @if (nextFu.scheduledDate) {
+            <p class="text-[11px] text-gray-400"><i class="pi pi-calendar mr-1"></i>{{ formatDateTime(nextFu.scheduledDate) }}</p>
+          }
         </div>
       </div>
     }
-    <ng-template pTemplate="footer">
-      <button
-        pButton
-        label="Cancelar"
-        class="p-button-text"
-        (click)="showEditContactDialog.set(false)"
-      ></button>
-      <button pButton label="Guardar" (click)="saveContact()"></button>
-    </ng-template>
-  </p-dialog>
-
-  <!-- Diálogo edición de seguimiento -->
-  <p-dialog
-    [visible]="showEditFollowUpDialog()"
-    (visibleChange)="showEditFollowUpDialog.set($event)"
-    [modal]="true"
-    [style]="{ width: '95vw', maxWidth: '36rem' }"
-    [draggable]="false"
-    [resizable]="false"
-    header="Editar seguimiento"
-  >
-    @if (editingFollowUp()) {
-      <div class="space-y-3 pt-2">
-        <div>
-          <label for="editFuTitle" class="block text-sm font-medium text-gray-700 mb-1">
-            Título
-          </label>
-          <input
-            id="editFuTitle"
-            pInputText
-            class="w-full"
-            [ngModel]="editingFollowUp()!.title"
-            (ngModelChange)="onEditFollowUpChange('title', $event)"
-          />
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label for="editFuType" class="block text-sm font-medium text-gray-700 mb-1">
-              Tipo
-            </label>
-            <p-select
-              id="editFuType"
-              [options]="typeOptions"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="editingFollowUp()!.type"
-              (ngModelChange)="onEditFollowUpChange('type', $event)"
-              class="w-full"
-            ></p-select>
-          </div>
-          <div>
-            <label for="editFuStatus" class="block text-sm font-medium text-gray-700 mb-1">
-              Estado
-            </label>
-            <p-select
-              id="editFuStatus"
-              [options]="statusOptions"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="editingFollowUp()!.status"
-              (ngModelChange)="onEditFollowUpChange('status', $event)"
-              class="w-full"
-            ></p-select>
-          </div>
-          <div>
-            <label for="editFuUser" class="block text-sm font-medium text-gray-700 mb-1">
-              Usuario
-            </label>
-            <p-select
-              id="editFuUser"
-              [options]="users()"
-              optionLabel="name"
-              optionValue="_id"
-              [ngModel]="editingFollowUp()!.userId"
-              (ngModelChange)="onEditFollowUpChange('userId', $event)"
-              class="w-full"
-            ></p-select>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label for="editFuDate" class="block text-sm font-medium text-gray-700 mb-1">
-              Fecha programada
-            </label>
-            <p-datepicker
-              id="editFuDate"
-              [ngModel]="getEditScheduledDate()"
-              (ngModelChange)="onEditFollowUpDateChange($event, 'scheduledDate')"
-              [showTime]="true"
-              [hourFormat]="'24'"
-              class="w-full"
-            ></p-datepicker>
-          </div>
-          <div>
-            <label for="editFuNextDate" class="block text-sm font-medium text-gray-700 mb-1">
-              Próximo seguimiento
-            </label>
-            <p-datepicker
-              id="editFuNextDate"
-              [ngModel]="getEditNextFollowUpDate()"
-              (ngModelChange)="onEditFollowUpDateChange($event, 'nextFollowUpDate')"
-              [showTime]="true"
-              [hourFormat]="'24'"
-              class="w-full"
-            ></p-datepicker>
-          </div>
-        </div>
-        <div>
-          <label for="editFuDescription" class="block text-sm font-medium text-gray-700 mb-1">
-            Descripción
-          </label>
-          <textarea
-            id="editFuDescription"
-            pTextarea
-            rows="3"
-            class="w-full"
-            [ngModel]="editingFollowUp()!.description"
-            (ngModelChange)="onEditFollowUpChange('description', $event)"
-          ></textarea>
-        </div>
-        <div>
-          <label for="editFuOutcome" class="block text-sm font-medium text-gray-700 mb-1">
-            Resultado
-          </label>
-          <textarea
-            id="editFuOutcome"
-            pTextarea
-            rows="3"
-            class="w-full"
-            [ngModel]="editingFollowUp()!.outcome"
-            (ngModelChange)="onEditFollowUpChange('outcome', $event)"
-          ></textarea>
-        </div>
-      </div>
-    }
-    <ng-template pTemplate="footer">
-      <button
-        pButton
-        label="Cancelar"
-        class="p-button-text"
-        (click)="showEditFollowUpDialog.set(false)"
-      ></button>
-      <button pButton label="Guardar" (click)="saveFollowUp()"></button>
-    </ng-template>
-  </p-dialog>
+  </aside>
 </div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     DIALOG: Editar seguimiento
+══════════════════════════════════════════════════════════════ -->
+<p-dialog
+  [visible]="showEditFollowUpDialog()"
+  (visibleChange)="showEditFollowUpDialog.set($event)"
+  [modal]="true"
+  [style]="{ width: '95vw', maxWidth: '36rem' }"
+  [draggable]="false"
+  [resizable]="false"
+  header="Editar seguimiento"
+>
+  @if (editingFollowUp()) {
+    <div class="space-y-3 pt-2">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Título</label>
+        <input pInputText class="w-full"
+          [ngModel]="editingFollowUp()!.title"
+          (ngModelChange)="onEditFuChange('title', $event)" />
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+          <p-select [options]="typeOptions" optionLabel="label" optionValue="value"
+            [ngModel]="editingFollowUp()!.type" (ngModelChange)="onEditFuChange('type', $event)"
+            [appendTo]="'body'" class="w-full"></p-select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+          <p-select [options]="statusOptions" optionLabel="label" optionValue="value"
+            [ngModel]="editingFollowUp()!.status" (ngModelChange)="onEditFuChange('status', $event)"
+            [appendTo]="'body'" class="w-full"></p-select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+          <p-select [options]="users()" optionLabel="name" optionValue="_id"
+            [ngModel]="editingFollowUp()!.userId" (ngModelChange)="onEditFuChange('userId', $event)"
+            [appendTo]="'body'" class="w-full"></p-select>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha programada</label>
+          <p-datepicker [ngModel]="getEditScheduledDate()" (ngModelChange)="onEditFuDateChange($event, 'scheduledDate')"
+            [showTime]="true" [hourFormat]="'24'" [appendTo]="'body'" class="w-full"></p-datepicker>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Próximo seguimiento</label>
+          <p-datepicker [ngModel]="getEditNextDate()" (ngModelChange)="onEditFuDateChange($event, 'nextFollowUpDate')"
+            [showTime]="true" [hourFormat]="'24'" [appendTo]="'body'" class="w-full"></p-datepicker>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+        <textarea pTextarea rows="3" class="w-full"
+          [ngModel]="editingFollowUp()!.description"
+          (ngModelChange)="onEditFuChange('description', $event)"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Resultado</label>
+        <textarea pTextarea rows="2" class="w-full"
+          [ngModel]="editingFollowUp()!.outcome"
+          (ngModelChange)="onEditFuChange('outcome', $event)"></textarea>
+      </div>
+    </div>
+  }
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancelar" class="p-button-text" (click)="showEditFollowUpDialog.set(false)"></button>
+    <button pButton label="Guardar" (click)="saveFollowUp()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- ══════════════════════════════════════════════════════════════
+     DIALOG: Vincular empresa existente
+══════════════════════════════════════════════════════════════ -->
+<p-dialog
+  [visible]="showLinkCompanyDialog()"
+  (visibleChange)="showLinkCompanyDialog.set($event)"
+  [modal]="true"
+  [style]="{ width: '90vw', maxWidth: '24rem' }"
+  [draggable]="false"
+  [resizable]="false"
+  header="Vincular empresa"
+>
+  <div class="space-y-3 pt-2">
+    <p class="text-sm text-gray-600">Selecciona una empresa para vincular a este contacto.</p>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Empresa</label>
+      <p-select
+        [options]="clients()"
+        optionLabel="name"
+        optionValue="_id"
+        [ngModel]="selectedClientId()"
+        (ngModelChange)="selectedClientId.set($event)"
+        placeholder="Buscar empresa..."
+        [filter]="true"
+        filterPlaceholder="Nombre..."
+        [showClear]="true"
+        [appendTo]="'body'"
+        class="w-full"
+      ></p-select>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancelar" class="p-button-text" (click)="showLinkCompanyDialog.set(false)"></button>
+    <button pButton label="Vincular" [loading]="saving()" (click)="saveLinkCompany()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- ══════════════════════════════════════════════════════════════
+     DIALOG: Nueva empresa
+══════════════════════════════════════════════════════════════ -->
+<p-dialog
+  [visible]="showNewCompanyDialog()"
+  (visibleChange)="showNewCompanyDialog.set($event)"
+  [modal]="true"
+  [style]="{ width: '95vw', maxWidth: '26rem' }"
+  [draggable]="false"
+  [resizable]="false"
+  header="Nueva empresa"
+>
+  <div class="space-y-3 pt-2">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+      <input pInputText class="w-full" placeholder="Razón social" [(ngModel)]="newCompanyName" />
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">RUC *</label>
+      <input pInputText class="w-full" placeholder="11 dígitos" inputmode="numeric" maxlength="11" [(ngModel)]="newCompanyTaxId" />
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono <span class="text-gray-400 font-normal">(opcional)</span></label>
+      <input pInputText class="w-full" placeholder="+51 ..." [(ngModel)]="newCompanyPhone" />
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Correo <span class="text-gray-400 font-normal">(opcional)</span></label>
+      <input pInputText type="email" class="w-full" placeholder="empresa@ejemplo.com" [(ngModel)]="newCompanyEmail" />
+    </div>
+    <p class="text-xs text-gray-400">La empresa se creará y vinculará automáticamente a este contacto.</p>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancelar" class="p-button-text" (click)="showNewCompanyDialog.set(false)"></button>
+    <button pButton label="Crear y vincular" [loading]="savingCompany()" (click)="saveNewCompany()"></button>
+  </ng-template>
+</p-dialog>

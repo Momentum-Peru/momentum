@@ -6,6 +6,7 @@ import { ToggleSwitch } from 'primeng/toggleswitch';
 import { Toast } from 'primeng/toast';
 import { Dialog } from 'primeng/dialog';
 import { Checkbox } from 'primeng/checkbox';
+import { Select } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { LeadFormService } from './services/lead-form.service';
 import { LeadsApiService } from '../../shared/services/leads-api.service';
@@ -23,7 +24,7 @@ import { Subject, of } from 'rxjs';
 @Component({
   selector: 'app-lead-form',
   standalone: true,
-  imports: [Button, InputText, ToggleSwitch, Toast, Dialog, Checkbox, ReactiveFormsModule],
+  imports: [Button, InputText, ToggleSwitch, Toast, Dialog, Checkbox, Select, ReactiveFormsModule],
   templateUrl: './lead-form.html',
   styleUrl: './lead-form.scss',
 })
@@ -37,6 +38,12 @@ export class LeadFormComponent {
 
   leadForm: FormGroup;
   isLoading = signal(false);
+
+  readonly sourceOptions = [
+    { label: 'Referido', value: 'REFERRAL' },
+    { label: 'Redes sociales', value: 'SOCIAL_MEDIA' },
+    { label: 'Otros', value: 'OTHER' },
+  ];
   isSubmitted = signal(false);
   privacyModalVisible = signal(false);
   pendingPhoto = signal<File[]>([]);
@@ -65,6 +72,7 @@ export class LeadFormComponent {
       phone: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(20)]],
       address: ['', [Validators.maxLength(200)]],
       referredBy: ['', [Validators.maxLength(120)]],
+      source: ['', [Validators.required]],
       hasCompany: [false],
       company: ['', [Validators.minLength(2), Validators.maxLength(120)]],
       dni: ['', [Validators.maxLength(15)]],
@@ -220,6 +228,7 @@ export class LeadFormComponent {
       phone: 'Teléfono',
       address: 'Dirección',
       referredBy: 'Referido por',
+      source: 'Procedencia del contacto',
       hasCompany: '¿Tiene empresa?',
       company: 'Empresa',
       dni: 'DNI',
@@ -259,6 +268,7 @@ export class LeadFormComponent {
         phone: formValue.phone,
         address: formValue.address,
         referredBy: formValue.referredBy,
+        source: formValue.source,
         hasCompany: formValue.hasCompany,
         company: formValue.company,
         dni: formValue.dni,
@@ -297,6 +307,7 @@ export class LeadFormComponent {
           this.leadForm.reset({
             hasCompany: false,
             acceptPrivacyPolicy: false,
+            source: '',
           });
           this.pendingPhoto.set([]);
           this.pendingPhotoUrlCache.forEach((url) => URL.revokeObjectURL(url));

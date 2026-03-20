@@ -1,0 +1,363 @@
+<div class="min-h-screen bg-gray-50 dark:bg-gray-950">
+  <p-toast [life]="4000"></p-toast>
+
+  <!-- ── Header ──────────────────────────────────────────────────── -->
+  <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">Estadísticas CRM</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Métricas calculadas en tiempo real sobre contactos y seguimientos</p>
+    </div>
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      label="Actualizar"
+      class="p-button-outlined p-button-sm"
+      [loading]="loading()"
+      (click)="reload()"
+    ></button>
+  </div>
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-32">
+      <div class="text-center space-y-3">
+        <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
+        <p class="text-sm text-gray-500">Cargando estadísticas…</p>
+      </div>
+    </div>
+  } @else {
+
+  <div class="p-6 space-y-6 max-w-screen-xl mx-auto">
+
+    <!-- ══════════════════════════════════════════════════════════
+         FILA 1 — KPIs principales
+    ══════════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+      <!-- Total contactos -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Contactos</p>
+            <p class="text-4xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ totalContacts() }}</p>
+          </div>
+          <div class="w-11 h-11 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center">
+            <i class="pi pi-users text-blue-600 dark:text-blue-400 text-lg"></i>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-3 text-xs text-gray-500">
+          <span><i class="pi pi-check-circle text-green-500 mr-0.5"></i>{{ contactsWithCompany() }} con empresa</span>
+          <span>{{ contactsWithoutCompany() }} sin empresa</span>
+        </div>
+      </div>
+
+      <!-- Total seguimientos -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Seguimientos</p>
+            <p class="text-4xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ totalFollowUps() }}</p>
+          </div>
+          <div class="w-11 h-11 bg-purple-100 dark:bg-purple-900/40 rounded-xl flex items-center justify-center">
+            <i class="pi pi-calendar text-purple-600 dark:text-purple-400 text-lg"></i>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-3 text-xs text-gray-500">
+          <span><i class="pi pi-calendar-plus text-purple-400 mr-0.5"></i>{{ followUpsThisWeek() }} esta semana</span>
+          <span>~{{ avgFollowUpsPerContact() }}/contacto</span>
+        </div>
+      </div>
+
+      <!-- Tasa de completitud -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tasa completitud</p>
+            <p class="text-4xl font-bold mt-1" [class]="completionRate() >= 60 ? 'text-green-600' : completionRate() >= 30 ? 'text-yellow-600' : 'text-red-500'">
+              {{ completionRate() }}%
+            </p>
+          </div>
+          <div class="w-11 h-11 bg-green-100 dark:bg-green-900/40 rounded-xl flex items-center justify-center">
+            <i class="pi pi-chart-pie text-green-600 dark:text-green-400 text-lg"></i>
+          </div>
+        </div>
+        <div class="mt-3">
+          <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all" [style.width]="completionRate() + '%'"
+              [class]="completionRate() >= 60 ? 'bg-green-500' : completionRate() >= 30 ? 'bg-yellow-500' : 'bg-red-500'"></div>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">{{ completedFollowUps() }} completados de {{ totalFollowUps() }}</p>
+        </div>
+      </div>
+
+      <!-- Seguimientos vencidos -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm"
+        [class.border-red-200]="overdueFollowUps() > 0" [class.dark:border-red-800]="overdueFollowUps() > 0">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Vencidos</p>
+            <p class="text-4xl font-bold mt-1" [class]="overdueFollowUps() > 0 ? 'text-red-500' : 'text-gray-900 dark:text-gray-100'">
+              {{ overdueFollowUps() }}
+            </p>
+          </div>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center"
+            [class]="overdueFollowUps() > 0 ? 'bg-red-100 dark:bg-red-900/40' : 'bg-gray-100 dark:bg-gray-800'">
+            <i class="pi pi-exclamation-triangle text-lg"
+              [class]="overdueFollowUps() > 0 ? 'text-red-500' : 'text-gray-400'"></i>
+          </div>
+        </div>
+        <div class="mt-3 text-xs text-gray-500">
+          @if (overdueFollowUps() > 0) {
+            <span class="text-red-500 font-medium">Programados con fecha pasada</span>
+          } @else {
+            <span class="text-green-600">Sin vencidos pendientes</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         FILA 2 — KPIs secundarios
+    ══════════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm flex items-center gap-4">
+        <div class="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center shrink-0">
+          <i class="pi pi-building text-emerald-600 text-base"></i>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ contactsWithCompany() }}</p>
+          <p class="text-xs text-gray-500">Con empresa asignada</p>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm flex items-center gap-4">
+        <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/40 rounded-xl flex items-center justify-center shrink-0">
+          <i class="pi pi-clock text-yellow-600 text-base"></i>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ scheduledFollowUps() }}</p>
+          <p class="text-xs text-gray-500">Programados activos</p>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm flex items-center gap-4">
+        <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center shrink-0">
+          <i class="pi pi-calendar-plus text-blue-600 text-base"></i>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ upcomingFollowUps() }}</p>
+          <p class="text-xs text-gray-500">Próximos 7 días</p>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm flex items-center gap-4">
+        <div class="w-10 h-10 bg-orange-100 dark:bg-orange-900/40 rounded-xl flex items-center justify-center shrink-0">
+          <i class="pi pi-file-check text-orange-600 text-base"></i>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ followUpsWithOutcome() }}</p>
+          <p class="text-xs text-gray-500">Con resultado registrado</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         FILA 3 — Distribuciones
+    ══════════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+      <!-- Por estado -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Seguimientos por estado</h3>
+        <div class="space-y-3">
+          @for (item of followUpsByStatus(); track item.status) {
+            <div>
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="font-medium text-gray-700 dark:text-gray-300">{{ item.label }}</span>
+                <span class="text-gray-500">{{ item.count }} ({{ item.pct }}%)</span>
+              </div>
+              <div class="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-700" [class]="item.color" [style.width]="item.pct + '%'"></div>
+              </div>
+            </div>
+          }
+        </div>
+        @if (!totalFollowUps()) {
+          <p class="text-xs text-gray-400 text-center py-4">Sin datos</p>
+        }
+      </div>
+
+      <!-- Por tipo -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Seguimientos por tipo</h3>
+        <div class="space-y-3">
+          @for (item of followUpsByType(); track item.type) {
+            @if (item.count > 0) {
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1">
+                  <span class="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
+                    <i [class]="'pi ' + item.icon + ' text-[10px]'"></i>{{ item.label }}
+                  </span>
+                  <span class="text-gray-500">{{ item.count }} ({{ item.pct }}%)</span>
+                </div>
+                <div class="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-700" [class]="item.color" [style.width]="item.pct + '%'"></div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+        @if (!totalFollowUps()) {
+          <p class="text-xs text-gray-400 text-center py-4">Sin datos</p>
+        }
+      </div>
+
+      <!-- Fuente de contactos -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Fuente de contactos</h3>
+        <div class="space-y-3">
+          @for (item of contactsBySource(); track item.source) {
+            <div>
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
+                  <i [class]="'pi ' + item.icon + ' text-[10px]'"></i>{{ item.label }}
+                </span>
+                <span class="text-gray-500">{{ item.count }} ({{ item.pct }}%)</span>
+              </div>
+              <div class="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-700" [class]="item.color" [style.width]="item.pct + '%'"></div>
+              </div>
+            </div>
+          }
+        </div>
+        @if (!totalContacts()) {
+          <p class="text-xs text-gray-400 text-center py-4">Sin datos</p>
+        }
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         FILA 4 — Series temporales (últimos 14 días)
+    ══════════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <!-- Contactos creados por día -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Contactos creados · últimos 14 días</h3>
+          <span class="text-xs text-gray-400">Total: {{ totalContacts() }}</span>
+        </div>
+        <div class="flex items-end justify-between gap-1 h-24">
+          @for (day of contactsPerDay(); track day.isoDate) {
+            <div class="flex-1 flex flex-col items-center gap-1 group">
+              <div class="w-full relative flex items-end justify-center" style="height: 80px;">
+                <div
+                  class="w-full max-w-[20px] rounded-t-sm transition-all duration-500 bg-blue-500 group-hover:bg-blue-400 cursor-default"
+                  [style.height]="barPct(day.count, maxContactsPerDay())"
+                  [pTooltip]="day.label + ': ' + day.count"
+                  tooltipPosition="top"
+                ></div>
+              </div>
+              <span class="text-[9px] text-gray-400 leading-none">{{ day.label }}</span>
+            </div>
+          }
+        </div>
+        @if (maxContactsPerDay() <= 1 && contactsPerDay()[0]?.count === 0) {
+          <p class="text-xs text-gray-400 text-center -mt-4">Sin actividad en los últimos 14 días</p>
+        }
+      </div>
+
+      <!-- Seguimientos por día -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Seguimientos programados · últimos 14 días</h3>
+          <span class="text-xs text-gray-400">Total: {{ totalFollowUps() }}</span>
+        </div>
+        <div class="flex items-end justify-between gap-1 h-24">
+          @for (day of followUpsPerDay(); track day.isoDate) {
+            <div class="flex-1 flex flex-col items-center gap-1 group">
+              <div class="w-full relative flex items-end justify-center" style="height: 80px;">
+                <div
+                  class="w-full max-w-[20px] rounded-t-sm transition-all duration-500 bg-purple-500 group-hover:bg-purple-400 cursor-default"
+                  [style.height]="barPct(day.count, maxFollowUpsPerDay())"
+                  [pTooltip]="day.label + ': ' + day.count"
+                  tooltipPosition="top"
+                ></div>
+              </div>
+              <span class="text-[9px] text-gray-400 leading-none">{{ day.label }}</span>
+            </div>
+          }
+        </div>
+        @if (maxFollowUpsPerDay() <= 1 && followUpsPerDay()[0]?.count === 0) {
+          <p class="text-xs text-gray-400 text-center -mt-4">Sin actividad en los últimos 14 días</p>
+        }
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         FILA 5 — Top contactos + Próximos seguimientos
+    ══════════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <!-- Top 5 contactos con más seguimientos -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Top contactos por seguimientos</h3>
+        @if (topContactsByFollowUps().length === 0) {
+          <div class="py-8 text-center text-gray-400">
+            <i class="pi pi-inbox text-3xl block mb-2 opacity-40"></i>
+            <p class="text-sm">Sin seguimientos vinculados a contactos</p>
+          </div>
+        } @else {
+          <div class="space-y-3">
+            @for (item of topContactsByFollowUps(); track item.contact._id; let i = $index) {
+              <div class="flex items-center gap-3">
+                <div class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[11px] font-bold text-gray-500 shrink-0">
+                  {{ i + 1 }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ item.contact.name || 'Sin nombre' }}</span>
+                    <span class="text-xs font-bold text-purple-600 shrink-0 ml-2">{{ item.count }}</span>
+                  </div>
+                  <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-purple-500 rounded-full transition-all" [style.width]="barPct(item.count, maxTopCount())"></div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Próximos seguimientos -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Próximos seguimientos programados</h3>
+        @if (nextFollowUps().length === 0) {
+          <div class="py-8 text-center text-gray-400">
+            <i class="pi pi-calendar-times text-3xl block mb-2 opacity-40"></i>
+            <p class="text-sm">Sin seguimientos próximos</p>
+          </div>
+        } @else {
+          <div class="space-y-2">
+            @for (fu of nextFollowUps(); track fu._id) {
+              <div class="flex items-start gap-3 py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs" [class]="getTypeColor(fu.type)">
+                  <i [class]="getTypeIcon(fu.type)"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                    {{ fu.title || getTypeLabel(fu.type) }}
+                  </p>
+                  <p class="text-xs text-gray-400">{{ formatDate(fu.scheduledDate) }}</p>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+  </div><!-- /max-w -->
+  }<!-- /if !loading -->
+</div>
