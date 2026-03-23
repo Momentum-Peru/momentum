@@ -17,6 +17,10 @@ export class PurchasesQuotesApiService {
     return this.http.get<PurchaseQuote[]>(`${this.baseUrl}/requirements/${requirementId}/quotes`);
   }
 
+  listAll(): Observable<PurchaseQuote[]> {
+    return this.http.get<PurchaseQuote[]>(`${this.baseUrl}/quotes`);
+  }
+
   getById(id: string): Observable<PurchaseQuote> {
     return this.http.get<PurchaseQuote>(`${this.baseUrl}/quotes/${id}`);
   }

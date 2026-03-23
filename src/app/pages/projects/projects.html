@@ -3,7 +3,7 @@
   <div class="flex flex-wrap xl:flex-nowrap items-center gap-2">
     <input
       pInputText
-      placeholder="Buscar proyectos..."
+      placeholder="Buscar centros de costo..."
       [ngModel]="query()"
       (ngModelChange)="setQuery($event)"
       class="w-full"
@@ -15,7 +15,7 @@
         (click)="newItem()"
         label="Nuevo"
         icon="pi pi-plus"
-        aria-label="Crear nuevo proyecto"
+        aria-label="Crear nuevo centro de costo"
         class="w-full xl:w-auto"
       ></button>
     }
@@ -141,7 +141,7 @@
                   size="small"
                   (click)="remove(row)"
                   pTooltip="Eliminar proyecto"
-                  aria-label="Eliminar proyecto"
+                  aria-label="Eliminar centro de costo"
                 ></button>
               }
             </div>
@@ -300,7 +300,7 @@
                       label="Eliminar"
                       class="p-button-text p-button-sm p-button-danger flex-1"
                       (click)="remove(row)"
-                      aria-label="Eliminar proyecto"
+                      aria-label="Eliminar centro de costo"
                     ></button>
                   }
                 </div>
@@ -313,7 +313,7 @@
     @if (filteredItems().length === 0) {
       <div class="text-center py-8 text-gray-500 dark:text-gray-400">
         <i class="pi pi-inbox text-4xl mb-2"></i>
-        <p>No hay proyectos disponibles</p>
+        <p>No hay centros de costo disponibles</p>
       </div>
     }
   </div>
@@ -329,7 +329,7 @@
     [closable]="true"
   >
     <ng-template pTemplate="header">
-      {{ editing()?._id ? 'Editar proyecto' : 'Nuevo proyecto' }}
+      {{ editing()?._id ? 'Editar centro de costo' : 'Nuevo centro de costo' }}
     </ng-template>
 
     <div class="grid gap-4">
@@ -361,7 +361,7 @@
             id="projectName"
             pInputText
             name="projectName"
-            placeholder="Nombre del proyecto"
+            placeholder="Nombre del centro de costo"
             [ngModel]="editing()?.name"
             (ngModelChange)="onEditChange('name', $event)"
             class="w-full"
@@ -706,7 +706,7 @@
         (click)="save()"
         [disabled]="uploadingFiles()"
         [loading]="uploadingFiles()"
-        aria-label="Guardar proyecto"
+        aria-label="Guardar centro de costo"
       ></button>
     </ng-template>
   </p-dialog>

@@ -43,9 +43,9 @@ export class MenuConfigService {
   private readonly routesConfig: RouteConfig[] = [
     { path: '/dashboard', label: 'Inicio', icon: 'pi pi-home' },
     { path: '/docs', label: 'Documentación', icon: 'pi pi-book' },
-    { path: '/projects/dashboard', label: 'Dashboard de proyectos', icon: 'pi pi-chart-line' },
+    { path: '/projects/dashboard', label: 'Dashboard de centros de costo', icon: 'pi pi-chart-line' },
     { path: '/clients', label: 'Clientes', icon: 'pi pi-briefcase' },
-    { path: '/projects', label: 'Proyectos', icon: 'pi pi-folder' },
+    { path: '/projects', label: 'Centros de costo', icon: 'pi pi-folder' },
     { path: '/engineering', label: 'Ingeniería', icon: 'pi pi-cog' },
     { path: '/orders', label: 'Órdenes', icon: 'pi pi-shopping-cart' },
     { path: '/requirements', label: 'Requerimientos', icon: 'pi pi-inbox' },
@@ -160,7 +160,7 @@ export class MenuConfigService {
         ],
       },
       {
-        label: 'Proyectos',
+        label: 'Centros de costo',
         icon: 'pi pi-folder',
         routerLink: '/projects',
       },

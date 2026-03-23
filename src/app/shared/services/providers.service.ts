@@ -29,7 +29,6 @@ export interface Provider {
   description?: string;
   services: string[];
   website?: string;
-  rating?: number;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -38,19 +37,12 @@ export interface Provider {
     provincia?: { codigo: string; nombre: string; tipo: string };
     distrito?: { codigo: string; nombre: string; tipo: string };
   };
-  metrics?: {
-    onTimeDelivery?: number;
-    completeDelivery?: number;
-    internalRating?: number;
-  };
 }
 
 export interface ProviderStats {
   total: number;
   active: number;
   inactive: number;
-  withRating: number;
-  averageRating: number;
 }
 
 export interface ProviderFilters {
@@ -122,28 +114,10 @@ export class ProvidersService {
   }
 
   /**
-   * Actualiza la calificación de un proveedor
-   */
-  updateProviderRating(id: string, rating: number): Observable<Provider> {
-    return this.http.put<Provider>(`${this.baseUrl}/providers/${id}/rating`, { rating });
-  }
-
-  /**
    * Obtiene estadísticas de proveedores
    */
   getProviderStats(): Observable<ProviderStats> {
     return this.http.get<ProviderStats>(`${this.baseUrl}/providers/stats`);
-  }
-
-  /**
-   * Obtiene proveedores mejor calificados
-   */
-  getTopRatedProviders(limit?: number): Observable<Provider[]> {
-    let url = `${this.baseUrl}/providers/top-rated`;
-    if (limit) {
-      url += `?limit=${limit}`;
-    }
-    return this.http.get<Provider[]>(url);
   }
 
   /**
