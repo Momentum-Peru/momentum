@@ -89,6 +89,7 @@ export interface PurchaseQuote {
   attachmentUrls?: string[];
   paymentTerms?: string;
   warranty?: string;
+  projectId?: string | { _id: string; name?: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -139,6 +140,7 @@ export interface PurchaseOrderLine {
   includesIgv?: boolean;
   discount?: number;
   centerCostId?: string;
+  productId?: string;
 }
 
 export interface PurchaseOrder {
@@ -155,6 +157,9 @@ export interface PurchaseOrder {
   status: string;
   paymentTerms?: string;
   notes?: string;
+  quoteId?: string;
+  projectId?: string | { _id: string; name?: string };
+  attachments?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -175,8 +180,10 @@ export interface CreatePurchaseOrderRequest {
   issueDate: string;
   dueDate?: string;
   quoteId?: string;
+  projectId?: string;
   paymentTerms?: string;
   notes?: string;
+  attachments?: string[];
 }
 
 export interface PurchaseVoucherLine {

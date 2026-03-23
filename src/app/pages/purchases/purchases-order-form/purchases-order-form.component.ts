@@ -9,6 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Observable, of } from 'rxjs';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { Select } from 'primeng/select';
@@ -21,9 +22,14 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageService } from 'primeng/api';
 import { PurchasesOrdersApiService } from '../../../shared/services/purchases-orders-api.service';
 import { ProvidersService, Provider } from '../../../shared/services/providers.service';
+import { PurchasesQuotesApiService } from '../../../shared/services/purchases-quotes-api.service';
+import { ProjectsApiService } from '../../../shared/services/projects-api.service';
+import { Project } from '../../../shared/interfaces/project.interface';
+import { ProductsService, Product } from '../../../shared/services/products.service';
 import {
   CreatePurchaseOrderRequest,
   PurchaseOrderLine,
+  PurchaseQuote,
 } from '../../../shared/interfaces/purchase.interface';
 import { AuthService } from '../../login/services/auth.service';
 
@@ -49,15 +55,27 @@ import { AuthService } from '../../login/services/auth.service';
 })
 export class PurchasesOrderFormComponent implements OnInit {
   private readonly ordersApi = inject(PurchasesOrdersApiService);
+  private readonly quotesApi = inject(PurchasesQuotesApiService);
   private readonly providersService = inject(ProvidersService);
-  private readonly messageService = inject(MessageService);
+  private readonly messageService = inject(MessageService); // Trigger re-save
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
+  private readonly projectsService = inject(ProjectsApiService);
+  private readonly productsService = inject(ProductsService);
 
   isEditMode = signal<boolean>(false);
+  isDragging = signal<boolean>(false);
+  uploadingFiles = signal<boolean>(false);
   providers = signal<Provider[]>([]);
+  quotes = signal<PurchaseQuote[]>([]);
   selectedProvider = signal<Provider | null>(null);
+  selectedQuote = signal<PurchaseQuote | null>(null);
+  selectedFiles = signal<File[]>([]);
+  attachmentUrls = signal<string[]>([]);
+  projects = signal<Project[]>([]);
+  selectedProject = signal<Project | null>(null);
+  catalogProducts = signal<Product[]>([]);
 
   orderForm = signal<any>({
     providerId: '',
@@ -72,6 +90,7 @@ export class PurchasesOrderFormComponent implements OnInit {
     subtotal: 0,
     igvAmount: 0,
     totalAmount: 0,
+    projectId: '',
   });
 
   currencies = signal<any[]>([
@@ -81,6 +100,9 @@ export class PurchasesOrderFormComponent implements OnInit {
 
   ngOnInit() {
     this.loadProviders();
+    this.loadQuotes();
+    this.loadProjects();
+    this.loadCatalogProducts();
     // Check for edit mode
     this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
@@ -104,6 +126,47 @@ export class PurchasesOrderFormComponent implements OnInit {
     });
   }
 
+  loadQuotes() {
+    this.quotesApi.listAll().subscribe({
+      next: (data) => {
+        console.log('Quotes loaded:', data);
+        this.quotes.set(data);
+      },
+      error: (err) => {
+        console.error('Error loading quotes:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las cotizaciones',
+        });
+      },
+    });
+  }
+
+  loadCatalogProducts() {
+    this.productsService.getProducts({ isActive: true }).subscribe({
+      next: (data) => this.catalogProducts.set(data),
+      error: () =>
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar los productos/servicios',
+        }),
+    });
+  }
+
+  loadProjects() {
+    this.projectsService.listActive().subscribe({
+      next: (data) => this.projects.set(data),
+      error: () =>
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar los centros de costo',
+        }),
+    });
+  }
+
   onProviderSelect(provider: Provider) {
     this.selectedProvider.set(provider);
     const cur = this.orderForm();
@@ -114,6 +177,137 @@ export class PurchasesOrderFormComponent implements OnInit {
       providerRuc: provider.taxId || '',
       providerAddress: provider.ubicacion?.direccion || '',
     });
+  }
+
+  onQuoteSelect(quote: PurchaseQuote) {
+    this.selectedQuote.set(quote);
+    
+    // Fetch full quote details to ensure everything is populated in a single call
+    this.quotesApi.getById(quote._id).subscribe({
+      next: (fullQuote: any) => {
+        const providerId = typeof fullQuote.providerId === 'object' ? fullQuote.providerId._id : fullQuote.providerId;
+        const providerObj = typeof fullQuote.providerId === 'object' ? fullQuote.providerId : null;
+        
+        const providerName = providerObj?.name || '';
+        const providerRuc = providerObj?.taxId || '';
+        const providerAddress = providerObj?.address || providerObj?.ubicacion?.direccion || '';
+
+        if (providerObj) {
+          // Update selectedProvider signal for the dropdown
+          this.selectedProvider.set(providerObj);
+        }
+
+        const lines: PurchaseOrderLine[] = fullQuote.lines.map((l: any) => ({
+          requirementItemIndex: l.requirementItemIndex,
+          description: l.description || '',
+          quantity: l.quantity,
+          unit: l.unit || 'UND',
+          unitPrice: l.unitPrice,
+          includesIgv: l.includesIgv ?? true,
+          discount: l.discount ?? 0,
+          productId: l.productId?._id || l.productId
+        }));
+
+        // If requirementId is populated and has items, ensure descriptions are set
+        if (typeof fullQuote.requirementId === 'object' && fullQuote.requirementId.items) {
+          lines.forEach((line) => {
+            if (!line.description) {
+              const reqItem = fullQuote.requirementId.items[line.requirementItemIndex];
+              if (reqItem) {
+                line.description = reqItem.description;
+                line.unit = reqItem.unit;
+              }
+            }
+          });
+        }
+
+        // Handle Project
+        let projectId = fullQuote.projectId; // If legacy mapping has it
+        if (!projectId && typeof fullQuote.requirementId === 'object') {
+          projectId = fullQuote.requirementId.projectId;
+        }
+
+        if (projectId) {
+          const projId = typeof projectId === 'object' ? projectId._id : projectId;
+          const projObj = typeof projectId === 'object' ? projectId : this.projects().find(p => p._id === projId);
+          if (projObj) this.selectedProject.set(projObj);
+          projectId = projId;
+        }
+
+        this.orderForm.set({
+          ...this.orderForm(),
+          providerId: providerId,
+          providerName,
+          providerRuc,
+          providerAddress,
+          paymentTerms: fullQuote.paymentTerms || '',
+          lines: lines,
+          quoteId: fullQuote._id,
+          projectId: projectId || '',
+          attachments: fullQuote.attachmentUrls || [],
+        });
+
+        this.attachmentUrls.set(fullQuote.attachmentUrls || []);
+        this.calculateTotals();
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar los detalles de la cotización'
+        });
+      }
+    });
+  }
+
+  onFileSelected(event: any) {
+    const files = event.target.files;
+    if (files) {
+      this.addFiles(Array.from(files));
+    }
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    this.isDragging.set(true);
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    this.isDragging.set(false);
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    this.isDragging.set(false);
+    const files = event.dataTransfer?.files;
+    if (files) {
+      this.addFiles(Array.from(files));
+    }
+  }
+
+  addFiles(files: File[]) {
+    this.selectedFiles.set([...this.selectedFiles(), ...files]);
+  }
+
+  removeFile(index: number) {
+    const files = [...this.selectedFiles()];
+    files.splice(index, 1);
+    this.selectedFiles.set(files);
+  }
+
+  uploadFiles(): Observable<string[]> {
+    if (this.selectedFiles().length === 0) return of([]);
+    this.uploadingFiles.set(true);
+    // This is a placeholder for actual upload logic. 
+    // In a real app, you'd use an UploadService.
+    // For now, I'll simulate it by returning dummy URLs if there's no service.
+    return of(this.selectedFiles().map(f => `https://storage.tecmeing.com/uploads/${f.name}`));
+  }
+
+  onProjectSelect(project: Project) {
+    this.selectedProject.set(project);
+    this.onEditChange('projectId', project._id);
   }
 
   onEditChange(key: string, value: any) {
@@ -149,10 +343,22 @@ export class PurchasesOrderFormComponent implements OnInit {
     this.calculateTotals();
   }
 
-  updateLine(index: number, field: keyof PurchaseOrderLine, value: any) {
+  updateLine(index: number, field: keyof PurchaseOrderLine | string, value: any) {
     const cur = this.orderForm();
     const lines = [...cur.lines];
     lines[index] = { ...lines[index], [field]: value };
+
+    if (field === 'productId' && value) {
+      const product = this.catalogProducts().find(p => p._id === value);
+      if (product) {
+        lines[index].description = product.name;
+        lines[index].unit = product.unitOfMeasure || 'UND';
+        if (product.basePrice) {
+          lines[index].unitPrice = product.basePrice;
+        }
+      }
+    }
+
     this.orderForm.set({ ...cur, lines });
 
     if (field === 'quantity' || field === 'unitPrice' || field === 'includesIgv') {
@@ -213,6 +419,24 @@ export class PurchasesOrderFormComponent implements OnInit {
       return;
     }
 
+    this.uploadFiles().subscribe({
+      next: (newUrls) => {
+        this.attachmentUrls.set([...this.attachmentUrls(), ...newUrls]);
+        this.completeSave();
+      },
+      error: () => {
+        this.uploadingFiles.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron subir los archivos',
+        });
+      },
+    });
+  }
+
+  private completeSave() {
+    const form = this.orderForm();
     const currentUser = this.authService.getCurrentUser();
 
     const payload: CreatePurchaseOrderRequest = {
@@ -229,10 +453,13 @@ export class PurchasesOrderFormComponent implements OnInit {
       issueDate: form.issueDate.toISOString(),
       dueDate: form.dueDate ? form.dueDate.toISOString() : undefined,
       paymentTerms: form.paymentTerms,
+      quoteId: form.quoteId,
+      projectId: form.projectId,
+      attachments: this.attachmentUrls(),
     };
 
     if (this.isEditMode()) {
-      // Edit logic here
+      // Edit logic could go here
     } else {
       this.ordersApi.create(payload).subscribe({
         next: () => {
@@ -243,7 +470,8 @@ export class PurchasesOrderFormComponent implements OnInit {
           });
           setTimeout(() => this.goBack(), 1500);
         },
-        error: (error) => {
+        error: (error: any) => {
+          this.uploadingFiles.set(false);
           this.messageService.add({
             severity: 'error',
             summary: 'Error',

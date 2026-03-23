@@ -15,7 +15,6 @@ import { MessageService } from 'primeng/api';
 // InputTextarea no está disponible en PrimeNG 20, usaremos InputText con textarea
 import { Checkbox } from 'primeng/checkbox';
 import { Chip } from 'primeng/chip';
-import { Rating } from 'primeng/rating';
 import { Tag } from 'primeng/tag';
 import { Card } from 'primeng/card';
 import { ConfirmationService } from 'primeng/api';
@@ -77,7 +76,6 @@ interface District {
     Tooltip,
     Toast,
     Chip,
-    Rating,
     Tag,
     Card,
   ],
@@ -367,7 +365,6 @@ export class ProvidersPage implements OnInit {
       description: item.description,
       services: item.services,
       website: item.website,
-      rating: item.rating,
       isActive: item.isActive,
     };
 
@@ -445,27 +442,6 @@ export class ProvidersPage implements OnInit {
       },
       error: (error) => {
         console.error('Error al cambiar estado del proveedor:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: this.getErrorMessage(error),
-        });
-      },
-    });
-  }
-
-  updateRating(item: Provider, rating: number) {
-    this.providersService.updateProviderRating(item._id!, rating).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Calificación actualizada correctamente',
-        });
-        this.load();
-      },
-      error: (error) => {
-        console.error('Error al actualizar calificación:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -759,10 +735,6 @@ export class ProvidersPage implements OnInit {
       errors.push('Debe seleccionar al menos un tipo de servicio');
     }
 
-    if (item.rating && (item.rating < 1 || item.rating > 5)) {
-      errors.push('La calificación debe estar entre 1 y 5');
-    }
-
     return errors;
   }
 
@@ -804,12 +776,6 @@ export class ProvidersPage implements OnInit {
           }
           if (message.includes('website must be a URL')) {
             return 'El sitio web debe tener un formato válido';
-          }
-          if (message.includes('rating must not be less than 1')) {
-            return 'La calificación debe ser mayor o igual a 1';
-          }
-          if (message.includes('rating must not be greater than 5')) {
-            return 'La calificación debe ser menor o igual a 5';
           }
           if (message.includes('description must be longer than or equal to 10 characters')) {
             return 'La descripción debe tener al menos 10 caracteres';

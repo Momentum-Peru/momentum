@@ -52,8 +52,10 @@ export class RfqsService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
 
-  getRfqs(): Observable<Rfq[]> {
-    return this.http.get<Rfq[]>(`${this.baseUrl}/rfqs`);
+  getRfqs(projectId?: string): Observable<Rfq[]> {
+    const params: any = {};
+    if (projectId) params.projectId = projectId;
+    return this.http.get<Rfq[]>(`${this.baseUrl}/rfqs`, { params });
   }
 
   getRfq(id: string): Observable<Rfq> {
