@@ -2,6 +2,7 @@ export type SupplierQuoteStatus = 'Pendiente' | 'Aprobada' | 'Rechazada';
 
 export interface SupplierQuoteItem {
   productId?: string | { _id: string; name: string; code?: string };
+  description?: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;

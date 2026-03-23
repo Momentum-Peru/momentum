@@ -44,6 +44,13 @@ export class SupplierQuotesApiService {
   }
 
   /**
+   * Elimina una cotización
+   */
+  delete(id: string): Observable<{ deleted: boolean }> {
+    return this.http.delete<{ deleted: boolean }>(`${this.baseUrl}/supplier-quotes/${id}`);
+  }
+
+  /**
    * Aprueba la cotización y genera automáticamente la Orden de Compra/Servicio
    */
   approveAndGenerateOrder(id: string): Observable<any> {

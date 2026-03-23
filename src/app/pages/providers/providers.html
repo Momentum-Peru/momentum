@@ -15,10 +15,6 @@
           <i class="pi pi-check-circle text-green-500"></i>
           {{ stats()?.active }} activos
         </span>
-        <span class="flex items-center gap-1">
-          <i class="pi pi-star text-yellow-500"></i>
-          {{ stats()?.averageRating?.toFixed(1) || '0.0' }} avg
-        </span>
       </div>
       }
     </div>
@@ -127,7 +123,6 @@
           <th class="whitespace-nowrap">Servicios</th>
           <th class="whitespace-nowrap">Ubicación</th>
           <th class="whitespace-nowrap">Contactos</th>
-          <th class="whitespace-nowrap">Calificación</th>
           <th class="whitespace-nowrap">Estado</th>
           <th class="whitespace-nowrap">Acciones</th>
         </tr>
@@ -197,15 +192,6 @@
               (click)="openContacts(row)"
               aria-label="Ver contactos del proveedor"
             ></button>
-          </td>
-          <td>
-            <div class="flex items-center gap-2">
-              <p-rating
-                [ngModel]="row.rating || 0"
-                (ngModelChange)="updateRating(row, $event)"
-              ></p-rating>
-              <span class="text-sm text-gray-600">{{ row.rating || 0 }}</span>
-            </div>
           </td>
           <td>
             @if (row.isActive) {
@@ -384,23 +370,6 @@
             }
           </div>
 
-          <!-- Calificación -->
-          @if (row.rating !== undefined) {
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Calificación
-            </div>
-            <div class="flex items-center gap-2">
-              <p-rating
-                [ngModel]="row.rating || 0"
-                (ngModelChange)="updateRating(row, $event)"
-                [readonly]="false"
-              ></p-rating>
-              <span class="text-sm text-gray-600 dark:text-gray-400">{{ row.rating || 0 }}</span>
-            </div>
-          </div>
-          }
-
           <!-- Contactos -->
           <div>
             <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
@@ -558,16 +527,6 @@
           </div>
         </ng-template>
       </p-card>
-      <p-card>
-        <ng-template pTemplate="content">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-yellow-600">
-              {{ stats()?.averageRating?.toFixed(1) || '0.0' }}
-            </div>
-            <div class="text-sm text-gray-600">Calificación Promedio</div>
-          </div>
-        </ng-template>
-      </p-card>
     </div>
     }
     <ng-template pTemplate="footer">
@@ -639,17 +598,6 @@
             } @else {
             <div class="text-gray-500 dark:text-gray-400">No especificado</div>
             }
-          </div>
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Calificación</span
-            >
-            <div class="flex items-center gap-2">
-              <p-rating [ngModel]="viewingProvider()?.rating || 0" [readonly]="true"></p-rating>
-              <span class="text-sm text-gray-600 dark:text-gray-400">{{
-                viewingProvider()?.rating || 0
-              }}</span>
-            </div>
           </div>
           <div>
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"

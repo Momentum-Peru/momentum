@@ -9,7 +9,6 @@ import { ButtonModule } from 'primeng/button';
 import { Select } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ChipModule } from 'primeng/chip';
-import { RatingModule } from 'primeng/rating';
 import { CardModule } from 'primeng/card';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
@@ -33,7 +32,7 @@ interface District { _id: string; codigo: string; nombre: string; provinciaCodig
     standalone: true,
     imports: [
         CommonModule, FormsModule, ReactiveFormsModule, InputTextModule, ButtonModule,
-        Select, CheckboxModule, ChipModule, RatingModule, CardModule, ToastModule, TooltipModule
+        Select, CheckboxModule, ChipModule, CardModule, ToastModule, TooltipModule
     ],
     templateUrl: './provider-form.component.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -210,7 +209,6 @@ export class ProviderFormComponent implements OnInit {
             description: item.description,
             services: item.services,
             website: item.website,
-            rating: item.rating,
             isActive: item.isActive,
         };
 
@@ -262,14 +260,6 @@ export class ProviderFormComponent implements OnInit {
         const cur = this.editing();
         const services = text.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
         this.editing.set({ ...cur, services });
-    }
-
-    updateMetric(metric: string, value: number) {
-        const cur = this.editing();
-        this.editing.set({
-            ...cur,
-            metrics: { ...(cur.metrics || {}), [metric]: value }
-        });
     }
 
     loadCountries() {
@@ -363,7 +353,6 @@ export class ProviderFormComponent implements OnInit {
             });
         }
         if (!item.services || item.services.length === 0) errors.push('Debe seleccionar al menos un tipo de servicio');
-        if (item.rating && (item.rating < 1 || item.rating > 5)) errors.push('La calificación debe estar entre 1 y 5');
         return errors;
     }
 }
