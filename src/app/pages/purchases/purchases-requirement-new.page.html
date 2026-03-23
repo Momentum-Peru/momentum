@@ -1,0 +1,21 @@
+<div class="p-4 sm:p-6 max-w-4xl mx-auto">
+  <p-toast [life]="5000"></p-toast>
+  <div class="flex items-center gap-2 mb-6">
+    <button
+      pButton
+      type="button"
+      icon="pi pi-arrow-left"
+      class="p-button-text"
+      (click)="onCancel()"
+    ></button>
+    <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
+      Nuevo requerimiento de compra
+    </h1>
+  </div>
+  <app-purchase-requirement-form
+    [saveLabel]="'Crear'"
+    [cancelLabel]="'Cancelar'"
+    (save)="onSave($event)"
+    (cancelRequest)="onCancel()"
+  />
+</div>

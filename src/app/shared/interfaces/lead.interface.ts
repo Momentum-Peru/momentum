@@ -21,9 +21,12 @@ export type LeadSource =
   | 'OTHER';
 
 export interface LeadContact {
+  /** Nombres (en formulario); al persistir se concatena con `lastName` en un solo `name` para API/BD. */
   name: string;
+  /** Apellidos (solo UI; se envía fusionado en `name`). */
+  lastName?: string;
   email?: string;
-  phone: string;
+  phone?: string;
   position?: string;
   department?: string;
 }

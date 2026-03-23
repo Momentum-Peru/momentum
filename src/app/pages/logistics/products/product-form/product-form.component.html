@@ -1,0 +1,61 @@
+<div class="p-4 space-y-4 max-w-4xl mx-auto">
+  <p-toast></p-toast>
+  
+  <div class="flex items-center gap-4 mb-6">
+    <button pButton icon="pi pi-arrow-left" class="p-button-rounded p-button-text p-button-secondary" (click)="goBack()"></button>
+    <div class="flex flex-col">
+      <h1 class="text-2xl font-bold text-slate-800 m-0">
+        {{ isEditMode() ? 'Editar Item' : 'Nuevo Item' }}
+      </h1>
+      <p class="text-sm text-slate-500 m-0 mt-1">
+        Registra un bien o servicio para tu catálogo de adquisiciones.
+      </p>
+    </div>
+  </div>
+
+  <div class="grid gap-6">
+    <p-card>
+      <ng-template pTemplate="content">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Nombre *</label>
+            <input pInputText placeholder="Ej: Laptop Lenovo Thinkpad" [ngModel]="editing().name" (ngModelChange)="onEditChange('name', $event)" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Código</label>
+            <input pInputText placeholder="Ej: PROD-001" [ngModel]="editing().code" (ngModelChange)="onEditChange('code', $event)" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Tipo *</label>
+            <p-select [options]="productTypes" optionLabel="label" optionValue="value" [ngModel]="editing().type" (ngModelChange)="onEditChange('type', $event)" class="w-full"></p-select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Unidad de Medida *</label>
+            <p-select [options]="unitOptions" optionLabel="label" optionValue="value" [ngModel]="editing().unitOfMeasure" (ngModelChange)="onEditChange('unitOfMeasure', $event)" class="w-full"></p-select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+            <textarea pInputText placeholder="Características, detalles técnicos..." [ngModel]="editing().description" (ngModelChange)="onEditChange('description', $event)" rows="3" class="w-full"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
+            <input pInputText placeholder="Ej: Informática" [ngModel]="editing().category" (ngModelChange)="onEditChange('category', $event)" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Precio referencial Base (PEN)</label>
+            <p-inputNumber mode="currency" currency="PEN" locale="es-PE" placeholder="0.00" [ngModel]="editing().basePrice" (ngModelChange)="onEditChange('basePrice', $event)" class="w-full"></p-inputNumber>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-2 mt-2">
+            <p-checkbox [ngModel]="editing().isActive" (ngModelChange)="onEditChange('isActive', $event)" [binary]="true" inputId="activeCheck"></p-checkbox>
+            <label for="activeCheck" class="text-sm font-medium text-slate-700 cursor-pointer">Item disponible (Activo)</label>
+          </div>
+        </div>
+      </ng-template>
+    </p-card>
+
+    <div class="flex items-center justify-end gap-3 mt-4">
+      <button pButton label="Cancelar" icon="pi pi-times" class="p-button-outlined p-button-secondary" (click)="goBack()"></button>
+      <button pButton label="Guardar Item" icon="pi pi-check" class="p-button-primary" (click)="save()"></button>
+    </div>
+  </div>
+</div>

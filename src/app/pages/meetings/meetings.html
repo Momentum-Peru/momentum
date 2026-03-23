@@ -5,18 +5,58 @@
   <!-- Título y Estadísticas -->
   <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
     <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">Reuniones</h1>
-    <button
-      pButton
-      type="button"
-      (click)="loadStats()"
-      label="Ver Estadísticas"
-      icon="pi pi-chart-bar"
-      class="p-button-outlined"
-      aria-label="Ver estadísticas de reuniones"
-    ></button>
+    @if (activeTab() === 'registros') {
+      <button
+        pButton
+        type="button"
+        (click)="loadStats()"
+        label="Ver Estadísticas"
+        icon="pi pi-chart-bar"
+        class="p-button-outlined"
+        aria-label="Ver estadísticas de reuniones"
+      ></button>
+    }
   </div>
 
-  <!-- Filtros -->
+  <!-- Tabs Navigation -->
+  <div
+    class="flex overflow-x-auto pb-2 mb-4 border-b border-gray-200 dark:border-gray-700 no-scrollbar gap-2"
+  >
+    <button
+      class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap"
+      [class]="
+        activeTab() === 'calendar'
+          ? 'bg-primary text-white shadow-md shadow-primary/20'
+          : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+      "
+      (click)="activeTab.set('calendar')"
+      type="button"
+      aria-label="Vista Calendario"
+    >
+      <i class="pi pi-calendar"></i>
+      Calendario
+    </button>
+    <button
+      class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap"
+      [class]="
+        activeTab() === 'registros'
+          ? 'bg-primary text-white shadow-md shadow-primary/20'
+          : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+      "
+      (click)="activeTab.set('registros')"
+      type="button"
+      aria-label="Vista Registros"
+    >
+      <i class="pi pi-list"></i>
+      Registros
+    </button>
+  </div>
+
+  <!-- Content Area -->
+  @if (activeTab() === 'calendar') {
+    <app-meetings-calendar class="flex-1 flex flex-col min-h-[60vh]"></app-meetings-calendar>
+  } @else {
+  <!-- Filtros (solo en Registros) -->
   <div class="flex flex-wrap items-center gap-2 mb-4">
     <input
       pInputText
@@ -82,7 +122,7 @@
     }
   </div>
 
-  <!-- Vista Desktop: Tabla -->
+  <!-- Vista Desktop: Tabla (Registros) -->
   <div class="hidden md:block">
     <p-table
       [value]="filteredItems()"
@@ -171,7 +211,7 @@
     </p-table>
   </div>
 
-  <!-- Vista Móvil: Cards -->
+  <!-- Vista Móvil: Cards (Registros) -->
   <div class="md:hidden space-y-3">
     @for (row of filteredItems(); track row._id || row.title; let i = $index) {
     <p-card>
@@ -255,6 +295,7 @@
     <div class="text-center py-8 text-gray-500 dark:text-gray-400">No se encontraron reuniones</div>
     }
   </div>
+  }
 
   <!-- Diálogo de creación/edición -->
   <p-dialog

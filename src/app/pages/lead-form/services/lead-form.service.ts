@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { LeadsApiService } from '../../../shared/services/leads-api.service';
-import { CreateLeadRequest, Lead } from '../../../shared/interfaces/lead.interface';
+import { CreateLeadRequest, Lead, LeadSource } from '../../../shared/interfaces/lead.interface';
 
 /**
  * Interfaz para los datos del formulario
@@ -12,6 +12,7 @@ export interface LeadFormData {
   phone: string;
   address?: string;
   referredBy?: string;
+  source?: LeadSource;
   hasCompany?: boolean;
   company?: string;
   dni?: string;
@@ -61,7 +62,7 @@ export class LeadFormService {
           direccion: formData.address
         }
         : undefined,
-      source: formData.referredBy ? 'REFERRAL' : 'WEBSITE',
+      source: formData.source || 'OTHER',
       notes: notes,
       status: 'NEW'
     };

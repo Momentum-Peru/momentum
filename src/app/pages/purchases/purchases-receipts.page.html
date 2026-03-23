@@ -1,0 +1,44 @@
+<div class="card">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-2xl font-bold">Recepciones de Mercadería</h2>
+    <!-- El registro se hace desde la Orden de Compra -->
+  </div>
+
+  <p-table [value]="receipts()" [loading]="loading()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Número</th>
+        <th>Fecha</th>
+        <th>Orden de Compra</th>
+        <th>Proveedor</th>
+        <th>Guía Remisión</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-r>
+      <tr>
+        <td>{{ r.number }}</td>
+        <td>{{ r.receiptDate | date:'dd/MM/yyyy' }}</td>
+        <td>
+          <a [routerLink]="['/purchases/orders', r.purchaseOrderId?._id || r.purchaseOrderId]" class="text-blue-600 hover:underline">
+            {{ r.purchaseOrderId?.number || 'OC' }}
+          </a>
+        </td>
+        <td>{{ providerName(r) }}</td>
+        <td>{{ r.guideNumber || '-' }}</td>
+        <td>
+          <p-tag [value]="r.status" [severity]="getStatusSeverity(r.status)"></p-tag>
+        </td>
+        <td>
+          <button pButton icon="pi pi-eye" class="p-button-text p-button-sm" [routerLink]="['/purchases/receipts', r._id]"></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="7" class="text-center p-4">No hay recepciones registradas.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

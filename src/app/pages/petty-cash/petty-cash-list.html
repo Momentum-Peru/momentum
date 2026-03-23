@@ -1,0 +1,92 @@
+<div class="petty-cash-list-page">
+  <p-toast [life]="5000"></p-toast>
+
+  <header class="page-header">
+    <h1 class="page-title">Cajas Chicas</h1>
+    <p class="page-desc">Seleccione una caja para ver movimientos y saldo, o cree una nueva.</p>
+  </header>
+
+  <section class="section-create">
+    <button
+      pButton
+      type="button"
+      label="Crear caja chica"
+      icon="pi pi-plus"
+      class="p-button-primary"
+      (click)="openCreateDialog()"
+      aria-label="Crear caja chica"
+    ></button>
+  </section>
+
+  <section class="section-boxes">
+    @if (loading()) {
+      <div class="loading-block">
+        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        <span>Cargando cajas...</span>
+      </div>
+    } @else if (boxes().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-wallet empty-icon" aria-hidden="true"></i>
+        <p class="empty-title">No hay cajas chicas</p>
+        <p class="empty-desc">
+          Cree la primera caja chica para comenzar (ej. Caja chica de administración, Caja chica de
+          contabilidad).
+        </p>
+      </div>
+    } @else {
+      <div class="boxes-grid">
+        @for (box of boxes(); track trackByBoxId($index, box)) {
+          <a [routerLink]="['/petty-cash', 'box', box._id]" class="box-card-link">
+            <div class="box-card">
+              <i class="pi pi-wallet box-icon" aria-hidden="true"></i>
+              <h3 class="box-name">{{ box.name }}</h3>
+              <span class="box-arrow"><i class="pi pi-chevron-right" aria-hidden="true"></i></span>
+            </div>
+          </a>
+        }
+      </div>
+    }
+  </section>
+
+  <p-dialog
+    header="Nueva caja chica"
+    [visible]="showCreateDialog()"
+    (visibleChange)="showCreateDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '400px' }"
+    [appendTo]="'body'"
+    (onHide)="closeCreateDialog()"
+    [closable]="!creating()"
+  >
+    <div class="create-dialog-content">
+      <label for="newBoxName" class="block text-sm font-medium mb-2">Nombre de la caja</label>
+      <input
+        pInputText
+        id="newBoxName"
+        [ngModel]="newBoxName()"
+        (ngModelChange)="newBoxName.set($event)"
+        placeholder="Ej. Caja chica de administración"
+        class="w-full"
+        maxlength="120"
+        (keydown.enter)="createBox()"
+      />
+    </div>
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="closeCreateDialog()"
+        [disabled]="creating()"
+      ></button>
+      <button
+        pButton
+        label="Crear"
+        icon="pi pi-check"
+        (click)="createBox()"
+        [loading]="creating()"
+        [disabled]="!newBoxName().trim()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+</div>

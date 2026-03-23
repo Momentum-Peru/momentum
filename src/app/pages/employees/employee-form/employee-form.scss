@@ -68,7 +68,7 @@
   font-weight: 500;
   transition: all 0.2s ease;
   position: relative;
-  
+
   i {
     font-size: 1.1rem;
   }
@@ -82,7 +82,7 @@
     background: white;
     color: var(--primary-color);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    
+
     .active-indicator {
       position: absolute;
       left: 0;

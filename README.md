@@ -54,6 +54,19 @@ ng e2e
 
 Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
 
+## Deployment to Netlify
+
+This project is configured for deployment on Netlify.
+
+1. **Configuration**: The `netlify.toml` file in the root directory contains the build and redirect settings.
+2. **SPA Routing**: A redirect rule is included to handle Angular's client-side routing.
+3. **Setup Steps**:
+   - Go to the [Netlify App](https://app.netlify.com/).
+   - "Add new site" -> "Import an existing project".
+   - Select your repository and branch.
+   - Netlify will automatically detect the settings from `netlify.toml`.
+   - Click "Deploy site".
+
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

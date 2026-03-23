@@ -1,0 +1,262 @@
+<div class="p-4 space-y-4 max-w-5xl mx-auto">
+  <p-toast></p-toast>
+
+  <div class="flex items-center gap-4 mb-6">
+    <button
+      pButton
+      icon="pi pi-arrow-left"
+      class="p-button-rounded p-button-text p-button-secondary"
+      (click)="goBack()"
+    ></button>
+    <div class="flex flex-col">
+      <h1 class="text-2xl font-bold text-gray-800 m-0">
+        {{ isEditMode() ? 'Editar Orden de Compra' : 'Nueva Orden de Compra' }}
+      </h1>
+      <p class="text-sm text-gray-500 m-0 mt-1">Complete la información de la orden de compra.</p>
+    </div>
+  </div>
+
+  <div class="grid gap-6">
+    <!-- Información del Proveedor -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-2 p-4 border-b">
+          <i class="pi pi-building text-blue-500 text-xl"></i>
+          <h2 class="text-lg font-semibold m-0 text-slate-800">Datos del Proveedor</h2>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Buscar Proveedor *</label>
+            <p-select
+              [options]="providers()"
+              optionLabel="name"
+              [filter]="true"
+              filterBy="name,taxId"
+              [ngModel]="selectedProvider()"
+              (ngModelChange)="onProviderSelect($event)"
+              placeholder="Seleccione un proveedor"
+              class="w-full"
+            ></p-select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">RUC</label>
+            <input
+              pInputText
+              [disabled]="true"
+              [ngModel]="orderForm().providerRuc"
+              class="w-full opacity-70"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+            <input
+              pInputText
+              [disabled]="true"
+              [ngModel]="orderForm().providerAddress"
+              class="w-full opacity-70"
+            />
+          </div>
+        </div>
+      </ng-template>
+    </p-card>
+
+    <!-- Detalles de la Orden -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-2 p-4 border-b">
+          <i class="pi pi-file-o text-green-500 text-xl"></i>
+          <h2 class="text-lg font-semibold m-0 text-slate-800">Detalles de la Orden</h2>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
+            <p-select
+              [options]="currencies()"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="orderForm().currency"
+              (ngModelChange)="onEditChange('currency', $event)"
+              placeholder="Moneda"
+              class="w-full"
+            ></p-select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Emisión *</label>
+            <p-datepicker
+              [ngModel]="orderForm().issueDate"
+              (ngModelChange)="onEditChange('issueDate', $event)"
+              dateFormat="dd/mm/yy"
+              class="w-full"
+              appendTo="body"
+            ></p-datepicker>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Entrega</label>
+            <p-datepicker
+              [ngModel]="orderForm().dueDate"
+              (ngModelChange)="onEditChange('dueDate', $event)"
+              dateFormat="dd/mm/yy"
+              class="w-full"
+              appendTo="body"
+              [showClear]="true"
+            ></p-datepicker>
+          </div>
+          <div class="md:col-span-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Condiciones de Pago</label>
+            <input
+              pInputText
+              [ngModel]="orderForm().paymentTerms"
+              (ngModelChange)="onEditChange('paymentTerms', $event)"
+              class="w-full"
+            />
+          </div>
+        </div>
+      </ng-template>
+    </p-card>
+
+    <!-- Líneas de la Orden -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center justify-between p-4 border-b">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-list text-purple-500 text-xl"></i>
+            <h2 class="text-lg font-semibold m-0 text-slate-800">Artículos *</h2>
+          </div>
+          <button
+            pButton
+            label="Agregar Artículo"
+            icon="pi pi-plus"
+            class="p-button-sm p-button-outlined"
+            (click)="addLine()"
+          ></button>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <div class="space-y-4 pt-2">
+          @if (orderForm().lines.length === 0) {
+            <div class="text-sm text-center text-slate-500 py-4">
+              No hay artículos. Agregue un artículo a la orden.
+            </div>
+          }
+          @for (line of orderForm().lines; track $index) {
+            <div
+              class="border border-slate-200 rounded-lg p-4 bg-slate-50/50 relative group transition-colors hover:border-blue-200"
+            >
+              <button
+                pButton
+                icon="pi pi-times"
+                class="p-button-rounded p-button-danger p-button-text p-button-sm absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                (click)="removeLine($index)"
+                pTooltip="Eliminar artículo"
+              ></button>
+              <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div class="md:col-span-3">
+                  <label class="block text-xs text-slate-500 mb-1">Descripción *</label>
+                  <input
+                    pInputText
+                    [ngModel]="line.description"
+                    (ngModelChange)="updateLine($index, 'description', $event)"
+                    class="w-full p-inputtext-sm text-sm"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">Und.</label>
+                  <input
+                    pInputText
+                    [ngModel]="line.unit"
+                    (ngModelChange)="updateLine($index, 'unit', $event)"
+                    class="w-full p-inputtext-sm text-sm"
+                    placeholder="UND"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">Cant. *</label>
+                  <p-inputnumber
+                    [ngModel]="line.quantity"
+                    (ngModelChange)="updateLine($index, 'quantity', $event)"
+                    class="w-full p-inputtext-sm"
+                    [min]="0"
+                    locale="en-US"
+                    [minFractionDigits]="0"
+                    [maxFractionDigits]="2"
+                  ></p-inputnumber>
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">P. Unitario *</label>
+                  <p-inputnumber
+                    [ngModel]="line.unitPrice"
+                    (ngModelChange)="updateLine($index, 'unitPrice', $event)"
+                    class="w-full p-inputtext-sm"
+                    [min]="0"
+                    mode="decimal"
+                    locale="en-US"
+                    [minFractionDigits]="2"
+                    [maxFractionDigits]="2"
+                  ></p-inputnumber>
+                </div>
+                <div class="md:col-span-6 flex items-center justify-end gap-2 mt-2">
+                  <p-checkbox
+                    [ngModel]="line.includesIgv"
+                    (ngModelChange)="updateLine($index, 'includesIgv', $event)"
+                    [binary]="true"
+                    [inputId]="'igvCheck' + $index"
+                  ></p-checkbox>
+                  <label [for]="'igvCheck' + $index" class="text-xs text-slate-500 cursor-pointer"
+                    >Incluye IGV (18%)</label
+                  >
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Totales -->
+          @if (orderForm().lines.length > 0) {
+            <div class="mt-6 border-t border-slate-200 pt-4 flex flex-col items-end gap-2 px-4">
+              <div class="flex justify-between w-64 text-sm text-slate-600">
+                <span>Subtotal:</span>
+                <span class="font-medium">{{
+                  orderForm().subtotal | currency: orderForm().currency : 'symbol'
+                }}</span>
+              </div>
+              <div class="flex justify-between w-64 text-sm text-slate-600">
+                <span>IGV (18%):</span>
+                <span class="font-medium">{{
+                  orderForm().igvAmount | currency: orderForm().currency : 'symbol'
+                }}</span>
+              </div>
+              <div
+                class="flex justify-between w-64 text-lg font-bold text-slate-800 border-t border-slate-200 pt-2 mt-1"
+              >
+                <span>Total:</span>
+                <span>{{
+                  orderForm().totalAmount | currency: orderForm().currency : 'symbol'
+                }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </ng-template>
+    </p-card>
+
+    <div class="flex items-center justify-end gap-3 mt-4">
+      <button
+        pButton
+        label="Cancelar"
+        icon="pi pi-times"
+        class="p-button-outlined p-button-secondary"
+        (click)="goBack()"
+      ></button>
+      <button
+        pButton
+        label="Generar Orden"
+        icon="pi pi-check"
+        class="p-button-primary"
+        (click)="save()"
+      ></button>
+    </div>
+  </div>
+</div>

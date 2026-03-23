@@ -1,0 +1,176 @@
+<div class="p-4 sm:p-6 max-w-6xl mx-auto">
+  <p-toast [life]="5000"></p-toast>
+
+  <div class="flex items-center justify-between gap-4 mb-6 text-slate-800">
+    <div>
+      <h1 class="text-2xl font-bold m-0">
+        <i class="pi pi-compare mr-2 text-primary"></i> Comparar cotizaciones
+      </h1>
+      <p class="text-slate-500 mt-1 text-sm">
+        Compare las ofertas de proveedores por solicitud. Abra la vista de cada solicitud para ver
+        las cotizaciones ingresadas y adjudicar.
+      </p>
+    </div>
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      label="Actualizar"
+      class="p-button-outlined"
+      (click)="load()"
+    ></button>
+  </div>
+
+  <!-- Sección 1: Solicitudes de cotización (RFQ) enviadas ───────────────────── -->
+  <div class="mb-8">
+    <h2 class="text-lg font-semibold text-slate-700 mb-3 flex items-center gap-2">
+      <i class="pi pi-send text-primary"></i>
+      Solicitudes enviadas a proveedores
+      <span class="text-sm font-normal text-slate-500"
+        >(ingrese cotizaciones en &quot;Ingresar cotizaciones&quot; y compare aquí)</span
+      >
+    </h2>
+
+    @if (loadingRfqs()) {
+      <div class="flex justify-center py-8">
+        <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+      </div>
+    } @else {
+      <p-card>
+        <p-table
+          [value]="rfqs()"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '50rem' }"
+        >
+          <ng-template pTemplate="header">
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-700">
+              <th class="p-4 font-semibold text-left">Solicitud</th>
+              <th class="p-4 font-semibold text-left">Estado</th>
+              <th class="p-4 font-semibold text-left">Vencimiento</th>
+              <th class="p-4 font-semibold text-center w-40">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="4" class="text-center py-10 text-slate-500">
+                <i class="pi pi-inbox text-3xl mb-3 text-slate-300 block"></i>
+                No hay solicitudes enviadas para comparar.
+                <br />
+                <span class="text-sm"
+                  >Envíe solicitudes desde
+                  <a routerLink="/logistics/quotes" class="text-primary hover:underline"
+                    >Solicitudes de cotización</a
+                  >, ingrese las respuestas en
+                  <a routerLink="/logistics/quote-entry" class="text-primary hover:underline"
+                    >Ingresar cotizaciones</a
+                  >, y aparecerán aquí.</span
+                >
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-rfq>
+            <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+              <td class="p-4">
+                <span class="font-medium text-slate-800">{{ rfq.title }}</span>
+                @if (rfq.description) {
+                  <p class="text-sm text-slate-500 mt-0.5 line-clamp-1">{{ rfq.description }}</p>
+                }
+              </td>
+              <td class="p-4">
+                <p-tag [value]="rfq.status" [severity]="rfqStatusSeverity(rfq.status)"></p-tag>
+              </td>
+              <td class="p-4 text-sm text-slate-600">
+                {{ rfq.deadline ? (rfq.deadline | date: 'dd/MM/yyyy') : '—' }}
+              </td>
+              <td class="p-4 text-center">
+                <button
+                  pButton
+                  icon="pi pi-table"
+                  label="Comparar"
+                  class="p-button-sm p-button-primary"
+                  pTooltip="Ver cotizaciones por proveedor y adjudicar"
+                  (click)="goToRfqCompare(rfq._id)"
+                ></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+    }
+  </div>
+
+  <!-- Sección 2: Requerimientos de compra (sistema compras) ─────────────────── -->
+  <div>
+    <h2 class="text-lg font-semibold text-slate-700 mb-3 flex items-center gap-2">
+      <i class="pi pi-file-edit text-primary"></i>
+      Requerimientos de compra
+      <span class="text-sm font-normal text-slate-500">(listos para comparar y generar O/C)</span>
+    </h2>
+
+    @if (loadingRequirements()) {
+      <div class="flex justify-center py-8">
+        <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+      </div>
+    } @else {
+      <p-card>
+        <p-table
+          [value]="requirements()"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '50rem' }"
+        >
+          <ng-template pTemplate="header">
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-700">
+              <th class="p-4 font-semibold text-left">Requerimiento</th>
+              <th class="p-4 font-semibold text-left">Estado</th>
+              <th class="p-4 font-semibold text-center">Cotizaciones</th>
+              <th class="p-4 font-semibold text-left">Fecha</th>
+              <th class="p-4 font-semibold text-center w-40">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="5" class="text-center py-10 text-slate-500">
+                <i class="pi pi-inbox text-3xl mb-3 text-slate-300 block"></i>
+                No hay requerimientos listos para comparar. Ingrese cotizaciones en &quot;Ingresar
+                cotizaciones&quot;; cuando haya al menos una, el requerimiento pasará a &quot;Listo
+                para comparar&quot; y aparecerá aquí.
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+              <td class="p-4">
+                <span class="font-medium text-slate-800">{{ row.title }}</span>
+                @if (row.description) {
+                  <p class="text-sm text-slate-500 mt-0.5 line-clamp-1">{{ row.description }}</p>
+                }
+              </td>
+              <td class="p-4">
+                <p-tag
+                  [value]="statusLabel(row.status)"
+                  [severity]="statusSeverity(row.status)"
+                ></p-tag>
+              </td>
+              <td class="p-4 text-center">
+                <span class="font-mono text-slate-600">{{ getQuotesCount(row._id) }}</span>
+              </td>
+              <td class="p-4 text-sm text-slate-600">
+                {{ row.createdAt | date: 'dd/MM/yyyy' }}
+              </td>
+              <td class="p-4 text-center">
+                <button
+                  pButton
+                  icon="pi pi-table"
+                  label="Comparar"
+                  class="p-button-sm p-button-primary"
+                  pTooltip="Abrir comparador y generar orden de compra"
+                  (click)="goToCompare(row._id)"
+                ></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+    }
+  </div>
+</div>

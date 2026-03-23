@@ -6,6 +6,7 @@ import {
   ChangeDetectionStrategy,
   signal,
   OnInit,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -18,9 +19,11 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { DialogModule } from 'primeng/dialog';
 import { AgendaActivityComponent } from '../agenda-activity/agenda-activity';
+import { TasksCalendarViewComponent } from '../tasks-calendar-view/tasks-calendar-view';
+import { TasksTimelineViewComponent } from '../tasks-timeline-view/tasks-timeline-view';
 import { User } from '../../../../shared/services/users-api.service';
+import { AuthService } from '../../../login/services/auth.service';
 import { Board } from '../../../../shared/interfaces/board.interface';
-import { Area } from '../../../../shared/interfaces/area.interface'; // Added
 import {
   Task,
   DragDropEvent,
@@ -46,13 +49,18 @@ import {
     MultiSelectModule,
     DialogModule,
     AgendaActivityComponent,
+    TasksCalendarViewComponent,
+    TasksTimelineViewComponent,
   ],
   templateUrl: './board-view.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BoardViewComponent implements OnInit {
   @Input({ required: true }) board!: Board;
+  @Input() areaName: string | null = null;
   @Input() isOwner = false;
+  @Input() canInvite = false;
+  @Input() pendingInvitationsCount = 0;
   @Input() currentUser: User | null = null;
   @Input() tasksByStatus: { pending: Task[]; inProgress: Task[]; completed: Task[] } = {
     pending: [],
@@ -66,33 +74,37 @@ export class BoardViewComponent implements OnInit {
     completed: number;
     overdue: number;
   } = {
-      total: 0,
-      pending: 0,
-      inProgress: 0,
-      completed: 0,
-      overdue: 0,
-    };
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+    overdue: 0,
+  };
   @Input() loading = false;
 
   @Output() back = new EventEmitter<void>();
   @Output() edit = new EventEmitter<void>();
   @Output() invite = new EventEmitter<void>();
+  @Output() openInvitations = new EventEmitter<void>();
   @Output() refresh = new EventEmitter<void>();
   @Output() taskStatusChanged = new EventEmitter<DragDropEvent>();
   @Output() editTask = new EventEmitter<Task>();
   @Output() deleteTask = new EventEmitter<Task>();
   @Output() viewTask = new EventEmitter<Task>();
   @Output() createTask = new EventEmitter<void>();
+  @Output() taskFieldUpdated = new EventEmitter<{
+    task: Task;
+    updates: Partial<import('../../../../shared/interfaces/task.interface').UpdateTaskRequest>;
+  }>();
   @Output() quickCreateTask = new EventEmitter<{
     title: string;
     assignedTo: string;
     dueDate?: Date;
-    areaId?: string;
   }>();
   @Output() filtersChanged = new EventEmitter<TasksSearchParams>();
 
-  // Modo de vista
-  public readonly viewMode = signal<'kanban' | 'list'>('list');
+  // Modo de vista: Lista | Calendario | Cronograma (como en Jira)
+  public readonly viewMode = signal<'list' | 'calendar' | 'timeline'>('list');
   public readonly showMembersDialog = signal(false);
 
   // All Tasks Computed for Agenda View
@@ -104,65 +116,67 @@ export class BoardViewComponent implements OnInit {
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  // Board Users Computed for Agenda View
+  // Board Users para "Asignar a" en creación rápida (owner + members + invitaciones aceptadas)
   public get boardUsers(): User[] {
-    // Si hay usuarios disponibles desde el padre, usarlos (para "Agenda")
-    if (this.availableUsersObjects && this.availableUsersObjects.length > 0) {
-      return this.availableUsersObjects;
+    const isSystemUser = (u: User) =>
+      (u._id || u.id) === 'system' || (u.email || '').toLowerCase() === 'system@momentum';
+
+    // Vista "Todas las tareas": usar lista del padre
+    if (this.board._id === 'all') {
+      const fromParent = this.availableUsersObjects || [];
+      return fromParent.filter((u) => !isSystemUser(u));
     }
 
-    // Fallback: extraer del board (para boards normales)
-    const owner = this.board.owner;
-    const members = this.board.members || [];
-    const users = owner ? [owner, ...members] : [...members];
+    // Tablero concreto: extraer owner + members + invitaciones aceptadas
+    if (!this.board) return [];
 
-    // Filter duplicates and map to User
-    const uniqueMap = new Map();
-
-    users.forEach((u: any) => {
+    const addToMap = (uniqueMap: Map<string, User>, u: any) => {
       if (!u) return;
-
-      // Determine ID
       let userId: string | undefined;
       let userData: any = u;
-
       if (typeof u === 'string') {
         userId = u;
-        // If it's just a string ID, we can't really get name/email unless we look it up
-        // But we'll create a placeholder
         userData = { _id: u, id: u };
       } else if (typeof u === 'object') {
         userId = u._id || u.id;
       }
+      if (
+        !userId ||
+        userId === 'system' ||
+        (userData.email || '').toString().toLowerCase() === 'system@momentum'
+      )
+        return;
+      if (uniqueMap.has(userId)) return;
+      uniqueMap.set(userId, {
+        _id: userId,
+        id: userId,
+        name: userData.name || userData.email || 'Sin nombre',
+        email: userData.email || '',
+        role: userData.role || 'user',
+        profilePicture: userData.profilePicture,
+      } as unknown as User);
+    };
 
-      if (userId) {
-        uniqueMap.set(userId, {
-          _id: userId,
-          id: userId,
-          name: userData.name || userData.email || 'Sin nombre',
-          email: userData.email || '',
-          role: userData.role || 'user',
-          profilePicture: userData.profilePicture,
-        } as unknown as User);
-      }
+    const uniqueMap = new Map<string, User>();
+    if (this.board.owner) addToMap(uniqueMap, this.board.owner);
+    (this.board.members || []).forEach((m) => addToMap(uniqueMap, m));
+    (this.board.invitations || []).forEach((inv) => {
+      if (inv.status === 'accepted' && inv.userId) addToMap(uniqueMap, inv.userId);
     });
 
     return Array.from(uniqueMap.values());
   }
 
-
-
   // Filtros
   public readonly showFilters = signal<boolean>(true);
   public readonly filterAssignedTo = signal<string | undefined>(undefined);
-  public readonly filterDate = signal<Date | undefined>(new Date());
+  /** Por defecto sin filtrar por fecha (todas las fechas) */
+  public readonly filterDate = signal<Date | undefined>(undefined);
   public readonly filterTags = signal<string[]>([]);
-  public readonly filterArea = signal<string | undefined>(undefined); // Added filter
 
   // Opciones para filtros
   @Input() availableUsers: { label: string; value: string }[] = [];
   @Input() availableTags: string[] = [];
-  @Input() availableAreas: Area[] = []; // Added input
   @Input() availableUsersObjects: User[] = []; // Added: User objects for agenda
   @Input() currentUserId = '';
   @Output() removeMember = new EventEmitter<{ board: Board; memberId: string }>();
@@ -176,27 +190,31 @@ export class BoardViewComponent implements OnInit {
   }
 
   /**
-   * Opciones de áreas para el select
+   * Nombre del usuario logueado (para el botón de filtro)
    */
-  public get areaOptions(): { label: string; value: string }[] {
-    return this.availableAreas
-      .map((area) => ({
-        label: area.nombre || 'Sin nombre',
-        value: area._id || '',
-      }))
-      .filter((opt) => opt.value !== '');
+  public get currentUserName(): string {
+    if (this.currentUser?.name) return this.currentUser.name;
+    const fromList = this.availableUsers.find((u) => u.value === this.currentUserId);
+    return fromList?.label || '';
+  }
+
+  /**
+   * Usuarios del tablero excluyendo al usuario logueado (para los botones de filtro)
+   */
+  public otherUsers(): { label: string; value: string }[] {
+    return this.availableUsers.filter((u) => u.value !== this.currentUserId);
   }
 
   ngOnInit(): void {
-    // Aplicar filtros al cargar para que, con fechas por defecto (hoy), se listen las tareas del día
+    // Aplicar filtros al cargar (por defecto todas las fechas)
     this.applyFilters();
   }
 
   /**
-   * Cambia el modo de vista
+   * Cambia el modo de vista (Lista, Calendario, Cronograma)
    */
-  public toggleViewMode(): void {
-    this.viewMode.set(this.viewMode() === 'kanban' ? 'list' : 'kanban');
+  public setViewMode(mode: 'list' | 'calendar' | 'timeline'): void {
+    this.viewMode.set(mode);
   }
 
   get pendingInvitations(): number {
@@ -256,12 +274,6 @@ export class BoardViewComponent implements OnInit {
       filters.tags = tags;
     }
 
-    // Normalizar y agregar filtro de área
-    const areaId = this.filterArea();
-    if (areaId) {
-      filters.areaId = areaId;
-    }
-
     this.filtersChanged.emit(filters);
   }
 
@@ -269,8 +281,7 @@ export class BoardViewComponent implements OnInit {
    * Limpia los filtros
    */
   public clearFilters(): void {
-    this.filterDate.set(new Date());
-    this.filterArea.set(undefined);
+    this.filterDate.set(undefined); // Todas las fechas
     this.filterAssignedTo.set(undefined);
     this.filterTags.set([]);
     this.applyFilters();
@@ -341,38 +352,16 @@ export class BoardViewComponent implements OnInit {
   }
 
   /**
-   * Normaliza el valor de área cuando cambia
-   */
-  public onAreaChange(value: string | { value: string; label: string } | null | undefined): void {
-    if (value === null || value === undefined || value === '') {
-      this.filterArea.set(undefined);
-    } else if (typeof value === 'object' && 'value' in value) {
-      const extractedValue = value.value;
-      this.filterArea.set(
-        extractedValue === null || extractedValue === undefined || extractedValue === ''
-          ? undefined
-          : extractedValue,
-      );
-    } else if (typeof value === 'string' && value.trim() !== '') {
-      this.filterArea.set(value);
-    } else {
-      this.filterArea.set(undefined);
-    }
-    this.applyFilters();
-  }
-
-  /**
    * Verifica si hay filtros activos
    */
   public hasActiveFilters(): boolean {
     const hasDate = !!this.filterDate();
-    const hasArea = !!this.filterArea();
     const hasAssignedTo = !!this.filterAssignedTo();
     const hasTags = this.filterTags().length > 0;
 
     const isDifferentDate = hasDate && !this.isToday(this.filterDate());
 
-    return hasArea || hasAssignedTo || hasTags || isDifferentDate;
+    return hasAssignedTo || hasTags || isDifferentDate;
   }
 
   /**
@@ -444,12 +433,18 @@ export class BoardViewComponent implements OnInit {
   }
 
   onStatusChanged(event: { task: Task; newStatus: string }): void {
-    // Emitir evento de cambio de estado usando el formato DragDropEvent
     this.taskStatusChanged.emit({
       taskId: event.task._id,
       newStatus: event.newStatus as any,
       fromStatus: event.task.status,
     });
+  }
+
+  onTaskFieldUpdated(event: {
+    task: Task;
+    updates: Partial<import('../../../../shared/interfaces/task.interface').UpdateTaskRequest>;
+  }): void {
+    this.taskFieldUpdated.emit(event);
   }
 
   onLeaveBoard(): void {

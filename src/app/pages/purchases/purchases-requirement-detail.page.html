@@ -1,0 +1,103 @@
+<div class="p-4 sm:p-6 max-w-4xl mx-auto">
+  <p-toast [life]="5000"></p-toast>
+
+  @if (loading()) {
+    <div class="flex justify-center py-12">
+      <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+    </div>
+  } @else if (requirement(); as req) {
+    <div class="flex items-center gap-2 mb-6">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-arrow-left"
+        class="p-button-text"
+        (click)="goBack()"
+      ></button>
+      <h1 class="text-xl font-semibold text-gray-900 dark:text-white flex-1">{{ req.number ? req.number + ' - ' : '' }}{{ req.title }}</h1>
+      <p-tag [value]="statusLabel(req.status)" severity="info" />
+    </div>
+
+    <p-card>
+      <div class="flex flex-col gap-4">
+        @if (req.description) {
+          <p class="text-gray-600 dark:text-gray-400">{{ req.description }}</p>
+        }
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+          <div>
+            <span class="text-gray-500 dark:text-gray-400">Solicitado por:</span>
+            {{ requestedByName() }}
+          </div>
+          <div>
+            <span class="text-gray-500 dark:text-gray-400">Proyecto:</span> {{ projectName() }}
+          </div>
+          <div>
+            <span class="text-gray-500 dark:text-gray-400">Prioridad:</span> {{ req.priority }}
+          </div>
+          @if (req.dueDate) {
+            <div>
+              <span class="text-gray-500 dark:text-gray-400">Vence:</span>
+              {{ req.dueDate | date: 'dd/MM/yyyy' }}
+            </div>
+          }
+        </div>
+        <div>
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ítems</h3>
+          <ul class="list-disc list-inside space-y-1 text-sm text-gray-600 dark:text-gray-400">
+            @for (item of req.items; track $index) {
+              <li>{{ item.description }} — {{ item.quantity }} {{ item.unit }}</li>
+            }
+          </ul>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Proveedores Invitados / Cotizaciones</h3>
+          <p class="text-xs text-gray-500 mb-2">Lista de proveedores que han enviado cotización o han sido invitados.</p>
+          <!-- TODO: Listar RFQs enviadas si existiera el endpoint -->
+          <!-- Por ahora mostramos cotizaciones registradas -->
+           <ul class="list-disc list-inside space-y-1 text-sm text-gray-600 dark:text-gray-400">
+             <!-- Se poblará cuando se integre con RFQs o listado de cotizaciones en el detalle -->
+             <li>(Funcionalidad pendiente de integración con módulo de RFQs)</li>
+           </ul>
+        </div>
+      </div>
+      <ng-template pTemplate="footer">
+        <div class="flex flex-wrap gap-2">
+          @if (req.status === 'listo_para_comparar' || req.status === 'cotizaciones_pendientes') {
+            <button
+              pButton
+              type="button"
+              label="Comparar cotizaciones"
+              icon="pi pi-th-large"
+              (click)="goCompare()"
+            ></button>
+          }
+          @if (
+            req.status === 'borrador' ||
+            req.status === 'listo_para_comparar' ||
+            req.status === 'cotizaciones_pendientes'
+          ) {
+            <button
+              pButton
+              type="button"
+              label="Registrar cotización"
+              icon="pi pi-plus"
+              class="p-button-outlined"
+              (click)="goQuote()"
+            ></button>
+          }
+          @if (req.status === 'borrador') {
+            <button
+              pButton
+              type="button"
+              label="Editar"
+              icon="pi pi-pencil"
+              class="p-button-outlined"
+              (click)="goEdit()"
+            ></button>
+          }
+        </div>
+      </ng-template>
+    </p-card>
+  }
+</div>

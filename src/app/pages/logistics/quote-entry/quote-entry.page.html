@@ -1,0 +1,311 @@
+<div class="p-4 sm:p-6 max-w-6xl mx-auto">
+  <p-toast></p-toast>
+
+  <div class="flex items-center justify-between gap-4 mb-6 text-slate-800">
+    <div>
+      <h1 class="text-2xl font-bold m-0">
+        <i class="pi pi-pencil mr-2 text-primary"></i> Cotizaciones de Proveedores
+      </h1>
+      <p class="text-slate-500 mt-1 text-sm">
+        Listado de cotizaciones registradas en base a las solicitudes enviadas.
+      </p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-refresh"
+        label="Actualizar"
+        class="p-button-outlined"
+        (click)="load()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-plus"
+        label="Ingresar Nueva Cotización"
+        class="p-button-primary"
+        (click)="goToEnterQuotePage()"
+      ></button>
+    </div>
+  </div>
+
+  <div>
+    @if (loading()) {
+      <div class="flex justify-center py-8">
+        <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+      </div>
+    } @else {
+      <p-card>
+        <p-table
+          [value]="quotes()"
+          styleClass="p-datatable-sm p-datatable-gridlines"
+          [tableStyle]="{ 'min-width': '60rem' }"
+          [paginator]="true"
+          [rows]="10"
+          rowGroupMode="rowspan"
+          groupRowsBy="rfqId._id"
+          sortField="rfqId.code"
+          sortMode="single"
+        >
+          <ng-template pTemplate="header">
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-700">
+              <th class="p-4 font-semibold text-left w-64">Solicitud (RFQ)</th>
+              <th class="p-4 font-semibold text-left">Proveedor</th>
+              <th class="p-4 font-semibold text-left">Monto Total</th>
+              <th class="p-4 font-semibold text-left">Plazo de Entrega</th>
+              <th class="p-4 font-semibold text-left">Condiciones de Pago</th>
+              <th class="p-4 font-semibold text-left">Estado</th>
+              <th class="p-4 font-semibold text-center w-32">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="7" class="text-center py-10 text-slate-500">
+                <i class="pi pi-inbox text-3xl mb-3 text-slate-300 block"></i>
+                No hay cotizaciones registradas.
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-quote let-rowgroup="rowgroup" let-rowspan="rowspan">
+            <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+              @if (rowgroup) {
+                <td class="p-4 bg-slate-50/30 align-top border-slate-200" [attr.rowspan]="rowspan">
+                  <span class="font-medium text-slate-700">
+                    {{
+                      $any(quote.rfqId)?.code ||
+                        ($any(quote.rfqId)
+                          ? 'ID: ' + ($any(quote.rfqId) | slice: 0 : 8)
+                          : 'Sin Solicitud')
+                    }}
+                  </span>
+                  <div class="text-xs text-slate-500 mt-1">
+                    {{ $any(quote.rfqId)?.title || '-' }}
+                  </div>
+                </td>
+              }
+              <td class="p-4">
+                <span class="font-medium text-slate-800">{{
+                  quote.providerId?.name || quote.providerId?.businessName || 'Desconocido'
+                }}</span>
+                <div class="text-xs text-slate-500 mt-0.5">
+                  RUC: {{ quote.providerId?.ruc || '-' }}
+                </div>
+              </td>
+              <td class="p-4 font-medium text-slate-800">
+                {{ quote.totalCost | currency: quote.currency || 'PEN' : 'symbol' : '1.2-2' }}
+              </td>
+              <td class="p-4 text-sm text-slate-600">
+                <i class="pi pi-calendar mr-1 text-slate-400"></i
+                >{{ quote.deliveryTime || 'No especificado' }}
+              </td>
+              <td class="p-4 text-sm text-slate-600">
+                {{ quote.paymentTerms || 'No especificadas' }}
+              </td>
+              <td class="p-4">
+                <p-tag
+                  [value]="getStatusLabel(quote.status)"
+                  [severity]="getStatusSeverity(quote.status)"
+                ></p-tag>
+              </td>
+              <td class="p-4 text-center">
+                <button
+                  pButton
+                  icon="pi pi-eye"
+                  class="p-button-text p-button-sm p-button-secondary"
+                  pTooltip="Ver detalles"
+                  (click)="goToViewQuote(quote)"
+                ></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+    }
+  </div>
+  <p-dialog
+    header="Detalle de la Cotización"
+    [(visible)]="viewDialogVisible"
+    [modal]="true"
+    [style]="{ width: '50vw', minWidth: '500px' }"
+    [draggable]="false"
+    [resizable]="false"
+    [dismissableMask]="true"
+  >
+    @if (selectedQuote(); as detail) {
+      <div class="text-slate-700 space-y-4 pt-2">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+          <div
+            class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold text-slate-400"
+          >
+            {{
+              (
+                $any(detail.providerId)?.name ||
+                $any(detail.providerId)?.businessName ||
+                '?'
+              ).charAt(0) | uppercase
+            }}
+          </div>
+          <div>
+            <h3 class="font-semibold text-lg m-0">
+              {{
+                $any(detail.providerId)?.name ||
+                  $any(detail.providerId)?.businessName ||
+                  'Desconocido'
+              }}
+            </h3>
+            <span class="text-sm text-slate-500"
+              >RUC: {{ $any(detail.providerId)?.ruc || '-' }}</span
+            >
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span class="block text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1"
+              >Solicitud (RFQ)</span
+            >
+            <span class="font-medium">{{ $any(detail.rfqId)?.code || '-' }}</span> -
+            {{ $any(detail.rfqId)?.title || '-' }}
+          </div>
+          <div>
+            <span class="block text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1"
+              >Costo Total</span
+            >
+            <span class="font-bold text-lg text-primary">{{
+              detail.totalCost | currency: detail.currency || 'PEN' : 'symbol' : '1.2-2'
+            }}</span>
+          </div>
+          <div>
+            <span class="block text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1"
+              >Subtotal</span
+            >
+            <span>{{
+              detail.subtotal | currency: detail.currency || 'PEN' : 'symbol' : '1.2-2'
+            }}</span>
+          </div>
+          <div>
+            <span class="block text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1"
+              >IGV</span
+            >
+            <span>{{ detail.igv | currency: detail.currency || 'PEN' : 'symbol' : '1.2-2' }}</span>
+          </div>
+          <div>
+            <span class="block text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1"
+              >Condiciones de Pago</span
+            >
+            <span>{{ detail.paymentTerms || 'No especificadas' }}</span>
+          </div>
+          <div>
+            <span class="block text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1"
+              >Plazo de Entrega</span
+            >
+            <span class="flex items-center gap-2"
+              ><i class="pi pi-calendar text-slate-400"></i
+              >{{ detail.deliveryTime || 'No especificado' }}</span
+            >
+          </div>
+          <div>
+            <span class="block text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1"
+              >Días de Validez</span
+            >
+            <span>{{ detail.validityDays }} días</span>
+          </div>
+          <div>
+            <span class="block text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1"
+              >Estado de cotización</span
+            >
+            <p-tag
+              [value]="getStatusLabel($any(detail.status))"
+              [severity]="getStatusSeverity($any(detail.status))"
+            ></p-tag>
+          </div>
+        </div>
+
+        @if (detail.items && detail.items.length > 0) {
+          <div class="mt-4">
+            <span class="block text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2"
+              >Ítems Cotizados ({{ detail.items.length }})</span
+            >
+            <div class="bg-slate-50 border border-slate-200 rounded-md overflow-hidden">
+              <ul class="divide-y divide-slate-200">
+                @for (item of detail.items; track $index) {
+                  <li
+                    class="p-3 flex justify-between items-center hover:bg-slate-100 transition-colors"
+                  >
+                    <div class="flex-1">
+                      <span class="block text-sm font-medium">{{
+                        $any(item.productId)?.name || item.brandOrModel || 'Producto / Servicio'
+                      }}</span>
+                      <span class="block text-xs text-slate-500 mt-0.5">
+                        Cant: {{ item.quantity }}
+                        {{ $any(item.productId)?.unitOfMeasure || 'und' }} | P.U:
+                        {{
+                          item.unitPrice | currency: detail.currency || 'PEN' : 'symbol' : '1.2-2'
+                        }}
+                        @if (item.includesIgv) {
+                          <span
+                            class="font-medium text-[10px] text-green-600 bg-green-50 px-1 py-0.5 rounded ml-1 border border-green-200"
+                            >Inc. IGV</span
+                          >
+                        }
+                      </span>
+                    </div>
+                    <div class="font-bold text-sm">
+                      {{
+                        item.totalPrice | currency: detail.currency || 'PEN' : 'symbol' : '1.2-2'
+                      }}
+                    </div>
+                  </li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
+
+        @if (detail.notes) {
+          <div
+            class="mt-3 p-3 bg-blue-50 text-blue-800 text-sm rounded border border-blue-100 italic"
+          >
+            <strong>Notas: </strong>
+            <span class="break-words whitespace-pre-line">{{ detail.notes }}</span>
+          </div>
+        }
+
+        @if (detail.documents && detail.documents.length > 0) {
+          <div class="mt-4">
+            <span class="block text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2">
+              <i class="pi pi-paperclip mr-1"></i>Documentos adjuntos ({{
+                detail.documents.length
+              }})
+            </span>
+            <ul class="space-y-2">
+              @for (doc of detail.documents; track $index) {
+                <li
+                  class="flex items-center gap-2 p-2 rounded border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors"
+                >
+                  <i class="pi pi-file text-slate-400 text-lg flex-shrink-0"></i>
+                  <span class="flex-1 text-xs text-slate-600 truncate" [title]="doc">
+                    {{ doc.split('/').pop() || 'Documento ' + ($index + 1) }}
+                  </span>
+                  <a
+                    [href]="doc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary hover:underline text-xs flex items-center gap-1 flex-shrink-0"
+                  >
+                    <i class="pi pi-external-link"></i> Abrir
+                  </a>
+                </li>
+              }
+            </ul>
+          </div>
+        } @else {
+          <div class="mt-4 text-xs text-slate-400 italic flex items-center gap-1">
+            <i class="pi pi-paperclip"></i> Sin documentos adjuntos
+          </div>
+        }
+      </div>
+    }
+  </p-dialog>
+</div>

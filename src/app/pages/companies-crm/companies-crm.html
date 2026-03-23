@@ -4,16 +4,16 @@
 
   <!-- Header -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-    <h1 class="text-2xl font-bold text-gray-800">Gestión de Empresas Momentum</h1>
+    <h1 class="text-2xl font-bold text-gray-800">Empresas del CRM</h1>
     @if (canEdit()) {
-    <button
-      pButton
-      type="button"
-      label="Nueva Empresa"
-      icon="pi pi-plus"
-      (click)="newItem()"
-      aria-label="Crear nueva empresa"
-    ></button>
+      <button
+        pButton
+        type="button"
+        label="Nueva Empresa"
+        icon="pi pi-plus"
+        (click)="newItem()"
+        aria-label="Crear nueva empresa"
+      ></button>
     }
   </div>
 
@@ -30,7 +30,7 @@
           <input
             id="companySearch"
             pInputText
-            placeholder="Nombre, código, RUC..."
+            placeholder="Nombre, RUC..."
             [ngModel]="query()"
             (ngModelChange)="setQuery($event)"
             class="w-full"
@@ -75,9 +75,9 @@
     <p-table [value]="items()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
       <ng-template pTemplate="header">
         <tr>
+          <th style="width: 3rem"></th>
           <th>Nombre</th>
-          <th>Código</th>
-          <th>RUC/DNI</th>
+          <th>RUC</th>
           <th>Email</th>
           <th>Teléfono</th>
           <th>Estado</th>
@@ -86,22 +86,31 @@
       </ng-template>
       <ng-template pTemplate="body" let-row>
         <tr>
+          <td class="py-2">
+            @if (row.logo) {
+              <img
+                [src]="row.logo"
+                [alt]="'Logo ' + row.name"
+                class="h-8 w-8 object-contain rounded border border-gray-200 dark:border-gray-600 bg-white"
+              />
+            } @else {
+              <span
+                class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-400 text-xs"
+                >—</span
+              >
+            }
+          </td>
           <td>
             <div class="space-y-1">
               <div class="font-semibold text-gray-900 dark:text-gray-100 break-words">
                 {{ row.name }}
               </div>
               @if (row.description) {
-              <div class="text-sm text-gray-500 dark:text-gray-400 break-words line-clamp-1">
-                {{ row.description }}
-              </div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 break-words line-clamp-1">
+                  {{ row.description }}
+                </div>
               }
             </div>
-          </td>
-          <td>
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-              {{ row.code || '-' }}
-            </span>
           </td>
           <td>
             <span class="text-sm text-gray-600 dark:text-gray-400">
@@ -120,9 +129,9 @@
           </td>
           <td>
             @if (row.isActive) {
-            <p-tag value="Activa" severity="success"></p-tag>
+              <p-tag value="Activa" severity="success"></p-tag>
             } @else {
-            <p-tag value="Inactiva" severity="danger"></p-tag>
+              <p-tag value="Inactiva" severity="danger"></p-tag>
             }
           </td>
           <td class="text-right">
@@ -136,41 +145,41 @@
                 aria-label="Ver detalles de la empresa"
               ></button>
               @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                class="p-button-text p-button-sm"
-                pTooltip="Editar"
-                (click)="editItem(row)"
-                aria-label="Editar empresa"
-              ></button>
-              @if (row.isActive) {
-              <button
-                pButton
-                icon="pi pi-ban"
-                class="p-button-text p-button-sm p-button-warning"
-                pTooltip="Desactivar"
-                (click)="deactivate(row)"
-                aria-label="Desactivar empresa"
-              ></button>
-              } @else {
-              <button
-                pButton
-                icon="pi pi-check"
-                class="p-button-text p-button-sm p-button-success"
-                pTooltip="Activar"
-                (click)="activate(row)"
-                aria-label="Activar empresa"
-              ></button>
-              }
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-text p-button-sm p-button-danger"
-                pTooltip="Eliminar"
-                (click)="remove(row)"
-                aria-label="Eliminar empresa"
-              ></button>
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  class="p-button-text p-button-sm"
+                  pTooltip="Editar"
+                  (click)="editItem(row)"
+                  aria-label="Editar empresa"
+                ></button>
+                @if (row.isActive) {
+                  <button
+                    pButton
+                    icon="pi pi-ban"
+                    class="p-button-text p-button-sm p-button-warning"
+                    pTooltip="Desactivar"
+                    (click)="deactivate(row)"
+                    aria-label="Desactivar empresa"
+                  ></button>
+                } @else {
+                  <button
+                    pButton
+                    icon="pi pi-check"
+                    class="p-button-text p-button-sm p-button-success"
+                    pTooltip="Activar"
+                    (click)="activate(row)"
+                    aria-label="Activar empresa"
+                  ></button>
+                }
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  class="p-button-text p-button-sm p-button-danger"
+                  pTooltip="Eliminar"
+                  (click)="remove(row)"
+                  aria-label="Eliminar empresa"
+                ></button>
               }
             </div>
           </td>
@@ -182,144 +191,159 @@
   <!-- Vista Móvil -->
   <div class="md:hidden space-y-3">
     @for (row of items(); track row._id || $index) {
-    <div
-      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden"
-    >
-      <button
-        type="button"
-        class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-        (click)="toggleRow(row._id)"
+      <div
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden"
       >
-        <div class="flex-1 text-left min-w-0 pr-4">
-          <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
-            {{ row.name }}
-          </div>
-          @if (row.code) {
-          <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-            Código: {{ row.code }}
-          </div>
-          }
-          <div class="flex items-center gap-2 mt-1">
-            @if (row.isActive) {
-            <p-tag value="Activa" severity="success" styleClass="text-xs"></p-tag>
+        <button
+          type="button"
+          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+          (click)="toggleRow(row._id)"
+        >
+          <div class="flex items-center gap-3 flex-1 min-w-0 pr-4">
+            @if (row.logo) {
+              <img
+                [src]="row.logo"
+                [alt]="row.name"
+                class="h-10 w-10 object-contain rounded border border-gray-200 dark:border-gray-600 bg-white shrink-0"
+              />
             } @else {
-            <p-tag value="Inactiva" severity="danger" styleClass="text-xs"></p-tag>
+              <span
+                class="flex h-10 w-10 items-center justify-center rounded border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-400 shrink-0"
+                ><i class="pi pi-image"></i
+              ></span>
             }
+            <div class="text-left min-w-0">
+              <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                {{ row.name }}
+              </div>
+              <div class="flex items-center gap-2 mt-1">
+                @if (row.isActive) {
+                  <p-tag value="Activa" severity="success" styleClass="text-xs"></p-tag>
+                } @else {
+                  <p-tag value="Inactiva" severity="danger" styleClass="text-xs"></p-tag>
+                }
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="flex-shrink-0">
-          <i
-            class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
-            [class.pi-chevron-down]="!isRowExpanded(row._id)"
-            [class.pi-chevron-up]="isRowExpanded(row._id)"
-          ></i>
-        </div>
-      </button>
+          <div class="flex-shrink-0">
+            <i
+              class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+              [class.pi-chevron-down]="!isRowExpanded(row._id)"
+              [class.pi-chevron-up]="isRowExpanded(row._id)"
+            ></i>
+          </div>
+        </button>
 
-      @if (isRowExpanded(row._id)) {
-      <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
-        <div class="px-4 py-4 space-y-4">
-          <!-- Información básica -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Información
-            </div>
-            @if (row.description) {
-            <div class="text-sm text-gray-900 dark:text-gray-100 break-words mb-2">
-              {{ row.description }}
-            </div>
-            } @if (row.taxId) {
-            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
-              RUC/DNI: {{ row.taxId }}
-            </div>
-            } @if (row.email) {
-            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
-              Email: {{ row.email }}
-            </div>
-            } @if (row.phone) {
-            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
-              Teléfono: {{ row.phone }}
-            </div>
-            } @if (row.website) {
-            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
-              Web:
-              <a
-                [href]="row.website"
-                target="_blank"
-                class="text-blue-600 hover:text-blue-800 dark:text-blue-400"
-              >
-                {{ row.website }}
-              </a>
-            </div>
-            } @if (row.address) {
-            <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
-              Dirección: {{ row.address }}
-            </div>
-            }
-          </div>
+        @if (isRowExpanded(row._id)) {
+          <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
+            <div class="px-4 py-4 space-y-4">
+              <!-- Información básica -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Información
+                </div>
+                @if (row.description) {
+                  <div class="text-sm text-gray-900 dark:text-gray-100 break-words mb-2">
+                    {{ row.description }}
+                  </div>
+                }
+                @if (row.taxId) {
+                  <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+                    RUC: {{ row.taxId }}
+                  </div>
+                }
+                @if (row.email) {
+                  <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+                    Email: {{ row.email }}
+                  </div>
+                }
+                @if (row.phone) {
+                  <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+                    Teléfono: {{ row.phone }}
+                  </div>
+                }
+                @if (row.website) {
+                  <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+                    Web:
+                    <a
+                      [href]="row.website"
+                      target="_blank"
+                      class="text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                    >
+                      {{ row.website }}
+                    </a>
+                  </div>
+                }
+                @if (row.address) {
+                  <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
+                    Dirección: {{ row.address }}
+                  </div>
+                }
+              </div>
 
-          <!-- Acciones -->
-          <div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Acciones
-            </div>
-            <div class="flex flex-col gap-2 items-start">
-              <button
-                pButton
-                icon="pi pi-eye"
-                label="Ver detalles"
-                class="p-button-text p-button-sm"
-                (click)="viewDetails(row)"
-                aria-label="Ver detalles de la empresa"
-              ></button>
-              @if (canEdit()) {
-              <button
-                pButton
-                icon="pi pi-pencil"
-                label="Editar"
-                class="p-button-text p-button-sm"
-                (click)="editItem(row)"
-                aria-label="Editar empresa"
-              ></button>
-              @if (row.isActive) {
-              <button
-                pButton
-                icon="pi pi-ban"
-                label="Desactivar"
-                class="p-button-text p-button-sm p-button-warning"
-                (click)="deactivate(row)"
-                aria-label="Desactivar empresa"
-              ></button>
-              } @else {
-              <button
-                pButton
-                icon="pi pi-check"
-                label="Activar"
-                class="p-button-text p-button-sm p-button-success"
-                (click)="activate(row)"
-                aria-label="Activar empresa"
-              ></button>
-              }
-              <button
-                pButton
-                icon="pi pi-trash"
-                label="Eliminar"
-                class="p-button-text p-button-sm p-button-danger"
-                (click)="remove(row)"
-                aria-label="Eliminar empresa"
-              ></button>
-              }
+              <!-- Acciones -->
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                  Acciones
+                </div>
+                <div class="flex flex-col gap-2 items-start">
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    label="Ver detalles"
+                    class="p-button-text p-button-sm"
+                    (click)="viewDetails(row)"
+                    aria-label="Ver detalles de la empresa"
+                  ></button>
+                  @if (canEdit()) {
+                    <button
+                      pButton
+                      icon="pi pi-pencil"
+                      label="Editar"
+                      class="p-button-text p-button-sm"
+                      (click)="editItem(row)"
+                      aria-label="Editar empresa"
+                    ></button>
+                    @if (row.isActive) {
+                      <button
+                        pButton
+                        icon="pi pi-ban"
+                        label="Desactivar"
+                        class="p-button-text p-button-sm p-button-warning"
+                        (click)="deactivate(row)"
+                        aria-label="Desactivar empresa"
+                      ></button>
+                    } @else {
+                      <button
+                        pButton
+                        icon="pi pi-check"
+                        label="Activar"
+                        class="p-button-text p-button-sm p-button-success"
+                        (click)="activate(row)"
+                        aria-label="Activar empresa"
+                      ></button>
+                    }
+                    <button
+                      pButton
+                      icon="pi pi-trash"
+                      label="Eliminar"
+                      class="p-button-text p-button-sm p-button-danger"
+                      (click)="remove(row)"
+                      aria-label="Eliminar empresa"
+                    ></button>
+                  }
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        }
       </div>
-      }
-    </div>
-    } @if (items().length === 0) {
-    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-      <i class="pi pi-inbox text-4xl mb-2"></i>
-      <p>No hay empresas disponibles</p>
-    </div>
+    }
+    @if (items().length === 0) {
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <i class="pi pi-inbox text-4xl mb-2"></i>
+        <p>No hay empresas disponibles</p>
+      </div>
     }
   </div>
 
@@ -329,6 +353,7 @@
     (visibleChange)="showDialog.set($event)"
     [modal]="true"
     [style]="{ width: '95vw', maxWidth: '50rem' }"
+    [contentStyle]="{ maxHeight: '70vh', overflow: 'auto' }"
     [draggable]="false"
     [resizable]="false"
     [closable]="true"
@@ -336,7 +361,58 @@
     <ng-template pTemplate="header">
       {{ editing()?._id ? 'Editar Empresa' : 'Nueva Empresa' }}
     </ng-template>
-    <div class="space-y-4 max-h-[70vh] overflow-y-auto">
+    <div class="space-y-4">
+      <!-- Logo -->
+      <div
+        class="logo-drop-zone flex items-center gap-3 rounded-lg border px-3 py-2 transition-colors"
+        [ngClass]="{
+          'border-blue-400 bg-blue-50/50 dark:bg-blue-950/30': isLogoDropActive(),
+          'border-gray-200 dark:border-gray-600': !isLogoDropActive(),
+        }"
+        (dragover)="onLogoDragOver($event)"
+        (dragleave)="onLogoDragLeave($event)"
+        (drop)="onLogoDrop($event)"
+      >
+        @if (logoPreviewUrl()) {
+          <div class="relative shrink-0">
+            <img
+              [src]="logoPreviewUrl()"
+              alt="Logo"
+              class="h-12 w-12 object-contain rounded bg-white dark:bg-gray-800 p-0.5"
+            />
+            @if (selectedLogoFile()) {
+              <button
+                type="button"
+                pButton
+                icon="pi pi-times"
+                class="p-button-rounded p-button-text p-button-sm absolute -top-1 -right-1 h-5 w-5 min-w-0 bg-white dark:bg-gray-800 border shadow-sm"
+                (click)="clearLogoSelection()"
+                aria-label="Quitar logo"
+              ></button>
+            }
+          </div>
+        } @else {
+          <div
+            class="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-gray-100 dark:bg-gray-800 text-gray-400"
+          >
+            <i class="pi pi-image"></i>
+          </div>
+        }
+        <div class="flex min-w-0 flex-1 items-center gap-2">
+          <p-fileUpload
+            mode="basic"
+            name="logo"
+            chooseLabel="Subir logo"
+            [accept]="'image/*'"
+            [maxFileSize]="2000000"
+            (onSelect)="onLogoSelect($event)"
+            chooseIcon="pi pi-upload"
+            aria-label="Subir logo"
+          ></p-fileUpload>
+          <span class="text-xs text-gray-500 dark:text-gray-400">o arrastra aquí · máx. 2 MB</span>
+        </div>
+      </div>
+
       <!-- Información Básica -->
       <div>
         <h4 class="text-lg font-semibold mb-3">Información Básica</h4>
@@ -359,36 +435,21 @@
           </div>
           <div>
             <label
-              for="companyCode"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Código
-            </label>
-            <input
-              id="companyCode"
-              pInputText
-              placeholder="Código único"
-              [ngModel]="editing()?.code"
-              (ngModelChange)="onEditChange('code', $event)"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label
               for="companyTaxId"
               class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
-              RUC/DNI
-              <span class="text-xs text-gray-500 ml-1">(se autocompleta automáticamente)</span>
+              RUC *
+              <span class="text-xs text-gray-500 ml-1">(11 dígitos; se autocompleta)</span>
             </label>
             <input
               id="companyTaxId"
               pInputText
-              placeholder="20123456789 o 12345678"
+              placeholder="20123456789"
               [ngModel]="editing()?.taxId"
               (ngModelChange)="onEditChange('taxId', $event)"
               class="w-full"
               maxlength="11"
+              inputmode="numeric"
             />
           </div>
           <div class="md:col-span-2">
@@ -401,7 +462,7 @@
             <textarea
               id="companyDescription"
               pTextarea
-              placeholder="Descripción de la empresa"
+              placeholder="Opcional · descripción de la empresa"
               [ngModel]="editing()?.description"
               (ngModelChange)="onEditChange('description', $event)"
               [rows]="3"
@@ -425,8 +486,10 @@
             <input
               id="companyEmail"
               pInputText
-              type="email"
-              placeholder="contacto@ejemplo.com"
+              type="text"
+              inputmode="email"
+              autocomplete="email"
+              placeholder="contacto@ejemplo.com (opcional)"
               [ngModel]="editing()?.email"
               (ngModelChange)="onEditChange('email', $event)"
               class="w-full"
@@ -442,7 +505,7 @@
             <input
               id="companyPhone"
               pInputText
-              placeholder="+51 987654321"
+              placeholder="Opcional · ej. +51 987654321"
               [ngModel]="editing()?.phone"
               (ngModelChange)="onEditChange('phone', $event)"
               class="w-full"
@@ -458,7 +521,7 @@
             <input
               id="companyWebsite"
               pInputText
-              placeholder="https://www.ejemplo.com"
+              placeholder="Opcional · https://www.ejemplo.com"
               [ngModel]="editing()?.website"
               (ngModelChange)="onEditChange('website', $event)"
               class="w-full"
@@ -474,7 +537,7 @@
             <input
               id="companyAddress"
               pInputText
-              placeholder="Av. Principal 123, Lima"
+              placeholder="Opcional · Av. Principal 123, Lima"
               [ngModel]="editing()?.address"
               (ngModelChange)="onEditChange('address', $event)"
               class="w-full"
@@ -533,115 +596,123 @@
     header="Detalles de la Empresa"
   >
     @if (viewingCompany()) {
-    <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg space-y-6">
-      <!-- Información básica -->
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-info-circle text-blue-500"></i>
-          Información Básica
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Nombre</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 font-medium">
+      <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg space-y-6">
+        @if (viewingCompany()?.logo) {
+          <div class="flex items-center gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <img
+              [src]="viewingCompany()?.logo"
+              alt="Logo de la empresa"
+              class="h-16 w-16 object-contain rounded border border-gray-200 dark:border-gray-600 bg-white p-1"
+            />
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
               {{ viewingCompany()?.name }}
+            </h3>
+          </div>
+        }
+        <!-- Información básica -->
+        <div>
+          <h3
+            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
+          >
+            <i class="pi pi-info-circle text-blue-500"></i>
+            Información Básica
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Nombre</span
+              >
+              <div class="text-gray-900 dark:text-gray-100 font-medium">
+                {{ viewingCompany()?.name }}
+              </div>
             </div>
-          </div>
-          @if (viewingCompany()?.code) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Código</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.code }}</div>
-          </div>
-          } @if (viewingCompany()?.taxId) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >RUC/DNI</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.taxId }}</div>
-          </div>
-          }
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Estado</span
-            >
-            @if (viewingCompany()?.isActive) {
-            <p-tag value="Activa" severity="success"></p-tag>
-            } @else {
-            <p-tag value="Inactiva" severity="danger"></p-tag>
+            @if (viewingCompany()?.taxId) {
+              <div>
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >RUC</span
+                >
+                <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.taxId }}</div>
+              </div>
+            }
+            <div>
+              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >Estado</span
+              >
+              @if (viewingCompany()?.isActive) {
+                <p-tag value="Activa" severity="success"></p-tag>
+              } @else {
+                <p-tag value="Inactiva" severity="danger"></p-tag>
+              }
+            </div>
+            @if (viewingCompany()?.description) {
+              <div class="md:col-span-2">
+                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >Descripción</span
+                >
+                <div class="text-gray-900 dark:text-gray-100 break-words">
+                  {{ viewingCompany()?.description }}
+                </div>
+              </div>
             }
           </div>
-          @if (viewingCompany()?.description) {
-          <div class="md:col-span-2">
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Descripción</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 break-words">
-              {{ viewingCompany()?.description }}
-            </div>
-          </div>
-          }
         </div>
-      </div>
 
-      <!-- Información de contacto -->
-      @if (viewingCompany()?.email || viewingCompany()?.phone || viewingCompany()?.website) {
-      <div>
-        <h3
-          class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-        >
-          <i class="pi pi-envelope text-purple-500"></i>
-          Información de Contacto
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          @if (viewingCompany()?.email) {
+        <!-- Información de contacto -->
+        @if (viewingCompany()?.email || viewingCompany()?.phone || viewingCompany()?.website) {
           <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Email</span
+            <h3
+              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
             >
-            <div class="text-gray-900 dark:text-gray-100 break-words">
-              {{ viewingCompany()?.email }}
+              <i class="pi pi-envelope text-purple-500"></i>
+              Información de Contacto
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              @if (viewingCompany()?.email) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Email</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100 break-words">
+                    {{ viewingCompany()?.email }}
+                  </div>
+                </div>
+              }
+              @if (viewingCompany()?.phone) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Teléfono</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.phone }}</div>
+                </div>
+              }
+              @if (viewingCompany()?.website) {
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Sitio Web</span
+                  >
+                  <a
+                    [href]="viewingCompany()?.website"
+                    target="_blank"
+                    class="text-blue-600 hover:text-blue-800 dark:text-blue-400 break-words"
+                  >
+                    {{ viewingCompany()?.website }}
+                  </a>
+                </div>
+              }
+              @if (viewingCompany()?.address) {
+                <div class="md:col-span-2">
+                  <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Dirección</span
+                  >
+                  <div class="text-gray-900 dark:text-gray-100 break-words">
+                    {{ viewingCompany()?.address }}
+                  </div>
+                </div>
+              }
             </div>
           </div>
-          } @if (viewingCompany()?.phone) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Teléfono</span
-            >
-            <div class="text-gray-900 dark:text-gray-100">{{ viewingCompany()?.phone }}</div>
-          </div>
-          } @if (viewingCompany()?.website) {
-          <div>
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Sitio Web</span
-            >
-            <a
-              [href]="viewingCompany()?.website"
-              target="_blank"
-              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 break-words"
-            >
-              {{ viewingCompany()?.website }}
-            </a>
-          </div>
-          } @if (viewingCompany()?.address) {
-          <div class="md:col-span-2">
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Dirección</span
-            >
-            <div class="text-gray-900 dark:text-gray-100 break-words">
-              {{ viewingCompany()?.address }}
-            </div>
-          </div>
-          }
-        </div>
+        }
       </div>
-      }
-    </div>
     }
     <ng-template pTemplate="footer">
       <div class="flex justify-end">

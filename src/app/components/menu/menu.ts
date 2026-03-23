@@ -13,14 +13,21 @@ import { AuthService } from '../../pages/login/services/auth.service';
 import { MenuService } from '../../shared/services/menu.service';
 import { MenuConfigService } from '../../shared/services/menu-config.service';
 import { Button } from 'primeng/button';
-import { PanelMenuModule } from 'primeng/panelmenu';
 import { MenuItem } from 'primeng/api';
 import { filter, Subscription } from 'rxjs';
+
+interface SidebarItem {
+  label: string;
+  icon: string;
+  routerLink: string;
+  hubKey?: string;
+  isHub?: boolean;
+}
 
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [Button, RouterModule, PanelMenuModule],
+  imports: [Button, RouterModule],
   templateUrl: './menu.html',
   styleUrl: './menu.scss',
 })
@@ -53,6 +60,9 @@ export class Menu implements OnInit, OnDestroy {
   // Items con submenús para PanelMenu
   submenuItems = signal<MenuItem[]>([]);
 
+  // Unified sidebar items (direct + hub groups)
+  sidebarItems = signal<SidebarItem[]>([]);
+
   // Estado de carga de permisos
   isLoadingPermissions = signal(true);
 
@@ -62,7 +72,7 @@ export class Menu implements OnInit, OnDestroy {
     if (this.isLoadingPermissions()) {
       return true; // Mostrar loading o esperar
     }
-    return this.directMenuItems().length > 0 || this.submenuItems().length > 0;
+    return this.sidebarItems().length > 0;
   });
 
   constructor() {
@@ -141,21 +151,53 @@ export class Menu implements OnInit, OnDestroy {
     const allItems = this.menuConfig.getMenuItemsWithSubmenus();
     const filteredItems = this.filterMenuItemsByPermissions(allItems);
 
-    // Separar items directos de items con submenús
-    const directItems: MenuItem[] = [];
-    const submenuItems: MenuItem[] = [];
+    const sidebarItems: SidebarItem[] = [];
 
     filteredItems.forEach((item) => {
       if (item.items && item.items.length > 0) {
-        submenuItems.push(item);
-      } else {
-        directItems.push(item);
+        // Find hub section by label
+        const section = this.menuConfig.getHubSectionByLabel(item.label ?? '');
+        if (section) {
+          sidebarItems.push({
+            label: item.label ?? '',
+            icon: item.icon ?? '',
+            routerLink: section.hubPath,
+            hubKey: section.key,
+            isHub: true,
+          });
+        }
+      } else if (item.routerLink) {
+        sidebarItems.push({
+          label: item.label ?? '',
+          icon: item.icon ?? '',
+          routerLink: typeof item.routerLink === 'string'
+            ? item.routerLink
+            : (item.routerLink as string[])[0] ?? '',
+        });
       }
     });
 
-    this.directMenuItems.set(directItems);
-    this.submenuItems.set(submenuItems);
+    this.sidebarItems.set(sidebarItems);
+    // Keep backward compat signals empty
+    this.directMenuItems.set([]);
+    this.submenuItems.set([]);
     this.menuItems.set(filteredItems);
+  }
+
+  /**
+   * Verifica si un grupo hub está activo basado en la ruta actual
+   */
+  isGroupActive(hubKey: string | undefined): boolean {
+    if (!hubKey) return false;
+    const section = this.menuConfig.getHubSection(hubKey);
+    if (!section) return false;
+    const current = this.currentRoute();
+    // Check if on the hub page itself
+    if (current === section.hubPath || current.startsWith(section.hubPath + '/')) return true;
+    // Check related routes
+    return section.relatedRoutes.some(r =>
+      current === r || current.startsWith(r + '/')
+    );
   }
 
   /**

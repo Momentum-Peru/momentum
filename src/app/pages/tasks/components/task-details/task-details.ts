@@ -71,557 +71,327 @@ import {
       (onShow)="onDialogShow()"
     >
       @if (task) {
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <!-- Header -->
-        <div class="mb-6">
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Detalles de la Tarea
-          </h2>
-        </div>
-        <!-- Header Section -->
-        <div class="mb-6">
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex-1">
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                {{ task.title }}
-              </h3>
-              <div class="flex items-center gap-3 mb-3">
-                <!-- Status Badge -->
-                <p-tag
-                  [value]="task.status"
-                  [severity]="getStatusSeverity(task.status)"
-                  [rounded]="true"
-                ></p-tag>
-
-                <!-- Priority Badge -->
-                <p-tag
-                  [value]="task.priority"
-                  [severity]="getPrioritySeverity(task.priority)"
-                  [rounded]="true"
-                ></p-tag>
-              </div>
-              
-              <!-- Status Selector -->
-              <div class="mt-3">
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Cambiar estado
-                </label>
-                <p-select
-                  [ngModel]="task.status"
-                  (ngModelChange)="onStatusChange($event)"
-                  [options]="statusOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="Selecciona un estado"
-                  styleClass="w-full md:w-64"
-                ></p-select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Project -->
-          @if (getProjectName()) {
-          <div class="mb-4">
-            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Proyecto</h3>
-            <div
-              class="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <!-- Header -->
+          <div class="flex items-center gap-3 mb-6">
+            <button
+              type="button"
+              (click)="onClose()"
+              class="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-white transition-all duration-200"
             >
-              <i class="pi pi-folder text-blue-600 dark:text-blue-400"></i>
-              <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
-                {{ getProjectName() }}
-              </span>
-            </div>
+              <i class="pi pi-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
+              Regresar
+            </button>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+              Detalles de la Tarea
+            </h2>
           </div>
-          }
+          <!-- Header Section -->
+          <div class="mb-6">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex-1">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  {{ task.title }}
+                </h3>
+                <div class="flex items-center gap-3 mb-3">
+                  <!-- Status Badge -->
+                  <p-tag
+                    [value]="task.status"
+                    [severity]="getStatusSeverity(task.status)"
+                    [rounded]="true"
+                  ></p-tag>
 
-          <!-- Description -->
-          @if (task.description) {
-          <div class="mb-4">
-            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Descripción</h3>
-            <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
-              {{ task.description }}
-            </p>
-          </div>
-          }
+                  <!-- Priority Badge -->
+                  <p-tag
+                    [value]="task.priority"
+                    [severity]="getPrioritySeverity(task.priority)"
+                    [rounded]="true"
+                  ></p-tag>
+                </div>
 
-          <!-- Incomplete Reason -->
-          <div class="mb-4">
-            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              Razón por la que no se terminó la tarea
-            </h3>
-            <div class="space-y-2">
-              <textarea
-                pInputTextarea
-                [ngModel]="incompleteReasonValue()"
-                (ngModelChange)="incompleteReasonValue.set($event)"
-                placeholder="Explica por qué no se pudo terminar la tarea..."
-                rows="3"
-                class="w-full"
-                [class.p-invalid]="incompleteReasonError()"
-              ></textarea>
-              @if (incompleteReasonError()) {
-              <small class="text-red-500 dark:text-red-400 block">
-                {{ incompleteReasonError() }}
-              </small>
-              }
-              <div class="flex justify-end gap-2">
-                <p-button
-                  label="Guardar razón"
-                  icon="pi pi-save"
-                  severity="primary"
-                  size="small"
-                  (onClick)="saveIncompleteReason()"
-                  [loading]="savingIncompleteReason()"
-                  [disabled]="savingIncompleteReason()"
-                ></p-button>
+                <!-- Status Selector -->
+                <div class="mt-3">
+                  <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Cambiar estado
+                  </label>
+                  <p-select
+                    [ngModel]="task.status"
+                    (ngModelChange)="onStatusChange($event)"
+                    [options]="statusOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Selecciona un estado"
+                    styleClass="w-full md:w-64"
+                  ></p-select>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Subtasks -->
-          @if (task.subtasks && task.subtasks.length > 0) {
-          <div class="mb-4">
-            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Subtareas</h3>
-            <div class="space-y-2">
-              @for (subtask of task.subtasks; track subtask._id || $index) {
-              <div
-                class="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  [id]="'subtask-' + $index"
-                  [checked]="subtask.completed"
-                  (change)="toggleSubtask(subtask)"
-                  class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                />
-                <label
-                  [for]="'subtask-' + $index"
-                  [class.line-through]="subtask.completed"
-                  [class.text-gray-400]="subtask.completed"
-                  class="flex-1 text-gray-700 dark:text-gray-300 cursor-pointer"
-                >
-                  {{ subtask.title }}
-                </label>
-              </div>
-              }
-            </div>
-          </div>
-          }
-
-          <!-- Attachments -->
-          @if (task.attachments && task.attachments.length > 0) {
-          <div class="mb-4">
-            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-              Archivos Adjuntos
-            </h3>
-            <div class="space-y-3">
-              @for (attachment of task.attachments; track attachment._id || $index) {
-              <div
-                class="bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden"
-              >
-                @if (attachment.mimeType && attachment.mimeType.startsWith('audio/')) {
-                <!-- Audio -->
-                <div class="p-3">
-                  <div class="flex items-center gap-2 mb-2">
-                    <i class="pi pi-volume-up text-blue-500"></i>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {{ attachment.originalName }}
-                    </span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">
-                      ({{ formatFileSize(attachment.size || 0) }})
-                    </span>
-                  </div>
-                  <audio [src]="attachment.url" controls class="w-full"></audio>
-                </div>
-                } @else if (attachment.mimeType && attachment.mimeType.startsWith('video/')) {
-                <!-- Video -->
-                <div class="p-3">
-                  <div class="flex items-center gap-2 mb-2">
-                    <i class="pi pi-video text-red-500"></i>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {{ attachment.originalName }}
-                    </span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">
-                      ({{ formatFileSize(attachment.size || 0) }})
-                    </span>
-                  </div>
-                  <video [src]="attachment.url" controls class="w-full max-h-64 rounded"></video>
-                </div>
-                } @else if (attachment.mimeType && attachment.mimeType.startsWith('image/')) {
-                <!-- Imagen -->
-                <div class="p-3">
-                  <div class="flex items-center gap-2 mb-2">
-                    <i class="pi pi-image text-green-500"></i>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {{ attachment.originalName }}
-                    </span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">
-                      ({{ formatFileSize(attachment.size || 0) }})
-                    </span>
-                  </div>
-                  <img
-                    [src]="attachment.url"
-                    [alt]="attachment.originalName"
-                    class="w-full max-h-64 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity"
-                    (click)="openFileInNewTab(attachment.url)"
-                    (keydown.enter)="openFileInNewTab(attachment.url)"
-                    tabindex="0"
-                    role="button"
-                    [attr.aria-label]="'Abrir imagen ' + attachment.originalName"
-                  />
-                </div>
-                } @else if (attachment.mimeType === 'application/pdf') {
-                <!-- PDF -->
-                <div class="p-3">
-                  <div class="flex items-center justify-between gap-2 mb-2">
-                    <div class="flex items-center gap-2">
-                      <i class="pi pi-file-pdf text-red-500"></i>
-                      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ attachment.originalName }}
-                      </span>
-                      <span class="text-xs text-gray-500 dark:text-gray-400">
-                        ({{ formatFileSize(attachment.size || 0) }})
-                      </span>
-                    </div>
-                  </div>
-                  <!-- Miniatura del PDF -->
-                  <div
-                    class="relative w-full border border-gray-200 dark:border-gray-600 rounded overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors group"
-                    (click)="openPdfModal(attachment.url, attachment.originalName)"
-                    (keydown.enter)="openPdfModal(attachment.url, attachment.originalName)"
-                    tabindex="0"
-                    role="button"
-                    [attr.aria-label]="'Ver PDF completo: ' + attachment.originalName"
+            <!-- Hoja de seguimiento: Item, Ejecutor, Proveedor, Conclusiones, % Avance, Fechas -->
+            <div
+              class="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-600"
+            >
+              @if (task.item) {
+                <div>
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"
+                    >Item</span
                   >
-                    <!-- Miniatura - Primera página del PDF -->
-                    <iframe
-                      [src]="getSafePdfUrl(attachment.url, 1)"
-                      class="w-full pointer-events-none"
-                      style="height: 200px; border: none;"
-                      title="Miniatura del PDF"
-                      loading="lazy"
-                    ></iframe>
-                    <!-- Overlay con información -->
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">{{ task.item }}</p>
+                </div>
+              }
+              @if (task.ejecutor) {
+                <div>
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"
+                    >Ejecute</span
+                  >
+                  <p class="text-sm text-gray-700 dark:text-gray-300">{{ task.ejecutor }}</p>
+                </div>
+              }
+              @if (task.proveedorResponsable) {
+                <div>
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"
+                    >Proveedor responsable</span
+                  >
+                  <p class="text-sm text-gray-700 dark:text-gray-300">
+                    {{ task.proveedorResponsable }}
+                  </p>
+                </div>
+              }
+              @if (task.progress != null && task.progress !== undefined) {
+                <div>
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"
+                    >% Avance</span
+                  >
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    {{ task.progress }}%
+                  </p>
+                </div>
+              }
+              @if (task.startDate) {
+                <div>
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"
+                    >Fecha inicio</span
+                  >
+                  <p class="text-sm text-gray-700 dark:text-gray-300">
+                    {{ formatDateTime(task.startDate) }}
+                  </p>
+                </div>
+              }
+              @if (task.dueDate || task.completedDate) {
+                <div>
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"
+                    >Fecha finalización</span
+                  >
+                  <p class="text-sm text-gray-700 dark:text-gray-300">
+                    {{
+                      task.completedDate
+                        ? formatDateTime(task.completedDate)
+                        : task.dueDate
+                          ? formatDateTime(task.dueDate)
+                          : '—'
+                    }}
+                  </p>
+                </div>
+              }
+              @if (task.conclusiones) {
+                <div class="sm:col-span-2">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"
+                    >Conclusiones</span
+                  >
+                  <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    {{ task.conclusiones }}
+                  </p>
+                </div>
+              }
+            </div>
+
+            <!-- Project -->
+            @if (getProjectName()) {
+              <div class="mb-4">
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Proyecto
+                </h3>
+                <div
+                  class="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+                >
+                  <i class="pi pi-folder text-blue-600 dark:text-blue-400"></i>
+                  <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    {{ getProjectName() }}
+                  </span>
+                </div>
+              </div>
+            }
+
+            <!-- Description -->
+            @if (task.description) {
+              <div class="mb-4">
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Descripción
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+                  {{ task.description }}
+                </p>
+              </div>
+            }
+
+            <!-- Incomplete Reason -->
+            <div class="mb-4">
+              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Razón por la que no se terminó la tarea
+              </h3>
+              <div class="space-y-2">
+                <textarea
+                  pInputTextarea
+                  [ngModel]="incompleteReasonValue()"
+                  (ngModelChange)="incompleteReasonValue.set($event)"
+                  placeholder="Explica por qué no se pudo terminar la tarea..."
+                  rows="3"
+                  class="w-full"
+                  [class.p-invalid]="incompleteReasonError()"
+                ></textarea>
+                @if (incompleteReasonError()) {
+                  <small class="text-red-500 dark:text-red-400 block">
+                    {{ incompleteReasonError() }}
+                  </small>
+                }
+                <div class="flex justify-end gap-2">
+                  <p-button
+                    label="Guardar razón"
+                    icon="pi pi-save"
+                    severity="primary"
+                    size="small"
+                    (onClick)="saveIncompleteReason()"
+                    [loading]="savingIncompleteReason()"
+                    [disabled]="savingIncompleteReason()"
+                  ></p-button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Subtasks -->
+            @if (task.subtasks && task.subtasks.length > 0) {
+              <div class="mb-4">
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Subtareas
+                </h3>
+                <div class="space-y-2">
+                  @for (subtask of task.subtasks; track subtask._id || $index) {
                     <div
-                      class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center"
+                      class="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
                     >
-                      <div
-                        class="opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-800 px-3 py-1.5 rounded-md shadow-lg flex items-center gap-2"
+                      <input
+                        type="checkbox"
+                        [id]="'subtask-' + $index"
+                        [checked]="subtask.completed"
+                        (change)="toggleSubtask(subtask)"
+                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                      />
+                      <label
+                        [for]="'subtask-' + $index"
+                        [class.line-through]="subtask.completed"
+                        [class.text-gray-400]="subtask.completed"
+                        class="flex-1 text-gray-700 dark:text-gray-300 cursor-pointer"
                       >
-                        <i class="pi pi-eye text-blue-600 dark:text-blue-400"></i>
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-                          >Ver PDF completo</span
-                        >
-                      </div>
+                        {{ subtask.title }}
+                      </label>
                     </div>
-                  </div>
-                </div>
-                } @else {
-                <!-- Documento genérico -->
-                <div class="flex items-center gap-2 p-3">
-                  <i class="pi pi-file text-gray-500"></i>
-                  <span class="text-sm text-gray-700 dark:text-gray-300 flex-1">
-                    {{ attachment.originalName }}
-                  </span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">
-                    ({{ formatFileSize(attachment.size || 0) }})
-                  </span>
-                  <a
-                    [href]="attachment.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                    pTooltip="Abrir archivo"
-                  >
-                    <i class="pi pi-external-link"></i>
-                  </a>
-                </div>
-                }
-              </div>
-              }
-            </div>
-          </div>
-          }
-        </div>
-
-        <p-divider></p-divider>
-
-        <!-- Task Information Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <!-- Left Column -->
-          <div class="space-y-4">
-            <!-- Assigned To -->
-            <div>
-              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Asignado a
-              </h3>
-              <div class="flex items-center gap-2">
-                <p-avatar
-                  [label]="getInitials(getAssignedToName())"
-                  styleClass="bg-blue-500 text-white"
-                  size="normal"
-                ></p-avatar>
-                <span class="text-gray-600 dark:text-gray-400">
-                  {{ getAssignedToName() }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Created By -->
-            <div>
-              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Creado por
-              </h3>
-              <div class="flex items-center gap-2">
-                <p-avatar
-                  [label]="getInitials(getCreatedByName())"
-                  styleClass="bg-green-500 text-white"
-                  size="normal"
-                ></p-avatar>
-                <span class="text-gray-600 dark:text-gray-400">
-                  {{ getCreatedByName() }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Created Date -->
-            <div>
-              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Fecha de creación
-              </h3>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-clock text-gray-500"></i>
-                <span class="text-gray-600 dark:text-gray-400">
-                  {{ formatDateTime(task.createdAt) }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right Column -->
-          <div class="space-y-4">
-            <!-- Due Date -->
-            <div>
-              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Fecha y hora límite
-              </h3>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-calendar text-gray-500"></i>
-                <span
-                  class="text-gray-600 dark:text-gray-400"
-                  [class.text-red-600]="isOverdue()"
-                  [class.dark:text-red-400]="isOverdue()"
-                  [class.font-semibold]="isOverdue()"
-                >
-                  {{ task.dueDate ? formatDateTime(task.dueDate) : 'Sin fecha límite' }}
-                </span>
-                @if (isOverdue()) {
-                <p-badge value="Vencida" severity="danger"></p-badge>
-                }
-              </div>
-            </div>
-
-            <!-- Last Updated -->
-            <div>
-              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Última actualización
-              </h3>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-refresh text-gray-500"></i>
-                <span class="text-gray-600 dark:text-gray-400">
-                  {{ formatDateTime(task.updatedAt) }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Last Modified By -->
-            <div>
-              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Última modificación
-              </h3>
-              @if (logsLoading()) {
-              <div class="flex items-center gap-2">
-                <i class="pi pi-spin pi-spinner text-gray-500"></i>
-                <span class="text-gray-600 dark:text-gray-400 text-sm">Cargando...</span>
-              </div>
-              } @else if (lastModificationLog()) {
-              <div class="flex items-center gap-2">
-                <p-avatar
-                  [label]="getInitials(getLastModifierName())"
-                  styleClass="bg-purple-500 text-white"
-                  size="normal"
-                ></p-avatar>
-                <div class="flex-1">
-                  <div class="text-sm text-gray-600 dark:text-gray-400">
-                    <span class="font-medium">{{ getLastModifierName() }}</span>
-                    <span> {{ getLastModificationAction() }} la tarea</span>
-                  </div>
-                  @if (getLastModificationDate()) {
-                  <div class="text-xs text-gray-500 dark:text-gray-500">
-                    {{ getLastModificationDate() }}
-                  </div>
                   }
                 </div>
               </div>
-              } @else {
-              <div class="flex items-center gap-2">
-                <i class="pi pi-info-circle text-gray-400"></i>
-                <span class="text-gray-500 dark:text-gray-400 text-sm"
-                  >Sin información de modificación</span
-                >
-              </div>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- Tags -->
-        @if (task.tags && task.tags.length > 0) {
-        <div class="mb-6">
-          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Etiquetas</h3>
-          <div class="flex flex-wrap gap-2">
-            @for (tag of task.tags; track tag) {
-            <p-chip
-              [label]="tag"
-              styleClass="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-            ></p-chip>
             }
-          </div>
-        </div>
-        }
 
-        <p-divider></p-divider>
-
-        <!-- Comments Section -->
-        <div class="mb-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Comentarios</h3>
-            <p-badge [value]="task.info?.length || 0" severity="info"></p-badge>
-          </div>
-
-          @if (commentsLoading()) {
-          <div class="flex justify-center py-4">
-            <p-progressSpinner styleClass="w-6 h-6" strokeWidth="4"></p-progressSpinner>
-          </div>
-          } @else if (task.info && task.info.length > 0) {
-          <p-scrollPanel [style]="{ height: '300px' }">
-            <div class="space-y-4 pr-4">
-              @for (comment of task.info; track comment._id) {
-              <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 group">
-                <div class="flex items-start gap-3">
-                  <p-avatar
-                    [label]="getInitials(getAuthorName(comment.createdBy))"
-                    styleClass="bg-purple-500 text-white"
-                    size="normal"
-                  ></p-avatar>
-                  <div class="flex-1">
-                    <div class="flex items-center justify-between mb-2">
-                      <div class="flex items-center gap-2">
-                        <span class="font-semibold text-gray-900 dark:text-white text-sm">
-                          {{ getAuthorName(comment.createdBy) }}
-                        </span>
-                        <span class="text-xs text-gray-500 dark:text-gray-400">
-                          {{ formatDateTime(comment.createdAt) }}
-                        </span>
-                      </div>
-                      <p-button
-                        icon="pi pi-trash"
-                        size="small"
-                        severity="danger"
-                        [text]="true"
-                        (onClick)="deleteComment(comment)"
-                        pTooltip="Eliminar comentario"
-                        class="opacity-0 group-hover:opacity-100 transition-opacity"
-                      ></p-button>
-                    </div>
-                    <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-                      {{ comment.content }}
-                    </p>
-
-                    <!-- Comment Files -->
-                    @if (comment.attachments && comment.attachments.length > 0) {
-                    <div class="mt-3 space-y-2">
-                      @for (file of comment.attachments || []; track file._id) {
-                      <div
-                        class="bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden"
-                      >
-                        @if (file.mimeType && file.mimeType.startsWith('audio/')) {
+            <!-- Attachments -->
+            @if (task.attachments && task.attachments.length > 0) {
+              <div class="mb-4">
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Archivos Adjuntos
+                </h3>
+                <div class="space-y-3">
+                  @for (attachment of task.attachments; track attachment._id || $index) {
+                    <div
+                      class="bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden"
+                    >
+                      @if (attachment.mimeType && attachment.mimeType.startsWith('audio/')) {
                         <!-- Audio -->
                         <div class="p-3">
                           <div class="flex items-center gap-2 mb-2">
                             <i class="pi pi-volume-up text-blue-500"></i>
                             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {{ file.originalName }}
+                              {{ attachment.originalName }}
                             </span>
                             <span class="text-xs text-gray-500 dark:text-gray-400">
-                              ({{ formatFileSize(file.size || 0) }})
+                              ({{ formatFileSize(attachment.size || 0) }})
                             </span>
                           </div>
-                          <audio [src]="file.url" controls class="w-full"></audio>
+                          <audio [src]="attachment.url" controls class="w-full"></audio>
                         </div>
-                        } @else if (file.mimeType && file.mimeType.startsWith('video/')) {
+                      } @else if (attachment.mimeType && attachment.mimeType.startsWith('video/')) {
                         <!-- Video -->
                         <div class="p-3">
                           <div class="flex items-center gap-2 mb-2">
                             <i class="pi pi-video text-red-500"></i>
                             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {{ file.originalName }}
+                              {{ attachment.originalName }}
                             </span>
                             <span class="text-xs text-gray-500 dark:text-gray-400">
-                              ({{ formatFileSize(file.size || 0) }})
+                              ({{ formatFileSize(attachment.size || 0) }})
                             </span>
                           </div>
-                          <video [src]="file.url" controls class="w-full max-h-64 rounded"></video>
+                          <video
+                            [src]="attachment.url"
+                            controls
+                            class="w-full max-h-64 rounded"
+                          ></video>
                         </div>
-                        } @else if (file.mimeType && file.mimeType.startsWith('image/')) {
+                      } @else if (attachment.mimeType && attachment.mimeType.startsWith('image/')) {
                         <!-- Imagen -->
                         <div class="p-3">
                           <div class="flex items-center gap-2 mb-2">
                             <i class="pi pi-image text-green-500"></i>
                             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {{ file.originalName }}
+                              {{ attachment.originalName }}
                             </span>
                             <span class="text-xs text-gray-500 dark:text-gray-400">
-                              ({{ formatFileSize(file.size || 0) }})
+                              ({{ formatFileSize(attachment.size || 0) }})
                             </span>
                           </div>
                           <img
-                            [src]="file.url"
-                            [alt]="file.originalName"
+                            [src]="attachment.url"
+                            [alt]="attachment.originalName"
                             class="w-full max-h-64 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity"
-                            (click)="openFileInNewTab(file.url)"
-                            (keydown.enter)="openFileInNewTab(file.url)"
+                            (click)="openFileInNewTab(attachment.url)"
+                            (keydown.enter)="openFileInNewTab(attachment.url)"
                             tabindex="0"
                             role="button"
-                            [attr.aria-label]="'Abrir imagen ' + file.originalName"
+                            [attr.aria-label]="'Abrir imagen ' + attachment.originalName"
                           />
                         </div>
-                        } @else if (file.mimeType === 'application/pdf') {
+                      } @else if (attachment.mimeType === 'application/pdf') {
                         <!-- PDF -->
                         <div class="p-3">
                           <div class="flex items-center justify-between gap-2 mb-2">
                             <div class="flex items-center gap-2">
                               <i class="pi pi-file-pdf text-red-500"></i>
                               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {{ file.originalName }}
+                                {{ attachment.originalName }}
                               </span>
                               <span class="text-xs text-gray-500 dark:text-gray-400">
-                                ({{ formatFileSize(file.size || 0) }})
+                                ({{ formatFileSize(attachment.size || 0) }})
                               </span>
                             </div>
                           </div>
                           <!-- Miniatura del PDF -->
                           <div
                             class="relative w-full border border-gray-200 dark:border-gray-600 rounded overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors group"
-                            (click)="openPdfModal(file.url, file.originalName)"
-                            (keydown.enter)="openPdfModal(file.url, file.originalName)"
+                            (click)="openPdfModal(attachment.url, attachment.originalName)"
+                            (keydown.enter)="openPdfModal(attachment.url, attachment.originalName)"
                             tabindex="0"
                             role="button"
-                            [attr.aria-label]="'Ver PDF completo: ' + file.originalName"
+                            [attr.aria-label]="'Ver PDF completo: ' + attachment.originalName"
                           >
                             <!-- Miniatura - Primera página del PDF -->
                             <iframe
-                              [src]="getSafePdfUrl(file.url, 1)"
+                              [src]="getSafePdfUrl(attachment.url, 1)"
                               class="w-full pointer-events-none"
                               style="height: 200px; border: none;"
                               title="Miniatura del PDF"
@@ -642,18 +412,18 @@ import {
                             </div>
                           </div>
                         </div>
-                        } @else {
+                      } @else {
                         <!-- Documento genérico -->
                         <div class="flex items-center gap-2 p-3">
                           <i class="pi pi-file text-gray-500"></i>
                           <span class="text-sm text-gray-700 dark:text-gray-300 flex-1">
-                            {{ file.originalName }}
+                            {{ attachment.originalName }}
                           </span>
                           <span class="text-xs text-gray-500 dark:text-gray-400">
-                            ({{ formatFileSize(file.size || 0) }})
+                            ({{ formatFileSize(attachment.size || 0) }})
                           </span>
                           <a
-                            [href]="file.url"
+                            [href]="attachment.url"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
@@ -662,305 +432,663 @@ import {
                             <i class="pi pi-external-link"></i>
                           </a>
                         </div>
-                        }
-                      </div>
                       }
                     </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <p-divider></p-divider>
+
+          <!-- Task Information Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- Left Column -->
+            <div class="space-y-4">
+              <!-- Assigned To -->
+              <div>
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Asignado a
+                </h3>
+                <div class="flex items-center gap-2">
+                  <p-avatar
+                    [label]="getInitials(getAssignedToName())"
+                    styleClass="bg-blue-500 text-white"
+                    size="normal"
+                  ></p-avatar>
+                  <span class="text-gray-600 dark:text-gray-400">
+                    {{ getAssignedToName() }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Created By -->
+              <div>
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Creado por
+                </h3>
+                <div class="flex items-center gap-2">
+                  <p-avatar
+                    [label]="getInitials(getCreatedByName())"
+                    styleClass="bg-green-500 text-white"
+                    size="normal"
+                  ></p-avatar>
+                  <span class="text-gray-600 dark:text-gray-400">
+                    {{ getCreatedByName() }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Created Date -->
+              <div>
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Fecha de creación
+                </h3>
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-clock text-gray-500"></i>
+                  <span class="text-gray-600 dark:text-gray-400">
+                    {{ formatDateTime(task.createdAt) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-4">
+              <!-- Due Date -->
+              <div>
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Fecha y hora límite
+                </h3>
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-calendar text-gray-500"></i>
+                  <span
+                    class="text-gray-600 dark:text-gray-400"
+                    [class.text-red-600]="isOverdue()"
+                    [class.dark:text-red-400]="isOverdue()"
+                    [class.font-semibold]="isOverdue()"
+                  >
+                    {{ task.dueDate ? formatDateTime(task.dueDate) : 'Sin fecha límite' }}
+                  </span>
+                  @if (isOverdue()) {
+                    <p-badge value="Vencida" severity="danger"></p-badge>
+                  }
+                </div>
+              </div>
+
+              <!-- Last Updated -->
+              <div>
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Última actualización
+                </h3>
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-refresh text-gray-500"></i>
+                  <span class="text-gray-600 dark:text-gray-400">
+                    {{ formatDateTime(task.updatedAt) }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Last Modified By -->
+              <div>
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Última modificación
+                </h3>
+                @if (logsLoading()) {
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-spin pi-spinner text-gray-500"></i>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Cargando...</span>
+                  </div>
+                } @else if (lastModificationLog()) {
+                  <div class="flex items-center gap-2">
+                    <p-avatar
+                      [label]="getInitials(getLastModifierName())"
+                      styleClass="bg-purple-500 text-white"
+                      size="normal"
+                    ></p-avatar>
+                    <div class="flex-1">
+                      <div class="text-sm text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">{{ getLastModifierName() }}</span>
+                        <span> {{ getLastModificationAction() }} la tarea</span>
+                      </div>
+                      @if (getLastModificationDate()) {
+                        <div class="text-xs text-gray-500 dark:text-gray-500">
+                          {{ getLastModificationDate() }}
+                        </div>
+                      }
+                    </div>
+                  </div>
+                } @else {
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-info-circle text-gray-400"></i>
+                    <span class="text-gray-500 dark:text-gray-400 text-sm"
+                      >Sin información de modificación</span
+                    >
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Tags -->
+          @if (task.tags && task.tags.length > 0) {
+            <div class="mb-6">
+              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Etiquetas</h3>
+              <div class="flex flex-wrap gap-2">
+                @for (tag of task.tags; track tag) {
+                  <p-chip
+                    [label]="tag"
+                    styleClass="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                  ></p-chip>
+                }
+              </div>
+            </div>
+          }
+
+          <p-divider></p-divider>
+
+          <!-- Comments Section -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Comentarios</h3>
+              <p-badge [value]="task.info?.length || 0" severity="info"></p-badge>
+            </div>
+
+            @if (commentsLoading()) {
+              <div class="flex justify-center py-4">
+                <p-progressSpinner styleClass="w-6 h-6" strokeWidth="4"></p-progressSpinner>
+              </div>
+            } @else if (task.info && task.info.length > 0) {
+              <p-scrollPanel [style]="{ height: '300px' }">
+                <div class="space-y-4 pr-4">
+                  @for (comment of task.info; track comment._id) {
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 group">
+                      <div class="flex items-start gap-3">
+                        <p-avatar
+                          [label]="getInitials(getAuthorName(comment.createdBy))"
+                          styleClass="bg-purple-500 text-white"
+                          size="normal"
+                        ></p-avatar>
+                        <div class="flex-1">
+                          <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                              <span class="font-semibold text-gray-900 dark:text-white text-sm">
+                                {{ getAuthorName(comment.createdBy) }}
+                              </span>
+                              <span class="text-xs text-gray-500 dark:text-gray-400">
+                                {{ formatDateTime(comment.createdAt) }}
+                              </span>
+                            </div>
+                            <p-button
+                              icon="pi pi-trash"
+                              size="small"
+                              severity="danger"
+                              [text]="true"
+                              (onClick)="deleteComment(comment)"
+                              pTooltip="Eliminar comentario"
+                              class="opacity-0 group-hover:opacity-100 transition-opacity"
+                            ></p-button>
+                          </div>
+                          <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                            {{ comment.content }}
+                          </p>
+
+                          <!-- Comment Files -->
+                          @if (comment.attachments && comment.attachments.length > 0) {
+                            <div class="mt-3 space-y-2">
+                              @for (file of comment.attachments || []; track file._id) {
+                                <div
+                                  class="bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden"
+                                >
+                                  @if (file.mimeType && file.mimeType.startsWith('audio/')) {
+                                    <!-- Audio -->
+                                    <div class="p-3">
+                                      <div class="flex items-center gap-2 mb-2">
+                                        <i class="pi pi-volume-up text-blue-500"></i>
+                                        <span
+                                          class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        >
+                                          {{ file.originalName }}
+                                        </span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">
+                                          ({{ formatFileSize(file.size || 0) }})
+                                        </span>
+                                      </div>
+                                      <audio [src]="file.url" controls class="w-full"></audio>
+                                    </div>
+                                  } @else if (file.mimeType && file.mimeType.startsWith('video/')) {
+                                    <!-- Video -->
+                                    <div class="p-3">
+                                      <div class="flex items-center gap-2 mb-2">
+                                        <i class="pi pi-video text-red-500"></i>
+                                        <span
+                                          class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        >
+                                          {{ file.originalName }}
+                                        </span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">
+                                          ({{ formatFileSize(file.size || 0) }})
+                                        </span>
+                                      </div>
+                                      <video
+                                        [src]="file.url"
+                                        controls
+                                        class="w-full max-h-64 rounded"
+                                      ></video>
+                                    </div>
+                                  } @else if (file.mimeType && file.mimeType.startsWith('image/')) {
+                                    <!-- Imagen -->
+                                    <div class="p-3">
+                                      <div class="flex items-center gap-2 mb-2">
+                                        <i class="pi pi-image text-green-500"></i>
+                                        <span
+                                          class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        >
+                                          {{ file.originalName }}
+                                        </span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">
+                                          ({{ formatFileSize(file.size || 0) }})
+                                        </span>
+                                      </div>
+                                      <img
+                                        [src]="file.url"
+                                        [alt]="file.originalName"
+                                        class="w-full max-h-64 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity"
+                                        (click)="openFileInNewTab(file.url)"
+                                        (keydown.enter)="openFileInNewTab(file.url)"
+                                        tabindex="0"
+                                        role="button"
+                                        [attr.aria-label]="'Abrir imagen ' + file.originalName"
+                                      />
+                                    </div>
+                                  } @else if (file.mimeType === 'application/pdf') {
+                                    <!-- PDF -->
+                                    <div class="p-3">
+                                      <div class="flex items-center justify-between gap-2 mb-2">
+                                        <div class="flex items-center gap-2">
+                                          <i class="pi pi-file-pdf text-red-500"></i>
+                                          <span
+                                            class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                                          >
+                                            {{ file.originalName }}
+                                          </span>
+                                          <span class="text-xs text-gray-500 dark:text-gray-400">
+                                            ({{ formatFileSize(file.size || 0) }})
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <!-- Miniatura del PDF -->
+                                      <div
+                                        class="relative w-full border border-gray-200 dark:border-gray-600 rounded overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors group"
+                                        (click)="openPdfModal(file.url, file.originalName)"
+                                        (keydown.enter)="openPdfModal(file.url, file.originalName)"
+                                        tabindex="0"
+                                        role="button"
+                                        [attr.aria-label]="'Ver PDF completo: ' + file.originalName"
+                                      >
+                                        <!-- Miniatura - Primera página del PDF -->
+                                        <iframe
+                                          [src]="getSafePdfUrl(file.url, 1)"
+                                          class="w-full pointer-events-none"
+                                          style="height: 200px; border: none;"
+                                          title="Miniatura del PDF"
+                                          loading="lazy"
+                                        ></iframe>
+                                        <!-- Overlay con información -->
+                                        <div
+                                          class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center"
+                                        >
+                                          <div
+                                            class="opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-800 px-3 py-1.5 rounded-md shadow-lg flex items-center gap-2"
+                                          >
+                                            <i
+                                              class="pi pi-eye text-blue-600 dark:text-blue-400"
+                                            ></i>
+                                            <span
+                                              class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                                              >Ver PDF completo</span
+                                            >
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  } @else {
+                                    <!-- Documento genérico -->
+                                    <div class="flex items-center gap-2 p-3">
+                                      <i class="pi pi-file text-gray-500"></i>
+                                      <span class="text-sm text-gray-700 dark:text-gray-300 flex-1">
+                                        {{ file.originalName }}
+                                      </span>
+                                      <span class="text-xs text-gray-500 dark:text-gray-400">
+                                        ({{ formatFileSize(file.size || 0) }})
+                                      </span>
+                                      <a
+                                        [href]="file.url"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                        pTooltip="Abrir archivo"
+                                      >
+                                        <i class="pi pi-external-link"></i>
+                                      </a>
+                                    </div>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </p-scrollPanel>
+            } @else {
+              <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <i class="pi pi-comments text-4xl mb-3"></i>
+                <p>No hay comentarios aún</p>
+              </div>
+            }
+          </div>
+
+          <!-- Add Comment Section -->
+          <div class="mt-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Agregar Comentario
+            </h3>
+
+            @if (commentError()) {
+              <p-message severity="error" [text]="commentError()!" class="mb-4"></p-message>
+            }
+
+            <!-- Zona de Drag and Drop -->
+            <div
+              [class]="
+                isDragging()
+                  ? 'mb-4 p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                  : 'mb-4 p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+              "
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)"
+              (drop)="onDrop($event)"
+              (click)="documentsInput.click()"
+              role="button"
+              tabindex="0"
+              (keydown.enter)="documentsInput.click()"
+              (keydown.space)="documentsInput.click()"
+              [attr.aria-label]="
+                'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos o pega archivos con Ctrl+V'
+              "
+            >
+              <div class="text-center">
+                <i
+                  class="pi pi-cloud-upload text-5xl mb-3 transition-colors"
+                  [class.text-blue-500]="isDragging()"
+                  [class.text-gray-400]="!isDragging()"
+                  [class.dark:text-gray-500]="!isDragging()"
+                ></i>
+                <p
+                  class="text-sm font-medium mb-1 transition-colors"
+                  [class.text-blue-700]="isDragging()"
+                  [class.dark:text-blue-300]="isDragging()"
+                  [class.text-gray-700]="!isDragging()"
+                  [class.dark:text-gray-300]="!isDragging()"
+                >
+                  @if (isDragging()) {
+                    <span>Suelta los archivos aquí</span>
+                  } @else {
+                    <span>Arrastra archivos aquí, haz clic para seleccionar o pega con Ctrl+V</span>
+                  }
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  Imágenes desde WhatsApp, videos, audios o documentos desde tu PC
+                </p>
+              </div>
+            </div>
+
+            <form [formGroup]="commentForm" (ngSubmit)="onSubmitComment()">
+              <div class="space-y-4">
+                <div>
+                  <textarea
+                    pInputTextarea
+                    formControlName="content"
+                    placeholder="Escribe tu comentario aquí (opcional si subes archivos)..."
+                    rows="4"
+                    class="w-full"
+                    [class.p-invalid]="
+                      commentForm.get('content')?.invalid && commentForm.get('content')?.touched
+                    "
+                  ></textarea>
+                  @if (commentForm.get('content')?.invalid && commentForm.get('content')?.touched) {
+                    <small class="text-red-500 dark:text-red-400 mt-1 block">
+                      Si escribes un comentario, debe tener al menos 3 caracteres
+                    </small>
+                  }
+                </div>
+
+                <!-- Botones de Media -->
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    pButton
+                    icon="pi pi-volume-up"
+                    label="Audio"
+                    (click)="audioInput.click()"
+                    class="flex-1 min-w-[100px]"
+                    severity="secondary"
+                    [outlined]="pendingAudio().length === 0"
+                    aria-label="Seleccionar archivos de audio"
+                  ></button>
+                  <input
+                    type="file"
+                    #audioInput
+                    accept="audio/*"
+                    capture
+                    multiple
+                    (change)="onAudioSelected($event)"
+                    class="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    pButton
+                    icon="pi pi-image"
+                    label="Foto"
+                    (click)="photoInput.click()"
+                    class="flex-1 min-w-[100px]"
+                    severity="secondary"
+                    [outlined]="pendingPhoto().length === 0"
+                    aria-label="Seleccionar fotos"
+                  ></button>
+                  <input
+                    type="file"
+                    #photoInput
+                    accept="image/*"
+                    capture="environment"
+                    multiple
+                    (change)="onPhotoSelected($event)"
+                    class="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    pButton
+                    icon="pi pi-video"
+                    label="Video"
+                    (click)="videoInput.click()"
+                    class="flex-1 min-w-[100px]"
+                    severity="secondary"
+                    [outlined]="pendingVideo().length === 0"
+                    aria-label="Seleccionar videos"
+                  ></button>
+                  <input
+                    type="file"
+                    #videoInput
+                    accept="video/*"
+                    capture
+                    multiple
+                    (change)="onVideoSelected($event)"
+                    class="hidden"
+                  />
+                </div>
+
+                <!-- Archivos seleccionados -->
+                @if (
+                  pendingAudio().length > 0 ||
+                  pendingPhoto().length > 0 ||
+                  pendingVideo().length > 0 ||
+                  pendingDocuments().length > 0
+                ) {
+                  <div class="space-y-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    @if (pendingAudio().length > 0) {
+                      <div class="text-sm">
+                        <span class="font-medium text-gray-700 dark:text-gray-300">Audios:</span>
+                        @for (file of pendingAudio(); track $index) {
+                          <div class="flex items-center justify-between mt-1">
+                            <span class="text-gray-600 dark:text-gray-400 text-xs">{{
+                              file.name
+                            }}</span>
+                            <button
+                              type="button"
+                              pButton
+                              icon="pi pi-times"
+                              [text]="true"
+                              severity="danger"
+                              size="small"
+                              (click)="removePendingAudio($index)"
+                              [attr.aria-label]="'Eliminar ' + file.name"
+                            ></button>
+                          </div>
+                        }
+                      </div>
+                    }
+                    @if (pendingPhoto().length > 0) {
+                      <div class="text-sm">
+                        <span class="font-medium text-gray-700 dark:text-gray-300">Fotos:</span>
+                        @for (file of pendingPhoto(); track $index) {
+                          <div class="flex items-center justify-between mt-1">
+                            <span class="text-gray-600 dark:text-gray-400 text-xs">{{
+                              file.name
+                            }}</span>
+                            <button
+                              type="button"
+                              pButton
+                              icon="pi pi-times"
+                              [text]="true"
+                              severity="danger"
+                              size="small"
+                              (click)="removePendingPhoto($index)"
+                              [attr.aria-label]="'Eliminar ' + file.name"
+                            ></button>
+                          </div>
+                        }
+                      </div>
+                    }
+                    @if (pendingVideo().length > 0) {
+                      <div class="text-sm">
+                        <span class="font-medium text-gray-700 dark:text-gray-300">Videos:</span>
+                        @for (file of pendingVideo(); track $index) {
+                          <div class="flex items-center justify-between mt-1">
+                            <span class="text-gray-600 dark:text-gray-400 text-xs">{{
+                              file.name
+                            }}</span>
+                            <button
+                              type="button"
+                              pButton
+                              icon="pi pi-times"
+                              [text]="true"
+                              severity="danger"
+                              size="small"
+                              (click)="removePendingVideo($index)"
+                              [attr.aria-label]="'Eliminar ' + file.name"
+                            ></button>
+                          </div>
+                        }
+                      </div>
+                    }
+                    @if (pendingDocuments().length > 0) {
+                      <div class="text-sm">
+                        <span class="font-medium text-gray-700 dark:text-gray-300"
+                          >Documentos:</span
+                        >
+                        @for (file of pendingDocuments(); track $index) {
+                          <div class="flex items-center justify-between mt-1">
+                            <span class="text-gray-600 dark:text-gray-400 text-xs">{{
+                              file.name
+                            }}</span>
+                            <button
+                              type="button"
+                              pButton
+                              icon="pi pi-times"
+                              [text]="true"
+                              severity="danger"
+                              size="small"
+                              (click)="removePendingDocument($index)"
+                              [attr.aria-label]="'Eliminar ' + file.name"
+                            ></button>
+                          </div>
+                        }
+                      </div>
                     }
                   </div>
+                }
+
+                <!-- Campo de Documentos -->
+                <div>
+                  <label
+                    for="documents-input"
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
+                    Documentos
+                  </label>
+                  <button
+                    type="button"
+                    pButton
+                    icon="pi pi-file"
+                    label="Elegir archivos"
+                    (click)="documentsInput.click()"
+                    severity="secondary"
+                    [outlined]="true"
+                    class="w-full"
+                    aria-label="Seleccionar documentos"
+                  ></button>
+                  <input
+                    type="file"
+                    id="documents-input"
+                    #documentsInput
+                    accept="*/*"
+                    multiple
+                    (change)="onDocumentsSelected($event)"
+                    class="hidden"
+                  />
+                  @if (pendingDocuments().length === 0) {
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Ningún archivo seleccionado
+                    </p>
+                  }
+                </div>
+
+                <div class="flex justify-end gap-2">
+                  <p-button
+                    label="Cancelar"
+                    severity="secondary"
+                    [text]="true"
+                    type="button"
+                    (onClick)="onClose()"
+                  ></p-button>
+                  <p-button
+                    label="Agregar"
+                    severity="primary"
+                    type="submit"
+                    [loading]="commentsService.loading()"
+                    [disabled]="commentForm.invalid"
+                  ></p-button>
                 </div>
               </div>
-              }
-            </div>
-          </p-scrollPanel>
-          } @else {
-          <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-            <i class="pi pi-comments text-4xl mb-3"></i>
-            <p>No hay comentarios aún</p>
+            </form>
           </div>
-          }
         </div>
-
-        <!-- Add Comment Section -->
-        <div class="mt-6">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Agregar Comentario
-          </h3>
-
-          @if (commentError()) {
-          <p-message severity="error" [text]="commentError()!" class="mb-4"></p-message>
-          }
-
-          <!-- Zona de Drag and Drop -->
-          <div
-            [class]="
-              isDragging()
-                ? 'mb-4 p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                : 'mb-4 p-8 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-            "
-            (dragover)="onDragOver($event)"
-            (dragleave)="onDragLeave($event)"
-            (drop)="onDrop($event)"
-            (click)="documentsInput.click()"
-            role="button"
-            tabindex="0"
-            (keydown.enter)="documentsInput.click()"
-            (keydown.space)="documentsInput.click()"
-            [attr.aria-label]="
-              'Zona de arrastrar y soltar archivos. Haz clic para seleccionar archivos o pega archivos con Ctrl+V'
-            "
-          >
-            <div class="text-center">
-              <i
-                class="pi pi-cloud-upload text-5xl mb-3 transition-colors"
-                [class.text-blue-500]="isDragging()"
-                [class.text-gray-400]="!isDragging()"
-                [class.dark:text-gray-500]="!isDragging()"
-              ></i>
-              <p
-                class="text-sm font-medium mb-1 transition-colors"
-                [class.text-blue-700]="isDragging()"
-                [class.dark:text-blue-300]="isDragging()"
-                [class.text-gray-700]="!isDragging()"
-                [class.dark:text-gray-300]="!isDragging()"
-              >
-                @if (isDragging()) {
-                <span>Suelta los archivos aquí</span>
-                } @else {
-                <span>Arrastra archivos aquí, haz clic para seleccionar o pega con Ctrl+V</span>
-                }
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                Imágenes desde WhatsApp, videos, audios o documentos desde tu PC
-              </p>
-            </div>
-          </div>
-
-          <form [formGroup]="commentForm" (ngSubmit)="onSubmitComment()">
-            <div class="space-y-4">
-              <div>
-                <textarea
-                  pInputTextarea
-                  formControlName="content"
-                  placeholder="Escribe tu comentario aquí (opcional si subes archivos)..."
-                  rows="4"
-                  class="w-full"
-                  [class.p-invalid]="
-                    commentForm.get('content')?.invalid && commentForm.get('content')?.touched
-                  "
-                ></textarea>
-                @if (commentForm.get('content')?.invalid && commentForm.get('content')?.touched) {
-                <small class="text-red-500 dark:text-red-400 mt-1 block">
-                  Si escribes un comentario, debe tener al menos 3 caracteres
-                </small>
-                }
-              </div>
-
-              <!-- Botones de Media -->
-              <div class="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  pButton
-                  icon="pi pi-volume-up"
-                  label="Audio"
-                  (click)="audioInput.click()"
-                  class="flex-1 min-w-[100px]"
-                  severity="secondary"
-                  [outlined]="pendingAudio().length === 0"
-                  aria-label="Seleccionar archivos de audio"
-                ></button>
-                <input
-                  type="file"
-                  #audioInput
-                  accept="audio/*"
-                  capture
-                  multiple
-                  (change)="onAudioSelected($event)"
-                  class="hidden"
-                />
-
-                <button
-                  type="button"
-                  pButton
-                  icon="pi pi-image"
-                  label="Foto"
-                  (click)="photoInput.click()"
-                  class="flex-1 min-w-[100px]"
-                  severity="secondary"
-                  [outlined]="pendingPhoto().length === 0"
-                  aria-label="Seleccionar fotos"
-                ></button>
-                <input
-                  type="file"
-                  #photoInput
-                  accept="image/*"
-                  capture="environment"
-                  multiple
-                  (change)="onPhotoSelected($event)"
-                  class="hidden"
-                />
-
-                <button
-                  type="button"
-                  pButton
-                  icon="pi pi-video"
-                  label="Video"
-                  (click)="videoInput.click()"
-                  class="flex-1 min-w-[100px]"
-                  severity="secondary"
-                  [outlined]="pendingVideo().length === 0"
-                  aria-label="Seleccionar videos"
-                ></button>
-                <input
-                  type="file"
-                  #videoInput
-                  accept="video/*"
-                  capture
-                  multiple
-                  (change)="onVideoSelected($event)"
-                  class="hidden"
-                />
-              </div>
-
-              <!-- Archivos seleccionados -->
-              @if (pendingAudio().length > 0 || pendingPhoto().length > 0 || pendingVideo().length >
-              0 || pendingDocuments().length > 0) {
-              <div class="space-y-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                @if (pendingAudio().length > 0) {
-                <div class="text-sm">
-                  <span class="font-medium text-gray-700 dark:text-gray-300">Audios:</span>
-                  @for (file of pendingAudio(); track $index) {
-                  <div class="flex items-center justify-between mt-1">
-                    <span class="text-gray-600 dark:text-gray-400 text-xs">{{ file.name }}</span>
-                    <button
-                      type="button"
-                      pButton
-                      icon="pi pi-times"
-                      [text]="true"
-                      severity="danger"
-                      size="small"
-                      (click)="removePendingAudio($index)"
-                      [attr.aria-label]="'Eliminar ' + file.name"
-                    ></button>
-                  </div>
-                  }
-                </div>
-                } @if (pendingPhoto().length > 0) {
-                <div class="text-sm">
-                  <span class="font-medium text-gray-700 dark:text-gray-300">Fotos:</span>
-                  @for (file of pendingPhoto(); track $index) {
-                  <div class="flex items-center justify-between mt-1">
-                    <span class="text-gray-600 dark:text-gray-400 text-xs">{{ file.name }}</span>
-                    <button
-                      type="button"
-                      pButton
-                      icon="pi pi-times"
-                      [text]="true"
-                      severity="danger"
-                      size="small"
-                      (click)="removePendingPhoto($index)"
-                      [attr.aria-label]="'Eliminar ' + file.name"
-                    ></button>
-                  </div>
-                  }
-                </div>
-                } @if (pendingVideo().length > 0) {
-                <div class="text-sm">
-                  <span class="font-medium text-gray-700 dark:text-gray-300">Videos:</span>
-                  @for (file of pendingVideo(); track $index) {
-                  <div class="flex items-center justify-between mt-1">
-                    <span class="text-gray-600 dark:text-gray-400 text-xs">{{ file.name }}</span>
-                    <button
-                      type="button"
-                      pButton
-                      icon="pi pi-times"
-                      [text]="true"
-                      severity="danger"
-                      size="small"
-                      (click)="removePendingVideo($index)"
-                      [attr.aria-label]="'Eliminar ' + file.name"
-                    ></button>
-                  </div>
-                  }
-                </div>
-                } @if (pendingDocuments().length > 0) {
-                <div class="text-sm">
-                  <span class="font-medium text-gray-700 dark:text-gray-300">Documentos:</span>
-                  @for (file of pendingDocuments(); track $index) {
-                  <div class="flex items-center justify-between mt-1">
-                    <span class="text-gray-600 dark:text-gray-400 text-xs">{{ file.name }}</span>
-                    <button
-                      type="button"
-                      pButton
-                      icon="pi pi-times"
-                      [text]="true"
-                      severity="danger"
-                      size="small"
-                      (click)="removePendingDocument($index)"
-                      [attr.aria-label]="'Eliminar ' + file.name"
-                    ></button>
-                  </div>
-                  }
-                </div>
-                }
-              </div>
-              }
-
-              <!-- Campo de Documentos -->
-              <div>
-                <label
-                  for="documents-input"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >
-                  Documentos
-                </label>
-                <button
-                  type="button"
-                  pButton
-                  icon="pi pi-file"
-                  label="Elegir archivos"
-                  (click)="documentsInput.click()"
-                  severity="secondary"
-                  [outlined]="true"
-                  class="w-full"
-                  aria-label="Seleccionar documentos"
-                ></button>
-                <input
-                  type="file"
-                  id="documents-input"
-                  #documentsInput
-                  accept="*/*"
-                  multiple
-                  (change)="onDocumentsSelected($event)"
-                  class="hidden"
-                />
-                @if (pendingDocuments().length === 0) {
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Ningún archivo seleccionado
-                </p>
-                }
-              </div>
-
-              <div class="flex justify-end gap-2">
-                <p-button
-                  label="Cancelar"
-                  severity="secondary"
-                  [text]="true"
-                  type="button"
-                  (onClick)="onClose()"
-                ></p-button>
-                <p-button
-                  label="Agregar"
-                  severity="primary"
-                  type="submit"
-                  [loading]="commentsService.loading()"
-                  [disabled]="commentForm.invalid"
-                ></p-button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
       }
     </p-dialog>
 
@@ -977,32 +1105,32 @@ import {
       [header]="selectedPdfName() || 'Visualizador de PDF'"
     >
       @if (selectedPdfUrl()) {
-      <div style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
-        <!-- Botones de acción -->
-        <div
-          class="flex items-center justify-end gap-2 p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0"
-        >
-          <p-button
-            icon="pi pi-download"
-            label="Descargar PDF"
-            severity="primary"
-            (onClick)="downloadPdf(selectedPdfUrl()!, selectedPdfName() || 'documento.pdf')"
-            pTooltip="Descargar el PDF"
-          ></p-button>
-        </div>
+        <div style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
+          <!-- Botones de acción -->
+          <div
+            class="flex items-center justify-end gap-2 p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0"
+          >
+            <p-button
+              icon="pi pi-download"
+              label="Descargar PDF"
+              severity="primary"
+              (onClick)="downloadPdf(selectedPdfUrl()!, selectedPdfName() || 'documento.pdf')"
+              pTooltip="Descargar el PDF"
+            ></p-button>
+          </div>
 
-        <!-- Contenedor del PDF -->
-        <div
-          style="flex: 1; overflow: hidden; border: 1px solid #e5e7eb; border-radius: 0.375rem; background: #f3f4f6;"
-        >
-          <iframe
-            [src]="getSafePdfUrl(selectedPdfUrl()!)"
-            style="width: 100%; height: 100%; border: none; display: block;"
-            title="Visualizador de PDF"
-            loading="lazy"
-          ></iframe>
+          <!-- Contenedor del PDF -->
+          <div
+            style="flex: 1; overflow: hidden; border: 1px solid #e5e7eb; border-radius: 0.375rem; background: #f3f4f6;"
+          >
+            <iframe
+              [src]="getSafePdfUrl(selectedPdfUrl()!)"
+              style="width: 100%; height: 100%; border: none; display: block;"
+              title="Visualizador de PDF"
+              loading="lazy"
+            ></iframe>
+          </div>
         </div>
-      </div>
       }
     </p-dialog>
   `,
@@ -1049,12 +1177,12 @@ export class TaskDetailsComponent {
 
   // Form
   public readonly commentForm: FormGroup;
-  
+
   // Opciones de estado
   public readonly statusOptions = [
     { label: 'Pendiente', value: 'Pendiente' },
     { label: 'En curso', value: 'En curso' },
-    { label: 'Terminada', value: 'Terminada' }
+    { label: 'Terminada', value: 'Terminada' },
   ];
 
   constructor() {
@@ -1062,30 +1190,30 @@ export class TaskDetailsComponent {
       content: ['', [Validators.minLength(3)]], // Opcional, pero si se escribe debe tener al menos 3 caracteres
     });
   }
-  
+
   /**
    * Cambia el estado de la tarea
    */
   public async onStatusChange(newStatus: string): Promise<void> {
     if (!this.task) return;
-    
+
     try {
       // Actualizar la tarea en el backend usando firstValueFrom para convertir Observable a Promise
       const updatedTask = await firstValueFrom(
-        this.tasksApiService.updateTask(this.task._id, { status: newStatus as any })
+        this.tasksApiService.updateTask(this.task._id, { status: newStatus as any }),
       );
-      
+
       // Actualizar localmente con la respuesta del servidor
       if (updatedTask) {
         this.task.status = updatedTask.status;
       }
-      
+
       // Mostrar mensaje de éxito
       this.messageService.add({
         severity: 'success',
         summary: 'Estado actualizado',
         detail: `El estado de la tarea se cambió a "${newStatus}"`,
-        life: 3000
+        life: 3000,
       });
     } catch (error) {
       console.error('Error al cambiar estado:', error);
@@ -1093,7 +1221,7 @@ export class TaskDetailsComponent {
         severity: 'error',
         summary: 'Error',
         detail: 'No se pudo cambiar el estado de la tarea',
-        life: 3000
+        life: 3000,
       });
     }
   }
@@ -1112,7 +1240,7 @@ export class TaskDetailsComponent {
    * Obtiene la severidad del estado para PrimeNG
    */
   public getStatusSeverity(
-    status: string
+    status: string,
   ): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | null | undefined {
     switch (status) {
       case 'Pendiente':
@@ -1130,7 +1258,7 @@ export class TaskDetailsComponent {
    * Obtiene la severidad de la prioridad para PrimeNG
    */
   public getPrioritySeverity(
-    priority: string
+    priority: string,
   ): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | null | undefined {
     switch (priority) {
       case 'Crítica':
@@ -1220,7 +1348,7 @@ export class TaskDetailsComponent {
    * Obtiene el nombre del autor del comentario
    */
   public getAuthorName(
-    createdBy: string | { name?: string; email?: string; _id?: string } | null | undefined
+    createdBy: string | { name?: string; email?: string; _id?: string } | null | undefined,
   ): string {
     // Si createdBy es un objeto (poblado), usar directamente
     if (typeof createdBy === 'object' && createdBy !== null) {
@@ -1400,10 +1528,10 @@ export class TaskDetailsComponent {
                 typeof newComment._id === 'string'
                   ? newComment._id
                   : typeof newComment._id === 'object' &&
-                    newComment._id !== null &&
-                    '_id' in newComment._id
-                  ? String((newComment._id as { _id?: string })._id || newComment._id)
-                  : String(newComment._id);
+                      newComment._id !== null &&
+                      '_id' in newComment._id
+                    ? String((newComment._id as { _id?: string })._id || newComment._id)
+                    : String(newComment._id);
 
               await this.uploadCommentFiles(commentId);
             } else {
@@ -1756,7 +1884,7 @@ export class TaskDetailsComponent {
         (progress) => {
           // Opcional: mostrar progreso
           console.log(`Progreso de subida: ${progress}%`);
-        }
+        },
       );
 
       // Actualizar la tarea con los datos del servidor

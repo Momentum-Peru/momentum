@@ -17,9 +17,10 @@ import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { DatePickerModule } from 'primeng/datepicker';
 import { FollowUpsApiService } from '../../shared/services/follow-ups-api.service';
-import { LeadsApiService } from '../../shared/services/leads-api.service';
+import { ContactsCrmApiService } from '../../shared/services/contacts-crm-api.service';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
 import { UsersApiService } from '../../shared/services/users-api.service';
+import { AgendaApiService } from '../../shared/services/agenda-api.service';
 import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import {
   FollowUp,
@@ -29,7 +30,8 @@ import {
   UpdateFollowUpRequest,
   FollowUpQueryParams,
 } from '../../shared/interfaces/follow-up.interface';
-import { Lead } from '../../shared/interfaces/lead.interface';
+import { ContactCrm } from '../../shared/interfaces/contact-crm.interface';
+import { LeadsApiService } from '../../shared/services/leads-api.service';
 import {
   PresignedUrlRequest,
   AudioAnalysisRequest,
@@ -63,15 +65,17 @@ import { firstValueFrom } from 'rxjs';
 })
 export class FollowUpsPage implements OnInit {
   private readonly followUpsApi = inject(FollowUpsApiService);
+  private readonly contactsCrmApi = inject(ContactsCrmApiService);
   private readonly leadsApi = inject(LeadsApiService);
   private readonly clientsApi = inject(ClientsApiService);
   private readonly usersApi = inject(UsersApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly route = inject(ActivatedRoute); // Injected Route
+  private readonly agendaApi = inject(AgendaApiService);
 
   // Signals
-  selectedLeadId = signal<string | null>(null);
+  selectedContactId = signal<string | null>(null);
   items = signal<FollowUp[]>([]);
   query = signal<string>('');
   statusFilter = signal<FollowUpStatus | ''>('');
@@ -92,13 +96,23 @@ export class FollowUpsPage implements OnInit {
   recordedChunks: Blob[] = [];
 
   // Selectores
-  leads = signal<Lead[]>([]);
+  contacts = signal<ContactCrm[]>([]);
   clients = signal<ClientOption[]>([]);
   users = signal<UserOption[]>([]);
 
   // Opciones de enums
-  typeOptions: { label: string; value: FollowUpType | '' }[] = [
+  // Usar una lista para filtros (incluye "Todos") y otra para el formulario (sin "Todos")
+  typeFilterOptions: { label: string; value: FollowUpType | '' }[] = [
     { label: 'Todos', value: '' },
+    { label: 'Llamada', value: 'CALL' },
+    { label: 'Email', value: 'EMAIL' },
+    { label: 'Reunión', value: 'MEETING' },
+    { label: 'Nota', value: 'NOTE' },
+    { label: 'Propuesta', value: 'PROPOSAL' },
+    { label: 'Otro', value: 'OTHER' },
+  ];
+
+  typeOptions: { label: string; value: FollowUpType }[] = [
     { label: 'Llamada', value: 'CALL' },
     { label: 'Email', value: 'EMAIL' },
     { label: 'Reunión', value: 'MEETING' },
@@ -194,21 +208,27 @@ export class FollowUpsPage implements OnInit {
   // Flags para controlar carga lazy
   private usersLoaded = signal<boolean>(false);
   private clientsLoaded = signal<boolean>(false);
-  private leadsLoaded = signal<boolean>(false);
+  private contactsLoaded = signal<boolean>(false);
 
   ngOnInit() {
-    // Cargar leads y usuarios inmediatamente
-    this.loadLeads();
+    this.loadContacts();
     this.loadUsers();
+    this.load();
 
-    // Verificar si hay parámetros de navegación para seleccionar lead automáticamente
     this.route.queryParams.subscribe((params) => {
-      if (params['leadId']) {
-        this.selectedLeadId.set(params['leadId']);
+      const leadId = params['leadId'] as string | undefined;
+      const contactId = params['contactId'] as string | undefined;
+
+      if (contactId) {
+        this.selectedContactId.set(contactId);
+      }
+
+      if (leadId || contactId) {
         this.load();
-        if (params['action'] === 'new') {
-          this.newItem(params['leadId']);
-        }
+      }
+
+      if (params['action'] === 'new') {
+        this.newItem(leadId, contactId);
       }
     });
   }
@@ -219,15 +239,9 @@ export class FollowUpsPage implements OnInit {
   }
 
   load() {
-    const leadId = this.selectedLeadId();
-    if (!leadId) {
-      this.items.set([]);
-      return;
-    }
-
-    const params: FollowUpQueryParams = {
-      leadId: leadId,
-    };
+    const params: FollowUpQueryParams = {};
+    const contactId = this.selectedContactId();
+    if (contactId) params.contactId = contactId;
     const status = this.statusFilter();
     if (status !== '') params.status = status;
     const type = this.typeFilter();
@@ -237,8 +251,16 @@ export class FollowUpsPage implements OnInit {
       next: (followUps) => {
         // Ordenar de más nuevos a más antiguos por createdAt o scheduledDate
         const sorted = followUps.sort((a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.scheduledDate).getTime();
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.scheduledDate).getTime();
+          const dateA = a.createdAt
+            ? new Date(a.createdAt).getTime()
+            : a.scheduledDate
+              ? new Date(a.scheduledDate).getTime()
+              : 0;
+          const dateB = b.createdAt
+            ? new Date(b.createdAt).getTime()
+            : b.scheduledDate
+              ? new Date(b.scheduledDate).getTime()
+              : 0;
           return dateB - dateA; // Más reciente primero
         });
         this.items.set(sorted);
@@ -254,14 +276,14 @@ export class FollowUpsPage implements OnInit {
     });
   }
 
-  onLeadSelected(leadId: string | null) {
-    this.selectedLeadId.set(leadId);
+  onContactSelected(contactId: string | null) {
+    this.selectedContactId.set(contactId);
     this.clearFilters();
     this.load();
   }
 
   loadUsers() {
-    this.usersApi.list().subscribe({
+    this.usersApi.listAllForSelect().subscribe({
       next: (users) => this.users.set(users),
       error: () => this.users.set([]),
     });
@@ -274,10 +296,10 @@ export class FollowUpsPage implements OnInit {
     });
   }
 
-  loadLeads() {
-    this.leadsApi.list().subscribe({
-      next: (leads) => this.leads.set(leads),
-      error: () => this.leads.set([]),
+  loadContacts() {
+    this.contactsCrmApi.list().subscribe({
+      next: (contacts) => this.contacts.set(contacts),
+      error: () => this.contacts.set([]),
     });
   }
 
@@ -297,36 +319,28 @@ export class FollowUpsPage implements OnInit {
     this.load();
   }
 
-  newItem(preselectedLeadId?: string) {
-    const leadId = preselectedLeadId || this.selectedLeadId();
-    if (!leadId) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'Debes seleccionar un lead primero',
-      });
-      return;
-    }
+  newItem(preselectedLeadId?: string, preselectedContactId?: string) {
+    const leadId = preselectedLeadId || undefined;
+    const contactId = preselectedContactId || this.selectedContactId() || undefined;
 
-    // Cargar datos si no se han cargado antes
+    if (!this.contactsLoaded()) {
+      this.loadContacts();
+      this.contactsLoaded.set(true);
+    }
     if (!this.clientsLoaded()) {
       this.loadClients();
       this.clientsLoaded.set(true);
     }
-    if (!this.leadsLoaded()) {
-      this.loadLeads();
-      this.leadsLoaded.set(true);
-    }
 
-    // Preparar el objeto de edición antes de abrir el diálogo
     const newEditing: Partial<FollowUp> = {
       title: '',
       description: '',
-      type: 'CALL',
+      type: 'NOTE',
       status: 'SCHEDULED',
       scheduledDate: new Date().toISOString(),
       userId: '',
-      leadId: leadId,
+      leadId: leadId ?? undefined,
+      contactId: contactId ?? undefined,
     };
     this.editing.set(newEditing);
     this.showDialog.set(true);
@@ -391,23 +405,19 @@ export class FollowUpsPage implements OnInit {
       return;
     }
 
-    // Generar título automático si no existe
-    const title =
-      item.title ||
-      `Seguimiento - ${this.getTypeLabel(
-        item.type || 'CALL'
-      )} - ${new Date().toLocaleDateString()}`;
+    const title = item.title?.trim() || `Seguimiento ${new Date().toLocaleDateString()}`;
 
     if (item._id) {
       const updatePayload: UpdateFollowUpRequest = {
-        title: title,
-        description: item.description,
+        title: title || undefined,
+        description: item.description ?? undefined,
         type: item.type,
         status: item.status,
         scheduledDate: item.scheduledDate,
-        leadId: item.leadId,
+        leadId: item.leadId || undefined,
+        contactId: item.contactId || undefined,
         clientId: item.clientId,
-        userId: item.userId,
+        userId: item.userId || undefined,
         attachments: item.attachments,
         outcome: item.outcome,
         nextFollowUpDate: item.nextFollowUpDate,
@@ -432,14 +442,15 @@ export class FollowUpsPage implements OnInit {
       });
     } else {
       const createPayload: CreateFollowUpRequest = {
-        title: title,
-        description: item.description!,
-        type: item.type!,
+        title: title || undefined,
+        description: item.description ?? undefined,
+        type: item.type,
         status: item.status,
-        scheduledDate: item.scheduledDate!,
-        leadId: item.leadId,
+        scheduledDate: item.scheduledDate ?? new Date().toISOString(),
+        leadId: item.leadId || undefined,
+        contactId: item.contactId || this.selectedContactId() || undefined,
         clientId: item.clientId,
-        userId: item.userId!,
+        userId: item.userId || undefined,
         attachments: item.attachments,
         outcome: item.outcome,
         nextFollowUpDate: item.nextFollowUpDate,
@@ -496,19 +507,51 @@ export class FollowUpsPage implements OnInit {
     });
   }
 
-  getTypeLabel(type: FollowUpType): string {
+  getContactName(id: string | undefined): string {
+    if (!id) return '—';
+    return this.contacts().find((c) => c._id === id)?.name ?? '—';
+  }
+
+  getTypeColorClass(type?: FollowUpType): string {
+    const map: Record<string, string> = {
+      CALL: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400',
+      EMAIL: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400',
+      MEETING: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400',
+      NOTE: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400',
+      PROPOSAL: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400',
+      OTHER: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+    };
+    return type ? (map[type] ?? 'bg-gray-100 text-gray-500') : 'bg-gray-100 text-gray-500';
+  }
+
+  getTypeIcon(type?: FollowUpType): string {
+    const map: Record<string, string> = {
+      CALL: 'pi pi-phone',
+      EMAIL: 'pi pi-envelope',
+      MEETING: 'pi pi-users',
+      NOTE: 'pi pi-file-edit',
+      PROPOSAL: 'pi pi-file',
+      OTHER: 'pi pi-ellipsis-h',
+    };
+    return type ? (map[type] ?? 'pi pi-circle') : 'pi pi-circle';
+  }
+
+  getTypeLabel(type: FollowUpType | undefined): string {
+    if (!type) return '—';
     const option = this.typeOptions.find((o) => o.value === type);
     return option ? option.label : type;
   }
 
-  getStatusLabel(status: FollowUpStatus): string {
+  getStatusLabel(status: FollowUpStatus | undefined): string {
+    if (!status) return '—';
     const option = this.statusOptions.find((o) => o.value === status);
     return option ? option.label : status;
   }
 
   getStatusSeverity(
-    status: FollowUpStatus
+    status: FollowUpStatus | undefined,
   ): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' {
+    if (!status) return 'secondary';
     return this.statusColors[status] || 'info';
   }
 
@@ -518,14 +561,6 @@ export class FollowUpsPage implements OnInit {
     }
     const user = this.users().find((u) => u._id === id);
     return user ? user.name : id;
-  }
-
-  getLeadName(id: string | undefined): string {
-    if (!id) {
-      return '-';
-    }
-    const lead = this.leads().find((l) => l._id === id);
-    return lead ? lead.name : id;
   }
 
   getClientName(id: string | undefined): string {
@@ -562,30 +597,9 @@ export class FollowUpsPage implements OnInit {
     return index !== -1 ? index + 1 : 0;
   }
 
-  private validateForm(item: Partial<FollowUp>): string[] {
-    const errors: string[] = [];
-
-    if (!item.description || item.description.trim() === '') {
-      errors.push('La descripción del seguimiento es requerida');
-    }
-
-    if (!item.type) {
-      errors.push('El tipo de seguimiento es requerido');
-    }
-
-    if (!item.scheduledDate) {
-      errors.push('La fecha programada es requerida');
-    }
-
-    if (!item.userId || item.userId.trim() === '') {
-      errors.push('Debe asignar el seguimiento a un usuario');
-    }
-
-    if (!item.leadId) {
-      errors.push('Debe asociar el seguimiento a un lead');
-    }
-
-    return errors;
+  private validateForm(_item: Partial<FollowUp>): string[] {
+    // Ningún campo es obligatorio; validación mínima solo para formato si se desea en el futuro
+    return [];
   }
 
   private getErrorMessage(error: unknown): string {
@@ -625,19 +639,20 @@ export class FollowUpsPage implements OnInit {
 
   // ========== MÉTODOS DE GRABACIÓN Y ANÁLISIS DE AUDIO ==========
 
-  openAudioAnalysisDialog() {
+  async openAudioAnalysisDialog() {
     const currentEditing = this.editing();
-    // Validar que haya un lead seleccionado para asociar el análisis
-    if (!currentEditing?.leadId) {
+    // Validar que haya un seguimiento en edición
+    if (!currentEditing) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Requerido',
-        detail: 'Debes seleccionar un Lead antes de grabar audio',
+        detail: 'Debes crear o editar un seguimiento antes de grabar audio',
       });
       return;
     }
     this.showAudioAnalysisDialog.set(true);
     this.audioAnalysisResult.set(null);
+    await this.startRecording();
   }
 
   closeAudioAnalysisDialog() {
@@ -705,63 +720,27 @@ export class FollowUpsPage implements OnInit {
   async processRecordedAudio() {
     if (this.recordedChunks.length === 0) return;
 
-    const currentEditing = this.editing();
-    if (!currentEditing?.leadId) return;
-
     const audioBlob = new Blob(this.recordedChunks, { type: 'audio/webm;codecs=opus' });
     const fileName = `followup-recording-${Date.now()}.webm`;
     const audioFile = new File([audioBlob], fileName, { type: 'audio/webm;codecs=opus' });
     this.recordedChunks = [];
 
     try {
-      this.uploadingAudio.set(true);
-
-      // 1. Presigned URL (Usamos LeadsApiService porque el endpoint está ahí por ahora)
-      const presignedRequest: PresignedUrlRequest = {
-        fileName: fileName,
-        contentType: 'audio/webm',
-        expirationTime: 3600,
-      };
-
-      const presignedResponse = await firstValueFrom(
-        this.leadsApi.getPresignedUrlForAudio(currentEditing.leadId, presignedRequest)
-      );
-
-      // 2. Upload S3
-      const uploadResponse = await fetch(presignedResponse.presignedUrl, {
-        method: 'PUT',
-        body: audioFile,
-        headers: { 'Content-Type': 'audio/webm' },
-      });
-
-      if (!uploadResponse.ok) throw new Error('Error al subir audio');
-
-      // 3. Analyze
-      this.uploadingAudio.set(false);
       this.analyzingAudio.set(true);
 
-      const analysisRequest: AudioAnalysisRequest = {
-        audioUrl: presignedResponse.publicUrl,
-        leadId: currentEditing.leadId,
-      };
-
-      const analysisResult = await firstValueFrom(
-        this.leadsApi.analyzeAudio(currentEditing.leadId, analysisRequest)
-      );
-
-      this.audioAnalysisResult.set(analysisResult);
+      // Usar el mismo servicio de transcripción que Agenda (Whisper)
+      const result = await firstValueFrom(this.agendaApi.transcribe(audioFile));
       this.analyzingAudio.set(false);
 
-      // 4. Autocompletar campos del seguimiento
-      this.applyAnalysisToForm(analysisResult);
+      // Autocompletar descripción con la transcripción literal
+      this.applyTranscriptionToForm(result?.text ?? '');
 
       this.messageService.add({
         severity: 'success',
-        summary: 'Análisis completado',
-        detail: 'Se han completado la descripción y resultado automáticamente.',
+        summary: 'Transcripción completada',
+        detail: 'La descripción se ha rellenado con lo que se grabó.',
       });
     } catch (error) {
-      this.uploadingAudio.set(false);
       this.analyzingAudio.set(false);
       this.messageService.add({
         severity: 'error',
@@ -795,6 +774,18 @@ export class FollowUpsPage implements OnInit {
     });
 
     // Cerrar el modal de análisis ya que los datos se pasaron al form
+    this.closeAudioAnalysisDialog();
+  }
+
+  applyTranscriptionToForm(text: string) {
+    const cur = this.editing();
+    if (!cur) return;
+
+    this.editing.set({
+      ...cur,
+      description: text,
+    });
+
     this.closeAudioAnalysisDialog();
   }
 }

@@ -1,0 +1,564 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  inject,
+  signal,
+  computed,
+} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { TagModule } from 'primeng/tag';
+import { TableModule } from 'primeng/table';
+import { ToastModule } from 'primeng/toast';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { TooltipModule } from 'primeng/tooltip';
+import { DividerModule } from 'primeng/divider';
+import { MessageService } from 'primeng/api';
+import { ContactsCrmApiService } from '../../shared/services/contacts-crm-api.service';
+import {
+  ContactCrm,
+  ContactSource,
+  UpdateContactCrmRequest,
+} from '../../shared/interfaces/contact-crm.interface';
+import { FollowUpsApiService } from '../../shared/services/follow-ups-api.service';
+import { UsersApiService } from '../../shared/services/users-api.service';
+import { CrmCompaniesApiService } from '../../shared/services/crm-companies-api.service';
+import { CompanyOption } from '../../shared/interfaces/company.interface';
+import { UserOption } from '../../shared/interfaces/menu-permission.interface';
+import {
+  FollowUp,
+  FollowUpType,
+  FollowUpStatus,
+  CreateFollowUpRequest,
+  UpdateFollowUpRequest,
+} from '../../shared/interfaces/follow-up.interface';
+
+type Tab = 'info' | 'seguimientos';
+
+@Component({
+  selector: 'app-crm-contact-detail',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterModule,
+    FormsModule,
+    ButtonModule,
+    TagModule,
+    TableModule,
+    ToastModule,
+    DialogModule,
+    InputTextModule,
+    TextareaModule,
+    SelectModule,
+    DatePickerModule,
+    TooltipModule,
+    DividerModule,
+  ],
+  providers: [MessageService],
+  templateUrl: './crm-contact-detail.page.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class CrmContactDetailPage implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly contactsApi = inject(ContactsCrmApiService);
+  private readonly followUpsApi = inject(FollowUpsApiService);
+  private readonly messageService = inject(MessageService);
+  private readonly usersApi = inject(UsersApiService);
+  private readonly crmCompaniesApi = inject(CrmCompaniesApiService);
+
+  // ── Data ─────────────────────────────────────────────────────────────────
+  contact = signal<ContactCrm | null>(null);
+  followUps = signal<FollowUp[]>([]);
+  users = signal<UserOption[]>([]);
+  clients = signal<CompanyOption[]>([]);
+
+  // ── Loading ───────────────────────────────────────────────────────────────
+  loadingContact = signal(false);
+  loadingFollowUps = signal(false);
+  saving = signal(false);
+  savingFollowUp = signal(false);
+  savingCompany = signal(false);
+
+  // ── UI state ──────────────────────────────────────────────────────────────
+  activeTab = signal<Tab>('info');
+
+  // Inline field editing
+  editingField = signal<string | null>(null);
+  editingValue = signal('');
+  editingSourceValue = signal<ContactSource | ''>('');
+
+  // New follow-up form (inline in Seguimientos tab)
+  showNewFollowUpForm = signal(false);
+  newFuTitle = '';
+  newFuType = signal<FollowUpType>('CALL');
+  newFuStatus = signal<FollowUpStatus>('SCHEDULED');
+  newFuDate = signal<Date | null>(null);
+  newFuUserId = signal('');
+  newFuDescription = '';
+
+  // Edit follow-up dialog
+  showEditFollowUpDialog = signal(false);
+  editingFollowUp = signal<Partial<FollowUp> | null>(null);
+  private cachedScheduledDate: Date | null = null;
+  private cachedScheduledDateStr: string | null = null;
+  private cachedNextDate: Date | null = null;
+  private cachedNextDateStr: string | null = null;
+
+  // Link company dialog
+  showLinkCompanyDialog = signal(false);
+  selectedClientId = signal('');
+
+  // New company dialog
+  showNewCompanyDialog = signal(false);
+  newCompanyName = '';
+  newCompanyTaxId = '';
+  newCompanyPhone = '';
+  newCompanyEmail = '';
+
+  // ── Options ───────────────────────────────────────────────────────────────
+  readonly sourceOptions: { label: string; value: ContactSource }[] = [
+    { label: 'Referido', value: 'REFERRAL' },
+    { label: 'Redes sociales', value: 'SOCIAL_MEDIA' },
+    { label: 'Otros', value: 'OTHER' },
+  ];
+
+  readonly typeOptions: { label: string; value: FollowUpType }[] = [
+    { label: 'Llamada', value: 'CALL' },
+    { label: 'Email', value: 'EMAIL' },
+    { label: 'Reunión', value: 'MEETING' },
+    { label: 'Nota', value: 'NOTE' },
+    { label: 'Propuesta', value: 'PROPOSAL' },
+    { label: 'Otro', value: 'OTHER' },
+  ];
+
+  readonly statusOptions: { label: string; value: FollowUpStatus }[] = [
+    { label: 'Programado', value: 'SCHEDULED' },
+    { label: 'Completado', value: 'COMPLETED' },
+    { label: 'Cancelado', value: 'CANCELLED' },
+  ];
+
+  // ── Computed ──────────────────────────────────────────────────────────────
+  initials = computed(() => {
+    const name = this.contact()?.name || '';
+    return name
+      .split(' ')
+      .slice(0, 2)
+      .map((w) => w.charAt(0).toUpperCase())
+      .join('');
+  });
+
+  linkedClient = computed(() => {
+    const clientId = this.contact()?.clientId;
+    if (!clientId) return null;
+    return this.clients().find((c) => c._id === clientId) ?? null;
+  });
+
+  followUpCounts = computed(() => {
+    const fus = this.followUps();
+    return {
+      total: fus.length,
+      scheduled: fus.filter((f) => f.status === 'SCHEDULED').length,
+      completed: fus.filter((f) => f.status === 'COMPLETED').length,
+    };
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  ngOnInit(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (!id) {
+      this.router.navigate(['/leads']);
+      return;
+    }
+    this.loadContact(id);
+    this.loadUsers();
+    this.loadClients();
+  }
+
+  private loadContact(id: string): void {
+    this.loadingContact.set(true);
+    this.contactsApi.getById(id).subscribe({
+      next: (c) => {
+        this.contact.set(c);
+        this.loadingContact.set(false);
+        this.loadFollowUps(c);
+      },
+      error: () => {
+        this.loadingContact.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el contacto' });
+        this.router.navigate(['/leads']);
+      },
+    });
+  }
+
+  private loadUsers(): void {
+    this.usersApi.list().subscribe({
+      next: (u) => this.users.set(u),
+      error: () => this.users.set([]),
+    });
+  }
+
+  private loadClients(): void {
+    this.crmCompaniesApi.listActiveAsOptions().subscribe({
+      next: (c) => this.clients.set(c),
+      error: () => this.clients.set([]),
+    });
+  }
+
+  private loadFollowUps(contact: ContactCrm): void {
+    if (!contact._id) { this.followUps.set([]); return; }
+    this.loadingFollowUps.set(true);
+    this.followUpsApi.getByContact(contact._id).subscribe({
+      next: (items) => { this.followUps.set(items ?? []); this.loadingFollowUps.set(false); },
+      error: () => { this.loadingFollowUps.set(false); this.followUps.set([]); },
+    });
+  }
+
+  goBack(): void {
+    this.router.navigate(['/leads']);
+  }
+
+  setTab(tab: Tab): void {
+    this.activeTab.set(tab);
+  }
+
+  // ── Inline editing ────────────────────────────────────────────────────────
+  startEdit(field: string, currentValue?: string): void {
+    this.editingField.set(field);
+    this.editingValue.set(currentValue ?? '');
+  }
+
+  startEditSource(): void {
+    this.editingField.set('source');
+    this.editingSourceValue.set((this.contact()?.source as ContactSource) ?? '');
+  }
+
+  cancelEdit(): void {
+    this.editingField.set(null);
+    this.editingValue.set('');
+  }
+
+  saveField(field: keyof UpdateContactCrmRequest): void {
+    const contact = this.contact();
+    if (!contact?._id) return;
+    const raw = this.editingValue().trim();
+    this.saving.set(true);
+    this.contactsApi.update(contact._id, { [field]: raw || undefined } as UpdateContactCrmRequest).subscribe({
+      next: (updated) => {
+        this.contact.set(updated);
+        this.editingField.set(null);
+        this.saving.set(false);
+      },
+      error: () => {
+        this.saving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el campo' });
+      },
+    });
+  }
+
+  saveSource(value: ContactSource): void {
+    const contact = this.contact();
+    if (!contact?._id) return;
+    this.contactsApi.update(contact._id, { source: value }).subscribe({
+      next: (updated) => { this.contact.set(updated); this.editingField.set(null); },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar' }),
+    });
+  }
+
+  onFieldKeydown(event: KeyboardEvent, field: keyof UpdateContactCrmRequest): void {
+    if (event.key === 'Enter') this.saveField(field);
+    if (event.key === 'Escape') this.cancelEdit();
+  }
+
+  // ── New follow-up (inline form) ───────────────────────────────────────────
+  toggleNewFollowUpForm(): void {
+    this.showNewFollowUpForm.set(!this.showNewFollowUpForm());
+    if (!this.showNewFollowUpForm()) this.resetNewFuForm();
+  }
+
+  private resetNewFuForm(): void {
+    this.newFuTitle = '';
+    this.newFuType.set('CALL');
+    this.newFuStatus.set('SCHEDULED');
+    this.newFuDate.set(null);
+    this.newFuUserId.set('');
+    this.newFuDescription = '';
+  }
+
+  createFollowUp(): void {
+    const contact = this.contact();
+    if (!contact?._id) return;
+    this.savingFollowUp.set(true);
+    const date = this.newFuDate();
+    const payload: CreateFollowUpRequest = {
+      contactId: contact._id,
+      title: this.newFuTitle.trim() || undefined,
+      type: this.newFuType(),
+      status: this.newFuStatus(),
+      scheduledDate: date ? date.toISOString() : undefined,
+      userId: this.newFuUserId() || undefined,
+      description: this.newFuDescription.trim() || undefined,
+    };
+    this.followUpsApi.create(payload).subscribe({
+      next: () => {
+        this.savingFollowUp.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Seguimiento creado', detail: 'Se guardó el seguimiento.' });
+        this.showNewFollowUpForm.set(false);
+        this.resetNewFuForm();
+        this.loadFollowUps(contact);
+      },
+      error: () => {
+        this.savingFollowUp.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el seguimiento' });
+      },
+    });
+  }
+
+  // ── Edit follow-up dialog ─────────────────────────────────────────────────
+  openEditFollowUp(fu: FollowUp): void {
+    if (!fu?._id) return;
+    this.editingFollowUp.set({ ...fu });
+    this.showEditFollowUpDialog.set(true);
+  }
+
+  onEditFuChange<K extends keyof FollowUp>(key: K, value: FollowUp[K] | undefined): void {
+    const cur = this.editingFollowUp();
+    if (!cur) return;
+    this.editingFollowUp.set({ ...cur, [key]: value as FollowUp[K] });
+  }
+
+  onEditFuDateChange(date: Date | null, key: 'scheduledDate' | 'nextFollowUpDate'): void {
+    this.onEditFuChange(key, (date ? date.toISOString() : undefined) as unknown as string);
+  }
+
+  getEditScheduledDate(): Date | null {
+    const s = this.editingFollowUp()?.scheduledDate;
+    if (!s) { this.cachedScheduledDate = null; this.cachedScheduledDateStr = null; return null; }
+    if (this.cachedScheduledDateStr !== s) { this.cachedScheduledDate = new Date(s); this.cachedScheduledDateStr = s; }
+    return this.cachedScheduledDate;
+  }
+
+  getEditNextDate(): Date | null {
+    const s = this.editingFollowUp()?.nextFollowUpDate;
+    if (!s) { this.cachedNextDate = null; this.cachedNextDateStr = null; return null; }
+    if (this.cachedNextDateStr !== s) { this.cachedNextDate = new Date(s); this.cachedNextDateStr = s; }
+    return this.cachedNextDate;
+  }
+
+  saveFollowUp(): void {
+    const editing = this.editingFollowUp();
+    const contact = this.contact();
+    if (!editing?._id) return;
+    const payload: UpdateFollowUpRequest = {
+      title: editing.title,
+      description: editing.description,
+      type: editing.type,
+      status: editing.status,
+      scheduledDate: editing.scheduledDate,
+      contactId: editing.contactId || contact?._id,
+      userId: editing.userId,
+      outcome: editing.outcome,
+      nextFollowUpDate: editing.nextFollowUpDate,
+    };
+    this.followUpsApi.update(editing._id, payload).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Guardado', detail: 'Seguimiento actualizado.' });
+        this.showEditFollowUpDialog.set(false);
+        this.editingFollowUp.set(null);
+        if (contact) this.loadFollowUps(contact);
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el seguimiento' }),
+    });
+  }
+
+  deleteFollowUp(fu: FollowUp): void {
+    if (!fu._id) return;
+    this.followUpsApi.delete(fu._id).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Eliminado', detail: 'Seguimiento eliminado.' });
+        const contact = this.contact();
+        if (contact) this.loadFollowUps(contact);
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar' }),
+    });
+  }
+
+  // ── Link company ──────────────────────────────────────────────────────────
+  openLinkCompany(): void {
+    this.selectedClientId.set(this.contact()?.clientId ?? '');
+    this.showLinkCompanyDialog.set(true);
+  }
+
+  saveLinkCompany(): void {
+    const contact = this.contact();
+    if (!contact?._id) return;
+    this.saving.set(true);
+    this.contactsApi.update(contact._id, { clientId: this.selectedClientId() || undefined }).subscribe({
+      next: (updated) => {
+        this.contact.set(updated);
+        this.saving.set(false);
+        this.showLinkCompanyDialog.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Empresa vinculada', detail: 'Se actualizó la empresa.' });
+      },
+      error: () => {
+        this.saving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo vincular la empresa' });
+      },
+    });
+  }
+
+  unlinkCompany(): void {
+    const contact = this.contact();
+    if (!contact?._id) return;
+    this.contactsApi.update(contact._id, { clientId: undefined }).subscribe({
+      next: (updated) => {
+        this.contact.set(updated);
+        this.messageService.add({ severity: 'info', summary: 'Desvinculada', detail: 'Se desviculó la empresa.' });
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo desvincular' }),
+    });
+  }
+
+  // ── New company ───────────────────────────────────────────────────────────
+  openNewCompany(): void {
+    this.newCompanyName = '';
+    this.newCompanyTaxId = '';
+    this.newCompanyPhone = '';
+    this.newCompanyEmail = '';
+    this.showNewCompanyDialog.set(true);
+  }
+
+  saveNewCompany(): void {
+    const name = this.newCompanyName.trim();
+    const taxId = this.newCompanyTaxId.trim();
+    if (!name) {
+      this.messageService.add({ severity: 'warn', summary: 'Requerido', detail: 'El nombre de la empresa es requerido' });
+      return;
+    }
+    if (!/^\d{11}$/.test(taxId)) {
+      this.messageService.add({ severity: 'warn', summary: 'RUC inválido', detail: 'El RUC debe tener exactamente 11 dígitos' });
+      return;
+    }
+    const contact = this.contact();
+    if (!contact?._id) return;
+    this.savingCompany.set(true);
+    this.crmCompaniesApi.create({
+      name,
+      taxId,
+      ...(this.newCompanyPhone.trim() ? { phone: this.newCompanyPhone.trim() } : {}),
+      ...(this.newCompanyEmail.trim() ? { email: this.newCompanyEmail.trim() } : {}),
+    }).subscribe({
+      next: (newClient) => {
+        this.clients.set([...this.clients(), { _id: newClient._id, name: newClient.name }]);
+        this.contactsApi.update(contact._id!, { clientId: newClient._id }).subscribe({
+          next: (updated) => {
+            this.contact.set(updated);
+            this.savingCompany.set(false);
+            this.showNewCompanyDialog.set(false);
+            this.messageService.add({ severity: 'success', summary: 'Empresa creada', detail: 'Se creó y vinculó la empresa.' });
+          },
+          error: () => {
+            this.savingCompany.set(false);
+            this.messageService.add({ severity: 'warn', summary: 'Empresa creada', detail: 'Empresa creada pero no se pudo vincular.' });
+          },
+        });
+      },
+      error: () => {
+        this.savingCompany.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear la empresa' });
+      },
+    });
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  getTypeLabel(type?: FollowUpType): string {
+    const map: Record<string, string> = { CALL: 'Llamada', EMAIL: 'Email', MEETING: 'Reunión', NOTE: 'Nota', PROPOSAL: 'Propuesta', OTHER: 'Otro' };
+    return type ? (map[type] ?? type) : '—';
+  }
+
+  getTypeIcon(type?: FollowUpType): string {
+    const map: Record<string, string> = { CALL: 'pi-phone', EMAIL: 'pi-envelope', MEETING: 'pi-users', NOTE: 'pi-file', PROPOSAL: 'pi-file-edit', OTHER: 'pi-ellipsis-h' };
+    return `pi ${type ? (map[type] ?? 'pi-circle') : 'pi-circle'}`;
+  }
+
+  getStatusLabel(status?: FollowUpStatus): string {
+    const map: Record<string, string> = { SCHEDULED: 'Programado', COMPLETED: 'Completado', CANCELLED: 'Cancelado' };
+    return status ? (map[status] ?? status) : '—';
+  }
+
+  getStatusSeverity(status?: FollowUpStatus): 'success' | 'warn' | 'danger' | 'secondary' {
+    if (status === 'COMPLETED') return 'success';
+    if (status === 'SCHEDULED') return 'warn';
+    if (status === 'CANCELLED') return 'danger';
+    return 'secondary';
+  }
+
+  getSourceLabel(source?: string): string {
+    const map: Record<string, string> = { REFERRAL: 'Referido', SOCIAL_MEDIA: 'Redes sociales', OTHER: 'Otros' };
+    return source ? (map[source] ?? source) : '—';
+  }
+
+  getSourceSeverity(source?: string): 'success' | 'info' | 'secondary' {
+    if (source === 'REFERRAL') return 'success';
+    if (source === 'SOCIAL_MEDIA') return 'info';
+    return 'secondary';
+  }
+
+  getUserName(userId?: string): string {
+    if (!userId) return 'Sin asignar';
+    return this.users().find((u) => u._id === userId)?.name ?? '—';
+  }
+
+  formatDate(dateStr?: string): string {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('es-PE', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+    });
+  }
+
+  formatDateTime(dateStr?: string): string {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('es-PE', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  callContact(): void {
+    const phone = this.contact()?.phone || this.contact()?.mobile;
+    if (!phone) {
+      this.messageService.add({ severity: 'warn', summary: 'Sin teléfono', detail: 'El contacto no tiene teléfono registrado' });
+      return;
+    }
+    window.open(`tel:${phone}`);
+  }
+
+  emailContact(): void {
+    const email = this.contact()?.email;
+    if (!email) {
+      this.messageService.add({ severity: 'warn', summary: 'Sin correo', detail: 'El contacto no tiene correo registrado' });
+      return;
+    }
+    window.open(`mailto:${email}`);
+  }
+
+  quickFollowUp(type: FollowUpType): void {
+    this.activeTab.set('seguimientos');
+    this.newFuType.set(type);
+    this.showNewFollowUpForm.set(true);
+  }
+
+  copyToClipboard(text?: string): void {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() =>
+      this.messageService.add({ severity: 'info', summary: 'Copiado', detail: 'Copiado al portapapeles' })
+    );
+  }
+}

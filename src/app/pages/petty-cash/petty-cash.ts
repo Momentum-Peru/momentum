@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -17,6 +18,7 @@ import { firstValueFrom } from 'rxjs';
 import * as XLSX from 'xlsx';
 import { PettyCashApiService } from '../../shared/services/petty-cash-api.service';
 import { AuthService } from '../login/services/auth.service';
+import { MenuService } from '../../shared/services/menu.service';
 import {
   PettyCashBalance,
   PettyCashMovement,
@@ -40,6 +42,7 @@ import { RechargeDialogComponent } from './components/recharge-dialog/recharge-d
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     ButtonModule,
     CardModule,
     TableModule,
@@ -61,8 +64,17 @@ import { RechargeDialogComponent } from './components/recharge-dialog/recharge-d
 export class PettyCashPage implements OnInit {
   private readonly api = inject(PettyCashApiService);
   private readonly auth = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly menuService = inject(MenuService);
+
+  /** Solo usuarios con permiso de editar pueden registrar gastos, recargas, anular y exportar */
+  canEdit = computed(() => this.menuService.canEdit('/petty-cash'));
+
+  /** ID de la caja chica (desde la ruta /petty-cash/box/:boxId) */
+  boxId = signal<string | null>(null);
+  boxName = signal<string>('');
 
   balance = signal<PettyCashBalance | null>(null);
   movementsResult = signal<PettyCashPaginatedMovements | null>(null);
@@ -132,6 +144,14 @@ export class PettyCashPage implements OnInit {
   ];
 
   ngOnInit(): void {
+    const boxId = this.route.snapshot.paramMap.get('boxId');
+    this.boxId.set(boxId);
+    if (boxId) {
+      this.api.getBoxById(boxId).subscribe({
+        next: (box) => this.boxName.set(box.name),
+        error: () => this.boxName.set(''),
+      });
+    }
     this.loadBalance();
     this.loadMovements();
     this.loadCategoryStats();
@@ -139,7 +159,8 @@ export class PettyCashPage implements OnInit {
 
   loadBalance(): void {
     this.loadingBalance.set(true);
-    this.api.getBalance().subscribe({
+    const id = this.boxId();
+    this.api.getBalance(id ?? undefined).subscribe({
       next: (res) => {
         this.balance.set(res);
         this.loadingBalance.set(false);
@@ -177,7 +198,8 @@ export class PettyCashPage implements OnInit {
     this.loadingStats.set(true);
     const from = this.filterDateFrom();
     const to = this.filterDateTo();
-    this.api.getStatsByCategory(from ?? undefined, to ?? undefined).subscribe({
+    const id = this.boxId() ?? undefined;
+    this.api.getStatsByCategory(from ?? undefined, to ?? undefined, id).subscribe({
       next: (res) => {
         this.categoryStats.set(res);
         this.loadingStats.set(false);
@@ -212,7 +234,8 @@ export class PettyCashPage implements OnInit {
       });
       return;
     }
-    this.api.createExpense(payload, userId).subscribe({
+    const id = this.boxId() ?? undefined;
+    this.api.createExpense(payload, userId, id).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
@@ -244,7 +267,8 @@ export class PettyCashPage implements OnInit {
       });
       return;
     }
-    this.api.createRecharge(payload, userId).subscribe({
+    const id = this.boxId() ?? undefined;
+    this.api.createRecharge(payload, userId, id).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
@@ -417,6 +441,8 @@ export class PettyCashPage implements OnInit {
       sortOrder: 'desc',
       ...overrides,
     };
+    const id = this.boxId();
+    if (id) params.boxId = id;
     if (this.filterQ()) params.q = this.filterQ();
     if (this.filterType()) params.type = this.filterType()!;
     if (this.filterCategory()) params.category = this.filterCategory()!;
@@ -431,6 +457,8 @@ export class PettyCashPage implements OnInit {
       sortBy: 'createdAt',
       sortOrder: 'desc',
     };
+    const id = this.boxId();
+    if (id) params.boxId = id;
     if (this.filterQ()) params.q = this.filterQ();
     if (this.filterType()) params.type = this.filterType()!;
     if (this.filterCategory()) params.category = this.filterCategory()!;
