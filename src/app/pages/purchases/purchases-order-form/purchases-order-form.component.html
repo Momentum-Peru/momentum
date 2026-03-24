@@ -288,7 +288,7 @@
                   ></p-inputnumber>
                 </div>
                 <div>
-                  <label class="block text-xs text-slate-500 mb-1">P. Unitario *</label>
+                  <label class="block text-xs text-slate-500 mb-1">P. Unitario * (hasta 4 dec.)</label>
                   <p-inputnumber
                     [ngModel]="line.unitPrice"
                     (ngModelChange)="updateLine($index, 'unitPrice', $event)"
@@ -296,8 +296,8 @@
                     [min]="0"
                     mode="decimal"
                     locale="en-US"
-                    [minFractionDigits]="2"
-                    [maxFractionDigits]="2"
+                    [minFractionDigits]="0"
+                    [maxFractionDigits]="4"
                   ></p-inputnumber>
                 </div>
                 <div class="md:col-span-6 flex items-center justify-end gap-2 mt-2">

@@ -193,6 +193,11 @@ export class MenuConfigService {
             icon: 'pi pi-shopping-cart',
             routerLink: '/orders',
           },
+          {
+            label: 'Modelado 3D',
+            icon: 'pi pi-box',
+            routerLink: '/sales/modelado-3d',
+          },
         ],
       },
       {
@@ -460,13 +465,14 @@ export class MenuConfigService {
       colorTo: '#065F46',
       colorPrimary: '#10B981',
       colorLight: '#D1FAE5',
-      relatedRoutes: ['/projects/dashboard', '/requirements', '/quotes', '/tdrs', '/orders'],
+      relatedRoutes: ['/projects/dashboard', '/requirements', '/quotes', '/tdrs', '/orders', '/sales/modelado-3d'],
       items: [
         { label: 'Dashboard', icon: 'pi pi-chart-line', routerLink: '/projects/dashboard', description: 'Métricas de ventas' },
         { label: 'Requerimientos', icon: 'pi pi-inbox', routerLink: '/requirements', description: 'Solicitudes de clientes' },
         { label: 'Cotizaciones', icon: 'pi pi-dollar', routerLink: '/quotes', description: 'Propuestas económicas' },
         { label: 'TDRs', icon: 'pi pi-file', routerLink: '/tdrs', description: 'Términos de referencia' },
         { label: 'Órdenes', icon: 'pi pi-shopping-cart', routerLink: '/orders', description: 'Órdenes de venta' },
+        { label: 'Modelado 3D', icon: 'pi pi-box', routerLink: '/sales/modelado-3d', description: 'Planos 3D por proyecto' },
       ],
     },
     {

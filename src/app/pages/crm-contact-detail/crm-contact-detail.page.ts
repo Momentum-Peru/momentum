@@ -39,8 +39,14 @@ import {
   CreateFollowUpRequest,
   UpdateFollowUpRequest,
 } from '../../shared/interfaces/follow-up.interface';
+import { AgendaApiService } from '../../shared/services/agenda-api.service';
+import { LeadsApiService } from '../../shared/services/leads-api.service';
+import { buildWhatsAppUrl } from '../../shared/utils/whatsapp-url.util';
+import { AudioAnalysisResponse } from '../../shared/interfaces/audio-analysis.interface';
+import { firstValueFrom } from 'rxjs';
 
 type Tab = 'info' | 'seguimientos';
+type AudioFollowUpMode = 'transcribe' | 'analyze';
 
 @Component({
   selector: 'app-crm-contact-detail',
@@ -73,6 +79,8 @@ export class CrmContactDetailPage implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly usersApi = inject(UsersApiService);
   private readonly crmCompaniesApi = inject(CrmCompaniesApiService);
+  private readonly agendaApi = inject(AgendaApiService);
+  private readonly leadsApi = inject(LeadsApiService);
 
   // ── Data ─────────────────────────────────────────────────────────────────
   contact = signal<ContactCrm | null>(null);
@@ -103,6 +111,7 @@ export class CrmContactDetailPage implements OnInit {
   newFuDate = signal<Date | null>(null);
   newFuUserId = signal('');
   newFuDescription = '';
+  newFuOutcome = '';
 
   // Edit follow-up dialog
   showEditFollowUpDialog = signal(false);
@@ -122,6 +131,13 @@ export class CrmContactDetailPage implements OnInit {
   newCompanyTaxId = '';
   newCompanyPhone = '';
   newCompanyEmail = '';
+
+  showAudioFollowUpDialog = signal(false);
+  audioFollowUpMode = signal<AudioFollowUpMode>('transcribe');
+  isRecording = signal(false);
+  analyzingAudio = signal(false);
+  mediaRecorder: MediaRecorder | null = null;
+  recordedChunks: Blob[] = [];
 
   // ── Options ───────────────────────────────────────────────────────────────
   readonly sourceOptions: { label: string; value: ContactSource }[] = [
@@ -168,6 +184,29 @@ export class CrmContactDetailPage implements OnInit {
       scheduled: fus.filter((f) => f.status === 'SCHEDULED').length,
       completed: fus.filter((f) => f.status === 'COMPLETED').length,
     };
+  });
+
+  /** Más reciente primero (fecha programada o creación). */
+  sortedFollowUps = computed(() => {
+    const list = [...this.followUps()];
+    return list.sort((a, b) => {
+      const ta = a.scheduledDate
+        ? new Date(a.scheduledDate).getTime()
+        : a.createdAt
+          ? new Date(a.createdAt).getTime()
+          : 0;
+      const tb = b.scheduledDate
+        ? new Date(b.scheduledDate).getTime()
+        : b.createdAt
+          ? new Date(b.createdAt).getTime()
+          : 0;
+      return tb - ta;
+    });
+  });
+
+  lastFollowUpPreview = computed(() => {
+    const s = this.sortedFollowUps();
+    return s.length ? s[0] : null;
   });
 
   // ── Init ──────────────────────────────────────────────────────────────────
@@ -290,6 +329,7 @@ export class CrmContactDetailPage implements OnInit {
     this.newFuDate.set(null);
     this.newFuUserId.set('');
     this.newFuDescription = '';
+    this.newFuOutcome = '';
   }
 
   createFollowUp(): void {
@@ -305,6 +345,7 @@ export class CrmContactDetailPage implements OnInit {
       scheduledDate: date ? date.toISOString() : undefined,
       userId: this.newFuUserId() || undefined,
       description: this.newFuDescription.trim() || undefined,
+      outcome: this.newFuOutcome.trim() || undefined,
     };
     this.followUpsApi.create(payload).subscribe({
       next: () => {
@@ -560,5 +601,161 @@ export class CrmContactDetailPage implements OnInit {
     navigator.clipboard.writeText(text).then(() =>
       this.messageService.add({ severity: 'info', summary: 'Copiado', detail: 'Copiado al portapapeles' })
     );
+  }
+
+  whatsappUrl(): string | null {
+    const c = this.contact();
+    return buildWhatsAppUrl(c?.mobile || c?.phone);
+  }
+
+  openWhatsApp(): void {
+    const url = this.whatsappUrl();
+    if (!url) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Sin WhatsApp',
+        detail: 'No hay un número válido. Añade móvil o teléfono (con o sin +51).',
+      });
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  openAudioFollowUpDialog(mode: AudioFollowUpMode): void {
+    if (!this.showNewFollowUpForm()) {
+      this.showNewFollowUpForm.set(true);
+    }
+    this.audioFollowUpMode.set(mode);
+    this.showAudioFollowUpDialog.set(true);
+    void this.startRecordingFollowUp();
+  }
+
+  closeAudioFollowUpDialog(): void {
+    this.showAudioFollowUpDialog.set(false);
+    if (this.isRecording()) {
+      this.stopRecordingFollowUp();
+    }
+  }
+
+  async toggleRecordingFollowUp(): Promise<void> {
+    if (this.isRecording()) {
+      this.stopRecordingFollowUp();
+    } else {
+      await this.startRecordingFollowUp();
+    }
+  }
+
+  private async startRecordingFollowUp(): Promise<void> {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus',
+      });
+      this.recordedChunks = [];
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.recordedChunks.push(event.data);
+        }
+      };
+      this.mediaRecorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        void this.onFollowUpRecordingStopped();
+      };
+      this.mediaRecorder.start();
+      this.isRecording.set(true);
+    } catch {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Micrófono',
+        detail: 'No se pudo acceder al micrófono.',
+      });
+    }
+  }
+
+  private stopRecordingFollowUp(): void {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this.isRecording.set(false);
+  }
+
+  private async onFollowUpRecordingStopped(): Promise<void> {
+    if (this.recordedChunks.length === 0) return;
+    const audioBlob = new Blob(this.recordedChunks, { type: 'audio/webm;codecs=opus' });
+    const fileName = `contact-fu-${Date.now()}.webm`;
+    const audioFile = new File([audioBlob], fileName, { type: 'audio/webm;codecs=opus' });
+    this.recordedChunks = [];
+
+    this.analyzingAudio.set(true);
+    try {
+      if (this.audioFollowUpMode() === 'transcribe') {
+        const result = await firstValueFrom(this.agendaApi.transcribe(audioFile));
+        const text = result?.text?.trim() ?? '';
+        this.newFuDescription = this.newFuDescription.trim()
+          ? `${this.newFuDescription.trim()}\n\n${text}`.trim()
+          : text;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Transcripción',
+          detail: 'Texto añadido a la descripción del seguimiento.',
+        });
+      } else {
+        const presigned = await firstValueFrom(
+          this.leadsApi.getPresignedUrlForAudioGlobal({
+            fileName,
+            contentType: 'audio/webm',
+            expirationTime: 600,
+          }),
+        );
+        await this.agendaApi.uploadFileToS3(
+          presigned.presignedUrl,
+          audioFile,
+          'audio/webm',
+        );
+        const analysis = await firstValueFrom(
+          this.leadsApi.analyzeAudioGlobal({ audioUrl: presigned.publicUrl }),
+        );
+        this.applyAudioAnalysisToNewFollowUp(analysis);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Análisis IA',
+          detail: 'Resumen y acuerdos aplicados al formulario.',
+        });
+      }
+    } catch {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Audio',
+        detail: 'No se pudo procesar el audio. Intenta de nuevo.',
+      });
+    } finally {
+      this.analyzingAudio.set(false);
+      this.closeAudioFollowUpDialog();
+    }
+  }
+
+  private applyAudioAnalysisToNewFollowUp(result: AudioAnalysisResponse): void {
+    const summary = result.summary?.trim() ?? '';
+    let outcome = '';
+    if (result.agreements?.length) {
+      outcome +=
+        'ACUERDOS:\n' +
+        result.agreements.map((a) => `- ${a}`).join('\n') +
+        '\n\n';
+    }
+    if (result.followUpActions?.length) {
+      outcome +=
+        'ACCIONES:\n' + result.followUpActions.map((a) => `- ${a}`).join('\n');
+    }
+    if (summary) {
+      this.newFuDescription = this.newFuDescription.trim()
+        ? `${this.newFuDescription.trim()}\n\n${summary}`.trim()
+        : summary;
+    }
+    if (outcome.trim()) {
+      this.newFuOutcome = this.newFuOutcome.trim()
+        ? `${this.newFuOutcome.trim()}\n\n${outcome.trim()}`
+        : outcome.trim();
+    }
   }
 }

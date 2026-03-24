@@ -123,101 +123,122 @@
       </div>
 
     } @else {
-      <!-- Cards timeline -->
-      <div class="space-y-3 max-w-4xl mx-auto">
-        @for (row of items(); track row._id || $index) {
-          <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-            <div class="flex items-start gap-4 p-4">
-
-              <!-- Icono tipo (coloreado) -->
+      <div class="max-w-full mx-auto mb-3 px-1">
+        <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+          <span class="font-semibold text-indigo-600 dark:text-indigo-400">Vista paso a paso:</span>
+          desplaza horizontalmente. El paso <strong>1</strong> es el más antiguo y el
+          <strong>{{ itemsForStepper().length }}</strong> el más reciente.
+        </p>
+      </div>
+      <div class="overflow-x-auto pb-6 pt-1 scroll-smooth -mx-1 px-1">
+        <div class="flex gap-0 items-stretch min-w-min">
+          @for (row of itemsForStepper(); track row._id; let i = $index; let isLast = $last) {
+            <div class="flex items-stretch">
               <div
-                class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-sm"
-                [class]="getTypeColorClass(row.type)"
+                class="w-[min(90vw,21rem)] sm:w-[22rem] shrink-0 flex"
               >
-                <i [class]="getTypeIcon(row.type)"></i>
-              </div>
-
-              <!-- Contenido -->
-              <div class="flex-1 min-w-0">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="flex-1 min-w-0">
-                    <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-snug truncate">
-                      {{ row.title || getTypeLabel(row.type) || '—' }}
-                    </h3>
-                    <div class="flex items-center gap-2 mt-1 flex-wrap">
-                      <p-tag
-                        [value]="getStatusLabel(row.status)"
-                        [severity]="getStatusSeverity(row.status)"
-                        styleClass="text-[10px]"
-                      ></p-tag>
-                      <span class="text-xs text-gray-400">{{ getTypeLabel(row.type) }}</span>
-                      @if (row.contactId) {
-                        <span class="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                          <i class="pi pi-user text-[10px] mr-0.5"></i>{{ getContactName(row.contactId) }}
-                        </span>
+                <div
+                  class="bg-white dark:bg-gray-900 rounded-xl border-2 border-gray-100 dark:border-gray-800 shadow-md hover:shadow-lg hover:border-indigo-200 dark:hover:border-indigo-900 transition-all overflow-hidden flex flex-col w-full h-full"
+                >
+                  <div class="flex items-start gap-3 p-4 flex-1">
+                    <div
+                      class="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white text-sm font-bold flex items-center justify-center shadow-md"
+                    >
+                      {{ i + 1 }}
+                    </div>
+                    <div
+                      class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-sm"
+                      [class]="getTypeColorClass(row.type)"
+                    >
+                      <i [class]="getTypeIcon(row.type)"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-start justify-between gap-2">
+                        <div class="flex-1 min-w-0">
+                          <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-snug line-clamp-2">
+                            {{ row.title || getTypeLabel(row.type) || '—' }}
+                          </h3>
+                          <div class="flex items-center gap-2 mt-1 flex-wrap">
+                            <p-tag
+                              [value]="getStatusLabel(row.status)"
+                              [severity]="getStatusSeverity(row.status)"
+                              styleClass="text-[10px]"
+                            ></p-tag>
+                            <span class="text-xs text-gray-400">{{ getTypeLabel(row.type) }}</span>
+                            @if (row.contactId) {
+                              <span class="text-xs text-blue-600 dark:text-blue-400 font-medium truncate max-w-[10rem]">
+                                <i class="pi pi-user text-[10px] mr-0.5"></i>{{ getContactName(row.contactId) }}
+                              </span>
+                            }
+                          </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-1 shrink-0">
+                          @if (row.scheduledDate) {
+                            <span class="text-[10px] text-gray-400 whitespace-nowrap">
+                              {{ row.scheduledDate | date:'dd/MM/yy HH:mm' }}
+                            </span>
+                          }
+                          <div class="flex items-center gap-0.5">
+                            <button
+                              pButton
+                              icon="pi pi-eye"
+                              class="p-button-text p-button-sm p-0 w-7 h-7"
+                              pTooltip="Ver detalles"
+                              (click)="viewDetails(row)"
+                            ></button>
+                            <button
+                              pButton
+                              icon="pi pi-pencil"
+                              class="p-button-text p-button-sm p-0 w-7 h-7"
+                              pTooltip="Editar"
+                              (click)="editItem(row)"
+                            ></button>
+                            <button
+                              pButton
+                              icon="pi pi-trash"
+                              class="p-button-text p-button-sm p-button-danger p-0 w-7 h-7"
+                              pTooltip="Eliminar"
+                              (click)="remove(row)"
+                            ></button>
+                          </div>
+                        </div>
+                      </div>
+                      @if (row.description) {
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 line-clamp-3 leading-relaxed">
+                          {{ row.description }}
+                        </p>
+                      }
+                      @if (row.outcome) {
+                        <div class="mt-2 bg-green-50 dark:bg-green-950/30 rounded-lg px-2 py-1.5 text-[11px] text-green-700 dark:text-green-400 line-clamp-2">
+                          <i class="pi pi-check-circle mr-1"></i>{{ row.outcome }}
+                        </div>
+                      }
+                      @if (row.userId || row.nextFollowUpDate) {
+                        <div class="flex items-center gap-3 mt-2 text-[10px] text-gray-400 flex-wrap">
+                          @if (row.userId) {
+                            <span><i class="pi pi-user mr-1"></i>{{ getUserName(row.userId) }}</span>
+                          }
+                          @if (row.nextFollowUpDate) {
+                            <span class="text-blue-500">
+                              <i class="pi pi-arrow-right mr-1"></i>{{ row.nextFollowUpDate | date:'dd/MM/yy' }}
+                            </span>
+                          }
+                        </div>
                       }
                     </div>
                   </div>
-
-                  <!-- Fecha + acciones -->
-                  <div class="flex items-center gap-1 shrink-0">
-                    @if (row.scheduledDate) {
-                      <span class="text-[11px] text-gray-400 mr-2 whitespace-nowrap">
-                        {{ row.scheduledDate | date:'dd/MM/yy HH:mm' }}
-                      </span>
-                    }
-                    <button
-                      pButton
-                      icon="pi pi-eye"
-                      class="p-button-text p-button-sm p-0 w-7 h-7"
-                      pTooltip="Ver detalles"
-                      (click)="viewDetails(row)"
-                    ></button>
-                    <button
-                      pButton
-                      icon="pi pi-pencil"
-                      class="p-button-text p-button-sm p-0 w-7 h-7"
-                      pTooltip="Editar"
-                      (click)="editItem(row)"
-                    ></button>
-                    <button
-                      pButton
-                      icon="pi pi-trash"
-                      class="p-button-text p-button-sm p-button-danger p-0 w-7 h-7"
-                      pTooltip="Eliminar"
-                      (click)="remove(row)"
-                    ></button>
-                  </div>
                 </div>
-
-                @if (row.description) {
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 line-clamp-2 leading-relaxed">
-                    {{ row.description }}
-                  </p>
-                }
-
-                @if (row.outcome) {
-                  <div class="mt-2 bg-green-50 dark:bg-green-950/30 rounded-lg px-3 py-1.5 text-xs text-green-700 dark:text-green-400 line-clamp-1">
-                    <i class="pi pi-check-circle mr-1"></i>{{ row.outcome }}
-                  </div>
-                }
-
-                @if (row.userId || row.nextFollowUpDate) {
-                  <div class="flex items-center gap-4 mt-2 text-[11px] text-gray-400 flex-wrap">
-                    @if (row.userId) {
-                      <span><i class="pi pi-user mr-1"></i>{{ getUserName(row.userId) }}</span>
-                    }
-                    @if (row.nextFollowUpDate) {
-                      <span class="text-blue-500">
-                        <i class="pi pi-arrow-right mr-1"></i>Próximo: {{ row.nextFollowUpDate | date:'dd/MM/yy' }}
-                      </span>
-                    }
-                  </div>
-                }
               </div>
+              @if (!isLast) {
+                <div class="w-4 sm:w-8 shrink-0 flex items-center justify-center self-center px-0.5">
+                  <div
+                    class="h-1 w-full rounded-full bg-gradient-to-r from-sky-400 via-indigo-500 to-violet-500 opacity-90 dark:opacity-70"
+                  ></div>
+                </div>
+              }
             </div>
-          </div>
-        }
+          }
+        </div>
       </div>
     }
   </div>

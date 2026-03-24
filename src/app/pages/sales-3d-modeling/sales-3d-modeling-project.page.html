@@ -1,0 +1,97 @@
+<div class="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+  <p-toast [life]="4000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <div class="flex flex-wrap items-center gap-3">
+    <button
+      pButton
+      type="button"
+      icon="pi pi-arrow-left"
+      label="Proyectos con 3D"
+      class="p-button-text p-button-sm"
+      (click)="back()"
+    ></button>
+  </div>
+
+  @if (project(); as p) {
+    <div>
+      <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase">Centro de costo</p>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ p.name }}</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Código {{ p.code }}</p>
+    </div>
+  }
+
+  <div class="flex flex-wrap items-center gap-3">
+    <input
+      #fileMore
+      type="file"
+      multiple
+      class="hidden"
+      [disabled]="uploading()"
+      (change)="onMoreFiles($event)"
+    />
+    <button
+      pButton
+      type="button"
+      icon="pi pi-plus"
+      label="Agregar archivos"
+      class="p-button-outlined p-button-sm"
+      [disabled]="uploading()"
+      (click)="fileMore.click()"
+    ></button>
+    @if (uploading()) {
+      <p-progressSpinner strokeWidth="3" styleClass="w-8 h-8"></p-progressSpinner>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="flex justify-center py-16">
+      <p-progressSpinner strokeWidth="3" styleClass="w-12 h-12"></p-progressSpinner>
+    </div>
+  } @else if (files().length === 0) {
+    <p-card>
+      <p class="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">No hay archivos en este proyecto.</p>
+    </p-card>
+  } @else {
+    <ul class="space-y-2">
+      @for (f of files(); track f._id) {
+        <li
+          class="flex flex-wrap items-center gap-3 justify-between rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3"
+        >
+          <div class="min-w-0 flex-1">
+            <a
+              [href]="f.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-medium text-emerald-700 dark:text-emerald-400 hover:underline break-all text-sm"
+            >
+              {{ f.originalName }}
+            </a>
+            <p class="text-xs text-gray-500 mt-1">
+              {{ formatBytes(f.size) }} · {{ f.mimeType }} · {{ f.createdAt | date: 'short' }}
+            </p>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <a
+              pButton
+              type="button"
+              icon="pi pi-download"
+              class="p-button-text p-button-sm"
+              [href]="f.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              pTooltip="Descargar / abrir"
+            ></a>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-trash"
+              class="p-button-text p-button-sm p-button-danger"
+              (click)="removeFile(f)"
+            ></button>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</div>

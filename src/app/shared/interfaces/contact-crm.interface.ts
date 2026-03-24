@@ -19,6 +19,10 @@ export interface ContactCrm {
   notes?: string;
   assignedTo?: string;
   lastFollowUpDate?: string;
+  /** Denormalizado al crear/actualizar seguimientos */
+  lastFollowUpTitle?: string;
+  lastFollowUpType?: string;
+  lastFollowUpStatus?: string;
   createdAt?: string;
   updatedAt?: string;
 }
