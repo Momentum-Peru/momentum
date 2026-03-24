@@ -35,6 +35,20 @@ export interface HubSection {
   items: HubSectionItem[];
 }
 
+/** Ítem asignable en la pantalla de permisos (agrupado por menú). */
+export interface MenuPermissionSectionItem {
+  path: string;
+  label: string;
+  icon: string;
+}
+
+export interface MenuPermissionSection {
+  key: string;
+  label: string;
+  icon: string;
+  items: MenuPermissionSectionItem[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -87,6 +101,12 @@ export class MenuConfigService {
     { path: '/logistics/compare-quotes', label: 'Comparar cotizaciones', icon: 'pi pi-compare' },
     { path: '/logistics/deliveries', label: 'Confirmación de entrega', icon: 'pi pi-check-circle' },
     { path: '/approvals', label: 'Aprobaciones', icon: 'pi pi-check-circle' },
+    { path: '/sales/modelado-3d', label: 'Modelado 3D', icon: 'pi pi-box' },
+    { path: '/meetings', label: 'Reuniones', icon: 'pi pi-video' },
+    { path: '/dashboard-gerencia', label: 'Dashboard gerencia', icon: 'pi pi-chart-line' },
+    { path: '/gerencia-boards', label: 'Tableros gerencia', icon: 'pi pi-th-large' },
+    { path: '/companies', label: 'Empresas (sistema)', icon: 'pi pi-building' },
+    { path: '/fi', label: 'Futuro imposible', icon: 'pi pi-flag' },
   ];
 
   /**
@@ -398,6 +418,123 @@ export class MenuConfigService {
         ],
       },
     ];
+  }
+
+  /**
+   * Convierte routerLink de PrimeNG a string.
+   */
+  private extractMenuRouterLink(routerLink: MenuItem['routerLink']): string | null {
+    if (routerLink == null) return null;
+    if (Array.isArray(routerLink)) {
+      const first = routerLink[0];
+      return typeof first === 'string' ? first : null;
+    }
+    return typeof routerLink === 'string' ? routerLink : null;
+  }
+
+  /**
+   * Ruta persistida en permisos: documentos ventas/compras comparten `/documents`.
+   */
+  private resolvePermissionPath(routerLink: string): string {
+    if (routerLink === '/documents/ventas' || routerLink === '/documents/compras') {
+      return '/documents';
+    }
+    return routerLink;
+  }
+
+  private normalizePath(p: string): string {
+    return p.endsWith('/') && p !== '/' ? p.slice(0, -1) : p;
+  }
+
+  /**
+   * Estructura para /menu-permissions: mismos grupos que el nav lateral + “Otras rutas”.
+   */
+  getMenuPermissionSections(): MenuPermissionSection[] {
+    const menuRoots = this.getMenuItemsWithSubmenus();
+    const routeSet = new Set(this.routesConfig.map((r) => r.path));
+    const globalSeen = new Set<string>();
+    const sections: MenuPermissionSection[] = [];
+
+    for (let i = 0; i < menuRoots.length; i++) {
+      const mi = menuRoots[i];
+      const key = `nav-${i}-${(mi.label ?? 'item').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+      const sectionIcon = (mi.icon as string) || 'pi pi-folder';
+      const sectionLabel = (mi.label as string) || 'Menú';
+
+      /** path -> labels acumuladas (misma ruta de permiso) */
+      const bucket = new Map<string, { labels: string[]; icon: string }>();
+
+      if (mi.items?.length) {
+        for (const sub of mi.items) {
+          const link = this.extractMenuRouterLink(sub.routerLink);
+          if (!link) continue;
+          const permPath = this.resolvePermissionPath(link);
+          if (!routeSet.has(permPath)) continue;
+          const subLabel = (sub.label as string) || permPath;
+          const subIcon = (sub.icon as string) || 'pi pi-circle';
+          const cur = bucket.get(permPath);
+          if (cur) {
+            cur.labels.push(subLabel);
+          } else {
+            bucket.set(permPath, { labels: [subLabel], icon: subIcon });
+          }
+        }
+      } else {
+        const link = this.extractMenuRouterLink(mi.routerLink);
+        if (!link) continue;
+        const permPath = this.resolvePermissionPath(link);
+        if (!routeSet.has(permPath)) continue;
+        bucket.set(permPath, {
+          labels: [sectionLabel],
+          icon: sectionIcon,
+        });
+      }
+
+      const items: MenuPermissionSectionItem[] = [];
+      for (const [permPath, { labels, icon }] of bucket) {
+        const n = this.normalizePath(permPath);
+        if (globalSeen.has(n)) continue;
+        globalSeen.add(n);
+        const cfg = this.getRouteConfig(permPath);
+        const label =
+          labels.length > 1
+            ? `${cfg?.label ?? permPath} (${labels.join(' · ')})`
+            : labels[0] || cfg?.label || permPath;
+        items.push({
+          path: permPath,
+          label,
+          icon: icon || cfg?.icon || 'pi pi-circle',
+        });
+      }
+
+      if (items.length > 0) {
+        sections.push({ key, label: sectionLabel, icon: sectionIcon, items });
+      }
+    }
+
+    const orphanItems: MenuPermissionSectionItem[] = [];
+    for (const path of this.getProtectedRoutes()) {
+      const n = this.normalizePath(path);
+      if (globalSeen.has(n)) continue;
+      globalSeen.add(n);
+      const cfg = this.getRouteConfig(path);
+      orphanItems.push({
+        path,
+        label: cfg?.label || path,
+        icon: cfg?.icon || 'pi pi-link',
+      });
+    }
+    if (orphanItems.length > 0) {
+      orphanItems.sort((a, b) => a.label.localeCompare(b.label, 'es'));
+      sections.push({
+        key: 'otras-rutas-sistema',
+        label: 'Otras rutas del sistema',
+        icon: 'pi pi-server',
+        items: orphanItems,
+      });
+    }
+
+    return sections;
   }
 
   /**

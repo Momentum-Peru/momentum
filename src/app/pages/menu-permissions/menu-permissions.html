@@ -505,82 +505,115 @@
             ></button>
           </div>
         </div>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
-          Selecciona las rutas a las que tendrá acceso el usuario
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          Agrupado como en el menú lateral. El checkbox del encabezado activa o quita
+          <strong>todos</strong> los permisos de ese bloque.
         </p>
         <div
-          class="max-h-96 overflow-y-auto p-2 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700"
+          class="max-h-[28rem] overflow-y-auto p-2 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 space-y-3"
         >
-          @for (route of predefinedRoutes(); track route) {
-          <div
-            class="flex items-center justify-between p-3 border dark:border-gray-600 rounded mb-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors bg-white dark:bg-gray-800"
-            [ngClass]="{
-              'bg-blue-50': isRouteSelected(route),
-              'dark:bg-blue-900/30': isRouteSelected(route),
-              'border-blue-500': isRouteSelected(route),
-              'dark:border-blue-400': isRouteSelected(route)
-            }"
-            (click)="toggleRoute(route)"
-            (keyup.enter)="toggleRoute(route)"
-            (keyup.space)="toggleRoute(route)"
-            tabindex="0"
-            role="checkbox"
-            [attr.aria-checked]="isRouteSelected(route)"
-            [attr.aria-label]="'Seleccionar ruta: ' + getRouteLabel(route)"
-          >
-            <div class="flex items-center space-x-2 flex-1">
-              <i
-                class="pi text-base"
-                [class.pi-check-square]="isRouteSelected(route)"
-                [class.pi-square]="!isRouteSelected(route)"
-                [class.text-blue-600]="isRouteSelected(route)"
-                [class.dark:text-blue-400]="isRouteSelected(route)"
-                [class.text-gray-400]="!isRouteSelected(route)"
-                [class.dark:text-gray-500]="!isRouteSelected(route)"
-              ></i>
-              <i [class]="getRouteIcon(route)" class="text-sm text-gray-600 dark:text-gray-400"></i>
-              <span class="text-sm text-gray-700 dark:text-gray-300 font-medium">{{
-                getRouteLabel(route)
-              }}</span>
-            </div>
-            @if (isRouteSelected(route)) {
+          @for (section of permissionSections(); track section.key) {
             <div
-              class="flex items-center gap-2 ml-4"
-              (click)="$event.stopPropagation()"
-              (keyup.enter)="$event.stopPropagation()"
-              (keyup.space)="$event.stopPropagation()"
-              tabindex="0"
-              role="group"
-              [attr.aria-label]="'Tipo de permiso para ' + getRouteLabel(route)"
+              class="rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden bg-white dark:bg-gray-800 shadow-sm"
             >
-              <p-select
-                [options]="permissionTypeOptions"
-                optionLabel="label"
-                optionValue="value"
-                [ngModel]="getRoutePermissionType(route)"
-                (ngModelChange)="setRoutePermissionType(route, $event)"
-                [appendTo]="'body'"
-                class="w-32"
-                [style]="{ 'min-width': '8rem' }"
+              <div
+                class="flex items-center gap-3 px-3 py-2.5 bg-slate-100 dark:bg-slate-900/60 border-b border-gray-200 dark:border-gray-600"
               >
-                <ng-template let-option pTemplate="item">
-                  <div class="flex items-center gap-2">
-                    <i [class]="option.icon" class="text-sm"></i>
-                    <span>{{ option.label }}</span>
+                <p-checkbox
+                  [inputId]="'perm-sec-' + section.key"
+                  [binary]="true"
+                  [ngModel]="isSectionFullySelected(section)"
+                  (ngModelChange)="onSectionHeaderToggle(section, $event)"
+                  [indeterminate]="isSectionPartiallySelected(section)"
+                ></p-checkbox>
+                <label
+                  [for]="'perm-sec-' + section.key"
+                  class="flex items-center gap-2 flex-1 cursor-pointer m-0 text-sm font-semibold text-gray-800 dark:text-gray-100 select-none"
+                >
+                  <i [class]="section.icon" class="text-slate-600 dark:text-slate-300"></i>
+                  <span>{{ section.label }}</span>
+                  <span class="text-xs font-normal text-slate-500 dark:text-slate-400"
+                    >({{ section.items.length }})</span
+                  >
+                </label>
+              </div>
+              <div class="p-2 space-y-1.5">
+                @for (item of section.items; track item.path) {
+                  <div
+                    class="flex items-center justify-between p-2.5 border dark:border-gray-600 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/80 transition-colors bg-gray-50/80 dark:bg-gray-800/80"
+                    [ngClass]="{
+                      'ring-1 ring-blue-400 dark:ring-blue-500': isRouteSelected(item.path),
+                      'bg-blue-50/90': isRouteSelected(item.path),
+                      'dark:bg-blue-950/40': isRouteSelected(item.path)
+                    }"
+                    (click)="toggleRoute(item.path)"
+                    (keyup.enter)="toggleRoute(item.path)"
+                    (keyup.space)="toggleRoute(item.path)"
+                    tabindex="0"
+                    role="checkbox"
+                    [attr.aria-checked]="isRouteSelected(item.path)"
+                    [attr.aria-label]="'Permiso: ' + item.label"
+                  >
+                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                      <i
+                        class="pi text-sm shrink-0"
+                        [class.pi-check-square]="isRouteSelected(item.path)"
+                        [class.pi-square]="!isRouteSelected(item.path)"
+                        [class.text-blue-600]="isRouteSelected(item.path)"
+                        [class.dark:text-blue-400]="isRouteSelected(item.path)"
+                        [class.text-gray-400]="!isRouteSelected(item.path)"
+                      ></i>
+                      <i [class]="item.icon" class="text-sm text-gray-600 dark:text-gray-400 shrink-0"></i>
+                      <div class="min-w-0 flex-1">
+                        <span class="text-sm font-medium text-gray-800 dark:text-gray-200 block truncate">{{
+                          item.label
+                        }}</span>
+                        <span class="text-[11px] font-mono text-gray-500 dark:text-gray-400 truncate block">{{
+                          item.path
+                        }}</span>
+                      </div>
+                    </div>
+                    @if (isRouteSelected(item.path)) {
+                      <div
+                        class="flex items-center gap-2 ml-2 shrink-0"
+                        (click)="$event.stopPropagation()"
+                        (keyup.enter)="$event.stopPropagation()"
+                        (keyup.space)="$event.stopPropagation()"
+                        tabindex="0"
+                        role="group"
+                        [attr.aria-label]="'Tipo de permiso para ' + item.label"
+                      >
+                        <p-select
+                          [options]="permissionTypeOptions"
+                          optionLabel="label"
+                          optionValue="value"
+                          [ngModel]="getRoutePermissionType(item.path)"
+                          (ngModelChange)="setRoutePermissionType(item.path, $event)"
+                          [appendTo]="'body'"
+                          class="w-32"
+                          [style]="{ 'min-width': '8rem' }"
+                        >
+                          <ng-template let-option pTemplate="item">
+                            <div class="flex items-center gap-2">
+                              <i [class]="option.icon" class="text-sm"></i>
+                              <span>{{ option.label }}</span>
+                            </div>
+                          </ng-template>
+                          <ng-template let-option pTemplate="selectedItem">
+                            <div class="flex items-center gap-2">
+                              <i [class]="option.icon" class="text-sm"></i>
+                              <span>{{ option.label }}</span>
+                            </div>
+                          </ng-template>
+                        </p-select>
+                      </div>
+                    }
                   </div>
-                </ng-template>
-                <ng-template let-option pTemplate="selectedItem">
-                  <div class="flex items-center gap-2">
-                    <i [class]="option.icon" class="text-sm"></i>
-                    <span>{{ option.label }}</span>
-                  </div>
-                </ng-template>
-              </p-select>
+                }
+              </div>
             </div>
-            }
-          </div>
           }
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          <p class="text-sm text-gray-500 dark:text-gray-400 pt-1">
             Seleccionados: {{ editing()?.selectedRoutes?.length || 0 }} permisos
           </p>
         </div>

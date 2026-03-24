@@ -62,10 +62,10 @@ export class ContactsCrmApiService {
     }
 
     /**
-     * Elimina un contacto
+     * Elimina el contacto y todos sus seguimientos CRM (contactId).
      */
-    delete(id: string): Observable<{ deleted: boolean }> {
-        return this.http.delete<{ deleted: boolean }>(`${this.baseUrl}/${id}`);
+    delete(id: string): Observable<{ deleted: boolean; followUpsRemoved: number }> {
+        return this.http.delete<{ deleted: boolean; followUpsRemoved: number }>(`${this.baseUrl}/${id}`);
     }
 }
 
