@@ -17,7 +17,10 @@ import { MenuPermissionsApiService } from '../../shared/services/menu-permission
 import { UsersApiService, User, UserResponse } from '../../shared/services/users-api.service';
 import { forkJoin } from 'rxjs';
 import { MenuService } from '../../shared/services/menu.service';
-import { MenuConfigService } from '../../shared/services/menu-config.service';
+import {
+  MenuConfigService,
+  MenuPermissionSection,
+} from '../../shared/services/menu-config.service';
 import { TenantService } from '../../core/services/tenant.service';
 import { AuthService } from '../../pages/login/services/auth.service';
 import {
@@ -55,7 +58,7 @@ export interface UserPermissionsGroup {
   ],
   templateUrl: './menu-permissions.html',
   styleUrl: './menu-permissions.scss',
-  providers: [ConfirmationService],
+  providers: [ConfirmationService, MessageService],
 })
 export class MenuPermissionsPage implements OnInit {
   private readonly menuPermissionsApi = inject(MenuPermissionsApiService);
@@ -108,13 +111,11 @@ export class MenuPermissionsPage implements OnInit {
     { label: 'Editar', value: 'edit', icon: 'pi pi-pencil' },
   ];
 
-  // Rutas predefinidas del sistema (extraídas automáticamente del servicio de configuración)
+  /** Rutas asignables (todas), ordenadas. */
   predefinedRoutes = computed(() => this.menuConfig.getProtectedRoutes());
 
-  // Getter para usar en *ngFor (necesario porque *ngFor no funciona bien con computed signals)
-  get routesList(): string[] {
-    return this.predefinedRoutes();
-  }
+  /** Misma jerarquía que el menú lateral + otras rutas. */
+  permissionSections = computed(() => this.menuConfig.getMenuPermissionSections());
 
   ngOnInit() {
     // Cargar usuarios y permisos
@@ -461,6 +462,49 @@ export class MenuPermissionsPage implements OnInit {
     const current = this.editing();
     if (!current) return false;
     return current.selectedRoutes.includes(route);
+  }
+
+  private sectionPaths(section: MenuPermissionSection): string[] {
+    return [...new Set(section.items.map((i) => i.path))];
+  }
+
+  isSectionFullySelected(section: MenuPermissionSection): boolean {
+    const current = this.editing();
+    if (!current || section.items.length === 0) return false;
+    const paths = this.sectionPaths(section);
+    return paths.length > 0 && paths.every((p) => current.selectedRoutes.includes(p));
+  }
+
+  isSectionPartiallySelected(section: MenuPermissionSection): boolean {
+    const current = this.editing();
+    if (!current || section.items.length === 0) return false;
+    const paths = this.sectionPaths(section);
+    const n = paths.filter((p) => current.selectedRoutes.includes(p)).length;
+    return n > 0 && n < paths.length;
+  }
+
+  /** Checkbox del encabezado del menú: marca o quita todos los ítems del grupo. */
+  onSectionHeaderToggle(section: MenuPermissionSection, checked: boolean): void {
+    const current = this.editing();
+    if (!current) return;
+    const paths = this.sectionPaths(section);
+    const selectedRoutes = [...current.selectedRoutes];
+    const routePermissions = new Map(current.routePermissions);
+    if (checked) {
+      for (const p of paths) {
+        if (!selectedRoutes.includes(p)) {
+          selectedRoutes.push(p);
+          if (!routePermissions.has(p)) routePermissions.set(p, 'view');
+        }
+      }
+    } else {
+      for (const p of paths) {
+        const idx = selectedRoutes.indexOf(p);
+        if (idx >= 0) selectedRoutes.splice(idx, 1);
+        routePermissions.delete(p);
+      }
+    }
+    this.editing.set({ ...current, selectedRoutes, routePermissions });
   }
 
   selectAllRoutes() {

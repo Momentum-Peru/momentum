@@ -1,5 +1,6 @@
 <div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
   <p-toast [life]="4000"></p-toast>
+  <p-confirmDialog [style]="{ width: '28rem' }" acceptButtonStyleClass="p-button-danger"></p-confirmDialog>
 
   <!-- ══════════════════════════════════════════════════════════════
        PANEL IZQUIERDO — Identidad + Info Clave
@@ -325,6 +326,21 @@
         <div class="py-2">
           <div class="text-[11px] font-medium text-gray-400 uppercase mb-0.5">Fecha de creación</div>
           <div class="text-sm text-gray-800 dark:text-gray-200">{{ formatDate(contact()?.createdAt) }}</div>
+        </div>
+
+        <div class="pt-4 mt-2 border-t border-red-100 dark:border-red-900/40">
+          <button
+            pButton
+            type="button"
+            label="Eliminar contacto"
+            icon="pi pi-trash"
+            class="p-button-danger p-button-outlined p-button-sm w-full"
+            (click)="confirmDeleteContact()"
+            aria-label="Eliminar contacto y todos sus seguimientos"
+          ></button>
+          <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-2 text-center leading-snug">
+            Incluye todos los seguimientos vinculados a esta ficha.
+          </p>
         </div>
       </div>
     }

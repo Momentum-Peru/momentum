@@ -19,7 +19,8 @@ import { InputIconModule } from 'primeng/inputicon';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ContactsCrmApiService } from '../../shared/services/contacts-crm-api.service';
 import { CrmCompaniesApiService } from '../../shared/services/crm-companies-api.service';
 import {
@@ -47,8 +48,9 @@ import { Router } from '@angular/router';
     TooltipModule,
     SelectModule,
     TagModule,
+    ConfirmDialogModule,
   ],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './crm-contacts.page.html',
   styleUrls: ['./crm-contacts.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,6 +59,7 @@ export class CrmContactsPage implements OnInit, OnDestroy {
   private readonly contactsApi = inject(ContactsCrmApiService);
   private readonly crmCompaniesApi = inject(CrmCompaniesApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   private readonly router = inject(Router);
 
   contacts = signal<ContactCrm[]>([]);
@@ -238,6 +241,44 @@ export class CrmContactsPage implements OnInit, OnDestroy {
   goToDetail(contact: ContactCrm): void {
     if (!contact._id) return;
     this.router.navigate(['/leads', contact._id]);
+  }
+
+  confirmDelete(contact: ContactCrm, event: Event): void {
+    event.stopPropagation();
+    const id = contact._id;
+    if (!id) return;
+    const name = contact.name?.trim() || 'este contacto';
+    this.confirmationService.confirm({
+      message: `¿Eliminar a <strong>${name}</strong>? Se borrarán también <strong>todos sus seguimientos</strong>. No se puede deshacer.`,
+      header: 'Eliminar contacto',
+      icon: 'pi pi-trash',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.contactsApi.delete(id).subscribe({
+          next: (res) => {
+            const n = res.followUpsRemoved ?? 0;
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Eliminado',
+              detail:
+                n > 0
+                  ? `Contacto eliminado (${n} seguimiento(s) borrados).`
+                  : 'Contacto eliminado.',
+            });
+            this.loadContacts();
+          },
+          error: (err) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: err?.error?.message || 'No se pudo eliminar el contacto',
+            });
+          },
+        });
+      },
+    });
   }
 
   lastFollowUpTypeLabel(type?: string): string {
