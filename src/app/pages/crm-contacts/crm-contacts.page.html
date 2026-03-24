@@ -1,5 +1,6 @@
 <div class="p-4 md:p-6 space-y-6 max-w-full">
   <p-toast [life]="4000"></p-toast>
+  <p-confirmDialog [style]="{ width: '28rem' }" acceptButtonStyleClass="p-button-danger"></p-confirmDialog>
 
   <!-- Header -->
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -186,18 +187,30 @@
             }
           </td>
           <td class="text-center whitespace-nowrap w-1">
-            <button
-              pButton
-              type="button"
-              icon="pi pi-eye"
-              label="Ver detalles"
-              class="crm-contact-detail-btn p-button-sm"
-              [outlined]="true"
-              (click)="goToDetail(row)"
-              pTooltip="Abrir ficha del contacto"
-              tooltipPosition="left"
-              aria-label="Ver detalles del contacto"
-            ></button>
+            <div class="inline-flex flex-wrap items-center justify-center gap-1">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-eye"
+                label="Ver detalles"
+                class="crm-contact-detail-btn p-button-sm"
+                [outlined]="true"
+                (click)="goToDetail(row)"
+                pTooltip="Abrir ficha del contacto"
+                tooltipPosition="left"
+                aria-label="Ver detalles del contacto"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-trash"
+                class="p-button-sm p-button-danger p-button-text"
+                (click)="confirmDelete(row, $event)"
+                pTooltip="Eliminar contacto y sus seguimientos"
+                tooltipPosition="left"
+                aria-label="Eliminar contacto"
+              ></button>
+            </div>
           </td>
         </tr>
       </ng-template>

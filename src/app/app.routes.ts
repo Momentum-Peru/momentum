@@ -133,7 +133,7 @@ export const routes: Routes = [
                 (m) => m.Sales3dModelingListPage,
               ),
             canActivate: [MenuPermissionGuard],
-            data: { menuPermission: '/quotes' },
+            data: { menuPermission: '/sales/modelado-3d' },
           },
           {
             path: 'modelado-3d/:projectId',
@@ -142,7 +142,7 @@ export const routes: Routes = [
                 (m) => m.Sales3dModelingProjectPage,
               ),
             canActivate: [MenuPermissionGuard],
-            data: { menuPermission: '/quotes' },
+            data: { menuPermission: '/sales/modelado-3d' },
           },
         ],
       },
