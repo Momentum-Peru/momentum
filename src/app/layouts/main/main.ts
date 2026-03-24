@@ -6,6 +6,7 @@ import { AuthService } from '../../pages/login/services/auth.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmationService } from 'primeng/api';
+import { ErpToastHostComponent } from '../../shared/components/erp-toast-host/erp-toast-host.component';
 import { Button } from 'primeng/button';
 import { TenantService } from '../../core/services/tenant.service';
 import { ProfileApiService } from '../../shared/services/profile-api.service';
@@ -16,7 +17,15 @@ import { filter, Subscription } from 'rxjs';
 @Component({
   selector: 'app-main',
   standalone: true,
-  imports: [RouterOutlet, Menu, NotificationsBellComponent, ConfirmDialogModule, ToastModule, Button],
+  imports: [
+    RouterOutlet,
+    Menu,
+    NotificationsBellComponent,
+    ConfirmDialogModule,
+    ToastModule,
+    Button,
+    ErpToastHostComponent,
+  ],
   templateUrl: './main.html',
   styleUrl: './main.scss',
   providers: [ConfirmationService],

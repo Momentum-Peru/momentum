@@ -12,7 +12,6 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { TableModule } from 'primeng/table';
-import { ToastModule } from 'primeng/toast';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
@@ -45,6 +44,7 @@ import { LeadsApiService } from '../../shared/services/leads-api.service';
 import { buildWhatsAppUrl } from '../../shared/utils/whatsapp-url.util';
 import { AudioAnalysisResponse } from '../../shared/interfaces/audio-analysis.interface';
 import { firstValueFrom } from 'rxjs';
+import { ErpNotifyService } from '../../core/services/erp-notify.service';
 
 type Tab = 'info' | 'seguimientos';
 type AudioFollowUpMode = 'transcribe' | 'analyze';
@@ -59,7 +59,6 @@ type AudioFollowUpMode = 'transcribe' | 'analyze';
     ButtonModule,
     TagModule,
     TableModule,
-    ToastModule,
     DialogModule,
     InputTextModule,
     TextareaModule,
@@ -69,7 +68,7 @@ type AudioFollowUpMode = 'transcribe' | 'analyze';
     DividerModule,
     ConfirmDialogModule,
   ],
-  providers: [MessageService, ConfirmationService],
+  providers: [ConfirmationService],
   templateUrl: './crm-contact-detail.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -78,7 +77,7 @@ export class CrmContactDetailPage implements OnInit {
   private readonly router = inject(Router);
   private readonly contactsApi = inject(ContactsCrmApiService);
   private readonly followUpsApi = inject(FollowUpsApiService);
-  private readonly messageService = inject(MessageService);
+  private readonly erpNotify = inject(ErpNotifyService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly usersApi = inject(UsersApiService);
   private readonly crmCompaniesApi = inject(CrmCompaniesApiService);
@@ -234,7 +233,7 @@ export class CrmContactDetailPage implements OnInit {
       },
       error: () => {
         this.loadingContact.set(false);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el contacto' });
+        this.erpNotify.error('Error', 'No se pudo cargar el contacto');
         this.router.navigate(['/leads']);
       },
     });
@@ -286,22 +285,16 @@ export class CrmContactDetailPage implements OnInit {
     this.contactsApi.delete(id).subscribe({
       next: (res) => {
         const n = res.followUpsRemoved ?? 0;
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Eliminado',
-          detail:
-            n > 0
-              ? `Contacto eliminado (${n} seguimiento(s) borrados).`
-              : 'Contacto eliminado.',
-        });
+        this.erpNotify.success(
+          'Eliminado',
+          n > 0
+            ? `Contacto eliminado (${n} seguimiento(s) borrados).`
+            : 'Contacto eliminado.'
+        );
         this.router.navigate(['/leads']);
       },
       error: (err: { error?: { message?: string } }) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: err?.error?.message || 'No se pudo eliminar el contacto',
-        });
+        this.erpNotify.error('Error', err?.error?.message || 'No se pudo eliminar el contacto');
       },
     });
   }
@@ -339,7 +332,7 @@ export class CrmContactDetailPage implements OnInit {
       },
       error: () => {
         this.saving.set(false);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el campo' });
+        this.erpNotify.error('Error', 'No se pudo guardar el campo');
       },
     });
   }
@@ -349,7 +342,7 @@ export class CrmContactDetailPage implements OnInit {
     if (!contact?._id) return;
     this.contactsApi.update(contact._id, { source: value }).subscribe({
       next: (updated) => { this.contact.set(updated); this.editingField.set(null); },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar' }),
+      error: () => this.erpNotify.error('Error', 'No se pudo guardar'),
     });
   }
 
@@ -392,14 +385,14 @@ export class CrmContactDetailPage implements OnInit {
     this.followUpsApi.create(payload).subscribe({
       next: () => {
         this.savingFollowUp.set(false);
-        this.messageService.add({ severity: 'success', summary: 'Seguimiento creado', detail: 'Se guardó el seguimiento.' });
+        this.erpNotify.crmFollowUpCreated((contact.name ?? '').trim() || undefined);
         this.showNewFollowUpForm.set(false);
         this.resetNewFuForm();
         this.loadFollowUps(contact);
       },
       error: () => {
         this.savingFollowUp.set(false);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el seguimiento' });
+        this.erpNotify.error('Error', 'No se pudo crear el seguimiento');
       },
     });
   }
@@ -452,12 +445,12 @@ export class CrmContactDetailPage implements OnInit {
     };
     this.followUpsApi.update(editing._id, payload).subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Guardado', detail: 'Seguimiento actualizado.' });
+        this.erpNotify.crmFollowUpUpdated();
         this.showEditFollowUpDialog.set(false);
         this.editingFollowUp.set(null);
         if (contact) this.loadFollowUps(contact);
       },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el seguimiento' }),
+      error: () => this.erpNotify.error('Error', 'No se pudo actualizar el seguimiento'),
     });
   }
 
@@ -465,11 +458,11 @@ export class CrmContactDetailPage implements OnInit {
     if (!fu._id) return;
     this.followUpsApi.delete(fu._id).subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Eliminado', detail: 'Seguimiento eliminado.' });
+        this.erpNotify.crmFollowUpRemoved();
         const contact = this.contact();
         if (contact) this.loadFollowUps(contact);
       },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar' }),
+      error: () => this.erpNotify.error('Error', 'No se pudo eliminar'),
     });
   }
 
@@ -488,11 +481,11 @@ export class CrmContactDetailPage implements OnInit {
         this.contact.set(updated);
         this.saving.set(false);
         this.showLinkCompanyDialog.set(false);
-        this.messageService.add({ severity: 'success', summary: 'Empresa vinculada', detail: 'Se actualizó la empresa.' });
+        this.erpNotify.success('Empresa vinculada', 'Se actualizó la empresa.');
       },
       error: () => {
         this.saving.set(false);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo vincular la empresa' });
+        this.erpNotify.error('Error', 'No se pudo vincular la empresa');
       },
     });
   }
@@ -503,9 +496,9 @@ export class CrmContactDetailPage implements OnInit {
     this.contactsApi.update(contact._id, { clientId: undefined }).subscribe({
       next: (updated) => {
         this.contact.set(updated);
-        this.messageService.add({ severity: 'info', summary: 'Desvinculada', detail: 'Se desviculó la empresa.' });
+        this.erpNotify.info('Desvinculada', 'Se desvinculó la empresa del contacto.');
       },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo desvincular' }),
+      error: () => this.erpNotify.error('Error', 'No se pudo desvincular'),
     });
   }
 
@@ -522,11 +515,11 @@ export class CrmContactDetailPage implements OnInit {
     const name = this.newCompanyName.trim();
     const taxId = this.newCompanyTaxId.trim();
     if (!name) {
-      this.messageService.add({ severity: 'warn', summary: 'Requerido', detail: 'El nombre de la empresa es requerido' });
+      this.erpNotify.warn('Requerido', 'El nombre de la empresa es requerido');
       return;
     }
     if (!/^\d{11}$/.test(taxId)) {
-      this.messageService.add({ severity: 'warn', summary: 'RUC inválido', detail: 'El RUC debe tener exactamente 11 dígitos' });
+      this.erpNotify.warn('RUC inválido', 'El RUC debe tener exactamente 11 dígitos');
       return;
     }
     const contact = this.contact();
@@ -545,17 +538,17 @@ export class CrmContactDetailPage implements OnInit {
             this.contact.set(updated);
             this.savingCompany.set(false);
             this.showNewCompanyDialog.set(false);
-            this.messageService.add({ severity: 'success', summary: 'Empresa creada', detail: 'Se creó y vinculó la empresa.' });
+            this.erpNotify.success('Empresa creada', 'Se creó y vinculó la empresa.');
           },
           error: () => {
             this.savingCompany.set(false);
-            this.messageService.add({ severity: 'warn', summary: 'Empresa creada', detail: 'Empresa creada pero no se pudo vincular.' });
+            this.erpNotify.warn('Empresa creada', 'Empresa creada pero no se pudo vincular.');
           },
         });
       },
       error: () => {
         this.savingCompany.set(false);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear la empresa' });
+        this.erpNotify.error('Error', 'No se pudo crear la empresa');
       },
     });
   }
@@ -617,7 +610,7 @@ export class CrmContactDetailPage implements OnInit {
   callContact(): void {
     const phone = this.contact()?.phone || this.contact()?.mobile;
     if (!phone) {
-      this.messageService.add({ severity: 'warn', summary: 'Sin teléfono', detail: 'El contacto no tiene teléfono registrado' });
+      this.erpNotify.warn('Sin teléfono', 'El contacto no tiene teléfono registrado');
       return;
     }
     window.open(`tel:${phone}`);
@@ -626,7 +619,7 @@ export class CrmContactDetailPage implements OnInit {
   emailContact(): void {
     const email = this.contact()?.email;
     if (!email) {
-      this.messageService.add({ severity: 'warn', summary: 'Sin correo', detail: 'El contacto no tiene correo registrado' });
+      this.erpNotify.warn('Sin correo', 'El contacto no tiene correo registrado');
       return;
     }
     window.open(`mailto:${email}`);
@@ -641,7 +634,7 @@ export class CrmContactDetailPage implements OnInit {
   copyToClipboard(text?: string): void {
     if (!text) return;
     navigator.clipboard.writeText(text).then(() =>
-      this.messageService.add({ severity: 'info', summary: 'Copiado', detail: 'Copiado al portapapeles' })
+      this.erpNotify.info('Copiado', 'Copiado al portapapeles')
     );
   }
 
@@ -653,11 +646,10 @@ export class CrmContactDetailPage implements OnInit {
   openWhatsApp(): void {
     const url = this.whatsappUrl();
     if (!url) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Sin WhatsApp',
-        detail: 'No hay un número válido. Añade móvil o teléfono (con o sin +51).',
-      });
+      this.erpNotify.warn(
+        'Sin WhatsApp',
+        'No hay un número válido. Añade móvil o teléfono (con o sin +51).'
+      );
       return;
     }
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -706,11 +698,7 @@ export class CrmContactDetailPage implements OnInit {
       this.mediaRecorder.start();
       this.isRecording.set(true);
     } catch {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Micrófono',
-        detail: 'No se pudo acceder al micrófono.',
-      });
+      this.erpNotify.error('Micrófono', 'No se pudo acceder al micrófono.');
     }
   }
 
@@ -736,11 +724,7 @@ export class CrmContactDetailPage implements OnInit {
         this.newFuDescription = this.newFuDescription.trim()
           ? `${this.newFuDescription.trim()}\n\n${text}`.trim()
           : text;
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Transcripción',
-          detail: 'Texto añadido a la descripción del seguimiento.',
-        });
+        this.erpNotify.success('Transcripción', 'Texto añadido a la descripción del seguimiento.');
       } else {
         const presigned = await firstValueFrom(
           this.leadsApi.getPresignedUrlForAudioGlobal({
@@ -758,18 +742,10 @@ export class CrmContactDetailPage implements OnInit {
           this.leadsApi.analyzeAudioGlobal({ audioUrl: presigned.publicUrl }),
         );
         this.applyAudioAnalysisToNewFollowUp(analysis);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Análisis IA',
-          detail: 'Resumen y acuerdos aplicados al formulario.',
-        });
+        this.erpNotify.success('Análisis IA', 'Resumen y acuerdos aplicados al formulario.');
       }
     } catch {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Audio',
-        detail: 'No se pudo procesar el audio. Intenta de nuevo.',
-      });
+      this.erpNotify.error('Audio', 'No se pudo procesar el audio. Intenta de nuevo.');
     } finally {
       this.analyzingAudio.set(false);
       this.closeAudioFollowUpDialog();

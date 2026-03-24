@@ -12,14 +12,13 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { TableModule } from 'primeng/table';
-import { ToastModule } from 'primeng/toast';
 import { CardModule } from 'primeng/card';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ContactsCrmApiService } from '../../shared/services/contacts-crm-api.service';
 import { CrmCompaniesApiService } from '../../shared/services/crm-companies-api.service';
@@ -30,6 +29,7 @@ import {
 } from '../../shared/interfaces/contact-crm.interface';
 import { CompanyOption } from '../../shared/interfaces/company.interface';
 import { Router } from '@angular/router';
+import { ErpNotifyService } from '../../core/services/erp-notify.service';
 
 @Component({
   selector: 'app-crm-contacts',
@@ -41,7 +41,6 @@ import { Router } from '@angular/router';
     ButtonModule,
     DialogModule,
     TableModule,
-    ToastModule,
     CardModule,
     IconFieldModule,
     InputIconModule,
@@ -50,7 +49,7 @@ import { Router } from '@angular/router';
     TagModule,
     ConfirmDialogModule,
   ],
-  providers: [MessageService, ConfirmationService],
+  providers: [ConfirmationService],
   templateUrl: './crm-contacts.page.html',
   styleUrls: ['./crm-contacts.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,7 +57,7 @@ import { Router } from '@angular/router';
 export class CrmContactsPage implements OnInit, OnDestroy {
   private readonly contactsApi = inject(ContactsCrmApiService);
   private readonly crmCompaniesApi = inject(CrmCompaniesApiService);
-  private readonly messageService = inject(MessageService);
+  private readonly erpNotify = inject(ErpNotifyService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly router = inject(Router);
 
@@ -144,11 +143,7 @@ export class CrmContactsPage implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Error loading CRM contacts', error);
         this.loading.set(false);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudieron cargar los contactos',
-        });
+        this.erpNotify.error('Error', 'No se pudieron cargar los contactos');
       },
     });
   }
@@ -169,11 +164,7 @@ export class CrmContactsPage implements OnInit, OnDestroy {
   save(): void {
     const first = this.formFirstName.trim();
     if (!first) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'Los nombres del contacto son obligatorios.',
-      });
+      this.erpNotify.warn('Datos incompletos', 'Los nombres del contacto son obligatorios.');
       return;
     }
 
@@ -181,32 +172,20 @@ export class CrmContactsPage implements OnInit, OnDestroy {
     const fullName = [first, last].filter(Boolean).join(' ').trim();
 
     if (fullName.length < 2) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'El nombre debe tener al menos 2 caracteres.',
-      });
+      this.erpNotify.warn('Datos incompletos', 'El nombre debe tener al menos 2 caracteres.');
       return;
     }
 
     const email = this.formEmail.trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (email && !emailRegex.test(email)) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Correo inválido',
-        detail: 'Ingrese un correo válido o déjelo vacío.',
-      });
+      this.erpNotify.warn('Correo inválido', 'Ingrese un correo válido o déjelo vacío.');
       return;
     }
 
     const phone = this.formPhone.trim();
     if (phone && (phone.length < 5 || phone.length > 20)) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Teléfono',
-        detail: 'Si ingresa teléfono, debe tener entre 5 y 20 caracteres.',
-      });
+      this.erpNotify.warn('Teléfono', 'Si ingresa teléfono, debe tener entre 5 y 20 caracteres.');
       return;
     }
 
@@ -219,21 +198,13 @@ export class CrmContactsPage implements OnInit, OnDestroy {
 
     this.contactsApi.create(payload as CreateContactCrmRequest).subscribe({
       next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Guardado',
-          detail: 'Contacto creado correctamente',
-        });
+        this.erpNotify.crmContactCreated(fullName);
         this.showDialog.set(false);
         this.loadContacts();
       },
       error: (error) => {
         console.error('Error creating CRM contact', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo crear el contacto',
-        });
+        this.erpNotify.error('Error', 'No se pudo crear el contacto');
       },
     });
   }
@@ -259,22 +230,19 @@ export class CrmContactsPage implements OnInit, OnDestroy {
         this.contactsApi.delete(id).subscribe({
           next: (res) => {
             const n = res.followUpsRemoved ?? 0;
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Eliminado',
-              detail:
-                n > 0
-                  ? `Contacto eliminado (${n} seguimiento(s) borrados).`
-                  : 'Contacto eliminado.',
-            });
+            this.erpNotify.success(
+              'Eliminado',
+              n > 0
+                ? `Contacto eliminado (${n} seguimiento(s) borrados).`
+                : 'Contacto eliminado.'
+            );
             this.loadContacts();
           },
           error: (err) => {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: err?.error?.message || 'No se pudo eliminar el contacto',
-            });
+            this.erpNotify.error(
+              'Error',
+              (err as { error?: { message?: string } })?.error?.message || 'No se pudo eliminar el contacto'
+            );
           },
         });
       },

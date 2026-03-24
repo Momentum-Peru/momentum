@@ -30,9 +30,17 @@
       <div
         class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
       >
-        <div class="flex items-center gap-2">
-          <i class="pi pi-bell text-lg text-gray-700 dark:text-gray-300"></i>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Notificaciones</h3>
+        <div class="flex items-center gap-2 min-w-0">
+          <img
+            [src]="brandLogoSrc"
+            alt=""
+            class="h-7 w-auto max-w-[88px] shrink-0 object-contain opacity-90"
+            width="88"
+            height="28"
+            loading="lazy"
+          />
+          <i class="pi pi-bell text-lg text-gray-700 dark:text-gray-300 shrink-0" aria-hidden="true"></i>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">Notificaciones</h3>
           @if (hasUnread()) {
           <span class="px-2 py-0.5 text-xs font-medium text-white bg-red-500 rounded-full">
             {{ unreadCount() }}

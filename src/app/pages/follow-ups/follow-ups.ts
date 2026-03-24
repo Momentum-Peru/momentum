@@ -15,11 +15,9 @@ import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
-import { ToastModule } from 'primeng/toast';
 import { CardModule } from 'primeng/card';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
-import { MessageService } from 'primeng/api';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -45,6 +43,7 @@ import {
   AudioAnalysisResponse,
 } from '../../shared/interfaces/audio-analysis.interface';
 import { firstValueFrom } from 'rxjs';
+import { ErpNotifyService } from '../../core/services/erp-notify.service';
 
 @Component({
   selector: 'app-follow-ups',
@@ -58,14 +57,13 @@ import { firstValueFrom } from 'rxjs';
     DialogModule,
     SelectModule,
     TooltipModule,
-    ToastModule,
     CardModule,
     ConfirmDialogModule,
     TagModule,
     TextareaModule,
     DatePickerModule,
   ],
-  providers: [ConfirmationService, MessageService],
+  providers: [ConfirmationService],
   templateUrl: './follow-ups.html',
   styleUrls: ['./follow-ups.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,7 +74,7 @@ export class FollowUpsPage implements OnInit {
   private readonly leadsApi = inject(LeadsApiService);
   private readonly clientsApi = inject(ClientsApiService);
   private readonly usersApi = inject(UsersApiService);
-  private readonly messageService = inject(MessageService);
+  private readonly erpNotify = inject(ErpNotifyService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly route = inject(ActivatedRoute); // Injected Route
   private readonly agendaApi = inject(AgendaApiService);
@@ -292,11 +290,7 @@ export class FollowUpsPage implements OnInit {
       },
       error: (error) => {
         console.error('Error loading follow-ups:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Error al cargar los seguimientos',
-        });
+        this.erpNotify.error('Error', 'Error al cargar los seguimientos');
       },
     });
   }
@@ -421,11 +415,7 @@ export class FollowUpsPage implements OnInit {
     const validationErrors = this.validateForm(item);
     if (validationErrors.length > 0) {
       validationErrors.forEach((error) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error de validación',
-          detail: error,
-        });
+        this.erpNotify.error('Error de validación', error);
       });
       return;
     }
@@ -449,20 +439,12 @@ export class FollowUpsPage implements OnInit {
       };
       this.followUpsApi.update(item._id, updatePayload).subscribe({
         next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Seguimiento actualizado correctamente',
-          });
+          this.erpNotify.crmFollowUpUpdated();
           this.closeDialog();
           this.load();
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: this.getErrorMessage(error),
-          });
+          this.erpNotify.error('Error', this.getErrorMessage(error));
         },
       });
     } else {
@@ -482,20 +464,15 @@ export class FollowUpsPage implements OnInit {
       };
       this.followUpsApi.create(createPayload).subscribe({
         next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Seguimiento creado correctamente',
-          });
+          const cid =
+            item.contactId ?? this.selectedContactId() ?? createPayload.contactId ?? undefined;
+          const nm = cid ? this.getContactName(cid) : undefined;
+          this.erpNotify.crmFollowUpCreated(nm && nm !== '—' ? nm : undefined);
           this.closeDialog();
           this.load();
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: this.getErrorMessage(error),
-          });
+          this.erpNotify.error('Error', this.getErrorMessage(error));
         },
       });
     }
@@ -513,19 +490,11 @@ export class FollowUpsPage implements OnInit {
       accept: () => {
         this.followUpsApi.delete(item._id!).subscribe({
           next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Éxito',
-              detail: 'Seguimiento eliminado correctamente',
-            });
+            this.erpNotify.crmFollowUpRemoved();
             this.load();
           },
           error: (error) => {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: this.getErrorMessage(error),
-            });
+            this.erpNotify.error('Error', this.getErrorMessage(error));
           },
         });
       },
@@ -658,11 +627,10 @@ export class FollowUpsPage implements OnInit {
     const currentEditing = this.editing();
     // Validar que haya un seguimiento en edición
     if (!currentEditing) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Requerido',
-        detail: 'Debes crear o editar un seguimiento antes de grabar audio',
-      });
+      this.erpNotify.warn(
+        'Requerido',
+        'Debes crear o editar un seguimiento antes de grabar audio'
+      );
       return;
     }
     this.showAudioAnalysisDialog.set(true);
@@ -709,19 +677,10 @@ export class FollowUpsPage implements OnInit {
       this.mediaRecorder.start();
       this.isRecording.set(true);
 
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Grabando',
-        detail: 'Haz clic en "Detener" para analizar.',
-        life: 3000,
-      });
+      this.erpNotify.info('Grabando', 'Haz clic en "Detener" para analizar.', { life: 3000 });
     } catch (error) {
       console.error('Error al iniciar la grabación:', error);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'No se pudo acceder al micrófono.',
-      });
+      this.erpNotify.error('Error', 'No se pudo acceder al micrófono.');
     }
   }
 
@@ -750,18 +709,13 @@ export class FollowUpsPage implements OnInit {
       // Autocompletar descripción con la transcripción literal
       this.applyTranscriptionToForm(result?.text ?? '');
 
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Transcripción completada',
-        detail: 'La descripción se ha rellenado con lo que se grabó.',
-      });
+      this.erpNotify.success(
+        'Transcripción completada',
+        'La descripción se ha rellenado con lo que se grabó.'
+      );
     } catch (error) {
       this.analyzingAudio.set(false);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: this.getErrorMessage(error),
-      });
+      this.erpNotify.error('Error', this.getErrorMessage(error));
     }
   }
 
