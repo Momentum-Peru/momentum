@@ -124,6 +124,29 @@ export const routes: Routes = [
         data: { menuPermission: '/orders' },
       },
       {
+        path: 'sales',
+        children: [
+          {
+            path: 'modelado-3d',
+            loadComponent: () =>
+              import('./pages/sales-3d-modeling/sales-3d-modeling-list.page').then(
+                (m) => m.Sales3dModelingListPage,
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/quotes' },
+          },
+          {
+            path: 'modelado-3d/:projectId',
+            loadComponent: () =>
+              import('./pages/sales-3d-modeling/sales-3d-modeling-project.page').then(
+                (m) => m.Sales3dModelingProjectPage,
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/quotes' },
+          },
+        ],
+      },
+      {
         path: 'projects',
         children: [
           {

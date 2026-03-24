@@ -18,10 +18,15 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
 import { MessageService } from 'primeng/api';
 import { ContactsCrmApiService } from '../../shared/services/contacts-crm-api.service';
 import { CrmCompaniesApiService } from '../../shared/services/crm-companies-api.service';
-import { ContactCrm, ContactSource, CreateContactCrmRequest } from '../../shared/interfaces/contact-crm.interface';
+import {
+  ContactCrm,
+  ContactSource,
+  CreateContactCrmRequest,
+} from '../../shared/interfaces/contact-crm.interface';
 import { CompanyOption } from '../../shared/interfaces/company.interface';
 import { Router } from '@angular/router';
 
@@ -41,6 +46,7 @@ import { Router } from '@angular/router';
     InputIconModule,
     TooltipModule,
     SelectModule,
+    TagModule,
   ],
   providers: [MessageService],
   templateUrl: './crm-contacts.page.html',
@@ -59,6 +65,9 @@ export class CrmContactsPage implements OnInit, OnDestroy {
 
   /** Texto de búsqueda (nombre, teléfono o correo); se envía al API tras debounce. */
   searchTerm = signal('');
+
+  /** Índice del primer registro en la página actual (para numerar filas con paginación). */
+  tableFirst = signal(0);
 
   private searchDebounceId: ReturnType<typeof setTimeout> | null = null;
 
@@ -112,7 +121,12 @@ export class CrmContactsPage implements OnInit, OnDestroy {
       clearTimeout(this.searchDebounceId);
       this.searchDebounceId = null;
     }
+    this.tableFirst.set(0);
     this.loadContacts();
+  }
+
+  onTablePage(event: { first?: number }): void {
+    this.tableFirst.set(event.first ?? 0);
   }
 
   loadContacts(): void {
@@ -121,6 +135,7 @@ export class CrmContactsPage implements OnInit, OnDestroy {
     this.contactsApi.list(q ? { search: q } : undefined).subscribe({
       next: (items) => {
         this.contacts.set(items);
+        this.tableFirst.set(0);
         this.loading.set(false);
       },
       error: (error) => {
@@ -223,5 +238,54 @@ export class CrmContactsPage implements OnInit, OnDestroy {
   goToDetail(contact: ContactCrm): void {
     if (!contact._id) return;
     this.router.navigate(['/leads', contact._id]);
+  }
+
+  lastFollowUpTypeLabel(type?: string): string {
+    const map: Record<string, string> = {
+      CALL: 'Llamada',
+      EMAIL: 'Email',
+      MEETING: 'Reunión',
+      NOTE: 'Nota',
+      PROPOSAL: 'Propuesta',
+      OTHER: 'Otro',
+    };
+    return type ? (map[type] ?? type) : '';
+  }
+
+  lastFollowUpStatusLabel(status?: string): string {
+    const map: Record<string, string> = {
+      SCHEDULED: 'Programado',
+      COMPLETED: 'Hecho',
+      CANCELLED: 'Cancelado',
+    };
+    return status ? (map[status] ?? status) : '';
+  }
+
+  lastFollowUpStatusClass(status?: string): string {
+    if (status === 'COMPLETED') {
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200';
+    }
+    if (status === 'SCHEDULED') {
+      return 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200';
+    }
+    if (status === 'CANCELLED') {
+      return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200';
+    }
+    return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300';
+  }
+
+  sourceLabel(source?: ContactSource): string {
+    const map: Record<string, string> = {
+      REFERRAL: 'Referido',
+      SOCIAL_MEDIA: 'Redes',
+      OTHER: 'Otros',
+    };
+    return source ? (map[source] ?? source) : '—';
+  }
+
+  sourceSeverity(source?: ContactSource): 'success' | 'info' | 'secondary' {
+    if (source === 'REFERRAL') return 'success';
+    if (source === 'SOCIAL_MEDIA') return 'info';
+    return 'secondary';
   }
 }

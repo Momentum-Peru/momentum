@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+  computed,
+  OnInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router'; // Added import
@@ -209,6 +216,24 @@ export class FollowUpsPage implements OnInit {
   private usersLoaded = signal<boolean>(false);
   private clientsLoaded = signal<boolean>(false);
   private contactsLoaded = signal<boolean>(false);
+
+  /** Orden cronológico (antiguo → reciente) para pasos 1…n en la vista horizontal. */
+  itemsForStepper = computed(() => {
+    const list = [...this.items()];
+    return list.sort((a, b) => {
+      const ta = a.scheduledDate
+        ? new Date(a.scheduledDate).getTime()
+        : a.createdAt
+          ? new Date(a.createdAt).getTime()
+          : 0;
+      const tb = b.scheduledDate
+        ? new Date(b.scheduledDate).getTime()
+        : b.createdAt
+          ? new Date(b.createdAt).getTime()
+          : 0;
+      return ta - tb;
+    });
+  });
 
   ngOnInit() {
     this.loadContacts();
@@ -585,16 +610,6 @@ export class FollowUpsPage implements OnInit {
   isRowExpanded(rowId: string | undefined): boolean {
     if (!rowId) return false;
     return this.expandedRows().has(rowId);
-  }
-
-  /**
-   * Obtiene el número de seguimiento basado en su posición en la lista ordenada
-   * (1 = más reciente, 2 = segundo más reciente, etc.)
-   */
-  getFollowUpNumber(followUp: FollowUp): number {
-    const items = this.items();
-    const index = items.findIndex((item) => item._id === followUp._id);
-    return index !== -1 ? index + 1 : 0;
   }
 
   private validateForm(_item: Partial<FollowUp>): string[] {

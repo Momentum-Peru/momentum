@@ -99,10 +99,9 @@
           }
         </div>
 
-        <!-- Acciones rápidas (HubSpot-style) -->
+        <!-- Acciones rápidas -->
         <div class="grid grid-cols-3 gap-y-4 gap-x-2 mt-5 px-2">
 
-          <!-- Seguimiento -->
           <button
             type="button"
             class="flex flex-col items-center gap-1.5 group"
@@ -116,7 +115,25 @@
             <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Seguimiento</span>
           </button>
 
-          <!-- Llamada -->
+          <button
+            type="button"
+            class="flex flex-col items-center gap-1.5 group"
+            (click)="openWhatsApp()"
+            pTooltip="WhatsApp (normaliza +51 automático)"
+            tooltipPosition="bottom"
+            [disabled]="!whatsappUrl()"
+          >
+            <div
+              class="w-11 h-11 rounded-full flex items-center justify-center shadow-md transition-all group-hover:scale-110 group-hover:shadow-lg"
+              [class]="whatsappUrl()
+                ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-800'"
+            >
+              <i class="pi pi-whatsapp text-lg"></i>
+            </div>
+            <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">WhatsApp</span>
+          </button>
+
           <button
             type="button"
             class="flex flex-col items-center gap-1.5 group"
@@ -130,7 +147,6 @@
             <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Llamada</span>
           </button>
 
-          <!-- Email -->
           <button
             type="button"
             class="flex flex-col items-center gap-1.5 group"
@@ -144,7 +160,6 @@
             <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Correo</span>
           </button>
 
-          <!-- Nota -->
           <button
             type="button"
             class="flex flex-col items-center gap-1.5 group"
@@ -158,7 +173,6 @@
             <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Nota</span>
           </button>
 
-          <!-- Copiar info -->
           <button
             type="button"
             class="flex flex-col items-center gap-1.5 group"
@@ -438,10 +452,14 @@
       <!-- ── TAB: SEGUIMIENTOS ── -->
       @if (activeTab() === 'seguimientos') {
 
-        <!-- Botón nuevo + mini form -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
-            <h3 class="font-semibold text-gray-800 dark:text-gray-100">Seguimientos</h3>
+        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-slate-50 to-indigo-50/50 dark:from-gray-900 dark:to-indigo-950/20">
+            <div>
+              <h3 class="font-semibold text-gray-800 dark:text-gray-100">Línea de seguimientos</h3>
+              <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                Cada tarjeta numerada es un paso; el <strong>1</strong> es el más reciente. Puedes grabar audio, transcribir o analizar con IA.
+              </p>
+            </div>
             <button
               pButton
               type="button"
@@ -452,7 +470,27 @@
           </div>
 
           @if (showNewFollowUpForm()) {
-            <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-blue-50 dark:bg-blue-950/30 space-y-3">
+            <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-br from-blue-50 to-violet-50/40 dark:from-blue-950/25 dark:to-violet-950/20 space-y-3">
+              <div class="flex flex-wrap gap-2">
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-microphone"
+                  label="Grabar → transcribir"
+                  class="p-button-sm p-button-outlined"
+                  (click)="openAudioFollowUpDialog('transcribe')"
+                  pTooltip="Rellena la descripción con lo que digas"
+                ></button>
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-sparkles"
+                  label="Grabar → IA (resumen)"
+                  class="p-button-sm p-button-outlined text-violet-700 border-violet-300"
+                  (click)="openAudioFollowUpDialog('analyze')"
+                  pTooltip="Sube el audio y genera resumen y acuerdos"
+                ></button>
+              </div>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div class="md:col-span-3">
                   <label class="block text-xs font-medium text-gray-600 mb-1">Título</label>
@@ -485,6 +523,10 @@
                   <label class="block text-xs font-medium text-gray-600 mb-1">Descripción</label>
                   <textarea pTextarea rows="2" class="w-full" placeholder="Descripción del seguimiento..." [(ngModel)]="newFuDescription"></textarea>
                 </div>
+                <div class="md:col-span-3">
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Resultado / acuerdos <span class="text-gray-400 font-normal">(opcional)</span></label>
+                  <textarea pTextarea rows="2" class="w-full" placeholder="Resultado de la interacción…" [(ngModel)]="newFuOutcome"></textarea>
+                </div>
               </div>
               <div class="flex justify-end gap-2">
                 <button pButton type="button" label="Cancelar" class="p-button-text p-button-sm" (click)="toggleNewFollowUpForm()"></button>
@@ -499,20 +541,29 @@
             <div class="py-10 text-center text-gray-400">
               <i class="pi pi-spin pi-spinner text-2xl"></i>
             </div>
-          } @else if (followUps().length === 0) {
+          } @else if (sortedFollowUps().length === 0) {
             <div class="py-10 text-center text-gray-400 space-y-2">
               <i class="pi pi-calendar-times text-3xl block"></i>
               <p class="text-sm">No hay seguimientos. Crea el primero con el botón de arriba.</p>
             </div>
           } @else {
             <ul class="divide-y divide-gray-50 dark:divide-gray-800">
-              @for (fu of followUps(); track fu._id) {
-                <li class="px-5 py-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                  <!-- Icono tipo -->
-                  <div class="shrink-0 w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+              @for (fu of sortedFollowUps(); track fu._id; let i = $index) {
+                <li
+                  class="px-5 py-4 flex gap-4 transition-colors border-l-4 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  [class.border-amber-400]="fu.status === 'SCHEDULED'"
+                  [class.border-emerald-500]="fu.status === 'COMPLETED'"
+                  [class.border-red-400]="fu.status === 'CANCELLED'"
+                  [class.border-transparent]="!fu.status"
+                >
+                  <div
+                    class="shrink-0 w-10 h-10 rounded-xl flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-violet-600 text-white text-sm font-bold shadow-md"
+                  >
+                    {{ i + 1 }}
+                  </div>
+                  <div class="shrink-0 w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center self-start mt-0.5">
                     <i [class]="getTypeIcon(fu.type) + ' text-gray-500 text-sm'"></i>
                   </div>
-                  <!-- Contenido -->
                   <div class="flex-1 min-w-0">
                     <div class="flex items-start justify-between gap-2">
                       <div>
@@ -533,14 +584,14 @@
                       </div>
                     </div>
                     @if (fu.description) {
-                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ fu.description }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-3">{{ fu.description }}</p>
                     }
                     @if (fu.outcome) {
-                      <p class="text-xs text-green-700 dark:text-green-400 mt-1 line-clamp-1">
+                      <p class="text-xs text-green-700 dark:text-green-400 mt-1 line-clamp-2 whitespace-pre-wrap">
                         <strong>Resultado:</strong> {{ fu.outcome }}
                       </p>
                     }
-                    <div class="flex items-center gap-3 mt-1.5 text-[11px] text-gray-400">
+                    <div class="flex items-center gap-3 mt-1.5 text-[11px] text-gray-400 flex-wrap">
                       @if (fu.scheduledDate) {
                         <span><i class="pi pi-calendar mr-1"></i>{{ formatDateTime(fu.scheduledDate) }}</span>
                       }
@@ -652,21 +703,31 @@
       </div>
     </div>
 
-    <!-- Próximo seguimiento -->
-    @if (followUps().length > 0) {
-      @let nextFu = followUps()[0];
+    @if (lastFollowUpPreview(); as preview) {
       <div class="px-4 py-4">
-        <div class="text-[11px] font-semibold text-gray-400 uppercase mb-2">Último registro</div>
-        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm space-y-1">
-          <div class="flex items-center gap-2">
-            <i [class]="getTypeIcon(nextFu.type) + ' text-gray-500 text-xs'"></i>
-            <span class="font-medium text-gray-800 dark:text-gray-100">{{ nextFu.title || getTypeLabel(nextFu.type) }}</span>
+        <div class="text-[11px] font-semibold text-gray-400 uppercase mb-2">Último seguimiento</div>
+        <div class="rounded-xl border border-indigo-200/60 dark:border-indigo-900/50 bg-gradient-to-br from-indigo-50/90 to-white dark:from-indigo-950/40 dark:to-gray-900 p-3 text-sm space-y-2 shadow-sm">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span
+              class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-[11px] font-bold text-white"
+            >1</span>
+            <i [class]="getTypeIcon(preview.type) + ' text-indigo-500 text-sm'"></i>
+            <span class="font-semibold text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">
+              {{ preview.title || getTypeLabel(preview.type) }}
+            </span>
+            <p-tag
+              [value]="getStatusLabel(preview.status)"
+              [severity]="getStatusSeverity(preview.status)"
+              styleClass="text-[10px]"
+            ></p-tag>
           </div>
-          @if (nextFu.description) {
-            <p class="text-xs text-gray-500 line-clamp-2">{{ nextFu.description }}</p>
+          @if (preview.description) {
+            <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">{{ preview.description }}</p>
           }
-          @if (nextFu.scheduledDate) {
-            <p class="text-[11px] text-gray-400"><i class="pi pi-calendar mr-1"></i>{{ formatDateTime(nextFu.scheduledDate) }}</p>
+          @if (preview.scheduledDate) {
+            <p class="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+              <i class="pi pi-calendar mr-1"></i>{{ formatDateTime(preview.scheduledDate) }}
+            </p>
           }
         </div>
       </div>
@@ -818,4 +879,49 @@
     <button pButton label="Cancelar" class="p-button-text" (click)="showNewCompanyDialog.set(false)"></button>
     <button pButton label="Crear y vincular" [loading]="savingCompany()" (click)="saveNewCompany()"></button>
   </ng-template>
+</p-dialog>
+
+<p-dialog
+  [visible]="showAudioFollowUpDialog()"
+  (visibleChange)="showAudioFollowUpDialog.set($event)"
+  [modal]="true"
+  [style]="{ width: '90vw', maxWidth: '22rem' }"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!isRecording()"
+  [header]="audioFollowUpMode() === 'analyze' ? 'Grabar para IA' : 'Grabar y transcribir'"
+  (onHide)="closeAudioFollowUpDialog()"
+>
+  <div class="flex flex-col items-center py-6 space-y-5">
+    <div
+      class="w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300"
+      [class]="isRecording() ? 'bg-red-100 animate-pulse' : 'bg-violet-100 dark:bg-violet-950/40'"
+    >
+      <i
+        class="pi pi-microphone text-4xl transition-colors"
+        [class]="isRecording() ? 'text-red-600' : 'text-violet-500'"
+      ></i>
+    </div>
+    <p class="text-center text-xs text-gray-500 px-2">
+      @if (audioFollowUpMode() === 'analyze') {
+        Al detener, el audio se sube y la IA generará resumen y acuerdos en el formulario.
+      } @else {
+        Al detener, se transcribe el audio al texto de la descripción.
+      }
+    </p>
+    @if (analyzingAudio()) {
+      <div class="flex items-center gap-2 text-violet-600 text-sm">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>Procesando…</span>
+      </div>
+    }
+    <button
+      pButton
+      [icon]="isRecording() ? 'pi pi-stop' : 'pi pi-circle-fill'"
+      [label]="isRecording() ? 'Detener' : 'Grabar'"
+      [class]="isRecording() ? 'p-button-danger w-full' : 'w-full'"
+      (click)="toggleRecordingFollowUp()"
+      [disabled]="analyzingAudio()"
+    ></button>
+  </div>
 </p-dialog>
