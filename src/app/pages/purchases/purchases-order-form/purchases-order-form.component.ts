@@ -155,6 +155,14 @@ export class PurchasesOrderFormComponent implements OnInit {
     });
   }
 
+  /** Unidad de medida válida para el API (máx. 20 caracteres; vacío → UND). */
+  private normalizeLineUnit(value: unknown): string {
+    if (value === undefined || value === null) return 'UND';
+    const s = String(value).trim();
+    if (s.length === 0) return 'UND';
+    return s.length > 20 ? s.slice(0, 20) : s;
+  }
+
   loadProjects() {
     this.projectsService.listActive().subscribe({
       next: (data) => this.projects.set(data),
@@ -199,25 +207,35 @@ export class PurchasesOrderFormComponent implements OnInit {
 
         const lines: PurchaseOrderLine[] = fullQuote.lines.map((l: any) => ({
           requirementItemIndex: l.requirementItemIndex,
-          description: l.description || '',
+          description: (l.description ?? '').trim() || '',
           quantity: l.quantity,
-          unit: l.unit || 'UND',
+          unit: this.normalizeLineUnit(l.unit),
           unitPrice: l.unitPrice,
           includesIgv: l.includesIgv ?? true,
           discount: l.discount ?? 0,
-          productId: l.productId?._id || l.productId
+          productId: l.productId?._id || l.productId,
         }));
 
-        // If requirementId is populated and has items, ensure descriptions are set
+        // Las líneas de cotización no guardan und./descripción: completar desde el requerimiento
         if (typeof fullQuote.requirementId === 'object' && fullQuote.requirementId.items) {
+          const items = fullQuote.requirementId.items as Array<{
+            description?: string;
+            unit?: unknown;
+          }>;
           lines.forEach((line) => {
-            if (!line.description) {
-              const reqItem = fullQuote.requirementId.items[line.requirementItemIndex];
-              if (reqItem) {
-                line.description = reqItem.description;
-                line.unit = reqItem.unit;
+            const reqItem = items[line.requirementItemIndex];
+            if (reqItem) {
+              if (!line.description?.trim()) {
+                line.description = (reqItem.description ?? '').trim() || '';
               }
+              line.unit = this.normalizeLineUnit(reqItem.unit ?? line.unit);
+            } else {
+              line.unit = this.normalizeLineUnit(line.unit);
             }
+          });
+        } else {
+          lines.forEach((line) => {
+            line.unit = this.normalizeLineUnit(line.unit);
           });
         }
 
@@ -352,16 +370,25 @@ export class PurchasesOrderFormComponent implements OnInit {
       const product = this.catalogProducts().find(p => p._id === value);
       if (product) {
         lines[index].description = product.name;
-        lines[index].unit = product.unitOfMeasure || 'UND';
+        lines[index].unit = this.normalizeLineUnit(product.unitOfMeasure);
         if (product.basePrice) {
           lines[index].unitPrice = product.basePrice;
         }
       }
     }
 
+    if (field === 'unit') {
+      lines[index].unit = this.normalizeLineUnit(value);
+    }
+
     this.orderForm.set({ ...cur, lines });
 
-    if (field === 'quantity' || field === 'unitPrice' || field === 'includesIgv') {
+    if (
+      field === 'quantity' ||
+      field === 'unitPrice' ||
+      field === 'includesIgv' ||
+      field === 'discount'
+    ) {
       this.calculateTotals();
     }
   }
@@ -401,7 +428,7 @@ export class PurchasesOrderFormComponent implements OnInit {
     if (!form.lines || form.lines.length === 0) errors.push('Debe agregar al menos un artículo');
 
     form.lines.forEach((line: any, i: number) => {
-      if (!line.description) errors.push(`El artículo ${i + 1} requiere una descripción`);
+      if (!line.description?.trim()) errors.push(`El artículo ${i + 1} requiere una descripción`);
       if (line.quantity <= 0) errors.push(`La cantidad del artículo ${i + 1} debe ser mayor a 0`);
     });
 
@@ -445,7 +472,10 @@ export class PurchasesOrderFormComponent implements OnInit {
       providerName: form.providerName,
       providerRuc: form.providerRuc,
       providerAddress: form.providerAddress,
-      lines: form.lines,
+      lines: form.lines.map((l: PurchaseOrderLine) => ({
+        ...l,
+        unit: this.normalizeLineUnit(l.unit),
+      })),
       subtotal: form.subtotal,
       igvAmount: form.igvAmount,
       totalAmount: form.totalAmount,

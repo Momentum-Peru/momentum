@@ -12,6 +12,7 @@ import { PurchaseOrder, CreatePurchaseOrderRequest } from '../interfaces/purchas
 export class PurchasesOrdersApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/purchases/orders`;
+  private readonly purchasesBaseUrl = `${environment.apiUrl}/purchases`;
 
   list(params?: {
     providerId?: string;
@@ -41,5 +42,13 @@ export class PurchasesOrdersApiService {
 
   rejectOrder(id: string, userId: string): Observable<PurchaseOrder> {
     return this.http.post<PurchaseOrder>(`${this.baseUrl}/${id}/reject?rejectedBy=${userId}`, {});
+  }
+
+  /**
+   * Elimina la orden si no tiene recepciones ni comprobantes vinculados (204).
+   * Usa POST /purchases/remove-order/:id (ruta corta) para evitar 404 en proxies que filtran rutas largas.
+   */
+  delete(id: string): Observable<void> {
+    return this.http.post<void>(`${this.purchasesBaseUrl}/remove-order/${id}`, {});
   }
 }

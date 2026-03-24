@@ -144,6 +144,44 @@ export class PurchasesOrdersPage implements OnInit {
     });
   }
 
+  /** Órdenes con recepciones suelen estar en estos estados; el backend valida de todas formas. */
+  canDeleteOrder(o: PurchaseOrder): boolean {
+    return o.status !== 'recibida' && o.status !== 'parcialmente_recibida';
+  }
+
+  deleteOrder(order: PurchaseOrder): void {
+    const orderId = order._id || (order as { id?: string }).id || '';
+    if (!orderId) return;
+
+    this.confirmationService.confirm({
+      message: `¿Eliminar la orden de compra <strong>${order.number}</strong>? Esta acción no se puede deshacer. No podrá eliminarla si tiene recepciones o comprobantes asociados.`,
+      header: 'Confirmar eliminación',
+      icon: 'pi pi-trash',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.ordersApi.delete(orderId).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Eliminada',
+              detail: 'La orden de compra fue eliminada.',
+            });
+            this.loadOrders();
+          },
+          error: (err) => {
+            const msg =
+              err?.error?.message ||
+              err?.message ||
+              'No se pudo eliminar la orden.';
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+          },
+        });
+      },
+    });
+  }
+
   rejectOrder(order: PurchaseOrder): void {
     const user = this.authService.getCurrentUser();
     if (!user) return;
