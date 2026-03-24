@@ -6,6 +6,7 @@ import { AuthService } from '../../pages/login/services/auth.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmationService } from 'primeng/api';
+import { ErpToastHostComponent } from '../../shared/components/erp-toast-host/erp-toast-host.component';
 import { Button } from 'primeng/button';
 import { TenantService } from '../../core/services/tenant.service';
 import { ProfileApiService } from '../../shared/services/profile-api.service';
@@ -21,6 +22,7 @@ import { UserProfile } from '../../shared/interfaces/profile.interface';
     ConfirmDialogModule,
     ToastModule,
     Button,
+    ErpToastHostComponent,
   ],
   templateUrl: './documentation.html',
   styleUrl: './documentation.scss',

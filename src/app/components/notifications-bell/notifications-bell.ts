@@ -6,6 +6,7 @@ import { Popover } from 'primeng/popover';
 import { ButtonModule } from 'primeng/button';
 import { NotificationsService } from '../../shared/services/notifications.service';
 import { Notification } from '../../shared/interfaces/notification.interface';
+import { ERP_BRAND_LOGO_SRC } from '../../core/constants/erp-notify.constants';
 
 /**
  * Componente de campana de notificaciones
@@ -22,6 +23,8 @@ import { Notification } from '../../shared/interfaces/notification.interface';
 export class NotificationsBellComponent implements OnInit {
   private readonly notificationsService = inject(NotificationsService);
   private readonly router = inject(Router);
+
+  readonly brandLogoSrc = ERP_BRAND_LOGO_SRC;
 
   // Estado del componente
   readonly notifications = this.notificationsService.notifications;
