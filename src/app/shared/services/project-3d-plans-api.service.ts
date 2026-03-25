@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  Modeling3dProjectDto,
   Project3dPlanConfirmAttachment,
   Project3dPlanFile,
   Project3dPlanPresignedFileSpec,
@@ -19,25 +20,41 @@ export class Project3dPlansApiService {
     return this.http.get<Project3dPlanSummary[]>(`${this.base}/summary`);
   }
 
-  listByProject(projectId: string): Observable<Project3dPlanFile[]> {
-    return this.http.get<Project3dPlanFile[]>(`${this.base}/project/${projectId}`);
+  createModelingProject(name: string): Observable<Modeling3dProjectDto> {
+    return this.http.post<Modeling3dProjectDto>(`${this.base}/modeling-project`, { name });
+  }
+
+  listModelingProjects(): Observable<Modeling3dProjectDto[]> {
+    return this.http.get<Modeling3dProjectDto[]>(`${this.base}/modeling-projects`);
+  }
+
+  getModelingProject(id: string): Observable<Modeling3dProjectDto> {
+    return this.http.get<Modeling3dProjectDto>(`${this.base}/modeling-project/${id}`);
+  }
+
+  /** @param modelingProjectId Id del proyecto de modelado 3D. */
+  listByProject(modelingProjectId: string): Observable<Project3dPlanFile[]> {
+    return this.http.get<Project3dPlanFile[]>(`${this.base}/project/${modelingProjectId}`);
   }
 
   presignedUrls(
-    projectId: string,
+    modelingProjectId: string,
     files: Project3dPlanPresignedFileSpec[],
     expirationTime = 300,
   ): Observable<Project3dPlanPresignedResponse[]> {
     return this.http.post<Project3dPlanPresignedResponse[]>(`${this.base}/presigned-urls`, {
-      projectId,
+      modelingProjectId,
       files,
       expirationTime,
     });
   }
 
-  confirm(projectId: string, attachments: Project3dPlanConfirmAttachment[]): Observable<Project3dPlanFile[]> {
+  confirm(
+    modelingProjectId: string,
+    attachments: Project3dPlanConfirmAttachment[],
+  ): Observable<Project3dPlanFile[]> {
     return this.http.post<Project3dPlanFile[]>(`${this.base}/confirm`, {
-      projectId,
+      modelingProjectId,
       attachments,
     });
   }

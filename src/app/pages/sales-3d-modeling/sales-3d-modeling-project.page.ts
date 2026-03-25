@@ -15,11 +15,9 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { Project3dPlansApiService } from '../../shared/services/project-3d-plans-api.service';
-import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { PresignedUploadService } from '../../shared/services/presigned-upload.service';
 import { AuthService } from '../login/services/auth.service';
-import { Project } from '../../shared/interfaces/project.interface';
-import { Project3dPlanFile } from '../../shared/interfaces/project-3d-plan.interface';
+import { Modeling3dProjectDto, Project3dPlanFile } from '../../shared/interfaces/project-3d-plan.interface';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -42,14 +40,13 @@ export class Sales3dModelingProjectPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly api = inject(Project3dPlansApiService);
-  private readonly projectsApi = inject(ProjectsApiService);
   private readonly presignedUpload = inject(PresignedUploadService);
   private readonly auth = inject(AuthService);
   private readonly messageService = inject(MessageService);
   private readonly confirm = inject(ConfirmationService);
 
-  projectId = signal<string | null>(null);
-  project = signal<Project | null>(null);
+  modelingProjectId = signal<string | null>(null);
+  modelingProject = signal<Modeling3dProjectDto | null>(null);
   files = signal<Project3dPlanFile[]>([]);
   loading = signal(true);
   uploading = signal(false);
@@ -60,19 +57,19 @@ export class Sales3dModelingProjectPage implements OnInit {
       void this.router.navigate(['/sales', 'modelado-3d']);
       return;
     }
-    this.projectId.set(id);
-    this.loadProject(id);
+    this.modelingProjectId.set(id);
+    this.loadModelingProject(id);
     this.loadFiles(id);
   }
 
-  private loadProject(id: string): void {
-    this.projectsApi.getById(id).subscribe({
-      next: (p) => this.project.set(p),
+  private loadModelingProject(id: string): void {
+    this.api.getModelingProject(id).subscribe({
+      next: (p) => this.modelingProject.set(p),
       error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Proyecto',
-          detail: 'No se encontró el centro de costo',
+          detail: 'No se encontró el proyecto de modelado',
         });
         void this.router.navigate(['/sales', 'modelado-3d']);
       },
@@ -108,7 +105,7 @@ export class Sales3dModelingProjectPage implements OnInit {
   }
 
   async onMoreFiles(event: Event): Promise<void> {
-    const id = this.projectId();
+    const id = this.modelingProjectId();
     if (!id) return;
     const input = event.target as HTMLInputElement;
     const list = input.files ? Array.from(input.files) : [];
@@ -157,7 +154,7 @@ export class Sales3dModelingProjectPage implements OnInit {
       acceptLabel: 'Sí',
       rejectLabel: 'No',
       accept: () => {
-        const id = this.projectId();
+        const id = this.modelingProjectId();
         if (!f._id || !id) return;
         this.api.delete(f._id).subscribe({
           next: () => {

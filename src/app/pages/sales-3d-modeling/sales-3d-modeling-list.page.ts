@@ -13,15 +13,14 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
+import { InputTextModule } from 'primeng/inputtext';
 import { ToastModule } from 'primeng/toast';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
 import { Project3dPlansApiService } from '../../shared/services/project-3d-plans-api.service';
-import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import { PresignedUploadService } from '../../shared/services/presigned-upload.service';
 import { AuthService } from '../login/services/auth.service';
-import { Project } from '../../shared/interfaces/project.interface';
-import { Project3dPlanSummary } from '../../shared/interfaces/project-3d-plan.interface';
+import { Modeling3dProjectDto, Project3dPlanSummary } from '../../shared/interfaces/project-3d-plan.interface';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -34,6 +33,7 @@ import { firstValueFrom } from 'rxjs';
     CardModule,
     DialogModule,
     SelectModule,
+    InputTextModule,
     ToastModule,
     ProgressSpinnerModule,
   ],
@@ -43,35 +43,34 @@ import { firstValueFrom } from 'rxjs';
 })
 export class Sales3dModelingListPage implements OnInit {
   private readonly api = inject(Project3dPlansApiService);
-  private readonly projectsApi = inject(ProjectsApiService);
   private readonly presignedUpload = inject(PresignedUploadService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
 
   summaries = signal<Project3dPlanSummary[]>([]);
-  allProjects = signal<Project[]>([]);
+  allModelingProjects = signal<Modeling3dProjectDto[]>([]);
 
-  projectSelectOptions = computed(() =>
-    this.allProjects()
+  existingProjectOptions = computed(() =>
+    this.allModelingProjects()
       .filter((p) => p._id)
       .map((p) => ({
-        label: `${p.name} (${p.code})`,
-        value: p._id as string,
+        label: p.name,
+        value: p._id,
       })),
   );
+
   loading = signal(true);
   uploadDialog = signal(false);
-  uploadProjectId = signal<string | null>(null);
+  /** Si se elige un proyecto ya existente, tiene prioridad sobre el nombre nuevo. */
+  existingModelingProjectId = signal<string | null>(null);
+  newProjectName = '';
+  loadingModelingList = signal(false);
   uploading = signal(false);
   selectedFiles: File[] = [];
 
   ngOnInit(): void {
     this.load();
-    this.projectsApi.listActive().subscribe({
-      next: (p) => this.allProjects.set(p ?? []),
-      error: () => this.allProjects.set([]),
-    });
   }
 
   load(): void {
@@ -93,9 +92,21 @@ export class Sales3dModelingListPage implements OnInit {
   }
 
   openUpload(): void {
-    this.uploadProjectId.set(null);
+    this.existingModelingProjectId.set(null);
+    this.newProjectName = '';
     this.selectedFiles = [];
     this.uploadDialog.set(true);
+    this.loadingModelingList.set(true);
+    this.api.listModelingProjects().subscribe({
+      next: (list) => {
+        this.allModelingProjects.set(list ?? []);
+        this.loadingModelingList.set(false);
+      },
+      error: () => {
+        this.allModelingProjects.set([]);
+        this.loadingModelingList.set(false);
+      },
+    });
   }
 
   closeUpload(): void {
@@ -108,16 +119,25 @@ export class Sales3dModelingListPage implements OnInit {
     this.selectedFiles = input.files ? Array.from(input.files) : [];
   }
 
-  async submitUpload(): Promise<void> {
-    const projectId = this.uploadProjectId();
-    if (!projectId) {
+  private async resolveModelingProjectId(): Promise<string | null> {
+    const existing = this.existingModelingProjectId();
+    if (existing) {
+      return existing;
+    }
+    const name = this.newProjectName.trim();
+    if (name.length < 2) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Proyecto',
-        detail: 'Selecciona un centro de costo (proyecto)',
+        summary: 'Nombre del proyecto',
+        detail: 'Escribe al menos 2 caracteres o elige un proyecto existente',
       });
-      return;
+      return null;
     }
+    const created = await firstValueFrom(this.api.createModelingProject(name));
+    return created?._id ?? null;
+  }
+
+  async submitUpload(): Promise<void> {
     if (this.selectedFiles.length === 0) {
       this.messageService.add({
         severity: 'warn',
@@ -134,11 +154,17 @@ export class Sales3dModelingListPage implements OnInit {
 
     this.uploading.set(true);
     try {
+      const modelingProjectId = await this.resolveModelingProjectId();
+      if (!modelingProjectId) {
+        this.uploading.set(false);
+        return;
+      }
+
       const specs = this.selectedFiles.map((f) => ({
         fileName: f.name,
         contentType: f.type?.trim() ? f.type : 'application/octet-stream',
       }));
-      const presigned = await firstValueFrom(this.api.presignedUrls(projectId, specs));
+      const presigned = await firstValueFrom(this.api.presignedUrls(modelingProjectId, specs));
       for (let i = 0; i < this.selectedFiles.length; i++) {
         const file = this.selectedFiles[i];
         const pr = presigned[i];
@@ -152,7 +178,7 @@ export class Sales3dModelingListPage implements OnInit {
         mimeType: f.type?.trim() ? f.type : 'application/octet-stream',
         size: f.size,
       }));
-      await firstValueFrom(this.api.confirm(projectId, attachments));
+      await firstValueFrom(this.api.confirm(modelingProjectId, attachments));
       this.messageService.add({
         severity: 'success',
         summary: 'Listo',
