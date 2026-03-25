@@ -609,7 +609,7 @@ export class MenuConfigService {
         { label: 'Cotizaciones', icon: 'pi pi-dollar', routerLink: '/quotes', description: 'Propuestas económicas' },
         { label: 'TDRs', icon: 'pi pi-file', routerLink: '/tdrs', description: 'Términos de referencia' },
         { label: 'Órdenes', icon: 'pi pi-shopping-cart', routerLink: '/orders', description: 'Órdenes de venta' },
-        { label: 'Modelado 3D', icon: 'pi pi-box', routerLink: '/sales/modelado-3d', description: 'Planos 3D por proyecto' },
+        { label: 'Modelado 3D', icon: 'pi pi-box', routerLink: '/sales/modelado-3d', description: 'Planos 3D por proyecto de modelado (ventas)' },
       ],
     },
     {
