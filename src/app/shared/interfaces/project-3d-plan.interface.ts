@@ -1,14 +1,20 @@
 export interface Project3dPlanSummary {
-  projectId: string;
+  modelingProjectId: string;
   name: string;
-  code: string;
   fileCount: number;
   lastUploadedAt: string;
 }
 
+/** Proyecto de modelado 3D (independiente del centro de costo). */
+export interface Modeling3dProjectDto {
+  _id: string;
+  name: string;
+  createdAt: string;
+}
+
 export interface Project3dPlanFile {
   _id: string;
-  projectId: string;
+  modelingProjectId: string;
   url: string;
   key: string;
   originalName: string;

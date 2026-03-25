@@ -13,11 +13,13 @@
     ></button>
   </div>
 
-  @if (project(); as p) {
+  @if (modelingProject(); as mp) {
     <div>
-      <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase">Centro de costo</p>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ p.name }}</h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400">Código {{ p.code }}</p>
+      <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase">Proyecto modelado 3D</p>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ mp.name }}</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        Creado {{ mp.createdAt | date: 'short' }}
+      </p>
     </div>
   }
 
