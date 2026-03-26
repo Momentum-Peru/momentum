@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router'; // Added import
+import { ActivatedRoute, Router } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -43,6 +43,7 @@ import {
 } from '../../shared/interfaces/audio-analysis.interface';
 import { firstValueFrom } from 'rxjs';
 import { ErpNotifyService } from '../../core/services/erp-notify.service';
+import { buildWhatsAppUrl } from '../../shared/utils/whatsapp-url.util';
 
 @Component({
   selector: 'app-follow-ups',
@@ -74,7 +75,8 @@ export class FollowUpsPage implements OnInit {
   private readonly usersApi = inject(UsersApiService);
   private readonly erpNotify = inject(ErpNotifyService);
   private readonly confirmationService = inject(ConfirmationService);
-  private readonly route = inject(ActivatedRoute); // Injected Route
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly agendaApi = inject(AgendaApiService);
 
   // Signals
@@ -126,7 +128,7 @@ export class FollowUpsPage implements OnInit {
 
   statusOptions: { label: string; value: FollowUpStatus | '' }[] = [
     { label: 'Todos', value: '' },
-    { label: 'Programado', value: 'SCHEDULED' },
+    { label: 'Pendiente', value: 'SCHEDULED' },
     { label: 'Completado', value: 'COMPLETED' },
     { label: 'Cancelado', value: 'CANCELLED' },
   ];
@@ -555,6 +557,43 @@ export class FollowUpsPage implements OnInit {
   getContactName(id: string | undefined): string {
     if (!id) return '—';
     return this.contacts().find((c) => c._id === id)?.name ?? '—';
+  }
+
+  getContactForFollowUp(fu: FollowUp): ContactCrm | undefined {
+    const id = fu.contactId;
+    if (!id) return undefined;
+    return this.contacts().find((c) => c._id === id);
+  }
+
+  contactWhatsAppUrl(contact: ContactCrm | undefined): string | null {
+    if (!contact) return null;
+    return buildWhatsAppUrl(contact.mobile || contact.phone);
+  }
+
+  openWhatsAppForContact(contact: ContactCrm | undefined): void {
+    const url = this.contactWhatsAppUrl(contact);
+    if (!url) {
+      this.erpNotify.warn(
+        'Sin WhatsApp',
+        'Este contacto no tiene teléfono válido para abrir WhatsApp.',
+      );
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  openCallContact(contact: ContactCrm | undefined): void {
+    const phone = contact?.phone || contact?.mobile;
+    if (!phone?.trim()) {
+      this.erpNotify.warn('Sin teléfono', 'Este contacto no tiene número para llamar.');
+      return;
+    }
+    window.open(`tel:${phone}`, '_self');
+  }
+
+  goToLeadContact(contactId: string | undefined): void {
+    if (!contactId) return;
+    void this.router.navigate(['/leads', contactId]);
   }
 
   getTypeColorClass(type?: FollowUpType): string {
