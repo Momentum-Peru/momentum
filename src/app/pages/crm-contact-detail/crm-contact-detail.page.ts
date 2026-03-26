@@ -56,7 +56,7 @@ type AudioFollowUpMode = 'transcribe' | 'analyze';
 interface FileWebhookOption {
   id: string;
   label: string;
-  /** Slug permitido en GET /crm/n8n-webhooks/:slug (proxy servidor → n8n). */
+  /** Slug permitido en POST /crm/n8n-webhooks/:slug (proxy servidor → n8n). */
   slug: string;
   /** URL pública del webhook (texto de auditoría / descripción). */
   n8nUrl: string;
@@ -370,40 +370,59 @@ export class CrmContactDetailPage implements OnInit {
     if (!contact?._id) return;
     if (this.fileWebhookLoadingId()) return;
 
+    const nombre = (contact.name ?? '').trim();
+    if (!nombre) {
+      this.erpNotify.warn(
+        'Falta el nombre',
+        'Completa el nombre del contacto antes de enviar archivos al flujo n8n.',
+      );
+      return;
+    }
+
+    const telefono = (contact.phone ?? contact.mobile ?? '')
+      .replace(/\s+/g, '')
+      .trim();
+
+    const sentPayload = { nombre, telefono };
+
     this.fileWebhookLoadingId.set(option.id);
     const proxyUrl = `${environment.apiUrl}/crm/n8n-webhooks/${option.slug}`;
-    this.http.get<N8nProxyResponse>(proxyUrl).subscribe({
-      next: (data) => {
-        const ok =
-          data.upstreamStatus >= 200 && data.upstreamStatus < 300;
-        const sanitized = this.sanitizeWebhookBodyForDisplay(data.body ?? '');
-        const truncated = sanitized.length > 12000;
-        const bodySlice = sanitized.slice(0, 12000);
-        this.persistWebhookFollowUp(contact, option, {
-          ok,
-          upstreamHttpStatus: data.upstreamStatus,
-          responseBody: bodySlice,
-          bodyTruncated: truncated,
-          resolvedUrl: data.upstreamUrl ?? option.n8nUrl,
-        });
-      },
-      error: (err: HttpErrorResponse) => {
-        const friendly = this.mapProxyHttpError(err);
-        const raw =
-          typeof err.error === 'string'
-            ? err.error
-            : JSON.stringify(err.error ?? { message: err.message });
-        const sanitized = this.sanitizeWebhookBodyForDisplay(raw);
-        this.persistWebhookFollowUp(contact, option, {
-          ok: false,
-          upstreamHttpStatus: err.status ?? 0,
-          responseBody: sanitized.slice(0, 12000),
-          bodyTruncated: sanitized.length > 12000,
-          resolvedUrl: option.n8nUrl,
-          backendFailureMessage: friendly,
-        });
-      },
-    });
+    this.http
+      .post<N8nProxyResponse>(proxyUrl, sentPayload)
+      .subscribe({
+        next: (data) => {
+          const ok =
+            data.upstreamStatus >= 200 && data.upstreamStatus < 300;
+          const sanitized = this.sanitizeWebhookBodyForDisplay(data.body ?? '');
+          const truncated = sanitized.length > 12000;
+          const bodySlice = sanitized.slice(0, 12000);
+          this.persistWebhookFollowUp(contact, option, {
+            ok,
+            upstreamHttpStatus: data.upstreamStatus,
+            responseBody: bodySlice,
+            bodyTruncated: truncated,
+            resolvedUrl: data.upstreamUrl ?? option.n8nUrl,
+            sentPayload,
+          });
+        },
+        error: (err: HttpErrorResponse) => {
+          const friendly = this.mapProxyHttpError(err);
+          const raw =
+            typeof err.error === 'string'
+              ? err.error
+              : JSON.stringify(err.error ?? { message: err.message });
+          const sanitized = this.sanitizeWebhookBodyForDisplay(raw);
+          this.persistWebhookFollowUp(contact, option, {
+            ok: false,
+            upstreamHttpStatus: err.status ?? 0,
+            responseBody: sanitized.slice(0, 12000),
+            bodyTruncated: sanitized.length > 12000,
+            resolvedUrl: option.n8nUrl,
+            backendFailureMessage: friendly,
+            sentPayload,
+          });
+        },
+      });
   }
 
   private persistWebhookFollowUp(
@@ -416,6 +435,7 @@ export class CrmContactDetailPage implements OnInit {
       bodyTruncated: boolean;
       resolvedUrl: string;
       backendFailureMessage?: string;
+      sentPayload: { nombre: string; telefono: string };
     },
   ): void {
     const {
@@ -425,6 +445,7 @@ export class CrmContactDetailPage implements OnInit {
       bodyTruncated,
       resolvedUrl,
       backendFailureMessage,
+      sentPayload,
     } = result;
 
     const title = `Enviar archivos: ${option.label}`;
@@ -436,7 +457,8 @@ export class CrmContactDetailPage implements OnInit {
       `Acción: ${option.label}`,
       `Webhook en n8n: ${option.n8nUrl}`,
       `URL atendida por el flujo: ${resolvedUrl}`,
-      'Conexión: aplicación → API Momentum → n8n (evita bloqueos CORS del navegador).',
+      'Conexión: aplicación → API Momentum → n8n (POST JSON; evita CORS del navegador).',
+      `Payload enviado: ${JSON.stringify(sentPayload)}`,
       '',
       `Resumen: ${resumenUsuario}`,
       `Código HTTP devuelto por n8n: ${upstreamHttpStatus || '—'}`,

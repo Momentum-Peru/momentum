@@ -21,11 +21,13 @@ import { TagModule } from 'primeng/tag';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ContactsCrmApiService } from '../../shared/services/contacts-crm-api.service';
+import { UsersApiService } from '../../shared/services/users-api.service';
 import {
   ContactCrm,
   ContactSource,
   CreateContactCrmRequest,
 } from '../../shared/interfaces/contact-crm.interface';
+import { UserOption } from '../../shared/interfaces/menu-permission.interface';
 import { Router } from '@angular/router';
 import { ErpNotifyService } from '../../core/services/erp-notify.service';
 
@@ -56,11 +58,13 @@ type FollowUpStatusFilter = '' | 'NONE' | 'SCHEDULED' | 'COMPLETED' | 'CANCELLED
 })
 export class CrmContactsPage implements OnInit, OnDestroy {
   private readonly contactsApi = inject(ContactsCrmApiService);
+  private readonly usersApi = inject(UsersApiService);
   private readonly erpNotify = inject(ErpNotifyService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly router = inject(Router);
 
   contacts = signal<ContactCrm[]>([]);
+  users = signal<UserOption[]>([]);
   loading = signal<boolean>(false);
 
   filterName = signal('');
@@ -95,7 +99,15 @@ export class CrmContactsPage implements OnInit, OnDestroy {
   ];
 
   ngOnInit(): void {
+    this.loadUsers();
     this.loadContacts();
+  }
+
+  private loadUsers(): void {
+    this.usersApi.list().subscribe({
+      next: (u) => this.users.set(u),
+      error: () => this.users.set([]),
+    });
   }
 
   ngOnDestroy(): void {
@@ -361,5 +373,10 @@ export class CrmContactsPage implements OnInit, OnDestroy {
     if (source === 'REFERRAL') return 'success';
     if (source === 'SOCIAL_MEDIA') return 'info';
     return 'secondary';
+  }
+
+  getUserName(userId?: string): string {
+    if (!userId) return 'Sin asignar';
+    return this.users().find((u) => u._id === userId)?.name ?? '—';
   }
 }
