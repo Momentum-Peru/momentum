@@ -213,21 +213,31 @@ export class FollowUpsPage implements OnInit {
   private clientsLoaded = signal<boolean>(false);
   private contactsLoaded = signal<boolean>(false);
 
-  /** Orden cronológico (antiguo → reciente) para pasos 1…n en la vista horizontal. */
+  /** Fecha efectiva del paso (programada prioriza sobre creación), para ordenar el pipeline. */
+  private followUpSortTimestamp(fu: FollowUp): number {
+    return fu.scheduledDate
+      ? new Date(fu.scheduledDate).getTime()
+      : fu.createdAt
+        ? new Date(fu.createdAt).getTime()
+        : 0;
+  }
+
+  private groupLatestFollowUpMs(group: { followUps: FollowUp[] }): number {
+    let max = 0;
+    for (const fu of group.followUps) {
+      const t = this.followUpSortTimestamp(fu);
+      if (t > max) max = t;
+    }
+    return max;
+  }
+
+  /** Orden cronológico (reciente → antiguo); el paso 1 es el más nuevo. */
   itemsForStepper = computed(() => {
     const list = [...this.items()];
     return list.sort((a, b) => {
-      const ta = a.scheduledDate
-        ? new Date(a.scheduledDate).getTime()
-        : a.createdAt
-          ? new Date(a.createdAt).getTime()
-          : 0;
-      const tb = b.scheduledDate
-        ? new Date(b.scheduledDate).getTime()
-        : b.createdAt
-          ? new Date(b.createdAt).getTime()
-          : 0;
-      return ta - tb;
+      const tb = this.followUpSortTimestamp(b);
+      const ta = this.followUpSortTimestamp(a);
+      return tb - ta;
     });
   });
 
@@ -253,20 +263,17 @@ export class FollowUpsPage implements OnInit {
 
     for (const group of grouped.values()) {
       group.followUps.sort((a, b) => {
-        const ta = a.scheduledDate
-          ? new Date(a.scheduledDate).getTime()
-          : a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const tb = b.scheduledDate
-          ? new Date(b.scheduledDate).getTime()
-          : b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return ta - tb;
+        const tb = this.followUpSortTimestamp(b);
+        const ta = this.followUpSortTimestamp(a);
+        return tb - ta;
       });
     }
 
     return [...grouped.values()].sort((a, b) => {
+      if (!a.contactId && !b.contactId) return 0;
       if (!a.contactId) return 1;
       if (!b.contactId) return -1;
-      return a.contactName.localeCompare(b.contactName);
+      return this.groupLatestFollowUpMs(b) - this.groupLatestFollowUpMs(a);
     });
   });
 
