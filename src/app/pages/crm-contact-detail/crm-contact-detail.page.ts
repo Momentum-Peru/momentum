@@ -5,9 +5,11 @@ import {
   inject,
   signal,
   computed,
+  viewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
@@ -19,7 +21,8 @@ import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { TooltipModule } from 'primeng/tooltip';
 import { DividerModule } from 'primeng/divider';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { Popover } from 'primeng/popover';
+import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ContactsCrmApiService } from '../../shared/services/contacts-crm-api.service';
 import {
@@ -45,9 +48,25 @@ import { buildWhatsAppUrl } from '../../shared/utils/whatsapp-url.util';
 import { AudioAnalysisResponse } from '../../shared/interfaces/audio-analysis.interface';
 import { firstValueFrom } from 'rxjs';
 import { ErpNotifyService } from '../../core/services/erp-notify.service';
+import { environment } from '../../../environments/environment';
 
 type Tab = 'info' | 'seguimientos';
 type AudioFollowUpMode = 'transcribe' | 'analyze';
+
+interface FileWebhookOption {
+  id: string;
+  label: string;
+  /** Slug permitido en GET /crm/n8n-webhooks/:slug (proxy servidor → n8n). */
+  slug: string;
+  /** URL pública del webhook (texto de auditoría / descripción). */
+  n8nUrl: string;
+}
+
+interface N8nProxyResponse {
+  upstreamStatus: number;
+  upstreamUrl: string;
+  body: string;
+}
 
 @Component({
   selector: 'app-crm-contact-detail',
@@ -67,14 +86,18 @@ type AudioFollowUpMode = 'transcribe' | 'analyze';
     TooltipModule,
     DividerModule,
     ConfirmDialogModule,
+    Popover,
   ],
   providers: [ConfirmationService],
   templateUrl: './crm-contact-detail.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CrmContactDetailPage implements OnInit {
+  private readonly sendFilesPanel = viewChild<Popover>('sendFilesPanel');
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
   private readonly contactsApi = inject(ContactsCrmApiService);
   private readonly followUpsApi = inject(FollowUpsApiService);
   private readonly erpNotify = inject(ErpNotifyService);
@@ -98,7 +121,41 @@ export class CrmContactDetailPage implements OnInit {
   savingCompany = signal(false);
 
   // ── UI state ──────────────────────────────────────────────────────────────
-  activeTab = signal<Tab>('info');
+  activeTab = signal<Tab>('seguimientos');
+
+  /** Webhook "Enviar archivos": id de la opción en curso o null. */
+  fileWebhookLoadingId = signal<string | null>(null);
+
+  readonly fileWebhookOptions: FileWebhookOption[] = [
+    {
+      id: 'cusco-media',
+      label: 'Imágenes y videos — Proyecto Cusco',
+      slug: 'momentumcusco',
+      n8nUrl:
+        'https://clase-easypanel-n8n.zycrzt.easypanel.host/webhook/momentumcusco',
+    },
+    {
+      id: 'cusco-docs',
+      label: 'Documentos — Proyecto Cusco',
+      slug: 'momentumdocusco',
+      n8nUrl:
+        'https://clase-easypanel-n8n.zycrzt.easypanel.host/webhook/momentumdocusco',
+    },
+    {
+      id: 'chincha-media',
+      label: 'Imágenes y videos — Proyecto Chincha',
+      slug: 'momentumchincha',
+      n8nUrl:
+        'https://clase-easypanel-n8n.zycrzt.easypanel.host/webhook/momentumchincha',
+    },
+    {
+      id: 'satipo-media',
+      label: 'Imágenes y videos — Proyecto Satipo',
+      slug: 'momentumsatipo',
+      n8nUrl:
+        'https://clase-easypanel-n8n.zycrzt.easypanel.host/webhook/momentumsatipo',
+    },
+  ];
 
   // Inline field editing
   editingField = signal<string | null>(null);
@@ -301,6 +358,198 @@ export class CrmContactDetailPage implements OnInit {
 
   setTab(tab: Tab): void {
     this.activeTab.set(tab);
+  }
+
+  /**
+   * Llama al proxy del API (servidor → n8n) y crea un seguimiento con la respuesta.
+   * Evita CORS del navegador (error HTTP 0 al llamar a n8n directamente).
+   */
+  runFileWebhook(option: FileWebhookOption, event: Event): void {
+    event.stopPropagation();
+    const contact = this.contact();
+    if (!contact?._id) return;
+    if (this.fileWebhookLoadingId()) return;
+
+    this.fileWebhookLoadingId.set(option.id);
+    const proxyUrl = `${environment.apiUrl}/crm/n8n-webhooks/${option.slug}`;
+    this.http.get<N8nProxyResponse>(proxyUrl).subscribe({
+      next: (data) => {
+        const ok =
+          data.upstreamStatus >= 200 && data.upstreamStatus < 300;
+        const sanitized = this.sanitizeWebhookBodyForDisplay(data.body ?? '');
+        const truncated = sanitized.length > 12000;
+        const bodySlice = sanitized.slice(0, 12000);
+        this.persistWebhookFollowUp(contact, option, {
+          ok,
+          upstreamHttpStatus: data.upstreamStatus,
+          responseBody: bodySlice,
+          bodyTruncated: truncated,
+          resolvedUrl: data.upstreamUrl ?? option.n8nUrl,
+        });
+      },
+      error: (err: HttpErrorResponse) => {
+        const friendly = this.mapProxyHttpError(err);
+        const raw =
+          typeof err.error === 'string'
+            ? err.error
+            : JSON.stringify(err.error ?? { message: err.message });
+        const sanitized = this.sanitizeWebhookBodyForDisplay(raw);
+        this.persistWebhookFollowUp(contact, option, {
+          ok: false,
+          upstreamHttpStatus: err.status ?? 0,
+          responseBody: sanitized.slice(0, 12000),
+          bodyTruncated: sanitized.length > 12000,
+          resolvedUrl: option.n8nUrl,
+          backendFailureMessage: friendly,
+        });
+      },
+    });
+  }
+
+  private persistWebhookFollowUp(
+    contact: ContactCrm,
+    option: FileWebhookOption,
+    result: {
+      ok: boolean;
+      upstreamHttpStatus: number;
+      responseBody: string;
+      bodyTruncated: boolean;
+      resolvedUrl: string;
+      backendFailureMessage?: string;
+    },
+  ): void {
+    const {
+      ok,
+      upstreamHttpStatus,
+      responseBody,
+      bodyTruncated,
+      resolvedUrl,
+      backendFailureMessage,
+    } = result;
+
+    const title = `Enviar archivos: ${option.label}`;
+    const resumenUsuario = backendFailureMessage
+      ? backendFailureMessage
+      : this.upstreamSummaryForUser(ok, upstreamHttpStatus);
+
+    const lines = [
+      `Acción: ${option.label}`,
+      `Webhook en n8n: ${option.n8nUrl}`,
+      `URL atendida por el flujo: ${resolvedUrl}`,
+      'Conexión: aplicación → API Momentum → n8n (evita bloqueos CORS del navegador).',
+      '',
+      `Resumen: ${resumenUsuario}`,
+      `Código HTTP devuelto por n8n: ${upstreamHttpStatus || '—'}`,
+      bodyTruncated ? '\n(Respuesta truncada a 12 000 caracteres.)\n' : '',
+      '\n--- Respuesta técnica ---\n',
+      responseBody || '(vacío)',
+    ];
+
+    const outcome = backendFailureMessage
+      ? `No se ejecutó el flujo: ${backendFailureMessage}`
+      : ok
+        ? 'Listo. La respuesta de n8n está en la descripción.'
+        : this.shortOutcomeForFailedUpstream(upstreamHttpStatus);
+
+    const payload: CreateFollowUpRequest = {
+      contactId: contact._id!,
+      title,
+      type: 'OTHER',
+      status: 'COMPLETED',
+      description: lines.join('\n'),
+      outcome,
+    };
+    this.followUpsApi.create(payload).subscribe({
+      next: () => {
+        this.fileWebhookLoadingId.set(null);
+        this.sendFilesPanel()?.hide();
+        if (backendFailureMessage) {
+          this.erpNotify.warn(
+            'Seguimiento guardado',
+            'No se pudo contactar n8n; el detalle quedó registrado en el seguimiento.',
+          );
+        } else if (ok) {
+          this.erpNotify.success(
+            'Listo',
+            'La respuesta de n8n quedó guardada en seguimientos.',
+          );
+        } else {
+          this.erpNotify.warn(
+            'Revisa el seguimiento',
+            resumenUsuario,
+          );
+        }
+        this.loadFollowUps(contact);
+        this.activeTab.set('seguimientos');
+      },
+      error: () => {
+        this.fileWebhookLoadingId.set(null);
+        this.erpNotify.error('Error', 'No se pudo guardar el seguimiento.');
+      },
+    });
+  }
+
+  /** Texto legible según código HTTP devuelto por n8n (vía proxy). */
+  private upstreamSummaryForUser(ok: boolean, status: number): string {
+    if (ok) {
+      return `El flujo en n8n respondió correctamente (código ${status}).`;
+    }
+    if (status === 404) {
+      return 'n8n indica que esa ruta de webhook no existe o el workflow está inactivo / sin publicar.';
+    }
+    if (status === 401 || status === 403) {
+      return 'n8n rechazó la petición. Revisa si el nodo Webhook exige autenticación o header.';
+    }
+    if (status >= 500) {
+      return 'n8n devolvió error interno. Abre la ejecución del workflow en n8n para ver el fallo.';
+    }
+    return `n8n respondió con código ${status}. Mira el detalle de la respuesta más abajo.`;
+  }
+
+  private shortOutcomeForFailedUpstream(status: number): string {
+    if (status === 404) {
+      return 'Webhook no encontrado o flujo inactivo en n8n.';
+    }
+    if (status === 401 || status === 403) {
+      return 'Revisa autenticación del Webhook en n8n.';
+    }
+    if (status >= 500) {
+      return 'Error en n8n al procesar el webhook.';
+    }
+    return 'La llamada llegó a n8n pero el código de respuesta indica un problema.';
+  }
+
+  /** Cuando falla el GET al API proxy (no llegamos a n8n). */
+  private mapProxyHttpError(err: HttpErrorResponse): string {
+    if (err.status === 0) {
+      return 'No hay conexión con el servidor Momentum (red, VPN o API no disponible).';
+    }
+    if (err.status === 401 || err.status === 403) {
+      return 'Tu sesión expiró o no tienes permiso. Vuelve a iniciar sesión.';
+    }
+    const msg = (err.error as { message?: string })?.message;
+    if (typeof msg === 'string' && msg.trim().length > 0) {
+      return msg.length > 320 ? `${msg.slice(0, 317)}…` : msg;
+    }
+    if (err.status >= 500) {
+      return 'Momentum no pudo contactar a n8n (revisa que la instancia esté en línea y la URL sea correcta).';
+    }
+    return 'No se pudo completar la solicitud. Intenta de nuevo en unos segundos.';
+  }
+
+  /** Evita mostrar basura del cliente (p. ej. ProgressEvent serializado). */
+  private sanitizeWebhookBodyForDisplay(raw: string): string {
+    const t = (raw ?? '').trim();
+    if (!t) {
+      return '(Sin contenido en la respuesta.)';
+    }
+    if (
+      t === '{"isTrusted":true}' ||
+      /^[\s\{\[]*"isTrusted"\s*:\s*true/.test(t)
+    ) {
+      return '(Sin datos útiles en el cuerpo; suele ocurrir con errores del navegador. La llamada ahora pasa por el servidor Momentum.)';
+    }
+    return raw ?? '';
   }
 
   // ── Inline editing ────────────────────────────────────────────────────────
