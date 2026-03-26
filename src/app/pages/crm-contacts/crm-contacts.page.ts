@@ -21,15 +21,15 @@ import { TagModule } from 'primeng/tag';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ContactsCrmApiService } from '../../shared/services/contacts-crm-api.service';
-import { CrmCompaniesApiService } from '../../shared/services/crm-companies-api.service';
 import {
   ContactCrm,
   ContactSource,
   CreateContactCrmRequest,
 } from '../../shared/interfaces/contact-crm.interface';
-import { CompanyOption } from '../../shared/interfaces/company.interface';
 import { Router } from '@angular/router';
 import { ErpNotifyService } from '../../core/services/erp-notify.service';
+
+type FollowUpStatusFilter = '' | 'NONE' | 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
 
 @Component({
   selector: 'app-crm-contacts',
@@ -56,22 +56,29 @@ import { ErpNotifyService } from '../../core/services/erp-notify.service';
 })
 export class CrmContactsPage implements OnInit, OnDestroy {
   private readonly contactsApi = inject(ContactsCrmApiService);
-  private readonly crmCompaniesApi = inject(CrmCompaniesApiService);
   private readonly erpNotify = inject(ErpNotifyService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly router = inject(Router);
 
   contacts = signal<ContactCrm[]>([]);
-  companies = signal<CompanyOption[]>([]);
   loading = signal<boolean>(false);
 
-  /** Texto de búsqueda (nombre, teléfono o correo); se envía al API tras debounce. */
-  searchTerm = signal('');
+  filterName = signal('');
+  filterPhone = signal('');
+  filterFollowUpStatus = signal<FollowUpStatusFilter>('');
 
   /** Índice del primer registro en la página actual (para numerar filas con paginación). */
   tableFirst = signal(0);
 
-  private searchDebounceId: ReturnType<typeof setTimeout> | null = null;
+  private filterDebounceId: ReturnType<typeof setTimeout> | null = null;
+
+  readonly followUpStatusOptions: { label: string; value: FollowUpStatusFilter }[] = [
+    { label: 'Todos los estados', value: '' },
+    { label: 'Sin seguimiento', value: 'NONE' },
+    { label: 'Programado', value: 'SCHEDULED' },
+    { label: 'Hecho', value: 'COMPLETED' },
+    { label: 'Cancelado', value: 'CANCELLED' },
+  ];
 
   // Estado del formulario de alta de contacto
   showDialog = signal<boolean>(false);
@@ -89,39 +96,55 @@ export class CrmContactsPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadContacts();
-    this.crmCompaniesApi.listActiveAsOptions().subscribe({
-      next: (c) => this.companies.set(c),
-      error: () => this.companies.set([]),
-    });
-  }
-
-  getCompanyName(clientId?: string): string {
-    if (!clientId) return 'Sin empresa';
-    return this.companies().find((c) => c._id === clientId)?.name ?? 'Sin empresa';
   }
 
   ngOnDestroy(): void {
-    if (this.searchDebounceId != null) {
-      clearTimeout(this.searchDebounceId);
+    if (this.filterDebounceId != null) {
+      clearTimeout(this.filterDebounceId);
     }
   }
 
-  onSearchChange(raw: string): void {
-    this.searchTerm.set(raw);
-    if (this.searchDebounceId != null) {
-      clearTimeout(this.searchDebounceId);
+  hasActiveFilters(): boolean {
+    return (
+      this.filterName().trim().length > 0 ||
+      this.filterPhone().trim().length > 0 ||
+      this.filterFollowUpStatus() !== ''
+    );
+  }
+
+  onFilterNameChange(raw: string): void {
+    this.filterName.set(raw);
+    this.scheduleLoadContacts();
+  }
+
+  onFilterPhoneChange(raw: string): void {
+    this.filterPhone.set(raw);
+    this.scheduleLoadContacts();
+  }
+
+  onFilterStatusChange(value: FollowUpStatusFilter | null): void {
+    this.filterFollowUpStatus.set((value ?? '') as FollowUpStatusFilter);
+    this.scheduleLoadContacts();
+  }
+
+  private scheduleLoadContacts(): void {
+    if (this.filterDebounceId != null) {
+      clearTimeout(this.filterDebounceId);
     }
-    this.searchDebounceId = setTimeout(() => {
-      this.searchDebounceId = null;
+    this.filterDebounceId = setTimeout(() => {
+      this.filterDebounceId = null;
+      this.tableFirst.set(0);
       this.loadContacts();
     }, 350);
   }
 
-  clearSearch(): void {
-    this.searchTerm.set('');
-    if (this.searchDebounceId != null) {
-      clearTimeout(this.searchDebounceId);
-      this.searchDebounceId = null;
+  clearFilters(): void {
+    this.filterName.set('');
+    this.filterPhone.set('');
+    this.filterFollowUpStatus.set('');
+    if (this.filterDebounceId != null) {
+      clearTimeout(this.filterDebounceId);
+      this.filterDebounceId = null;
     }
     this.tableFirst.set(0);
     this.loadContacts();
@@ -133,11 +156,22 @@ export class CrmContactsPage implements OnInit, OnDestroy {
 
   loadContacts(): void {
     this.loading.set(true);
-    const q = this.searchTerm().trim();
-    this.contactsApi.list(q ? { search: q } : undefined).subscribe({
+    const name = this.filterName().trim();
+    const phone = this.filterPhone().trim();
+    const followUpStatus = this.filterFollowUpStatus();
+
+    const params =
+      name || phone || followUpStatus
+        ? {
+            ...(name ? { name } : {}),
+            ...(phone ? { phone } : {}),
+            ...(followUpStatus ? { followUpStatus } : {}),
+          }
+        : undefined;
+
+    this.contactsApi.list(params).subscribe({
       next: (items) => {
         this.contacts.set(items);
-        this.tableFirst.set(0);
         this.loading.set(false);
       },
       error: (error) => {
@@ -234,19 +268,50 @@ export class CrmContactsPage implements OnInit, OnDestroy {
               'Eliminado',
               n > 0
                 ? `Contacto eliminado (${n} seguimiento(s) borrados).`
-                : 'Contacto eliminado.'
+                : 'Contacto eliminado.',
             );
             this.loadContacts();
           },
           error: (err) => {
             this.erpNotify.error(
               'Error',
-              (err as { error?: { message?: string } })?.error?.message || 'No se pudo eliminar el contacto'
+              (err as { error?: { message?: string } })?.error?.message || 'No se pudo eliminar el contacto',
             );
           },
         });
       },
     });
+  }
+
+  /** Iniciales en recuadro: dos letras si hay nombre y apellido implícito, si no una. */
+  contactInitials(name?: string): string {
+    const n = (name ?? '').trim();
+    if (!n) return '?';
+    const parts = n.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      const a = parts[0].charAt(0);
+      const b = parts[1].charAt(0);
+      return (a + b).toUpperCase();
+    }
+    return n.charAt(0).toUpperCase();
+  }
+
+  /** Texto relativo corto para la fecha del último seguimiento. */
+  relativeFollowUpLabel(iso?: string): string {
+    if (!iso) return '';
+    const t = new Date(iso).getTime();
+    if (Number.isNaN(t)) return '';
+    const diff = Date.now() - t;
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return 'Hace un momento';
+    if (m < 60) return `Hace ${m} min`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `Hace ${h} h`;
+    const d = Math.floor(h / 24);
+    if (d < 7) return `Hace ${d} d`;
+    const w = Math.floor(d / 7);
+    if (w < 8) return `Hace ${w} sem.`;
+    return new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
   lastFollowUpTypeLabel(type?: string): string {

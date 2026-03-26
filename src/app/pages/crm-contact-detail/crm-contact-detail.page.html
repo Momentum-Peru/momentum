@@ -351,120 +351,83 @@
   <main class="flex-1 min-w-0 flex flex-col overflow-hidden">
 
     <!-- Tab bar -->
-    <div class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center px-6 shrink-0">
-      <button
-        type="button"
-        class="px-4 py-3 text-sm font-medium border-b-2 transition-colors"
-        [class.border-blue-600]="activeTab() === 'info'"
-        [class.text-blue-600]="activeTab() === 'info'"
-        [class.border-transparent]="activeTab() !== 'info'"
-        [class.text-gray-500]="activeTab() !== 'info'"
-        (click)="setTab('info')"
-      >
-        Información
-      </button>
-      <button
-        type="button"
-        class="px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5"
-        [class.border-blue-600]="activeTab() === 'seguimientos'"
-        [class.text-blue-600]="activeTab() === 'seguimientos'"
-        [class.border-transparent]="activeTab() !== 'seguimientos'"
-        [class.text-gray-500]="activeTab() !== 'seguimientos'"
-        (click)="setTab('seguimientos')"
-      >
-        Seguimientos
-        @if (followUpCounts().total > 0) {
-          <span class="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">
-            {{ followUpCounts().total }}
-          </span>
-        }
-      </button>
+    <div
+      class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-wrap items-center justify-between gap-3 px-6 py-1 shrink-0"
+    >
+      <div class="flex items-center min-w-0">
+        <button
+          type="button"
+          class="px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5"
+          [class.border-blue-600]="activeTab() === 'seguimientos'"
+          [class.text-blue-600]="activeTab() === 'seguimientos'"
+          [class.border-transparent]="activeTab() !== 'seguimientos'"
+          [class.text-gray-500]="activeTab() !== 'seguimientos'"
+          (click)="setTab('seguimientos')"
+        >
+          Seguimientos
+          @if (followUpCounts().total > 0) {
+            <span class="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">
+              {{ followUpCounts().total }}
+            </span>
+          }
+        </button>
+        <button
+          type="button"
+          class="px-4 py-3 text-sm font-medium border-b-2 transition-colors"
+          [class.border-blue-600]="activeTab() === 'info'"
+          [class.text-blue-600]="activeTab() === 'info'"
+          [class.border-transparent]="activeTab() !== 'info'"
+          [class.text-gray-500]="activeTab() !== 'info'"
+          (click)="setTab('info')"
+        >
+          Información
+        </button>
+      </div>
+      <div class="flex items-center gap-2 shrink-0 pb-1">
+        <button
+          pButton
+          type="button"
+          label="Enviar archivos"
+          icon="pi pi-cloud-upload"
+          class="p-button-sm p-button-outlined"
+          (click)="sendFilesPanel.toggle($event)"
+          pTooltip="Disparar webhooks n8n y registrar la respuesta como seguimiento"
+          tooltipPosition="bottom"
+          aria-haspopup="true"
+          aria-label="Abrir opciones para enviar archivos por webhook"
+        ></button>
+        <p-popover
+          #sendFilesPanel
+          [appendTo]="'body'"
+          [style]="{ width: 'min(22rem, 92vw)' }"
+          styleClass="crm-send-files-popover shadow-lg"
+        >
+          <div class="px-1 pb-1 pt-0.5">
+            <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-1">
+              Elegir proyecto (petición GET)
+            </p>
+            <div class="flex flex-col gap-2">
+              @for (opt of fileWebhookOptions; track opt.id) {
+                <button
+                  pButton
+                  type="button"
+                  class="w-full p-button-outlined p-button-sm justify-start text-left whitespace-normal h-auto py-2 min-h-[2.5rem]"
+                  [label]="opt.label"
+                  [loading]="fileWebhookLoadingId() === opt.id"
+                  [disabled]="fileWebhookLoadingId() !== null && fileWebhookLoadingId() !== opt.id"
+                  (click)="runFileWebhook(opt, $event)"
+                ></button>
+              }
+            </div>
+          </div>
+        </p-popover>
+      </div>
     </div>
 
     <!-- Tab content -->
     <div class="flex-1 overflow-y-auto p-6 space-y-4">
 
-      <!-- ── TAB: INFORMACIÓN ── -->
-      @if (activeTab() === 'info') {
-
-        <!-- Perfil del contacto -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
-            <h3 class="font-semibold text-gray-800 dark:text-gray-100">Perfil del contacto</h3>
-          </div>
-          <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4 text-sm">
-            <div>
-              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Empresa vinculada</div>
-              <div class="text-gray-800 dark:text-gray-200">{{ linkedClient()?.name || '—' }}</div>
-            </div>
-            <div>
-              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Cargo</div>
-              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.position || '—' }}</div>
-            </div>
-            <div>
-              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Departamento</div>
-              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.department || '—' }}</div>
-            </div>
-            <div>
-              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Correo</div>
-              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.email || '—' }}</div>
-            </div>
-            <div>
-              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Teléfono</div>
-              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.phone || '—' }}</div>
-            </div>
-            <div>
-              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Móvil</div>
-              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.mobile || '—' }}</div>
-            </div>
-            <div>
-              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Procedencia</div>
-              @if (contact()?.source) {
-                <p-tag [value]="getSourceLabel(contact()?.source)" [severity]="getSourceSeverity(contact()?.source)" styleClass="text-xs"></p-tag>
-              } @else {
-                <span class="text-gray-400">—</span>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- Notas -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
-            <h3 class="font-semibold text-gray-800 dark:text-gray-100">Notas</h3>
-            @if (editingField() !== 'notes') {
-              <button
-                pButton
-                type="button"
-                icon="pi pi-pencil"
-                class="p-button-text p-button-sm"
-                (click)="startEdit('notes', contact()?.notes)"
-              ></button>
-            }
-          </div>
-          <div class="p-5">
-            @if (editingField() === 'notes') {
-              <textarea
-                pTextarea
-                rows="4"
-                class="w-full text-sm"
-                [ngModel]="editingValue()"
-                (ngModelChange)="editingValue.set($event)"
-              ></textarea>
-              <div class="flex gap-2 mt-2">
-                <button pButton type="button" label="Guardar" class="p-button-sm" (click)="saveField('notes')"></button>
-                <button pButton type="button" label="Cancelar" class="p-button-text p-button-sm" (click)="cancelEdit()"></button>
-              </div>
-            } @else {
-              <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                {{ contact()?.notes || 'Sin notas. Haz clic en el lápiz para agregar.' }}
-              </p>
-            }
-          </div>
-        </div>
-      }
-
-      <!-- ── TAB: SEGUIMIENTOS ── -->
+      <!-- ── TAB: SEGUIMIENTOS (primero) ── -->
       @if (activeTab() === 'seguimientos') {
 
         <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
@@ -619,6 +582,86 @@
               }
             </ul>
           }
+        </div>
+      }
+
+      <!-- ── TAB: INFORMACIÓN ── -->
+      @if (activeTab() === 'info') {
+
+        <!-- Perfil del contacto -->
+        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-100">Perfil del contacto</h3>
+          </div>
+          <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4 text-sm">
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Empresa vinculada</div>
+              <div class="text-gray-800 dark:text-gray-200">{{ linkedClient()?.name || '—' }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Cargo</div>
+              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.position || '—' }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Departamento</div>
+              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.department || '—' }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Correo</div>
+              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.email || '—' }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Teléfono</div>
+              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.phone || '—' }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Móvil</div>
+              <div class="text-gray-800 dark:text-gray-200">{{ contact()?.mobile || '—' }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Procedencia</div>
+              @if (contact()?.source) {
+                <p-tag [value]="getSourceLabel(contact()?.source)" [severity]="getSourceSeverity(contact()?.source)" styleClass="text-xs"></p-tag>
+              } @else {
+                <span class="text-gray-400">—</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Notas -->
+        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-100">Notas</h3>
+            @if (editingField() !== 'notes') {
+              <button
+                pButton
+                type="button"
+                icon="pi pi-pencil"
+                class="p-button-text p-button-sm"
+                (click)="startEdit('notes', contact()?.notes)"
+              ></button>
+            }
+          </div>
+          <div class="p-5">
+            @if (editingField() === 'notes') {
+              <textarea
+                pTextarea
+                rows="4"
+                class="w-full text-sm"
+                [ngModel]="editingValue()"
+                (ngModelChange)="editingValue.set($event)"
+              ></textarea>
+              <div class="flex gap-2 mt-2">
+                <button pButton type="button" label="Guardar" class="p-button-sm" (click)="saveField('notes')"></button>
+                <button pButton type="button" label="Cancelar" class="p-button-text p-button-sm" (click)="cancelEdit()"></button>
+              </div>
+            } @else {
+              <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                {{ contact()?.notes || 'Sin notas. Haz clic en el lápiz para agregar.' }}
+              </p>
+            }
+          </div>
         </div>
       }
     </div>

@@ -60,4 +60,10 @@ export interface ContactCrmQueryParams {
   assignedTo?: string;
   isPrimary?: boolean;
   search?: string;
+  /** Filtro por nombre (parcial); el backend combina con otros filtros por AND */
+  name?: string;
+  /** Filtro por teléfono o móvil (parcial) */
+  phone?: string;
+  /** SCHEDULED | COMPLETED | CANCELLED | NONE (sin último seguimiento en UI) */
+  followUpStatus?: string;
 }
