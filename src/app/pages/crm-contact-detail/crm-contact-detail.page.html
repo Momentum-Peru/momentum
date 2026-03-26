@@ -187,7 +187,32 @@
           </button>
 
         </div>
-      </div>
+        </div>
+
+        <!-- Responsable CRM (visible al gestionar el contacto) -->
+        <div class="px-5 pb-4 border-b border-gray-100 dark:border-gray-800">
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            Asignar a
+          </label>
+          <p-select
+            [options]="users()"
+            optionLabel="name"
+            optionValue="_id"
+            [ngModel]="contact()?.assignedTo ?? ''"
+            (ngModelChange)="saveAssignedTo($event)"
+            placeholder="Sin asignar — elige responsable"
+            [showClear]="true"
+            [filter]="true"
+            filterPlaceholder="Buscar persona…"
+            [loading]="savingAssignee()"
+            [disabled]="savingAssignee()"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+          <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5 leading-snug">
+            Queda reflejado en la lista de leads para que el equipo sepa quién lleva el caso.
+          </p>
+        </div>
 
       <!-- Información Clave -->
       <div class="flex-1 px-4 py-4 space-y-1">
@@ -447,6 +472,63 @@
             ></button>
           </div>
 
+          <!-- Datos del contacto + accesos rápidos (contexto en seguimientos) -->
+          <div
+            class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 px-4 sm:px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-slate-50/90 dark:bg-slate-900/40"
+          >
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+              <span class="text-[10px] font-semibold text-gray-400 uppercase shrink-0">Contacto</span>
+              <span class="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
+                {{ contact()?.name || '—' }}
+              </span>
+            </div>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+              @if (contact()?.phone || contact()?.mobile) {
+                <a
+                  class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+                  [href]="'tel:' + (contact()?.phone || contact()?.mobile)"
+                  (click)="$event.stopPropagation()"
+                >
+                  <i class="pi pi-phone text-[10px]"></i>
+                  {{ contact()?.phone || contact()?.mobile }}
+                </a>
+              } @else {
+                <span class="text-gray-400">Sin teléfono</span>
+              }
+              @if (contact()?.email) {
+                <a
+                  class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline truncate max-w-[11rem] sm:max-w-[16rem]"
+                  [href]="'mailto:' + contact()?.email"
+                  (click)="$event.stopPropagation()"
+                >
+                  <i class="pi pi-envelope text-[10px] shrink-0"></i>
+                  <span class="truncate">{{ contact()?.email }}</span>
+                </a>
+              }
+            </div>
+            <div class="flex flex-wrap gap-2 sm:ml-auto shrink-0">
+              <button
+                pButton
+                type="button"
+                label="WhatsApp"
+                icon="pi pi-whatsapp"
+                class="p-button-sm"
+                [disabled]="!whatsappUrl()"
+                (click)="openWhatsApp()"
+                pTooltip="Abrir chat en WhatsApp"
+              ></button>
+              <button
+                pButton
+                type="button"
+                label="Llamar"
+                icon="pi pi-phone"
+                class="p-button-sm p-button-outlined"
+                [disabled]="!(contact()?.phone || contact()?.mobile)"
+                (click)="callContact()"
+              ></button>
+            </div>
+          </div>
+
           @if (showNewFollowUpForm()) {
             <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-br from-blue-50 to-violet-50/40 dark:from-blue-950/25 dark:to-violet-950/20 space-y-3">
               <div class="flex flex-wrap gap-2">
@@ -554,7 +636,16 @@
                           styleClass="text-[10px] ml-2"
                         ></p-tag>
                       </div>
-                      <div class="flex items-center gap-1 shrink-0">
+                      <div class="flex items-center gap-0.5 shrink-0">
+                        <button
+                          pButton
+                          type="button"
+                          icon="pi pi-whatsapp"
+                          class="p-button-text p-button-sm p-0 w-8 h-8 text-emerald-600"
+                          [disabled]="!whatsappUrl()"
+                          pTooltip="WhatsApp"
+                          (click)="openWhatsApp()"
+                        ></button>
                         <button pButton type="button" icon="pi pi-pencil"
                           class="p-button-text p-button-sm p-0 w-7 h-7" (click)="openEditFollowUp(fu)"></button>
                         <button pButton type="button" icon="pi pi-trash"
@@ -625,6 +716,24 @@
               } @else {
                 <span class="text-gray-400">—</span>
               }
+            </div>
+            <div class="md:col-span-3 pt-1">
+              <div class="text-[11px] font-medium text-gray-400 uppercase mb-1">Asignar a</div>
+              <p-select
+                [options]="users()"
+                optionLabel="name"
+                optionValue="_id"
+                [ngModel]="contact()?.assignedTo ?? ''"
+                (ngModelChange)="saveAssignedTo($event)"
+                placeholder="Sin asignar — elige responsable"
+                [showClear]="true"
+                [filter]="true"
+                filterPlaceholder="Buscar persona…"
+                [loading]="savingAssignee()"
+                [disabled]="savingAssignee()"
+                [appendTo]="'body'"
+                class="w-full max-w-md"
+              ></p-select>
             </div>
           </div>
         </div>
@@ -832,6 +941,33 @@
             [ngModel]="editingFollowUp()!.userId" (ngModelChange)="onEditFuChange('userId', $event)"
             [appendTo]="'body'" class="w-full"></p-select>
         </div>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button
+          pButton
+          type="button"
+          label="WhatsApp"
+          icon="pi pi-whatsapp"
+          class="p-button-sm"
+          [disabled]="!whatsappUrl()"
+          (click)="openWhatsApp()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Llamar"
+          icon="pi pi-phone"
+          class="p-button-sm p-button-outlined"
+          (click)="callContact()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Correo"
+          icon="pi pi-envelope"
+          class="p-button-sm p-button-outlined"
+          (click)="emailContact()"
+        ></button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>

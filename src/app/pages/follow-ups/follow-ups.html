@@ -30,7 +30,7 @@
             [class]="statusFilter() === 'SCHEDULED' ? 'bg-yellow-500 text-white' : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400'"
             (click)="setStatusFilter('SCHEDULED')"
           >
-            <i class="pi pi-clock mr-1 text-[10px]"></i>Programados
+            <i class="pi pi-clock mr-1 text-[10px]"></i>Pendientes
           </button>
 
           <button
@@ -514,6 +514,7 @@
   >
     @if (viewingFollowUp()) {
       @let fu = viewingFollowUp()!;
+      @let c = getContactForFollowUp(fu);
       <div class="space-y-4 pt-2">
         <!-- Header tarjeta -->
         <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
@@ -529,13 +530,63 @@
           </div>
         </div>
 
+        <!-- Contacto + accesos -->
+        <div class="rounded-xl border border-slate-200/90 dark:border-slate-600/80 bg-slate-50/90 dark:bg-slate-900/45 p-3.5 space-y-3">
+          <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Datos del contacto</div>
+          <div class="font-semibold text-gray-900 dark:text-gray-100">{{ c?.name || getContactName(fu.contactId) }}</div>
+          <div class="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+            @if (c?.phone || c?.mobile) {
+              <div class="flex items-center gap-2">
+                <i class="pi pi-phone text-emerald-600 text-xs shrink-0"></i>
+                <span>{{ c?.phone || c?.mobile }}</span>
+              </div>
+            }
+            @if (c?.email) {
+              <div class="flex items-center gap-2 min-w-0">
+                <i class="pi pi-envelope text-blue-500 text-xs shrink-0"></i>
+                <a class="text-blue-600 dark:text-blue-400 hover:underline truncate" [href]="'mailto:' + c!.email">{{ c!.email }}</a>
+              </div>
+            }
+            @if (!c?.phone && !c?.mobile && !c?.email) {
+              <p class="text-xs text-gray-400 dark:text-gray-500 leading-snug">
+                No hay teléfono ni correo en la ficha. Abre el contacto para completar datos o sincroniza la lista de contactos.
+              </p>
+            }
+          </div>
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button
+              pButton
+              type="button"
+              label="WhatsApp"
+              icon="pi pi-whatsapp"
+              class="p-button-sm"
+              [disabled]="!contactWhatsAppUrl(c)"
+              (click)="openWhatsAppForContact(c)"
+            ></button>
+            <button
+              pButton
+              type="button"
+              label="Llamar"
+              icon="pi pi-phone"
+              class="p-button-sm p-button-outlined"
+              [disabled]="!(c?.phone || c?.mobile)"
+              (click)="openCallContact(c)"
+            ></button>
+            <button
+              pButton
+              type="button"
+              label="Ver ficha"
+              icon="pi pi-user"
+              class="p-button-sm p-button-outlined"
+              [disabled]="!fu.contactId"
+              (click)="goToLeadContact(fu.contactId)"
+            ></button>
+          </div>
+        </div>
+
         <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
           <div>
-            <div class="text-[11px] font-medium text-gray-400 uppercase mb-0.5">Contacto</div>
-            <div class="text-gray-800 dark:text-gray-200">{{ getContactName(fu.contactId) }}</div>
-          </div>
-          <div>
-            <div class="text-[11px] font-medium text-gray-400 uppercase mb-0.5">Asignado a</div>
+            <div class="text-[11px] font-medium text-gray-400 uppercase mb-0.5">Asignado a (seguimiento)</div>
             <div class="text-gray-800 dark:text-gray-200">{{ getUserName(fu.userId) }}</div>
           </div>
           <div>
@@ -545,7 +596,7 @@
             </div>
           </div>
           @if (fu.nextFollowUpDate) {
-            <div>
+            <div class="col-span-2">
               <div class="text-[11px] font-medium text-gray-400 uppercase mb-0.5">Próximo seguimiento</div>
               <div class="text-blue-600">{{ fu.nextFollowUpDate | date:'dd/MM/yyyy HH:mm' }}</div>
             </div>
@@ -568,8 +619,29 @@
       </div>
     }
     <ng-template pTemplate="footer">
-      <button pButton label="Editar" icon="pi pi-pencil" class="p-button-outlined" (click)="editItem(viewingFollowUp()!); closeDetails()"></button>
-      <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+      @if (viewingFollowUp(); as vf) {
+        @let c2 = getContactForFollowUp(vf);
+        <div class="flex flex-wrap items-center gap-2 w-full justify-end">
+          <button
+            pButton
+            label="WhatsApp"
+            icon="pi pi-whatsapp"
+            class="p-button-sm"
+            [disabled]="!contactWhatsAppUrl(c2)"
+            (click)="openWhatsAppForContact(c2)"
+          ></button>
+          <button
+            pButton
+            label="Ver contacto"
+            icon="pi pi-external-link"
+            class="p-button-sm p-button-outlined"
+            [disabled]="!vf.contactId"
+            (click)="goToLeadContact(vf.contactId)"
+          ></button>
+          <button pButton label="Editar" icon="pi pi-pencil" class="p-button-outlined" (click)="editItem(vf); closeDetails()"></button>
+          <button pButton label="Cerrar" class="p-button-text" (click)="closeDetails()"></button>
+        </div>
+      }
     </ng-template>
   </p-dialog>
 
