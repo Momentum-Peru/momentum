@@ -119,6 +119,7 @@ export class CrmContactDetailPage implements OnInit {
   saving = signal(false);
   savingFollowUp = signal(false);
   savingCompany = signal(false);
+  savingAssignee = signal(false);
 
   // ── UI state ──────────────────────────────────────────────────────────────
   activeTab = signal<Tab>('seguimientos');
@@ -215,7 +216,7 @@ export class CrmContactDetailPage implements OnInit {
   ];
 
   readonly statusOptions: { label: string; value: FollowUpStatus }[] = [
-    { label: 'Programado', value: 'SCHEDULED' },
+    { label: 'Pendiente', value: 'SCHEDULED' },
     { label: 'Completado', value: 'COMPLETED' },
     { label: 'Cancelado', value: 'CANCELLED' },
   ];
@@ -468,16 +469,17 @@ export class CrmContactDetailPage implements OnInit {
     ];
 
     const outcome = backendFailureMessage
-      ? `No se ejecutó el flujo: ${backendFailureMessage}`
+      ? `Pendiente: no se ejecutó el flujo (${backendFailureMessage}). Revisa la descripción.`
       : ok
-        ? 'Listo. La respuesta de n8n está en la descripción.'
-        : this.shortOutcomeForFailedUpstream(upstreamHttpStatus);
+        ? 'Pendiente: validar el resultado del flujo n8n; el detalle técnico está en la descripción.'
+        : `Pendiente: ${this.shortOutcomeForFailedUpstream(upstreamHttpStatus)} (detalle en descripción).`;
 
     const payload: CreateFollowUpRequest = {
       contactId: contact._id!,
       title,
       type: 'OTHER',
-      status: 'COMPLETED',
+      status: 'SCHEDULED',
+      scheduledDate: new Date().toISOString(),
       description: lines.join('\n'),
       outcome,
     };
@@ -487,17 +489,17 @@ export class CrmContactDetailPage implements OnInit {
         this.sendFilesPanel()?.hide();
         if (backendFailureMessage) {
           this.erpNotify.warn(
-            'Seguimiento guardado',
-            'No se pudo contactar n8n; el detalle quedó registrado en el seguimiento.',
+            'Registro pendiente',
+            'No se pudo contactar n8n; el detalle quedó como seguimiento pendiente.',
           );
         } else if (ok) {
           this.erpNotify.success(
-            'Listo',
-            'La respuesta de n8n quedó guardada en seguimientos.',
+            'Pendiente de validar',
+            'La respuesta de n8n quedó en el seguimiento; márcalo completado cuando lo revises.',
           );
         } else {
           this.erpNotify.warn(
-            'Revisa el seguimiento',
+            'Seguimiento pendiente',
             resumenUsuario,
           );
         }
@@ -836,7 +838,7 @@ export class CrmContactDetailPage implements OnInit {
   }
 
   getStatusLabel(status?: FollowUpStatus): string {
-    const map: Record<string, string> = { SCHEDULED: 'Programado', COMPLETED: 'Completado', CANCELLED: 'Cancelado' };
+    const map: Record<string, string> = { SCHEDULED: 'Pendiente', COMPLETED: 'Completado', CANCELLED: 'Cancelado' };
     return status ? (map[status] ?? status) : '—';
   }
 
@@ -924,6 +926,26 @@ export class CrmContactDetailPage implements OnInit {
       return;
     }
     window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  saveAssignedTo(userId: string | null | undefined): void {
+    const c = this.contact();
+    if (!c?._id || this.savingAssignee()) return;
+    const next = userId?.trim() ? userId.trim() : undefined;
+    const prev = c.assignedTo;
+    if (next === prev) return;
+    this.savingAssignee.set(true);
+    this.contactsApi.update(c._id, { assignedTo: next }).subscribe({
+      next: (updated) => {
+        this.contact.set(updated);
+        this.savingAssignee.set(false);
+        this.erpNotify.success('Responsable', 'Asignación actualizada.');
+      },
+      error: () => {
+        this.savingAssignee.set(false);
+        this.erpNotify.error('Error', 'No se pudo actualizar el responsable.');
+      },
+    });
   }
 
   openAudioFollowUpDialog(mode: AudioFollowUpMode): void {

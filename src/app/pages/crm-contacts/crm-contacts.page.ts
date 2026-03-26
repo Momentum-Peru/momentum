@@ -79,7 +79,7 @@ export class CrmContactsPage implements OnInit, OnDestroy {
   readonly followUpStatusOptions: { label: string; value: FollowUpStatusFilter }[] = [
     { label: 'Todos los estados', value: '' },
     { label: 'Sin seguimiento', value: 'NONE' },
-    { label: 'Programado', value: 'SCHEDULED' },
+    { label: 'Pendiente', value: 'SCHEDULED' },
     { label: 'Hecho', value: 'COMPLETED' },
     { label: 'Cancelado', value: 'CANCELLED' },
   ];
@@ -340,7 +340,7 @@ export class CrmContactsPage implements OnInit, OnDestroy {
 
   lastFollowUpStatusLabel(status?: string): string {
     const map: Record<string, string> = {
-      SCHEDULED: 'Programado',
+      SCHEDULED: 'Pendiente',
       COMPLETED: 'Hecho',
       CANCELLED: 'Cancelado',
     };
