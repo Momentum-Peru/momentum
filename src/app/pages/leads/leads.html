@@ -1,430 +1,300 @@
-<div class="p-4 space-y-4">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
   <p-toast [life]="5000"></p-toast>
   <p-confirmDialog></p-confirmDialog>
 
-  <!-- Header con estadísticas -->
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-    <div class="flex flex-col md:flex-row md:items-center gap-4">
-      <h1 class="text-2xl font-bold text-gray-800">Gestión de Contactos</h1>
-      @if (stats()) {
-        <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-          <span class="flex items-center gap-1">
-            <i class="pi pi-users text-blue-500"></i>
-            {{ stats()?.total }} total
-          </span>
-          <span class="flex items-center gap-1">
-            <i class="pi pi-dollar text-green-500"></i>
-            ${{ stats()?.totalValue | number: '1.0-0' }}
-          </span>
-        </div>
-      }
-    </div>
-    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-      <button
-        pButton
-        type="button"
-        label="Estadísticas"
-        icon="pi pi-chart-bar"
-        class="p-button-outlined"
-        (click)="openStats()"
-        aria-label="Ver estadísticas de leads"
-      ></button>
-      <button
-        pButton
-        type="button"
-        label="Nuevo Lead"
-        icon="pi pi-plus"
-        (click)="newItem()"
-        aria-label="Crear nuevo lead"
-      ></button>
-    </div>
-  </div>
+  <!-- ── Header ──────────────────────────────────────────────────── -->
+  <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0">
+    <div class="px-6 py-4 flex items-center justify-between gap-4">
+      <div>
+        <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Leads</h1>
+        @if (stats()) {
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <span class="font-medium text-gray-700 dark:text-gray-300">{{ stats()?.total }}</span> leads ·
+            <span class="font-medium text-green-600 dark:text-green-400">${{ stats()?.totalValue | number:'1.0-0' }}</span> valor estimado
+          </p>
+        }
 
-  <!-- Filtros -->
-  <p-card>
-    <ng-template pTemplate="content">
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div>
-          <label
-            for="leadSearch"
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >Buscar</label
-          >
-          <input
-            id="leadSearch"
-            name="leadSearch"
-            pInputText
-            placeholder="Nombre, email, empresa..."
-            [ngModel]="query()"
-            (ngModelChange)="setQuery($event)"
-            class="w-full"
-          />
-        </div>
-        <div>
-          <label
-            for="leadStatusFilter"
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >Estado</label
-          >
-          <p-select
-            id="leadStatusFilter"
-            [options]="statusOptions"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="statusFilter()"
-            (ngModelChange)="setStatusFilter($event)"
-            placeholder="Filtrar por estado"
-            [showClear]="true"
-            [appendTo]="'body'"
-            class="w-full"
-          ></p-select>
-        </div>
-        <div>
-          <label
-            for="leadSourceFilter"
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >Origen</label
-          >
-          <p-select
-            id="leadSourceFilter"
-            [options]="sourceOptions"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="sourceFilter()"
-            (ngModelChange)="setSourceFilter($event)"
-            placeholder="Filtrar por origen"
-            [showClear]="true"
-            [appendTo]="'body'"
-            class="w-full"
-          ></p-select>
-        </div>
-        <div>
-          <label
-            for="leadCompanyFilter"
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >Empresa CRM</label
-          >
-          <p-select
-            id="leadCompanyFilter"
-            [options]="getCompanyFilterOptions()"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="companyIdFilter()"
-            (ngModelChange)="setCompanyIdFilter($event)"
-            placeholder="Filtrar por empresa"
-            [appendTo]="'body'"
-            class="w-full"
-          ></p-select>
-        </div>
-        <div class="flex items-end">
+        <!-- Status filter pills -->
+        <div class="flex items-center gap-1.5 mt-2 flex-wrap">
           <button
-            pButton
             type="button"
-            label="Limpiar"
-            icon="pi pi-filter-slash"
-            class="p-button-outlined w-full"
-            (click)="clearFilters()"
-            aria-label="Limpiar filtros"
-          ></button>
+            class="px-3 py-1 rounded-full text-xs font-semibold transition-colors"
+            [class]="statusFilter() === '' ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'"
+            (click)="setStatusFilter('')"
+          >Todos · {{ items().length }}</button>
+
+          <button type="button"
+            class="px-3 py-1 rounded-full text-xs font-semibold transition-colors"
+            [class]="statusFilter() === 'NEW' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400'"
+            (click)="setStatusFilter('NEW')">Nuevo</button>
+
+          <button type="button"
+            class="px-3 py-1 rounded-full text-xs font-semibold transition-colors"
+            [class]="statusFilter() === 'CONTACTED' ? 'bg-yellow-500 text-white' : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400'"
+            (click)="setStatusFilter('CONTACTED')">Contactado</button>
+
+          <button type="button"
+            class="px-3 py-1 rounded-full text-xs font-semibold transition-colors"
+            [class]="statusFilter() === 'QUALIFIED' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400'"
+            (click)="setStatusFilter('QUALIFIED')">Calificado</button>
+
+          <button type="button"
+            class="px-3 py-1 rounded-full text-xs font-semibold transition-colors"
+            [class]="statusFilter() === 'PROPOSAL' ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-700 hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400'"
+            (click)="setStatusFilter('PROPOSAL')">Propuesta</button>
+
+          <button type="button"
+            class="px-3 py-1 rounded-full text-xs font-semibold transition-colors"
+            [class]="statusFilter() === 'NEGOTIATION' ? 'bg-teal-600 text-white' : 'bg-teal-50 text-teal-700 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400'"
+            (click)="setStatusFilter('NEGOTIATION')">Negociación</button>
+
+          <button type="button"
+            class="px-3 py-1 rounded-full text-xs font-semibold transition-colors"
+            [class]="statusFilter() === 'CONVERTED' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400'"
+            (click)="setStatusFilter('CONVERTED')">Convertido</button>
+
+          <button type="button"
+            class="px-3 py-1 rounded-full text-xs font-semibold transition-colors"
+            [class]="statusFilter() === 'LOST' ? 'bg-red-500 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400'"
+            (click)="setStatusFilter('LOST')">Perdido</button>
         </div>
       </div>
-    </ng-template>
-  </p-card>
 
-  <!-- Vista Desktop: Tabla normal -->
-  <div class="hidden md:block">
-    <p-table [value]="items()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
-      <ng-template pTemplate="header">
-        <tr>
-          <th>Lead</th>
-          <th>Contacto</th>
-          <th>Estado</th>
-          <th>Origen</th>
-          <th>Empresa CRM</th>
-          <th>Valor Estimado</th>
-          <th>Asignado a</th>
-          <th class="text-right">Acciones</th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-row>
-        <tr>
-          <td>
-            <div class="space-y-1">
-              <div class="font-semibold text-gray-900 dark:text-gray-100 break-words">
-                {{ row.name }}
-              </div>
-              @if (row.company?.name) {
-                <div class="text-sm text-gray-500 dark:text-gray-400 break-words">
-                  {{ row.company?.name }}
-                </div>
-              }
-            </div>
-          </td>
-          <td>
-            <div class="text-sm space-y-1">
-              <div class="break-words text-gray-900 dark:text-gray-100">
-                {{ row.contact.name }}
-              </div>
-              <div class="text-gray-500 dark:text-gray-400 break-words">
-                {{ row.contact.email }}
-              </div>
-              @if (row.contact.phone) {
-                <div class="text-gray-400 dark:text-gray-500 text-xs break-words">
-                  {{ row.contact.phone }}
-                </div>
-              }
-            </div>
-          </td>
-          <td>
-            <p-tag
-              [value]="getStatusLabel(row.status)"
-              [severity]="getStatusSeverity(row.status)"
-            ></p-tag>
-          </td>
-          <td>
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-              {{ getSourceLabel(row.source) }}
-            </span>
-          </td>
-          <td>
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-              <i class="pi pi-building mr-1"></i>
-              {{ getCompanyName(row.companyId) }}
-            </span>
-          </td>
-          <td>
-            @if (row.estimatedValue) {
-              <span class="font-medium text-gray-900 dark:text-gray-100">
-                ${{ row.estimatedValue | number: '1.0-0' }}
-              </span>
-            } @else {
-              <span class="text-gray-400 dark:text-gray-500 text-sm">-</span>
-            }
-          </td>
-          <td>
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-              {{ getUserName(row.assignedTo) }}
-            </span>
-          </td>
-          <td class="text-right">
-            <div class="flex items-center justify-end gap-1">
-              <button
-                pButton
-                icon="pi pi-eye"
-                class="p-button-text p-button-sm"
-                pTooltip="Ver detalles"
-                (click)="viewDetails(row)"
-                aria-label="Ver detalles del lead"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-pencil"
-                class="p-button-text p-button-sm"
-                pTooltip="Editar"
-                (click)="editItem(row)"
-                aria-label="Editar lead"
-              ></button>
-              @if (row.status !== 'CONVERTED') {
-                <button
-                  pButton
-                  icon="pi pi-check-circle"
-                  class="p-button-text p-button-sm p-button-success"
-                  pTooltip="Convertir a Cliente"
-                  (click)="openConvertDialog(row)"
-                  aria-label="Convertir lead a cliente"
-                ></button>
-              }
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-text p-button-sm p-button-danger"
-                pTooltip="Eliminar"
-                (click)="remove(row)"
-                aria-label="Eliminar lead"
-              ></button>
-            </div>
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
+      <div class="flex items-center gap-2 shrink-0">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-chart-bar"
+          label="Estadísticas"
+          class="p-button-outlined p-button-sm"
+          (click)="openStats()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-plus"
+          label="Nuevo Lead"
+          class="p-button-sm"
+          (click)="newItem()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- Filtros secundarios -->
+    <div class="px-6 pb-3 flex items-center gap-3 flex-wrap">
+      <div class="min-w-[14rem] flex-1 max-w-xs relative">
+        <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+        <input
+          pInputText
+          placeholder="Nombre, email, empresa…"
+          [ngModel]="query()"
+          (ngModelChange)="setQuery($event)"
+          class="w-full pl-9"
+        />
+      </div>
+
+      <div class="w-36">
+        <p-select
+          [options]="sourceOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="sourceFilter()"
+          (ngModelChange)="setSourceFilter($event)"
+          placeholder="Origen…"
+          [showClear]="true"
+          [appendTo]="'body'"
+          class="w-full"
+        ></p-select>
+      </div>
+
+      <div class="w-40">
+        <p-select
+          [options]="getCompanyFilterOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="companyIdFilter()"
+          (ngModelChange)="setCompanyIdFilter($event)"
+          placeholder="Empresa…"
+          [showClear]="true"
+          [appendTo]="'body'"
+          class="w-full"
+        ></p-select>
+      </div>
+
+      @if (statusFilter() || sourceFilter() || companyIdFilter() || query()) {
+        <button
+          pButton
+          type="button"
+          icon="pi pi-filter-slash"
+          label="Limpiar"
+          class="p-button-text p-button-sm"
+          (click)="clearFilters()"
+        ></button>
+      }
+    </div>
   </div>
 
-  <!-- Vista Móvil: Accordion desplegable -->
-  <div class="md:hidden space-y-3">
-    @for (row of items(); track row._id || $index) {
-      <div
-        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
-      >
-        <!-- Header del accordion -->
-        <button
-          type="button"
-          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-          (click)="toggleRow(row._id)"
+  <!-- ── Contenido ───────────────────────────────────────────────── -->
+  <div class="flex-1 overflow-auto p-6">
+
+    @if (items().length === 0) {
+      <!-- Empty state -->
+      <div class="flex flex-col items-center justify-center py-24 text-center">
+        <div class="w-16 h-16 bg-blue-50 dark:bg-blue-950/40 rounded-2xl flex items-center justify-center mb-4">
+          <i class="pi pi-users text-blue-400 text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">Sin leads</h3>
+        <p class="text-sm text-gray-500 mb-6 max-w-xs">
+          @if (statusFilter() || sourceFilter() || companyIdFilter() || query()) {
+            No hay leads que coincidan con los filtros aplicados.
+          } @else {
+            Crea el primer lead para empezar a gestionar tus oportunidades.
+          }
+        </p>
+        @if (!statusFilter() && !sourceFilter() && !companyIdFilter() && !query()) {
+          <button pButton type="button" icon="pi pi-plus" label="Nuevo Lead" (click)="newItem()"></button>
+        }
+      </div>
+
+    } @else {
+
+      <!-- Vista Desktop: Tabla -->
+      <div class="hidden md:block bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <p-table
+          [value]="items()"
+          [paginator]="true"
+          [rows]="15"
+          styleClass="p-datatable-sm p-datatable-striped"
         >
-          <div class="flex-1 text-left min-w-0 pr-4">
-            <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">
-              {{ row.name }}
-            </div>
-            @if (row.contact.email) {
-              <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-                {{ row.contact.email }}
-              </div>
-            }
-            <div class="flex items-center gap-2 mt-1">
-              <p-tag
-                [value]="getStatusLabel(row.status)"
-                [severity]="statusColors[row.status] || 'info'"
-                styleClass="text-xs"
-              ></p-tag>
-              @if (row.estimatedValue) {
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  ${{ row.estimatedValue | number: '1.0-0' }}
-                </span>
-              }
-            </div>
-          </div>
-          <div class="flex-shrink-0">
-            <i
-              class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
-              [class.pi-chevron-down]="!isRowExpanded(row._id)"
-              [class.pi-chevron-up]="isRowExpanded(row._id)"
-            ></i>
-          </div>
-        </button>
-
-        <!-- Contenido del accordion -->
-        @if (isRowExpanded(row._id)) {
-          <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
-            <div class="px-4 py-4 space-y-4">
+          <ng-template pTemplate="header">
+            <tr>
+              <th class="font-semibold text-gray-700 dark:text-gray-300">Lead</th>
+              <th class="font-semibold text-gray-700 dark:text-gray-300">Contacto</th>
+              <th class="font-semibold text-gray-700 dark:text-gray-300">Estado</th>
+              <th class="font-semibold text-gray-700 dark:text-gray-300">Origen</th>
+              <th class="font-semibold text-gray-700 dark:text-gray-300">Valor</th>
+              <th class="font-semibold text-gray-700 dark:text-gray-300">Asignado a</th>
+              <th class="font-semibold text-gray-700 dark:text-gray-300 text-right">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr
+              class="cursor-pointer hover:bg-indigo-50/60 dark:hover:bg-indigo-950/20 transition-colors group"
+              (click)="viewDetails(row)"
+            >
+              <!-- Lead -->
+              <td>
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white text-sm font-bold flex items-center justify-center shrink-0 shadow-sm">
+                    {{ (row.name || row.contact?.name || '?').charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-snug truncate">
+                      {{ row.name }}
+                    </div>
+                    @if (row.company?.name) {
+                      <div class="text-xs text-gray-400 dark:text-gray-500 truncate flex items-center gap-1 mt-0.5">
+                        <i class="pi pi-building text-[10px]"></i>{{ row.company?.name }}
+                      </div>
+                    }
+                  </div>
+                </div>
+              </td>
               <!-- Contacto -->
-              <div>
-                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Contacto
-                </div>
-                <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
-                  {{ row.contact.name }}
-                </div>
-                <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
-                  {{ row.contact.email }}
-                </div>
-                @if (row.contact.phone) {
-                  <div class="text-sm text-gray-600 dark:text-gray-400 break-words">
-                    {{ row.contact.phone }}
-                  </div>
-                }
-              </div>
-
-              <!-- Empresa del Lead -->
-              @if (row.company?.name) {
-                <div>
-                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                    Empresa
-                  </div>
-                  <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
-                    {{ row.company?.name }}
-                  </div>
-                </div>
-              }
-
-              <!-- Empresa CRM -->
-              @if (row.companyId) {
-                <div>
-                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                    Empresa CRM
-                  </div>
-                  <div
-                    class="text-sm text-gray-900 dark:text-gray-100 break-words flex items-center gap-1"
-                  >
-                    <i class="pi pi-building"></i>
-                    {{ getCompanyName(row.companyId) }}
-                  </div>
-                </div>
-              }
-
-              <!-- Estado y Origen -->
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                    Estado
-                  </div>
-                  <p-tag
-                    [value]="getStatusLabel(row.status)"
-                    [severity]="statusColors[row.status] || 'info'"
-                    styleClass="text-xs"
-                  ></p-tag>
-                </div>
-                <div>
-                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                    Origen
-                  </div>
-                  <div class="text-sm text-gray-900 dark:text-gray-100">
-                    {{ getSourceLabel(row.source) }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Asignado a -->
-              <div>
-                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Asignado a
-                </div>
-                <div class="text-sm text-gray-900 dark:text-gray-100">
-                  {{ getUserName(row.assignedTo) }}
-                </div>
-              </div>
-
-              <!-- Acciones -->
-              <div>
-                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-                  Acciones
-                </div>
-                <div class="flex flex-col gap-2 justify-start">
-                  <button
-                    pButton
-                    icon="pi pi-eye"
-                    label="Ver detalles"
-                    class="p-button-text p-button-sm w-full"
-                    (click)="viewDetails(row)"
-                    aria-label="Ver detalles del lead"
-                  ></button>
-                  <button
-                    pButton
-                    icon="pi pi-pencil"
-                    label="Editar"
-                    class="p-button-text p-button-sm w-full"
-                    (click)="editItem(row)"
-                    aria-label="Editar lead"
-                  ></button>
-                  @if (row.status !== 'CONVERTED') {
-                    <button
-                      pButton
-                      icon="pi pi-check-circle"
-                      label="Convertir a Cliente"
-                      class="p-button-text p-button-sm p-button-success w-full justify-start"
-                      (click)="openConvertDialog(row)"
-                      aria-label="Convertir lead a cliente"
-                    ></button>
+              <td>
+                <div class="text-sm leading-snug">
+                  <div class="text-gray-800 dark:text-gray-200 truncate">{{ row.contact.name }}</div>
+                  <div class="text-gray-400 text-xs truncate">{{ row.contact.email }}</div>
+                  @if (row.contact.phone) {
+                    <div class="text-gray-400 text-xs">{{ row.contact.phone }}</div>
                   }
-                  <button
-                    pButton
-                    icon="pi pi-trash"
-                    label="Eliminar"
-                    class="p-button-text p-button-sm p-button-danger w-full justify-start"
-                    (click)="remove(row)"
-                    aria-label="Eliminar lead"
-                  ></button>
+                </div>
+              </td>
+              <!-- Estado -->
+              <td>
+                <p-tag [value]="getStatusLabel(row.status)" [severity]="getStatusSeverity(row.status)" styleClass="text-xs"></p-tag>
+              </td>
+              <!-- Origen -->
+              <td>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ getSourceLabel(row.source) }}</span>
+              </td>
+              <!-- Valor -->
+              <td>
+                @if (row.estimatedValue) {
+                  <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    ${{ row.estimatedValue | number:'1.0-0' }}
+                  </span>
+                } @else {
+                  <span class="text-gray-300 dark:text-gray-600 text-sm">—</span>
+                }
+              </td>
+              <!-- Asignado -->
+              <td>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ getUserName(row.assignedTo) }}</span>
+              </td>
+              <!-- Acciones -->
+              <td class="text-right" (click)="$event.stopPropagation()">
+                <div class="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                  <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-0 w-8 h-8" pTooltip="Editar" (click)="editItem(row)"></button>
+                  @if (row.status !== 'CONVERTED') {
+                    <button pButton icon="pi pi-check-circle" class="p-button-text p-button-sm p-button-success p-0 w-8 h-8" pTooltip="Convertir a cliente" (click)="openConvertDialog(row)"></button>
+                  }
+                  <button pButton icon="pi pi-eye" class="p-button-text p-button-sm p-0 w-8 h-8" pTooltip="Ver detalles" (click)="viewDetails(row)"></button>
+                  <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger p-0 w-8 h-8" pTooltip="Eliminar" (click)="remove(row)"></button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Vista Móvil: Cards -->
+      <div class="md:hidden space-y-3">
+        @for (row of items(); track row._id || $index) {
+          <div
+            class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-800 transition-all cursor-pointer"
+            (click)="viewDetails(row)"
+          >
+            <div class="px-4 py-3 flex items-start gap-3">
+              <!-- Avatar -->
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white text-sm font-bold flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                {{ (row.name || row.contact.name || '?').charAt(0).toUpperCase() }}
+              </div>
+              <!-- Info -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <div class="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate">{{ row.name }}</div>
+                    @if (row.contact.email) {
+                      <div class="text-xs text-gray-400 truncate mt-0.5">{{ row.contact.email }}</div>
+                    }
+                  </div>
+                  @if (row.estimatedValue) {
+                    <span class="text-sm font-bold text-gray-900 dark:text-gray-100 shrink-0">${{ row.estimatedValue | number:'1.0-0' }}</span>
+                  }
+                </div>
+                <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <p-tag [value]="getStatusLabel(row.status)" [severity]="getStatusSeverity(row.status)" styleClass="text-[10px]"></p-tag>
+                  <span class="text-[11px] text-gray-400">{{ getSourceLabel(row.source) }}</span>
+                  @if (row.assignedTo) {
+                    <span class="text-[11px] text-gray-400"><i class="pi pi-user text-[9px] mr-0.5"></i>{{ getUserName(row.assignedTo) }}</span>
+                  }
                 </div>
               </div>
+            </div>
+            <!-- Actions bar -->
+            <div class="border-t border-gray-100 dark:border-gray-800 px-3 py-1.5 flex items-center justify-end gap-0.5" (click)="$event.stopPropagation()">
+              <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-0 w-8 h-8" pTooltip="Editar" (click)="editItem(row)"></button>
+              @if (row.status !== 'CONVERTED') {
+                <button pButton icon="pi pi-check-circle" class="p-button-text p-button-sm p-button-success p-0 w-8 h-8" pTooltip="Convertir" (click)="openConvertDialog(row)"></button>
+              }
+              <button pButton icon="pi pi-eye" class="p-button-text p-button-sm p-0 w-8 h-8" pTooltip="Ver detalles" (click)="viewDetails(row)"></button>
+              <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger p-0 w-8 h-8" pTooltip="Eliminar" (click)="remove(row)"></button>
             </div>
           </div>
         }
       </div>
-    }
-    @if (items().length === 0) {
-      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-        <i class="pi pi-inbox text-4xl mb-2"></i>
-        <p>No hay leads disponibles</p>
-      </div>
+
     }
   </div>
 
