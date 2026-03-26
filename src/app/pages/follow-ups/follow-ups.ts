@@ -11,7 +11,6 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router'; // Added import
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
-import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
@@ -53,7 +52,6 @@ import { ErpNotifyService } from '../../core/services/erp-notify.service';
     FormsModule,
     InputTextModule,
     ButtonModule,
-    TableModule,
     DialogModule,
     SelectModule,
     TooltipModule,
@@ -231,6 +229,52 @@ export class FollowUpsPage implements OnInit {
           : 0;
       return ta - tb;
     });
+  });
+
+  /** Agrupa los seguimientos por contacto para la vista pipeline (una fila por contacto). */
+  itemsByContact = computed(() => {
+    const grouped = new Map<
+      string,
+      { rowKey: string; contactId: string | undefined; contactName: string; followUps: FollowUp[] }
+    >();
+
+    for (const fu of this.items()) {
+      const key = fu.contactId ?? '__none__';
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          rowKey: key,
+          contactId: fu.contactId ?? undefined,
+          contactName: this.getContactName(fu.contactId),
+          followUps: [],
+        });
+      }
+      grouped.get(key)!.followUps.push(fu);
+    }
+
+    for (const group of grouped.values()) {
+      group.followUps.sort((a, b) => {
+        const ta = a.scheduledDate
+          ? new Date(a.scheduledDate).getTime()
+          : a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tb = b.scheduledDate
+          ? new Date(b.scheduledDate).getTime()
+          : b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return ta - tb;
+      });
+    }
+
+    return [...grouped.values()].sort((a, b) => {
+      if (!a.contactId) return 1;
+      if (!b.contactId) return -1;
+      return a.contactName.localeCompare(b.contactName);
+    });
+  });
+
+  /** Totales para cabecera (vista pipeline). */
+  pipelineSummary = computed(() => {
+    const groups = this.itemsByContact();
+    const steps = groups.reduce((acc, g) => acc + g.followUps.length, 0);
+    return { contacts: groups.length, steps };
   });
 
   ngOnInit() {

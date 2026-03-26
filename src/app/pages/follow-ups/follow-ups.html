@@ -5,7 +5,16 @@
   <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0">
     <div class="px-6 py-4 flex items-center justify-between gap-4">
       <div>
-        <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">Seguimientos</h1>
+        <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Seguimientos</h1>
+        @if (items().length > 0) {
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <span class="font-medium text-gray-700 dark:text-gray-300">{{ pipelineSummary().contacts }}</span>
+            {{ pipelineSummary().contacts === 1 ? 'contacto' : 'contactos' }}
+            ·
+            <span class="font-medium text-gray-700 dark:text-gray-300">{{ pipelineSummary().steps }}</span>
+            {{ pipelineSummary().steps === 1 ? 'paso' : 'pasos' }} en el pipeline
+          </p>
+        }
         <!-- Status filter pills -->
         <div class="flex items-center gap-2 mt-2 flex-wrap">
           <button
@@ -122,122 +131,188 @@
       </div>
 
     } @else {
-      <div class="max-w-full mx-auto mb-3 px-1">
-        <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-          <span class="font-semibold text-indigo-600 dark:text-indigo-400">Vista paso a paso:</span>
-          desplaza horizontalmente. El paso <strong>1</strong> es el más antiguo y el
-          <strong>{{ itemsForStepper().length }}</strong> el más reciente.
-        </p>
-      </div>
-      <div class="overflow-x-auto pb-6 pt-1 scroll-smooth -mx-1 px-1">
-        <div class="flex gap-0 items-stretch min-w-min">
-          @for (row of itemsForStepper(); track row._id; let i = $index; let isLast = $last) {
-            <div class="flex items-stretch">
-              <div
-                class="w-[min(90vw,21rem)] sm:w-[22rem] shrink-0 flex"
-              >
+      <!-- Pipeline por contacto: columna contacto + carril horizontal -->
+      <div class="space-y-4 fu-pipeline-list">
+        @for (group of itemsByContact(); track group.rowKey) {
+          <div
+            class="fu-pipeline-row flex flex-col md:flex-row rounded-2xl border border-gray-200/90 dark:border-gray-700/90 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md hover:border-indigo-200/80 dark:hover:border-indigo-800/60 transition-all duration-200 overflow-hidden"
+          >
+            <!-- Columna contacto -->
+            <div
+              class="fu-pipeline-contact shrink-0 md:w-[13.5rem] flex flex-row md:flex-col md:items-stretch gap-3 p-4 md:p-4 bg-gradient-to-br from-slate-50 to-indigo-50/40 dark:from-gray-900 dark:to-indigo-950/20 border-b md:border-b-0 md:border-r border-gray-200/80 dark:border-gray-700/80"
+            >
+              <div class="flex items-start gap-3 flex-1 min-w-0">
                 <div
-                  class="bg-white dark:bg-gray-900 rounded-xl border-2 border-gray-100 dark:border-gray-800 shadow-md hover:shadow-lg hover:border-indigo-200 dark:hover:border-indigo-900 transition-all overflow-hidden flex flex-col w-full h-full"
+                  class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white text-sm font-bold flex items-center justify-center shrink-0 shadow-md ring-2 ring-white/30 dark:ring-gray-900/40"
                 >
-                  <div class="flex items-start gap-3 p-4 flex-1">
-                    <div
-                      class="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white text-sm font-bold flex items-center justify-center shadow-md"
-                    >
-                      {{ i + 1 }}
-                    </div>
-                    <div
-                      class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-sm"
-                      [class]="getTypeColorClass(row.type)"
-                    >
-                      <i [class]="getTypeIcon(row.type)"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <div class="flex items-start justify-between gap-2">
-                        <div class="flex-1 min-w-0">
-                          <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-snug line-clamp-2">
-                            {{ row.title || getTypeLabel(row.type) || '—' }}
-                          </h3>
-                          <div class="flex items-center gap-2 mt-1 flex-wrap">
-                            <p-tag
-                              [value]="getStatusLabel(row.status)"
-                              [severity]="getStatusSeverity(row.status)"
-                              styleClass="text-[10px]"
-                            ></p-tag>
-                            <span class="text-xs text-gray-400">{{ getTypeLabel(row.type) }}</span>
-                            @if (row.contactId) {
-                              <span class="text-xs text-blue-600 dark:text-blue-400 font-medium truncate max-w-[10rem]">
-                                <i class="pi pi-user text-[10px] mr-0.5"></i>{{ getContactName(row.contactId) }}
-                              </span>
-                            }
-                          </div>
-                        </div>
-                        <div class="flex flex-col items-end gap-1 shrink-0">
-                          @if (row.scheduledDate) {
-                            <span class="text-[10px] text-gray-400 whitespace-nowrap">
-                              {{ row.scheduledDate | date:'dd/MM/yy HH:mm' }}
-                            </span>
-                          }
-                          <div class="flex items-center gap-0.5">
-                            <button
-                              pButton
-                              icon="pi pi-eye"
-                              class="p-button-text p-button-sm p-0 w-7 h-7"
-                              pTooltip="Ver detalles"
-                              (click)="viewDetails(row)"
-                            ></button>
-                            <button
-                              pButton
-                              icon="pi pi-pencil"
-                              class="p-button-text p-button-sm p-0 w-7 h-7"
-                              pTooltip="Editar"
-                              (click)="editItem(row)"
-                            ></button>
-                            <button
-                              pButton
-                              icon="pi pi-trash"
-                              class="p-button-text p-button-sm p-button-danger p-0 w-7 h-7"
-                              pTooltip="Eliminar"
-                              (click)="remove(row)"
-                            ></button>
-                          </div>
-                        </div>
-                      </div>
-                      @if (row.description) {
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 line-clamp-3 leading-relaxed">
-                          {{ row.description }}
-                        </p>
-                      }
-                      @if (row.outcome) {
-                        <div class="mt-2 bg-green-50 dark:bg-green-950/30 rounded-lg px-2 py-1.5 text-[11px] text-green-700 dark:text-green-400 line-clamp-2">
-                          <i class="pi pi-check-circle mr-1"></i>{{ row.outcome }}
-                        </div>
-                      }
-                      @if (row.userId || row.nextFollowUpDate) {
-                        <div class="flex items-center gap-3 mt-2 text-[10px] text-gray-400 flex-wrap">
-                          @if (row.userId) {
-                            <span><i class="pi pi-user mr-1"></i>{{ getUserName(row.userId) }}</span>
-                          }
-                          @if (row.nextFollowUpDate) {
-                            <span class="text-blue-500">
-                              <i class="pi pi-arrow-right mr-1"></i>{{ row.nextFollowUpDate | date:'dd/MM/yy' }}
-                            </span>
-                          }
-                        </div>
-                      }
-                    </div>
+                  {{ (group.contactName !== '—' ? group.contactName : '?').charAt(0).toUpperCase() }}
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="font-semibold text-sm text-gray-900 dark:text-gray-100 leading-snug truncate">
+                    {{ group.contactName !== '—' ? group.contactName : 'Sin contacto' }}
                   </div>
+                  <div class="mt-1 inline-flex items-center gap-1.5 text-[11px] font-medium text-indigo-700 dark:text-indigo-300 bg-white/70 dark:bg-gray-800/80 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-900/50">
+                    <i class="pi pi-sitemap text-[10px] opacity-80"></i>
+                    {{ group.followUps.length }} paso{{ group.followUps.length !== 1 ? 's' : '' }}
+                  </div>
+                  <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-2 leading-tight hidden md:block">
+                    Cronología de izquierda a derecha · desplaza en móvil
+                  </p>
                 </div>
               </div>
-              @if (!isLast) {
-                <div class="w-4 sm:w-8 shrink-0 flex items-center justify-center self-center px-0.5">
-                  <div
-                    class="h-1 w-full rounded-full bg-gradient-to-r from-sky-400 via-indigo-500 to-violet-500 opacity-90 dark:opacity-70"
-                  ></div>
-                </div>
-              }
+              <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Paso"
+                class="p-button-sm p-button-outlined shrink-0 self-center md:self-stretch md:w-full border-indigo-200 text-indigo-700 dark:border-indigo-800 dark:text-indigo-300"
+                pTooltip="Nuevo seguimiento para este contacto"
+                (click)="newItem(undefined, group.contactId)"
+              ></button>
             </div>
-          }
-        </div>
+
+            <!-- Carril horizontal -->
+            <div class="fu-pipeline-rail flex-1 min-w-0 relative">
+              <div class="fu-pipeline-scroll overflow-x-auto overflow-y-hidden overscroll-x-contain py-3 pl-3 pr-4 md:pl-4 md:pr-6">
+                <div class="flex items-stretch min-h-[7.5rem]">
+                  @for (fu of group.followUps; track fu._id; let i = $index; let isLast = $last) {
+                    @if (i > 0) {
+                      <div
+                        class="fu-pipeline-connector flex flex-col items-center justify-center shrink-0 w-7 sm:w-9 text-indigo-400/90 dark:text-indigo-500/80"
+                        aria-hidden="true"
+                      >
+                        <span
+                          class="hidden sm:block h-px w-full max-w-[2rem] bg-gradient-to-r from-indigo-300 via-violet-400 to-violet-500 rounded-full opacity-90"
+                        ></span>
+                        <i class="pi pi-angle-right text-lg sm:text-xl drop-shadow-sm -my-1 sm:my-0"></i>
+                        <span
+                          class="hidden sm:block h-px w-full max-w-[2rem] bg-gradient-to-r from-violet-500 via-violet-400 to-indigo-300 rounded-full opacity-90"
+                        ></span>
+                      </div>
+                    }
+
+                    <article
+                      class="fu-step w-[11.5rem] sm:w-52 shrink-0 flex flex-col rounded-xl border-2 p-3 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-default group/step"
+                      [ngClass]="{
+                        'border-emerald-300/90 bg-gradient-to-b from-emerald-50/90 to-white dark:from-emerald-950/35 dark:to-gray-900 dark:border-emerald-800/70':
+                          fu.status === 'COMPLETED',
+                        'border-amber-300/90 bg-gradient-to-b from-amber-50/95 to-white dark:from-amber-950/30 dark:to-gray-900 dark:border-amber-800/60 ring-2 ring-amber-400/25 dark:ring-amber-500/20':
+                          fu.status === 'SCHEDULED',
+                        'border-red-200/90 bg-gradient-to-b from-red-50/60 to-white dark:from-red-950/25 dark:to-gray-900 dark:border-red-900/50 opacity-90':
+                          fu.status === 'CANCELLED'
+                      }"
+                    >
+                      <div class="flex items-start gap-2">
+                        <span
+                          class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 shadow-inner"
+                          [ngClass]="{
+                            'bg-emerald-600 text-white': fu.status === 'COMPLETED',
+                            'bg-amber-500 text-white': fu.status === 'SCHEDULED',
+                            'bg-red-500 text-white': fu.status === 'CANCELLED'
+                          }"
+                        >
+                          {{ i + 1 }}
+                        </span>
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-1 flex-wrap">
+                            <span
+                              class="inline-flex w-6 h-6 rounded-md items-center justify-center shrink-0"
+                              [class]="getTypeColorClass(fu.type)"
+                            >
+                              <i class="text-xs" [class]="getTypeIcon(fu.type)"></i>
+                            </span>
+                            <p-tag
+                              [value]="getStatusLabel(fu.status)"
+                              [severity]="getStatusSeverity(fu.status)"
+                              styleClass="text-[10px] py-0 px-1.5"
+                            ></p-tag>
+                          </div>
+                          <h3 class="text-xs font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug mt-1.5">
+                            {{ fu.title || getTypeLabel(fu.type) || 'Seguimiento' }}
+                          </h3>
+                        </div>
+                      </div>
+
+                      @if (fu.scheduledDate) {
+                        <div class="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-2">
+                          <i class="pi pi-calendar text-[9px] text-indigo-400"></i>
+                          {{ fu.scheduledDate | date: 'dd/MM/yy · HH:mm' }}
+                        </div>
+                      }
+
+                      @if (fu.description) {
+                        <p class="text-[10px] text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed mt-1.5 border-t border-gray-100/80 dark:border-gray-700/80 pt-1.5">
+                          {{ fu.description }}
+                        </p>
+                      }
+
+                      @if (fu.outcome) {
+                        <div
+                          class="mt-1.5 rounded-lg px-2 py-1 text-[10px] text-emerald-800 dark:text-emerald-300 bg-emerald-100/80 dark:bg-emerald-950/40 line-clamp-2 border border-emerald-200/60 dark:border-emerald-900/50"
+                        >
+                          <i class="pi pi-check-circle mr-0.5 text-[9px]"></i>{{ fu.outcome }}
+                        </div>
+                      }
+
+                      @if (fu.nextFollowUpDate) {
+                        <div class="text-[10px] text-blue-600 dark:text-blue-400 flex items-center gap-1 mt-1 font-medium">
+                          <i class="pi pi-forward text-[9px]"></i>
+                          Próx. {{ fu.nextFollowUpDate | date: 'dd/MM/yy' }}
+                        </div>
+                      }
+
+                      <div
+                        class="flex items-center justify-end gap-0.5 mt-auto pt-2 border-t border-gray-100/90 dark:border-gray-700/60 opacity-80 group-hover/step:opacity-100 transition-opacity"
+                      >
+                        <button
+                          pButton
+                          icon="pi pi-eye"
+                          class="p-button-text p-button-sm p-0 w-8 h-8"
+                          pTooltip="Ver"
+                          (click)="viewDetails(fu)"
+                        ></button>
+                        <button
+                          pButton
+                          icon="pi pi-pencil"
+                          class="p-button-text p-button-sm p-0 w-8 h-8"
+                          pTooltip="Editar"
+                          (click)="editItem(fu)"
+                        ></button>
+                        <button
+                          pButton
+                          icon="pi pi-trash"
+                          class="p-button-text p-button-sm p-button-danger p-0 w-8 h-8"
+                          pTooltip="Eliminar"
+                          (click)="remove(fu)"
+                        ></button>
+                      </div>
+                    </article>
+                  }
+
+                  <!-- Nodo final: añadir paso -->
+                  <div
+                    class="fu-pipeline-connector flex flex-col items-center justify-center shrink-0 w-7 sm:w-9 text-gray-300 dark:text-gray-600"
+                    aria-hidden="true"
+                  >
+                    <i class="pi pi-angle-right text-lg sm:text-xl"></i>
+                  </div>
+                  <button
+                    type="button"
+                    class="fu-pipeline-add shrink-0 w-[11.5rem] sm:w-52 min-h-[7.5rem] rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 hover:border-indigo-400 hover:bg-indigo-50/40 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/20 flex flex-col items-center justify-center gap-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
+                    (click)="newItem(undefined, group.contactId)"
+                  >
+                    <span
+                      class="w-10 h-10 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 flex items-center justify-center shadow-sm"
+                    >
+                      <i class="pi pi-plus text-indigo-500"></i>
+                    </span>
+                    <span class="text-xs font-semibold">Siguiente paso</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
       </div>
     }
   </div>

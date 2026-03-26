@@ -1,1 +1,40 @@
-// Estilos específicos para la página de Seguimientos
+// Carril horizontal: scroll suave y barra discreta
+.fu-pipeline-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgb(243 244 246 / 0.85);
+    border-radius: 9999px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgb(129 140 248 / 0.75);
+    border-radius: 9999px;
+  }
+
+  scrollbar-width: thin;
+  scrollbar-color: rgb(129 140 248 / 0.75) rgb(243 244 246 / 0.85);
+}
+
+@media (prefers-color-scheme: dark) {
+  .fu-pipeline-scroll::-webkit-scrollbar-track {
+    background: rgb(31 41 55 / 0.85);
+  }
+
+  .fu-pipeline-scroll::-webkit-scrollbar-thumb {
+    background: rgb(79 70 229 / 0.55);
+  }
+
+  .fu-pipeline-scroll {
+    scrollbar-color: rgb(79 70 229 / 0.55) rgb(31 41 55 / 0.85);
+  }
+}
+
+.fu-pipeline-list {
+  padding-bottom: 0.25rem;
+}
