@@ -1,0 +1,96 @@
+<p-toast></p-toast>
+
+<div class="crm-assoc">
+  <p-card header="Asociación">
+    <p class="crm-assoc-desc">
+      Registros globales de la asociación (mismos datos para todas las empresas). Origen: formulario público
+      QUIO Lima.
+    </p>
+
+    <div class="crm-assoc-filters">
+      <div class="crm-assoc-filter">
+        <label for="f-search">Búsqueda</label>
+        <input
+          pInputText
+          id="f-search"
+          [formControl]="searchCtrl"
+          placeholder="Nombre, DNI, email, teléfono…"
+          class="w-full"
+        />
+      </div>
+      <div class="crm-assoc-filter">
+        <label for="f-dni">DNI</label>
+        <input pInputText id="f-dni" [formControl]="dniCtrl" class="w-full" />
+      </div>
+      <div class="crm-assoc-filter">
+        <label for="f-email">Email</label>
+        <input pInputText id="f-email" type="email" [formControl]="emailCtrl" class="w-full" />
+      </div>
+      <div class="crm-assoc-filter">
+        <label for="f-tel">Teléfono</label>
+        <input pInputText id="f-tel" [formControl]="telefonoCtrl" class="w-full" />
+      </div>
+      <div class="crm-assoc-filter">
+        <label for="f-from">Desde</label>
+        <input pInputText id="f-from" type="date" [formControl]="dateFromCtrl" class="w-full" />
+      </div>
+      <div class="crm-assoc-filter">
+        <label for="f-to">Hasta</label>
+        <input pInputText id="f-to" type="date" [formControl]="dateToCtrl" class="w-full" />
+      </div>
+      <div class="crm-assoc-filter-actions">
+        <button
+          pButton
+          type="button"
+          label="Aplicar filtros"
+          (click)="load()"
+          [loading]="loading()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Limpiar"
+          severity="secondary"
+          [outlined]="true"
+          (click)="clearFilters()"
+          [disabled]="loading()"
+        ></button>
+      </div>
+    </div>
+
+    <p-table
+      [value]="items()"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="15"
+      [rowsPerPageOptions]="[15, 30, 50]"
+      styleClass="p-datatable-sm"
+      responsiveLayout="stack"
+      [breakpoint]="'768px'"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Nombre completo</th>
+          <th>DNI</th>
+          <th>Teléfono</th>
+          <th>Email</th>
+          <th>Fecha</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ displayName(row) }}</td>
+          <td>{{ displayCell(row.dni) }}</td>
+          <td>{{ displayCell(row.telefono) }}</td>
+          <td>{{ displayCell(row.email) }}</td>
+          <td>{{ row.createdAt | date: 'short' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center p-4 text-color-secondary">Sin registros</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</div>
