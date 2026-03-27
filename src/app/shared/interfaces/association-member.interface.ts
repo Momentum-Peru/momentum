@@ -19,6 +19,14 @@ export interface CreatePublicAssociationMemberRequest {
   direccion?: string;
 }
 
+export interface UpdateAssociationMemberRequest {
+  nombreCompleto?: string;
+  dni?: string;
+  telefono?: string;
+  email?: string;
+  direccion?: string;
+}
+
 export interface AssociationMemberQueryParams {
   search?: string;
   dni?: string;

@@ -47,3 +47,25 @@
     grid-column: span 2;
   }
 }
+
+.crm-assoc-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.crm-assoc-edit-grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .crm-assoc-edit-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.crm-assoc-span-2 {
+  grid-column: 1 / -1;
+}
