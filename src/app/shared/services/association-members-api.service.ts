@@ -6,6 +6,7 @@ import {
   AssociationMember,
   AssociationMemberQueryParams,
   CreatePublicAssociationMemberRequest,
+  UpdateAssociationMemberRequest,
 } from '../interfaces/association-member.interface';
 
 @Injectable({ providedIn: 'root' })
@@ -28,5 +29,13 @@ export class AssociationMembersApiService {
       });
     }
     return this.http.get<AssociationMember[]>(this.crmUrl, { params: httpParams });
+  }
+
+  update(id: string, body: UpdateAssociationMemberRequest): Observable<AssociationMember> {
+    return this.http.patch<AssociationMember>(`${this.crmUrl}/${id}`, body);
+  }
+
+  remove(id: string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.crmUrl}/${id}`);
   }
 }
