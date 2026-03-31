@@ -94,7 +94,8 @@ export class MenuConfigService {
     { path: '/purchases/requirements', label: 'Requerimientos de compra', icon: 'pi pi-inbox' },
     { path: '/purchases/orders', label: 'Órdenes de compra', icon: 'pi pi-shopping-cart' },
     { path: '/purchases/vouchers', label: 'Comprobantes CXP', icon: 'pi pi-file' },
-    { path: '/logistics/products', label: 'Productos y Servicios', icon: 'pi pi-box' },
+    { path: '/logistics/products', label: 'Productos', icon: 'pi pi-box' },
+    { path: '/logistics/locations', label: 'Ubicaciones', icon: 'pi pi-map-marker' },
     { path: '/logistics/quotes', label: 'Solicitudes de cotización', icon: 'pi pi-inbox' },
 
     { path: '/logistics/quote-entry', label: 'Ingresar cotizaciones', icon: 'pi pi-pencil' },
@@ -272,9 +273,14 @@ export class MenuConfigService {
             routerLink: '/providers',
           },
           {
-            label: 'Productos y Servicios',
+            label: 'Productos',
             icon: 'pi pi-box',
             routerLink: '/logistics/products',
+          },
+          {
+            label: 'Ubicaciones',
+            icon: 'pi pi-map-marker',
+            routerLink: '/logistics/locations',
           },
           {
             label: 'Solicitudes de cotización',
@@ -659,7 +665,8 @@ export class MenuConfigService {
       relatedRoutes: ['/providers', '/logistics', '/purchases'],
       items: [
         { label: 'Proveedores', icon: 'pi pi-building', routerLink: '/providers', description: 'Gestión de proveedores' },
-        { label: 'Productos y Servicios', icon: 'pi pi-box', routerLink: '/logistics/products', description: 'Catálogo de productos' },
+        { label: 'Productos', icon: 'pi pi-box', routerLink: '/logistics/products', description: 'Catálogo de productos' },
+        { label: 'Ubicaciones', icon: 'pi pi-map-marker', routerLink: '/logistics/locations', description: 'Almacenes y stock' },
         { label: 'Solicitudes de cotización', icon: 'pi pi-inbox', routerLink: '/logistics/quotes', description: 'Solicitudes de precios' },
         { label: 'Ingresar cotizaciones', icon: 'pi pi-pencil', routerLink: '/logistics/quote-entry', description: 'Registro de cotizaciones' },
         { label: 'Comparar cotizaciones', icon: 'pi pi-arrows-h', routerLink: '/logistics/compare-quotes', description: 'Análisis comparativo' },

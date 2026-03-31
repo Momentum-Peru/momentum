@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
@@ -11,6 +11,7 @@ import { CardModule } from 'primeng/card';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { ProductsService, Product } from '../../../../shared/services/products.service';
+import { PresignedUploadService } from '../../../../shared/services/presigned-upload.service';
 
 @Component({
   selector: 'app-product-form',
@@ -18,7 +19,6 @@ import { ProductsService, Product } from '../../../../shared/services/products.s
   imports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule,
     InputTextModule,
     ButtonModule,
     SelectModule,
@@ -28,29 +28,48 @@ import { ProductsService, Product } from '../../../../shared/services/products.s
     ToastModule,
   ],
   templateUrl: './product-form.component.html',
+  providers: [MessageService],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductFormComponent implements OnInit {
   private readonly productsService = inject(ProductsService);
+  private readonly presignedUploadService = inject(PresignedUploadService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  /** Si viene de solicitud de cotización (quotes/new), volver allí tras guardar */
   returnTo = signal<string | null>(null);
+  isEditMode = signal<boolean>(false);
+  uploadingImages = signal<boolean>(false);
 
   editing = signal<Product>({
     name: '',
-    type: 'bien',
     unitOfMeasure: 'unidad',
     isActive: true,
+    images: [],
   });
 
-  isEditMode = signal<boolean>(false);
-
-  productTypes = [
-    { label: 'Bien', value: 'bien' },
-    { label: 'Servicio', value: 'servicio' },
+  categoryOptions = [
+    { label: 'Informática y Tecnología', value: 'informatica' },
+    { label: 'Electrónica', value: 'electronica' },
+    { label: 'Papelería y Oficina', value: 'papeleria' },
+    { label: 'Limpieza e Higiene', value: 'limpieza' },
+    { label: 'Herramientas y Equipos', value: 'herramientas' },
+    { label: 'Muebles y Enseres', value: 'muebles' },
+    { label: 'Materiales de Construcción', value: 'materiales_construccion' },
+    { label: 'Repuestos y Mantenimiento', value: 'repuestos' },
+    { label: 'Químicos y Laboratorio', value: 'quimicos' },
+    { label: 'Alimentos y Bebidas', value: 'alimentos' },
+    { label: 'Ropa y EPP', value: 'ropa_epp' },
+    { label: 'Material Eléctrico', value: 'electrico' },
+    { label: 'Material Mecánico', value: 'mecanico' },
+    { label: 'Material Médico', value: 'medico' },
+    { label: 'Agrícola', value: 'agricola' },
+    { label: 'Automotriz', value: 'automotriz' },
+    { label: 'Embalaje y Empaque', value: 'packaging' },
+    { label: 'Combustible y Lubricantes', value: 'combustible' },
+    { label: 'Seguridad Industrial', value: 'seguridad' },
+    { label: 'Otro', value: 'otro' },
   ];
 
   unitOptions = [
@@ -76,7 +95,7 @@ export class ProductFormComponent implements OnInit {
         this.isEditMode.set(true);
         this.productsService.getProduct(id).subscribe({
           next: (product) => {
-            this.editing.set(product);
+            this.editing.set({ ...product, images: product.images ?? [] });
           },
           error: () => this.goBack(),
         });
@@ -85,32 +104,87 @@ export class ProductFormComponent implements OnInit {
   }
 
   onEditChange<K extends keyof Product>(key: K, value: Product[K]) {
-    const cur = this.editing();
-    if (!cur) return;
-    this.editing.set({ ...cur, [key]: value });
+    this.editing.set({ ...this.editing(), [key]: value });
+  }
+
+  /** Redimensiona y recorta la imagen a un cuadrado de `size`×`size` px en JPEG. */
+  private resizeImage(file: File, size = 800): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d')!;
+        // Center-crop cuadrado (igual que object-cover)
+        const side = Math.min(img.width, img.height);
+        const sx = (img.width - side) / 2;
+        const sy = (img.height - side) / 2;
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { reject(new Error('No se pudo procesar la imagen')); return; }
+            const name = file.name.replace(/\.[^.]+$/, '.jpg');
+            resolve(new File([blob], name, { type: 'image/jpeg' }));
+          },
+          'image/jpeg',
+          0.85
+        );
+      };
+      img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Error al cargar imagen')); };
+      img.src = objectUrl;
+    });
+  }
+
+  async addImages(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    this.uploadingImages.set(true);
+    try {
+      const originals = Array.from(files);
+      const resized = await Promise.all(originals.map((f) => this.resizeImage(f)));
+      const results = await this.presignedUploadService.uploadMultipleFiles(resized, { prefix: 'products' });
+      const newUrls = results.map((r) => r.publicUrl);
+      const current = this.editing();
+      this.editing.set({ ...current, images: [...(current.images ?? []), ...newUrls] });
+    } catch {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudieron subir las imágenes. Intenta nuevamente.',
+      });
+    } finally {
+      this.uploadingImages.set(false);
+    }
+  }
+
+  removeImage(index: number) {
+    const current = this.editing();
+    const images = [...(current.images ?? [])];
+    images.splice(index, 1);
+    this.editing.set({ ...current, images });
   }
 
   save() {
     const item = this.editing();
-    if (!item) return;
 
     if (!item.name || item.name.trim() === '') {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'El nombre es obligatorio',
+        detail: 'El nombre del producto es obligatorio',
       });
       return;
     }
 
-    const payload: Omit<Product, '_id' | 'createdAt' | 'updatedAt'> = {
+    const payload = {
       name: item.name,
-      code: item.code,
-      type: item.type,
       unitOfMeasure: item.unitOfMeasure,
       category: item.category,
       description: item.description,
       basePrice: item.basePrice,
+      images: item.images ?? [],
       isActive: item.isActive,
     };
 
@@ -123,7 +197,7 @@ export class ProductFormComponent implements OnInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
-          detail: item._id ? 'Item actualizado' : 'Item creado',
+          detail: item._id ? 'Producto actualizado' : 'Producto creado',
         });
         const returnUrl = this.returnTo();
         if (returnUrl && !item._id && saved?._id) {

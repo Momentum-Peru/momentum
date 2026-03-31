@@ -664,6 +664,32 @@ export const routes: Routes = [
                     (m) => m.ProductFormComponent,
                   ),
               },
+              {
+                path: 'view/:id',
+                loadComponent: () =>
+                  import('./pages/logistics/products/product-detail/product-detail.component').then(
+                    (m) => m.ProductDetailComponent,
+                  ),
+              },
+            ],
+          },
+          {
+            path: 'locations',
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/logistics/locations' },
+            children: [
+              {
+                path: '',
+                loadComponent: () =>
+                  import('./pages/logistics/locations/locations.page').then((m) => m.LocationsPage),
+              },
+              {
+                path: ':id',
+                loadComponent: () =>
+                  import('./pages/logistics/locations/location-detail/location-detail.component').then(
+                    (m) => m.LocationDetailComponent,
+                  ),
+              },
             ],
           },
           {

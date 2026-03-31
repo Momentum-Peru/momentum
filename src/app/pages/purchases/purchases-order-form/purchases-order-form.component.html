@@ -17,6 +17,79 @@
   </div>
 
   <div class="grid gap-6">
+    <!-- Tipo de Orden -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-2 p-4 border-b">
+          <i class="pi pi-sliders-h text-slate-500 text-xl"></i>
+          <h2 class="text-lg font-semibold m-0 text-slate-800">¿Qué tipo de orden deseas crear?</h2>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <div class="grid grid-cols-2 gap-4">
+          <div
+            class="cursor-pointer border-2 rounded-xl p-5 flex flex-col items-center gap-3 transition-all duration-200 select-none"
+            [class.border-primary-500]="orderType() === 'productos'"
+            [class.bg-primary-50]="orderType() === 'productos'"
+            [class.shadow-md]="orderType() === 'productos'"
+            [class.border-slate-200]="orderType() !== 'productos'"
+            (click)="changeOrderType('productos')"
+          >
+            <div
+              class="w-14 h-14 rounded-full flex items-center justify-center transition-colors"
+              [class.bg-primary-100]="orderType() === 'productos'"
+              [class.bg-slate-100]="orderType() !== 'productos'"
+            >
+              <i class="pi pi-box text-2xl"
+                [class.text-primary-600]="orderType() === 'productos'"
+                [class.text-slate-400]="orderType() !== 'productos'"
+              ></i>
+            </div>
+            <div class="text-center">
+              <p class="font-semibold text-base m-0"
+                [class.text-primary-700]="orderType() === 'productos'"
+                [class.text-slate-700]="orderType() !== 'productos'"
+              >Productos</p>
+              <p class="text-xs text-slate-500 m-0 mt-1">Orden de compra de bienes físicos</p>
+            </div>
+            @if (orderType() === 'productos') {
+              <span class="text-xs bg-primary-500 text-white px-3 py-0.5 rounded-full font-medium">Seleccionado</span>
+            }
+          </div>
+
+          <div
+            class="cursor-pointer border-2 rounded-xl p-5 flex flex-col items-center gap-3 transition-all duration-200 select-none"
+            [class.border-primary-500]="orderType() === 'servicios'"
+            [class.bg-primary-50]="orderType() === 'servicios'"
+            [class.shadow-md]="orderType() === 'servicios'"
+            [class.border-slate-200]="orderType() !== 'servicios'"
+            (click)="changeOrderType('servicios')"
+          >
+            <div
+              class="w-14 h-14 rounded-full flex items-center justify-center transition-colors"
+              [class.bg-primary-100]="orderType() === 'servicios'"
+              [class.bg-slate-100]="orderType() !== 'servicios'"
+            >
+              <i class="pi pi-wrench text-2xl"
+                [class.text-primary-600]="orderType() === 'servicios'"
+                [class.text-slate-400]="orderType() !== 'servicios'"
+              ></i>
+            </div>
+            <div class="text-center">
+              <p class="font-semibold text-base m-0"
+                [class.text-primary-700]="orderType() === 'servicios'"
+                [class.text-slate-700]="orderType() !== 'servicios'"
+              >Servicios</p>
+              <p class="text-xs text-slate-500 m-0 mt-1">Contratación de mano de obra o consultoría</p>
+            </div>
+            @if (orderType() === 'servicios') {
+              <span class="text-xs bg-primary-500 text-white px-3 py-0.5 rounded-full font-medium">Seleccionado</span>
+            }
+          </div>
+        </div>
+      </ng-template>
+    </p-card>
+
     <!-- Selección de Cotización (Opcional) -->
     <p-card>
       <ng-template pTemplate="header">
@@ -203,11 +276,13 @@
         <div class="flex items-center justify-between p-4 border-b">
           <div class="flex items-center gap-2">
             <i class="pi pi-list text-purple-500 text-xl"></i>
-            <h2 class="text-lg font-semibold m-0 text-slate-800">Artículos *</h2>
+            <h2 class="text-lg font-semibold m-0 text-slate-800">
+              {{ orderType() === 'productos' ? 'Productos *' : 'Servicios *' }}
+            </h2>
           </div>
           <button
             pButton
-            label="Agregar Artículo"
+            [label]="orderType() === 'productos' ? 'Agregar Producto' : 'Agregar Servicio'"
             icon="pi pi-plus"
             class="p-button-sm p-button-outlined"
             (click)="addLine()"
@@ -218,7 +293,7 @@
         <div class="space-y-4 pt-2">
           @if (orderForm().lines.length === 0) {
             <div class="text-sm text-center text-slate-500 py-4">
-              No hay artículos. Agregue un artículo a la orden.
+              No hay {{ orderType() === 'productos' ? 'productos' : 'servicios' }} agregados.
             </div>
           }
           @for (line of orderForm().lines; track $index) {
@@ -233,33 +308,39 @@
                 pTooltip="Eliminar artículo"
               ></button>
               <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-                <div class="md:col-span-2">
-                  <label class="block text-xs text-slate-500 mb-1">Producto / Servicio</label>
-                  <p-select
-                    [options]="catalogProducts()"
-                    optionLabel="name"
-                    optionValue="_id"
-                    [filter]="true"
-                    filterBy="name,code"
-                    [ngModel]="line.productId"
-                    (ngModelChange)="updateLine($index, 'productId', $event)"
-                    placeholder="Seleccione un producto"
-                    class="w-full p-inputtext-sm"
-                    appendTo="body"
-                  >
-                    <ng-template pTemplate="selectedItem" let-selectedOption>
-                      @if (selectedOption) {
-                        <div class="flex items-center gap-2">
-                          <span class="text-xs font-medium">{{ selectedOption.name }}</span>
-                        </div>
-                      }
-                    </ng-template>
-                  </p-select>
-                </div>
-                <div class="md:col-span-2">
-                  <label class="block text-xs text-slate-500 mb-1">Descripción *</label>
+                @if (orderType() === 'productos') {
+                  <div class="md:col-span-2">
+                    <label class="block text-xs text-slate-500 mb-1">Producto del catálogo</label>
+                    <p-select
+                      [options]="catalogProducts()"
+                      optionLabel="name"
+                      optionValue="_id"
+                      [filter]="true"
+                      filterBy="name,code"
+                      [ngModel]="line.productId"
+                      (ngModelChange)="updateLine($index, 'productId', $event)"
+                      placeholder="Seleccione un producto"
+                      class="w-full p-inputtext-sm"
+                      appendTo="body"
+                      [showClear]="true"
+                    >
+                      <ng-template pTemplate="selectedItem" let-selectedOption>
+                        @if (selectedOption) {
+                          <div class="flex items-center gap-2">
+                            <span class="text-xs font-medium">{{ selectedOption.name }}</span>
+                          </div>
+                        }
+                      </ng-template>
+                    </p-select>
+                  </div>
+                }
+                <div [class]="orderType() === 'productos' ? 'md:col-span-2' : 'md:col-span-4'">
+                  <label class="block text-xs text-slate-500 mb-1">
+                    {{ orderType() === 'productos' ? 'Descripción *' : 'Nombre del Servicio *' }}
+                  </label>
                   <input
                     pInputText
+                    [placeholder]="orderType() === 'servicios' ? 'Ej: Servicio de instalación, Consultoría...' : ''"
                     [ngModel]="line.description"
                     (ngModelChange)="updateLine($index, 'description', $event)"
                     class="w-full p-inputtext-sm text-sm"

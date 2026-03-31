@@ -329,8 +329,8 @@ export class QuoteViewComponent implements OnInit {
   get rfqType(): 'bien' | 'servicio' {
     const rfq = this.rfq();
     if (!rfq?.items?.length) return 'bien';
-    // Se asume que productId está poblado con { name, type, ... }
-    return (rfq.items[0].productId as any)?.type || 'bien';
+    // Si el primer item tiene productId es de productos (OC), si tiene description es servicio (OS)
+    return rfq.items[0].productId ? 'bien' : 'servicio';
   }
 
   get hasPricedQuotes(): boolean {

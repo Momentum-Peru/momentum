@@ -8,7 +8,8 @@ import { Provider } from './providers.service';
 export type RfqStatus = 'Borrador' | 'Aprobada' | 'Publicada' | 'Cerrada' | 'Cancelada';
 
 export interface RfqItem {
-  productId: Product | string;
+  productId?: Product | string;
+  description?: string;
   quantity: number;
   notes?: string;
 }
@@ -66,7 +67,7 @@ export class RfqsService {
     title: string;
     description: string;
     projectId?: string;
-    items: { productId: string; quantity: number; notes?: string }[];
+    items: { productId?: string; description?: string; quantity: number; notes?: string }[];
     providerIds?: string[];
     deadline?: string;
     termsAndConditions?: string;

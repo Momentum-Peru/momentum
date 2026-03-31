@@ -1,15 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { CardModule } from 'primeng/card';
-import { TableModule } from 'primeng/table';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { TagModule } from 'primeng/tag';
+import { CardModule } from 'primeng/card';
 import { TooltipModule } from 'primeng/tooltip';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { ProductsService, Product } from '../../../shared/services/products.service';
+import { ProductsService, Product } from '../../../../shared/services/products.service';
 
 export const CATEGORY_LABELS: Record<string, string> = {
   informatica: 'Informática y Tecnología',
@@ -35,55 +30,58 @@ export const CATEGORY_LABELS: Record<string, string> = {
 };
 
 @Component({
-  selector: 'app-products-page',
+  selector: 'app-product-detail',
   standalone: true,
-  imports: [
-    CommonModule, CardModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule,
-    IconFieldModule, InputIconModule
-  ],
-  templateUrl: './products.page.html',
+  imports: [CommonModule, ButtonModule, CardModule, TooltipModule],
+  templateUrl: './product-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProductsPage implements OnInit {
+export class ProductDetailComponent implements OnInit {
   private readonly productsService = inject(ProductsService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
-  products = signal<Product[]>([]);
-  loading = signal<boolean>(false);
+  product = signal<Product | null>(null);
+  loading = signal<boolean>(true);
+  selectedImageIndex = signal<number>(0);
 
   readonly categoryLabels = CATEGORY_LABELS;
 
   ngOnInit() {
-    this.loadProducts();
-  }
-
-  loadProducts() {
-    this.loading.set(true);
-    this.productsService.getProducts().subscribe({
-      next: (data) => {
-        this.products.set(data);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-      }
+    this.route.paramMap.subscribe((params) => {
+      const id = params.get('id');
+      if (!id) { this.goBack(); return; }
+      this.productsService.getProduct(id).subscribe({
+        next: (p) => {
+          this.product.set(p);
+          this.loading.set(false);
+        },
+        error: () => this.goBack(),
+      });
     });
   }
 
-  newProduct() {
-    this.router.navigate(['/logistics/products/new']);
+  get mainImage(): string | null {
+    const p = this.product();
+    if (!p?.images?.length) return null;
+    return p.images[this.selectedImageIndex()] ?? p.images[0];
   }
 
-  viewProduct(item: Product) {
-    this.router.navigate(['/logistics/products/view', item._id]);
-  }
-
-  editProduct(item: Product) {
-    this.router.navigate(['/logistics/products/edit', item._id]);
+  selectImage(index: number) {
+    this.selectedImageIndex.set(index);
   }
 
   getCategoryLabel(category?: string): string {
     if (!category) return '-';
     return this.categoryLabels[category] ?? category;
+  }
+
+  editProduct() {
+    const p = this.product();
+    if (p?._id) this.router.navigate(['/logistics/products/edit', p._id]);
+  }
+
+  goBack() {
+    this.router.navigate(['/logistics/products']);
   }
 }

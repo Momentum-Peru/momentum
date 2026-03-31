@@ -1,0 +1,180 @@
+<div class="p-4 space-y-4">
+
+  <!-- Skeleton de carga -->
+  @if (loading()) {
+    <div class="animate-pulse space-y-4">
+      <div class="h-5 bg-slate-200 rounded w-48"></div>
+      <div class="flex gap-6">
+        <div class="w-72 h-72 flex-shrink-0 bg-slate-200 rounded-xl"></div>
+        <div class="flex-1 space-y-4 pt-2">
+          <div class="h-7 bg-slate-200 rounded w-3/4"></div>
+          <div class="h-5 bg-slate-200 rounded w-1/4"></div>
+          <div class="h-10 bg-slate-200 rounded w-1/3"></div>
+          <div class="h-16 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (!loading() && product(); as p) {
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 text-sm text-slate-500">
+      <button class="hover:text-primary-600 transition-colors" (click)="goBack()">Productos</button>
+      <i class="pi pi-chevron-right text-xs"></i>
+      <span class="text-slate-800 font-medium truncate max-w-xs">{{ p.name }}</span>
+    </nav>
+
+    <!-- Layout principal: columna fija de imagen + columna flexible de info -->
+    <div class="flex flex-col lg:flex-row gap-8 mt-2 items-start">
+
+      <!-- ===== GALERÍA DE IMÁGENES — columna fija 520 px ===== -->
+      <div class="w-full lg:w-[520px] flex-shrink-0 space-y-2">
+
+        <!-- Imagen principal -->
+        <div class="relative w-full h-[520px] rounded-xl border border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center">
+          @if (mainImage) {
+            <img
+              [src]="mainImage"
+              [alt]="p.name"
+              class="w-full h-full object-contain transition-opacity duration-300"
+            />
+          } @else {
+            <div class="flex flex-col items-center justify-center text-slate-300 gap-3">
+              <i class="pi pi-box text-6xl"></i>
+              <span class="text-xs text-slate-400">Sin imágenes</span>
+            </div>
+          }
+
+          <!-- Badge de estado -->
+          <div class="absolute top-2 left-2">
+            <span
+              class="px-2 py-0.5 text-xs rounded-full font-semibold shadow-sm"
+              [class.bg-green-500]="p.isActive"
+              [class.text-white]="p.isActive"
+              [class.bg-slate-300]="!p.isActive"
+              [class.text-slate-700]="!p.isActive"
+            >
+              {{ p.isActive ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Miniaturas -->
+        @if (p.images && p.images.length > 1) {
+          <div class="flex gap-1.5 overflow-x-auto pb-1">
+            @for (img of p.images; track $index) {
+              <button
+                type="button"
+                class="flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden transition-all duration-200"
+                [class.border-primary-500]="selectedImageIndex() === $index"
+                [class.border-slate-200]="selectedImageIndex() !== $index"
+                [class.opacity-50]="selectedImageIndex() !== $index"
+                (click)="selectImage($index)"
+              >
+                <img [src]="img" [alt]="'Imagen ' + ($index + 1)" class="w-full h-full object-cover" />
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- ===== INFORMACIÓN DEL PRODUCTO ===== -->
+      <div class="flex-1 flex flex-col gap-4 min-w-0">
+
+        <!-- Código + Categoría -->
+        <div class="flex items-center gap-2 flex-wrap">
+          @if (p.code) {
+            <span class="font-mono text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full border border-slate-200">
+              # {{ p.code }}
+            </span>
+          }
+          @if (p.category) {
+            <span class="text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full border border-primary-200 font-medium">
+              {{ getCategoryLabel(p.category) }}
+            </span>
+          }
+        </div>
+
+        <!-- Nombre -->
+        <h1 class="text-2xl font-bold text-slate-900 leading-tight m-0">{{ p.name }}</h1>
+
+        <!-- Precio -->
+        @if (p.basePrice && p.basePrice > 0) {
+          <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-extrabold text-slate-900">
+              {{ p.basePrice | currency:'PEN':'symbol':'1.2-2' }}
+            </span>
+            <span class="text-sm text-slate-500">precio referencial</span>
+          </div>
+        } @else {
+          <div class="text-slate-400 text-sm italic">Precio no definido</div>
+        }
+
+        <hr class="border-slate-200" />
+
+        <!-- Descripción -->
+        @if (p.description) {
+          <div>
+            <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Descripción</h3>
+            <p class="text-sm text-slate-700 leading-relaxed m-0 whitespace-pre-line">{{ p.description }}</p>
+          </div>
+        }
+
+        <!-- Especificaciones -->
+        <div>
+          <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Especificaciones</h3>
+          <div class="rounded-lg border border-slate-200 overflow-hidden text-sm">
+            <table class="w-full">
+              <tbody>
+                <tr class="border-b border-slate-100">
+                  <td class="px-3 py-2 bg-slate-50 text-slate-500 font-medium w-36">Unidad de Medida</td>
+                  <td class="px-3 py-2 text-slate-800 capitalize">{{ p.unitOfMeasure || '-' }}</td>
+                </tr>
+                <tr class="border-b border-slate-100">
+                  <td class="px-3 py-2 bg-slate-50 text-slate-500 font-medium">Categoría</td>
+                  <td class="px-3 py-2 text-slate-800">{{ getCategoryLabel(p.category) }}</td>
+                </tr>
+                <tr class="border-b border-slate-100">
+                  <td class="px-3 py-2 bg-slate-50 text-slate-500 font-medium">Código</td>
+                  <td class="px-3 py-2 text-slate-800 font-mono">{{ p.code || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 bg-slate-50 text-slate-500 font-medium">Estado</td>
+                  <td class="px-3 py-2">
+                    <span
+                      class="px-2 py-0.5 text-xs rounded-full font-medium"
+                      [class.bg-green-100]="p.isActive"
+                      [class.text-green-700]="p.isActive"
+                      [class.bg-red-100]="!p.isActive"
+                      [class.text-red-700]="!p.isActive"
+                    >
+                      {{ p.isActive ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="flex gap-3 pt-1">
+          <button
+            pButton
+            label="Editar producto"
+            icon="pi pi-pencil"
+            class="p-button-primary"
+            (click)="editProduct()"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-arrow-left"
+            label="Volver"
+            class="p-button-outlined p-button-secondary"
+            (click)="goBack()"
+          ></button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -65,6 +65,7 @@ export class PurchasesOrderFormComponent implements OnInit {
   private readonly productsService = inject(ProductsService);
 
   isEditMode = signal<boolean>(false);
+  orderType = signal<'productos' | 'servicios'>('productos');
   isDragging = signal<boolean>(false);
   uploadingFiles = signal<boolean>(false);
   providers = signal<Provider[]>([]);
@@ -175,6 +176,19 @@ export class PurchasesOrderFormComponent implements OnInit {
     });
   }
 
+  changeOrderType(type: 'productos' | 'servicios') {
+    if (this.orderType() === type) return;
+    this.orderType.set(type);
+    // When switching to services, clear productId from all lines
+    if (type === 'servicios') {
+      const cur = this.orderForm();
+      this.orderForm.set({
+        ...cur,
+        lines: cur.lines.map((l: any) => ({ ...l, productId: undefined })),
+      });
+    }
+  }
+
   onProviderSelect(provider: Provider) {
     this.selectedProvider.set(provider);
     const cur = this.orderForm();
@@ -251,6 +265,10 @@ export class PurchasesOrderFormComponent implements OnInit {
           if (projObj) this.selectedProject.set(projObj);
           projectId = projId;
         }
+
+        // Auto-detect order type from lines
+        const hasProducts = lines.some((l: any) => l.productId);
+        this.orderType.set(hasProducts ? 'productos' : 'servicios');
 
         this.orderForm.set({
           ...this.orderForm(),

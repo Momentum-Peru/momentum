@@ -1,4 +1,4 @@
-<div class="p-4 space-y-4 max-w-5xl mx-auto">
+<div class="p-4 space-y-4">
   <p-toast></p-toast>
 
   <div class="flex items-center gap-4 mb-6">
@@ -24,22 +24,100 @@
     </div>
 
     <!-- Paso 1: Productos / Servicios -->
-    <div *ngIf="activeIndex === 0" class="space-y-4">
-      <div class="flex justify-between items-center border-b pb-2 mb-4">
-        <h2 class="text-lg font-semibold text-slate-800 m-0">Paso 1: Productos / Servicios</h2>
+    <div *ngIf="activeIndex === 0" class="space-y-5">
+      <div class="border-b pb-3 mb-2">
+        <h2 class="text-lg font-semibold text-slate-800 m-0">Paso 1: ¿Qué deseas solicitar?</h2>
+        <p class="text-sm text-slate-500 m-0 mt-1">Selecciona el tipo de solicitud para continuar.</p>
+      </div>
+
+      <!-- Selector de tipo -->
+      <div class="grid grid-cols-2 gap-4">
+        <div
+          class="cursor-pointer border-2 rounded-xl p-5 flex flex-col items-center gap-3 transition-all duration-200 select-none"
+          [class.border-primary-500]="rfqType() === 'productos'"
+          [class.bg-primary-50]="rfqType() === 'productos'"
+          [class.shadow-md]="rfqType() === 'productos'"
+          [class.border-slate-200]="rfqType() !== 'productos'"
+          [class.hover:border-slate-300]="rfqType() !== 'productos'"
+          (click)="changeRfqType('productos')"
+        >
+          <div
+            class="w-14 h-14 rounded-full flex items-center justify-center transition-colors"
+            [class.bg-primary-100]="rfqType() === 'productos'"
+            [class.bg-slate-100]="rfqType() !== 'productos'"
+          >
+            <i
+              class="pi pi-box text-2xl transition-colors"
+              [class.text-primary-600]="rfqType() === 'productos'"
+              [class.text-slate-400]="rfqType() !== 'productos'"
+            ></i>
+          </div>
+          <div class="text-center">
+            <p
+              class="font-semibold text-base m-0 transition-colors"
+              [class.text-primary-700]="rfqType() === 'productos'"
+              [class.text-slate-700]="rfqType() !== 'productos'"
+            >Productos</p>
+            <p class="text-xs text-slate-500 m-0 mt-1">Artículos físicos del catálogo</p>
+          </div>
+          @if (rfqType() === 'productos') {
+            <span class="text-xs bg-primary-500 text-white px-3 py-0.5 rounded-full font-medium">Seleccionado</span>
+          }
+        </div>
+
+        <div
+          class="cursor-pointer border-2 rounded-xl p-5 flex flex-col items-center gap-3 transition-all duration-200 select-none"
+          [class.border-primary-500]="rfqType() === 'servicios'"
+          [class.bg-primary-50]="rfqType() === 'servicios'"
+          [class.shadow-md]="rfqType() === 'servicios'"
+          [class.border-slate-200]="rfqType() !== 'servicios'"
+          [class.hover:border-slate-300]="rfqType() !== 'servicios'"
+          (click)="changeRfqType('servicios')"
+        >
+          <div
+            class="w-14 h-14 rounded-full flex items-center justify-center transition-colors"
+            [class.bg-primary-100]="rfqType() === 'servicios'"
+            [class.bg-slate-100]="rfqType() !== 'servicios'"
+          >
+            <i
+              class="pi pi-wrench text-2xl transition-colors"
+              [class.text-primary-600]="rfqType() === 'servicios'"
+              [class.text-slate-400]="rfqType() !== 'servicios'"
+            ></i>
+          </div>
+          <div class="text-center">
+            <p
+              class="font-semibold text-base m-0 transition-colors"
+              [class.text-primary-700]="rfqType() === 'servicios'"
+              [class.text-slate-700]="rfqType() !== 'servicios'"
+            >Servicios</p>
+            <p class="text-xs text-slate-500 m-0 mt-1">Mano de obra, consultoría, etc.</p>
+          </div>
+          @if (rfqType() === 'servicios') {
+            <span class="text-xs bg-primary-500 text-white px-3 py-0.5 rounded-full font-medium">Seleccionado</span>
+          }
+        </div>
+      </div>
+
+      <!-- Separador -->
+      <div class="border-t border-slate-200 pt-4 flex justify-between items-center">
+        <h3 class="text-base font-semibold text-slate-700 m-0">
+          {{ rfqType() === 'productos' ? 'Productos a solicitar' : 'Servicios a solicitar' }}
+        </h3>
         <button
           pButton
-          label="Agregar Ítem"
+          [label]="rfqType() === 'productos' ? 'Agregar Producto' : 'Agregar Servicio'"
           icon="pi pi-plus"
           class="p-button-sm p-button-outlined"
           (click)="addRfqItem()"
         ></button>
       </div>
 
+      <!-- Lista de items -->
       <div class="space-y-3">
         @for (item of rfqItems(); track $index) {
           <div
-            class="flex flex-col md:flex-row gap-3 items-start md:items-end p-3 border border-slate-200 rounded-lg bg-slate-50 relative group"
+            class="flex flex-col md:flex-row gap-3 items-start md:items-end p-4 border border-slate-200 rounded-lg bg-slate-50 relative group"
           >
             <button
               pButton
@@ -48,65 +126,62 @@
               (click)="removeRfqItem($index)"
             ></button>
 
-            <div class="flex-1 w-full md:w-auto grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
-              <div>
-                <label class="block text-xs text-slate-500 font-semibold uppercase mb-1"
-                  >Tipo</label
-                >
-                <p-select
-                  [options]="productTypes"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="Todos"
-                  [ngModel]="item.typeFilter"
-                  (ngModelChange)="updateRfqItem($index, 'typeFilter', $event)"
-                  [showClear]="true"
-                  class="w-full"
-                  styleClass="w-full"
-                ></p-select>
-              </div>
-              <div>
-                <div class="flex justify-between mb-1">
-                  <label class="text-xs text-slate-500 font-semibold uppercase"
-                    >Producto / Servicio *</label
+            <!-- Campo principal: Producto del catálogo O Servicio escrito -->
+            <div class="flex-1 w-full">
+              @if (rfqType() === 'productos') {
+                <div>
+                  <div class="flex justify-between mb-1">
+                    <label class="text-xs text-slate-500 font-semibold uppercase">Producto *</label>
+                    <a
+                      href="javascript:void(0)"
+                      class="text-[11px] text-primary font-bold hover:underline"
+                      (click)="openNewProduct()"
+                    >+ Nuevo producto</a>
+                  </div>
+                  <p-select
+                    [options]="products()"
+                    optionLabel="name"
+                    placeholder="Seleccionar producto del catálogo"
+                    [ngModel]="item.productId"
+                    (ngModelChange)="updateRfqItem($index, 'productId', $event)"
+                    [filter]="true"
+                    filterBy="name"
+                    class="w-full"
+                    styleClass="w-full"
+                    [fluid]="true"
                   >
-                  <a
-                    href="javascript:void(0)"
-                    class="text-[11px] text-primary font-bold hover:underline"
-                    (click)="openNewProduct()"
-                    >+ Nuevo</a
-                  >
+                    <ng-template pTemplate="item" let-prod>
+                      <div class="flex items-center gap-2">
+                        @if (prod.images && prod.images.length > 0) {
+                          <img [src]="prod.images[0]" class="w-8 h-8 object-cover rounded" [alt]="prod.name" />
+                        }
+                        <div>
+                          <div>{{ prod.name }}</div>
+                          @if (prod.code) {
+                            <div class="text-xs text-slate-400">Cód: {{ prod.code }}</div>
+                          }
+                        </div>
+                      </div>
+                    </ng-template>
+                  </p-select>
                 </div>
-                <p-select
-                  [options]="getFilteredProducts(item.typeFilter)"
-                  optionLabel="name"
-                  placeholder="Seleccionar producto"
-                  [ngModel]="item.productId"
-                  (ngModelChange)="updateRfqItem($index, 'productId', $event)"
-                  [filter]="true"
-                  filterBy="name"
-                  class="w-full"
-                  styleClass="w-full"
-                  [fluid]="true"
-                >
-                  <ng-template pTemplate="item" let-prod>
-                    <div>
-                      <span>{{ prod.name }}</span>
-                      <span class="text-xs text-slate-400 ml-2" *ngIf="prod.code"
-                        >({{ prod.code }})</span
-                      >
-                    </div>
-                  </ng-template>
-                </p-select>
-              </div>
+              } @else {
+                <div>
+                  <label class="text-xs text-slate-500 font-semibold uppercase mb-1 block">Nombre del Servicio *</label>
+                  <input
+                    pInputText
+                    placeholder="Ej: Servicio de instalación eléctrica, Consultoría TI..."
+                    [ngModel]="item.serviceDescription"
+                    (ngModelChange)="updateRfqItem($index, 'serviceDescription', $event)"
+                    class="w-full"
+                  />
+                </div>
+              }
             </div>
 
+            <!-- Cantidad -->
             <div class="w-32 flex-shrink-0">
-              <div class="mb-1">
-                <label class="block text-xs text-slate-500 font-semibold uppercase"
-                  >Cantidad *</label
-                >
-              </div>
+              <label class="block text-xs text-slate-500 font-semibold uppercase mb-1">Cantidad *</label>
               <p-inputNumber
                 [ngModel]="item.quantity"
                 (ngModelChange)="updateRfqItem($index, 'quantity', $event)"
@@ -117,20 +192,26 @@
               ></p-inputNumber>
             </div>
 
+            <!-- Notas -->
             <div class="flex-1 w-full md:w-auto">
-              <div class="mb-1">
-                <label class="block text-xs text-slate-500 font-semibold uppercase"
-                  >Notas / Especificaciones</label
-                >
-              </div>
+              <label class="block text-xs text-slate-500 font-semibold uppercase mb-1">Especificaciones</label>
               <input
                 pInputText
-                placeholder="Ej: Color negro, 16GB RAM"
+                [placeholder]="rfqType() === 'productos' ? 'Ej: Color negro, 16GB RAM' : 'Ej: Incluye materiales, horario diurno'"
                 [ngModel]="item.notes"
                 (ngModelChange)="updateRfqItem($index, 'notes', $event)"
                 class="w-full p-inputtext-sm"
               />
             </div>
+          </div>
+        }
+
+        @if (rfqItems().length === 0) {
+          <div class="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+            <i class="pi pi-inbox text-3xl mb-2"></i>
+            <p class="text-sm">
+              No hay {{ rfqType() === 'productos' ? 'productos' : 'servicios' }} agregados.
+            </p>
           </div>
         }
       </div>
@@ -156,15 +237,12 @@
 
         <div class="md:col-span-2">
           <div class="flex justify-between mb-1">
-            <label class="block text-sm font-medium text-slate-700"
-              >Proyecto (Centro de costo) *</label
-            >
+            <label class="block text-sm font-medium text-slate-700">Proyecto (Centro de costo) *</label>
             <a
               href="javascript:void(0)"
               class="text-[11px] text-primary font-bold hover:underline"
               (click)="openNewProject()"
-              >+ Nuevo Proyecto</a
-            >
+            >+ Nuevo Proyecto</a>
           </div>
           <p-select
             [options]="projects()"
@@ -181,9 +259,7 @@
         </div>
 
         <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-slate-700 mb-1"
-            >Descripción / Justificación *</label
-          >
+          <label class="block text-sm font-medium text-slate-700 mb-1">Descripción / Justificación *</label>
           <textarea
             pInputText
             placeholder="Explique brevemente el propósito de esta solicitud..."
@@ -195,9 +271,7 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1"
-            >Fecha Límite para Recepción</label
-          >
+          <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Límite para Recepción</label>
           <p-datepicker
             [ngModel]="deadline()"
             (ngModelChange)="deadline.set($event)"
@@ -208,9 +282,7 @@
         </div>
 
         <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-slate-700 mb-1"
-            >Términos y Condiciones (Opcional)</label
-          >
+          <label class="block text-sm font-medium text-slate-700 mb-1">Términos y Condiciones (Opcional)</label>
           <textarea
             pInputText
             placeholder="Ej: Pagos a 30 días, entrega en almacén principal..."
@@ -311,84 +383,35 @@
     <div class="flex flex-col gap-4 mt-2">
       <div class="grid grid-cols-2 gap-4">
         <div class="col-span-2">
-          <label class="block text-sm font-medium text-slate-700 mb-1"
-            >Razón Social / Nombre *</label
-          >
-          <input
-            pInputText
-            placeholder="Nombre de empresa"
-            [(ngModel)]="newProvider().name"
-            class="w-full"
-          />
+          <label class="block text-sm font-medium text-slate-700 mb-1">Razón Social / Nombre *</label>
+          <input pInputText placeholder="Nombre de empresa" [(ngModel)]="newProvider().name" class="w-full" />
         </div>
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Tipo Doc.</label>
-          <p-select
-            [options]="docTypes()"
-            optionLabel="label"
-            optionValue="value"
-            [(ngModel)]="newProvider().taxIdType"
-            placeholder="Tipo"
-            class="w-full"
-          ></p-select>
+          <p-select [options]="docTypes()" optionLabel="label" optionValue="value" [(ngModel)]="newProvider().taxIdType" placeholder="Tipo" class="w-full"></p-select>
         </div>
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Núm. Documento</label>
-          <input
-            pInputText
-            placeholder="12345678"
-            [(ngModel)]="newProvider().taxId"
-            class="w-full"
-          />
+          <input pInputText placeholder="12345678" [(ngModel)]="newProvider().taxId" class="w-full" />
         </div>
-        <div class="col-span-2 text-xs font-semibold uppercase text-slate-500 mt-2 border-b pb-1">
-          Contacto Principal
-        </div>
+        <div class="col-span-2 text-xs font-semibold uppercase text-slate-500 mt-2 border-b pb-1">Contacto Principal</div>
         <div class="col-span-2">
           <label class="block text-xs text-slate-600 mb-1">Nombre Contacto</label>
-          <input
-            pInputText
-            placeholder="Ej: Juan Pérez"
-            [(ngModel)]="newProvider().contactName"
-            class="w-full p-inputtext-sm"
-          />
+          <input pInputText placeholder="Ej: Juan Pérez" [(ngModel)]="newProvider().contactName" class="w-full p-inputtext-sm" />
         </div>
         <div>
           <label class="block text-xs text-slate-600 mb-1">Email</label>
-          <input
-            pInputText
-            placeholder="ejemplo@correo.com"
-            [(ngModel)]="newProvider().email"
-            class="w-full p-inputtext-sm"
-          />
+          <input pInputText placeholder="ejemplo@correo.com" [(ngModel)]="newProvider().email" class="w-full p-inputtext-sm" />
         </div>
         <div>
           <label class="block text-xs text-slate-600 mb-1">Teléfono</label>
-          <input
-            pInputText
-            placeholder="987654321"
-            [(ngModel)]="newProvider().phone"
-            class="w-full p-inputtext-sm"
-          />
+          <input pInputText placeholder="987654321" [(ngModel)]="newProvider().phone" class="w-full p-inputtext-sm" />
         </div>
       </div>
     </div>
     <ng-template pTemplate="footer">
-      <button
-        pButton
-        label="Cancelar"
-        icon="pi pi-times"
-        class="p-button-text"
-        (click)="showProviderDialog.set(false)"
-      ></button>
-      <button
-        pButton
-        label="Crear e Invitar"
-        icon="pi pi-check"
-        class="p-button-primary"
-        (click)="saveNewProvider()"
-        [disabled]="!newProvider().name"
-      ></button>
+      <button pButton label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="showProviderDialog.set(false)"></button>
+      <button pButton label="Crear e Invitar" icon="pi pi-check" class="p-button-primary" (click)="saveNewProvider()" [disabled]="!newProvider().name"></button>
     </ng-template>
   </p-dialog>
 
@@ -402,38 +425,16 @@
     <div class="flex flex-col gap-4 mt-2">
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del Proyecto *</label>
-        <input
-          pInputText
-          placeholder="Ej: Construcción Sede A"
-          [(ngModel)]="newProject().name"
-          class="w-full"
-        />
+        <input pInputText placeholder="Ej: Construcción Sede A" [(ngModel)]="newProject().name" class="w-full" />
       </div>
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Cliente *</label>
-        <p-select
-          [options]="clients()"
-          optionLabel="name"
-          optionValue="_id"
-          placeholder="Seleccionar cliente"
-          [(ngModel)]="newProject().clientId"
-          [filter]="true"
-          filterBy="name"
-          class="w-full"
-          styleClass="w-full"
-          [appendTo]="'body'"
-        ></p-select>
+        <p-select [options]="clients()" optionLabel="name" optionValue="_id" placeholder="Seleccionar cliente" [(ngModel)]="newProject().clientId" [filter]="true" filterBy="name" class="w-full" styleClass="w-full" [appendTo]="'body'"></p-select>
       </div>
       <div class="grid grid-cols-1 gap-4">
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Fecha de Inicio *</label>
-          <p-datepicker
-            [(ngModel)]="newProject().startDate"
-            showIcon
-            class="w-full"
-            styleClass="w-full"
-            [appendTo]="'body'"
-          ></p-datepicker>
+          <p-datepicker [(ngModel)]="newProject().startDate" showIcon class="w-full" styleClass="w-full" [appendTo]="'body'"></p-datepicker>
         </div>
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Estado</label>
@@ -442,7 +443,7 @@
               { label: 'Pendiente', value: 'PENDIENTE' },
               { label: 'En Cotización', value: 'EN_COTIZACION' },
               { label: 'En Ejecución', value: 'EN_EJECUCION' },
-              { label: 'Aprobado', value: 'APROBADO' },
+              { label: 'Aprobado', value: 'APROBADO' }
             ]"
             optionLabel="label"
             optionValue="value"
@@ -454,31 +455,12 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
-        <textarea
-          pInputText
-          placeholder="Breve detalle..."
-          [(ngModel)]="newProject().description"
-          rows="2"
-          class="w-full"
-        ></textarea>
+        <textarea pInputText placeholder="Breve detalle..." [(ngModel)]="newProject().description" rows="2" class="w-full"></textarea>
       </div>
     </div>
     <ng-template pTemplate="footer">
-      <button
-        pButton
-        label="Cancelar"
-        icon="pi pi-times"
-        class="p-button-text"
-        (click)="showProjectDialog.set(false)"
-      ></button>
-      <button
-        pButton
-        label="Guardar"
-        icon="pi pi-check"
-        class="p-button-primary"
-        (click)="saveNewProject()"
-        [disabled]="!newProject().name || !newProject().clientId || !newProject().startDate"
-      ></button>
+      <button pButton label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="showProjectDialog.set(false)"></button>
+      <button pButton label="Guardar" icon="pi pi-check" class="p-button-primary" (click)="saveNewProject()" [disabled]="!newProject().name || !newProject().clientId || !newProject().startDate"></button>
     </ng-template>
   </p-dialog>
 </div>

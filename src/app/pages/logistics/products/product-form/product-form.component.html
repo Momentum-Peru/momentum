@@ -1,61 +1,183 @@
-<div class="p-4 space-y-4 max-w-4xl mx-auto">
+<div class="p-4 space-y-5">
   <p-toast></p-toast>
-  
-  <div class="flex items-center gap-4 mb-6">
+
+  <!-- Header -->
+  <div class="flex items-center gap-4">
     <button pButton icon="pi pi-arrow-left" class="p-button-rounded p-button-text p-button-secondary" (click)="goBack()"></button>
-    <div class="flex flex-col">
+    <div>
       <h1 class="text-2xl font-bold text-slate-800 m-0">
-        {{ isEditMode() ? 'Editar Item' : 'Nuevo Item' }}
+        {{ isEditMode() ? 'Editar Producto' : 'Nuevo Producto' }}
       </h1>
       <p class="text-sm text-slate-500 m-0 mt-1">
-        Registra un bien o servicio para tu catálogo de adquisiciones.
+        @if (isEditMode() && editing().code) {
+          Código: <span class="font-mono font-semibold text-slate-700">{{ editing().code }}</span>
+        } @else if (isEditMode()) {
+          Modifica los datos del producto
+        } @else {
+          El código se generará automáticamente al guardar
+        }
       </p>
     </div>
   </div>
 
-  <div class="grid gap-6">
-    <p-card>
-      <ng-template pTemplate="content">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Nombre *</label>
-            <input pInputText placeholder="Ej: Laptop Lenovo Thinkpad" [ngModel]="editing().name" (ngModelChange)="onEditChange('name', $event)" class="w-full" />
+  <!-- Fotografías -->
+  <p-card>
+    <ng-template pTemplate="header">
+      <div class="px-5 pt-5 pb-1">
+        <h2 class="text-base font-semibold text-slate-700 m-0">Fotografías del producto</h2>
+        <p class="text-xs text-slate-500 m-0 mt-1">Agrega hasta varias imágenes. La primera se mostrará como miniatura en el listado.</p>
+      </div>
+    </ng-template>
+    <ng-template pTemplate="content">
+      <div class="flex flex-wrap gap-4">
+        @for (img of editing().images || []; track $index) {
+          <div class="relative group w-36 h-36 flex-shrink-0">
+            <img
+              [src]="img"
+              class="w-full h-full object-cover rounded-xl border border-slate-200 shadow-sm"
+              [alt]="'Imagen ' + ($index + 1)"
+            />
+            <div class="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-rounded p-button-danger p-button-sm"
+                type="button"
+                (click)="removeImage($index)"
+                pTooltip="Eliminar imagen"
+              ></button>
+            </div>
+            @if ($index === 0) {
+              <span class="absolute top-2 left-2 bg-primary-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">Principal</span>
+            }
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Código</label>
-            <input pInputText placeholder="Ej: PROD-001" [ngModel]="editing().code" (ngModelChange)="onEditChange('code', $event)" class="w-full" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Tipo *</label>
-            <p-select [options]="productTypes" optionLabel="label" optionValue="value" [ngModel]="editing().type" (ngModelChange)="onEditChange('type', $event)" class="w-full"></p-select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Unidad de Medida *</label>
-            <p-select [options]="unitOptions" optionLabel="label" optionValue="value" [ngModel]="editing().unitOfMeasure" (ngModelChange)="onEditChange('unitOfMeasure', $event)" class="w-full"></p-select>
-          </div>
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
-            <textarea pInputText placeholder="Características, detalles técnicos..." [ngModel]="editing().description" (ngModelChange)="onEditChange('description', $event)" rows="3" class="w-full"></textarea>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
-            <input pInputText placeholder="Ej: Informática" [ngModel]="editing().category" (ngModelChange)="onEditChange('category', $event)" class="w-full" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Precio referencial Base (PEN)</label>
-            <p-inputNumber mode="currency" currency="PEN" locale="es-PE" placeholder="0.00" [ngModel]="editing().basePrice" (ngModelChange)="onEditChange('basePrice', $event)" class="w-full"></p-inputNumber>
-          </div>
-          <div class="md:col-span-2 flex items-center gap-2 mt-2">
-            <p-checkbox [ngModel]="editing().isActive" (ngModelChange)="onEditChange('isActive', $event)" [binary]="true" inputId="activeCheck"></p-checkbox>
-            <label for="activeCheck" class="text-sm font-medium text-slate-700 cursor-pointer">Item disponible (Activo)</label>
-          </div>
-        </div>
-      </ng-template>
-    </p-card>
+        }
 
-    <div class="flex items-center justify-end gap-3 mt-4">
-      <button pButton label="Cancelar" icon="pi pi-times" class="p-button-outlined p-button-secondary" (click)="goBack()"></button>
-      <button pButton label="Guardar Item" icon="pi pi-check" class="p-button-primary" (click)="save()"></button>
-    </div>
+        <!-- Botón agregar foto -->
+        <div
+          class="w-36 h-36 flex-shrink-0 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors duration-200"
+          [class.border-slate-300]="!uploadingImages()"
+          [class.hover:border-primary-400]="!uploadingImages()"
+          [class.hover:bg-primary-50]="!uploadingImages()"
+          [class.border-primary-400]="uploadingImages()"
+          [class.bg-primary-50]="uploadingImages()"
+          [class.cursor-wait]="uploadingImages()"
+          (click)="!uploadingImages() && fileInput.click()"
+        >
+          @if (uploadingImages()) {
+            <i class="pi pi-spin pi-spinner text-2xl text-primary-500"></i>
+            <span class="text-xs text-primary-600 mt-2 font-medium">Subiendo...</span>
+          } @else {
+            <i class="pi pi-camera text-2xl text-slate-400"></i>
+            <span class="text-xs text-slate-500 mt-2">Agregar foto</span>
+          }
+        </div>
+
+        <input
+          #fileInput
+          type="file"
+          multiple
+          accept="image/*"
+          class="hidden"
+          (change)="addImages($any($event.target).files); $any($event.target).value = ''"
+        />
+      </div>
+    </ng-template>
+  </p-card>
+
+  <!-- Datos del producto -->
+  <p-card>
+    <ng-template pTemplate="header">
+      <div class="px-5 pt-5 pb-1">
+        <h2 class="text-base font-semibold text-slate-700 m-0">Información del producto</h2>
+      </div>
+    </ng-template>
+    <ng-template pTemplate="content">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Nombre -->
+        <div class="lg:col-span-2">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del producto *</label>
+          <input
+            pInputText
+            placeholder="Ej: Laptop Lenovo ThinkPad E14"
+            [ngModel]="editing().name"
+            (ngModelChange)="onEditChange('name', $event)"
+            class="w-full"
+          />
+        </div>
+
+        <!-- Categoría -->
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
+          <p-select
+            [options]="categoryOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccionar categoría"
+            [ngModel]="editing().category"
+            (ngModelChange)="onEditChange('category', $event)"
+            class="w-full"
+            [showClear]="true"
+          ></p-select>
+        </div>
+
+        <!-- Unidad de Medida -->
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Unidad de Medida</label>
+          <p-select
+            [options]="unitOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="editing().unitOfMeasure"
+            (ngModelChange)="onEditChange('unitOfMeasure', $event)"
+            class="w-full"
+          ></p-select>
+        </div>
+
+        <!-- Precio -->
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Precio referencial (PEN)</label>
+          <p-inputNumber
+            mode="currency"
+            currency="PEN"
+            locale="es-PE"
+            placeholder="0.00"
+            [ngModel]="editing().basePrice"
+            (ngModelChange)="onEditChange('basePrice', $event)"
+            class="w-full"
+          ></p-inputNumber>
+        </div>
+
+        <!-- Descripción -->
+        <div class="lg:col-span-3">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+          <textarea
+            pInputText
+            placeholder="Características técnicas, marca, modelo, especificaciones..."
+            [ngModel]="editing().description"
+            (ngModelChange)="onEditChange('description', $event)"
+            rows="3"
+            class="w-full"
+          ></textarea>
+        </div>
+
+        <!-- Activo -->
+        <div class="lg:col-span-3 flex items-center gap-2 pt-1">
+          <p-checkbox
+            [ngModel]="editing().isActive"
+            (ngModelChange)="onEditChange('isActive', $event)"
+            [binary]="true"
+            inputId="activeCheck"
+          ></p-checkbox>
+          <label for="activeCheck" class="text-sm font-medium text-slate-700 cursor-pointer">Producto disponible (Activo)</label>
+        </div>
+      </div>
+    </ng-template>
+  </p-card>
+
+  <!-- Acciones -->
+  <div class="flex items-center justify-end gap-3">
+    <button pButton label="Cancelar" icon="pi pi-times" class="p-button-outlined p-button-secondary" (click)="goBack()"></button>
+    <button pButton label="Guardar Producto" icon="pi pi-check" class="p-button-primary" (click)="save()"></button>
   </div>
 </div>

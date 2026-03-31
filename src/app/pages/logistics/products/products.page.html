@@ -1,16 +1,16 @@
 <div class="p-4 space-y-4">
   <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-800 m-0">Productos y Servicios</h1>
-      <p class="text-slate-600 mt-1">Gestión del catálogo para adquisiciones y logística</p>
+      <h1 class="text-2xl font-bold text-slate-800 m-0">Productos</h1>
+      <p class="text-slate-600 mt-1">Catálogo de productos para logística y adquisiciones</p>
     </div>
     <div class="mt-4 md:mt-0">
       <button
         pButton
-        label="Nuevo Item"
+        label="Nuevo Producto"
         icon="pi pi-plus"
         class="p-button-primary"
-        (click)="newItem()"
+        (click)="newProduct()"
       ></button>
     </div>
   </div>
@@ -23,9 +23,9 @@
       [paginator]="true"
       [rows]="10"
       [showCurrentPageReport]="true"
-      currentPageReportTemplate="Mostrando del {first} al {last} de {totalRecords} items"
+      currentPageReportTemplate="Mostrando del {first} al {last} de {totalRecords} productos"
       [rowsPerPageOptions]="[10, 25, 50]"
-      [globalFilterFields]="['name', 'description', 'category']"
+      [globalFilterFields]="['name', 'description', 'category', 'code']"
       responsiveLayout="scroll"
       styleClass="p-datatable-sm"
     >
@@ -37,7 +37,7 @@
               pInputText
               type="text"
               (input)="dt.filterGlobal($any($event.target).value, 'contains')"
-              placeholder="Buscar por nombre, categoría..."
+              placeholder="Buscar por nombre, categoría, código..."
               class="w-full md:w-80"
             />
           </p-iconfield>
@@ -45,9 +45,9 @@
       </ng-template>
       <ng-template pTemplate="header">
         <tr>
+          <th class="w-16"></th>
           <th pSortableColumn="code">Código <p-sortIcon field="code"></p-sortIcon></th>
           <th pSortableColumn="name">Nombre <p-sortIcon field="name"></p-sortIcon></th>
-          <th pSortableColumn="type">Tipo <p-sortIcon field="type"></p-sortIcon></th>
           <th pSortableColumn="unitOfMeasure">Ud. Med. <p-sortIcon field="unitOfMeasure"></p-sortIcon></th>
           <th pSortableColumn="category">Categoría <p-sortIcon field="category"></p-sortIcon></th>
           <th pSortableColumn="basePrice">Precio Ref. <p-sortIcon field="basePrice"></p-sortIcon></th>
@@ -56,21 +56,30 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-product>
-        <tr>
+        <tr
+          class="cursor-pointer hover:bg-primary-50 transition-colors duration-150"
+          (click)="viewProduct(product)"
+        >
+          <td>
+            @if (product.images && product.images.length > 0) {
+              <img [src]="product.images[0]" class="w-10 h-10 object-cover rounded-md border border-slate-200" [alt]="product.name" />
+            } @else {
+              <div class="w-10 h-10 rounded-md border border-slate-200 bg-slate-100 flex items-center justify-center">
+                <i class="pi pi-box text-slate-400 text-sm"></i>
+              </div>
+            }
+          </td>
           <td class="text-slate-500 font-mono text-xs">{{ product.code || '-' }}</td>
           <td class="font-medium text-slate-800">
-            {{ product.name }}
+            <span class="hover:text-primary-600 transition-colors">{{ product.name }}</span>
             @if (product.description) {
               <div class="text-xs text-slate-500 font-normal truncate max-w-xs">
                 {{ product.description }}
               </div>
             }
           </td>
-          <td>
-            <p-tag [severity]="getTypeSeverity(product.type)" [value]="product.type === 'bien' ? 'Bien' : 'Servicio'"></p-tag>
-          </td>
           <td class="capitalize">{{ product.unitOfMeasure }}</td>
-          <td>{{ product.category || '-' }}</td>
+          <td>{{ getCategoryLabel(product.category) }}</td>
           <td>
             @if (product.basePrice) {
               {{ product.basePrice | currency:'PEN':'symbol':'1.2-2' }}
@@ -90,20 +99,29 @@
             </span>
           </td>
           <td>
-            <button
-              pButton
-              icon="pi pi-pencil"
-              class="p-button-text p-button-sm p-button-warning"
-              (click)="editItem(product)"
-              pTooltip="Editar"
-            ></button>
+            <div class="flex gap-1" (click)="$event.stopPropagation()">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-text p-button-sm p-button-secondary"
+                (click)="viewProduct(product)"
+                pTooltip="Ver detalle"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text p-button-sm p-button-warning"
+                (click)="editProduct(product)"
+                pTooltip="Editar"
+              ></button>
+            </div>
           </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
           <td colspan="8" class="text-center py-8 text-slate-500">
-            No se encontraron productos o servicios.
+            No se encontraron productos.
           </td>
         </tr>
       </ng-template>

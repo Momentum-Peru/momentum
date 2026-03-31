@@ -4,7 +4,6 @@ import {
   inject,
   signal,
   OnInit,
-  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -27,6 +26,15 @@ import { ProvidersService, Provider } from '../../../../shared/services/provider
 import { ProjectsApiService } from '../../../../shared/services/projects-api.service';
 import { Project } from '../../../../shared/interfaces/project.interface';
 import { ClientsApiService, ClientOption } from '../../../../shared/services/clients-api.service';
+
+export type RfqType = 'productos' | 'servicios';
+
+interface RfqFormItem {
+  productId: Product | null;
+  serviceDescription: string;
+  quantity: number;
+  notes: string;
+}
 
 @Component({
   selector: 'app-quote-form',
@@ -64,20 +72,14 @@ export class QuoteFormComponent implements OnInit {
 
   isEditMode = signal<boolean>(false);
   rfqId = signal<string | null>(null);
+  rfqType = signal<RfqType>('productos');
 
   // Form Data
   title = signal<string>('');
   description = signal<string>('');
   deadline = signal<Date | null>(null);
   termsAndConditions = signal<string>('');
-  rfqItems = signal<
-    {
-      typeFilter: 'bien' | 'servicio' | null;
-      productId: Product | null;
-      quantity: number;
-      notes: string;
-    }[]
-  >([]);
+  rfqItems = signal<RfqFormItem[]>([]);
   selectedProviderIds = signal<string[]>([]);
 
   // Catalogs
@@ -86,11 +88,6 @@ export class QuoteFormComponent implements OnInit {
   projects = signal<Project[]>([]);
   clients = signal<ClientOption[]>([]);
   selectedProjectId = signal<string | null>(null);
-
-  productTypes = [
-    { label: 'Bien', value: 'bien' },
-    { label: 'Servicio', value: 'servicio' },
-  ];
 
   // Quick Creation Modals
   showProjectDialog = signal<boolean>(false);
@@ -121,7 +118,7 @@ export class QuoteFormComponent implements OnInit {
 
   ngOnInit() {
     this.items = [
-      { label: 'Productos/Servicios' },
+      { label: 'Productos / Servicios' },
       { label: 'Detalles' },
       { label: 'Proveedores' },
     ];
@@ -140,14 +137,19 @@ export class QuoteFormComponent implements OnInit {
         this.rfqId.set(id);
         this.loadRfq(id);
       } else {
-        // Initialize one empty item
         this.addRfqItem();
       }
     });
   }
 
+  changeRfqType(type: RfqType) {
+    if (this.rfqType() === type) return;
+    this.rfqType.set(type);
+    this.rfqItems.set([]);
+    this.addRfqItem();
+  }
+
   loadCatalogs(newProductId?: string) {
-    // Solo productos y proveedores activos
     this.clientsService.list().subscribe((data) => this.clients.set(data));
     this.productsService.getProducts({ isActive: true }).subscribe((data) => {
       this.products.set(data);
@@ -176,11 +178,6 @@ export class QuoteFormComponent implements OnInit {
     this.projectsService.listActive().subscribe((data) => this.projects.set(data));
   }
 
-  getFilteredProducts(typeFilter: 'bien' | 'servicio' | null): Product[] {
-    if (!typeFilter) return this.products();
-    return this.products().filter((p) => p.type === typeFilter);
-  }
-
   loadRfq(id: string) {
     this.rfqsService.getRfq(id).subscribe({
       next: (rfq) => {
@@ -194,23 +191,25 @@ export class QuoteFormComponent implements OnInit {
           );
         }
 
-        // Map items back
-        const items = rfq.items.map((i) => {
-          const prod =
-            typeof i.productId === 'object'
+        const items: RfqFormItem[] = rfq.items.map((i) => {
+          const prod = i.productId
+            ? typeof i.productId === 'object'
               ? (i.productId as Product)
-              : this.products().find((p) => p._id === i.productId) || null;
+              : this.products().find((p) => p._id === i.productId) || null
+            : null;
           return {
-            typeFilter: prod?.type || null,
             productId: prod,
+            serviceDescription: (i as any).description || '',
             quantity: i.quantity,
             notes: i.notes || '',
           };
         });
-        this.rfqItems.set(items);
 
-        // Disable editing items or providers if it's already published to prevent mismatch?
-        // Wait, if editing, they shouldn't change providers. Only when creating.
+        // Auto-detect type: if no items have productId, it's a service RFQ
+        const isServiceRfq = items.length > 0 && items.every((i) => !i.productId);
+        if (isServiceRfq) this.rfqType.set('servicios');
+
+        this.rfqItems.set(items);
       },
       error: () => this.goBack(),
     });
@@ -218,14 +217,19 @@ export class QuoteFormComponent implements OnInit {
 
   next() {
     if (this.activeIndex === 0) {
-      if (
-        this.rfqItems().length === 0 ||
-        this.rfqItems().some((i) => !i.productId || i.quantity <= 0)
-      ) {
+      const isProducts = this.rfqType() === 'productos';
+      const invalid = this.rfqItems().length === 0 || this.rfqItems().some((i) =>
+        isProducts
+          ? !i.productId || i.quantity <= 0
+          : !i.serviceDescription?.trim() || i.quantity <= 0
+      );
+      if (invalid) {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Debe agregar al menos un producto válido y cantidad > 0',
+          detail: isProducts
+            ? 'Debe agregar al menos un producto válido y cantidad > 0'
+            : 'Debe agregar al menos un servicio con nombre y cantidad > 0',
         });
         return;
       }
@@ -249,7 +253,7 @@ export class QuoteFormComponent implements OnInit {
   addRfqItem() {
     this.rfqItems.update((items) => [
       ...items,
-      { typeFilter: 'bien', productId: null, quantity: 1, notes: '' },
+      { productId: null, serviceDescription: '', quantity: 1, notes: '' },
     ]);
   }
 
@@ -260,18 +264,14 @@ export class QuoteFormComponent implements OnInit {
     }
   }
 
-  updateRfqItem(index: number, field: string, value: any) {
+  updateRfqItem(index: number, field: keyof RfqFormItem, value: any) {
     this.rfqItems.update((items) => {
       const newItems = [...items];
       newItems[index] = { ...newItems[index], [field]: value };
-      if (field === 'typeFilter') {
-        newItems[index].productId = null; // reset selection when type changes
-      }
       return newItems;
     });
   }
 
-  // Navega al formulario completo de producto (logistics/products/new) y vuelve aquí con el producto creado
   openNewProduct() {
     const returnTo = this.router.url;
     this.router.navigate(['/logistics/products/new'], {
@@ -280,14 +280,7 @@ export class QuoteFormComponent implements OnInit {
   }
 
   openNewProvider() {
-    this.newProvider.set({
-      name: '',
-      taxIdType: 'RUC',
-      taxId: '',
-      contactName: '',
-      email: '',
-      phone: '',
-    });
+    this.newProvider.set({ name: '', taxIdType: 'RUC', taxId: '', contactName: '', email: '', phone: '' });
     this.showProviderDialog.set(true);
   }
 
@@ -303,14 +296,7 @@ export class QuoteFormComponent implements OnInit {
       services: [],
       contacts:
         payload.contactName || payload.email
-          ? [
-              {
-                name: payload.contactName || 'Contacto',
-                email: payload.email,
-                phone: payload.phone,
-                area: 'Ventas',
-              },
-            ]
+          ? [{ name: payload.contactName || 'Contacto', email: payload.email, phone: payload.phone, area: 'Ventas' }]
           : [],
     };
 
@@ -319,29 +305,15 @@ export class QuoteFormComponent implements OnInit {
         this.providers.update((list) => [...list, provider]);
         this.selectedProviderIds.update((ids) => [...ids, provider._id!]);
         this.showProviderDialog.set(false);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Proveedor agregado',
-        });
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Proveedor agregado' });
       },
       error: () =>
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo crear el proveedor',
-        }),
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el proveedor' }),
     });
   }
 
   openNewProject() {
-    this.newProject.set({
-      name: '',
-      description: '',
-      clientId: '',
-      startDate: null,
-      status: 'EN_EJECUCION',
-    });
+    this.newProject.set({ name: '', description: '', clientId: '', startDate: null, status: 'EN_EJECUCION' });
     this.showProjectDialog.set(true);
   }
 
@@ -362,24 +334,17 @@ export class QuoteFormComponent implements OnInit {
           this.projects.update((list) => [...list, project]);
           this.selectedProjectId.set(project._id!);
           this.showProjectDialog.set(false);
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Proyecto agregado',
-          });
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Proyecto agregado' });
         },
         error: () =>
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo crear el proyecto',
-          }),
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el proyecto' }),
       });
   }
 
   save() {
     if (!this.title() || this.rfqItems().length === 0) return;
 
+    const isProducts = this.rfqType() === 'productos';
     const payload = {
       title: this.title(),
       description: this.description(),
@@ -387,11 +352,11 @@ export class QuoteFormComponent implements OnInit {
       deadline: this.deadline() ? this.deadline()!.toISOString() : undefined,
       termsAndConditions: this.termsAndConditions(),
       items: this.rfqItems().map((i) => ({
-        productId: i.productId!._id!,
+        ...(isProducts ? { productId: i.productId!._id! } : { description: i.serviceDescription }),
         quantity: i.quantity,
         notes: i.notes,
       })),
-      providerIds: this.isEditMode() ? undefined : this.selectedProviderIds(), // Only send providers on create
+      providerIds: this.isEditMode() ? undefined : this.selectedProviderIds(),
     };
 
     const req = this.isEditMode()
@@ -400,19 +365,11 @@ export class QuoteFormComponent implements OnInit {
 
     req.subscribe({
       next: (rfq) => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'RFQ guardada correctamente',
-        });
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'RFQ guardada correctamente' });
         setTimeout(() => this.router.navigate(['/logistics/quotes/view', rfq._id]), 1000);
       },
       error: (err) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: err.error?.message || 'Error al guardar',
-        });
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al guardar' });
       },
     });
   }
