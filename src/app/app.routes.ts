@@ -40,6 +40,13 @@ export const routes: Routes = [
     path: 'solicitud-contacto',
     loadComponent: () => import('./pages/lead-form/lead-form').then((m) => m.LeadFormComponent),
   },
+  {
+    path: 'asociacion-quio-lima',
+    loadComponent: () =>
+      import('./pages/association-quio-lima/association-quio-lima.page').then(
+        (m) => m.AssociationQuioLimaPage,
+      ),
+  },
   // Rutas públicas primero
   {
     path: 'landing',
@@ -606,6 +613,13 @@ export const routes: Routes = [
           import('./pages/crm-stats/crm-stats.page').then((m) => m.CrmStatsPage),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/crm-stats' },
+      },
+      {
+        path: 'crm-asociacion',
+        loadComponent: () =>
+          import('./pages/crm-asociacion/crm-asociacion.page').then((m) => m.CrmAsociacionPage),
+        canActivate: [MenuPermissionGuard],
+        data: { menuPermission: '/crm-asociacion' },
       },
       {
         path: 'user-tenants-assignment',

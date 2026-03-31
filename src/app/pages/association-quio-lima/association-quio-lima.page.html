@@ -1,0 +1,115 @@
+<p-toast position="top-center" [life]="6000"></p-toast>
+
+<div class="assoc-page">
+  <div class="assoc-backdrop"></div>
+  <div class="assoc-inner">
+    <header class="assoc-header assoc-hero">
+      <div class="assoc-hero-bubble assoc-hero-bubble-top"></div>
+      <div class="assoc-hero-bubble assoc-hero-bubble-bottom"></div>
+      <div class="assoc-hero-content">
+        <div class="assoc-hero-icon">
+          <i class="pi pi-users"></i>
+        </div>
+        <div class="assoc-hero-text">
+          <p class="assoc-hero-eyebrow">Asociación</p>
+          <h1 class="assoc-title">Asociación hijos residentes de QUIO en Lima</h1>
+          <p class="assoc-subtitle">Formulario de registro.</p>
+        </div>
+      </div>
+    </header>
+
+    @if (submittedOk()) {
+      <div class="assoc-card assoc-success">
+        <div class="assoc-success-icon" aria-hidden="true">✓</div>
+        <h2>¡Gracias por registrarte!</h2>
+        <p>Tu información fue guardada correctamente.</p>
+        <button
+          pButton
+          type="button"
+          label="Enviar otro registro"
+          class="assoc-btn"
+          (click)="resetForm()"
+        ></button>
+      </div>
+    } @else {
+      <form class="assoc-card" [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="assoc-grid">
+          <div class="assoc-field assoc-span-2">
+            <label for="nombreCompleto">Nombres y apellidos</label>
+            <input
+              pInputText
+              id="nombreCompleto"
+              formControlName="nombreCompleto"
+              placeholder="Ej. María Pérez García"
+              class="w-full"
+              [class.assoc-invalid]="fieldInvalid('nombreCompleto')"
+            />
+          </div>
+          <div class="assoc-field">
+            <label for="dni">DNI</label>
+            <input
+              pInputText
+              id="dni"
+              formControlName="dni"
+              placeholder="Ej. 12345678"
+              class="w-full"
+              inputmode="numeric"
+              [class.assoc-invalid]="fieldInvalid('dni')"
+            />
+          </div>
+          <div class="assoc-field">
+            <label for="telefono">Teléfono</label>
+            <input
+              pInputText
+              id="telefono"
+              formControlName="telefono"
+              placeholder="Ej. 987654321"
+              class="w-full"
+              [class.assoc-invalid]="fieldInvalid('telefono')"
+            />
+          </div>
+          <div class="assoc-field assoc-span-2">
+            <label for="email">Correo electrónico</label>
+            <input
+              pInputText
+              id="email"
+              type="email"
+              formControlName="email"
+              placeholder="Ej. nombre@correo.com"
+              class="w-full"
+              [class.assoc-invalid]="fieldInvalid('email')"
+            />
+            @if (fieldInvalid('email')) {
+              <small class="assoc-error">Ingresa un correo válido.</small>
+            }
+          </div>
+          <div class="assoc-field assoc-span-2">
+            <label for="direccion">Dirección</label>
+            <textarea
+              id="direccion"
+              formControlName="direccion"
+              placeholder="Ej. Av. Principal 123, Lima"
+              rows="3"
+              class="assoc-textarea w-full"
+              [class.assoc-invalid]="fieldInvalid('direccion')"
+            ></textarea>
+          </div>
+        </div>
+        <div class="assoc-actions">
+          <button
+            pButton
+            type="submit"
+            label="Enviar registro"
+            class="assoc-btn"
+            [loading]="loading()"
+            [disabled]="loading()"
+          ></button>
+        </div>
+      </form>
+    }
+
+    <footer class="assoc-footer">
+      <span>Momentum</span>
+    </footer>
+  </div>
+</div>
