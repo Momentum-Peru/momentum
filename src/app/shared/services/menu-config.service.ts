@@ -109,6 +109,13 @@ export class MenuConfigService {
     { path: '/gerencia-boards', label: 'Tableros gerencia', icon: 'pi pi-th-large' },
     { path: '/companies', label: 'Empresas (sistema)', icon: 'pi pi-building' },
     { path: '/fi', label: 'Futuro imposible', icon: 'pi pi-flag' },
+
+    /* Rutas de Operaciones */
+    { path: '/operations/dashboard', label: 'Dashboard Operaciones', icon: 'pi pi-chart-bar' },
+    { path: '/operations/service-orders', label: 'Órdenes de Servicio', icon: 'pi pi-file-edit' },
+    { path: '/operations/technical-files', label: 'Expediente Técnico', icon: 'pi pi-folder-open' },
+    { path: '/operations/planning', label: 'Planificación', icon: 'pi pi-calendar-plus' },
+    { path: '/operations/safety', label: 'Seguridad', icon: 'pi pi-shield' },
   ];
 
   /**
@@ -230,6 +237,37 @@ export class MenuConfigService {
             label: 'Documentación',
             icon: 'pi pi-file-edit',
             routerLink: '/engineering',
+          },
+        ],
+      },
+      {
+        label: 'Operaciones',
+        icon: 'pi pi-wrench',
+        items: [
+          {
+            label: 'Dashboard',
+            icon: 'pi pi-chart-bar',
+            routerLink: '/operations/dashboard',
+          },
+          {
+            label: 'Órdenes de Servicio',
+            icon: 'pi pi-file-edit',
+            routerLink: '/operations/service-orders',
+          },
+          {
+            label: 'Expediente Técnico',
+            icon: 'pi pi-folder-open',
+            routerLink: '/operations/technical-files',
+          },
+          {
+            label: 'Planificación',
+            icon: 'pi pi-calendar-plus',
+            routerLink: '/operations/planning',
+          },
+          {
+            label: 'Seguridad',
+            icon: 'pi pi-shield',
+            routerLink: '/operations/safety',
           },
         ],
       },
@@ -716,6 +754,25 @@ export class MenuConfigService {
         { label: 'Empresas', icon: 'pi pi-building', routerLink: '/companies-crm', description: 'Empresas y cuentas' },
         { label: 'Estadísticas', icon: 'pi pi-chart-bar', routerLink: '/crm-stats', description: 'KPIs y métricas del CRM' },
         { label: 'Asociación', icon: 'pi pi-heart', routerLink: '/crm-asociacion', description: 'Registros asociación QUIO Lima' },
+      ],
+    },
+    {
+      key: 'operaciones',
+      label: 'Operaciones',
+      icon: 'pi pi-wrench',
+      description: 'Gestión de órdenes de servicio, expedientes técnicos y seguridad',
+      hubPath: '/hub/operaciones',
+      colorFrom: '#0369A1',
+      colorTo: '#0C4A6E',
+      colorPrimary: '#0EA5E9',
+      colorLight: '#E0F2FE',
+      relatedRoutes: ['/operations/dashboard', '/operations/service-orders', '/operations/technical-files', '/operations/planning', '/operations/safety'],
+      items: [
+        { label: 'Dashboard', icon: 'pi pi-chart-bar', routerLink: '/operations/dashboard', description: 'Vista general de proyectos' },
+        { label: 'Órdenes de Servicio', icon: 'pi pi-file-edit', routerLink: '/operations/service-orders', description: 'Registro de OS' },
+        { label: 'Expediente Técnico', icon: 'pi pi-folder-open', routerLink: '/operations/technical-files', description: 'Gestión documental' },
+        { label: 'Planificación', icon: 'pi pi-calendar-plus', routerLink: '/operations/planning', description: 'Actas y rosters' },
+        { label: 'Seguridad', icon: 'pi pi-shield', routerLink: '/operations/safety', description: 'PETS e IPERC' },
       ],
     },
     {

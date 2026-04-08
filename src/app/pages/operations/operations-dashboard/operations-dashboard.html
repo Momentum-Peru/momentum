@@ -1,0 +1,176 @@
+<div class="p-4 space-y-6">
+
+  <!-- Header -->
+  <div>
+    <h1 class="text-2xl font-bold">Dashboard de Operaciones</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Vista general de Órdenes de Servicio y estado de proyectos</p>
+  </div>
+
+  @if (loading()) {
+    <div class="text-center py-16 text-gray-400"><i class="pi pi-spin pi-spinner text-4xl"></i></div>
+  } @else {
+
+    <!-- Tarjetas de estadísticas -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <p-card styleClass="text-center">
+        <ng-template pTemplate="content">
+          <div class="text-3xl font-bold text-gray-800 dark:text-gray-100">{{ stats().total }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Total OS</div>
+        </ng-template>
+      </p-card>
+      <p-card styleClass="text-center">
+        <ng-template pTemplate="content">
+          <div class="text-3xl font-bold text-yellow-500">{{ stats().pendiente }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Pendientes</div>
+        </ng-template>
+      </p-card>
+      <p-card styleClass="text-center">
+        <ng-template pTemplate="content">
+          <div class="text-3xl font-bold text-blue-500">{{ stats().en_proceso }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">En Proceso</div>
+        </ng-template>
+      </p-card>
+      <p-card styleClass="text-center">
+        <ng-template pTemplate="content">
+          <div class="text-3xl font-bold text-green-500">{{ stats().completado }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Completadas</div>
+        </ng-template>
+      </p-card>
+      <p-card styleClass="text-center">
+        <ng-template pTemplate="content">
+          <div class="text-3xl font-bold text-red-500">{{ stats().cancelado }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Canceladas</div>
+        </ng-template>
+      </p-card>
+    </div>
+
+    <!-- Accesos rápidos -->
+    <div>
+      <h2 class="text-lg font-semibold mb-3">Accesos rápidos</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <a
+          routerLink="/operations/service-orders"
+          class="flex flex-col items-center justify-center gap-2 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 no-underline"
+        >
+          <i class="pi pi-file-edit text-2xl"></i>
+          <span class="text-xs font-medium text-center">Órdenes de Servicio</span>
+        </a>
+        <a
+          routerLink="/operations/technical-files"
+          class="flex flex-col items-center justify-center gap-2 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 no-underline"
+        >
+          <i class="pi pi-folder-open text-2xl"></i>
+          <span class="text-xs font-medium text-center">Expediente Técnico</span>
+        </a>
+        <a
+          routerLink="/operations/planning"
+          class="flex flex-col items-center justify-center gap-2 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 no-underline"
+        >
+          <i class="pi pi-calendar-plus text-2xl"></i>
+          <span class="text-xs font-medium text-center">Planificación</span>
+        </a>
+        <a
+          routerLink="/operations/safety"
+          class="flex flex-col items-center justify-center gap-2 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 no-underline"
+        >
+          <i class="pi pi-shield text-2xl"></i>
+          <span class="text-xs font-medium text-center">Seguridad</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- OS recientes -->
+    <div>
+      <h2 class="text-lg font-semibold mb-3">Órdenes de Servicio recientes</h2>
+
+      <!-- Vista Desktop -->
+      <div class="hidden md:block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+        @if (recent().length === 0) {
+          <div class="text-center py-10 text-gray-400 dark:text-gray-500">
+            <i class="pi pi-inbox text-3xl mb-2 block"></i>
+            <p>No hay órdenes de servicio registradas</p>
+          </div>
+        } @else {
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+              <tr>
+                <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Código</th>
+                <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Descripción</th>
+                <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Fecha Recepción</th>
+                <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Estado</th>
+                <th class="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+              @for (os of recent(); track os._id) {
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <td class="px-4 py-3">
+                    <span class="font-mono font-semibold text-gray-900 dark:text-gray-100">{{ os.code }}</span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <span class="text-gray-700 dark:text-gray-300 max-w-xs block truncate" [title]="os.description">{{ os.description }}</span>
+                  </td>
+                  <td class="px-4 py-3 text-gray-600 dark:text-gray-400">
+                    {{ os.receptionDate | date:'dd/MM/yyyy' }}
+                  </td>
+                  <td class="px-4 py-3">
+                    <p-tag [value]="getStatusLabel(os.status)" [severity]="getStatusSeverity(os.status)"></p-tag>
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <div class="flex items-center justify-end gap-1">
+                      <a [routerLink]="['/operations/technical-files']">
+                        <button pButton icon="pi pi-folder-open" [text]="true" severity="info" size="small" pTooltip="Expediente" tooltipPosition="top" aria-label="Ver expediente técnico"></button>
+                      </a>
+                      <a [routerLink]="['/operations/planning']">
+                        <button pButton icon="pi pi-calendar-plus" [text]="true" severity="info" size="small" pTooltip="Planificación" tooltipPosition="top" aria-label="Ver planificación"></button>
+                      </a>
+                      <a [routerLink]="['/operations/safety']">
+                        <button pButton icon="pi pi-shield" [text]="true" severity="info" size="small" pTooltip="Seguridad" tooltipPosition="top" aria-label="Ver seguridad"></button>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+
+      <!-- Vista Móvil -->
+      <div class="md:hidden space-y-3">
+        @for (os of recent(); track os._id) {
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <div class="font-mono font-semibold text-gray-900 dark:text-gray-100">{{ os.code }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">{{ os.description }}</div>
+                <div class="mt-2 flex items-center gap-2">
+                  <p-tag [value]="getStatusLabel(os.status)" [severity]="getStatusSeverity(os.status)"></p-tag>
+                  <span class="text-xs text-gray-400">{{ os.receptionDate | date:'dd/MM/yyyy' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <a routerLink="/operations/technical-files" class="flex-1">
+                <button pButton icon="pi pi-folder-open" label="Expediente" [text]="true" size="small" class="w-full" aria-label="Expediente técnico"></button>
+              </a>
+              <a routerLink="/operations/planning" class="flex-1">
+                <button pButton icon="pi pi-calendar-plus" label="Planeación" [text]="true" size="small" class="w-full" aria-label="Planificación"></button>
+              </a>
+              <a routerLink="/operations/safety" class="flex-1">
+                <button pButton icon="pi pi-shield" label="Seguridad" [text]="true" size="small" class="w-full" aria-label="Seguridad"></button>
+              </a>
+            </div>
+          </div>
+        }
+        @if (recent().length === 0) {
+          <div class="text-center py-8 text-gray-400 dark:text-gray-500">
+            <i class="pi pi-inbox text-4xl mb-2 block"></i>
+            <p>No hay órdenes de servicio</p>
+          </div>
+        }
+      </div>
+    </div>
+
+  }
+</div>

@@ -786,6 +786,52 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'operations',
+        children: [
+          {
+            path: 'dashboard',
+            loadComponent: () =>
+              import('./pages/operations/operations-dashboard/operations-dashboard').then(
+                (m) => m.OperationsDashboardPage,
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/operations/dashboard' },
+          },
+          {
+            path: 'service-orders',
+            loadComponent: () =>
+              import('./pages/operations/service-orders/service-orders').then(
+                (m) => m.ServiceOrdersPage,
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/operations/service-orders' },
+          },
+          {
+            path: 'technical-files',
+            loadComponent: () =>
+              import('./pages/operations/technical-files/technical-files').then(
+                (m) => m.TechnicalFilesPage,
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/operations/technical-files' },
+          },
+          {
+            path: 'planning',
+            loadComponent: () =>
+              import('./pages/operations/planning/planning').then((m) => m.PlanningPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/operations/planning' },
+          },
+          {
+            path: 'safety',
+            loadComponent: () =>
+              import('./pages/operations/safety/safety').then((m) => m.SafetyPage),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/operations/safety' },
+          },
+        ],
+      },
+      {
         path: 'purchases',
         children: [
           {

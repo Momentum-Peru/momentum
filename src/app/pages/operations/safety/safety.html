@@ -1,0 +1,262 @@
+<div class="p-4 space-y-4">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">Documentación de Seguridad</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Gestión de PETS e IPERC con flujo de aprobación</p>
+    </div>
+    @if (canEdit() && selectedOSId()) {
+      <button
+        pButton
+        type="button"
+        label="Registrar Documento"
+        icon="pi pi-plus"
+        (click)="openAddDialog()"
+        aria-label="Registrar documento de seguridad"
+        class="w-full sm:w-auto"
+      ></button>
+    }
+  </div>
+
+  <!-- Selector de OS -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div>
+        <label for="osSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Orden de Servicio</label>
+        <p-select
+          id="osSelect"
+          [options]="serviceOrders()"
+          [ngModel]="selectedOSId()"
+          (ngModelChange)="onSelectOS($event)"
+          optionLabel="code"
+          optionValue="_id"
+          placeholder="Seleccione una OS..."
+          [filter]="true"
+          [appendTo]="'body'"
+          class="w-full md:w-1/2"
+        >
+          <ng-template let-os pTemplate="item">
+            <span class="font-mono font-semibold">{{ os.code }}</span>
+            <span class="text-sm text-gray-500 ml-2">{{ os.description }}</span>
+          </ng-template>
+        </p-select>
+      </div>
+    </ng-template>
+  </p-card>
+
+  @if (!selectedOSId()) {
+    <div class="text-center py-16 text-gray-400 dark:text-gray-500">
+      <i class="pi pi-shield text-5xl mb-4 block"></i>
+      <p class="text-lg font-medium">Selecciona una Orden de Servicio</p>
+      <p class="text-sm mt-1">para gestionar su documentación de seguridad</p>
+    </div>
+  } @else if (loading()) {
+    <div class="text-center py-8 text-gray-400"><i class="pi pi-spin pi-spinner text-3xl"></i></div>
+  } @else {
+
+    <!-- PETS -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-2 px-4 pt-4">
+          <i class="pi pi-file-check text-orange-500 text-lg"></i>
+          <span class="font-semibold">PETS</span>
+          <span class="text-xs text-gray-500">– Procedimiento Escrito de Trabajo Seguro</span>
+          <span class="ml-auto text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
+            {{ pets().length }}
+          </span>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        @if (pets().length === 0) {
+          <p class="text-sm text-gray-400 dark:text-gray-500 text-center py-6">No hay documentos PETS registrados</p>
+        } @else {
+          <div class="space-y-3">
+            @for (doc of pets(); track doc._id) {
+              <ng-container *ngTemplateOutlet="docCard; context: { $implicit: doc }"></ng-container>
+            }
+          </div>
+        }
+      </ng-template>
+    </p-card>
+
+    <!-- IPERC -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-2 px-4 pt-4">
+          <i class="pi pi-exclamation-circle text-red-500 text-lg"></i>
+          <span class="font-semibold">IPERC</span>
+          <span class="text-xs text-gray-500">– Identificación de Peligros, Evaluación de Riesgos y Controles</span>
+          <span class="ml-auto text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
+            {{ iperc().length }}
+          </span>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="content">
+        @if (iperc().length === 0) {
+          <p class="text-sm text-gray-400 dark:text-gray-500 text-center py-6">No hay documentos IPERC registrados</p>
+        } @else {
+          <div class="space-y-3">
+            @for (doc of iperc(); track doc._id) {
+              <ng-container *ngTemplateOutlet="docCard; context: { $implicit: doc }"></ng-container>
+            }
+          </div>
+        }
+      </ng-template>
+    </p-card>
+
+  }
+
+  <!-- Template reutilizable: tarjeta de documento -->
+  <ng-template #docCard let-doc>
+    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div class="flex-1 min-w-0 space-y-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-medium text-gray-900 dark:text-gray-100">{{ doc.name }}</span>
+          @if (doc.version) {
+            <span class="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">v{{ doc.version }}</span>
+          }
+          <p-tag [value]="getStatusLabel(doc.status)" [severity]="getStatusSeverity(doc.status)"></p-tag>
+        </div>
+        @if (doc.description) {
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ doc.description }}</p>
+        }
+        <a [href]="doc.url" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 break-all">
+          {{ doc.url }}
+        </a>
+        @if (doc.status === 'RECHAZADO' && doc.rejectionReason) {
+          <div class="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-700 dark:text-red-400">
+            <i class="pi pi-times-circle mr-1"></i><strong>Motivo de rechazo:</strong> {{ doc.rejectionReason }}
+          </div>
+        }
+        @if (doc.status === 'APROBADO' && doc.approvedAt) {
+          <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+            <i class="pi pi-check-circle mr-1"></i>Aprobado el {{ doc.approvedAt | date:'dd/MM/yyyy' }}
+          </p>
+        }
+      </div>
+      <!-- Acciones según estado -->
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <a [href]="doc.url" target="_blank" rel="noopener noreferrer">
+          <button pButton icon="pi pi-external-link" [text]="true" severity="info" size="small" pTooltip="Ver documento" tooltipPosition="top" aria-label="Ver documento"></button>
+        </a>
+        @if (canEdit()) {
+          @if (doc.status === 'PENDIENTE' || doc.status === 'RECHAZADO') {
+            <button
+              pButton
+              icon="pi pi-send"
+              [text]="true"
+              severity="info"
+              size="small"
+              pTooltip="Enviar a revisión"
+              tooltipPosition="top"
+              (click)="sendToReview(doc)"
+              aria-label="Enviar a revisión"
+            ></button>
+          }
+          @if (doc.status === 'EN_REVISION') {
+            <button
+              pButton
+              icon="pi pi-check"
+              [text]="true"
+              severity="success"
+              size="small"
+              pTooltip="Aprobar"
+              tooltipPosition="top"
+              (click)="approve(doc)"
+              aria-label="Aprobar documento"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-times"
+              [text]="true"
+              severity="danger"
+              size="small"
+              pTooltip="Rechazar"
+              tooltipPosition="top"
+              (click)="openRejectDialog(doc)"
+              aria-label="Rechazar documento"
+            ></button>
+          }
+          <button
+            pButton
+            icon="pi pi-trash"
+            [text]="true"
+            severity="danger"
+            size="small"
+            pTooltip="Eliminar"
+            tooltipPosition="top"
+            (click)="deleteDoc(doc)"
+            aria-label="Eliminar documento"
+          ></button>
+        }
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- Diálogo: Registrar documento -->
+  <p-dialog
+    [(visible)]="showAddDialog"
+    header="Registrar Documento de Seguridad"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '36rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="content">
+      <form [formGroup]="addForm" class="grid gap-4 pt-2">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Tipo de documento *</label>
+          <p-select [options]="typeOptions" formControlName="type" optionLabel="label" optionValue="value" [appendTo]="'body'" class="w-full"></p-select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Nombre del documento *</label>
+          <input pInputText formControlName="name" placeholder="Ej: PETS-Trabajos en Altura Rev.3" class="w-full" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">URL del documento *</label>
+          <input pInputText formControlName="url" placeholder="https://..." class="w-full" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Versión</label>
+            <input pInputText formControlName="version" placeholder="Ej: 1.0, Rev.2" class="w-full" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Descripción</label>
+          <textarea pTextarea formControlName="description" rows="3" placeholder="Descripción breve del alcance del documento..." class="w-full"></textarea>
+        </div>
+      </form>
+    </ng-template>
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="showAddDialog.set(false)" aria-label="Cancelar"></button>
+      <button pButton label="Registrar" icon="pi pi-check" (click)="saveDoc()" [disabled]="addForm.invalid" aria-label="Registrar documento"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Diálogo: Motivo de rechazo -->
+  <p-dialog
+    [(visible)]="showRejectDialog"
+    header="Motivo de Rechazo"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '28rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="content">
+      <form [formGroup]="rejectForm" class="pt-2">
+        <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Motivo *</label>
+        <textarea pTextarea formControlName="reason" rows="4" placeholder="Describa por qué se rechaza el documento..." class="w-full"></textarea>
+      </form>
+    </ng-template>
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="showRejectDialog.set(false)" aria-label="Cancelar"></button>
+      <button pButton label="Rechazar" severity="danger" icon="pi pi-times" (click)="submitRejection()" [disabled]="rejectForm.invalid" aria-label="Confirmar rechazo"></button>
+    </ng-template>
+  </p-dialog>
+</div>

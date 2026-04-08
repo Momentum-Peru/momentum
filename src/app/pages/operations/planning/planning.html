@@ -1,0 +1,461 @@
+<div class="p-4 space-y-4">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Header -->
+  <div>
+    <h1 class="text-2xl font-bold">Planificación</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Acta de Constitución y Roster de Personal del proyecto</p>
+  </div>
+
+  <!-- Selector de OS -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="osSelect" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Orden de Servicio</label>
+          <p-select
+            id="osSelect"
+            [options]="serviceOrders()"
+            [ngModel]="selectedOSId()"
+            (ngModelChange)="onSelectOS($event)"
+            optionLabel="code"
+            optionValue="_id"
+            placeholder="Seleccione una OS..."
+            [filter]="true"
+            [appendTo]="'body'"
+            class="w-full"
+          >
+            <ng-template let-os pTemplate="item">
+              <span class="font-mono font-semibold">{{ os.code }}</span>
+              <span class="text-sm text-gray-500 ml-2">{{ os.description }}</span>
+            </ng-template>
+          </p-select>
+        </div>
+      </div>
+    </ng-template>
+  </p-card>
+
+  @if (!selectedOSId()) {
+    <div class="text-center py-16 text-gray-400 dark:text-gray-500">
+      <i class="pi pi-calendar-plus text-5xl mb-4 block"></i>
+      <p class="text-lg font-medium">Selecciona una Orden de Servicio</p>
+      <p class="text-sm mt-1">para gestionar su planificación</p>
+    </div>
+  } @else {
+
+    <!-- Tabs -->
+    <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700">
+      <button
+        type="button"
+        class="px-4 py-2 text-sm font-medium rounded-t transition-colors focus:outline-none"
+        [class.border-b-2]="activeTab() === 'charter'"
+        [class.border-blue-500]="activeTab() === 'charter'"
+        [class.text-blue-600]="activeTab() === 'charter'"
+        [class.dark:text-blue-400]="activeTab() === 'charter'"
+        [class.text-gray-600]="activeTab() !== 'charter'"
+        [class.dark:text-gray-400]="activeTab() !== 'charter'"
+        [class.hover:text-gray-900]="activeTab() !== 'charter'"
+        (click)="setTab('charter')"
+      >
+        <i class="pi pi-file-edit mr-2"></i>Acta de Constitución
+      </button>
+      <button
+        type="button"
+        class="px-4 py-2 text-sm font-medium rounded-t transition-colors focus:outline-none"
+        [class.border-b-2]="activeTab() === 'roster'"
+        [class.border-blue-500]="activeTab() === 'roster'"
+        [class.text-blue-600]="activeTab() === 'roster'"
+        [class.dark:text-blue-400]="activeTab() === 'roster'"
+        [class.text-gray-600]="activeTab() !== 'roster'"
+        [class.dark:text-gray-400]="activeTab() !== 'roster'"
+        [class.hover:text-gray-900]="activeTab() !== 'roster'"
+        (click)="setTab('roster')"
+      >
+        <i class="pi pi-users mr-2"></i>Roster de Personal
+      </button>
+    </div>
+
+    <!-- ═══ TAB: ACTA DE CONSTITUCIÓN ═══ -->
+    @if (activeTab() === 'charter') {
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="flex items-center justify-between px-4 pt-4">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-file-edit text-blue-500"></i>
+              <span class="font-semibold">Acta de Constitución del Proyecto</span>
+            </div>
+            @if (canEdit() && !charterEditing()) {
+              <button
+                pButton
+                [label]="charter() ? 'Editar' : 'Crear Acta'"
+                [icon]="charter() ? 'pi pi-pencil' : 'pi pi-plus'"
+                size="small"
+                (click)="startEditCharter()"
+                aria-label="Editar acta de constitución"
+              ></button>
+            }
+          </div>
+        </ng-template>
+        <ng-template pTemplate="content">
+          @if (loading()) {
+            <div class="text-center py-8 text-gray-400"><i class="pi pi-spin pi-spinner text-2xl"></i></div>
+          } @else if (charterEditing()) {
+            <!-- Formulario de edición -->
+            <form [formGroup]="charterForm" class="space-y-6">
+
+              <!-- Objetivo del proyecto -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Objetivo del Proyecto *</label>
+                <textarea
+                  pTextarea
+                  formControlName="projectGoal"
+                  rows="3"
+                  placeholder="Describa el objetivo principal del proyecto..."
+                  class="w-full"
+                ></textarea>
+              </div>
+
+              <!-- Alcance -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Alcance *</label>
+                <textarea
+                  pTextarea
+                  formControlName="scope"
+                  rows="3"
+                  placeholder="Defina qué incluye y qué no incluye el proyecto..."
+                  class="w-full"
+                ></textarea>
+              </div>
+
+              <!-- Objetivos específicos -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="text-sm font-medium text-gray-700 dark:text-white">Objetivos Específicos</label>
+                  <button pButton type="button" icon="pi pi-plus" size="small" [text]="true" (click)="addObjective()" aria-label="Agregar objetivo"></button>
+                </div>
+                <div class="space-y-2">
+                  @for (obj of objectives(); track $index) {
+                    <div class="flex gap-2">
+                      <input
+                        pInputText
+                        [value]="obj"
+                        (input)="updateObjective($index, $any($event.target).value)"
+                        placeholder="Objetivo específico..."
+                        class="w-full"
+                      />
+                      @if (objectives().length > 1) {
+                        <button pButton icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="removeObjective($index)" aria-label="Quitar objetivo"></button>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Restricciones -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="text-sm font-medium text-gray-700 dark:text-white">Restricciones</label>
+                  <button pButton type="button" icon="pi pi-plus" size="small" [text]="true" (click)="addConstraint()" aria-label="Agregar restricción"></button>
+                </div>
+                <div class="space-y-2">
+                  @for (con of constraints(); track $index) {
+                    <div class="flex gap-2">
+                      <input
+                        pInputText
+                        [value]="con"
+                        (input)="updateConstraint($index, $any($event.target).value)"
+                        placeholder="Restricción del proyecto..."
+                        class="w-full"
+                      />
+                      @if (constraints().length > 1) {
+                        <button pButton icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="removeConstraint($index)" aria-label="Quitar restricción"></button>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Responsables / Stakeholders -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="text-sm font-medium text-gray-700 dark:text-white">Responsables del Proyecto</label>
+                  <button pButton type="button" icon="pi pi-plus" size="small" [text]="true" (click)="addStakeholder()" aria-label="Agregar responsable"></button>
+                </div>
+                <div class="space-y-2">
+                  @for (s of stakeholders(); track $index) {
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <input pInputText [value]="s.role" (input)="updateStakeholder($index, 'role', $any($event.target).value)" placeholder="Rol (Ej: Jefe de Proyecto)" class="w-full" />
+                      <input pInputText [value]="s.name" (input)="updateStakeholder($index, 'name', $any($event.target).value)" placeholder="Nombre completo" class="w-full" />
+                      <div class="flex gap-2">
+                        <input pInputText [value]="s.responsibility" (input)="updateStakeholder($index, 'responsibility', $any($event.target).value)" placeholder="Responsabilidad" class="w-full" />
+                        <button pButton icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="removeStakeholder($index)" aria-label="Quitar responsable"></button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Acciones -->
+              <div class="flex justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <button pButton label="Cancelar" class="p-button-text" (click)="cancelEditCharter()" aria-label="Cancelar"></button>
+                <button pButton label="Guardar Acta" icon="pi pi-check" (click)="saveCharter()" [disabled]="charterForm.invalid" aria-label="Guardar acta de constitución"></button>
+              </div>
+            </form>
+          } @else if (charter()) {
+            <!-- Vista de lectura del acta -->
+            <div class="space-y-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Objetivo del Proyecto</p>
+                  <p class="text-sm text-gray-900 dark:text-gray-100">{{ charter()?.projectGoal }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Alcance</p>
+                  <p class="text-sm text-gray-900 dark:text-gray-100">{{ charter()?.scope }}</p>
+                </div>
+              </div>
+
+              @if (charter()?.objectives?.length) {
+                <div>
+                  <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Objetivos Específicos</p>
+                  <ul class="space-y-1">
+                    @for (obj of charter()?.objectives; track $index) {
+                      <li class="flex items-start gap-2 text-sm text-gray-900 dark:text-gray-100">
+                        <i class="pi pi-check-circle text-green-500 mt-0.5 flex-shrink-0"></i>
+                        {{ obj }}
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+
+              @if (charter()?.constraints?.length) {
+                <div>
+                  <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Restricciones</p>
+                  <ul class="space-y-1">
+                    @for (con of charter()?.constraints; track $index) {
+                      <li class="flex items-start gap-2 text-sm text-gray-900 dark:text-gray-100">
+                        <i class="pi pi-exclamation-triangle text-yellow-500 mt-0.5 flex-shrink-0"></i>
+                        {{ con }}
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+
+              @if (charter()?.stakeholders?.length) {
+                <div>
+                  <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Responsables</p>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                      <thead>
+                        <tr class="border-b border-gray-200 dark:border-gray-700 text-left">
+                          <th class="pb-2 font-medium text-gray-600 dark:text-gray-400">Rol</th>
+                          <th class="pb-2 font-medium text-gray-600 dark:text-gray-400">Nombre</th>
+                          <th class="pb-2 font-medium text-gray-600 dark:text-gray-400">Responsabilidad</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                        @for (s of charter()?.stakeholders; track $index) {
+                          <tr>
+                            <td class="py-2 text-gray-900 dark:text-gray-100">{{ s.role }}</td>
+                            <td class="py-2 text-gray-900 dark:text-gray-100">{{ s.name }}</td>
+                            <td class="py-2 text-gray-500 dark:text-gray-400">{{ s.responsibility }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="text-center py-10 text-gray-400 dark:text-gray-500">
+              <i class="pi pi-file-edit text-4xl mb-3 block"></i>
+              <p class="font-medium">Aún no se ha creado el Acta de Constitución</p>
+              @if (canEdit()) {
+                <button pButton label="Crear Acta" icon="pi pi-plus" class="mt-4" (click)="startEditCharter()" aria-label="Crear acta de constitución"></button>
+              }
+            </div>
+          }
+        </ng-template>
+      </p-card>
+    }
+
+    <!-- ═══ TAB: ROSTER ═══ -->
+    @if (activeTab() === 'roster') {
+      <div class="space-y-4">
+        <div class="flex justify-end">
+          @if (canEdit()) {
+            <button
+              pButton
+              type="button"
+              label="Asignar Personal"
+              icon="pi pi-user-plus"
+              (click)="openRosterDialog()"
+              aria-label="Asignar personal al roster"
+            ></button>
+          }
+        </div>
+
+        <!-- Vista Desktop -->
+        <div class="hidden md:block">
+          <p-table [value]="roster()" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="text-left">Empleado</th>
+                <th class="text-left">Rol en el Proyecto</th>
+                <th class="text-left">Desde</th>
+                <th class="text-left">Hasta</th>
+                <th class="text-right" style="width: 80px">Acciones</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-entry>
+              <tr>
+                <td>
+                  <div class="font-medium">{{ getEmployeeName(entry.employeeId) }}</div>
+                  @if (entry.employeeId?.position) {
+                    <div class="text-xs text-gray-500">{{ entry.employeeId.position }}</div>
+                  }
+                </td>
+                <td>{{ entry.role }}</td>
+                <td>{{ entry.startDate ? (entry.startDate | date:'dd/MM/yyyy') : '-' }}</td>
+                <td>{{ entry.endDate ? (entry.endDate | date:'dd/MM/yyyy') : '-' }}</td>
+                <td class="text-right">
+                  @if (canEdit()) {
+                    <button
+                      pButton
+                      icon="pi pi-user-minus"
+                      [text]="true"
+                      severity="danger"
+                      size="small"
+                      pTooltip="Quitar del roster"
+                      tooltipPosition="top"
+                      (click)="removeRosterEntry(entry)"
+                      aria-label="Quitar del roster"
+                    ></button>
+                  }
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="5" class="text-center p-8 text-gray-500">
+                  <div class="flex flex-col items-center space-y-2">
+                    <i class="pi pi-users text-2xl text-gray-400"></i>
+                    <p>No hay personal asignado a esta OS</p>
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <!-- Vista Móvil: Accordion -->
+        <div class="md:hidden space-y-3">
+          @for (entry of roster(); track entry._id || $index) {
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
+              <button
+                type="button"
+                class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none"
+                (click)="toggleRosterRow(entry._id)"
+              >
+                <div class="flex-1 text-left min-w-0 pr-4">
+                  <div class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ getEmployeeName(entry.employeeId) }}</div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">{{ entry.role }}</div>
+                </div>
+                <i class="pi text-gray-500 dark:text-gray-400" [class.pi-chevron-down]="!isRosterRowExpanded(entry._id)" [class.pi-chevron-up]="isRosterRowExpanded(entry._id)"></i>
+              </button>
+              @if (isRosterRowExpanded(entry._id)) {
+                <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-4 space-y-3">
+                  @if (entry.startDate) {
+                    <div>
+                      <div class="text-xs font-medium text-gray-500 uppercase mb-1">Desde</div>
+                      <div class="text-sm text-gray-900 dark:text-gray-100">{{ entry.startDate | date:'dd/MM/yyyy' }}</div>
+                    </div>
+                  }
+                  @if (entry.endDate) {
+                    <div>
+                      <div class="text-xs font-medium text-gray-500 uppercase mb-1">Hasta</div>
+                      <div class="text-sm text-gray-900 dark:text-gray-100">{{ entry.endDate | date:'dd/MM/yyyy' }}</div>
+                    </div>
+                  }
+                  @if (canEdit()) {
+                    <button pButton icon="pi pi-user-minus" label="Quitar del roster" class="p-button-text p-button-sm p-button-danger w-full justify-start" (click)="removeRosterEntry(entry)" aria-label="Quitar del roster"></button>
+                  }
+                </div>
+              }
+            </div>
+          }
+          @if (roster().length === 0) {
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+              <i class="pi pi-users text-4xl mb-2 block"></i>
+              <p>No hay personal asignado</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Diálogo: Asignar Personal -->
+  <p-dialog
+    [(visible)]="showRosterDialog"
+    header="Asignar Personal al Roster"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '32rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="content">
+      <form [formGroup]="rosterForm" class="grid gap-4 pt-2">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Empleado *</label>
+          <p-select
+            [options]="employees()"
+            formControlName="employeeId"
+            optionValue="_id"
+            optionLabel="name"
+            placeholder="Buscar empleado..."
+            [filter]="true"
+            filterBy="name,lastName"
+            [appendTo]="'body'"
+            class="w-full"
+          >
+            <ng-template let-emp pTemplate="item">
+              <div>
+                <span class="font-medium">{{ emp.name }} {{ emp.lastName }}</span>
+                <span class="text-sm text-gray-500 ml-2">{{ emp.position }}</span>
+              </div>
+            </ng-template>
+            <ng-template let-emp pTemplate="selectedItem">
+              @if (emp) {
+                <span>{{ emp.name }} {{ emp.lastName }}</span>
+              }
+            </ng-template>
+          </p-select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Rol en el Proyecto *</label>
+          <input pInputText formControlName="role" placeholder="Ej: Jefe de Obra, Técnico, Supervisor" class="w-full" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Fecha Inicio</label>
+            <p-datepicker formControlName="startDate" dateFormat="dd/mm/yy" [showIcon]="true" [appendTo]="'body'" class="w-full"></p-datepicker>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Fecha Fin</label>
+            <p-datepicker formControlName="endDate" dateFormat="dd/mm/yy" [showIcon]="true" [appendTo]="'body'" class="w-full"></p-datepicker>
+          </div>
+        </div>
+      </form>
+    </ng-template>
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancelar" class="p-button-text" (click)="showRosterDialog.set(false)" aria-label="Cancelar"></button>
+      <button pButton label="Asignar" icon="pi pi-check" (click)="saveRosterEntry()" [disabled]="rosterForm.invalid" aria-label="Asignar personal"></button>
+    </ng-template>
+  </p-dialog>
+</div>

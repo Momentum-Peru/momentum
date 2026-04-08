@@ -1,0 +1,290 @@
+<div class="p-4 space-y-4">
+  <p-toast [life]="5000"></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">Órdenes de Servicio (OS)</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Gestión de documentos operativos para proyectos</p>
+    </div>
+    @if (canEdit()) {
+      <button
+        pButton
+        type="button"
+        label="Nueva OS"
+        icon="pi pi-plus"
+        (click)="newOS()"
+        aria-label="Crear nueva orden de servicio"
+        class="w-full sm:w-auto"
+      ></button>
+    }
+  </div>
+
+  <!-- Filtros -->
+  <p-card>
+    <ng-template pTemplate="content">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label for="queryInput" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Buscar</label>
+          <input
+            id="queryInput"
+            pInputText
+            placeholder="Código o descripción..."
+            [ngModel]="query()"
+            (ngModelChange)="query.set($event); loadServiceOrders()"
+            class="w-full"
+          />
+        </div>
+      </div>
+    </ng-template>
+  </p-card>
+
+  <!-- Vista Desktop: Tabla -->
+  <div class="hidden md:block">
+    <p-table
+      [value]="serviceOrders()"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[5, 10, 25]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="text-left">Código</th>
+          <th class="text-left">Centro de Costo (Proyecto)</th>
+          <th class="text-left">Descripción</th>
+          <th class="text-left">Fecha Recepción</th>
+          <th class="text-left">Estado</th>
+          <th class="text-right" style="width: 100px">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-os>
+        <tr>
+          <td><span class="font-mono text-sm font-semibold">{{ os.code }}</span></td>
+          <td>{{ getProjectName(os.projectId) }}</td>
+          <td>
+            <span class="max-w-xs block truncate" [title]="os.description">{{ os.description }}</span>
+          </td>
+          <td>{{ os.receptionDate | date:'dd/MM/yyyy' }}</td>
+          <td>
+            <p-tag [value]="getStatusLabel(os.status)" [severity]="getStatusSeverity(os.status)"></p-tag>
+          </td>
+          <td class="text-right">
+            <div class="flex items-center justify-end gap-1">
+              @if (canEdit()) {
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  severity="warn"
+                  size="small"
+                  pTooltip="Editar"
+                  tooltipPosition="top"
+                  (click)="editOS(os)"
+                  aria-label="Editar orden de servicio"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  [text]="true"
+                  severity="danger"
+                  size="small"
+                  pTooltip="Eliminar"
+                  tooltipPosition="top"
+                  (click)="deleteOS(os)"
+                  aria-label="Eliminar orden de servicio"
+                ></button>
+              }
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-8 text-gray-500">
+            <div class="flex flex-col items-center space-y-2">
+              <i class="pi pi-inbox text-2xl text-gray-400"></i>
+              <p>No se encontraron órdenes de servicio</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Vista Móvil: Accordion -->
+  <div class="md:hidden space-y-3">
+    @for (os of serviceOrders(); track os._id || $index) {
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200">
+        <!-- Header del accordion -->
+        <button
+          type="button"
+          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+          (click)="toggleRow(os._id)"
+          [attr.aria-expanded]="isRowExpanded(os._id)"
+        >
+          <div class="flex-1 text-left min-w-0 pr-4">
+            <div class="font-mono text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{{ os.code }}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">{{ getProjectName(os.projectId) }}</div>
+            <div class="mt-2">
+              <p-tag [value]="getStatusLabel(os.status)" [severity]="getStatusSeverity(os.status)"></p-tag>
+            </div>
+          </div>
+          <div class="flex-shrink-0">
+            <i
+              class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
+              [class.pi-chevron-down]="!isRowExpanded(os._id)"
+              [class.pi-chevron-up]="isRowExpanded(os._id)"
+            ></i>
+          </div>
+        </button>
+
+        <!-- Contenido del accordion -->
+        @if (isRowExpanded(os._id)) {
+          <div class="border-t border-gray-200 dark:border-gray-700">
+            <div class="px-4 py-4 space-y-4">
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Descripción</div>
+                <div class="text-sm text-gray-900 dark:text-gray-100 break-words">{{ os.description }}</div>
+              </div>
+              <div>
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Fecha Recepción</div>
+                <div class="text-sm text-gray-900 dark:text-gray-100">{{ os.receptionDate | date:'dd/MM/yyyy' }}</div>
+              </div>
+              @if (os.emailReference) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Referencia</div>
+                  <div class="text-sm text-gray-900 dark:text-gray-100 break-words">{{ os.emailReference }}</div>
+                </div>
+              }
+              @if (canEdit()) {
+                <div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Acciones</div>
+                  <div class="flex flex-col gap-2">
+                    <button
+                      pButton
+                      icon="pi pi-pencil"
+                      label="Editar"
+                      class="p-button-text p-button-sm w-full justify-start"
+                      (click)="editOS(os)"
+                      aria-label="Editar orden de servicio"
+                    ></button>
+                    <button
+                      pButton
+                      icon="pi pi-trash"
+                      label="Eliminar"
+                      class="p-button-text p-button-sm p-button-danger w-full justify-start"
+                      (click)="deleteOS(os)"
+                      aria-label="Eliminar orden de servicio"
+                    ></button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    @if (serviceOrders().length === 0 && !loading()) {
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <i class="pi pi-inbox text-4xl mb-2 block"></i>
+        <p>No se encontraron órdenes de servicio</p>
+      </div>
+    }
+  </div>
+
+  <!-- Diálogo de Creación/Edición -->
+  <p-dialog
+    [(visible)]="showDialog"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '36rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    <ng-template pTemplate="header">
+      {{ editing() ? 'Editar Orden de Servicio' : 'Nueva Orden de Servicio' }}
+    </ng-template>
+    <ng-template pTemplate="content">
+      <form [formGroup]="osForm" class="grid gap-4 pt-2">
+        <div>
+          <label for="code" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Código de OS *</label>
+          <input id="code" type="text" pInputText formControlName="code" placeholder="Ej: OS-2024-001" class="w-full" />
+        </div>
+        <div>
+          <label for="projectId" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Centro de Costo (Proyecto) *</label>
+          <p-select
+            [options]="projects()"
+            formControlName="projectId"
+            optionLabel="name"
+            optionValue="_id"
+            placeholder="Seleccione un proyecto"
+            [filter]="true"
+            [appendTo]="'body'"
+            class="w-full"
+          ></p-select>
+        </div>
+        <div>
+          <label for="description" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Descripción / Alcance *</label>
+          <input id="description" type="text" pInputText formControlName="description" class="w-full" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="receptionDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Fecha de Recepción *</label>
+            <p-datepicker
+              id="receptionDate"
+              formControlName="receptionDate"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              [appendTo]="'body'"
+              class="w-full"
+            ></p-datepicker>
+          </div>
+          <div>
+            <label for="status" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Estado</label>
+            <p-select
+              [options]="statusOptions"
+              formControlName="status"
+              optionLabel="label"
+              optionValue="value"
+              [appendTo]="'body'"
+              class="w-full"
+            ></p-select>
+          </div>
+        </div>
+        <div>
+          <label for="emailReference" class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Referencia Email / Documento</label>
+          <input
+            id="emailReference"
+            type="text"
+            pInputText
+            formControlName="emailReference"
+            placeholder="Ej: Email de Aprobación"
+            class="w-full"
+          />
+        </div>
+      </form>
+    </ng-template>
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-text"
+        (click)="showDialog.set(false)"
+        aria-label="Cancelar"
+      ></button>
+      <button
+        pButton
+        label="Guardar"
+        (click)="save()"
+        [disabled]="osForm.invalid"
+        aria-label="Guardar orden de servicio"
+      ></button>
+    </ng-template>
+  </p-dialog>
+</div>
