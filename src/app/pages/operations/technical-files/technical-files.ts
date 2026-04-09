@@ -73,7 +73,7 @@ export class TechnicalFilesPage implements OnInit {
     this.serviceOrders().find(os => os._id === this.selectedOSId())
   );
 
-  readonly filesByType = computed(() => {
+  readonly filesByType = computed<Record<string, TechnicalFile[]>>(() => {
     const all = this.files();
     return {
       PLANO: all.filter(f => f.type === 'PLANO'),
