@@ -296,37 +296,51 @@
                         </ng-template>
                         <ng-template pTemplate="body" let-note let-rowIndex="rowIndex">
                           <tr
-                            class="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer align-top"
+                            class="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer align-top transition-colors"
                             [attr.data-inline-edit]="inlineEditingId() === note._id ? '' : null"
-                            (click)="viewNote(note)"
+                            [class.bg-blue-50/50]="inlineEditingId() === note._id"
+                            [class.dark:bg-blue-900/10]="inlineEditingId() === note._id"
+                            [class.ring-2]="inlineEditingId() === note._id"
+                            [class.ring-blue-500/20]="inlineEditingId() === note._id"
+                            (click)="onRowClick(note)"
+                            (keydown)="onInlineKeyDown($event)"
+                            tabindex="0"
                           >
                             <td class="text-center font-bold text-gray-400 text-xs pt-3">
-                              {{ rowIndex + 1 }}
+                              <span class="text-[10px]">{{ rowIndex + 1 }}</span>
+                              @if (inlineEditingId() === note._id) {
+                                <div class="mt-1 space-y-1">
+                                  <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse mx-auto"></div>
+                                  <div class="text-[8px] text-gray-400 dark:text-gray-500 whitespace-nowrap hidden lg:block">
+                                    <div>Esc: cancelar</div>
+                                    <div>Ctrl+↵: guardar</div>
+                                  </div>
+                                </div>
+                              }
                             </td>
                             <td>
                               @if (inlineEditingId() === note._id) {
-                                <div class="flex flex-col gap-2 p-1" (click)="$event.stopPropagation()">
+                                <div class="p-1" (click)="$event.stopPropagation()">
                                   <textarea
                                     pTextarea
                                     [autoResize]="true"
-                                    rows="3"
-                                    class="w-full text-xs"
+                                    rows="2"
+                                    class="w-full text-xs p-2 border border-blue-300 dark:border-blue-600 rounded bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500"
                                     [ngModel]="inlineEditContent()"
                                     (ngModelChange)="inlineEditContent.set($event)"
-                                          ></textarea>
+                                    placeholder="Escribe el contenido..."
+                                    cdkFocusInitial
+                                  ></textarea>
                                 </div>
                               } @else {
-                                <div class="flex items-start gap-2 group/cell py-1">
-                                  <span class="text-xs font-medium text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words">{{ getContentSummary(note) }}</span>
-                                  @if (canEditFull(note)) {
-                                    <i class="pi pi-pencil text-[10px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-auto flex-shrink-0 mt-0.5"></i>
-                                  }
+                                <div class="py-1 cursor-text" (click)="$event.stopPropagation(); startInlineEdit(note)">
+                                  <span class="text-xs font-medium text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words">{{ getContentSummary(note) || 'Sin contenido' }}</span>
                                 </div>
                               }
                             </td>
                             <td class="text-center">
                               @if (inlineEditingId() === note._id) {
-                                <div class="flex flex-col gap-1" (click)="$event.stopPropagation()">
+                                <div class="p-1" (click)="$event.stopPropagation()">
                                   <p-datepicker
                                     [ngModel]="inlineEditDueAt()"
                                     (ngModelChange)="onInlineDateChange(note, $event)"
@@ -338,47 +352,80 @@
                                   ></p-datepicker>
                                 </div>
                               } @else {
-                                @if (getDueDate(note)) {
-                                  <span class="text-[10px] font-medium" [ngClass]="{ 'text-red-500': isOverdue(note) }">
-                                    {{ formatDueAt(getDueDate(note)!) }}
-                                  </span>
-                                } @else {
-                                  <span class="text-[10px] text-gray-400">—</span>
-                                }
+                                <div class="py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded px-2" (click)="$event.stopPropagation(); startInlineEdit(note)">
+                                  @if (getDueDate(note)) {
+                                    <span class="text-[10px] font-medium" [ngClass]="{ 'text-red-500': isOverdue(note) }">
+                                      {{ formatDueAt(getDueDate(note)!) }}
+                                    </span>
+                                  } @else {
+                                    <span class="text-[10px] text-gray-400">— Sin fecha</span>
+                                  }
+                                </div>
                               }
                             </td>
                             <td class="text-center">
                               @if (inlineEditingId() === note._id) {
-                                <div (click)="$event.stopPropagation()">
+                                <div class="p-1" (click)="$event.stopPropagation()">
                                   <p-select
                                     [options]="statusOptions"
                                     [ngModel]="inlineEditStatus()"
                                     (ngModelChange)="onInlineStatusChange(note, $event)"
                                     optionLabel="label"
                                     optionValue="value"
-                                    styleClass="w-full h-8 text-[10px]"
+                                    styleClass="w-full"
                                     [appendTo]="'body'"
                                   ></p-select>
                                 </div>
                               } @else {
-                                <span
-                                  class="text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full"
-                                  [ngClass]="getStatusClass(note.status)"
-                                >
-                                  {{ getStatusLabel(note.status) }}
-                                </span>
+                                <div class="py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded px-2" (click)="$event.stopPropagation(); startInlineEdit(note)">
+                                  <span
+                                    class="text-[9px] font-bold tracking-wider px-2 py-1 rounded-full inline-block"
+                                    [ngClass]="getStatusClass(note.status)"
+                                  >
+                                    {{ getStatusLabel(note.status) }}
+                                  </span>
+                                </div>
                               }
                             </td>
                             <td class="text-right">
-                              <button
-                                pButton
-                                icon="pi pi-ellipsis-v"
-                                [text]="true"
-                                [rounded]="true"
-                                size="small"
-                                class="text-gray-400 h-7 w-7"
-                                (click)="$event.stopPropagation(); openActions(note)"
-                              ></button>
+                              @if (inlineEditingId() === note._id) {
+                                <div class="flex gap-1 justify-end p-1" (click)="$event.stopPropagation()">
+                                  <button
+                                    pButton
+                                    icon="pi pi-check"
+                                    [text]="true"
+                                    [rounded]="true"
+                                    size="small"
+                                    severity="success"
+                                    class="h-7 w-7"
+                                    (click)="saveInlineEdit(note)"
+                                    pTooltip="Guardar cambios"
+                                    tooltipPosition="bottom"
+                                  ></button>
+                                  <button
+                                    pButton
+                                    icon="pi pi-times"
+                                    [text]="true"
+                                    [rounded]="true"
+                                    size="small"
+                                    severity="danger"
+                                    class="h-7 w-7"
+                                    (click)="cancelInlineEdit()"
+                                    pTooltip="Cancelar"
+                                    tooltipPosition="bottom"
+                                  ></button>
+                                </div>
+                              } @else {
+                                <button
+                                  pButton
+                                  icon="pi pi-ellipsis-v"
+                                  [text]="true"
+                                  [rounded]="true"
+                                  size="small"
+                                  class="text-gray-400 h-7 w-7"
+                                  (click)="$event.stopPropagation(); openActions(note)"
+                                ></button>
+                              }
                             </td>
                           </tr>
                         </ng-template>
@@ -429,36 +476,50 @@
                     </ng-template>
                     <ng-template pTemplate="body" let-note let-rowIndex="rowIndex">
                       <tr
-                        class="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer align-top"
-                        (click)="viewNote(note)"
+                        class="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer align-top transition-colors"
+                        [attr.data-inline-edit]="inlineEditingId() === note._id ? '' : null"
+                        [class.bg-blue-50/50]="inlineEditingId() === note._id"
+                        [class.dark:bg-blue-900/10]="inlineEditingId() === note._id"
+                        [class.ring-2]="inlineEditingId() === note._id"
+                        [class.ring-blue-500/20]="inlineEditingId() === note._id"
+                        (click)="onRowClick(note)"
+                        (keydown)="onInlineKeyDown($event)"
+                        tabindex="0"
                       >
                         <td class="text-center font-bold text-gray-400 text-xs pt-3">
-                          {{ rowIndex + 1 }}
+                          <span class="text-[10px]">{{ rowIndex + 1 }}</span>
+                          @if (inlineEditingId() === note._id) {
+                            <div class="mt-1 space-y-1">
+                              <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse mx-auto"></div>
+                              <div class="text-[8px] text-gray-400 dark:text-gray-500 whitespace-nowrap hidden lg:block">
+                                <div>Esc: cancelar</div>
+                                <div>Ctrl+↵: guardar</div>
+                              </div>
+                            </div>
+                          }
                         </td>
                         <td>
                           @if (inlineEditingId() === note._id) {
-                            <div class="flex flex-col gap-2 p-1" (click)="$event.stopPropagation()">
+                            <div class="p-1" (click)="$event.stopPropagation()">
                               <textarea
                                 pTextarea
                                 [autoResize]="true"
-                                rows="3"
-                                class="w-full text-xs"
+                                rows="2"
+                                class="w-full text-xs p-2 border border-blue-300 dark:border-blue-600 rounded bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500"
                                 [ngModel]="inlineEditContent()"
                                 (ngModelChange)="inlineEditContent.set($event)"
-                                  ></textarea>
+                                placeholder="Escribe el contenido..."
+                              ></textarea>
                             </div>
                           } @else {
-                            <div class="flex items-start gap-2 group/cell py-1">
-                              <span class="text-xs font-medium text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words">{{ getContentSummary(note) }}</span>
-                              @if (canEditFull(note)) {
-                                <i class="pi pi-pencil text-[10px] text-gray-300 opacity-0 group-hover/cell:opacity-100 transition-opacity ml-auto flex-shrink-0 mt-0.5"></i>
-                              }
+                            <div class="py-1 cursor-text" (click)="$event.stopPropagation(); startInlineEdit(note)">
+                              <span class="text-xs font-medium text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words">{{ getContentSummary(note) || 'Sin contenido' }}</span>
                             </div>
                           }
                         </td>
                         <td class="text-center">
                           @if (inlineEditingId() === note._id) {
-                            <div class="flex flex-col gap-1" (click)="$event.stopPropagation()">
+                            <div class="p-1" (click)="$event.stopPropagation()">
                               <p-datepicker
                                 [ngModel]="inlineEditDueAt()"
                                 (ngModelChange)="onInlineDateChange(note, $event)"
@@ -470,47 +531,80 @@
                               ></p-datepicker>
                             </div>
                           } @else {
-                            @if (getDueDate(note)) {
-                              <span class="text-[10px] font-medium" [ngClass]="{ 'text-red-500': isOverdue(note) }">
-                                {{ formatDueAt(getDueDate(note)!) }}
-                              </span>
-                            } @else {
-                              <span class="text-[10px] text-gray-400">—</span>
-                            }
+                            <div class="py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded px-2" (click)="$event.stopPropagation(); startInlineEdit(note)">
+                              @if (getDueDate(note)) {
+                                <span class="text-[10px] font-medium" [ngClass]="{ 'text-red-500': isOverdue(note) }">
+                                  {{ formatDueAt(getDueDate(note)!) }}
+                                </span>
+                              } @else {
+                                <span class="text-[10px] text-gray-400">— Sin fecha</span>
+                              }
+                            </div>
                           }
                         </td>
                         <td class="text-center">
                           @if (inlineEditingId() === note._id) {
-                            <div (click)="$event.stopPropagation()">
+                            <div class="p-1" (click)="$event.stopPropagation()">
                               <p-select
                                 [options]="statusOptions"
                                 [ngModel]="inlineEditStatus()"
                                 (ngModelChange)="onInlineStatusChange(note, $event)"
                                 optionLabel="label"
                                 optionValue="value"
-                                styleClass="w-full h-8 text-[10px]"
+                                styleClass="w-full"
                                 [appendTo]="'body'"
                               ></p-select>
                             </div>
                           } @else {
-                            <span
-                              class="text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full"
-                              [ngClass]="getStatusClass(note.status)"
-                            >
-                              {{ getStatusLabel(note.status) }}
-                            </span>
+                            <div class="py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded px-2" (click)="$event.stopPropagation(); startInlineEdit(note)">
+                              <span
+                                class="text-[9px] font-bold tracking-wider px-2 py-1 rounded-full inline-block"
+                                [ngClass]="getStatusClass(note.status)"
+                              >
+                                {{ getStatusLabel(note.status) }}
+                              </span>
+                            </div>
                           }
                         </td>
                         <td class="text-right">
-                          <button
-                            pButton
-                            icon="pi pi-ellipsis-v"
-                            [text]="true"
-                            [rounded]="true"
-                            size="small"
-                            class="text-gray-400 h-7 w-7"
-                            (click)="$event.stopPropagation(); openActions(note)"
-                          ></button>
+                          @if (inlineEditingId() === note._id) {
+                            <div class="flex gap-1 justify-end p-1" (click)="$event.stopPropagation()">
+                              <button
+                                pButton
+                                icon="pi pi-check"
+                                [text]="true"
+                                [rounded]="true"
+                                size="small"
+                                severity="success"
+                                class="h-7 w-7"
+                                (click)="saveInlineEdit(note)"
+                                pTooltip="Guardar cambios"
+                                tooltipPosition="bottom"
+                              ></button>
+                              <button
+                                pButton
+                                icon="pi pi-times"
+                                [text]="true"
+                                [rounded]="true"
+                                size="small"
+                                severity="danger"
+                                class="h-7 w-7"
+                                (click)="cancelInlineEdit()"
+                                pTooltip="Cancelar"
+                                tooltipPosition="bottom"
+                              ></button>
+                            </div>
+                          } @else {
+                            <button
+                              pButton
+                              icon="pi pi-ellipsis-v"
+                              [text]="true"
+                              [rounded]="true"
+                              size="small"
+                              class="text-gray-400 h-7 w-7"
+                              (click)="$event.stopPropagation(); openActions(note)"
+                            ></button>
+                          }
                         </td>
                       </tr>
                     </ng-template>

@@ -323,9 +323,37 @@ export class AgendaPage implements OnInit {
     while (el && el.parentElement !== document.body) {
       el = el.parentElement;
     }
+    // Si es un componente PrimeNG, no hacer nada
     if (el && (el.hasAttribute('data-pc-name') || el.classList.contains('p-overlay') || el.classList.contains('p-component'))) return;
-    const note = this.inlineEditingNote();
-    if (note) this.saveInlineEdit(note);
+    // Si el overlay PrimeNG está directamente en el body, verificar si es parte del componente
+    if (el === document.body) {
+      const parentCheck = target.closest('.p-overlay, .p-component, [class*="p-"]');
+      if (parentCheck) return;
+    }
+    // Click fuera de la edición: cancelar (no auto-guardar)
+    this.cancelInlineEdit();
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onDocumentKeyDown(event: KeyboardEvent): void {
+    if (!this.inlineEditingId()) return;
+    
+    // Escape: cancelar edición
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.cancelInlineEdit();
+      return;
+    }
+    
+    // Ctrl+Enter o Cmd+Enter: guardar edición
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      event.stopPropagation();
+      const note = this.inlineEditingNote();
+      if (note) this.saveInlineEdit(note);
+      return;
+    }
   }
 
   // Sharing Modal
@@ -1691,11 +1719,27 @@ export class AgendaPage implements OnInit {
       window.open(noteAny.onlineMeetingUrl || noteAny.webLink!, '_blank');
       return;
     }
+    this.openDetailModal(note);
+  }
 
-    if (!this.isMobile() && this.canEditFull(note)) {
+  /** Maneja el click en la fila. Si está en modo edición, no hace nada. Si puede editar, inicia edición. */
+  onRowClick(note: AgendaNote): void {
+    if (this.inlineEditingId() === note._id) return;
+    
+    // Si es evento de Microsoft, abrir link
+    const noteAny = note as { isMicrosoftEvent?: boolean; onlineMeetingUrl?: string; webLink?: string };
+    if (noteAny.isMicrosoftEvent && (noteAny.onlineMeetingUrl || noteAny.webLink)) {
+      window.open(noteAny.onlineMeetingUrl || noteAny.webLink!, '_blank');
+      return;
+    }
+    
+    // Si puede editar, iniciar edición inline
+    if (this.canEditFull(note)) {
       this.startInlineEdit(note);
       return;
     }
+    
+    // Si no puede editar, abrir modal de detalle
     this.openDetailModal(note);
   }
 
@@ -1706,6 +1750,11 @@ export class AgendaPage implements OnInit {
     const due = this.getDueDate(note);
     this.inlineEditDueAt.set(due ? new Date(due) : null);
     this.inlineEditStatus.set(note.status ?? 'pendiente');
+    // Focus en el textarea después de un tick para que el DOM se actualice
+    setTimeout(() => {
+      const textarea = document.querySelector('[data-inline-edit] textarea') as HTMLTextAreaElement;
+      if (textarea) textarea.focus();
+    }, 100);
   }
 
   cancelInlineEdit(): void {
@@ -1716,14 +1765,32 @@ export class AgendaPage implements OnInit {
     this.inlineEditStatus.set('pendiente');
   }
 
+  /** Maneja eventos de teclado en el modo de edición inline. */
+  onInlineKeyDown(event: KeyboardEvent): void {
+    if (!this.inlineEditingId()) return;
+    
+    // Escape: cancelar edición
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.cancelInlineEdit();
+      return;
+    }
+    
+    // Ctrl+Enter o Cmd+Enter: guardar edición
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      const note = this.inlineEditingNote();
+      if (note) this.saveInlineEdit(note);
+      return;
+    }
+  }
+
   onInlineStatusChange(note: AgendaNote, value: AgendaNoteStatus): void {
     this.inlineEditStatus.set(value);
-    this.saveInlineEdit(note);
   }
 
   onInlineDateChange(note: AgendaNote, value: Date | null): void {
     this.inlineEditDueAt.set(value);
-    this.saveInlineEdit(note);
   }
 
   saveInlineEdit(note: AgendaNote): void {
