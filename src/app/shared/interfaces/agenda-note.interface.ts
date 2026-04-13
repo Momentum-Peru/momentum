@@ -30,6 +30,7 @@ export interface AgendaNote {
   voiceUrl?: string[];
   drawingUrl?: string[];
   assignedTo?: (AgendaNoteUser | string)[];
+  copiedTo?: (AgendaNoteUser | string)[];
   assignedExternal?: AgendaNoteExternal[];
   /** Fecha y hora de vencimiento (ISO). */
   dueAt?: string | null;
@@ -67,6 +68,7 @@ export interface UpdateAgendaNotePayload {
 
 export interface AssignAgendaNotePayload {
   userIds: string[];
+  copiedToIds?: string[];
   /** Fecha y hora de vencimiento (ISO). Opcional. */
   dueAt?: string | null;
   externalContacts?: AgendaNoteExternal[];

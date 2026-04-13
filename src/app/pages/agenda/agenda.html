@@ -743,6 +743,30 @@
         placeholder="Seleccione fecha y hora"
       ></p-datepicker>
     </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Copiar a (CC) - Solo lectura
+      </label>
+      <p-multiselect
+        [options]="assigneeOptions()"
+        [ngModel]="assignModalCopiedIds()"
+        (ngModelChange)="assignModalCopiedIds.set($event)"
+        optionLabel="name"
+        optionValue="id"
+        [filter]="true"
+        filterBy="name,email"
+        placeholder="Seleccionar usuarios"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      >
+        <ng-template #item let-opt>
+          <div class="flex items-center gap-2">
+            <i class="pi pi-user text-gray-400"></i>
+            <span>{{ opt.name || opt.email }}</span>
+          </div>
+        </ng-template>
+      </p-multiselect>
+    </div>
   </div>
   <ng-template pTemplate="footer">
     <button
@@ -849,6 +873,30 @@
       </p-select>
     </div>
     <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Copiar a (CC) - Solo lectura
+      </label>
+      <p-multiselect
+        [options]="assigneeOptions()"
+        [ngModel]="createCopiedUserIds()"
+        (ngModelChange)="createCopiedUserIds.set($event)"
+        optionLabel="name"
+        optionValue="id"
+        [filter]="true"
+        filterBy="name,email"
+        placeholder="Seleccionar usuarios"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      >
+        <ng-template #item let-opt>
+          <div class="flex items-center gap-2">
+            <i class="pi pi-user text-gray-400"></i>
+            <span>{{ opt.name || opt.email }}</span>
+          </div>
+        </ng-template>
+      </p-multiselect>
+    </div>
+    <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
         >Vencimiento</label
       >
@@ -941,6 +989,30 @@
             </div>
           </ng-template>
         </p-select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Copiar a (CC) - Solo lectura
+        </label>
+        <p-multiselect
+          [options]="assigneeOptions()"
+          [ngModel]="createCopiedUserIds()"
+          (ngModelChange)="createCopiedUserIds.set($event)"
+          optionLabel="name"
+          optionValue="id"
+          [filter]="true"
+          filterBy="name,email"
+          placeholder="Seleccionar usuarios"
+          styleClass="w-full"
+          [appendTo]="'body'"
+        >
+          <ng-template #item let-opt>
+            <div class="flex items-center gap-2">
+              <i class="pi pi-user text-gray-400"></i>
+              <span>{{ opt.name || opt.email }}</span>
+            </div>
+          </ng-template>
+        </p-multiselect>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"

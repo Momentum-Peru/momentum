@@ -18,6 +18,7 @@ import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { MenuModule } from 'primeng/menu';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
@@ -69,6 +70,7 @@ const AGENDA_STATUS_OPTIONS: { label: string; value: AgendaNoteStatus }[] = [
     DialogModule,
     SelectButtonModule,
     SelectModule,
+    MultiSelectModule,
     MenuModule,
     TableModule,
     ToastModule,
@@ -240,6 +242,8 @@ export class AgendaPage implements OnInit {
   showCreateDialog = signal(false);
   /** Usuario a asignar al crear una nueva nota (texto, voz o dibujo). */
   createAssignUserId = signal<string | null>(null);
+  /** Usuarios a copiar (CC) al crear una nueva nota. */
+  createCopiedUserIds = signal<string[]>([]);
   showDetailDialog = signal(false);
   saving = signal(false);
   recording = signal(false);
@@ -279,6 +283,8 @@ export class AgendaPage implements OnInit {
   assignModalNoteIds = signal<string[]>([]);
   assignModalUserId = signal<string | null>(null);
   assignModalDueAt = signal<Date | null>(null);
+  /** Usuarios a copiar (CC) en el modal de asignación. */
+  assignModalCopiedIds = signal<string[]>([]);
 
   /** Si en el detalle estamos en modo edición (tras pulsar Editar). */
   detailEditMode = signal(false);
@@ -786,6 +792,7 @@ export class AgendaPage implements OnInit {
     this.noteContent.set('');
     this.createDueAt.set(null);
     this.createAssignUserId.set(null);
+    this.createCopiedUserIds.set([]);
     this.pendingContactAssignment.set(null);
   }
 
@@ -841,6 +848,7 @@ export class AgendaPage implements OnInit {
       if (userIds.length > 0 || externalContacts.length > 0) {
         return this.agendaApi.assign(note._id, {
           userIds,
+          copiedToIds: this.createCopiedUserIds(),
           dueAt: dueAtIso,
           externalContacts: externalContacts.length > 0 ? externalContacts : undefined,
         });
@@ -1026,6 +1034,11 @@ export class AgendaPage implements OnInit {
     this.assignModalUserId.set(userId);
     const due = this.getDueDate(note);
     this.assignModalDueAt.set(due ? new Date(due) : null);
+    
+    // Inicializar usuarios en copia si ya existen en la nota
+    const existingCopied = (note.copiedTo ?? []).map(u => typeof u === 'string' ? u : u._id);
+    this.assignModalCopiedIds.set(existingCopied);
+
     this.showAssignModal.set(true);
   }
 
@@ -1054,7 +1067,9 @@ export class AgendaPage implements OnInit {
     this.assignModalNoteIds.set([]);
     this.assignModalUserId.set(null);
     this.assignModalDueAt.set(null);
+    this.assignModalCopiedIds.set([]);
     this.createAssignUserId.set(null);
+    this.createCopiedUserIds.set([]);
   }
 
   /** Formatea fecha/hora de vencimiento para mostrar en detalle. */
@@ -1133,7 +1148,7 @@ export class AgendaPage implements OnInit {
     const assignWithRetry = (id: string) =>
       firstValueFrom(
         this.agendaApi
-          .assign(id, { userIds, dueAt: dueAtIso, externalContacts })
+          .assign(id, { userIds, copiedToIds: this.assignModalCopiedIds(), dueAt: dueAtIso, externalContacts })
           .pipe(
             map(() => true),
             catchError(() => of(false)),
