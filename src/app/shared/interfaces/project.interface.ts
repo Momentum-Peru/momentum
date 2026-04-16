@@ -42,6 +42,7 @@ export interface Project {
 }
 
 export interface ProjectOption {
-  label: string;
-  value: string;
+  _id: string;
+  name: string;
+  code: string;
 }

@@ -98,6 +98,8 @@ export class MenuConfigService {
     { path: '/logistics/products', label: 'Productos', icon: 'pi pi-box' },
     { path: '/logistics/locations', label: 'Ubicaciones', icon: 'pi pi-map-marker' },
     { path: '/logistics/quotes', label: 'Solicitudes de cotización', icon: 'pi pi-inbox' },
+    { path: '/recruitment', label: 'Lista de Reclutamientos', icon: 'pi pi-list' },
+    { path: '/recruitment/new', label: 'Nueva Solicitud de Personal', icon: 'pi pi-plus-circle' },
 
     { path: '/logistics/quote-entry', label: 'Ingresar cotizaciones', icon: 'pi pi-pencil' },
     { path: '/logistics/compare-quotes', label: 'Comparar cotizaciones', icon: 'pi pi-compare' },
@@ -362,6 +364,11 @@ export class MenuConfigService {
             label: 'Empleados',
             icon: 'pi pi-user',
             routerLink: '/employees',
+          },
+          {
+            label: 'Solicitud de Reclutamiento',
+            icon: 'pi pi-user-plus',
+            routerLink: '/recruitment/new',
           },
           {
             label: 'Planillas y pagos',
@@ -732,6 +739,8 @@ export class MenuConfigService {
       relatedRoutes: ['/employees', '/payroll', '/payroll-calculation', '/tickets'],
       items: [
         { label: 'Empleados', icon: 'pi pi-user', routerLink: '/employees', description: 'Gestión de empleados' },
+        { label: 'Solicitud de Reclutamiento', icon: 'pi pi-user-plus', routerLink: '/recruitment/new', description: 'Nueva solicitud de personal' },
+        { label: 'Historial de Reclutamiento', icon: 'pi pi-list', routerLink: '/recruitment', description: 'Estado de solicitudes' },
         { label: 'Planillas y pagos', icon: 'pi pi-wallet', routerLink: '/payroll', description: 'Nómina de empleados' },
         { label: 'Cálculo de planilla', icon: 'pi pi-calculator', routerLink: '/payroll-calculation', description: 'Cálculo de haberes' },
         { label: 'Tickets', icon: 'pi pi-ticket', routerLink: '/tickets', description: 'Solicitudes internas' },

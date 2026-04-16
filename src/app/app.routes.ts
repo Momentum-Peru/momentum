@@ -58,10 +58,10 @@ export const routes: Routes = [
       import('./pages/select-company/select-company').then((m) => m.SelectCompanyPage),
     canActivate: [requireAuthGuard],
   },
-  // Ruta raíz - redirige a landing (debe estar antes del layout principal)
   {
     path: '',
-    redirectTo: 'landing',
+    canActivate: [publicGuard],
+    loadComponent: () => import('./pages/landing/landing').then((m) => m.LandingPage),
     pathMatch: 'full',
   },
   // Sección de documentación ERP (layout con menú de documentación)
@@ -931,6 +931,38 @@ export const routes: Routes = [
               import('./pages/payroll/payroll-detail/payroll-detail.component').then(
                 (m) => m.PayrollDetailComponent,
               ),
+          },
+        ],
+      },
+      {
+        path: 'recruitment',
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/recruitment/recruitment-list/recruitment-list').then(
+                (m) => m.RecruitmentListPage,
+              ),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/recruitment' },
+          },
+          {
+            path: 'new',
+            loadComponent: () =>
+              import(
+                './pages/recruitment/recruitment-request-form/recruitment-request-form'
+              ).then((m) => m.RecruitmentRequestForm),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/recruitment/new' },
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import(
+                './pages/recruitment/recruitment-request-form/recruitment-request-form'
+              ).then((m) => m.RecruitmentRequestForm),
+            canActivate: [MenuPermissionGuard],
+            data: { menuPermission: '/recruitment' },
           },
         ],
       },

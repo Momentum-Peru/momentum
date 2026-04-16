@@ -1,0 +1,143 @@
+<div class="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Panel de Reclutamiento</h1>
+      <p class="text-gray-500 dark:text-gray-400">Resumen y métricas de solicitudes de personal</p>
+    </div>
+    <div class="flex gap-2">
+      <button pButton label="Nueva Solicitud" icon="pi pi-plus" class="p-button-primary shadow-lg" routerLink="/recruitment/new"></button>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-gray-500 dark:text-gray-400 text-sm font-medium">Total Solicitudes</span>
+        <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+          <i class="pi pi-file-edit"></i>
+        </div>
+      </div>
+      <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ stats().total }}</div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-gray-500 dark:text-gray-400 text-sm font-medium">Pendiente Aprobación</span>
+        <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600">
+          <i class="pi pi-clock"></i>
+        </div>
+      </div>
+      <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ stats().pending }}</div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-gray-500 dark:text-gray-400 text-sm font-medium">En Proceso</span>
+        <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+          <i class="pi pi-sync"></i>
+        </div>
+      </div>
+      <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ stats().inProgress }}</div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-gray-500 dark:text-gray-400 text-sm font-medium">Completadas</span>
+        <div class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600">
+          <i class="pi pi-check-circle"></i>
+        </div>
+      </div>
+      <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ stats().approved }}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Quick Actions -->
+    <div class="lg:col-span-1 space-y-6">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Accesos Rápidos</h2>
+        <div class="space-y-3">
+          <a routerLink="/recruitment/new" class="flex items-center gap-3 p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all group">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+              <i class="pi pi-plus"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm">Nueva Solicitud</div>
+              <div class="text-xs text-gray-500">Crear requerimiento de personal</div>
+            </div>
+          </a>
+
+          <a routerLink="/recruitment" class="flex items-center gap-3 p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all group">
+            <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+              <i class="pi pi-list"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm">Ver Historial</div>
+              <div class="text-xs text-gray-500">Estado de todas las solicitudes</div>
+            </div>
+          </a>
+
+          <a routerLink="/employees" class="flex items-center gap-3 p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all group">
+            <div class="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
+              <i class="pi pi-users"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm">Gestión de Empleados</div>
+              <div class="text-xs text-gray-500">Ver base de datos actual</div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="lg:col-span-2">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+          <h2 class="text-lg font-bold text-gray-900 dark:text-white">Actividad Reciente</h2>
+          <a routerLink="/recruitment" class="text-sm font-semibold text-primary hover:underline">Ver todo</a>
+        </div>
+
+        <div class="p-6">
+          <div *ngIf="recentRequests().length === 0" class="flex flex-col items-center py-10 text-gray-500">
+            <i class="pi pi-info-circle text-4xl mb-2 opacity-20"></i>
+            <span>No hay actividad reciente</span>
+          </div>
+
+          <div class="space-y-6">
+            @for (req of recentRequests(); track req._id) {
+              <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold font-mono">
+                  RE
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-start mb-1">
+                    <span class="font-bold text-gray-900 dark:text-white truncate pr-4">{{ req.jobTitle }}</span>
+                    <span class="text-xs text-gray-500 shrink-0">{{ req.createdAt | date:'shortDate' }}</span>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                    <i class="pi pi-building"></i>
+                    <span class="truncate">{{ req.projectId?.name || 'Cargando...' }}</span>
+                    <span class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700">{{ req.requestNumber }}</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Solicitado por: {{ req.supervisorName }}</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border"
+                          [ngClass]="{
+                            'bg-amber-50 text-amber-600 border-amber-100': req.status === 'PENDIENTE',
+                            'bg-green-50 text-green-600 border-green-100': req.status === 'APROBADO',
+                            'bg-blue-50 text-blue-600 border-blue-100': req.status === 'EN_PROCESO'
+                          }">
+                      {{ req.status }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -850,8 +850,8 @@ export class MaterialRequestsPage implements OnInit {
   getProjectName(request: MaterialRequest): string {
     if (!request.projectId) return '-';
     if (typeof request.projectId === 'string') {
-      const project = this.availableProjects().find((p) => p.value === request.projectId);
-      return project?.label || request.projectId;
+      const project = this.availableProjects().find((p) => p._id === request.projectId);
+      return project?.name || request.projectId;
     }
     return request.projectId.name || '-';
   }

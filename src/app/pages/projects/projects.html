@@ -336,18 +336,25 @@
       <!-- Código (solo lectura) y Nombre -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <span class="block text-sm font-medium text-gray-700 dark:text-white mb-1">Código</span>
-          <div class="w-full">
-            @if (editing()?._id) {
-              <span
-                class="inline-block font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
-                >{{ editing()?.code }}</span
-              >
-            } @else {
-              <span
-                class="inline-block font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
-                >{{ nextCode() ?? 1 }}</span
-              >
+          <label
+            for="projectCode"
+            class="block text-sm font-medium text-gray-700 dark:text-white mb-1"
+            >Código</label
+          >
+          <div class="w-full relative">
+            <input
+              id="projectCode"
+              pInputText
+              name="projectCode"
+              placeholder="Ej: PRJ-001 (Dejar vacío para auto-generar)"
+              [ngModel]="editing()?.code"
+              (ngModelChange)="onEditChange('code', $event)"
+              class="w-full font-mono"
+            />
+            @if (!editing()?._id && (!editing()?.code || editing()?.code?.trim() === '')) {
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none bg-white px-1">
+                Sugerencia: {{ nextCode() ?? 1 }}
+              </span>
             }
           </div>
         </div>

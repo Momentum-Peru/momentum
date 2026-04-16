@@ -494,6 +494,7 @@ export class ProjectsPage implements OnInit {
     };
 
     const payload = {
+      code: typeof item.code === 'string' && item.code.trim() !== '' ? item.code.trim() : undefined,
       name: item.name.trim(),
       description: item.description?.trim() || '',
       clientId: item.clientId,
@@ -709,8 +710,7 @@ export class ProjectsPage implements OnInit {
 
         // Si es un array de mensajes, unirlos
         if (Array.isArray(message)) {
-          const filtered = message.filter((m: string) => !/c[oó]digo/i.test(m));
-          return filtered.join(', ');
+          return message.join(', ');
         }
 
         // Traducir mensajes comunes de validación (actualizado: código ahora se genera automáticamente)

@@ -912,7 +912,7 @@ export class TimeTrackingPage implements OnInit {
 
     // Si el proyecto ha sido eliminado, limpiar el projectId
     if (editedItem.projectId && typeof editedItem.projectId === 'string') {
-      const projectExists = this.projects().some((p) => p.value === editedItem.projectId);
+      const projectExists = this.projects().some((p) => p._id === editedItem.projectId);
       if (!projectExists) {
         editedItem.projectId = '';
       }
@@ -1177,8 +1177,8 @@ export class TimeTrackingPage implements OnInit {
     }
 
     if (typeof projectId === 'string') {
-      const project = this.projects().find((p) => p.value === projectId);
-      return project?.label || 'Sin proyecto';
+      const project = this.projects().find((p) => p._id === projectId);
+      return project?.name || 'Sin proyecto';
     }
 
     return 'Sin proyecto';

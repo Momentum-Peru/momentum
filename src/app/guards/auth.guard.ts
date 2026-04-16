@@ -14,7 +14,7 @@ export const publicGuard: CanActivateFn = () => {
     const isAuthenticated = authService.isAuthenticated();
 
     if (isAuthenticated) {
-        router.navigate(['/calendario']);
+        router.navigate(['/dashboard']);
         return false;
     }
 
@@ -52,7 +52,7 @@ export const authGuard: CanActivateFn = (route, state) => {
     const currentPath = state.url;
     // Si está en la página de login y ya está autenticado, redirigir al home
     if (currentPath === '/ingreso' && isAuthenticated) {
-        router.navigate(['/calendario']);
+        router.navigate(['/dashboard']);
         return false;
     }
 

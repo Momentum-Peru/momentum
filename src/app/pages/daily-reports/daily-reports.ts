@@ -603,7 +603,7 @@ export class DailyExpensesPage implements OnInit {
 
     // Si el proyecto ha sido eliminado, limpiar el projectId para que el usuario pueda seleccionar uno nuevo
     if (editedItem.projectId && typeof editedItem.projectId === 'string') {
-      const projectExists = this.projects().some((p) => p.value === editedItem.projectId);
+      const projectExists = this.projects().some((p) => p._id === editedItem.projectId);
       if (!projectExists) {
         // El proyecto ya no existe, establecer a string vacío para que el usuario seleccione uno nuevo
         editedItem.projectId = '';
@@ -2025,8 +2025,8 @@ export class DailyExpensesPage implements OnInit {
 
     // Si projectId es un string, buscar en la lista de proyectos
     if (typeof projectId === 'string') {
-      const project = this.projects().find((p) => p.value === projectId);
-      return project?.label || 'Sin proyecto';
+      const project = this.projects().find((p) => p._id === projectId);
+      return project?.name || 'Sin proyecto';
     }
 
     return 'Sin proyecto';
@@ -2047,8 +2047,8 @@ export class DailyExpensesPage implements OnInit {
 
     // Si projectId es un string, buscar en la lista de proyectos
     if (typeof projectId === 'string') {
-      const project = this.projects().find((p) => p.value === projectId);
-      return project?.label || '';
+      const project = this.projects().find((p) => p._id === projectId);
+      return project?.name || '';
     }
 
     return '';
@@ -2071,7 +2071,7 @@ export class DailyExpensesPage implements OnInit {
 
     // Si projectId es un string, verificar si existe en la lista de proyectos
     if (typeof editing.projectId === 'string') {
-      const projectExists = this.projects().some((p) => p.value === editing.projectId);
+      const projectExists = this.projects().some((p) => p._id === editing.projectId);
       return !projectExists;
     }
 
@@ -2202,7 +2202,7 @@ export class DailyExpensesPage implements OnInit {
 
     // Proyecto (si se provee) debe existir
     if (item.projectId && typeof item.projectId === 'string' && item.projectId.trim() !== '') {
-      const projectExists = this.projects().some((p) => p.value === item.projectId);
+      const projectExists = this.projects().some((p) => p._id === item.projectId);
       if (!projectExists) {
         errors.push('El proyecto seleccionado ya no está disponible. Selecciona otro.');
       }

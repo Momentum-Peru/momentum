@@ -1,0 +1,284 @@
+<div class="recruitment-container p-4 md:p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <p-toast></p-toast>
+
+  <!-- Header Section -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
+        <a routerLink="/dashboard" class="hover:text-primary transition-colors">Dashboard</a>
+        <i class="pi pi-chevron-right text-[10px]"></i>
+        <a routerLink="/hub/rrhh" class="hover:text-primary transition-colors">RRHH</a>
+        <i class="pi pi-chevron-right text-[10px]"></i>
+        <span class="text-gray-900 dark:text-gray-100 font-medium cursor-default">Solicitud de Personal</span>
+      </div>
+      <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+        Solicitud de Personal
+        <span class="text-sm font-normal px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-full border border-blue-200 dark:border-blue-800">
+          {{ requestNumber() }}
+        </span>
+      </h1>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button pButton label="Borrador" icon="pi pi-save" class="p-button-outlined p-button-secondary" (click)="saveDraft()" [disabled]="submitting()"></button>
+      <button pButton label="Enviar Requerimiento" icon="pi pi-send" class="p-button-primary shadow-lg shadow-primary/20" (click)="onSubmit()" [loading]="submitting()"></button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-12 gap-6">
+    <!-- Left Navigation (Sticky) -->
+    <div class="hidden lg:block lg:col-span-3">
+      <div class="sticky top-24 space-y-2">
+        <button
+          (click)="scrollToSection('general')"
+          class="w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left border"
+          [ngClass]="activeSection() === 'general' ? 'bg-primary-50 border-primary text-primary dark:bg-primary-900/10' : 'bg-white dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        >
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm" [ngClass]="activeSection() === 'general' ? 'bg-primary border-primary text-white' : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500'">1</div>
+          <span class="font-medium">Información General</span>
+        </button>
+
+        <button
+          (click)="scrollToSection('details')"
+          class="w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left border"
+          [ngClass]="activeSection() === 'details' ? 'bg-primary-50 border-primary text-primary dark:bg-primary-900/10' : 'bg-white dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        >
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm" [ngClass]="activeSection() === 'details' ? 'bg-primary border-primary text-white' : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500'">2</div>
+          <span class="font-medium">Detalles del Puesto</span>
+        </button>
+
+        <button
+          (click)="scrollToSection('location')"
+          class="w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left border"
+          [ngClass]="activeSection() === 'location' ? 'bg-primary-50 border-primary text-primary dark:bg-primary-900/10' : 'bg-white dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        >
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm" [ngClass]="activeSection() === 'location' ? 'bg-primary border-primary text-white' : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500'">3</div>
+          <span class="font-medium">Ubicación y Justificación</span>
+        </button>
+
+        <button
+          (click)="scrollToSection('safety')"
+          class="w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left border"
+          [ngClass]="activeSection() === 'safety' ? 'bg-primary-50 border-primary text-primary dark:bg-primary-900/10' : 'bg-white dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        >
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm" [ngClass]="activeSection() === 'safety' ? 'bg-primary border-primary text-white' : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500'">4</div>
+          <span class="font-medium">Seguridad y EPP (SSOMA)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-span-12 lg:col-span-7 space-y-6">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-6">
+
+        <!-- STEP 0: Project Selection (Must be first) -->
+        <div id="project-selection" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 overflow-hidden relative">
+          <div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+          <div class="flex items-center gap-2 mb-4">
+            <i class="pi pi-building text-primary text-xl"></i>
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Centro de Costo / Proyecto</h2>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4">
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Seleccionar Proyecto <span class="text-red-500">*</span></label>
+              <p-select
+                formControlName="projectId"
+                [options]="projects()"
+                optionLabel="name"
+                optionValue="_id"
+                placeholder="Busque y seleccione el proyecto"
+                [filter]="true"
+                filterBy="name,code"
+                class="w-full"
+                appendTo="body"
+              >
+                <ng-template let-project pTemplate="item">
+                  <div class="flex flex-col">
+                    <span class="font-medium">{{ project.name }}</span>
+                    <span class="text-xs text-gray-500">Código: {{ project.code }}</span>
+                  </div>
+                </ng-template>
+              </p-select>
+              <small class="text-gray-500" *ngIf="!projectSelected()">Debe seleccionar un proyecto para habilitar el resto del formulario.</small>
+            </div>
+          </div>
+        </div>
+
+        <div [ngClass]="{'opacity-40 pointer-events-none grayscale-50': !projectSelected()}" class="transition-all duration-300 space-y-6">
+
+          <!-- Section 1: General Info -->
+          <div id="general" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div class="flex items-center gap-2 mb-6">
+              <i class="pi pi-info-circle text-blue-500 text-xl"></i>
+              <h2 class="text-lg font-bold text-gray-900 dark:text-white">Información General</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha del Requerimiento <span class="text-red-500">*</span></label>
+                <p-datepicker formControlName="requestDate" [showIcon]="true" dateFormat="dd/mm/yy" class="w-full" [disabled]="true"></p-datepicker>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Nombre del Supervisor Solicitante <span class="text-red-500">*</span></label>
+                <input pInputText formControlName="supervisorName" placeholder="Escriba el nombre completo" class="w-full" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Position Details -->
+          <div id="details" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div class="flex items-center gap-2 mb-6">
+              <i class="pi pi-briefcase text-orange-500 text-xl"></i>
+              <h2 class="text-lg font-bold text-gray-900 dark:text-white">Detalles del Puesto</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="flex flex-col gap-2 md:col-span-2">
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Puesto Necesario <span class="text-red-500">*</span></label>
+                <input pInputText formControlName="jobTitle" placeholder="Ej. Técnico Electricista, Ingeniero de Campo..." class="w-full text-lg font-medium" />
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Cantidad <span class="text-red-500">*</span></label>
+                <p-inputNumber formControlName="quantity" [showButtons]="true" [min]="1" class="w-full"></p-inputNumber>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha Tentativa de Ingreso <span class="text-red-500">*</span></label>
+                <p-datepicker formControlName="startDate" [showIcon]="true" dateFormat="dd/mm/yy" [minDate]="today" class="w-full"></p-datepicker>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Salario Propuesto (S/.)</label>
+                <p-inputNumber formControlName="proposedSalary" mode="currency" currency="PEN" locale="es-PE" class="w-full"></p-inputNumber>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Location and Justification -->
+          <div id="location" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div class="flex items-center gap-2 mb-6">
+              <i class="pi pi-map-marker text-red-500 text-xl"></i>
+              <h2 class="text-lg font-bold text-gray-900 dark:text-white">Ubicación y Justificación</h2>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6">
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Lugar de Trabajo</label>
+                <input pInputText formControlName="workLocation" placeholder="Ej. Proyecto Las Bambas, Oficina Central..." class="w-full" />
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Justificación del Requerimiento</label>
+                <textarea pTextarea formControlName="businessJustification" rows="4" placeholder="Describa el motivo de la contratación y las funciones clave..." class="w-full"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Safety (SSOMA) -->
+          <div id="safety" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div class="flex items-center gap-2 mb-6">
+              <i class="pi pi-shield text-green-600 text-xl"></i>
+              <h2 class="text-lg font-bold text-gray-900 dark:text-white">Seguridad y EPP (SSOMA)</h2>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6">
+              <div class="flex flex-col gap-3">
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Requerimientos de EPP Especializados</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  @for (opt of ppeOptions; track opt.value) {
+                    <div class="flex items-center gap-3 p-3 border rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" (click)="$event.stopPropagation()">
+                      <p-checkbox
+                        [formControl]="$any(form.get('ppeRequirements'))"
+                        [value]="opt.value"
+                        [inputId]="opt.value"
+                      ></p-checkbox>
+                      <label [for]="opt.value" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer flex-1">
+                        {{ opt.label }}
+                      </label>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Links a IPERC / Documentación de Seguridad</label>
+                <div class="p-inputgroup">
+                  <span class="p-inputgroup-addon"><i class="pi pi-link"></i></span>
+                  <input pInputText formControlName="ipercLinks" placeholder="URL de documentos en Sharepoint/Drive..." class="w-full" />
+                </div>
+                <small class="text-gray-500">Ingrese links a la carpeta de seguridad del proyecto si aplica.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Right HUD (Approval Line) -->
+    <div class="hidden xl:block xl:col-span-2">
+      <div class="sticky top-24 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+        <h3 class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-6">Línea de Aprobación</h3>
+
+        <div class="space-y-8">
+          <div class="relative flex gap-4">
+            <div class="absolute top-5 left-3.5 w-[2px] h-10 bg-gray-200 dark:bg-gray-700"></div>
+            <div class="z-10 w-7 h-7 rounded-full bg-green-500 flex items-center justify-center text-white ring-4 ring-green-100 dark:ring-green-900/30">
+              <i class="pi pi-check text-[10px] font-bold"></i>
+            </div>
+            <div>
+              <div class="text-sm font-bold text-gray-900 dark:text-white leading-tight">Solicitante</div>
+              <div class="text-[11px] text-gray-500 uppercase font-medium mt-0.5">Enviado</div>
+            </div>
+          </div>
+
+          <div class="relative flex gap-4 opacity-50">
+            <div class="absolute top-5 left-3.5 w-[2px] h-10 bg-gray-200 dark:bg-gray-700"></div>
+            <div class="z-10 w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500">
+              <i class="pi pi-user text-[10px]"></i>
+            </div>
+            <div>
+              <div class="text-sm font-bold text-gray-900 dark:text-white leading-tight">RRHH</div>
+              <div class="text-[11px] text-gray-500 uppercase font-medium mt-0.5">Pendiente</div>
+            </div>
+          </div>
+
+          <div class="relative flex gap-4 opacity-50">
+            <div class="absolute top-5 left-3.5 w-[2px] h-10 bg-gray-200 dark:bg-gray-700"></div>
+            <div class="z-10 w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500">
+              <i class="pi pi-user text-[10px]"></i>
+            </div>
+            <div>
+              <div class="text-sm font-bold text-gray-900 dark:text-white leading-tight">Gerencia Op.</div>
+              <div class="text-[11px] text-gray-500 uppercase font-medium mt-0.5">Pendiente</div>
+            </div>
+          </div>
+
+          <div class="flex gap-4 opacity-50">
+            <div class="z-10 w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500">
+              <i class="pi pi-flag text-[10px]"></i>
+            </div>
+            <div>
+              <div class="text-sm font-bold text-gray-900 dark:text-white leading-tight">Gerencia Gral.</div>
+              <div class="text-[11px] text-gray-500 uppercase font-medium mt-0.5">Final</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+          <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+            <div class="flex items-center gap-2 text-blue-700 dark:text-blue-300 mb-1">
+              <i class="pi pi-info-circle text-sm"></i>
+              <span class="text-xs font-bold uppercase">Ayuda</span>
+            </div>
+            <p class="text-[11px] text-blue-600/80 dark:text-blue-400/80 leading-relaxed">
+              El proceso de aprobación toma usualmente 2-3 días hábiles.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

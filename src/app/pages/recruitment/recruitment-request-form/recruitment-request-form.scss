@@ -1,0 +1,82 @@
+.recruitment-container {
+  // PrimeNG Overrides for a cleaner look
+  :host ::ng-deep {
+    .p-select {
+      border-radius: 12px;
+      border-color: #e5e7eb;
+      box-shadow: none;
+      &:hover {
+        border-color: var(--primary-color);
+      }
+      &.p-focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px var(--primary-100);
+      }
+    }
+
+    .p-inputtext, .p-inputnumber-input, .p-calendar .p-inputtext, .p-textarea {
+      border-radius: 12px;
+      border-color: #e5e7eb;
+      padding: 10px 14px;
+      &:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px var(--primary-100);
+      }
+    }
+
+    .p-calendar {
+      width: 100%;
+    }
+
+    .p-button {
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+
+      &.p-button-primary {
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 15px -3px rgba(var(--primary-rgb), 0.3);
+        }
+        &:active {
+          transform: translateY(0);
+        }
+      }
+    }
+
+    .p-checkbox .p-checkbox-box {
+      border-radius: 6px;
+      width: 22px;
+      height: 22px;
+    }
+  }
+
+  // Animaciones
+  .transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  // Glassmorphism effect for sticky items in dark mode
+  .dark {
+    .sticky {
+      backdrop-filter: blur(8px);
+    }
+  }
+}
+
+// Scroll Margin for anchors
+[id] {
+  scroll-margin-top: 100px;
+}
+
+// Custom Radio-like checkbox cards
+.ppe-card {
+  transition: all 0.2s ease;
+  &:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(var(--primary-rgb), 0.05);
+  }
+}
