@@ -6,881 +6,275 @@
   <p-confirmDialog></p-confirmDialog>
 
   <!-- Header con búsqueda y acciones -->
-  <div class="flex flex-wrap xl:flex-nowrap items-center gap-2">
-    <div class="flex-1 w-full md:max-w-md">
-      <div class="w-full">
-        <input
-          pInputText
-          placeholder="Buscar cotizaciones..."
-          [ngModel]="query()"
-          (ngModelChange)="setQuery($event)"
-          class="w-full pl-10"
-          styleClass="w-full md:w-auto"
-        />
-      </div>
+  <div class="flex flex-wrap xl:flex-nowrap items-center gap-3">
+    <div class="flex-1 w-full md:max-w-md relative">
+      <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+      <input
+        type="text"
+        placeholder="Buscar cotizaciones..."
+        [ngModel]="query()"
+        (ngModelChange)="setQuery($event)"
+        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
     </div>
     @if (canEdit()) {
       <button
-        pButton
         type="button"
         (click)="newQuote()"
-        label="Nueva Cotización"
-        icon="pi pi-plus"
-        class="w-full sm:w-auto"
-        aria-label="Crear nueva cotización"
-      ></button>
+        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-medium transition-colors shadow-sm w-full sm:w-auto justify-center"
+      >
+        <i class="pi pi-plus text-xs"></i>
+        Nueva Cotización
+      </button>
     }
   </div>
 
-  <!-- Vista Desktop: Tabla normal -->
-  <div class="card hidden md:block">
-    <p-table
-      [value]="quotes()"
-      [loading]="loading()"
-      [paginator]="true"
-      [rows]="pagination().limit"
-      [totalRecords]="pagination().total"
-      [rowsPerPageOptions]="[5, 10, 25]"
-      [showCurrentPageReport]="true"
-      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-      (onPage)="onPageChange($event)"
-      styleClass="p-datatable-sm"
-    >
-      <ng-template pTemplate="header">
-        <tr>
-          <th class="text-left">Número</th>
-          <th class="text-left">Cliente</th>
-          <th class="text-left">Proyecto</th>
-          <th class="text-left">Estado</th>
-          <th class="text-left">Fecha Creación</th>
-          <th class="text-left">Documentos</th>
-          <th class="text-center">Acciones</th>
+  <!-- Vista Desktop: Tabla nativa -->
+  <div class="hidden md:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
+          <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Número</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Cliente</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Proyecto</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Estado</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Fecha</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Docs</th>
+          <th class="text-center px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Acciones</th>
         </tr>
-      </ng-template>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-700/50">
+        @if (loading()) {
+          <tr>
+            <td colspan="7" class="text-center py-12">
+              <div class="flex flex-col items-center gap-2 text-gray-400">
+                <i class="pi pi-spin pi-spinner text-3xl"></i>
+                <span class="text-sm">Cargando...</span>
+              </div>
+            </td>
+          </tr>
+        } @else if (quotes().length === 0) {
+          <tr>
+            <td colspan="7" class="text-center py-12">
+              <div class="flex flex-col items-center gap-2 text-gray-400">
+                <i class="pi pi-inbox text-3xl"></i>
+                <span class="text-sm">No se encontraron cotizaciones</span>
+              </div>
+            </td>
+          </tr>
+        } @else {
+          @for (quote of quotes(); track quote._id || $index) {
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+              <td class="px-4 py-3">
+                <span class="font-mono text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded">
+                  {{ quote.number }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <p class="font-medium text-gray-900 dark:text-gray-100 truncate max-w-[180px]">{{ getClientName(quote.clientId) }}</p>
+              </td>
+              <td class="px-4 py-3">
+                <p class="text-gray-600 dark:text-gray-400 truncate max-w-[180px]">{{ getProjectName(quote.projectId) }}</p>
+              </td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ getStateClass(quote.state) }}">
+                  {{ quote.state }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
+                {{ quote.createDate | date: 'dd/MM/yyyy' }}
+              </td>
+              <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
+                {{ quote.documents?.length || 0 }}
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-0.5 justify-center">
+                  <button
+                    type="button"
+                    (click)="openPdf(quote)"
+                    title="Ver documento"
+                    class="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                  >
+                    <i class="pi pi-file-pdf text-sm"></i>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="viewDetails(quote)"
+                    title="Ver detalles"
+                    class="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                  >
+                    <i class="pi pi-eye text-sm"></i>
+                  </button>
+                  <p-menu
+                    #stateMenu
+                    [model]="getStateMenuItems(quote)"
+                    [popup]="true"
+                    [appendTo]="'body'"
+                    [autoZIndex]="true"
+                    [showTransitionOptions]="'0ms'"
+                    [hideTransitionOptions]="'0ms'"
+                  ></p-menu>
+                  <button
+                    type="button"
+                    (click)="stateMenu.toggle($event)"
+                    title="Cambiar estado"
+                    class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <i class="pi pi-cog text-sm"></i>
+                  </button>
+                  @if (canEdit()) {
+                    <button
+                      type="button"
+                      (click)="cloneQuote(quote)"
+                      title="Clonar cotización"
+                      class="p-1.5 rounded-lg text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+                    >
+                      <i class="pi pi-copy text-sm"></i>
+                    </button>
+                    <button
+                      type="button"
+                      (click)="editQuote(quote)"
+                      title="Editar cotización"
+                      class="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                    >
+                      <i class="pi pi-pencil text-sm"></i>
+                    </button>
+                    <button
+                      type="button"
+                      (click)="deleteQuote(quote)"
+                      title="Eliminar cotización"
+                      class="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      <i class="pi pi-trash text-sm"></i>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
 
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="7" class="text-center p-8 text-gray-500">
-            <div class="flex flex-col items-center space-y-2">
-              <i class="pi pi-inbox text-2xl text-gray-400"></i>
-              <p>No hay datos disponibles</p>
-            </div>
-          </td>
-        </tr>
-      </ng-template>
-
-      <ng-template pTemplate="body" let-quote>
-        <tr>
-          <td>
-            <span
-              class="font-mono text-sm bg-gray-100 dark:bg-gray-200 text-gray-800 dark:text-gray-800 px-2 py-1 rounded"
-            >
-              {{ quote.number }}
-            </span>
-          </td>
-          <td>
-            <div class="max-w-xs">
-              <p class="font-semibold truncate">{{ getClientName(quote.clientId) }}</p>
-            </div>
-          </td>
-          <td>
-            <div class="max-w-xs">
-              <p class="text-sm truncate">{{ getProjectName(quote.projectId) }}</p>
-            </div>
-          </td>
-          <td>
-            <p-tag
-              [value]="quote.state"
-              [severity]="getStateSeverity(quote.state)"
-              [class]="getStateClass(quote.state)"
-            ></p-tag>
-          </td>
-          <td>
-            <span class="text-sm text-gray-600 dark:text-gray-300">
-              {{ quote.createDate | date: 'dd/MM/yyyy' }}
-            </span>
-          </td>
-          <td>
-            <span class="text-sm text-gray-600 dark:text-gray-300">
-              {{ quote.documents?.length || 0 }} docs
-            </span>
-          </td>
-          <td class="text-center">
-            <div class="flex gap-1 justify-center">
-              <button
-                pButton
-                icon="pi pi-file-pdf"
-                [text]="true"
-                severity="info"
-                size="small"
-                (click)="openPdf(quote)"
-                pTooltip="Ver documento"
-                tooltipPosition="top"
-                aria-label="Ver documento PDF"
-              ></button>
-
-              <p-menu
-                #stateMenu
-                [model]="getStateMenuItems(quote)"
-                [popup]="true"
-                [appendTo]="'body'"
-                [baseZIndex]="1000"
-                [autoZIndex]="true"
-                [showTransitionOptions]="'0ms'"
-                [hideTransitionOptions]="'0ms'"
-                styleClass="p-menu-sm"
-              ></p-menu>
-              <button
-                pButton
-                icon="pi pi-eye"
-                [text]="true"
-                severity="info"
-                size="small"
-                (click)="viewDetails(quote)"
-                pTooltip="Ver detalles"
-                tooltipPosition="top"
-                aria-label="Ver detalles de la cotización"
-              ></button>
-
-              <button
-                pButton
-                icon="pi pi-cog"
-                [text]="true"
-                severity="secondary"
-                size="small"
-                (click)="stateMenu.toggle($event)"
-                pTooltip="Cambiar estado"
-                tooltipPosition="top"
-                aria-label="Cambiar estado de la cotización"
-              ></button>
-
-              @if (canEdit()) {
-                <button
-                  pButton
-                  icon="pi pi-pencil"
-                  [text]="true"
-                  severity="warn"
-                  size="small"
-                  (click)="editQuote(quote)"
-                  pTooltip="Editar cotización"
-                  tooltipPosition="top"
-                  aria-label="Editar cotización"
-                ></button>
-
-                <button
-                  pButton
-                  icon="pi pi-trash"
-                  [text]="true"
-                  severity="danger"
-                  size="small"
-                  (click)="deleteQuote(quote)"
-                  pTooltip="Eliminar cotización"
-                  tooltipPosition="top"
-                  aria-label="Eliminar cotización"
-                ></button>
-              }
-            </div>
-          </td>
-        </tr>
-      </ng-template>
-
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="7" class="text-center py-8">
-            <div class="flex flex-col items-center gap-2 text-gray-500">
-              <i class="pi pi-inbox text-4xl"></i>
-              <p>No se encontraron cotizaciones</p>
-            </div>
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
+    <!-- Paginación nativa -->
+    @if (pagination().total > 0) {
+      <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600 dark:text-gray-400">
+        <span>
+          Mostrando {{ (pagination().page - 1) * pagination().limit + 1 }}–{{ getPageEnd() }} de {{ pagination().total }} registros
+        </span>
+        <div class="flex items-center gap-1">
+          <button
+            type="button"
+            [disabled]="pagination().page <= 1"
+            (click)="onPageChange({ first: (pagination().page - 2) * pagination().limit, rows: pagination().limit })"
+            class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <i class="pi pi-chevron-left text-xs"></i>
+          </button>
+          <span class="px-3 py-1.5">{{ pagination().page }} / {{ pagination().pages }}</span>
+          <button
+            type="button"
+            [disabled]="pagination().page >= pagination().pages"
+            (click)="onPageChange({ first: pagination().page * pagination().limit, rows: pagination().limit })"
+            class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <i class="pi pi-chevron-right text-xs"></i>
+          </button>
+        </div>
+      </div>
+    }
   </div>
 
-  <!-- Vista Móvil: Accordion desplegable -->
+  <!-- Vista Móvil: Accordion -->
   <div class="md:hidden space-y-3">
     @for (quote of quotes(); track quote._id || $index) {
-      <div
-        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
-      >
-        <!-- Header del accordion (siempre visible) -->
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
         <button
           type="button"
-          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+          class="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors focus:outline-none"
           (click)="toggleRow(quote._id)"
         >
           <div class="flex-1 text-left min-w-0 pr-4">
-            <div
-              class="font-mono text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded inline-block mb-1"
-            >
+            <span class="font-mono text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded inline-block mb-1.5">
               {{ quote.number }}
-            </div>
-            <div class="font-semibold text-gray-900 dark:text-gray-100 truncate mt-2">
-              {{ getClientName(quote.clientId) }}
-            </div>
-            <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-              {{ getProjectName(quote.projectId) }}
-            </div>
+            </span>
+            <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ getClientName(quote.clientId) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{{ getProjectName(quote.projectId) }}</p>
             <div class="mt-2">
-              <p-tag
-                [value]="quote.state"
-                [severity]="getStateSeverity(quote.state)"
-                [class]="getStateClass(quote.state)"
-              ></p-tag>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ getStateClass(quote.state) }}">
+                {{ quote.state }}
+              </span>
             </div>
           </div>
-          <div class="flex-shrink-0">
-            <i
-              class="pi transition-transform duration-200 text-gray-500 dark:text-gray-400"
-              [class.pi-chevron-down]="!isRowExpanded(quote._id)"
-              [class.pi-chevron-up]="isRowExpanded(quote._id)"
-            ></i>
-          </div>
+          <i class="pi text-gray-400 flex-shrink-0" [class.pi-chevron-down]="!isRowExpanded(quote._id)" [class.pi-chevron-up]="isRowExpanded(quote._id)"></i>
         </button>
 
-        <!-- Contenido del accordion (desplegable) -->
         @if (isRowExpanded(quote._id)) {
-          <div class="border-t border-gray-200 dark:border-gray-700 animate-fade-in">
-            <div class="px-4 py-4 space-y-4">
-              <!-- Número -->
-              <div>
-                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Número
-                </div>
-                <div
-                  class="font-mono text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded inline-block"
-                >
-                  {{ quote.number }}
-                </div>
+          <div class="border-t border-gray-100 dark:border-gray-700 px-4 py-4 space-y-3">
+            @if (quote.createDate) {
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Fecha creación</span>
+                <span class="font-medium text-gray-900 dark:text-gray-100">{{ quote.createDate | date: 'dd/MM/yyyy' }}</span>
               </div>
-
-              <!-- Cliente -->
-              <div>
-                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Cliente
-                </div>
-                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words">
-                  {{ getClientName(quote.clientId) }}
-                </div>
+            }
+            @if (quote.grandTotalQuote) {
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Total</span>
+                <span class="font-semibold text-gray-900 dark:text-gray-100">S/ {{ quote.grandTotalQuote | number: '1.2-2' }}</span>
               </div>
+            }
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-500">Documentos</span>
+              <span class="text-gray-700 dark:text-gray-300">{{ quote.documents?.length || 0 }}</span>
+            </div>
 
-              <!-- Proyecto -->
-              <div>
-                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Proyecto
-                </div>
-                <div class="text-sm text-gray-900 dark:text-gray-100 break-words">
-                  {{ getProjectName(quote.projectId) }}
-                </div>
-              </div>
-
-              <!-- Estado -->
-              <div>
-                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Estado
-                </div>
-                <div>
-                  <p-tag
-                    [value]="quote.state"
-                    [severity]="getStateSeverity(quote.state)"
-                    [class]="getStateClass(quote.state)"
-                  ></p-tag>
-                </div>
-              </div>
-
-              <!-- Fecha Creación -->
-              @if (quote.createDate) {
-                <div>
-                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                    Fecha Creación
-                  </div>
-                  <div class="text-sm text-gray-900 dark:text-gray-100">
-                    {{ quote.createDate | date: 'dd/MM/yyyy' }}
-                  </div>
-                </div>
+            <div class="pt-2 flex flex-wrap gap-2">
+              <button type="button" (click)="openPdf(quote)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+                <i class="pi pi-file-pdf text-xs"></i> Documento
+              </button>
+              <button type="button" (click)="viewDetails(quote)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+                <i class="pi pi-eye text-xs"></i> Detalles
+              </button>
+              @if (canEdit()) {
+                <button type="button" (click)="cloneQuote(quote)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors">
+                  <i class="pi pi-copy text-xs"></i> Clonar
+                </button>
+                <button type="button" (click)="editQuote(quote)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors">
+                  <i class="pi pi-pencil text-xs"></i> Editar
+                </button>
+                <button type="button" (click)="deleteQuote(quote)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                  <i class="pi pi-trash text-xs"></i> Eliminar
+                </button>
               }
-
-              <!-- Fecha Envío -->
-              @if (quote.sendDate) {
-                <div>
-                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                    Fecha Envío
-                  </div>
-                  <div class="text-sm text-gray-900 dark:text-gray-100">
-                    {{ quote.sendDate | date: 'dd/MM/yyyy' }}
-                  </div>
-                </div>
-              }
-
-              <!-- Total -->
-              @if (quote.total) {
-                <div>
-                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                    Total
-                  </div>
-                  <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    ${{ quote.total | number: '1.2-2' }}
-                  </div>
-                </div>
-              }
-
-              <!-- Documentos -->
-              <div>
-                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Documentos
-                </div>
-                <div class="text-sm text-gray-600 dark:text-gray-400">
-                  {{ quote.documents.length || 0 }} documentos
-                </div>
-              </div>
-
-              <!-- Acciones -->
-              <div>
-                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-                  Acciones
-                </div>
-                <div class="flex flex-col gap-2 items-start">
-                  <button
-                    pButton
-                    icon="pi pi-file-pdf"
-                    label="Ver documento"
-                    class="p-button-text p-button-sm"
-                    (click)="openPdf(quote)"
-                    aria-label="Ver documento PDF"
-                  ></button>
-                  <button
-                    pButton
-                    icon="pi pi-eye"
-                    label="Ver detalles"
-                    class="p-button-text p-button-sm"
-                    (click)="viewDetails(quote)"
-                    aria-label="Ver detalles de la cotización"
-                  ></button>
-                  <button
-                    pButton
-                    icon="pi pi-cog"
-                    label="Cambiar estado"
-                    class="p-button-text p-button-sm"
-                    (click)="stateMenu.toggle($event)"
-                    aria-label="Cambiar estado de la cotización"
-                  ></button>
-                  @if (canEdit()) {
-                    <button
-                      pButton
-                      icon="pi pi-pencil"
-                      label="Editar"
-                      class="p-button-text p-button-sm"
-                      (click)="editQuote(quote)"
-                      aria-label="Editar cotización"
-                    ></button>
-                    <button
-                      pButton
-                      icon="pi pi-trash"
-                      label="Eliminar"
-                      class="p-button-text p-button-sm p-button-danger"
-                      (click)="deleteQuote(quote)"
-                      aria-label="Eliminar cotización"
-                    ></button>
-                  }
-                </div>
-              </div>
             </div>
           </div>
         }
 
-        <!-- Menu de estado (oculto pero necesario para el botón) -->
         <p-menu
           #stateMenu
           [model]="getStateMenuItems(quote)"
           [popup]="true"
           [appendTo]="'body'"
-          [baseZIndex]="1000"
           [autoZIndex]="true"
           [showTransitionOptions]="'0ms'"
           [hideTransitionOptions]="'0ms'"
-          styleClass="p-menu-sm"
         ></p-menu>
       </div>
     }
 
-    <!-- Estado vacío móvil -->
     @if (!loading() && quotes().length === 0) {
-      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-        <i class="pi pi-inbox text-4xl mb-2"></i>
-        <p>No se encontraron cotizaciones</p>
+      <div class="text-center py-12 text-gray-400">
+        <i class="pi pi-inbox text-4xl mb-2 block"></i>
+        <p class="text-sm">No se encontraron cotizaciones</p>
       </div>
     }
 
-    <!-- Estado de carga móvil -->
     @if (loading()) {
       <div class="flex justify-center items-center py-12">
-        <div class="flex flex-col items-center space-y-2">
-          <i class="pi pi-spin pi-spinner text-4xl text-blue-600"></i>
-          <p class="text-gray-600">Cargando cotizaciones...</p>
-        </div>
+        <i class="pi pi-spin pi-spinner text-4xl text-blue-600"></i>
       </div>
     }
   </div>
 
-  <!-- Modal de edición/creación -->
-  <p-dialog
-    [(visible)]="showDialog"
-    [modal]="true"
-    [style]="{ width: '95vw', maxWidth: '60rem', maxHeight: '90vh' }"
-    [draggable]="false"
-    [resizable]="false"
-    [closable]="true"
-    [maximizable]="true"
-    [contentStyle]="{ overflow: 'auto', maxHeight: 'calc(90vh - 120px)' }"
-  >
-    <ng-template pTemplate="header">
-      <div class="flex items-center gap-2">
-        <i class="pi pi-file-edit text-xl"></i>
-        <span class="text-xl font-semibold">
-          {{ editing()?._id ? 'Editar Cotización' : 'Nueva Cotización' }}
-        </span>
-      </div>
-    </ng-template>
-
-    <form [formGroup]="quoteForm" class="space-y-6">
-      <!-- Información básica -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label
-            for="clientSelect"
-            class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-            >Cliente *</label
-          >
-          <p-select
-            id="clientSelect"
-            [options]="clients()"
-            optionLabel="name"
-            optionValue="_id"
-            formControlName="clientId"
-            placeholder="Seleccionar cliente"
-            [showClear]="true"
-            [appendTo]="'body'"
-            class="w-full"
-          ></p-select>
-        </div>
-
-        <div>
-          <label
-            for="projectSelect"
-            class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-            >Proyecto *</label
-          >
-          <p-select
-            id="projectSelect"
-            [options]="projects()"
-            optionLabel="name"
-            optionValue="_id"
-            formControlName="projectId"
-            placeholder="Seleccionar proyecto"
-            [showClear]="true"
-            [appendTo]="'body'"
-            [filter]="true"
-            filterPlaceholder="Buscar proyecto..."
-            class="w-full"
-            styleClass="w-full"
-          >
-            <ng-template let-project pTemplate="item">
-              <span class="truncate block max-w-full" [title]="project.name">
-                {{ project.name | truncate: 40 }}
-              </span>
-            </ng-template>
-          </p-select>
-        </div>
-
-        <div>
-          <label
-            for="requirementSelect"
-            class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-            >Requerimiento</label
-          >
-          <p-select
-            id="requirementSelect"
-            [options]="requirements()"
-            optionLabel="codigo"
-            optionValue="_id"
-            formControlName="requirementId"
-            placeholder="Seleccionar requerimiento"
-            [showClear]="true"
-            [appendTo]="'body'"
-            [filter]="true"
-            filterPlaceholder="Buscar requerimiento..."
-            class="w-full"
-            styleClass="w-full"
-          >
-            <ng-template let-requirement pTemplate="item">
-              <div class="flex flex-col">
-                <span class="font-semibold">{{ requirement.codigo }}</span>
-                <span class="text-xs text-gray-500 truncate">{{ requirement.title }}</span>
-              </div>
-            </ng-template>
-            <ng-template let-requirement pTemplate="selectedItem">
-              <span>{{ requirement.codigo }}</span>
-            </ng-template>
-          </p-select>
-        </div>
-      </div>
-
-      <!-- Estado y fechas -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label
-            for="stateSelect"
-            class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-            >Estado</label
-          >
-          <p-select
-            id="stateSelect"
-            [options]="stateOptions"
-            optionLabel="label"
-            optionValue="value"
-            formControlName="state"
-            placeholder="Seleccionar estado"
-            [appendTo]="'body'"
-            class="w-full"
-          ></p-select>
-        </div>
-
-        <div>
-          <label
-            for="createDate"
-            class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-            >Fecha Creación *</label
-          >
-          <p-datepicker
-            id="createDate"
-            formControlName="createDate"
-            dateFormat="dd/mm/yy"
-            placeholder="Seleccionar fecha"
-            [appendTo]="'body'"
-            iconDisplay="input"
-            [showClear]="true"
-            class="w-full"
-            inputStyleClass="w-full sm:w-auto"
-          ></p-datepicker>
-        </div>
-
-        <div>
-          <label for="sendDate" class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-            >Fecha Envío</label
-          >
-          <p-datepicker
-            id="sendDate"
-            formControlName="sendDate"
-            dateFormat="dd/mm/yy"
-            placeholder="Seleccionar fecha"
-            [appendTo]="'body'"
-            iconDisplay="input"
-            [showClear]="true"
-            class="w-full"
-            inputStyleClass="w-full sm:w-auto"
-          ></p-datepicker>
-        </div>
-      </div>
-
-      <!-- Notas -->
-      <div>
-        <label
-          for="notesTextarea"
-          class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-          >Notas</label
-        >
-        <textarea
-          id="notesTextarea"
-          pTextarea
-          formControlName="notes"
-          placeholder="Notas adicionales sobre la cotización"
-          rows="3"
-          class="w-full"
-        ></textarea>
-      </div>
-
-      <!-- Subida de documentos -->
-      <div>
-        <label
-          for="documentsUpload"
-          class="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-          >Documentos</label
-        >
-        <p-fileUpload
-          #fileUpload
-          id="documentsUpload"
-          mode="basic"
-          name="files[]"
-          [maxFileSize]="52428800"
-          [multiple]="true"
-          chooseLabel="Seleccionar archivos"
-          (onSelect)="onFileSelect($event)"
-          (onError)="onFileError($event)"
-          class="w-full"
-        ></p-fileUpload>
-        <small class="text-gray-500"
-          >Se aceptan todos los tipos de archivo. Máximo 50MB por archivo.</small
-        >
-
-        <!-- Documentos existentes (solo al editar) -->
-        @if (editing() && existingDocuments().length > 0) {
-          <div class="mt-3 space-y-2">
-            <p class="text-sm font-medium text-gray-700 dark:text-white">Documentos existentes:</p>
-            <div class="space-y-1">
-              @for (doc of existingDocuments(); track $index) {
-                <div
-                  class="flex flex-col sm:flex-row sm:items-center justify-between bg-blue-50 px-3 py-2 rounded-md min-w-0 gap-2"
-                >
-                  <div class="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
-                    <i class="pi pi-file text-blue-500 flex-shrink-0"></i>
-                    <span class="text-sm text-gray-700 break-words flex-1 min-w-0">{{
-                      getDocumentName(doc)
-                    }}</span>
-                    <span
-                      class="text-xs text-gray-500 dark:text-white whitespace-nowrap flex-shrink-0"
-                      >(Documento existente)</span
-                    >
-                  </div>
-                  <div class="flex gap-1 flex-shrink-0 self-end sm:self-auto">
-                    <button
-                      type="button"
-                      pButton
-                      icon="pi pi-eye"
-                      class="p-button-text p-button-sm"
-                      (click)="openDocument(doc)"
-                      pTooltip="Ver documento"
-                      tooltipPosition="top"
-                      aria-label="Ver documento"
-                    ></button>
-                    <button
-                      type="button"
-                      pButton
-                      icon="pi pi-times"
-                      class="p-button-text p-button-sm p-button-danger"
-                      (click)="removeExistingDocument($index)"
-                      pTooltip="Eliminar documento"
-                      tooltipPosition="top"
-                      aria-label="Eliminar documento"
-                    ></button>
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        }
-
-        <!-- Lista de archivos seleccionados -->
-        @if (selectedFiles().length > 0) {
-          <div class="mt-3 space-y-2">
-            <p class="text-sm font-medium text-gray-700">Archivos seleccionados:</p>
-            <div class="space-y-1">
-              @for (file of selectedFiles(); track $index) {
-                <div
-                  class="flex items-center justify-between flex-wrap bg-gray-50 px-3 py-2 rounded-md gap-2"
-                >
-                  <div class="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
-                    <i class="pi pi-file text-gray-500"></i>
-                    <span class="text-sm text-gray-700">{{ file.name }}</span>
-                    <span class="text-xs text-gray-500"
-                      >({{ (file.size / 1024 / 1024).toFixed(2) }} MB)</span
-                    >
-                  </div>
-                  <button
-                    type="button"
-                    pButton
-                    icon="pi pi-times"
-                    class="p-button-text p-button-sm p-button-danger flex-shrink-0 self-end sm:self-auto"
-                    (click)="removeSelectedFile($index)"
-                    pTooltip="Eliminar archivo"
-                    tooltipPosition="top"
-                    aria-label="Eliminar archivo"
-                  ></button>
-                </div>
-              }
-            </div>
-          </div>
-        }
-      </div>
-    </form>
-
-    <ng-template pTemplate="footer">
-      <div class="flex gap-2 justify-end">
-        <button
-          pButton
-          label="Cancelar"
-          class="p-button-text"
-          (click)="closeDialog()"
-          aria-label="Cancelar"
-        ></button>
-        <button
-          pButton
-          label="Guardar"
-          class="p-button-primary"
-          (click)="saveQuote()"
-          [disabled]="quoteForm.invalid"
-          aria-label="Guardar cotización"
-        ></button>
-      </div>
-    </ng-template>
-  </p-dialog>
-
-  <!-- Modal de detalles de la cotización -->
-  <p-dialog
-    [(visible)]="showDetailsDialog"
-    [modal]="true"
-    [style]="{ width: '50rem' }"
-    [draggable]="false"
-    [resizable]="false"
-    [closable]="true"
-  >
-    <ng-template pTemplate="header">
-      <div class="flex items-center gap-2">
-        <i class="pi pi-eye text-blue-500"></i>
-        Detalles de la Cotización — {{ viewingQuote()?.number }}
-      </div>
-    </ng-template>
-    @if (viewingQuote()) {
-      <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
-        <!-- Información básica -->
-        <div class="mb-6">
-          <h3
-            class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-          >
-            <i class="pi pi-info-circle text-blue-500"></i>
-            Información Básica
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >Número</span
-              >
-              <div
-                class="text-gray-900 dark:text-gray-100 font-mono font-medium bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
-              >
-                {{ viewingQuote()?.number }}
-              </div>
-            </div>
-            <div>
-              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >Estado</span
-              >
-              <div class="text-gray-900 dark:text-gray-100">
-                <p-tag
-                  [value]="viewingQuote()?.state"
-                  [severity]="getStateSeverity(viewingQuote()?.state ?? 'Pendiente')"
-                ></p-tag>
-              </div>
-            </div>
-            <div>
-              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >Cliente</span
-              >
-              <div class="text-gray-900 dark:text-gray-100 font-medium">
-                {{ getClientName(viewingQuote()?.clientId ?? '') }}
-              </div>
-            </div>
-            <div>
-              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >Proyecto</span
-              >
-              <div class="text-gray-900 dark:text-gray-100">
-                {{ getProjectName(viewingQuote()?.projectId ?? '') }}
-              </div>
-            </div>
-            <div>
-              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >Fecha de Creación</span
-              >
-              <div class="text-gray-900 dark:text-gray-100">
-                {{ viewingQuote()?.createDate | date: 'dd/MM/yyyy' }}
-              </div>
-            </div>
-            @if (viewingQuote()?.expirationDate) {
-              <div>
-                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >Fecha de Vencimiento</span
-                >
-                <div class="text-gray-900 dark:text-gray-100">
-                  {{ viewingQuote()?.expirationDate | date: 'dd/MM/yyyy' }}
-                </div>
-              </div>
-            }
-            @if (viewingQuote()?.total) {
-              <div>
-                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >Total</span
-                >
-                <div class="text-gray-900 dark:text-gray-100 font-semibold text-lg">
-                  ${{ viewingQuote()?.total | number: '1.2-2' }}
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-
-        <!-- Notas -->
-        @if (viewingQuote()?.notes) {
-          <div class="mb-6">
-            <h3
-              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-            >
-              <i class="pi pi-file-edit text-green-500"></i>
-              Notas
-            </h3>
-            <div
-              class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-white dark:bg-gray-700 p-4 rounded border"
-            >
-              {{ viewingQuote()?.notes }}
-            </div>
-          </div>
-        }
-
-        <!-- Documentos -->
-        @if (viewingQuote()?.documents?.length) {
-          <div>
-            <h3
-              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-            >
-              <i class="pi pi-file text-indigo-500"></i>
-              Documentos Adjuntos ({{ viewingQuote()?.documents?.length }})
-            </h3>
-            <div class="space-y-2">
-              @for (document of viewingQuote()?.documents; track document) {
-                <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded border">
-                  <i class="pi pi-file text-gray-500"></i>
-                  <a
-                    [href]="document"
-                    target="_blank"
-                    class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
-                  >
-                    <i class="pi pi-external-link text-xs"></i>
-                    Ver documento
-                  </a>
-                </div>
-              }
-            </div>
-          </div>
-        } @else {
-          <div>
-            <h3
-              class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"
-            >
-              <i class="pi pi-file text-indigo-500"></i>
-              Documentos Adjuntos
-            </h3>
-            <div class="text-gray-500 dark:text-gray-400">No hay documentos adjuntos</div>
-          </div>
-        }
-      </div>
-    }
-    <ng-template pTemplate="footer">
-      <button
-        pButton
-        label="Cerrar"
-        class="p-button-text"
-        (click)="closeDetails()"
-        aria-label="Cerrar"
-      ></button>
-    </ng-template>
-  </p-dialog>
+  <router-outlet></router-outlet>
 </div>

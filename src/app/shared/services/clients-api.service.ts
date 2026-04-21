@@ -11,6 +11,7 @@ export class ClientsApiService {
     private readonly baseUrl = environment.apiUrl;
 
     list() { return this.http.get<ClientOption[]>(`${this.baseUrl}/clients`); }
+    getById(id: string) { return this.http.get<ClientOption>(`${this.baseUrl}/clients/${id}`); }
     create(payload: CreateClientRequest) { return this.http.post<ClientOption>(`${this.baseUrl}/clients`, payload); }
 }
 

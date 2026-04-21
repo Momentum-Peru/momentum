@@ -1,0 +1,178 @@
+// ── Token de label estándar ──────────────────────────────────────
+.f-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgb(107 114 128);          // text-gray-500
+  margin-bottom: 0.25rem;           // mb-1
+}
+
+:host-context(.dark) .f-label {
+  color: rgb(156 163 175);          // dark:text-gray-400
+}
+
+// ── Input nativo estándar ────────────────────────────────────────
+.f-input {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;          // py-2 px-3
+  font-size: 0.875rem;              // text-sm
+  line-height: 1.25rem;
+  color: rgb(17 24 39);             // text-gray-900
+  background-color: #ffffff;
+  border: 1px solid rgb(209 213 219); // border-gray-300
+  border-radius: 0.5rem;            // rounded-lg
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &::placeholder {
+    color: rgb(156 163 175);        // placeholder-gray-400
+  }
+
+  &:focus {
+    box-shadow: 0 0 0 2px rgb(59 130 246 / 0.5); // ring-blue-500
+    border-color: rgb(59 130 246);
+  }
+}
+
+:host-context(.dark) .f-input {
+  color: rgb(243 244 246);          // dark:text-gray-100
+  background-color: rgb(31 41 55);  // dark:bg-gray-800
+  border-color: rgb(75 85 99);      // dark:border-gray-600
+}
+
+.f-input-center {
+  @extend .f-input;
+  text-align: center;
+}
+
+// ── Botón eliminar fila ──────────────────────────────────────────
+.btn-delete {
+  align-self: flex-end;
+  flex-shrink: 0;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  color: rgb(248 113 113);          // text-red-400
+  transition: background-color 0.15s, color 0.15s;
+
+  &:hover {
+    color: rgb(220 38 38);          // text-red-600
+    background-color: rgb(254 242 242); // bg-red-50
+  }
+}
+
+:host-context(.dark) .btn-delete:hover {
+  background-color: rgb(127 29 29 / 0.2); // dark:bg-red-900/20
+}
+
+// ── Fila de campos de costo ──────────────────────────────────────
+.cost-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;                     // gap-3
+
+  @media (min-width: 768px) {       // md
+    flex-wrap: nowrap;
+  }
+}
+
+.cost-row-lg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+
+  @media (min-width: 1024px) {      // lg
+    flex-wrap: nowrap;
+  }
+}
+
+// ── Botón agregar ítem ───────────────────────────────────────────
+.btn-add-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgb(37 99 235);            // text-blue-600
+  border-radius: 0.5rem;
+  transition: background-color 0.15s;
+
+  &:hover {
+    background-color: rgb(239 246 255); // bg-blue-50
+  }
+}
+
+:host-context(.dark) .btn-add-item {
+  color: rgb(96 165 250);           // dark:text-blue-400
+
+  &:hover {
+    background-color: rgb(29 78 216 / 0.2); // dark:bg-blue-900/20
+  }
+}
+
+// ── Botón agregar grupo ──────────────────────────────────────────
+.btn-add-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(37 99 235);
+  border: 1px solid rgb(59 130 246);
+  border-radius: 0.5rem;
+  transition: background-color 0.15s;
+
+  &:hover {
+    background-color: rgb(239 246 255);
+  }
+}
+
+:host-context(.dark) .btn-add-group {
+  color: rgb(96 165 250);
+  border-color: rgb(96 165 250);
+
+  &:hover {
+    background-color: rgb(29 78 216 / 0.2);
+  }
+}
+
+// ── Grupo de costo (card interna) ────────────────────────────────
+.cost-group {
+  background-color: rgb(249 250 251); // bg-gray-50
+  border: 1px solid rgb(229 231 235); // border-gray-200
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+:host-context(.dark) .cost-group {
+  background-color: rgb(55 65 81 / 0.4); // dark:bg-gray-700/40
+  border-color: rgb(75 85 99);           // dark:border-gray-600
+}
+
+// ── Input título de grupo ────────────────────────────────────────
+.group-title-input {
+  flex: 1;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgb(209 213 219);
+  color: rgb(17 24 39);
+  padding: 0.25rem 0;
+  outline: none;
+  margin-right: 1rem;
+
+  &::placeholder { color: rgb(156 163 175); }
+  &:focus { border-bottom-color: rgb(59 130 246); }
+}
+
+:host-context(.dark) .group-title-input {
+  color: rgb(243 244 246);
+  border-bottom-color: rgb(107 114 128);
+}

@@ -41,6 +41,10 @@ export class QuotesApiService {
     return this.http.post<Quote>(`${this.baseUrl}/quotes`, quote);
   }
 
+  calculate(quote: Partial<Quote>): Observable<Quote> {
+    return this.http.post<Quote>(`${this.baseUrl}/quotes/calculate`, quote);
+  }
+
   update(id: string, quote: Partial<Quote>): Observable<Quote> {
     return this.http.patch<Quote>(`${this.baseUrl}/quotes/${id}`, quote);
   }
@@ -89,6 +93,10 @@ export class QuotesApiService {
     return this.http.delete<Quote>(
       `${this.baseUrl}/quotes/${id}/documents?url=${encodeURIComponent(documentUrl)}`
     );
+  }
+
+  clone(id: string): Observable<Quote> {
+    return this.http.post<Quote>(`${this.baseUrl}/quotes/${id}/clone`, {});
   }
 
   generatePdf(id: string): string {

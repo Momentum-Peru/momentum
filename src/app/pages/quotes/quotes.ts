@@ -6,21 +6,9 @@ import {
   computed,
   effect,
   OnInit,
-  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
-import { ButtonModule } from 'primeng/button';
-import { TableModule } from 'primeng/table';
-import { DialogModule } from 'primeng/dialog';
-import { SelectModule } from 'primeng/select';
-import { DatePickerModule } from 'primeng/datepicker';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { TextareaModule } from 'primeng/textarea';
-import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
-import { FileUploadModule, FileUpload } from 'primeng/fileupload';
+import { FormsModule, ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { MenuModule } from 'primeng/menu';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
@@ -41,7 +29,7 @@ import { TruncatePipe } from './truncate.pipe';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { MenuService } from '../../shared/services/menu.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-quotes',
@@ -50,21 +38,10 @@ import { ActivatedRoute } from '@angular/router';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    InputTextModule,
-    ButtonModule,
-    TableModule,
-    DialogModule,
-    SelectModule,
-    DatePickerModule,
-    InputNumberModule,
-    TextareaModule,
-    TagModule,
-    TooltipModule,
-    FileUploadModule,
     MenuModule,
     ToastModule,
     ConfirmDialogModule,
-    TruncatePipe,
+    RouterModule,
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './quotes.html',
@@ -82,12 +59,15 @@ export class QuotesPage implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
+  getPageEnd(): number {
+    const p = this.pagination();
+    return Math.min(p.page * p.limit, p.total);
+  }
 
   // Verificar si el usuario tiene permiso de edición para este módulo
   readonly canEdit = computed(() => this.menuService.canEdit('/quotes'));
-
-  // Referencia al componente FileUpload
-  @ViewChild('fileUpload') fileUploadComponent!: FileUpload;
 
   // Signals para estado
   quotes = signal<Quote[]>([]);
@@ -110,15 +90,9 @@ export class QuotesPage implements OnInit {
   existingDocuments = signal<string[]>([]);
   expandedRows = signal<Set<string>>(new Set());
 
-  // Formulario reactivo
+  // Formulario reactivo para archivos/estados en la lista (si fuera necesario)
+  // Aunque ahora mayormente se usa en el form component, algunos métodos locales lo referencian
   quoteForm = this.fb.group({
-    clientId: ['', Validators.required],
-    projectId: ['', Validators.required],
-    requirementId: [''],
-    state: ['Pendiente' as QuoteState],
-    createDate: [new Date(), Validators.required],
-    sendDate: [null as Date | null],
-    notes: [''],
     documents: [[] as string[]],
   });
 
@@ -132,51 +106,12 @@ export class QuotesPage implements OnInit {
     { label: 'Aprobada', value: 'Aprobada' as QuoteState },
   ];
 
-  // Método para calcular el total - REMOVIDO: Ya no se manejan items
-  // calculateTotal() {
-  //   const items = this.quoteForm.get('items')?.value || [];
-  //   const total = items.reduce((sum: number, item: any) => {
-  //     const qty = Number(item.qty) || 0;
-  //     const price = Number(item.price) || 0;
-  //     return sum + qty * price;
-  //   }, 0);
-  //   this.total.set(total);
-  //   return total;
-  // }
-
   // Computed para items del formulario - REMOVIDO: Ya no se manejan items
   // get itemsFormArray() {
   //   return this.quoteForm.get('items') as FormArray;
   // }
 
   constructor() {
-    // Efecto para manejar el cierre del diálogo
-    effect(() => {
-      if (!this.showDialog()) {
-        this.editing.set(null);
-        this.selectedFiles.set([]);
-        this.existingDocuments.set([]);
-        this.quoteForm.reset({
-          clientId: '',
-          projectId: '',
-          requirementId: '',
-          state: 'Pendiente',
-          createDate: new Date(),
-          sendDate: null,
-          notes: '',
-          documents: [],
-        });
-
-        // Limpiar el componente FileUpload cuando se cierra el diálogo
-        // Usar setTimeout para asegurar que el componente esté disponible
-        setTimeout(() => {
-          if (this.fileUploadComponent) {
-            this.fileUploadComponent.clear();
-          }
-        }, 0);
-      }
-    });
-
     // Efecto para manejar el cierre del diálogo de detalles
     effect(() => {
       if (!this.showDetailsDialog()) {
@@ -313,72 +248,58 @@ export class QuotesPage implements OnInit {
   }
 
   newQuote() {
-    // Limpiar todos los estados relacionados
-    this.editing.set(null);
-    this.selectedFiles.set([]);
-    this.existingDocuments.set([]);
-
-    // Resetear el formulario con valores por defecto limpios
-    this.quoteForm.reset({
-      clientId: '',
-      projectId: '',
-      requirementId: '',
-      state: 'Pendiente',
-      createDate: new Date(),
-      sendDate: null,
-      notes: '',
-      documents: [],
-    });
-
-    // Marcar todos los campos como no tocados para limpiar estados de validación
-    this.quoteForm.markAsUntouched();
-    this.quoteForm.markAsPristine();
-
-    // Abrir el diálogo
-    this.showDialog.set(true);
-
-    // Limpiar el componente FileUpload después de que el diálogo se abra
-    // Usar setTimeout para asegurar que el componente esté disponible en el DOM
-    setTimeout(() => {
-      if (this.fileUploadComponent) {
-        this.fileUploadComponent.clear();
-      }
-    }, 0);
+    this.router.navigate(['./new'], { relativeTo: this.route });
   }
 
   editQuote(quote: Quote) {
-    this.editing.set(quote);
-    this.selectedFiles.set([]); // Limpiar archivos seleccionados al editar
+    this.router.navigate(['./edit', quote._id], { relativeTo: this.route });
+  }
 
-    // Convertir clientId y projectId si vienen como objetos
-    const clientId = typeof quote.clientId === 'object' ? quote.clientId._id : quote.clientId;
-    const projectId = typeof quote.projectId === 'object' ? quote.projectId._id : quote.projectId;
-    const requirementId =
-      quote.requirementId && typeof quote.requirementId === 'object'
-        ? quote.requirementId._id
-        : (quote.requirementId as string | undefined) || '';
-
-    // Asegurar que los documentos estén disponibles
-    const documents = quote.documents || [];
-
-    // Cargar documentos existentes
-    this.existingDocuments.set(documents);
-
-    this.quoteForm.patchValue({
-      clientId,
-      projectId,
-      requirementId,
-      state: quote.state,
-      createDate: new Date(quote.createDate),
-      sendDate: quote.sendDate ? new Date(quote.sendDate) : null,
-      notes: quote.notes || '',
-      documents: documents,
+  cloneQuote(quote: Quote) {
+    this.loading.set(true);
+    this.quotesApi.getById(quote._id!).subscribe({
+      next: (fullQuote) => {
+        const cloneData: Partial<Quote> = {
+          clientId: typeof fullQuote.clientId === 'object' ? fullQuote.clientId._id : fullQuote.clientId,
+          projectId: typeof fullQuote.projectId === 'object' ? fullQuote.projectId._id : fullQuote.projectId,
+          state: 'Pendiente',
+          createDate: new Date(),
+          location: fullQuote.location,
+          area: fullQuote.area,
+          notes: fullQuote.notes,
+          costs: fullQuote.costs,
+          items: fullQuote.items,
+          documents: [],
+          includeExpenses: fullQuote.includeExpenses,
+          includeIgv: fullQuote.includeIgv,
+          percentageGeneralExpenses: fullQuote.percentageGeneralExpenses,
+          percentageAccommodationFood: fullQuote.percentageAccommodationFood,
+          percentageUtilities: fullQuote.percentageUtilities,
+          clientCompliance: fullQuote.clientCompliance,
+          coordCompliance: fullQuote.coordCompliance,
+          tecmeingCompliance: fullQuote.tecmeingCompliance,
+        };
+        this.quotesApi.create(cloneData).subscribe({
+          next: (created) => {
+            this.loading.set(false);
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Cotización Clonada',
+              detail: `Nueva cotización #${created.number} creada exitosamente`,
+            });
+            this.router.navigate(['./edit', created._id], { relativeTo: this.route });
+          },
+          error: () => {
+            this.loading.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo clonar la cotización' });
+          },
+        });
+      },
+      error: () => {
+        this.loading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar la cotización' });
+      },
     });
-
-    // Asegurar que el objeto de edición tenga los documentos
-    this.editing.update((quote) => (quote ? { ...quote, documents } : null));
-
-    this.showDialog.set(true);
   }
 
   closeDialog() {
@@ -386,8 +307,7 @@ export class QuotesPage implements OnInit {
   }
 
   viewDetails(quote: Quote) {
-    this.viewingQuote.set(quote);
-    this.showDetailsDialog.set(true);
+    this.router.navigate(['./', quote._id], { relativeTo: this.route });
   }
 
   closeDetails() {
@@ -418,130 +338,15 @@ export class QuotesPage implements OnInit {
   //   setTimeout(() => this.calculateTotal(), 0);
   // }
 
-  saveQuote() {
-    if (this.quoteForm.invalid) {
-      const validationErrors = this.validateForm();
-      validationErrors.forEach((error) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error de validación',
-          detail: error,
-        });
-      });
-      return;
-    }
-
-    const formValue = this.quoteForm.value;
-    const quoteData: Partial<Quote & { requirementId?: string }> = {
-      clientId: formValue.clientId!,
-      projectId: formValue.projectId!,
-      requirementId: formValue.requirementId || undefined,
-      state: formValue.state!,
-      createDate: formValue.createDate!.toISOString(),
-      sendDate: formValue.sendDate?.toISOString(),
-      notes: formValue.notes || undefined,
-    };
-
-    const filesToUpload = this.selectedFiles();
-    const isEditing = !!this.editing()?._id;
-
-    // Si estamos creando y hay archivos, primero crear la cotización y luego subir los archivos
-    if (!isEditing && filesToUpload.length > 0) {
-      this.quotesApi.create(quoteData).subscribe({
-        next: (savedQuote) => {
-          // Subir archivos después de crear
-          this.quotesApi.uploadDocuments(savedQuote._id!, filesToUpload).subscribe({
-            next: () => {
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Éxito',
-                detail: 'Cotización creada y documentos subidos correctamente',
-              });
-              this.closeDialog();
-              this.loadQuotes();
-            },
-            error: (uploadError) => {
-              console.error('Error uploading files:', uploadError);
-              this.messageService.add({
-                severity: 'warn',
-                summary: 'Advertencia',
-                detail: 'Cotización creada pero hubo un error al subir algunos documentos',
-              });
-              this.closeDialog();
-              this.loadQuotes();
-            },
-          });
-        },
-        error: (error) => {
-          console.error('Error saving quote:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: this.getErrorMessage(error),
-          });
-        },
-      });
+  openPdf(quote: Quote) {
+    // Si hay documentos subidos, abrir el primero
+    if (quote.documents && quote.documents.length > 0) {
+      const firstDocument = quote.documents[0];
+      window.open(firstDocument, '_blank');
     } else {
-      // Si estamos editando o no hay archivos, usar el flujo normal
-      const operation = isEditing
-        ? this.quotesApi.update(this.editing()!._id!, quoteData)
-        : this.quotesApi.create(quoteData);
-
-      operation.subscribe({
-        next: (savedQuote) => {
-          // Si hay archivos seleccionados, subirlos
-          if (filesToUpload.length > 0) {
-            const quoteId = this.editing()?._id || savedQuote._id!;
-            this.quotesApi.uploadDocuments(quoteId, filesToUpload).subscribe({
-              next: (result) => {
-                // Si estamos editando, actualizar la lista de documentos existentes
-                if (isEditing) {
-                  const newDocuments = result.documents || [];
-                  this.existingDocuments.set(newDocuments);
-                }
-
-                this.messageService.add({
-                  severity: 'success',
-                  summary: 'Éxito',
-                  detail: isEditing
-                    ? 'Cotización actualizada y documentos subidos correctamente'
-                    : 'Cotización creada y documentos subidos correctamente',
-                });
-                this.closeDialog();
-                this.loadQuotes();
-              },
-              error: (uploadError) => {
-                console.error('Error uploading files:', uploadError);
-                this.messageService.add({
-                  severity: 'warn',
-                  summary: 'Advertencia',
-                  detail: isEditing
-                    ? 'Cotización actualizada pero hubo un error al subir algunos documentos'
-                    : 'Cotización creada pero hubo un error al subir algunos documentos',
-                });
-                this.closeDialog();
-                this.loadQuotes();
-              },
-            });
-          } else {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Éxito',
-              detail: isEditing ? 'Cotización actualizada' : 'Cotización creada',
-            });
-            this.closeDialog();
-            this.loadQuotes();
-          }
-        },
-        error: (error) => {
-          console.error('Error saving quote:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: this.getErrorMessage(error),
-          });
-        },
-      });
+      // Si no hay documentos, generar el PDF de la cotización
+      const pdfUrl = this.quotesApi.generatePdf(quote._id!);
+      window.open(pdfUrl, '_blank');
     }
   }
 
@@ -594,100 +399,6 @@ export class QuotesPage implements OnInit {
     });
   }
 
-  onFileUpload(event: { files?: File[] }, quote: Quote) {
-    const files = event.files;
-    if (files && files.length > 0) {
-      this.quotesApi.uploadDocuments(quote._id!, files).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Documentos subidos correctamente',
-          });
-          this.loadQuotes();
-        },
-        error: (error) => {
-          console.error('Error uploading files:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: this.getErrorMessage(error),
-          });
-        },
-      });
-    }
-  }
-
-  openPdf(quote: Quote) {
-    // Si hay documentos subidos, abrir el primero
-    if (quote.documents && quote.documents.length > 0) {
-      const firstDocument = quote.documents[0];
-      window.open(firstDocument, '_blank');
-    } else {
-      // Si no hay documentos, generar el PDF de la cotización
-      const pdfUrl = this.quotesApi.generatePdf(quote._id!);
-      window.open(pdfUrl, '_blank');
-    }
-  }
-
-  onFileSelect(event: {
-    files?: File[] | FileList;
-    currentFiles?: File[];
-    target?: { files?: FileList };
-  }) {
-    // El p-fileUpload puede enviar los archivos en diferentes estructuras
-    let files: File[] = [];
-
-    if (event.files && Array.isArray(event.files)) {
-      files = event.files;
-    } else if (event.files instanceof FileList) {
-      // Convertir FileList a Array
-      files = Array.from(event.files);
-    } else if (event.currentFiles && Array.isArray(event.currentFiles)) {
-      files = event.currentFiles;
-    } else if (event.target && event.target.files) {
-      files = Array.from(event.target.files);
-    }
-
-    if (files && files.length > 0) {
-      // Validar tamaño de archivos (50MB máximo)
-      const maxSize = 50 * 1024 * 1024; // 50MB en bytes
-      const validFiles = files.filter((file: File) => {
-        if (file.size > maxSize) {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error de validación',
-            detail: `El archivo ${file.name} es demasiado grande. Máximo 50MB.`,
-          });
-          return false;
-        }
-        return true;
-      });
-
-      if (validFiles.length > 0) {
-        // Almacenar los archivos seleccionados
-        const currentFiles = this.selectedFiles();
-        const updatedFiles = [...currentFiles, ...validFiles];
-        this.selectedFiles.set(updatedFiles);
-
-        // Actualizar el FormControl con los nombres de archivos para mostrar en el formulario
-        const currentDocuments = this.quoteForm.get('documents')?.value || [];
-        const newDocumentNames = validFiles.map((file: File) => file.name);
-        const updatedDocuments = [...currentDocuments, ...newDocumentNames];
-
-        this.quoteForm.patchValue({
-          documents: updatedDocuments,
-        });
-
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: `${validFiles.length} archivo(s) seleccionado(s) correctamente`,
-        });
-      }
-    }
-  }
-
   onFileError(event: unknown) {
     console.error('Error en selección de archivos:', event);
     // this.messageService.add({
@@ -702,8 +413,8 @@ export class QuotesPage implements OnInit {
     const currentDocuments = this.quoteForm.get('documents')?.value || [];
 
     // Remover archivo de la lista
-    const updatedFiles = currentFiles.filter((_, i) => i !== index);
-    const updatedDocuments = currentDocuments.filter((_, i) => i !== index);
+    const updatedFiles = currentFiles.filter((_: any, i: number) => i !== index);
+    const updatedDocuments = currentDocuments.filter((_: any, i: number) => i !== index);
 
     this.selectedFiles.set(updatedFiles);
     this.quoteForm.patchValue({
