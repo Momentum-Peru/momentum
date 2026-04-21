@@ -120,9 +120,35 @@ export const routes: Routes = [
       },
       {
         path: 'quotes',
-        loadComponent: () => import('./pages/quotes/quotes').then((m) => m.QuotesPage),
         canActivate: [MenuPermissionGuard],
         data: { menuPermission: '/quotes' },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./pages/quotes/quotes').then((m) => m.QuotesPage),
+          },
+          {
+            path: 'new',
+            loadComponent: () =>
+              import('./pages/quotes/quote-form/quote-form').then(
+                (m) => m.QuoteForm,
+              ),
+          },
+          {
+            path: 'edit/:id',
+            loadComponent: () =>
+              import('./pages/quotes/quote-form/quote-form').then(
+                (m) => m.QuoteForm,
+              ),
+          },
+          {
+             path: ':id',
+             loadComponent: () => 
+               import('./pages/quotes/quote-detail/quote-detail').then(
+                 (m) => m.QuoteDetailComponent,
+               ),
+          }
+        ],
       },
       {
         path: 'orders',

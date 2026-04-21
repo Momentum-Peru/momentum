@@ -1,0 +1,675 @@
+<div class="px-4 py-6 md:px-8 space-y-6 w-full">
+  <p-toast></p-toast>
+  
+  <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
+    <div class="flex items-center gap-3 w-full">
+      <button
+        type="button"
+        (click)="goBack()"
+        class="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+      >
+        <i class="pi pi-arrow-left text-sm"></i>
+      </button>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white truncate">
+          Cotización <span class="text-blue-600 font-mono">#{{ quote()?.number }}</span>
+        </h1>
+        <p class="text-sm text-gray-500 truncate">{{ clientName() }} — {{ projectName() }}</p>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2 shrink-0">
+      <button
+        type="button"
+        (click)="exportPDF()"
+        class="inline-flex items-center gap-2 px-4 py-2 border border-red-400 text-red-600 dark:text-red-400 dark:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm font-medium transition-colors"
+      >
+        <i class="pi pi-file-pdf text-sm"></i> PDF
+      </button>
+      <button
+        type="button"
+        (click)="exportXLSX()"
+        class="inline-flex items-center gap-2 px-4 py-2 border border-green-500 text-green-700 dark:text-green-400 dark:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg text-sm font-medium transition-colors"
+      >
+        <i class="pi pi-file-excel text-sm"></i> Excel
+      </button>
+      <button
+        type="button"
+        (click)="goEdit()"
+        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+      >
+        <i class="pi pi-pencil text-sm"></i> Editar CPQ
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+     <div class="flex justify-center p-12">
+        <i class="pi pi-spin pi-spinner text-4xl text-blue-600"></i>
+     </div>
+  } @else if (quote(); as q) {
+
+     <!-- Hero Cards -->
+     <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+
+        <div class="bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-900 border border-blue-100 dark:border-blue-900/50 rounded-xl shadow-sm p-5 flex flex-col justify-between space-y-4">
+           <div>
+              <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-1 uppercase tracking-wider">Costo Directo Ejecución</p>
+              <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100">{{ (q.costs?.grandTotalCosts || 0) | currency:'PEN':'S/ ' }}</h2>
+              <p class="text-xs text-gray-500 mt-2">Sumatoria total de análisis de costos sin utilidades ni IGV.</p>
+           </div>
+           <div class="flex justify-between items-end border-t border-blue-200/50 pt-2">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Categorías de costo:</span>
+              <span class="font-mono text-sm">7 secciones</span>
+           </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-50 to-white dark:from-green-900/20 dark:to-gray-900 border border-green-100 dark:border-green-900/50 rounded-xl shadow-sm p-5 flex flex-col justify-between space-y-4">
+           <div>
+              <p class="text-xs text-green-600 dark:text-green-400 font-semibold mb-1 uppercase tracking-wider">Presupuesto Venta Cliente</p>
+              <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100">{{ (q.grandTotalQuote || 0) | currency:'PEN':'S/ ' }}</h2>
+              <p class="text-xs text-gray-500 mt-2">Monto final considerando % General, Utilidades y configuraciones.</p>
+           </div>
+           <div class="flex justify-between items-end border-t border-green-200/50 pt-2">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Rentabilidad Bruta Estimada:</span>
+              <span class="font-mono text-sm font-semibold text-green-700 dark:text-green-400">
+                 {{ ((q.grandTotalQuote || 0) - (q.costs?.grandTotalCosts || 0)) | currency:'PEN':'S/ ' }}
+              </span>
+           </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-5">
+           <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold mb-3 uppercase tracking-wider">Estado Comercial</p>
+           <div class="mb-3">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold"
+                [class.bg-green-100]="q.state === 'Aprobada'"
+                [class.text-green-800]="q.state === 'Aprobada'"
+                [class.bg-blue-100]="q.state === 'Enviada'"
+                [class.text-blue-800]="q.state === 'Enviada'"
+                [class.bg-yellow-100]="q.state === 'Pendiente' || q.state === 'Observada'"
+                [class.text-yellow-800]="q.state === 'Pendiente' || q.state === 'Observada'"
+                [class.bg-red-100]="q.state === 'Rechazada' || q.state === 'Cancelada'"
+                [class.text-red-800]="q.state === 'Rechazada' || q.state === 'Cancelada'"
+              >{{ q.state }}</span>
+           </div>
+           <div class="grid grid-cols-2 gap-y-2 text-sm">
+              <span class="text-gray-500">Creación:</span>
+              <span class="text-right font-medium text-gray-900 dark:text-white">{{ q.createDate | date:'dd/MM/yyyy' }}</span>
+              <span class="text-gray-500">Actualización:</span>
+              <span class="text-right font-medium text-gray-900 dark:text-white">{{ q.updatedAt ? (q.updatedAt | date:'dd/MM/yyyy') : '-' }}</span>
+              <span class="text-gray-500">Envío Cliente:</span>
+              <span class="text-right font-medium text-gray-900 dark:text-white">{{ q.sendDate ? (q.sendDate | date:'dd/MM/yyyy') : '-' }}</span>
+           </div>
+        </div>
+
+     </div>
+
+     <!-- Configuración Comercial Global -->
+     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+           <p class="text-xs text-gray-500 uppercase font-bold">Incluir Costos</p>
+           <p class="font-medium">{{ q.includeExpenses ? 'Incluido' : 'No Incluido' }}</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+           <p class="text-xs text-gray-500 uppercase font-bold">IGV (18%)</p>
+           <p class="font-medium">{{ q.includeIgv ? 'Incluido' : 'No Incluido' }}</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+           <p class="text-xs text-gray-500 uppercase font-bold">% Gastos Generales</p>
+           <p class="font-medium">{{ q.percentageGeneralExpenses || 0 }}%</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+           <p class="text-xs text-gray-500 uppercase font-bold">% Alojamiento</p>
+           <p class="font-medium">{{ q.percentageAccommodationFood || 0 }}%</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+           <p class="text-xs text-gray-500 uppercase font-bold">% Utilidad</p>
+           <p class="font-medium">{{ q.percentageUtilities || 0 }}%</p>
+        </div>
+     </div>
+
+     <!-- Estructura Comercial List -->
+     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+           <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <i class="pi pi-file-export text-blue-500"></i>
+              Detalle Comercial de Venta
+           </h3>
+        </div>
+        @if(q.items && q.items.length > 0) {
+           <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                 <thead>
+                    <tr class="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
+                       <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Concepto Comercial</th>
+                       <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unidad</th>
+                       <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cant.</th>
+                       <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">P. Unit. Base</th>
+                       <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Venta</th>
+                    </tr>
+                 </thead>
+                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                    @for (item of q.items; track $index) {
+                       <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-colors">
+                          <td class="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">
+                             {{ item.description }}
+                             @if(item.subItems && item.subItems.length > 0) {
+                                <div class="text-xs text-gray-400 mt-0.5 font-normal">{{ item.subItems.length }} sub-conceptos</div>
+                             }
+                          </td>
+                          <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ item.unit }}</td>
+                          <td class="px-4 py-3 text-right font-mono text-gray-700 dark:text-gray-300">{{ item.qty }}</td>
+                          <td class="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-400">{{ item.price | number:'1.2-2' }}</td>
+                          <td class="px-4 py-3 text-right font-bold text-gray-900 dark:text-gray-100">{{ (item.finalTotal || item.subtotal || 0) | currency:'PEN':'S/ ' }}</td>
+                       </tr>
+                    }
+                 </tbody>
+              </table>
+           </div>
+        } @else {
+           <div class="text-center p-8 text-gray-400">
+              <i class="pi pi-box text-3xl mb-2 block"></i>
+              <p class="text-sm">No existen ítems comerciales registrados.</p>
+           </div>
+        }
+     </div>
+
+     <!-- Secciones de Cumplimiento -->
+     @if ((q.clientCompliance && q.clientCompliance.length > 0) || (q.coordCompliance && q.coordCompliance.length > 0) || (q.tecmeingCompliance && q.tecmeingCompliance.length > 0)) {
+        <h3 class="text-lg font-bold mt-8 mb-4 flex items-center gap-2">
+           <i class="pi pi-check-circle text-green-500"></i>
+           Obligaciones y Cumplimientos
+        </h3>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+
+           <!-- Cumplimiento del Cliente -->
+           @if (q.clientCompliance && q.clientCompliance.length > 0) {
+              <div class="bg-white dark:bg-gray-800 rounded-xl border border-blue-200 dark:border-blue-800/60 overflow-hidden shadow-sm">
+                 <div class="bg-blue-50 dark:bg-blue-900/20 px-4 py-3 border-b border-blue-200 dark:border-blue-800/60">
+                    <h4 class="font-semibold text-blue-800 dark:text-blue-300 flex items-center gap-2 text-sm">
+                       <i class="pi pi-building"></i> Cumplimiento del Cliente
+                    </h4>
+                 </div>
+                 <ul class="p-4 space-y-2">
+                    @for (item of q.clientCompliance; track $index) {
+                       <li class="flex items-start gap-2 text-sm">
+                          <span class="text-blue-400 font-mono shrink-0">{{ $index + 1 }}.</span>
+                          <span class="text-gray-700 dark:text-gray-300">{{ item.description }}</span>
+                       </li>
+                    }
+                 </ul>
+              </div>
+           }
+
+           <!-- Cumplimiento de Coordinación -->
+           @if (q.coordCompliance && q.coordCompliance.length > 0) {
+              <div class="bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-amber-800/60 overflow-hidden shadow-sm">
+                 <div class="bg-amber-50 dark:bg-amber-900/20 px-4 py-3 border-b border-amber-200 dark:border-amber-800/60">
+                    <h4 class="font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2 text-sm">
+                       <i class="pi pi-calendar-clock"></i> Coordinación, Plazo y Stand By
+                    </h4>
+                 </div>
+                 <ul class="p-4 space-y-2">
+                    @for (item of q.coordCompliance; track $index) {
+                       <li class="flex items-start gap-2 text-sm">
+                          <span class="text-amber-400 font-mono shrink-0">{{ $index + 1 }}.</span>
+                          <span class="text-gray-700 dark:text-gray-300">{{ item.description }}</span>
+                       </li>
+                    }
+                 </ul>
+              </div>
+           }
+
+           <!-- Cumplimiento de Tecmeing -->
+           @if (q.tecmeingCompliance && q.tecmeingCompliance.length > 0) {
+              <div class="bg-white dark:bg-gray-800 rounded-xl border border-green-200 dark:border-green-800/60 overflow-hidden shadow-sm">
+                 <div class="bg-green-50 dark:bg-green-900/20 px-4 py-3 border-b border-green-200 dark:border-green-800/60">
+                    <h4 class="font-semibold text-green-800 dark:text-green-300 flex items-center gap-2 text-sm">
+                       <i class="pi pi-verified"></i> Cumplimiento de Tecmeing
+                    </h4>
+                 </div>
+                 <ul class="p-4 space-y-2">
+                    @for (item of q.tecmeingCompliance; track $index) {
+                       <li class="flex items-start gap-2 text-sm">
+                          <span class="text-green-500 font-mono shrink-0">{{ $index + 1 }}.</span>
+                          <span class="text-gray-700 dark:text-gray-300">{{ item.description }}</span>
+                       </li>
+                    }
+                 </ul>
+              </div>
+           }
+
+        </div>
+     }
+
+     <!-- Cost Breakdown — expandable categories -->
+     <h3 class="text-lg font-bold mt-8 mb-4 flex items-center gap-2">
+       <i class="pi pi-chart-bar text-blue-500"></i>
+       Métricas de Análisis Costo Operativo Interno
+     </h3>
+     <div class="space-y-2">
+
+       <!-- ── Vehículos ── -->
+       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+         <button type="button" (click)="toggleCost('vehicles')"
+           class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+           <div class="flex items-center gap-3">
+             <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+               <i class="pi pi-car text-blue-600 dark:text-blue-400 text-sm"></i>
+             </div>
+             <span class="font-medium text-gray-900 dark:text-white text-sm">Transporte y Vehículos</span>
+           </div>
+           <div class="flex items-center gap-3">
+             <span class="font-bold font-mono text-sm text-gray-900 dark:text-gray-100">
+               {{ (q.costs?.totalVehicles || 0) | currency:'PEN':'S/ ' }}
+             </span>
+             <i class="pi text-xs text-gray-400 transition-transform"
+               [class.pi-chevron-down]="!expandedCosts().has('vehicles')"
+               [class.pi-chevron-up]="expandedCosts().has('vehicles')"></i>
+           </div>
+         </button>
+         @if (expandedCosts().has('vehicles') && q.costs?.vehicles && q.costs!.vehicles!.length > 0) {
+           <div class="border-t border-gray-100 dark:border-gray-700">
+             @for (group of q.costs!.vehicles!; track $index) {
+               @if (group.title) {
+                 <div class="px-4 py-1.5 bg-blue-50/60 dark:bg-blue-900/10 text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
+                   {{ group.title }}
+                 </div>
+               }
+               <div class="overflow-x-auto">
+                 <table class="w-full text-xs">
+                   <thead>
+                     <tr class="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-700">
+                       <th class="text-left px-4 py-2 text-gray-500 font-medium">Descripción</th>
+                       <th class="text-center px-3 py-2 text-gray-500 font-medium">Und</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">Costo Unit.</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">Días</th>
+                       <th class="text-right px-4 py-2 text-gray-500 font-medium">Subtotal</th>
+                     </tr>
+                   </thead>
+                   <tbody class="divide-y divide-gray-50 dark:divide-gray-700/40">
+                     @for (item of group.items; track $index) {
+                       <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/20">
+                         <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{ item.description }}</td>
+                         <td class="px-3 py-2 text-center text-gray-500">{{ item.unit }}</td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ (item.unitCost || 0) | number:'1.2-2' }}</td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ item.days }}</td>
+                         <td class="px-4 py-2 text-right font-bold font-mono text-gray-900 dark:text-gray-100">
+                           {{ (item.subtotal ?? ((item.unitCost || 0) * (item.days || 0))) | currency:'PEN':'S/ ' }}
+                         </td>
+                       </tr>
+                     }
+                   </tbody>
+                 </table>
+               </div>
+             }
+           </div>
+         }
+       </div>
+
+       <!-- ── Planillas / Personal ── -->
+       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+         <button type="button" (click)="toggleCost('payrolls')"
+           class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+           <div class="flex items-center gap-3">
+             <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+               <i class="pi pi-users text-indigo-600 dark:text-indigo-400 text-sm"></i>
+             </div>
+             <span class="font-medium text-gray-900 dark:text-white text-sm">Personal / Planillas</span>
+           </div>
+           <div class="flex items-center gap-3">
+             <span class="font-bold font-mono text-sm text-gray-900 dark:text-gray-100">
+               {{ (q.costs?.totalPayrolls || 0) | currency:'PEN':'S/ ' }}
+             </span>
+             <i class="pi text-xs text-gray-400"
+               [class.pi-chevron-down]="!expandedCosts().has('payrolls')"
+               [class.pi-chevron-up]="expandedCosts().has('payrolls')"></i>
+           </div>
+         </button>
+         @if (expandedCosts().has('payrolls') && q.costs?.payrolls && q.costs!.payrolls!.length > 0) {
+           <div class="border-t border-gray-100 dark:border-gray-700">
+             @for (group of q.costs!.payrolls!; track $index) {
+               @if (group.title) {
+                 <div class="px-4 py-1.5 bg-indigo-50/60 dark:bg-indigo-900/10 text-xs font-semibold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">
+                   {{ group.title }}
+                 </div>
+               }
+               <div class="overflow-x-auto">
+                 <table class="w-full text-xs">
+                   <thead>
+                     <tr class="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-700">
+                       <th class="text-left px-4 py-2 text-gray-500 font-medium">Tipo</th>
+                       <th class="text-left px-3 py-2 text-gray-500 font-medium">Cargo / Posición</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">Remun. Base</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">Personas</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">Días</th>
+                       <th class="text-right px-4 py-2 text-gray-500 font-medium">Subtotal</th>
+                     </tr>
+                   </thead>
+                   <tbody class="divide-y divide-gray-50 dark:divide-gray-700/40">
+                     @for (item of group.items; track $index) {
+                       <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/20">
+                         <td class="px-4 py-2">
+                           <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                             [class.bg-blue-100]="item.type === 'Planilla'" [class.text-blue-700]="item.type === 'Planilla'"
+                             [class.bg-purple-100]="item.type === 'Rxh'" [class.text-purple-700]="item.type === 'Rxh'">
+                             {{ item.type }}
+                           </span>
+                         </td>
+                         <td class="px-3 py-2 text-gray-800 dark:text-gray-200">{{ item.position || '—' }}</td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ (item.baseRemuneration || 0) | number:'1.2-2' }}</td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ item.qtyPersons }}</td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ item.qtyDays }}</td>
+                         <td class="px-4 py-2 text-right font-bold font-mono text-gray-900 dark:text-gray-100">
+                           {{ (item.subtotal || 0) | currency:'PEN':'S/ ' }}
+                         </td>
+                       </tr>
+                     }
+                   </tbody>
+                 </table>
+               </div>
+             }
+           </div>
+         }
+       </div>
+
+       <!-- ── Herramientas ── -->
+       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+         <button type="button" (click)="toggleCost('tools')"
+           class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+           <div class="flex items-center gap-3">
+             <div class="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+               <i class="pi pi-wrench text-orange-600 dark:text-orange-400 text-sm"></i>
+             </div>
+             <span class="font-medium text-gray-900 dark:text-white text-sm">Herramientas y Equipos</span>
+           </div>
+           <div class="flex items-center gap-3">
+             <span class="font-bold font-mono text-sm text-gray-900 dark:text-gray-100">
+               {{ (q.costs?.totalTools || 0) | currency:'PEN':'S/ ' }}
+             </span>
+             <i class="pi text-xs text-gray-400"
+               [class.pi-chevron-down]="!expandedCosts().has('tools')"
+               [class.pi-chevron-up]="expandedCosts().has('tools')"></i>
+           </div>
+         </button>
+         @if (expandedCosts().has('tools') && q.costs?.tools && q.costs!.tools!.length > 0) {
+           <div class="border-t border-gray-100 dark:border-gray-700 overflow-x-auto">
+             <table class="w-full text-xs">
+               <thead>
+                 <tr class="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-700">
+                   <th class="text-left px-4 py-2 text-gray-500 font-medium">Equipo / Herramienta</th>
+                   <th class="text-center px-3 py-2 text-gray-500 font-medium">Und</th>
+                   <th class="text-right px-3 py-2 text-gray-500 font-medium">P. Unitario</th>
+                   <th class="text-right px-3 py-2 text-gray-500 font-medium">Cantidad</th>
+                   <th class="text-right px-3 py-2 text-gray-500 font-medium">V. Útil (m)</th>
+                   <th class="text-right px-4 py-2 text-gray-500 font-medium">Subtotal</th>
+                 </tr>
+               </thead>
+               <tbody class="divide-y divide-gray-50 dark:divide-gray-700/40">
+                 @for (item of q.costs!.tools!; track $index) {
+                   <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/20">
+                     <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{ item.description }}</td>
+                     <td class="px-3 py-2 text-center text-gray-500">{{ item.unit }}</td>
+                     <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ (item.unitPrice || 0) | number:'1.2-2' }}</td>
+                     <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ item.qty }}</td>
+                     <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ item.usefulLifeMonths }}</td>
+                     <td class="px-4 py-2 text-right font-bold font-mono text-gray-900 dark:text-gray-100">
+                       {{ (item.subtotal ?? ((item.unitPrice || 0) * (item.qty || 0))) | currency:'PEN':'S/ ' }}
+                     </td>
+                   </tr>
+                 }
+               </tbody>
+             </table>
+           </div>
+         }
+       </div>
+
+       <!-- ── Materiales ── -->
+       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+         <button type="button" (click)="toggleCost('materials')"
+           class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+           <div class="flex items-center gap-3">
+             <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+               <i class="pi pi-box text-emerald-600 dark:text-emerald-400 text-sm"></i>
+             </div>
+             <span class="font-medium text-gray-900 dark:text-white text-sm">Materiales y Suministros</span>
+           </div>
+           <div class="flex items-center gap-3">
+             <span class="font-bold font-mono text-sm text-gray-900 dark:text-gray-100">
+               {{ (q.costs?.totalMaterials || 0) | currency:'PEN':'S/ ' }}
+             </span>
+             <i class="pi text-xs text-gray-400"
+               [class.pi-chevron-down]="!expandedCosts().has('materials')"
+               [class.pi-chevron-up]="expandedCosts().has('materials')"></i>
+           </div>
+         </button>
+         @if (expandedCosts().has('materials') && q.costs?.materials && q.costs!.materials!.length > 0) {
+           <div class="border-t border-gray-100 dark:border-gray-700">
+             @for (cat of q.costs!.materials!; track $index) {
+               @if (cat.title) {
+                 <div class="px-4 py-1.5 bg-emerald-50/60 dark:bg-emerald-900/10 text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                   {{ cat.title }}
+                 </div>
+               }
+               <div class="overflow-x-auto">
+                 <table class="w-full text-xs">
+                   <thead>
+                     <tr class="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-700">
+                       <th class="text-left px-4 py-2 text-gray-500 font-medium">Material</th>
+                       <th class="text-center px-3 py-2 text-gray-500 font-medium">Und</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">Metrado</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">Costo Unit.</th>
+                       <th class="text-right px-4 py-2 text-gray-500 font-medium">Total</th>
+                     </tr>
+                   </thead>
+                   <tbody class="divide-y divide-gray-50 dark:divide-gray-700/40">
+                     @for (item of cat.items; track $index) {
+                       <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/20">
+                         <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{ item.description }}</td>
+                         <td class="px-3 py-2 text-center text-gray-500">{{ item.unit }}</td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ (item.metrado || 0) | number:'1.2-2' }}</td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ (item.unitCost || 0) | number:'1.2-2' }}</td>
+                         <td class="px-4 py-2 text-right font-bold font-mono text-gray-900 dark:text-gray-100">
+                           {{ (item.totalCost ?? ((item.metrado || 0) * (item.unitCost || 0))) | currency:'PEN':'S/ ' }}
+                         </td>
+                       </tr>
+                     }
+                   </tbody>
+                 </table>
+               </div>
+             }
+           </div>
+         }
+       </div>
+
+       <!-- ── Uniformes / EPP ── -->
+       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+         <button type="button" (click)="toggleCost('uniforms')"
+           class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+           <div class="flex items-center gap-3">
+             <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+               <i class="pi pi-shield text-purple-600 dark:text-purple-400 text-sm"></i>
+             </div>
+             <span class="font-medium text-gray-900 dark:text-white text-sm">Uniformes / EPP</span>
+           </div>
+           <div class="flex items-center gap-3">
+             <span class="font-bold font-mono text-sm text-gray-900 dark:text-gray-100">
+               {{ (q.costs?.totalUniforms || 0) | currency:'PEN':'S/ ' }}
+             </span>
+             <i class="pi text-xs text-gray-400"
+               [class.pi-chevron-down]="!expandedCosts().has('uniforms')"
+               [class.pi-chevron-up]="expandedCosts().has('uniforms')"></i>
+           </div>
+         </button>
+         @if (expandedCosts().has('uniforms') && q.costs?.uniforms && q.costs!.uniforms!.length > 0) {
+           <div class="border-t border-gray-100 dark:border-gray-700">
+             @for (cat of q.costs!.uniforms!; track $index) {
+               @if (cat.title) {
+                 <div class="px-4 py-1.5 bg-purple-50/60 dark:bg-purple-900/10 text-xs font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wider">
+                   {{ cat.title }}
+                 </div>
+               }
+               <div class="overflow-x-auto">
+                 <table class="w-full text-xs">
+                   <thead>
+                     <tr class="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-700">
+                       <th class="text-left px-4 py-2 text-gray-500 font-medium">Artículo / Prenda</th>
+                       <th class="text-center px-3 py-2 text-gray-500 font-medium">Tipo</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">Cant./Persona</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">Costo Unit.</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">V. Útil (m)</th>
+                       <th class="text-right px-4 py-2 text-gray-500 font-medium">Total</th>
+                     </tr>
+                   </thead>
+                   <tbody class="divide-y divide-gray-50 dark:divide-gray-700/40">
+                     @for (item of cat.items; track $index) {
+                       <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/20">
+                         <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{ item.description }}</td>
+                         <td class="px-3 py-2 text-center">
+                           <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                             [class.bg-blue-100]="item.type === 'Planilla'" [class.text-blue-700]="item.type === 'Planilla'"
+                             [class.bg-purple-100]="item.type === 'Rxh'" [class.text-purple-700]="item.type === 'Rxh'">
+                             {{ item.type }}
+                           </span>
+                         </td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ item.qty }}</td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ (item.unitCost || 0) | number:'1.2-2' }}</td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ item.usefulLifeMonths }}</td>
+                         <td class="px-4 py-2 text-right font-bold font-mono text-gray-900 dark:text-gray-100">
+                           {{ ((item.totalEmployee || 0) + (item.totalWorker || 0)) | currency:'PEN':'S/ ' }}
+                         </td>
+                       </tr>
+                     }
+                   </tbody>
+                 </table>
+               </div>
+             }
+           </div>
+         }
+       </div>
+
+       <!-- ── Gastos Adicionales ── -->
+       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+         <button type="button" (click)="toggleCost('expenses')"
+           class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+           <div class="flex items-center gap-3">
+             <div class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+               <i class="pi pi-money-bill text-red-600 dark:text-red-400 text-sm"></i>
+             </div>
+             <span class="font-medium text-gray-900 dark:text-white text-sm">Gastos Operativos / Adicionales</span>
+           </div>
+           <div class="flex items-center gap-3">
+             <span class="font-bold font-mono text-sm text-gray-900 dark:text-gray-100">
+               {{ (q.costs?.totalExpenses || 0) | currency:'PEN':'S/ ' }}
+             </span>
+             <i class="pi text-xs text-gray-400"
+               [class.pi-chevron-down]="!expandedCosts().has('expenses')"
+               [class.pi-chevron-up]="expandedCosts().has('expenses')"></i>
+           </div>
+         </button>
+         @if (expandedCosts().has('expenses') && q.costs?.expenses && q.costs!.expenses!.length > 0) {
+           <div class="border-t border-gray-100 dark:border-gray-700">
+             @for (cat of q.costs!.expenses!; track $index) {
+               <div class="px-4 py-1.5 bg-red-50/60 dark:bg-red-900/10 flex items-center gap-2">
+                 <span class="text-xs font-semibold text-red-700 dark:text-red-400 uppercase tracking-wider">{{ cat.title }}</span>
+                 <span class="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                   [class.bg-red-100]="cat.type === 'Fijo'" [class.text-red-600]="cat.type === 'Fijo'"
+                   [class.bg-orange-100]="cat.type === 'Variable'" [class.text-orange-600]="cat.type === 'Variable'">
+                   {{ cat.type }}
+                 </span>
+               </div>
+               <div class="overflow-x-auto">
+                 <table class="w-full text-xs">
+                   <thead>
+                     <tr class="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-700">
+                       <th class="text-left px-4 py-2 text-gray-500 font-medium">Descripción</th>
+                       <th class="text-center px-3 py-2 text-gray-500 font-medium">Und</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">Cuadrillas</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">Cantidad</th>
+                       <th class="text-right px-3 py-2 text-gray-500 font-medium">P. Unit.</th>
+                       <th class="text-right px-4 py-2 text-gray-500 font-medium">Subtotal</th>
+                     </tr>
+                   </thead>
+                   <tbody class="divide-y divide-gray-50 dark:divide-gray-700/40">
+                     @for (item of cat.items; track $index) {
+                       <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/20">
+                         <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{ item.description }}</td>
+                         <td class="px-3 py-2 text-center text-gray-500">{{ item.unit }}</td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ item.cuadrilla }}</td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ item.qty }}</td>
+                         <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ (item.unitPrice || 0) | number:'1.2-2' }}</td>
+                         <td class="px-4 py-2 text-right font-bold font-mono text-gray-900 dark:text-gray-100">
+                           {{ (item.subtotal ?? ((item.cuadrilla || 0) * (item.qty || 0) * (item.unitPrice || 0))) | currency:'PEN':'S/ ' }}
+                         </td>
+                       </tr>
+                     }
+                   </tbody>
+                 </table>
+               </div>
+             }
+           </div>
+         }
+       </div>
+
+       <!-- ── Alojamiento / Alimentación ── -->
+       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+         <button type="button" (click)="toggleCost('accommodations')"
+           class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+           <div class="flex items-center gap-3">
+             <div class="w-8 h-8 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+               <i class="pi pi-home text-yellow-600 dark:text-yellow-400 text-sm"></i>
+             </div>
+             <span class="font-medium text-gray-900 dark:text-white text-sm">Alojamiento y Alimentación</span>
+           </div>
+           <div class="flex items-center gap-3">
+             <span class="font-bold font-mono text-sm text-gray-900 dark:text-gray-100">
+               {{ (q.costs?.totalAccommodations || 0) | currency:'PEN':'S/ ' }}
+             </span>
+             <i class="pi text-xs text-gray-400"
+               [class.pi-chevron-down]="!expandedCosts().has('accommodations')"
+               [class.pi-chevron-up]="expandedCosts().has('accommodations')"></i>
+           </div>
+         </button>
+         @if (expandedCosts().has('accommodations') && q.costs?.accommodations && q.costs!.accommodations!.length > 0) {
+           <div class="border-t border-gray-100 dark:border-gray-700 overflow-x-auto">
+             <table class="w-full text-xs">
+               <thead>
+                 <tr class="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-700">
+                   <th class="text-center px-3 py-2 text-gray-500 font-medium">Tipo</th>
+                   <th class="text-left px-4 py-2 text-gray-500 font-medium">Lugar / Descripción</th>
+                   <th class="text-center px-3 py-2 text-gray-500 font-medium">Und</th>
+                   <th class="text-right px-3 py-2 text-gray-500 font-medium">Personas</th>
+                   <th class="text-right px-3 py-2 text-gray-500 font-medium">Días</th>
+                   <th class="text-right px-3 py-2 text-gray-500 font-medium">P. Unit.</th>
+                   <th class="text-right px-4 py-2 text-gray-500 font-medium">Subtotal</th>
+                 </tr>
+               </thead>
+               <tbody class="divide-y divide-gray-50 dark:divide-gray-700/40">
+                 @for (item of q.costs!.accommodations!; track $index) {
+                   <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/20">
+                     <td class="px-3 py-2 text-center">
+                       <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                         [class.bg-yellow-100]="item.type === 'Alojamiento'" [class.text-yellow-700]="item.type === 'Alojamiento'"
+                         [class.bg-green-100]="item.type === 'Alimentación'" [class.text-green-700]="item.type === 'Alimentación'">
+                         {{ item.type }}
+                       </span>
+                     </td>
+                     <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{ item.description }}</td>
+                     <td class="px-3 py-2 text-center text-gray-500">{{ item.unit }}</td>
+                     <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ item.cuadrilla }}</td>
+                     <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ item.qty }}</td>
+                     <td class="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">{{ (item.unitPrice || 0) | number:'1.2-2' }}</td>
+                     <td class="px-4 py-2 text-right font-bold font-mono text-gray-900 dark:text-gray-100">
+                       {{ (item.subtotal ?? ((item.cuadrilla || 0) * (item.qty || 0) * (item.unitPrice || 0))) | currency:'PEN':'S/ ' }}
+                     </td>
+                   </tr>
+                 }
+               </tbody>
+             </table>
+           </div>
+         }
+       </div>
+
+     </div><!-- /space-y-2 -->
+  }
+</div>

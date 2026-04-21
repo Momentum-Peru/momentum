@@ -1,0 +1,857 @@
+<div class="px-4 py-6 md:px-8 w-full max-w-[1400px] mx-auto">
+  <p-toast></p-toast>
+
+  <!-- ══ Header ══════════════════════════════════════════════════════ -->
+  <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
+    <div class="flex items-center gap-3">
+      <button type="button" (click)="goBack()"
+        class="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <i class="pi pi-arrow-left text-sm"></i>
+      </button>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+          {{ quoteId() ? 'Editar Cotización' : 'Nueva Cotización' }}
+        </h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Configura los costos y presupuesto del proyecto.</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button type="button" (click)="goBack()"
+        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        Cancelar
+      </button>
+      <button type="button" (click)="save()" [disabled]="loading()"
+        class="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg shadow-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+        <i class="pi text-xs" [class.pi-save]="!loading()" [class.pi-spin]="loading()" [class.pi-spinner]="loading()"></i>
+        Guardar
+      </button>
+    </div>
+  </div>
+
+  <form [formGroup]="quoteForm" class="space-y-6">
+
+    <!-- ══ 1. Información General ══════════════════════════════════════ -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+        <i class="pi pi-info-circle text-blue-500"></i> Información General
+      </h2>
+
+      <!-- Grid: mismos tamaños, mismos estilos en todos los campos -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-4">
+
+        <!-- Cliente -->
+        <div class="flex flex-col">
+          <label class="f-label">Cliente <span class="text-red-500">*</span></label>
+          <p-select [options]="clients()" optionLabel="name" optionValue="_id"
+            formControlName="clientId" placeholder="Selecciona un cliente..."
+            appendTo="body" class="w-full" styleClass="w-full"></p-select>
+        </div>
+
+        <!-- Proyecto -->
+        <div class="flex flex-col">
+          <label class="f-label">Proyecto <span class="text-red-500">*</span></label>
+          <p-select [options]="projects()" optionLabel="name" optionValue="_id"
+            formControlName="projectId" placeholder="Selecciona un proyecto..."
+            [filter]="true" appendTo="body" class="w-full" styleClass="w-full"></p-select>
+        </div>
+
+        <!-- Estado -->
+        <div class="flex flex-col">
+          <label class="f-label">Estado</label>
+          <p-select [options]="stateOptions" optionLabel="label" optionValue="value"
+            formControlName="state" appendTo="body" class="w-full" styleClass="w-full"></p-select>
+        </div>
+
+        <!-- Fecha -->
+        <div class="flex flex-col">
+          <label class="f-label">Fecha de creación</label>
+          <p-datepicker formControlName="createDate" dateFormat="dd/mm/yy"
+            [showIcon]="true" class="w-full" inputStyleClass="w-full"></p-datepicker>
+        </div>
+
+        <!-- Ubicación -->
+        <div class="flex flex-col">
+          <label class="f-label">Ubicación</label>
+          <input type="text" formControlName="location" placeholder="Ej: Lima, Perú" class="f-input" />
+        </div>
+
+        <!-- Área -->
+        <div class="flex flex-col">
+          <label class="f-label">Área (m²)</label>
+          <p-inputNumber formControlName="area" class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+        </div>
+
+        <!-- Notas internas — ocupa 2 columnas en sm+, 2 en xl -->
+        <div class="flex flex-col sm:col-span-2">
+          <label class="f-label">Notas Internas</label>
+          <textarea formControlName="notes" rows="2" placeholder="Observaciones internas..."
+            class="f-input resize-none"></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ 2. Panel de Totales (sticky) ═══════════════════════════════ -->
+    @if (calculatedQuote(); as calc) {
+      <div class="sticky top-0 z-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md p-4">
+        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <i class="pi pi-chart-bar text-blue-500"></i>
+          Resumen de Costos y Presupuesto
+        </p>
+        <!-- Breakdown por categoría -->
+        <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-3">
+          @for (tab of costTabs; track $index) {
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg px-2 py-1.5 text-center min-w-0">
+              <p class="text-[10px] text-gray-400 truncate leading-tight">{{ tab.label }}</p>
+              <p class="text-xs font-semibold text-gray-700 dark:text-gray-200 font-mono leading-tight mt-0.5">
+                {{ getCostTotal(tab.totalKey) | number:'1.0-0' }}
+              </p>
+            </div>
+          }
+        </div>
+        <!-- Totales principales -->
+        <div class="flex flex-wrap gap-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <div class="flex-1 min-w-[140px]">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Costo Total Directo</p>
+            <p class="text-xl font-bold text-blue-700 dark:text-blue-300 font-mono leading-tight">
+              {{ calc.costs?.grandTotalCosts | currency:'PEN':'S/ ' }}
+            </p>
+          </div>
+          <div class="flex-1 min-w-[140px]">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Ítems Comerciales</p>
+            <p class="text-xl font-bold text-gray-700 dark:text-gray-200 font-mono leading-tight">
+              {{ localItemsSubtotal() | currency:'PEN':'S/ ' }}
+            </p>
+          </div>
+          <div class="flex-1 min-w-[160px] border-l border-gray-200 dark:border-gray-700 pl-4">
+            <p class="text-xs font-semibold text-green-600 dark:text-green-400">Presupuesto Final de Venta</p>
+            <p class="text-2xl font-bold text-green-700 dark:text-green-300 font-mono leading-tight">
+              {{ calc.grandTotalQuote | currency:'PEN':'S/ ' }}
+            </p>
+          </div>
+          @if ((calc.grandTotalQuote || 0) > (calc.costs?.grandTotalCosts || 0)) {
+            <div class="flex-1 min-w-[140px]">
+              <p class="text-xs text-gray-500 dark:text-gray-400">Rentabilidad Bruta</p>
+              <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono leading-tight">
+                {{ ((calc.grandTotalQuote || 0) - (calc.costs?.grandTotalCosts || 0)) | currency:'PEN':'S/ ' }}
+              </p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ══ 3. Análisis de Costos (Tabs) ═══════════════════════════════ -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+
+      <!-- Header de la sección -->
+      <div class="px-5 pt-5 pb-0">
+        <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+          <i class="pi pi-wallet text-blue-500"></i> Análisis de Costos
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Ingresa todos los costos del proyecto. El sistema calcula beneficios y totales automáticamente.
+        </p>
+      </div>
+
+      <!-- Navegación de tabs -->
+      <div class="overflow-x-auto border-b border-gray-200 dark:border-gray-700 px-5">
+        <div class="flex min-w-max" role="tablist">
+          @for (tab of costTabs; track $index) {
+            <button type="button" role="tab" (click)="activeCostTab.set($index)"
+              [attr.aria-selected]="activeCostTab() === $index"
+              [ngClass]="activeCostTab() === $index
+                ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+              class="inline-flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium whitespace-nowrap transition-colors focus:outline-none">
+              <i class="pi text-[11px]" [class]="tab.icon"></i>
+              <span>{{ tab.label }}</span>
+              @if (getCostTotal(tab.totalKey) > 0) {
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-semibold"
+                  [ngClass]="activeCostTab() === $index
+                    ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'">
+                  {{ getCostTotal(tab.totalKey) | number:'1.0-0' }}
+                </span>
+              }
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Contenido de tabs -->
+      <div class="p-5" formGroupName="costs">
+
+        <!-- ─── Tab 0: Transporte / Vehículos ─── -->
+        @if (activeCostTab() === 0) {
+          <div formArrayName="vehicles" class="space-y-4">
+            @for (group of vehicles.controls; track index; let index = $index) {
+              <div [formGroupName]="index" class="cost-group">
+                <div class="flex items-center mb-4 gap-3">
+                  <input type="text" formControlName="title"
+                    placeholder="Título del grupo de vehículos..."
+                    class="group-title-input" />
+                  <button type="button" (click)="removeGroup('vehicles', index)" class="btn-delete flex-shrink-0">
+                    <i class="pi pi-trash text-sm"></i>
+                  </button>
+                </div>
+                <div formArrayName="items" class="space-y-2">
+                  @for (item of getGroupItems('vehicles', index); track itemIndex; let itemIndex = $index) {
+                    <div [formGroupName]="itemIndex" class="cost-row">
+                      <div class="flex-1 min-w-[160px]">
+                        <label class="f-label">Descripción del vehículo</label>
+                        <input type="text" formControlName="description" class="f-input" />
+                      </div>
+                      <div class="w-24">
+                        <label class="f-label">Unidad</label>
+                        <input type="text" formControlName="unit" class="f-input text-center" />
+                      </div>
+                      <div class="w-36">
+                        <label class="f-label">Costo unitario</label>
+                        <p-inputNumber formControlName="unitCost" mode="currency" currency="PEN"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <div class="w-28">
+                        <label class="f-label">Días</label>
+                        <p-inputNumber formControlName="days"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <button type="button" (click)="removeItemFromGroup('vehicles', index, itemIndex)" class="btn-delete">
+                        <i class="pi pi-times text-sm"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+                <button type="button" (click)="addItemToGroup('vehicles', index)" class="btn-add-item">
+                  <i class="pi pi-plus text-[10px]"></i> Agregar vehículo
+                </button>
+              </div>
+            }
+          </div>
+          <button type="button" (click)="addGroup('vehicles')" class="btn-add-group">
+            <i class="pi pi-plus text-xs"></i> Nuevo grupo vehicular
+          </button>
+        }
+
+        <!-- ─── Tab 1: Personal / Planillas ─── -->
+        @if (activeCostTab() === 1) {
+          <div formArrayName="payrolls" class="space-y-4">
+            @for (group of payrolls.controls; track index; let index = $index) {
+              <div [formGroupName]="index" class="cost-group">
+                <div class="flex items-center mb-4 gap-3">
+                  <input type="text" formControlName="title"
+                    placeholder="Título de la cuadrilla o grupo..."
+                    class="group-title-input" />
+                  <button type="button" (click)="removeGroup('payrolls', index)" class="btn-delete flex-shrink-0">
+                    <i class="pi pi-trash text-sm"></i>
+                  </button>
+                </div>
+                <div formArrayName="items" class="space-y-2">
+                  @for (item of getGroupItems('payrolls', index); track itemIndex; let itemIndex = $index) {
+                    <div [formGroupName]="itemIndex"
+                      class="cost-row-lg bg-white dark:bg-gray-800/60 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+                      <div class="w-32 flex-shrink-0">
+                        <label class="f-label">Tipo</label>
+                        <p-select formControlName="type" [options]="typeOptions"
+                          optionLabel="label" optionValue="value"
+                          appendTo="body" class="w-full" styleClass="w-full"></p-select>
+                      </div>
+                      <div class="flex-1 min-w-[140px]">
+                        <label class="f-label">Posición / Cargo</label>
+                        <input type="text" formControlName="position" class="f-input" />
+                      </div>
+                      <div class="w-36 flex-shrink-0">
+                        <label class="f-label">Remuneración base</label>
+                        <p-inputNumber formControlName="baseRemuneration" mode="currency" currency="PEN"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <div class="w-32 flex-shrink-0">
+                        <label class="f-label">Asig. Familiar</label>
+                        <p-inputNumber formControlName="familyAssignment" mode="currency" currency="PEN"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <div class="w-28 flex-shrink-0">
+                        <label class="f-label">Personas</label>
+                        <p-inputNumber formControlName="qtyPersons"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <div class="w-28 flex-shrink-0">
+                        <label class="f-label">Días asig.</label>
+                        <p-inputNumber formControlName="qtyDays"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <button type="button" (click)="removeItemFromGroup('payrolls', index, itemIndex)" class="btn-delete">
+                        <i class="pi pi-times text-sm"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+                <button type="button" (click)="addItemToGroup('payrolls', index)" class="btn-add-item">
+                  <i class="pi pi-plus text-[10px]"></i> Agregar personal
+                </button>
+              </div>
+            }
+          </div>
+          <button type="button" (click)="addGroup('payrolls')" class="btn-add-group">
+            <i class="pi pi-plus text-xs"></i> Nueva cuadrilla / grupo
+          </button>
+        }
+
+        <!-- ─── Tab 2: Herramientas ─── -->
+        @if (activeCostTab() === 2) {
+          <div class="space-y-2" formArrayName="tools">
+            @for (item of tools.controls; track index; let index = $index) {
+              <div [formGroupName]="index" class="cost-row">
+                <div class="flex-1 min-w-[160px]">
+                  <label class="f-label">Equipo / herramienta</label>
+                  <input type="text" formControlName="description" class="f-input" />
+                </div>
+                <div class="w-24">
+                  <label class="f-label">Unidad</label>
+                  <input type="text" formControlName="unit" class="f-input text-center" />
+                </div>
+                <div class="w-36">
+                  <label class="f-label">Precio unitario</label>
+                  <p-inputNumber formControlName="unitPrice" mode="currency" currency="PEN"
+                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                </div>
+                <div class="w-28">
+                  <label class="f-label">Cantidad</label>
+                  <p-inputNumber formControlName="qty"
+                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                </div>
+                <div class="w-36">
+                  <label class="f-label">Vida útil (meses)</label>
+                  <p-inputNumber formControlName="usefulLifeMonths"
+                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                </div>
+                <button type="button" (click)="removeStandaloneItem('tools', index)" class="btn-delete">
+                  <i class="pi pi-times text-sm"></i>
+                </button>
+              </div>
+            }
+          </div>
+          <button type="button" (click)="addStandaloneItem('tools')" class="btn-add-group">
+            <i class="pi pi-plus text-xs"></i> Agregar herramienta / equipo
+          </button>
+        }
+
+        <!-- ─── Tab 3: Materiales ─── -->
+        @if (activeCostTab() === 3) {
+          <div formArrayName="materials" class="space-y-4">
+            @for (group of materials.controls; track index; let index = $index) {
+              <div [formGroupName]="index" class="cost-group">
+                <div class="flex items-center mb-4 gap-3">
+                  <input type="text" formControlName="title"
+                    placeholder="Categoría de materiales..."
+                    class="group-title-input" />
+                  <button type="button" (click)="removeGroup('materials', index)" class="btn-delete flex-shrink-0">
+                    <i class="pi pi-trash text-sm"></i>
+                  </button>
+                </div>
+                <div formArrayName="items" class="space-y-2">
+                  @for (item of getGroupItems('materials', index); track itemIndex; let itemIndex = $index) {
+                    <div [formGroupName]="itemIndex" class="cost-row">
+                      <div class="flex-1 min-w-[160px]">
+                        <label class="f-label">Descripción del material</label>
+                        <input type="text" formControlName="description" class="f-input" />
+                      </div>
+                      <div class="w-24">
+                        <label class="f-label">Unidad</label>
+                        <input type="text" formControlName="unit" class="f-input text-center" />
+                      </div>
+                      <div class="w-32">
+                        <label class="f-label">Metrado</label>
+                        <p-inputNumber formControlName="metrado" mode="decimal" [minFractionDigits]="2"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <div class="w-36">
+                        <label class="f-label">Costo unitario</label>
+                        <p-inputNumber formControlName="unitCost" mode="currency" currency="PEN"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <button type="button" (click)="removeItemFromGroup('materials', index, itemIndex)" class="btn-delete">
+                        <i class="pi pi-times text-sm"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+                <button type="button" (click)="addItemToGroup('materials', index)" class="btn-add-item">
+                  <i class="pi pi-plus text-[10px]"></i> Agregar material
+                </button>
+              </div>
+            }
+          </div>
+          <button type="button" (click)="addGroup('materials')" class="btn-add-group">
+            <i class="pi pi-plus text-xs"></i> Nueva categoría de materiales
+          </button>
+        }
+
+        <!-- ─── Tab 4: Uniformes / EPPs ─── -->
+        @if (activeCostTab() === 4) {
+          <div formArrayName="uniforms" class="space-y-4">
+            @for (group of uniforms.controls; track index; let index = $index) {
+              <div [formGroupName]="index" class="cost-group">
+                <div class="flex items-center mb-4 gap-3">
+                  <input type="text" formControlName="title"
+                    placeholder="Kit de uniforme / EPP..."
+                    class="group-title-input" />
+                  <button type="button" (click)="removeGroup('uniforms', index)" class="btn-delete flex-shrink-0">
+                    <i class="pi pi-trash text-sm"></i>
+                  </button>
+                </div>
+                <div formArrayName="items" class="space-y-2">
+                  @for (item of getGroupItems('uniforms', index); track itemIndex; let itemIndex = $index) {
+                    <div [formGroupName]="itemIndex" class="cost-row">
+                      <div class="flex-1 min-w-[160px]">
+                        <label class="f-label">Artículo / prenda</label>
+                        <input type="text" formControlName="description" class="f-input" />
+                      </div>
+                      <div class="w-32 flex-shrink-0">
+                        <label class="f-label">Tipo personal</label>
+                        <p-select formControlName="type" [options]="typeOptions"
+                          optionLabel="label" optionValue="value"
+                          appendTo="body" class="w-full" styleClass="w-full"></p-select>
+                      </div>
+                      <div class="w-36 flex-shrink-0">
+                        <label class="f-label">Costo unitario</label>
+                        <p-inputNumber formControlName="unitCost" mode="currency" currency="PEN"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <div class="w-28 flex-shrink-0">
+                        <label class="f-label">Cant. / persona</label>
+                        <p-inputNumber formControlName="qty"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <div class="w-36 flex-shrink-0">
+                        <label class="f-label">Vida útil (meses)</label>
+                        <p-inputNumber formControlName="usefulLifeMonths"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <button type="button" (click)="removeItemFromGroup('uniforms', index, itemIndex)" class="btn-delete">
+                        <i class="pi pi-times text-sm"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+                <button type="button" (click)="addItemToGroup('uniforms', index)" class="btn-add-item">
+                  <i class="pi pi-plus text-[10px]"></i> Agregar artículo
+                </button>
+              </div>
+            }
+          </div>
+          <button type="button" (click)="addGroup('uniforms')" class="btn-add-group">
+            <i class="pi pi-plus text-xs"></i> Nuevo kit de uniformes / EPP
+          </button>
+        }
+
+        <!-- ─── Tab 5: Gastos Adicionales ─── -->
+        @if (activeCostTab() === 5) {
+          <div formArrayName="expenses" class="space-y-4">
+            @for (group of expenses.controls; track index; let index = $index) {
+              <div [formGroupName]="index" class="cost-group">
+                <div class="flex items-center mb-4 gap-3">
+                  <input type="text" formControlName="title"
+                    placeholder="Concepto del gasto..."
+                    class="group-title-input" />
+                  <div class="flex-shrink-0">
+                    <p-select formControlName="type" [options]="expenseTypeOptions"
+                      optionLabel="label" optionValue="value"
+                      appendTo="body" class="w-36" styleClass="w-36"></p-select>
+                  </div>
+                  <button type="button" (click)="removeGroup('expenses', index)" class="btn-delete flex-shrink-0">
+                    <i class="pi pi-trash text-sm"></i>
+                  </button>
+                </div>
+                <div formArrayName="items" class="space-y-2">
+                  @for (item of getGroupItems('expenses', index); track itemIndex; let itemIndex = $index) {
+                    <div [formGroupName]="itemIndex" class="cost-row">
+                      <div class="flex-1 min-w-[160px]">
+                        <label class="f-label">Descripción</label>
+                        <input type="text" formControlName="description" class="f-input" />
+                      </div>
+                      <div class="w-24">
+                        <label class="f-label">Unidad</label>
+                        <input type="text" formControlName="unit" class="f-input text-center" />
+                      </div>
+                      <div class="w-28">
+                        <label class="f-label">Cuadrillas</label>
+                        <p-inputNumber formControlName="cuadrilla"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <div class="w-28">
+                        <label class="f-label">Cantidad</label>
+                        <p-inputNumber formControlName="qty"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <div class="w-36">
+                        <label class="f-label">Precio unitario</label>
+                        <p-inputNumber formControlName="unitPrice" mode="currency" currency="PEN"
+                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      </div>
+                      <button type="button" (click)="removeItemFromGroup('expenses', index, itemIndex)" class="btn-delete">
+                        <i class="pi pi-times text-sm"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+                <button type="button" (click)="addItemToGroup('expenses', index)" class="btn-add-item">
+                  <i class="pi pi-plus text-[10px]"></i> Agregar gasto
+                </button>
+              </div>
+            }
+          </div>
+          <button type="button" (click)="addGroup('expenses')" class="btn-add-group">
+            <i class="pi pi-plus text-xs"></i> Nuevo concepto de gasto
+          </button>
+        }
+
+        <!-- ─── Tab 6: Alojamiento / Alimentación ─── -->
+        @if (activeCostTab() === 6) {
+          <div formArrayName="accommodations" class="space-y-2">
+            @for (item of accommodations.controls; track index; let index = $index) {
+              <div [formGroupName]="index" class="cost-row">
+                <div class="w-36 flex-shrink-0">
+                  <label class="f-label">Tipo</label>
+                  <p-select formControlName="type" [options]="accommodationTypeOptions"
+                    optionLabel="label" optionValue="value"
+                    appendTo="body" class="w-full" styleClass="w-full"></p-select>
+                </div>
+                <div class="flex-1 min-w-[160px]">
+                  <label class="f-label">Lugar / descripción</label>
+                  <input type="text" formControlName="description" class="f-input" />
+                </div>
+                <div class="w-24">
+                  <label class="f-label">Unidad</label>
+                  <input type="text" formControlName="unit" class="f-input text-center" />
+                </div>
+                <div class="w-28">
+                  <label class="f-label">Personas</label>
+                  <p-inputNumber formControlName="cuadrilla"
+                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                </div>
+                <div class="w-28">
+                  <label class="f-label">Días totales</label>
+                  <p-inputNumber formControlName="qty"
+                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                </div>
+                <div class="w-36">
+                  <label class="f-label">Precio unitario</label>
+                  <p-inputNumber formControlName="unitPrice" mode="currency" currency="PEN"
+                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                </div>
+                <button type="button" (click)="removeStandaloneItem('accommodations', index)" class="btn-delete">
+                  <i class="pi pi-times text-sm"></i>
+                </button>
+              </div>
+            }
+          </div>
+          <button type="button" (click)="addStandaloneItem('accommodations')" class="btn-add-group">
+            <i class="pi pi-plus text-xs"></i> Agregar alojamiento / alimentación
+          </button>
+        }
+
+      </div><!-- /tab content -->
+    </div><!-- /costos card -->
+
+    <!-- ══ 4. Cotización Comercial ══════════════════════════════════════ -->
+    <hr class="border-gray-200 dark:border-gray-700" />
+
+    <div>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
+        <i class="pi pi-file-export text-blue-500"></i> Estructura Cotización Comercial
+      </h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+        Define los ítems comerciales que verá el cliente en el PDF/Excel. Los porcentajes se aplican sobre estos montos.
+      </p>
+
+      <!-- Configuración global -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 mb-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+
+          <!-- Incluir costos proyecto -->
+          <label class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors h-[46px]">
+            <input type="checkbox" formControlName="includeExpenses"
+              class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-500 rounded focus:ring-blue-500 focus:ring-2 flex-shrink-0" />
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 leading-tight">Incluir costos proyecto</span>
+          </label>
+
+          <!-- Incluir IGV -->
+          <label class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors h-[46px]">
+            <input type="checkbox" formControlName="includeIgv"
+              class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-500 rounded focus:ring-blue-500 focus:ring-2 flex-shrink-0" />
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 leading-tight">Incluir 18% IGV</span>
+          </label>
+
+          <!-- % Gastos Generales -->
+          <div class="flex flex-col">
+            <label class="f-label">% Gastos generales</label>
+            <p-inputNumber formControlName="percentageGeneralExpenses" suffix="%"
+              class="w-full" styleClass="w-full" inputStyleClass="w-full"
+              [showButtons]="true" [min]="0" [max]="100"></p-inputNumber>
+          </div>
+
+          <!-- % Alojamiento -->
+          <div class="flex flex-col">
+            <label class="f-label">% Alojamiento</label>
+            <p-inputNumber formControlName="percentageAccommodationFood" suffix="%"
+              class="w-full" styleClass="w-full" inputStyleClass="w-full"
+              [showButtons]="true" [min]="0" [max]="100"></p-inputNumber>
+          </div>
+
+          <!-- % Utilidad -->
+          <div class="flex flex-col">
+            <label class="f-label">% Utilidad Tecmeing</label>
+            <p-inputNumber formControlName="percentageUtilities" suffix="%"
+              class="w-full" styleClass="w-full" inputStyleClass="w-full"
+              [showButtons]="true" [min]="0" [max]="100"></p-inputNumber>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Ítems comerciales -->
+      <div formArrayName="items" class="space-y-4">
+        @for (main of items.controls; track index; let index = $index) {
+          <div [formGroupName]="index"
+            class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
+
+            <!-- Fila principal del ítem -->
+            <div class="flex gap-3 mb-3">
+              <!-- Número de ítem -->
+              <span class="inline-flex items-center justify-center w-7 h-7 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-xs font-bold flex-shrink-0 mt-6">
+                {{ index + 1 }}
+              </span>
+
+              <!-- Campos del ítem en grid -->
+              <div class="flex-1 grid grid-cols-1 sm:grid-cols-[1fr_80px_80px_140px_auto] gap-3">
+                <div class="flex flex-col">
+                  <label class="f-label">Concepto a cotizar</label>
+                  <input type="text" formControlName="description"
+                    placeholder="Describe el concepto..."
+                    class="f-input font-semibold" />
+                </div>
+                <div class="flex flex-col">
+                  <label class="f-label">Unidad</label>
+                  <input type="text" formControlName="unit" class="f-input text-center" />
+                </div>
+                <div class="flex flex-col">
+                  <label class="f-label">Cantidad</label>
+                  <p-inputNumber formControlName="qty"
+                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                </div>
+                <div class="flex flex-col">
+                  <label class="f-label">Precio unit. (S/)</label>
+                  <p-inputNumber formControlName="price" mode="currency" currency="PEN"
+                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                </div>
+                <div class="flex flex-col">
+                  <label class="f-label text-green-600 dark:text-green-400">Total</label>
+                  <div class="f-input bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/50 text-right font-bold text-green-800 dark:text-green-300 font-mono select-none cursor-default">
+                    {{ getItemTotal(index) | currency:'PEN':'S/ ' }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botón eliminar ítem -->
+              <button type="button" (click)="removeMainItem(index)"
+                class="self-start mt-6 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex-shrink-0">
+                <i class="pi pi-trash text-sm"></i>
+              </button>
+            </div>
+
+            <!-- Sub-ítems -->
+            <div class="ml-10 pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-2">
+              <div formArrayName="subItems">
+                @for (sub of getSubItems(index); track subIndex; let subIndex = $index) {
+                  <div [formGroupName]="subIndex" class="cost-row">
+                    <div class="flex-1 min-w-[140px]">
+                      <label class="f-label">Sub-concepto</label>
+                      <input type="text" formControlName="description"
+                        class="f-input bg-gray-50 dark:bg-gray-700" />
+                    </div>
+                    <div class="w-24">
+                      <label class="f-label">Unidad</label>
+                      <input type="text" formControlName="unit"
+                        class="f-input text-center bg-gray-50 dark:bg-gray-700" />
+                    </div>
+                    <div class="w-28">
+                      <label class="f-label">Cantidad</label>
+                      <p-inputNumber formControlName="qty"
+                        class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                    </div>
+                    <div class="w-36">
+                      <label class="f-label">Precio (S/)</label>
+                      <p-inputNumber formControlName="price" mode="currency" currency="PEN"
+                        class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                    </div>
+                    <div class="w-32">
+                      <label class="f-label text-green-600 dark:text-green-400">Total</label>
+                      <div class="f-input bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/50 text-right font-bold text-green-800 dark:text-green-300 font-mono select-none cursor-default text-xs">
+                        {{ getSubItemTotal(index, subIndex) | currency:'PEN':'S/ ' }}
+                      </div>
+                    </div>
+                    <button type="button" (click)="removeSubItem(index, subIndex)" class="btn-delete">
+                      <i class="pi pi-times text-sm"></i>
+                    </button>
+                  </div>
+                }
+              </div>
+              <button type="button" (click)="addSubItem(index)" class="btn-add-item">
+                <i class="pi pi-plus text-[10px]"></i> Agregar sub-concepto
+              </button>
+            </div>
+
+          </div>
+        }
+      </div>
+
+      <div class="mt-5 text-center">
+        <button type="button" (click)="addMainItem()"
+          class="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+          <i class="pi pi-plus text-xs"></i> Añadir concepto a vender
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ 5. Secciones de Cumplimiento ════════════════════════════════ -->
+    <hr class="border-gray-200 dark:border-gray-700" />
+
+    <div class="space-y-5">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
+          <i class="pi pi-check-circle text-green-500"></i> Obligaciones y Cumplimientos
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Define las responsabilidades y compromisos de cada parte para la ejecución del proyecto.
+        </p>
+      </div>
+
+      <!-- Cumplimiento del Cliente -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-blue-200 dark:border-blue-800/50 shadow-sm overflow-hidden">
+        <div class="bg-blue-50 dark:bg-blue-900/20 px-5 py-3 border-b border-blue-200 dark:border-blue-800/50">
+          <h3 class="font-semibold text-blue-800 dark:text-blue-300 text-sm flex items-center gap-2">
+            <i class="pi pi-building text-sm"></i> Cumplimiento del Cliente
+          </h3>
+          <p class="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+            Obligaciones que el cliente debe proveer para la correcta ejecución del servicio.
+          </p>
+        </div>
+        <div class="p-5" formArrayName="clientCompliance">
+          <div class="space-y-2">
+            @for (item of clientComplianceArray.controls; track index; let index = $index) {
+              <div [formGroupName]="index" class="flex gap-2 items-center">
+                <span class="text-blue-400 text-xs font-mono w-5 text-right flex-shrink-0">{{ index + 1 }}.</span>
+                <input type="text" formControlName="description"
+                  placeholder="Describe la obligación del cliente..."
+                  class="f-input" />
+                <button type="button" (click)="removeComplianceItem('clientCompliance', index)"
+                  class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex-shrink-0">
+                  <i class="pi pi-times text-sm"></i>
+                </button>
+              </div>
+            }
+          </div>
+          @if (clientComplianceArray.length === 0) {
+            <p class="text-xs text-gray-400 dark:text-gray-500 italic py-1">
+              Sin ítems. Agrega las obligaciones del cliente.
+            </p>
+          }
+          <button type="button" (click)="addComplianceItem('clientCompliance')"
+            class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+            <i class="pi pi-plus text-[10px]"></i> Agregar ítem
+          </button>
+        </div>
+      </div>
+
+      <!-- Cumplimiento de Coordinación -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-amber-800/50 shadow-sm overflow-hidden">
+        <div class="bg-amber-50 dark:bg-amber-900/20 px-5 py-3 border-b border-amber-200 dark:border-amber-800/50">
+          <h3 class="font-semibold text-amber-800 dark:text-amber-300 text-sm flex items-center gap-2">
+            <i class="pi pi-calendar-clock text-sm"></i>
+            Cumplimiento de Coordinación, Plazo y Stand By por Equipos del Cliente
+          </h3>
+          <p class="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+            Condiciones de coordinación, plazos acordados y tiempos de stand by aplicables.
+          </p>
+        </div>
+        <div class="p-5" formArrayName="coordCompliance">
+          <div class="space-y-2">
+            @for (item of coordComplianceArray.controls; track index; let index = $index) {
+              <div [formGroupName]="index" class="flex gap-2 items-center">
+                <span class="text-amber-400 text-xs font-mono w-5 text-right flex-shrink-0">{{ index + 1 }}.</span>
+                <input type="text" formControlName="description"
+                  placeholder="Describe la condición de coordinación o plazo..."
+                  class="f-input" />
+                <button type="button" (click)="removeComplianceItem('coordCompliance', index)"
+                  class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex-shrink-0">
+                  <i class="pi pi-times text-sm"></i>
+                </button>
+              </div>
+            }
+          </div>
+          @if (coordComplianceArray.length === 0) {
+            <p class="text-xs text-gray-400 dark:text-gray-500 italic py-1">
+              Sin ítems. Agrega las condiciones de coordinación y plazos.
+            </p>
+          }
+          <button type="button" (click)="addComplianceItem('coordCompliance')"
+            class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors">
+            <i class="pi pi-plus text-[10px]"></i> Agregar ítem
+          </button>
+        </div>
+      </div>
+
+      <!-- Cumplimiento de Tecmeing -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-green-200 dark:border-green-800/50 shadow-sm overflow-hidden">
+        <div class="bg-green-50 dark:bg-green-900/20 px-5 py-3 border-b border-green-200 dark:border-green-800/50">
+          <h3 class="font-semibold text-green-800 dark:text-green-300 text-sm flex items-center gap-2">
+            <i class="pi pi-verified text-sm"></i> Cumplimiento de Tecmeing
+          </h3>
+          <p class="text-xs text-green-600 dark:text-green-400 mt-0.5">
+            Compromisos y entregables que Tecmeing garantiza en la ejecución del proyecto.
+          </p>
+        </div>
+        <div class="p-5" formArrayName="tecmeingCompliance">
+          <div class="space-y-2">
+            @for (item of tecmeingComplianceArray.controls; track index; let index = $index) {
+              <div [formGroupName]="index" class="flex gap-2 items-center">
+                <span class="text-green-500 text-xs font-mono w-5 text-right flex-shrink-0">{{ index + 1 }}.</span>
+                <input type="text" formControlName="description"
+                  placeholder="Describe el compromiso de Tecmeing..."
+                  class="f-input" />
+                <button type="button" (click)="removeComplianceItem('tecmeingCompliance', index)"
+                  class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex-shrink-0">
+                  <i class="pi pi-times text-sm"></i>
+                </button>
+              </div>
+            }
+          </div>
+          @if (tecmeingComplianceArray.length === 0) {
+            <p class="text-xs text-gray-400 dark:text-gray-500 italic py-1">
+              Sin ítems. Agrega los compromisos de Tecmeing.
+            </p>
+          }
+          <button type="button" (click)="addComplianceItem('tecmeingCompliance')"
+            class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors">
+            <i class="pi pi-plus text-[10px]"></i> Agregar ítem
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Footer ════════════════════════════════════════════════════════ -->
+    <div class="flex justify-end gap-3 pt-4 pb-8">
+      <button type="button" (click)="goBack()"
+        class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        Cancelar
+      </button>
+      <button type="button" (click)="save()" [disabled]="loading()"
+        class="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg shadow-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+        <i class="pi text-xs" [class.pi-save]="!loading()" [class.pi-spin]="loading()" [class.pi-spinner]="loading()"></i>
+        Guardar cotización
+      </button>
+    </div>
+
+  </form>
+</div>
