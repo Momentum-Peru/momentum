@@ -36,6 +36,7 @@
     "@primeuix/themes": "^1.2.5",
     "@types/uuid": "^11.0.0",
     "chart.js": "^4.5.1",
+    "exceljs": "^4.4.0",
     "face-api.js": "^0.22.2",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",

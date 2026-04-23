@@ -9,13 +9,9 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder } from '@angular/forms';
-import { MenuModule } from 'primeng/menu';
-import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ConfirmationService } from 'primeng/api';
 
 import { QuotesApiService } from '../../shared/services/quotes-api.service';
+import { QuotePdfService } from '../../shared/services/quote-pdf.service';
 import { ClientsApiService, ClientOption } from '../../shared/services/clients-api.service';
 import { ProjectsApiService } from '../../shared/services/projects-api.service';
 import {
@@ -25,7 +21,6 @@ import {
   QuoteListResponse,
 } from '../../shared/interfaces/quote.interface';
 import { Project } from '../../shared/interfaces/project.interface';
-import { TruncatePipe } from './truncate.pipe';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { MenuService } from '../../shared/services/menu.service';
@@ -38,22 +33,20 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    MenuModule,
-    ToastModule,
-    ConfirmDialogModule,
     RouterModule,
   ],
-  providers: [MessageService, ConfirmationService],
+  providers: [],
   templateUrl: './quotes.html',
   styleUrls: ['./quotes.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuotesPage implements OnInit {
   private readonly quotesApi = inject(QuotesApiService);
+  private readonly quotePdfService = inject(QuotePdfService);
   private readonly clientsApi = inject(ClientsApiService);
   private readonly projectsApi = inject(ProjectsApiService);
-  private readonly messageService = inject(MessageService);
-  private readonly confirmationService = inject(ConfirmationService);
+  // private readonly messageService = inject(MessageService);
+  // private readonly confirmationService = inject(ConfirmationService);
   private readonly menuService = inject(MenuService);
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
@@ -187,11 +180,7 @@ export class QuotesPage implements OnInit {
       },
       error: (error) => {
         console.error('Error loading quotes:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Error al cargar las cotizaciones',
-        });
+        alert('Error: Error al cargar las cotizaciones');
         this.loading.set(false);
       },
     });
@@ -202,11 +191,7 @@ export class QuotesPage implements OnInit {
       next: (clients) => this.clients.set(clients),
       error: (error) => {
         console.error('Error loading clients:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Error al cargar los clientes',
-        });
+        alert('Error: Error al cargar los clientes');
       },
     });
   }
@@ -216,11 +201,7 @@ export class QuotesPage implements OnInit {
       next: (projects) => this.projects.set(projects),
       error: (error) => {
         console.error('Error loading projects:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Error al cargar los proyectos',
-        });
+        alert('Error: Error al cargar los proyectos');
       },
     });
   }
@@ -232,11 +213,7 @@ export class QuotesPage implements OnInit {
         next: (requirements) => this.requirements.set(requirements),
         error: (error) => {
           console.error('Error loading requirements:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Error al cargar los requerimientos',
-          });
+          alert('Error: Error al cargar los requerimientos');
         },
       });
   }
@@ -282,22 +259,18 @@ export class QuotesPage implements OnInit {
         this.quotesApi.create(cloneData).subscribe({
           next: (created) => {
             this.loading.set(false);
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Cotización Clonada',
-              detail: `Nueva cotización #${created.number} creada exitosamente`,
-            });
+            alert(`Cotización Clonada: Nueva cotización #${created.number} creada exitosamente`);
             this.router.navigate(['./edit', created._id], { relativeTo: this.route });
           },
           error: () => {
             this.loading.set(false);
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo clonar la cotización' });
+            alert('Error: No se pudo clonar la cotización');
           },
         });
       },
       error: () => {
         this.loading.set(false);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar la cotización' });
+        alert('Error: No se pudo cargar la cotización');
       },
     });
   }
@@ -339,64 +312,39 @@ export class QuotesPage implements OnInit {
   // }
 
   openPdf(quote: Quote) {
-    // Si hay documentos subidos, abrir el primero
-    if (quote.documents && quote.documents.length > 0) {
-      const firstDocument = quote.documents[0];
-      window.open(firstDocument, '_blank');
-    } else {
-      // Si no hay documentos, generar el PDF de la cotización
-      const pdfUrl = this.quotesApi.generatePdf(quote._id!);
-      window.open(pdfUrl, '_blank');
-    }
+    this.quotesApi.getById(quote._id!).subscribe(full => {
+      const clientName  = this.getClientName(full.clientId);
+      const projectName = this.getProjectName(full.projectId);
+      this.quotePdfService.export(full, clientName, projectName);
+    });
   }
 
   updateQuoteState(quote: Quote, state: QuoteState) {
     this.quotesApi.updateState(quote._id!, state).subscribe({
       next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Estado actualizado correctamente',
-        });
+        alert('Estado actualizado correctamente');
         this.loadQuotes();
       },
       error: (error) => {
         console.error('Error updating state:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: this.getErrorMessage(error),
-        });
+        alert(`Error: ${this.getErrorMessage(error)}`);
       },
     });
   }
 
   deleteQuote(quote: Quote) {
-    this.confirmationService.confirm({
-      message: '¿Estás seguro de eliminar esta cotización?',
-      header: 'Confirmar eliminación',
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        this.quotesApi.delete(quote._id!).subscribe({
-          next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Éxito',
-              detail: 'Cotización eliminada correctamente',
-            });
-            this.loadQuotes();
-          },
-          error: (error) => {
-            console.error('Error deleting quote:', error);
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: this.getErrorMessage(error),
-            });
-          },
-        });
-      },
-    });
+    if (confirm('¿Estás seguro de eliminar esta cotización?')) {
+      this.quotesApi.delete(quote._id!).subscribe({
+        next: () => {
+          alert('Cotización eliminada correctamente');
+          this.loadQuotes();
+        },
+        error: (error) => {
+          console.error('Error deleting quote:', error);
+          alert(`Error: ${this.getErrorMessage(error)}`);
+        },
+      });
+    }
   }
 
   onFileError(event: unknown) {
@@ -440,47 +388,33 @@ export class QuotesPage implements OnInit {
     const currentDocuments = this.existingDocuments();
     const documentToRemove = currentDocuments[index];
 
-    // Confirmar eliminación
-    this.confirmationService.confirm({
-      message: '¿Estás seguro de eliminar este documento?',
-      header: 'Confirmar eliminación',
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        this.quotesApi.removeDocument(this.editing()!._id!, documentToRemove).subscribe({
-          next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Éxito',
-              detail: 'Documento eliminado correctamente',
-            });
+    if (confirm('¿Estás seguro de eliminar este documento?')) {
+      this.quotesApi.removeDocument(this.editing()!._id!, documentToRemove).subscribe({
+        next: () => {
+          alert('Documento eliminado correctamente');
 
-            // Actualizar la lista de documentos existentes
-            const updatedDocuments = currentDocuments.filter((_, i) => i !== index);
-            this.existingDocuments.set(updatedDocuments);
+          // Actualizar la lista de documentos existentes
+          const updatedDocuments = currentDocuments.filter((_, i) => i !== index);
+          this.existingDocuments.set(updatedDocuments);
 
-            // Actualizar el formulario
-            this.quoteForm.patchValue({
-              documents: updatedDocuments,
-            });
+          // Actualizar el formulario
+          this.quoteForm.patchValue({
+            documents: updatedDocuments,
+          });
 
-            // Actualizar el objeto de edición
-            this.editing.update((quote) =>
-              quote ? { ...quote, documents: updatedDocuments } : null
-            );
+          // Actualizar el objeto de edición
+          this.editing.update((quote) =>
+            quote ? { ...quote, documents: updatedDocuments } : null
+          );
 
-            this.loadQuotes();
-          },
-          error: (error) => {
-            console.error('Error removing document:', error);
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: this.getErrorMessage(error),
-            });
-          },
-        });
-      },
-    });
+          this.loadQuotes();
+        },
+        error: (error) => {
+          console.error('Error removing document:', error);
+          alert(`Error: ${this.getErrorMessage(error)}`);
+        },
+      });
+    }
   }
 
   getClientName(clientId: string | { _id: string; name: string; taxId?: string }): string {
@@ -497,6 +431,16 @@ export class QuotesPage implements OnInit {
     }
     const project = this.projects().find((p) => p._id === projectId);
     return project?.name || 'Proyecto no encontrado';
+  }
+
+
+
+  getCurrencySymbol(quote: Quote): string {
+    return quote.currency === 'USD' ? '$ ' : 'S/ ';
+  }
+
+  getCurrencyCode(quote: Quote): string {
+    return quote.currency || 'PEN';
   }
 
   getStateSeverity(
@@ -540,6 +484,7 @@ export class QuotesPage implements OnInit {
   }
 
   onPageChange(event: { first?: number; rows?: number }) {
+    if (!event) return;
     const first: number = typeof event.first === 'number' ? event.first : 0;
     const rows: number = typeof event.rows === 'number' ? event.rows : this.pagination().limit;
     const pageCalculated = rows > 0 ? Math.floor(first / rows) : 0;

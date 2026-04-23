@@ -3,13 +3,9 @@ import { CommonModule, Location } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
-import { MessageService } from 'primeng/api';
 
-// PrimeNG — solo componentes complejos sin reemplazo nativo simple
-import { SelectModule } from 'primeng/select';
-import { DatePickerModule } from 'primeng/datepicker';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { ToastModule } from 'primeng/toast';
+// Native replacements for PrimeNG
+// import { MessageService } from 'primeng/api'; // Removed
 
 import { QuotesApiService } from '../../../shared/services/quotes-api.service';
 import { ClientsApiService, ClientOption } from '../../../shared/services/clients-api.service';
@@ -23,12 +19,8 @@ import { Project } from '../../../shared/interfaces/project.interface';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    SelectModule,
-    DatePickerModule,
-    InputNumberModule,
-    ToastModule,
   ],
-  providers: [MessageService],
+  providers: [],
   templateUrl: './quote-form.html',
   styleUrl: './quote-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -38,7 +30,7 @@ export class QuoteForm implements OnInit {
   private readonly quotesApi = inject(QuotesApiService);
   private readonly clientsApi = inject(ClientsApiService);
   private readonly projectsApi = inject(ProjectsApiService);
-  private readonly messageService = inject(MessageService);
+  // private readonly messageService = inject(MessageService); // Removed
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
@@ -49,6 +41,8 @@ export class QuoteForm implements OnInit {
   loading = signal<boolean>(false);
   calculatedQuote = signal<Quote | null>(null);
 
+  // Tab principal: 0 = Cotización, 1 = Estructura de Costos
+  activeMainTab = signal<number>(0);
   // Tab activo en sección de costos (0-6)
   activeCostTab = signal<number>(0);
 
@@ -62,7 +56,11 @@ export class QuoteForm implements OnInit {
     { label: 'Alojamiento', icon: 'pi-home', totalKey: 'totalAccommodations' },
   ] as const;
 
-  // Totales calculados localmente (para mostrar en tiempo real)
+  // Moneda reactiva — se actualiza vía suscripción en ngOnInit
+  private readonly _currency = signal<'PEN' | 'USD'>('PEN');
+  currentCurrency     = this._currency.asReadonly();
+  currentCurrencySymbol = computed(() => this._currency() === 'USD' ? '$' : 'S/');
+
   localItemsSubtotal = computed(() => {
     const items = this.quoteForm?.get('items')?.value || [];
     return items.reduce((sum: number, item: any) => sum + ((item.price || 0) * (item.qty || 0)), 0);
@@ -82,6 +80,11 @@ export class QuoteForm implements OnInit {
     { label: 'Rxh', value: 'Rxh' }
   ];
 
+  currencyOptions = [
+    { label: 'Soles (S/)', value: 'PEN' },
+    { label: 'Dólares ($)', value: 'USD' }
+  ];
+
   expenseTypeOptions = [
     { label: 'Fijo', value: 'Fijo' },
     { label: 'Variable', value: 'Variable' }
@@ -96,6 +99,7 @@ export class QuoteForm implements OnInit {
     clientId: ['', Validators.required],
     projectId: ['', Validators.required],
     state: ['Pendiente'],
+    currency: ['PEN', Validators.required],
     createDate: [new Date(), Validators.required],
     location: [''],
     area: [0],
@@ -133,6 +137,11 @@ export class QuoteForm implements OnInit {
     this.clientsApi.list().subscribe(res => this.clients.set(res));
     this.projectsApi.list().subscribe(res => this.projects.set(res));
 
+    // Sync currency signal with form control
+    this.quoteForm.get('currency')!.valueChanges.subscribe(v => {
+      this._currency.set((v || 'PEN') as 'PEN' | 'USD');
+    });
+
     this.quoteForm.valueChanges
       .pipe(
         debounceTime(700),
@@ -140,13 +149,14 @@ export class QuoteForm implements OnInit {
       )
       .subscribe(val => {
         if (!val.clientId || !val.projectId) return;
+        const { clientCompliance, coordCompliance, tecmeingCompliance, ...rest } = val;
         const quoteData = {
-          ...val,
-          includeExpenses: val.includeExpenses || false,
-          includeIgv: val.includeIgv || false,
-          percentageGeneralExpenses: val.percentageGeneralExpenses || 0,
-          percentageAccommodationFood: val.percentageAccommodationFood || 0,
-          percentageUtilities: val.percentageUtilities || 0
+          ...rest,
+          includeExpenses: rest.includeExpenses || false,
+          includeIgv: rest.includeIgv || false,
+          percentageGeneralExpenses: rest.percentageGeneralExpenses || 0,
+          percentageAccommodationFood: rest.percentageAccommodationFood || 0,
+          percentageUtilities: rest.percentageUtilities || 0
         };
         this.quotesApi.calculate(quoteData as Quote).subscribe({
           next: (res) => this.calculatedQuote.set(res),
@@ -162,10 +172,12 @@ export class QuoteForm implements OnInit {
         const clientVal = typeof quote.clientId === 'object' ? quote.clientId._id : quote.clientId;
         const projectVal = typeof quote.projectId === 'object' ? quote.projectId._id : quote.projectId;
 
+        this._currency.set((quote.currency || 'PEN') as 'PEN' | 'USD');
         this.quoteForm.patchValue({
           clientId: clientVal,
           projectId: projectVal,
           state: quote.state,
+          currency: quote.currency || 'PEN',
           createDate: new Date(quote.createDate),
           location: quote.location,
           area: quote.area,
@@ -273,7 +285,7 @@ export class QuoteForm implements OnInit {
     if (quote.items) {
       quote.items.forEach(i => {
         this.items.push(this.fb.group({
-          description: [i.description], qty: [i.qty], unit: [i.unit], price: [i.price],
+          number: [i.number || ''], description: [i.description], qty: [i.qty], unit: [i.unit], price: [i.price],
           subItems: this.fb.array(i.subItems ? i.subItems.map(s => this.fb.group({
             description: [s.description], qty: [s.qty], unit: [s.unit], price: [s.price]
           })) : [])
@@ -382,7 +394,7 @@ export class QuoteForm implements OnInit {
   // --- Ítems comerciales ---
   addMainItem() {
     this.items.push(this.fb.group({
-      description: [''], qty: [1], unit: ['Und'], price: [0],
+      number: [''], description: [''], qty: [1], unit: ['Und'], price: [0],
       subItems: this.fb.array([])
     }));
   }
@@ -431,7 +443,8 @@ export class QuoteForm implements OnInit {
 
   save() {
     if (this.quoteForm.invalid) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Complete los campos obligatorios.' });
+      // this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Complete los campos obligatorios.' });
+      alert('Por favor, complete todos los campos obligatorios.');
       return;
     }
 
@@ -444,11 +457,11 @@ export class QuoteForm implements OnInit {
 
     req.subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cotización guardada exitosamente.' });
+        // alert('Cotización guardada exitosamente.');
         this.router.navigate(['/quotes']);
       },
       error: () => {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar.' });
+        alert('No se pudo guardar la cotización.');
         this.loading.set(false);
       }
     });

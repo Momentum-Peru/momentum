@@ -141,6 +141,7 @@ export interface Quote {
   _id?: string;
   clientId: string | { _id: string; name: string; taxId?: string };
   state: QuoteState;
+  currency: 'PEN' | 'USD';
   projectId: string | { _id: string; name: string; code: string };
   requirementId?: string | { _id: string; codigo: string; title: string };
   number: string;
