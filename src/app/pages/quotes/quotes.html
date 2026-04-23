@@ -1,9 +1,4 @@
 <div class="p-6 space-y-6">
-  <!-- Toast para notificaciones -->
-  <p-toast [life]="5000"></p-toast>
-
-  <!-- Confirmación de eliminación -->
-  <p-confirmDialog></p-confirmDialog>
 
   <!-- Header con búsqueda y acciones -->
   <div class="flex flex-wrap xl:flex-nowrap items-center gap-3">
@@ -39,14 +34,13 @@
           <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Proyecto</th>
           <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Estado</th>
           <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Fecha</th>
-          <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Docs</th>
           <th class="text-center px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Acciones</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-100 dark:divide-gray-700/50">
         @if (loading()) {
           <tr>
-            <td colspan="7" class="text-center py-12">
+            <td colspan="6" class="text-center py-12">
               <div class="flex flex-col items-center gap-2 text-gray-400">
                 <i class="pi pi-spin pi-spinner text-3xl"></i>
                 <span class="text-sm">Cargando...</span>
@@ -55,7 +49,7 @@
           </tr>
         } @else if (quotes().length === 0) {
           <tr>
-            <td colspan="7" class="text-center py-12">
+            <td colspan="6" class="text-center py-12">
               <div class="flex flex-col items-center gap-2 text-gray-400">
                 <i class="pi pi-inbox text-3xl"></i>
                 <span class="text-sm">No se encontraron cotizaciones</span>
@@ -84,9 +78,6 @@
               <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
                 {{ quote.createDate | date: 'dd/MM/yyyy' }}
               </td>
-              <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
-                {{ quote.documents?.length || 0 }}
-              </td>
               <td class="px-4 py-3">
                 <div class="flex items-center gap-0.5 justify-center">
                   <button
@@ -105,23 +96,18 @@
                   >
                     <i class="pi pi-eye text-sm"></i>
                   </button>
-                  <p-menu
-                    #stateMenu
-                    [model]="getStateMenuItems(quote)"
-                    [popup]="true"
-                    [appendTo]="'body'"
-                    [autoZIndex]="true"
-                    [showTransitionOptions]="'0ms'"
-                    [hideTransitionOptions]="'0ms'"
-                  ></p-menu>
-                  <button
-                    type="button"
-                    (click)="stateMenu.toggle($event)"
+                  <select 
+                    class="p-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    (change)="updateQuoteState(quote, $any($event.target).value)"
                     title="Cambiar estado"
-                    class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
-                    <i class="pi pi-cog text-sm"></i>
-                  </button>
+                    <option value="" disabled selected>Estado</option>
+                    @for (option of stateOptions; track option.value) {
+                      <option [value]="option.value" [selected]="quote.state === option.value">
+                        {{ option.label }}
+                      </option>
+                    }
+                  </select>
                   @if (canEdit()) {
                     <button
                       type="button"
@@ -217,17 +203,10 @@
                 <span class="font-medium text-gray-900 dark:text-gray-100">{{ quote.createDate | date: 'dd/MM/yyyy' }}</span>
               </div>
             }
-            @if (quote.grandTotalQuote) {
               <div class="flex justify-between text-sm">
                 <span class="text-gray-500">Total</span>
-                <span class="font-semibold text-gray-900 dark:text-gray-100">S/ {{ quote.grandTotalQuote | number: '1.2-2' }}</span>
+                <span class="font-semibold text-gray-900 dark:text-gray-100">{{ quote.grandTotalQuote | currency:getCurrencyCode(quote):getCurrencySymbol(quote) }}</span>
               </div>
-            }
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-500">Documentos</span>
-              <span class="text-gray-700 dark:text-gray-300">{{ quote.documents?.length || 0 }}</span>
-            </div>
-
             <div class="pt-2 flex flex-wrap gap-2">
               <button type="button" (click)="openPdf(quote)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
                 <i class="pi pi-file-pdf text-xs"></i> Documento
@@ -250,15 +229,6 @@
           </div>
         }
 
-        <p-menu
-          #stateMenu
-          [model]="getStateMenuItems(quote)"
-          [popup]="true"
-          [appendTo]="'body'"
-          [autoZIndex]="true"
-          [showTransitionOptions]="'0ms'"
-          [hideTransitionOptions]="'0ms'"
-        ></p-menu>
       </div>
     }
 

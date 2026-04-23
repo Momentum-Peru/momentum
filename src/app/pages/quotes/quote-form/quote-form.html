@@ -1,5 +1,4 @@
 <div class="px-4 py-6 md:px-8 w-full max-w-[1400px] mx-auto">
-  <p-toast></p-toast>
 
   <!-- ══ Header ══════════════════════════════════════════════════════ -->
   <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
@@ -42,31 +41,49 @@
         <!-- Cliente -->
         <div class="flex flex-col">
           <label class="f-label">Cliente <span class="text-red-500">*</span></label>
-          <p-select [options]="clients()" optionLabel="name" optionValue="_id"
-            formControlName="clientId" placeholder="Selecciona un cliente..."
-            appendTo="body" class="w-full" styleClass="w-full"></p-select>
+          <select formControlName="clientId" class="f-input">
+            <option value="" disabled>Selecciona un cliente...</option>
+            @for (client of clients(); track client._id) {
+              <option [value]="client._id">{{ client.name }}</option>
+            }
+          </select>
         </div>
 
         <!-- Proyecto -->
         <div class="flex flex-col">
           <label class="f-label">Proyecto <span class="text-red-500">*</span></label>
-          <p-select [options]="projects()" optionLabel="name" optionValue="_id"
-            formControlName="projectId" placeholder="Selecciona un proyecto..."
-            [filter]="true" appendTo="body" class="w-full" styleClass="w-full"></p-select>
+          <select formControlName="projectId" class="f-input">
+            <option value="" disabled>Selecciona un proyecto...</option>
+            @for (project of projects(); track project._id) {
+              <option [value]="project._id">{{ project.name }}</option>
+            }
+          </select>
         </div>
 
         <!-- Estado -->
         <div class="flex flex-col">
           <label class="f-label">Estado</label>
-          <p-select [options]="stateOptions" optionLabel="label" optionValue="value"
-            formControlName="state" appendTo="body" class="w-full" styleClass="w-full"></p-select>
+          <select formControlName="state" class="f-input">
+            @for (opt of stateOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+        
+        <!-- Moneda -->
+        <div class="flex flex-col">
+          <label class="f-label">Moneda <span class="text-red-500">*</span></label>
+          <select formControlName="currency" class="f-input">
+            @for (opt of currencyOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
         </div>
 
         <!-- Fecha -->
         <div class="flex flex-col">
           <label class="f-label">Fecha de creación</label>
-          <p-datepicker formControlName="createDate" dateFormat="dd/mm/yy"
-            [showIcon]="true" class="w-full" inputStyleClass="w-full"></p-datepicker>
+          <input type="date" formControlName="createDate" class="f-input" />
         </div>
 
         <!-- Ubicación -->
@@ -78,7 +95,7 @@
         <!-- Área -->
         <div class="flex flex-col">
           <label class="f-label">Área (m²)</label>
-          <p-inputNumber formControlName="area" class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+          <input type="number" formControlName="area" class="f-input" />
         </div>
 
         <!-- Notas internas — ocupa 2 columnas en sm+, 2 en xl -->
@@ -91,49 +108,70 @@
       </div>
     </div>
 
-    <!-- ══ 2. Panel de Totales (sticky) ═══════════════════════════════ -->
+    <!-- ══ Tabs principales ══════════════════════════════════════════════ -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div class="flex border-b border-gray-200 dark:border-gray-700">
+        <button type="button" (click)="activeMainTab.set(0)"
+          [ngClass]="activeMainTab() === 0
+            ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'"
+          class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-semibold transition-colors focus:outline-none">
+          <i class="pi pi-file-edit text-sm"></i> Cotización
+        </button>
+        <button type="button" (click)="activeMainTab.set(1)"
+          [ngClass]="activeMainTab() === 1
+            ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'"
+          class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-semibold transition-colors focus:outline-none">
+          <i class="pi pi-wallet text-sm"></i> Estructura de Costos
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ Tab 1: Estructura de Costos ══════════════════════════════════ -->
+    @if (activeMainTab() === 1) {
+
+    <!-- Resumen de Costos y Presupuesto -->
     @if (calculatedQuote(); as calc) {
       <div class="sticky top-0 z-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md p-4">
         <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
           <i class="pi pi-chart-bar text-blue-500"></i>
           Resumen de Costos y Presupuesto
         </p>
-        <!-- Breakdown por categoría -->
         <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-3">
           @for (tab of costTabs; track $index) {
             <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg px-2 py-1.5 text-center min-w-0">
               <p class="text-[10px] text-gray-400 truncate leading-tight">{{ tab.label }}</p>
               <p class="text-xs font-semibold text-gray-700 dark:text-gray-200 font-mono leading-tight mt-0.5">
-                {{ getCostTotal(tab.totalKey) | number:'1.0-0' }}
+                {{ getCostTotal(tab.totalKey) | currency:currentCurrency():currentCurrencySymbol() + ' ' }}
               </p>
             </div>
           }
         </div>
-        <!-- Totales principales -->
         <div class="flex flex-wrap gap-4 pt-3 border-t border-gray-100 dark:border-gray-700">
           <div class="flex-1 min-w-[140px]">
             <p class="text-xs text-gray-500 dark:text-gray-400">Costo Total Directo</p>
             <p class="text-xl font-bold text-blue-700 dark:text-blue-300 font-mono leading-tight">
-              {{ calc.costs?.grandTotalCosts | currency:'PEN':'S/ ' }}
+              {{ calc.costs?.grandTotalCosts | currency:currentCurrency():currentCurrencySymbol() + ' ' }}
             </p>
           </div>
           <div class="flex-1 min-w-[140px]">
             <p class="text-xs text-gray-500 dark:text-gray-400">Ítems Comerciales</p>
             <p class="text-xl font-bold text-gray-700 dark:text-gray-200 font-mono leading-tight">
-              {{ localItemsSubtotal() | currency:'PEN':'S/ ' }}
+              {{ localItemsSubtotal() | currency:currentCurrency():currentCurrencySymbol() + ' ' }}
             </p>
           </div>
           <div class="flex-1 min-w-[160px] border-l border-gray-200 dark:border-gray-700 pl-4">
             <p class="text-xs font-semibold text-green-600 dark:text-green-400">Presupuesto Final de Venta</p>
             <p class="text-2xl font-bold text-green-700 dark:text-green-300 font-mono leading-tight">
-              {{ calc.grandTotalQuote | currency:'PEN':'S/ ' }}
+              {{ calc.grandTotalQuote | currency:currentCurrency():currentCurrencySymbol() + ' ' }}
             </p>
           </div>
           @if ((calc.grandTotalQuote || 0) > (calc.costs?.grandTotalCosts || 0)) {
             <div class="flex-1 min-w-[140px]">
               <p class="text-xs text-gray-500 dark:text-gray-400">Rentabilidad Bruta</p>
               <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono leading-tight">
-                {{ ((calc.grandTotalQuote || 0) - (calc.costs?.grandTotalCosts || 0)) | currency:'PEN':'S/ ' }}
+                {{ ((calc.grandTotalQuote || 0) - (calc.costs?.grandTotalCosts || 0)) | currency:currentCurrency():currentCurrencySymbol() + ' ' }}
               </p>
             </div>
           }
@@ -141,18 +179,13 @@
       </div>
     }
 
-    <!-- ══ 3. Análisis de Costos (Tabs) ═══════════════════════════════ -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+    <div>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        Ingresa todos los costos del proyecto. El sistema calcula beneficios y totales automáticamente.
+      </p>
+    </div>
 
-      <!-- Header de la sección -->
-      <div class="px-5 pt-5 pb-0">
-        <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-          <i class="pi pi-wallet text-blue-500"></i> Análisis de Costos
-        </h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Ingresa todos los costos del proyecto. El sistema calcula beneficios y totales automáticamente.
-        </p>
-      </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
 
       <!-- Navegación de tabs -->
       <div class="overflow-x-auto border-b border-gray-200 dark:border-gray-700 px-5">
@@ -171,7 +204,7 @@
                   [ngClass]="activeCostTab() === $index
                     ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'">
-                  {{ getCostTotal(tab.totalKey) | number:'1.0-0' }}
+                  {{ getCostTotal(tab.totalKey) | currency:currentCurrency():currentCurrencySymbol() + ' ' }}
                 </span>
               }
             </button>
@@ -208,13 +241,14 @@
                       </div>
                       <div class="w-36">
                         <label class="f-label">Costo unitario</label>
-                        <p-inputNumber formControlName="unitCost" mode="currency" currency="PEN"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <div class="relative">
+                          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none select-none">{{ currentCurrencySymbol() }}</span>
+                          <input type="number" formControlName="unitCost" step="0.01" min="0" class="f-input pr-10" />
+                        </div>
                       </div>
                       <div class="w-28">
                         <label class="f-label">Días</label>
-                        <p-inputNumber formControlName="days"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <input type="number" formControlName="days" step="0.5" min="0" class="f-input w-full" />
                       </div>
                       <button type="button" (click)="removeItemFromGroup('vehicles', index, itemIndex)" class="btn-delete">
                         <i class="pi pi-times text-sm"></i>
@@ -252,9 +286,11 @@
                       class="cost-row-lg bg-white dark:bg-gray-800/60 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
                       <div class="w-32 flex-shrink-0">
                         <label class="f-label">Tipo</label>
-                        <p-select formControlName="type" [options]="typeOptions"
-                          optionLabel="label" optionValue="value"
-                          appendTo="body" class="w-full" styleClass="w-full"></p-select>
+                        <select formControlName="type" class="f-input">
+                          @for (opt of typeOptions; track opt.value) {
+                            <option [value]="opt.value">{{ opt.label }}</option>
+                          }
+                        </select>
                       </div>
                       <div class="flex-1 min-w-[140px]">
                         <label class="f-label">Posición / Cargo</label>
@@ -262,23 +298,25 @@
                       </div>
                       <div class="w-36 flex-shrink-0">
                         <label class="f-label">Remuneración base</label>
-                        <p-inputNumber formControlName="baseRemuneration" mode="currency" currency="PEN"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <div class="relative">
+                          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none select-none">{{ currentCurrencySymbol() }}</span>
+                          <input type="number" formControlName="baseRemuneration" step="0.01" min="0" class="f-input pr-10" />
+                        </div>
                       </div>
                       <div class="w-32 flex-shrink-0">
                         <label class="f-label">Asig. Familiar</label>
-                        <p-inputNumber formControlName="familyAssignment" mode="currency" currency="PEN"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <div class="relative">
+                          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none select-none">{{ currentCurrencySymbol() }}</span>
+                          <input type="number" formControlName="familyAssignment" step="0.01" min="0" class="f-input pr-10" />
+                        </div>
                       </div>
                       <div class="w-28 flex-shrink-0">
                         <label class="f-label">Personas</label>
-                        <p-inputNumber formControlName="qtyPersons"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <input type="number" formControlName="qtyPersons" class="f-input" />
                       </div>
                       <div class="w-28 flex-shrink-0">
                         <label class="f-label">Días asig.</label>
-                        <p-inputNumber formControlName="qtyDays"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <input type="number" formControlName="qtyDays" class="f-input" />
                       </div>
                       <button type="button" (click)="removeItemFromGroup('payrolls', index, itemIndex)" class="btn-delete">
                         <i class="pi pi-times text-sm"></i>
@@ -312,18 +350,18 @@
                 </div>
                 <div class="w-36">
                   <label class="f-label">Precio unitario</label>
-                  <p-inputNumber formControlName="unitPrice" mode="currency" currency="PEN"
-                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                  <div class="relative">
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none select-none">{{ currentCurrencySymbol() }}</span>
+                    <input type="number" formControlName="unitPrice" step="0.01" min="0" class="f-input pr-10" />
+                  </div>
                 </div>
                 <div class="w-28">
                   <label class="f-label">Cantidad</label>
-                  <p-inputNumber formControlName="qty"
-                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                  <input type="number" formControlName="qty" step="0.01" min="0" class="f-input" />
                 </div>
                 <div class="w-36">
                   <label class="f-label">Vida útil (meses)</label>
-                  <p-inputNumber formControlName="usefulLifeMonths"
-                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                  <input type="number" formControlName="usefulLifeMonths" step="0.5" min="0" class="f-input" />
                 </div>
                 <button type="button" (click)="removeStandaloneItem('tools', index)" class="btn-delete">
                   <i class="pi pi-times text-sm"></i>
@@ -362,13 +400,14 @@
                       </div>
                       <div class="w-32">
                         <label class="f-label">Metrado</label>
-                        <p-inputNumber formControlName="metrado" mode="decimal" [minFractionDigits]="2"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <input type="number" formControlName="metrado" step="0.01" class="f-input" />
                       </div>
                       <div class="w-36">
                         <label class="f-label">Costo unitario</label>
-                        <p-inputNumber formControlName="unitCost" mode="currency" currency="PEN"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <div class="relative">
+                          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none select-none">{{ currentCurrencySymbol() }}</span>
+                          <input type="number" formControlName="unitCost" step="0.01" min="0" class="f-input pr-10" />
+                        </div>
                       </div>
                       <button type="button" (click)="removeItemFromGroup('materials', index, itemIndex)" class="btn-delete">
                         <i class="pi pi-times text-sm"></i>
@@ -409,24 +448,26 @@
                       </div>
                       <div class="w-32 flex-shrink-0">
                         <label class="f-label">Tipo personal</label>
-                        <p-select formControlName="type" [options]="typeOptions"
-                          optionLabel="label" optionValue="value"
-                          appendTo="body" class="w-full" styleClass="w-full"></p-select>
+                        <select formControlName="type" class="f-input">
+                          @for (opt of typeOptions; track opt.value) {
+                            <option [value]="opt.value">{{ opt.label }}</option>
+                          }
+                        </select>
                       </div>
                       <div class="w-36 flex-shrink-0">
                         <label class="f-label">Costo unitario</label>
-                        <p-inputNumber formControlName="unitCost" mode="currency" currency="PEN"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <div class="relative">
+                          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none select-none">{{ currentCurrencySymbol() }}</span>
+                          <input type="number" formControlName="unitCost" step="0.01" min="0" class="f-input pr-10" />
+                        </div>
                       </div>
                       <div class="w-28 flex-shrink-0">
                         <label class="f-label">Cant. / persona</label>
-                        <p-inputNumber formControlName="qty"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <input type="number" formControlName="qty" step="0.01" min="0" class="f-input" />
                       </div>
                       <div class="w-36 flex-shrink-0">
                         <label class="f-label">Vida útil (meses)</label>
-                        <p-inputNumber formControlName="usefulLifeMonths"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <input type="number" formControlName="usefulLifeMonths" step="0.5" min="0" class="f-input" />
                       </div>
                       <button type="button" (click)="removeItemFromGroup('uniforms', index, itemIndex)" class="btn-delete">
                         <i class="pi pi-times text-sm"></i>
@@ -455,9 +496,11 @@
                     placeholder="Concepto del gasto..."
                     class="group-title-input" />
                   <div class="flex-shrink-0">
-                    <p-select formControlName="type" [options]="expenseTypeOptions"
-                      optionLabel="label" optionValue="value"
-                      appendTo="body" class="w-36" styleClass="w-36"></p-select>
+                    <select formControlName="type" class="f-input w-36">
+                      @for (opt of expenseTypeOptions; track opt.value) {
+                        <option [value]="opt.value">{{ opt.label }}</option>
+                      }
+                    </select>
                   </div>
                   <button type="button" (click)="removeGroup('expenses', index)" class="btn-delete flex-shrink-0">
                     <i class="pi pi-trash text-sm"></i>
@@ -476,18 +519,18 @@
                       </div>
                       <div class="w-28">
                         <label class="f-label">Cuadrillas</label>
-                        <p-inputNumber formControlName="cuadrilla"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <input type="number" formControlName="cuadrilla" class="f-input" />
                       </div>
                       <div class="w-28">
                         <label class="f-label">Cantidad</label>
-                        <p-inputNumber formControlName="qty"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <input type="number" formControlName="qty" class="f-input" />
                       </div>
                       <div class="w-36">
                         <label class="f-label">Precio unitario</label>
-                        <p-inputNumber formControlName="unitPrice" mode="currency" currency="PEN"
-                          class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                        <div class="relative">
+                          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none select-none">{{ currentCurrencySymbol() }}</span>
+                          <input type="number" formControlName="unitPrice" step="0.01" min="0" class="f-input pr-10" />
+                        </div>
                       </div>
                       <button type="button" (click)="removeItemFromGroup('expenses', index, itemIndex)" class="btn-delete">
                         <i class="pi pi-times text-sm"></i>
@@ -513,9 +556,11 @@
               <div [formGroupName]="index" class="cost-row">
                 <div class="w-36 flex-shrink-0">
                   <label class="f-label">Tipo</label>
-                  <p-select formControlName="type" [options]="accommodationTypeOptions"
-                    optionLabel="label" optionValue="value"
-                    appendTo="body" class="w-full" styleClass="w-full"></p-select>
+                  <select formControlName="type" class="f-input">
+                    @for (opt of accommodationTypeOptions; track opt.value) {
+                      <option [value]="opt.value">{{ opt.label }}</option>
+                    }
+                  </select>
                 </div>
                 <div class="flex-1 min-w-[160px]">
                   <label class="f-label">Lugar / descripción</label>
@@ -527,18 +572,18 @@
                 </div>
                 <div class="w-28">
                   <label class="f-label">Personas</label>
-                  <p-inputNumber formControlName="cuadrilla"
-                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                  <input type="number" formControlName="cuadrilla" class="f-input" />
                 </div>
                 <div class="w-28">
                   <label class="f-label">Días totales</label>
-                  <p-inputNumber formControlName="qty"
-                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                  <input type="number" formControlName="qty" class="f-input" />
                 </div>
                 <div class="w-36">
                   <label class="f-label">Precio unitario</label>
-                  <p-inputNumber formControlName="unitPrice" mode="currency" currency="PEN"
-                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                  <div class="relative">
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none select-none">{{ currentCurrencySymbol() }}</span>
+                    <input type="number" formControlName="unitPrice" step="0.01" min="0" class="f-input pr-10" />
+                  </div>
                 </div>
                 <button type="button" (click)="removeStandaloneItem('accommodations', index)" class="btn-delete">
                   <i class="pi pi-times text-sm"></i>
@@ -553,6 +598,10 @@
 
       </div><!-- /tab content -->
     </div><!-- /costos card -->
+    }<!-- /activeMainTab === 1 -->
+
+    <!-- ══ Tab 0: Cotización ══════════════════════════════════════════════ -->
+    @if (activeMainTab() === 0) {
 
     <!-- ══ 4. Cotización Comercial ══════════════════════════════════════ -->
     <hr class="border-gray-200 dark:border-gray-700" />
@@ -567,14 +616,7 @@
 
       <!-- Configuración global -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 mb-5">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-
-          <!-- Incluir costos proyecto -->
-          <label class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors h-[46px]">
-            <input type="checkbox" formControlName="includeExpenses"
-              class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-500 rounded focus:ring-blue-500 focus:ring-2 flex-shrink-0" />
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 leading-tight">Incluir costos proyecto</span>
-          </label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
 
           <!-- Incluir IGV -->
           <label class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors h-[46px]">
@@ -586,25 +628,28 @@
           <!-- % Gastos Generales -->
           <div class="flex flex-col">
             <label class="f-label">% Gastos generales</label>
-            <p-inputNumber formControlName="percentageGeneralExpenses" suffix="%"
-              class="w-full" styleClass="w-full" inputStyleClass="w-full"
-              [showButtons]="true" [min]="0" [max]="100"></p-inputNumber>
+            <div class="relative">
+              <input type="number" formControlName="percentageGeneralExpenses" class="f-input pr-8 text-right" />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">%</span>
+            </div>
           </div>
 
           <!-- % Alojamiento -->
           <div class="flex flex-col">
             <label class="f-label">% Alojamiento</label>
-            <p-inputNumber formControlName="percentageAccommodationFood" suffix="%"
-              class="w-full" styleClass="w-full" inputStyleClass="w-full"
-              [showButtons]="true" [min]="0" [max]="100"></p-inputNumber>
+            <div class="relative">
+              <input type="number" formControlName="percentageAccommodationFood" class="f-input pr-8 text-right" />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">%</span>
+            </div>
           </div>
 
           <!-- % Utilidad -->
           <div class="flex flex-col">
             <label class="f-label">% Utilidad Tecmeing</label>
-            <p-inputNumber formControlName="percentageUtilities" suffix="%"
-              class="w-full" styleClass="w-full" inputStyleClass="w-full"
-              [showButtons]="true" [min]="0" [max]="100"></p-inputNumber>
+            <div class="relative">
+              <input type="number" formControlName="percentageUtilities" class="f-input pr-8 text-right" />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">%</span>
+            </div>
           </div>
 
         </div>
@@ -624,7 +669,13 @@
               </span>
 
               <!-- Campos del ítem en grid -->
-              <div class="flex-1 grid grid-cols-1 sm:grid-cols-[1fr_80px_80px_140px_auto] gap-3">
+              <div class="flex-1 grid grid-cols-1 sm:grid-cols-[90px_1fr_80px_80px_140px_auto] gap-3">
+                <div class="flex flex-col">
+                  <label class="f-label">N° (ej. 01.01.00)</label>
+                  <input type="text" formControlName="number"
+                    placeholder="01.00.00"
+                    class="f-input font-mono text-center" />
+                </div>
                 <div class="flex flex-col">
                   <label class="f-label">Concepto a cotizar</label>
                   <input type="text" formControlName="description"
@@ -637,18 +688,19 @@
                 </div>
                 <div class="flex flex-col">
                   <label class="f-label">Cantidad</label>
-                  <p-inputNumber formControlName="qty"
-                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                  <input type="number" formControlName="qty" step="0.01" min="0" class="f-input" />
                 </div>
                 <div class="flex flex-col">
-                  <label class="f-label">Precio unit. (S/)</label>
-                  <p-inputNumber formControlName="price" mode="currency" currency="PEN"
-                    class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                  <label class="f-label">Precio unitario</label>
+                  <div class="relative">
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none select-none">{{ currentCurrencySymbol() }}</span>
+                    <input type="number" formControlName="price" step="0.01" min="0" class="f-input pr-10" />
+                  </div>
                 </div>
                 <div class="flex flex-col">
                   <label class="f-label text-green-600 dark:text-green-400">Total</label>
                   <div class="f-input bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/50 text-right font-bold text-green-800 dark:text-green-300 font-mono select-none cursor-default">
-                    {{ getItemTotal(index) | currency:'PEN':'S/ ' }}
+                    {{ getItemTotal(index) | currency:currentCurrency():currentCurrencySymbol() + ' ' }}
                   </div>
                 </div>
               </div>
@@ -677,18 +729,19 @@
                     </div>
                     <div class="w-28">
                       <label class="f-label">Cantidad</label>
-                      <p-inputNumber formControlName="qty"
-                        class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      <input type="number" formControlName="qty" step="0.01" min="0" class="f-input" />
                     </div>
                     <div class="w-36">
-                      <label class="f-label">Precio (S/)</label>
-                      <p-inputNumber formControlName="price" mode="currency" currency="PEN"
-                        class="w-full" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                      <label class="f-label">Precio</label>
+                      <div class="relative">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none select-none">{{ currentCurrencySymbol() }}</span>
+                        <input type="number" formControlName="price" step="0.01" min="0" class="f-input pr-10" />
+                      </div>
                     </div>
                     <div class="w-32">
                       <label class="f-label text-green-600 dark:text-green-400">Total</label>
                       <div class="f-input bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/50 text-right font-bold text-green-800 dark:text-green-300 font-mono select-none cursor-default text-xs">
-                        {{ getSubItemTotal(index, subIndex) | currency:'PEN':'S/ ' }}
+                        {{ getSubItemTotal(index, subIndex) | currency:currentCurrency():currentCurrencySymbol() + ' ' }}
                       </div>
                     </div>
                     <button type="button" (click)="removeSubItem(index, subIndex)" class="btn-delete">
@@ -839,6 +892,8 @@
         </div>
       </div>
     </div>
+
+    }<!-- /activeMainTab === 0 -->
 
     <!-- ══ Footer ════════════════════════════════════════════════════════ -->
     <div class="flex justify-end gap-3 pt-4 pb-8">
