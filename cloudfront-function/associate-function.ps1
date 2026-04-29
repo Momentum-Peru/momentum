@@ -21,7 +21,8 @@ $fa = [PSCustomObject]@{
 $config.DefaultCacheBehavior | Add-Member -NotePropertyName FunctionAssociations -NotePropertyValue $fa -Force
 
 $tmp = "$env:TEMP\cf-config.json"
-$config | ConvertTo-Json -Depth 20 | Out-File -Encoding utf8 $tmp
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllText($tmp, ($config | ConvertTo-Json -Depth 20), $utf8NoBom)
 Write-Host "-> Config guardada en $tmp"
 
 Write-Host "-> Actualizando distribution..."
