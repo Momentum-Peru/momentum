@@ -1,239 +1,94 @@
-<div
-  class="min-h-screen bg-black text-white font-alan-sans selection:bg-white selection:text-black text-rendering-optimizeLegibility"
->
+<div class="min-h-screen bg-white text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
+
   <!-- Navbar -->
-  <!-- Navbar -->
-  <nav
-    class="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/5 transition-all duration-300"
-  >
-    <div class="container mx-auto px-6 h-20 md:h-24 flex items-center justify-between">
-      <div class="flex items-center gap-2 cursor-pointer" routerLink="/">
-        <img
-          src="/images/logo_b.png"
-          alt="Momentum Logo"
-          class="h-12 md:h-16 opacity-90 hover:opacity-100 transition-opacity"
-        />
+  <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center cursor-pointer" routerLink="/">
+        <img src="/images/logo_b.png" alt="Momentum" class="h-9 brightness-0" />
       </div>
-      <div class="flex items-center gap-4">
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
+        <a href="#ecosystem" class="hover:text-slate-900 transition-colors">Plataforma</a>
+        <a href="#features" class="hover:text-slate-900 transition-colors">Funcionalidades</a>
+        <a href="#faq" class="hover:text-slate-900 transition-colors">FAQ</a>
+      </div>
+      <div class="flex items-center gap-2">
         <p-button
           label="Iniciar sesión"
           [text]="true"
-          styleClass="!text-white hover:!bg-white/5 !font-medium !px-4 !py-2 !text-sm !rounded-full"
+          styleClass="!text-slate-500 hover:!text-slate-900 !font-medium !px-4 !py-2 !text-sm !rounded-lg"
           routerLink="/ingreso"
         ></p-button>
         <p-button
-          label="Agendar Demo"
-          [outlined]="true"
-          styleClass="!text-white !border-white/10 hover:!bg-white/5 !font-medium !px-5 !py-2 !text-sm !rounded-full"
+          label="Solicitar Demo"
+          styleClass="!bg-indigo-600 !border-indigo-600 hover:!bg-indigo-700 hover:!border-indigo-700 !text-white !font-semibold !px-5 !py-2 !text-sm !rounded-xl"
           (onClick)="scrollToForm()"
         ></p-button>
       </div>
     </div>
   </nav>
 
-  <!-- Hero Section -->
-  <section
-    class="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden min-h-[95vh] flex items-center"
-  >
-    <!-- Background Effects -->
-    <div class="absolute inset-0 landing-hero-gradient pointer-events-none"></div>
-    <div
-      class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-soft-light"
-    ></div>
-
-    <!-- Decorative gradient orbs -->
-    <div
-      class="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"
-    ></div>
-    <div
-      class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl pointer-events-none"
-    ></div>
-
-    <div class="container mx-auto px-6 relative z-10">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start lg:items-center">
-        <!-- Left Column: Text Content -->
-        <div
-          class="text-center lg:text-left space-y-6 lg:space-y-8 animate-fade-in-up order-2 lg:order-1"
-        >
-          <!-- Badge -->
-          <div
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm"
-          >
-            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            <span class="text-sm font-medium text-gray-300">v2.0 Disponible Ahora</span>
-          </div>
-
-          <!-- Main Heading -->
-          <div class="space-y-5">
-            <h1
-              class="text-4xl md:text-5xl lg:text-6xl font-bold !leading-tight text-white font-playfair"
-            >
-              El ERP que tu empresa de
-              <span
-                class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-purple-600 block mt-2"
-                >construcción necesita</span
-              >
-            </h1>
-            <p class="text-lg md:text-xl text-gray-300 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              Gestiona proyectos, controla personal con reconocimiento facial, administra finanzas y
-              potencia tus ventas. Todo en una sola plataforma.
-            </p>
-          </div>
-
-          <!-- Key Features List -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto lg:mx-0">
-            <div
-              class="flex items-start gap-3 text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-            >
-              <div
-                class="w-10 h-10 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0 mt-0.5"
-              >
-                <i class="pi pi-briefcase text-purple-400 text-lg"></i>
-              </div>
-              <div>
-                <div class="text-white font-semibold text-sm mb-1">Gestión de Proyectos</div>
-                <div class="text-gray-400 text-xs">Control total de obras</div>
-              </div>
-            </div>
-            <div
-              class="flex items-start gap-3 text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-            >
-              <div
-                class="w-10 h-10 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 mt-0.5"
-              >
-                <i class="pi pi-users text-blue-400 text-lg"></i>
-              </div>
-              <div>
-                <div class="text-white font-semibold text-sm mb-1">Personal Biométrico</div>
-                <div class="text-gray-400 text-xs">Asistencia con FaceID</div>
-              </div>
-            </div>
-            <div
-              class="flex items-start gap-3 text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-            >
-              <div
-                class="w-10 h-10 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center justify-center flex-shrink-0 mt-0.5"
-              >
-                <i class="pi pi-chart-line text-green-400 text-lg"></i>
-              </div>
-              <div>
-                <div class="text-white font-semibold text-sm mb-1">Finanzas Inteligentes</div>
-                <div class="text-gray-400 text-xs">Flujo de caja proyectado</div>
-              </div>
-            </div>
-            <div
-              class="flex items-start gap-3 text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-            >
-              <div
-                class="w-10 h-10 rounded-lg bg-orange-500/20 border border-orange-500/30 flex items-center justify-center flex-shrink-0 mt-0.5"
-              >
-                <i class="pi pi-heart text-orange-400 text-lg"></i>
-              </div>
-              <div>
-                <div class="text-white font-semibold text-sm mb-1">CRM Integrado</div>
-                <div class="text-gray-400 text-xs">Pipeline de ventas</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- CTA Buttons -->
-          <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2">
-            <p-button
-              label="Solicitar Demo Gratis"
-              size="large"
-              styleClass="!bg-white !text-black !px-8 !py-4 !font-bold !text-base !border-white hover:!bg-gray-100 hover:!border-gray-100 transition-all shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] transform hover:-translate-y-1 !rounded-xl"
-              (onClick)="scrollToForm()"
-            ></p-button>
-            <p-button
-              label="Ver Cómo Funciona"
-              [outlined]="true"
-              size="large"
-              styleClass="!text-white !border-white/20 hover:!bg-white/10 !font-semibold !px-8 !py-4 !text-base !rounded-xl"
-              (onClick)="scrollToForm()"
-            ></p-button>
-          </div>
+  <!-- Hero -->
+  <section class="pt-32 pb-20 md:pt-44 md:pb-28">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="max-w-4xl mx-auto text-center mb-16">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-sm font-medium mb-8">
+          <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+          Confiado por 50+ empresas constructoras en Perú
         </div>
 
-        <!-- Right Column: Dashboard Image -->
-        <div
-          class="relative animate-fade-in-up delay-200 flex flex-col items-center lg:items-center order-1 lg:order-2"
-        >
-          <!-- Main Dashboard Image -->
-          <div class="relative group w-full max-w-md lg:max-w-lg">
-            <!-- Glow effect behind image -->
-            <div
-              class="absolute -inset-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500"
-            ></div>
+        <h1 class="text-5xl md:text-6xl lg:text-[72px] font-bold text-slate-900 leading-[1.08] tracking-tight mb-6">
+          Gestiona obras,<br/>
+          controla costos,<br/>
+          <span class="text-indigo-600">crece con control.</span>
+        </h1>
 
-            <!-- Dashboard Image Container -->
-            <div
-              class="relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 backdrop-blur-sm shadow-2xl transform group-hover:scale-[1.02] transition-all duration-500"
-            >
-              <img
-                src="/images/dashboard-desktop.png"
-                alt="Dashboard de Momentum ERP"
-                class="w-full h-auto object-contain max-h-[450px] lg:max-h-[500px]"
-                onerror="this.style.display = 'none'"
-              />
-              <!-- Fallback if image doesn't load -->
-              <div
-                class="hidden w-full aspect-video bg-gradient-to-br from-gray-900 to-black flex items-center justify-center"
-              >
-                <div class="text-center space-y-4 p-8">
-                  <i class="pi pi-chart-line text-6xl text-purple-400"></i>
-                  <p class="text-white font-semibold text-lg">Dashboard Interactivo</p>
-                  <p class="text-gray-400 text-sm">Visualiza todas tus métricas en tiempo real</p>
-                </div>
-              </div>
+        <p class="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed mb-10">
+          El ERP especializado para empresas constructoras en Perú. Proyectos, personal, finanzas y ventas conectados en una sola plataforma.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <p-button
+            label="Solicitar Demo Gratis"
+            size="large"
+            styleClass="!bg-indigo-600 !border-indigo-600 hover:!bg-indigo-700 !text-white !font-semibold !px-8 !py-3.5 !text-base !rounded-2xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all"
+            (onClick)="scrollToForm()"
+          ></p-button>
+          <p-button
+            label="Ver cómo funciona"
+            [text]="true"
+            size="large"
+            styleClass="!text-slate-500 hover:!text-indigo-600 !font-medium !px-6 !py-3.5 !text-base transition-colors"
+            (onClick)="scrollToForm()"
+          ></p-button>
+        </div>
+      </div>
+
+      <!-- Dashboard screenshot -->
+      <div class="relative max-w-6xl mx-auto">
+        <div class="absolute -inset-6 bg-indigo-50 rounded-3xl blur-3xl opacity-50 pointer-events-none"></div>
+        <div class="relative rounded-2xl overflow-hidden border border-slate-200 shadow-2xl shadow-slate-300/40">
+          <div class="bg-slate-100 border-b border-slate-200 px-4 py-3 flex items-center gap-3">
+            <div class="flex gap-1.5">
+              <div class="w-3 h-3 rounded-full bg-rose-400"></div>
+              <div class="w-3 h-3 rounded-full bg-amber-400"></div>
+              <div class="w-3 h-3 rounded-full bg-emerald-400"></div>
             </div>
-
-            <!-- Floating Stats Cards -->
-            <div
-              class="absolute -top-4 -left-4 bg-black/90 backdrop-blur-md border border-white/10 rounded-xl p-3 shadow-xl hidden md:block animate-bounce-slow"
-            >
-              <div class="flex items-center gap-2">
-                <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                  <i class="pi pi-arrow-up text-green-400 text-lg"></i>
-                </div>
-                <div>
-                  <div class="text-white font-bold text-base">+24%</div>
-                  <div class="text-gray-400 text-xs">Eficiencia</div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="absolute -bottom-4 -right-4 bg-black/90 backdrop-blur-md border border-white/10 rounded-xl p-3 shadow-xl hidden md:block animate-bounce-slow delay-500"
-            >
-              <div class="flex items-center gap-2">
-                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                  <i class="pi pi-check-circle text-blue-400 text-lg"></i>
-                </div>
-                <div>
-                  <div class="text-white font-bold text-base">150+</div>
-                  <div class="text-gray-400 text-xs">Proyectos</div>
-                </div>
-              </div>
+            <div class="flex-1 bg-white rounded-md h-6 max-w-xs mx-auto flex items-center justify-center">
+              <span class="text-xs text-slate-400">app.momentum.pe/dashboard</span>
             </div>
           </div>
-
-          <!-- Trust Indicators - Below the image -->
-          <div
-            class="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-300 px-4"
-          >
-            <div class="flex items-center gap-2">
-              <i class="pi pi-shield-check text-green-400"></i>
-              <span class="font-medium">100% Seguro</span>
-            </div>
-            <span class="text-gray-500 hidden sm:inline">•</span>
-            <div class="flex items-center gap-2">
-              <i class="pi pi-cloud text-blue-400"></i>
-              <span class="font-medium">En la Nube</span>
-            </div>
-            <span class="text-gray-500 hidden sm:inline">•</span>
-            <div class="flex items-center gap-2">
-              <i class="pi pi-clock text-purple-400"></i>
-              <span class="font-medium">Configuración Rápida</span>
+          <img
+            src="/images/dashboard-real.png"
+            alt="Dashboard Momentum ERP"
+            class="w-full h-auto block"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
+          />
+          <div style="display:none" class="w-full aspect-video bg-slate-50 flex items-center justify-center">
+            <div class="text-center space-y-4">
+              <div class="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto">
+                <i class="pi pi-chart-line text-3xl text-indigo-600"></i>
+              </div>
+              <p class="text-slate-500 font-medium">Dashboard Momentum ERP</p>
             </div>
           </div>
         </div>
@@ -241,468 +96,321 @@
     </div>
   </section>
 
-  <!-- Bento Grid Ecosystem -->
-  <section id="ecosystem" class="py-24 bg-white border-t border-gray-100">
-    <div class="container mx-auto px-6">
-      <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-5xl font-bold mb-4 font-playfair text-gray-900">
-          Un Ecosistema Unificado
+  <!-- Stats Strip -->
+  <section class="py-14 border-t border-b border-slate-100 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-200 text-center">
+        <div class="px-6 py-2">
+          <div class="text-3xl md:text-4xl font-bold text-slate-900 mb-1">50<span class="text-indigo-600">+</span></div>
+          <div class="text-sm text-slate-500">Empresas activas</div>
+        </div>
+        <div class="px-6 py-2">
+          <div class="text-3xl md:text-4xl font-bold text-slate-900 mb-1">15k<span class="text-indigo-600">+</span></div>
+          <div class="text-sm text-slate-500">Trabajadores gestionados</div>
+        </div>
+        <div class="px-6 py-2">
+          <div class="text-3xl md:text-4xl font-bold text-slate-900 mb-1">600<span class="text-indigo-600">+</span></div>
+          <div class="text-sm text-slate-500">Proyectos ejecutados</div>
+        </div>
+        <div class="px-6 py-2">
+          <div class="text-3xl md:text-4xl font-bold text-slate-900 mb-1">30<span class="text-indigo-600">%</span></div>
+          <div class="text-sm text-slate-500">Reducción en costos operativos</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Platform Overview -->
+  <section id="ecosystem" class="py-28 bg-white">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-14 max-w-2xl mx-auto">
+        <span class="text-indigo-600 font-semibold text-sm tracking-wide uppercase mb-3 block">Plataforma Integral</span>
+        <h2 class="text-4xl md:text-5xl font-bold text-slate-900 leading-tight mb-4">
+          Todas tus áreas operativas, unificadas.
         </h2>
-        <p class="text-gray-600 max-w-2xl mx-auto">
-          Olvídate de usar 10 herramientas diferentes. Momentum integra todo lo que necesitas para
-          operar tu empresa.
+        <p class="text-slate-500 text-lg leading-relaxed">
+          Elimina los silos de información. Momentum conecta cada área de tu empresa en tiempo real.
         </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 min-h-[600px]">
-        <!-- Card 1: Projects -->
-        <div
-          class="group relative col-span-1 lg:col-span-2 row-span-2 bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden hover:border-purple-500/50 transition-all duration-500 hover:shadow-xl hover:shadow-purple-500/10"
-        >
-          <div
-            class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-          ></div>
-          <div class="p-8 h-full flex flex-col relative z-10">
-            <div class="flex items-start justify-between mb-8">
-              <div
-                class="p-3 bg-purple-100 rounded-2xl border border-purple-200 group-hover:scale-110 transition-transform duration-300"
-              >
-                <i class="pi pi-briefcase text-2xl text-purple-600"></i>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-fr">
+        <!-- Proyectos - large card -->
+        <div class="lg:col-span-2 lg:row-span-2 bg-slate-900 rounded-2xl p-8 flex flex-col group hover:bg-slate-800 transition-colors duration-300">
+          <div class="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center mb-6 group-hover:bg-indigo-500/30 transition-colors">
+            <i class="pi pi-briefcase text-xl text-indigo-400"></i>
+          </div>
+          <span class="text-xs font-bold text-indigo-400 tracking-widest uppercase mb-3 block">Core</span>
+          <h3 class="text-2xl font-bold text-white mb-3">Control Total de Proyectos</h3>
+          <p class="text-slate-400 leading-relaxed mb-8 flex-1">
+            Ciclo de vida completo: cotización, ejecución y cierre. Presupuestos, cronogramas y documentación técnica centralizada.
+          </p>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-slate-500 w-20 shrink-0">Cimentación</span>
+              <div class="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div class="h-full w-3/4 bg-indigo-500 rounded-full"></div>
               </div>
-              <span
-                class="px-3 py-1 bg-purple-100 rounded-full text-xs font-medium text-purple-700 border border-purple-200"
-                >Core</span
-              >
+              <span class="text-xs text-slate-400 w-8 text-right">75%</span>
             </div>
-            <h3 class="text-2xl font-bold text-gray-900 mb-3 font-playfair">
-              Control Total de Proyectos
-            </h3>
-            <p class="text-gray-600 mb-8 leading-relaxed">
-              Gestione el ciclo de vida completo: desde la cotización y aprobación hasta la
-              ejecución y cierre. Controle presupuestos, hitos y documentación técnica centralizada.
-            </p>
-
-            <!-- Abstract UI Mockup - Gantt/Timeline -->
-            <div
-              class="mt-auto relative w-full h-32 bg-white rounded-xl border border-gray-200 p-4 overflow-hidden shadow-sm"
-            >
-              <div class="absolute top-4 left-4 right-4 h-2 bg-gray-100 rounded-full mb-3">
-                <div class="h-full w-2/3 bg-purple-500/50 rounded-full"></div>
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-slate-500 w-20 shrink-0">Estructura</span>
+              <div class="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div class="h-full w-1/2 bg-indigo-500/70 rounded-full"></div>
               </div>
-              <div class="absolute top-10 left-4 w-32 h-2 bg-gray-100 rounded-full"></div>
-              <div class="absolute top-16 left-4 right-12 h-2 bg-gray-100 rounded-full">
-                <div class="h-full w-1/2 bg-blue-500/50 rounded-full ml-12"></div>
+              <span class="text-xs text-slate-400 w-8 text-right">50%</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-slate-500 w-20 shrink-0">Acabados</span>
+              <div class="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div class="h-full w-1/4 bg-indigo-500/40 rounded-full"></div>
               </div>
-              <!-- Floating Badge -->
-              <div
-                class="absolute bottom-3 right-3 px-2 py-1 bg-green-100 rounded text-[10px] text-green-700 border border-green-200"
-              >
-                En Ejecución
-              </div>
+              <span class="text-xs text-slate-400 w-8 text-right">25%</span>
             </div>
           </div>
         </div>
 
-        <!-- Card 2: HR -->
-        <div
-          class="group relative col-span-1 row-span-2 bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden hover:border-blue-500/50 transition-all duration-500 hover:shadow-xl hover:shadow-blue-500/10"
-        >
-          <div
-            class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-          ></div>
-          <div class="p-8 h-full flex flex-col relative z-10">
-            <div class="flex items-start justify-between mb-8">
-              <div
-                class="p-3 bg-blue-100 rounded-2xl border border-blue-200 group-hover:scale-110 transition-transform duration-300"
-              >
-                <i class="pi pi-users text-2xl text-blue-600"></i>
-              </div>
-            </div>
-            <h3 class="text-2xl font-bold text-gray-900 mb-3 font-playfair">Talento Biométrico</h3>
-            <p class="text-gray-600 mb-6 text-sm">
-              Registro de asistencia con FaceID, validación RENIEC automática y expedientes
-              digitales seguros drag-and-drop.
-            </p>
-
-            <div class="mt-auto flex justify-center py-4">
-              <div
-                class="relative w-24 h-24 rounded-full border-2 border-blue-500/30 flex items-center justify-center animate-pulse"
-              >
-                <div
-                  class="absolute inset-0 border-t-2 border-blue-400 rounded-full animate-spinSlow"
-                ></div>
-                <i class="pi pi-user text-3xl text-blue-500"></i>
-              </div>
-            </div>
+        <!-- RRHH -->
+        <div class="bg-indigo-600 rounded-2xl p-7 flex flex-col group hover:bg-indigo-700 transition-colors duration-300">
+          <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-5">
+            <i class="pi pi-users text-xl text-white"></i>
           </div>
+          <h3 class="text-xl font-bold text-white mb-2">Recursos Humanos</h3>
+          <p class="text-indigo-100 text-sm leading-relaxed">FaceID, GPS, planillas automáticas y legajos digitales.</p>
         </div>
 
-        <!-- Card 3: Finance -->
-        <div
-          class="group relative col-span-1 bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden hover:border-green-500/50 transition-all duration-500 hover:shadow-xl hover:shadow-green-500/10"
-        >
-          <div
-            class="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-          ></div>
-          <div class="p-6 relative z-10">
-            <div class="flex items-center gap-4 mb-4">
-              <div class="p-2 bg-green-100 rounded-xl border border-green-200">
-                <i class="pi pi-chart-line text-xl text-green-600"></i>
-              </div>
-              <h3 class="text-xl font-bold text-gray-900 font-playfair">Finanzas</h3>
-            </div>
-            <p class="text-gray-600 text-sm">
-              Flujos de caja proyectados (FI) y control de ingresos por contrato.
-            </p>
+        <!-- Finanzas -->
+        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-7 flex flex-col group hover:border-indigo-200 hover:shadow-md transition-all duration-300">
+          <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-5">
+            <i class="pi pi-chart-line text-xl text-emerald-600"></i>
           </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-2">Finanzas</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">Flujo de caja proyectado, conciliación bancaria y control por obra.</p>
         </div>
 
-        <!-- Card 4: CRM -->
-        <div
-          class="group relative col-span-1 bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden hover:border-pink-500/50 transition-all duration-500 hover:shadow-xl hover:shadow-pink-500/10"
-        >
-          <div
-            class="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-          ></div>
-          <div class="p-6 relative z-10">
-            <div class="flex items-center gap-4 mb-4">
-              <div class="p-2 bg-pink-100 rounded-xl border border-pink-200">
-                <i class="pi pi-heart text-xl text-pink-600"></i>
-              </div>
-              <h3 class="text-xl font-bold text-gray-900 font-playfair">CRM & Ventas</h3>
-            </div>
-            <p class="text-gray-600 text-sm">
-              Pipeline visual, consulta Sunat/Reniec integrada y conversión a proyectos.
-            </p>
+        <!-- CRM -->
+        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-7 flex flex-col group hover:border-indigo-200 hover:shadow-md transition-all duration-300">
+          <div class="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center mb-5">
+            <i class="pi pi-heart text-xl text-violet-600"></i>
           </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-2">CRM & Ventas</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">Pipeline visual, cotizaciones y conversión directa a proyectos.</p>
+        </div>
+
+        <!-- Contabilidad -->
+        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-7 flex flex-col group hover:border-indigo-200 hover:shadow-md transition-all duration-300">
+          <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-5">
+            <i class="pi pi-book text-xl text-amber-600"></i>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-2">Contabilidad</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">Libros electrónicos, NIIF y estados financieros automatizados.</p>
+        </div>
+
+        <!-- Logística -->
+        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-7 flex flex-col group hover:border-indigo-200 hover:shadow-md transition-all duration-300">
+          <div class="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center mb-5">
+            <i class="pi pi-box text-xl text-rose-600"></i>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-2">Logística</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">Compras, inventarios, kardex valorizado y activos fijos.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Deep Dive Features -->
-  <div id="features" class="relative">
-    <!-- Section 1: Project Management -->
-    <section class="py-32 border-t border-white/5 relative">
-      <!-- Ambient Glow -->
-      <div
-        class="absolute top-1/2 left-0 -translate-y-1/2 w-[500px] h-[500px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none"
-      ></div>
+  <!-- Features Deep Dive -->
+  <div id="features">
 
-      <div class="container mx-auto px-6 relative z-10 overflow-hidden">
-        <div class="flex flex-col md:flex-row items-center gap-16 lg:gap-24">
-          <div class="w-full md:w-1/2">
-            <div
-              class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6"
-            >
-              <i class="pi pi-bolt text-blue-400 text-xs"></i>
-              <span class="text-blue-400 font-bold tracking-widest text-xs uppercase"
-                >Proyectos</span
-              >
-            </div>
-            <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-playfair leading-tight">
-              Gestión de Obras <br /><span
-                class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-200"
-                >y Proyectos.</span
-              >
+    <!-- Feature 1: Proyectos -->
+    <section class="py-28 bg-slate-50 border-t border-slate-100">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <span class="inline-flex items-center gap-2 text-indigo-600 font-semibold text-sm tracking-wide uppercase mb-6">
+              <i class="pi pi-briefcase text-xs"></i> Gestión de Proyectos
+            </span>
+            <h2 class="text-4xl md:text-5xl font-bold text-slate-900 leading-tight mb-6">
+              Control de obras<br/>en tiempo real.
             </h2>
-            <p class="text-gray-400 text-lg leading-relaxed mb-8">
-              Supervisa el avance físico y financiero de cada obra. Centraliza la documentación
-              técnica, tareos y reportes diarios en un solo lugar.
+            <p class="text-slate-500 text-lg leading-relaxed mb-8">
+              Supervisa el avance físico y financiero de cada obra. Tareos digitales, KPIs y documentación técnica centralizada.
             </p>
-
-            <div class="space-y-6">
-              <div class="flex gap-4">
-                <div
-                  class="w-12 h-12 rounded-xl bg-neutral-900 border border-white/10 flex items-center justify-center shrink-0"
-                >
-                  <i class="pi pi-chart-bar text-blue-500 text-xl"></i>
+            <div class="space-y-5">
+              <div class="flex gap-4 items-start">
+                <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0">
+                  <i class="pi pi-chart-bar text-indigo-600"></i>
                 </div>
                 <div>
-                  <h4 class="font-bold text-white mb-1">Dashboard de Obra</h4>
-                  <p class="text-sm text-gray-500">
-                    Visualiza KPIs críticos: Avance vs Programado, SPI, CPI y proyecciones.
-                  </p>
+                  <h4 class="font-semibold text-slate-900 mb-1">Dashboard de obra con KPIs</h4>
+                  <p class="text-slate-500 text-sm">Avance vs programado, SPI, CPI y proyecciones al instante.</p>
                 </div>
               </div>
-              <div class="flex gap-4">
-                <div
-                  class="w-12 h-12 rounded-xl bg-neutral-900 border border-white/10 flex items-center justify-center shrink-0"
-                >
-                  <i class="pi pi-clock text-blue-500 text-xl"></i>
+              <div class="flex gap-4 items-start">
+                <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0">
+                  <i class="pi pi-clock text-indigo-600"></i>
                 </div>
                 <div>
-                  <h4 class="font-bold text-white mb-1">Tareos Digitales</h4>
-                  <p class="text-sm text-gray-500">
-                    Control de horas hombre y maquinaria con geolocalización y aprobación
-                    multinivel.
-                  </p>
+                  <h4 class="font-semibold text-slate-900 mb-1">Tareos digitales con geolocalización</h4>
+                  <p class="text-slate-500 text-sm">Control de horas hombre y maquinaria con aprobación multinivel.</p>
+                </div>
+              </div>
+              <div class="flex gap-4 items-start">
+                <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0">
+                  <i class="pi pi-file text-indigo-600"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-slate-900 mb-1">Documentación centralizada</h4>
+                  <p class="text-slate-500 text-sm">Planos, contratos, valorizaciones y reportes en un repositorio.</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="w-full md:w-1/2 relative perspective-1000 group">
-            <div
-              class="relative bg-neutral-900 rounded-2xl border border-white/10 shadow-2xl overflow-hidden transform group-hover:rotate-y-2 transition-transform duration-700 ease-out-expo aspect-[4/3]"
-            >
-              <!-- Glass Header -->
-              <div
-                class="absolute top-0 inset-x-0 h-14 bg-white/5 backdrop-blur-md border-b border-white/5 flex items-center px-6 gap-3 z-20"
-              >
-                <div class="flex gap-2">
-                  <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
-                  <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                  <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+          <div class="relative">
+            <div class="absolute -inset-4 bg-indigo-50 rounded-3xl blur-2xl opacity-70 pointer-events-none"></div>
+            <div class="relative bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+              <div class="bg-slate-900 px-5 py-3.5 flex items-center gap-3">
+                <div class="flex gap-1.5">
+                  <div class="w-2.5 h-2.5 rounded-full bg-rose-500/70"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-amber-500/70"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-emerald-500/70"></div>
                 </div>
-                <div class="ml-4 h-6 w-32 bg-white/5 rounded-full"></div>
+                <span class="text-xs text-slate-500 mx-auto">Dashboard de Obra</span>
               </div>
-
-              <!-- Gantt Chart Animation -->
-              <div class="p-6 pt-20 h-full bg-gradient-to-br from-neutral-900 to-black">
-                <!-- Timeline Header -->
-                <div class="flex mb-6 border-b border-white/5 pb-2">
-                  <div class="w-1/4 text-xs text-gray-600">Task Name</div>
-                  <div class="w-3/4 flex justify-between text-xs text-gray-600 px-4">
-                    <span>Week 1</span><span>Week 2</span><span>Week 3</span><span>Week 4</span>
+              <div class="p-6 space-y-4">
+                <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+                  <div>
+                    <div class="text-xs text-slate-400 mb-0.5">Proyecto activo</div>
+                    <div class="font-semibold text-slate-900 text-sm">Edificio San Borja — Torre B</div>
+                  </div>
+                  <span class="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-medium">En ejecución</span>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                  <div class="bg-slate-50 rounded-xl p-3 text-center">
+                    <div class="text-xl font-bold text-slate-900">68%</div>
+                    <div class="text-xs text-slate-400 mt-0.5">Avance</div>
+                  </div>
+                  <div class="bg-indigo-50 rounded-xl p-3 text-center">
+                    <div class="text-xl font-bold text-indigo-700">1.04</div>
+                    <div class="text-xs text-indigo-400 mt-0.5">SPI</div>
+                  </div>
+                  <div class="bg-slate-50 rounded-xl p-3 text-center">
+                    <div class="text-xl font-bold text-slate-900">0.98</div>
+                    <div class="text-xs text-slate-400 mt-0.5">CPI</div>
                   </div>
                 </div>
-
-                <!-- Task Rows with simple animation -->
-                <div class="space-y-4">
-                  <!-- Row 1 -->
-                  <div class="flex items-center group/row">
-                    <div class="w-1/4 h-8 bg-white/5 rounded flex items-center px-3 gap-2">
-                      <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                      <div class="w-16 h-2 bg-white/10 rounded"></div>
+                <div class="space-y-2.5 pt-1">
+                  <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-400 w-24 shrink-0">Cimentación</span>
+                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div class="h-full w-full bg-emerald-500 rounded-full"></div>
                     </div>
-                    <div class="w-3/4 px-4 relative h-8 flex items-center">
-                      <div
-                        class="absolute left-[10%] w-[40%] h-6 bg-blue-500/20 border border-blue-500/50 rounded flex items-center justify-center text-[10px] text-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.2)] group-hover/row:w-[45%] transition-all duration-500"
-                      >
-                        Exec
-                      </div>
-                    </div>
+                    <span class="text-xs text-slate-500 w-8 text-right">100%</span>
                   </div>
-                  <!-- Row 2 -->
-                  <div class="flex items-center group/row">
-                    <div class="w-1/4 h-8 bg-white/5 rounded flex items-center px-3 gap-2">
-                      <div class="w-2 h-2 rounded-full bg-purple-500"></div>
-                      <div class="w-12 h-2 bg-white/10 rounded"></div>
+                  <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-400 w-24 shrink-0">Estructura</span>
+                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div class="h-full bg-indigo-500 rounded-full" style="width:80%"></div>
                     </div>
-                    <div class="w-3/4 px-4 relative h-8 flex items-center">
-                      <div
-                        class="absolute left-[45%] w-[30%] h-6 bg-purple-500/20 border border-purple-500/50 rounded flex items-center justify-center text-[10px] text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.2)] group-hover/row:translate-x-2 transition-all duration-500"
-                      >
-                        Revisión
-                      </div>
-                    </div>
+                    <span class="text-xs text-slate-500 w-8 text-right">80%</span>
                   </div>
-                  <!-- Row 3 -->
-                  <div class="flex items-center group/row">
-                    <div class="w-1/4 h-8 bg-white/5 rounded flex items-center px-3 gap-2">
-                      <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                      <div class="w-14 h-2 bg-white/10 rounded"></div>
+                  <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-400 w-24 shrink-0">Acabados</span>
+                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div class="h-full bg-indigo-300 rounded-full" style="width:33%"></div>
                     </div>
-                    <div class="w-3/4 px-4 relative h-8 flex items-center">
-                      <div
-                        class="absolute left-[60%] w-[25%] h-6 bg-green-500/20 border border-green-500/50 rounded flex items-center justify-center text-[10px] text-green-300 shadow-[0_0_15px_rgba(34,197,94,0.2)]"
-                      >
-                        Entrega
-                      </div>
-                    </div>
-                  </div>
-                  <!-- Tooltip Floating -->
-                  <div
-                    class="absolute top-[40%] left-[60%] bg-black/90 border border-white/10 p-3 rounded-lg backdrop-blur-md shadow-xl transform translate-y-4 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 delay-100 z-30"
-                  >
-                    <div class="text-xs text-gray-400 mb-1">Status</div>
-                    <div class="text-sm font-bold text-white flex items-center gap-2">
-                      <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      On Track
-                    </div>
+                    <span class="text-xs text-slate-500 w-8 text-right">33%</span>
                   </div>
                 </div>
               </div>
             </div>
-
-            <!-- Decorative elements behind -->
-            <div
-              class="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl"
-            ></div>
-            <div
-              class="absolute -left-4 -top-4 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl"
-            ></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Section 2: HR & AI -->
-    <section class="py-32 border-t border-gray-200 bg-white relative">
-      <div class="container mx-auto px-6 overflow-hidden">
-        <div class="flex flex-col md:flex-row-reverse items-center gap-16 lg:gap-24">
-          <div class="w-full md:w-1/2">
-            <div
-              class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 border border-purple-200 mb-6"
-            >
-              <i class="pi pi-star text-purple-600 text-xs"></i>
-              <span class="text-purple-600 font-bold tracking-widest text-xs uppercase"
-                >Recursos Humanos</span
-              >
-            </div>
-            <h2
-              class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-playfair leading-tight text-gray-900"
-            >
-              Control de Asistencia <br />
-              <span
-                class="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-purple-400"
-                >y Personal.</span
-              >
-            </h2>
-            <p class="text-gray-600 text-lg leading-relaxed mb-8">
-              Registra la asistencia con reconocimiento facial y ubicación GPS. Gestiona legajos de
-              personal y calcula planillas automáticamente.
-            </p>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div
-                class="p-4 rounded-xl bg-gray-50 border border-gray-200 hover:border-purple-500/30 transition-colors"
-              >
-                <i class="pi pi-user text-purple-600 text-2xl mb-3"></i>
-                <h4 class="font-bold text-gray-900">Face ID Web</h4>
-                <p class="text-xs text-gray-500 mt-2">
-                  Detección de vida y validación biométrica en segundos.
-                </p>
-              </div>
-              <div
-                class="p-4 rounded-xl bg-gray-50 border border-gray-200 hover:border-purple-500/30 transition-colors"
-              >
-                <i class="pi pi-map-marker text-purple-600 text-2xl mb-3"></i>
-                <h4 class="font-bold text-gray-900">Geolocalización</h4>
-                <p class="text-xs text-gray-500 mt-2">
-                  Registra la ubicación exacta de cada marcación.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="w-full md:w-1/2 relative perspective-1000 flex justify-center">
-            <!-- Mobile Device Mockup -->
-            <div
-              class="relative mx-auto border-neutral-800 bg-neutral-800 border-[14px] rounded-[2.5rem] h-[550px] w-[280px] md:w-[300px] shadow-2xl z-10 transform rotate-[-2deg] hover:rotate-0 transition-transform duration-700"
-            >
-              <!-- Buttons -->
-              <div
-                class="h-[32px] w-[3px] bg-neutral-700 absolute -start-[17px] top-[72px] rounded-s-lg"
-              ></div>
-              <div
-                class="h-[46px] w-[3px] bg-neutral-700 absolute -start-[17px] top-[124px] rounded-s-lg"
-              ></div>
-              <div
-                class="h-[46px] w-[3px] bg-neutral-700 absolute -start-[17px] top-[178px] rounded-s-lg"
-              ></div>
-              <div
-                class="h-[64px] w-[3px] bg-neutral-700 absolute -end-[17px] top-[142px] rounded-e-lg"
-              ></div>
-
-              <!-- Screen -->
-              <div class="rounded-[2rem] overflow-hidden w-full h-full bg-neutral-900 relative">
-                <!-- Status Bar -->
-                <div class="flex justify-between items-center px-6 py-3 relative z-20">
-                  <span class="text-[10px] font-bold text-white">9:41</span>
-                  <div class="flex items-center gap-1">
-                    <i class="pi pi-wifi text-[10px] text-white"></i>
-                    <i class="pi pi-battery text-[10px] text-white"></i>
-                  </div>
+    <!-- Feature 2: RRHH -->
+    <section class="py-28 bg-white border-t border-slate-100">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <!-- Visual -->
+          <div class="relative order-2 lg:order-1">
+            <div class="absolute -inset-4 bg-violet-50 rounded-3xl blur-2xl opacity-60 pointer-events-none"></div>
+            <div class="relative bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden max-w-sm mx-auto">
+              <div class="bg-slate-900 px-5 py-3.5 flex items-center justify-between">
+                <span class="text-xs text-slate-400">9:41 AM</span>
+                <div class="flex gap-1.5">
+                  <i class="pi pi-wifi text-xs text-slate-400"></i>
+                  <i class="pi pi-battery text-xs text-slate-400"></i>
                 </div>
-
-                <!-- Camera View -->
-                <div class="absolute inset-0 z-0">
-                  <!-- Placeholder Image Background -->
-                  <div
-                    class="w-full h-full bg-neutral-800 flex items-center justify-center relative overflow-hidden"
-                  >
-                    <!-- Simulated Person -->
-                    <div
-                      class="w-40 h-40 bg-neutral-700 rounded-full flex items-center justify-center relative z-10"
-                    >
-                      <i class="pi pi-user text-6xl text-neutral-600"></i>
-                    </div>
-                    <div
-                      class="absolute bottom-0 w-64 h-32 bg-neutral-700 rounded-t-full opacity-50 z-0"
-                    ></div>
-
-                    <!-- Scan Effect -->
-                    <div
-                      class="absolute inset-x-0 w-full h-1 bg-green-400/80 shadow-[0_0_20px_rgba(74,222,128,0.8)] z-20 animate-[scan_2s_ease-in-out_infinite]"
-                    ></div>
-
-                    <!-- Face Frame -->
-                    <div class="absolute inset-0 flex items-center justify-center z-10">
-                      <img
-                        src="assets/images/face-frame.svg"
-                        onerror="this.style.display = 'none'"
-                        class="w-48 h-48 opacity-50"
-                      />
-                      <div
-                        class="w-56 h-56 border-2 border-dashed border-green-500/50 rounded-2xl"
-                      ></div>
-                    </div>
+              </div>
+              <div class="bg-slate-50 p-5 space-y-4">
+                <div class="bg-slate-800 rounded-xl h-44 flex items-center justify-center relative overflow-hidden">
+                  <div class="w-24 h-24 rounded-full bg-slate-700 flex items-center justify-center z-10">
+                    <i class="pi pi-user text-4xl text-slate-500"></i>
                   </div>
+                  <div class="absolute inset-x-8 inset-y-6 border-2 border-dashed border-indigo-500/60 rounded-xl z-20"></div>
+                  <div class="absolute bottom-0 left-0 right-0 h-px bg-indigo-400/80 shadow-[0_0_8px_rgba(129,140,248,0.8)] animate-scan z-30"></div>
                 </div>
-
-                <!-- Bottom Sheet Overlay -->
-                <div
-                  class="absolute bottom-0 left-0 right-0 bg-neutral-900/95 backdrop-blur-md pt-6 pb-8 px-5 rounded-t-3xl border-t border-white/10 z-30 transform translate-y-0 shadow-lg"
-                >
-                  <div class="w-12 h-1 bg-neutral-700 rounded-full mx-auto mb-6"></div>
-
-                  <div class="flex items-center gap-4 mb-6">
-                    <div
-                      class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center border border-green-500/30"
-                    >
-                      <i class="pi pi-check text-green-400 font-bold"></i>
+                <div class="bg-white rounded-xl border border-slate-200 p-4">
+                  <div class="flex items-center gap-3 mb-3">
+                    <div class="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <i class="pi pi-check text-emerald-600 text-sm"></i>
                     </div>
                     <div>
-                      <h4 class="text-white font-bold text-lg">Identidad Verificada</h4>
-                      <p class="text-xs text-green-400">Coincidencia 99.8%</p>
+                      <div class="font-semibold text-slate-900 text-sm">Identidad verificada</div>
+                      <div class="text-xs text-emerald-600">Coincidencia 99.8%</div>
                     </div>
                   </div>
-
-                  <div class="space-y-3">
-                    <div class="flex justify-between items-center py-2 border-b border-white/5">
-                      <span class="text-xs text-gray-500">Colaborador</span>
-                      <span class="text-xs text-white font-medium">Carlos Méndez</span>
+                  <div class="space-y-2 text-xs divide-y divide-slate-100">
+                    <div class="flex justify-between py-1.5">
+                      <span class="text-slate-400">Colaborador</span>
+                      <span class="text-slate-700 font-medium">Carlos Méndez</span>
                     </div>
-                    <div class="flex justify-between items-center py-2 border-b border-white/5">
-                      <span class="text-xs text-gray-500">Ubicación</span>
-                      <span class="text-xs text-white font-medium flex items-center gap-1"
-                        ><i class="pi pi-map-marker text-purple-400 text-[10px]"></i> Proyecto
-                        Lima</span
-                      >
+                    <div class="flex justify-between py-1.5">
+                      <span class="text-slate-400">Ubicación</span>
+                      <span class="text-slate-700 font-medium">Proyecto Lima Norte</span>
                     </div>
-                    <div class="flex justify-between items-center py-2">
-                      <span class="text-xs text-gray-500">Hora</span>
-                      <span class="text-xs text-white font-medium">07:58:32 AM</span>
+                    <div class="flex justify-between py-1.5">
+                      <span class="text-slate-400">Hora</span>
+                      <span class="text-slate-700 font-medium">07:58:32 AM</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Decorative Elements Behind Phone -->
-            <div class="absolute top-[20%] -right-12 z-0 hidden lg:block">
-              <div
-                class="bg-white border border-gray-200 p-4 rounded-xl shadow-xl w-48 transform rotate-6 animate-bounce-slow"
-              >
-                <div class="flex items-center gap-3 mb-2">
-                  <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider"
-                    >Ubicación</span
-                  >
-                </div>
-                <div class="text-xs text-gray-700">Coordenadas registradas correctamente.</div>
+          <!-- Text -->
+          <div class="order-1 lg:order-2">
+            <span class="inline-flex items-center gap-2 text-indigo-600 font-semibold text-sm tracking-wide uppercase mb-6">
+              <i class="pi pi-users text-xs"></i> Recursos Humanos
+            </span>
+            <h2 class="text-4xl md:text-5xl font-bold text-slate-900 leading-tight mb-6">
+              Asistencia biométrica<br/>desde el campo.
+            </h2>
+            <p class="text-slate-500 text-lg leading-relaxed mb-8">
+              Registro facial con GPS, validación RENIEC automática y planillas calculadas sin intervención manual.
+            </p>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-slate-50 border border-slate-100 rounded-xl p-5 hover:border-indigo-200 hover:shadow-sm transition-all">
+                <i class="pi pi-user text-indigo-600 text-2xl mb-3 block"></i>
+                <h4 class="font-semibold text-slate-900 text-sm mb-1">Face ID Web</h4>
+                <p class="text-xs text-slate-500">Detección de vida y validación biométrica en segundos.</p>
+              </div>
+              <div class="bg-slate-50 border border-slate-100 rounded-xl p-5 hover:border-indigo-200 hover:shadow-sm transition-all">
+                <i class="pi pi-map-marker text-indigo-600 text-2xl mb-3 block"></i>
+                <h4 class="font-semibold text-slate-900 text-sm mb-1">Geolocalización</h4>
+                <p class="text-xs text-slate-500">Ubicación exacta en cada marcación de asistencia.</p>
+              </div>
+              <div class="bg-slate-50 border border-slate-100 rounded-xl p-5 hover:border-indigo-200 hover:shadow-sm transition-all">
+                <i class="pi pi-id-card text-indigo-600 text-2xl mb-3 block"></i>
+                <h4 class="font-semibold text-slate-900 text-sm mb-1">Validación RENIEC</h4>
+                <p class="text-xs text-slate-500">Verificación automática de identidad contra base oficial.</p>
+              </div>
+              <div class="bg-slate-50 border border-slate-100 rounded-xl p-5 hover:border-indigo-200 hover:shadow-sm transition-all">
+                <i class="pi pi-calculator text-indigo-600 text-2xl mb-3 block"></i>
+                <h4 class="font-semibold text-slate-900 text-sm mb-1">Planillas Auto</h4>
+                <p class="text-xs text-slate-500">Cálculo automático con asistencia registrada en campo.</p>
               </div>
             </div>
           </div>
@@ -710,155 +418,98 @@
       </div>
     </section>
 
-    <!-- Section 3: Finance & CRM (NEW) -->
-    <section class="py-32 border-t border-white/5 relative">
-      <div
-        class="absolute right-0 bottom-0 w-[600px] h-[600px] bg-green-500/5 blur-[100px] rounded-full pointer-events-none"
-      ></div>
-
-      <div class="container mx-auto px-6 relative z-10 overflow-hidden">
-        <div class="flex flex-col md:flex-row items-center gap-16 lg:gap-24">
-          <div class="w-full md:w-1/2">
-            <div
-              class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 mb-6"
-            >
-              <i class="pi pi-wallet text-green-400 text-xs"></i>
-              <span class="text-green-400 font-bold tracking-widest text-xs uppercase"
-                >Comercial y Finanzas</span
-              >
-            </div>
-            <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-playfair leading-tight">
-              Finanzas y Ventas <br /><span
-                class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-200"
-                >(CRM).</span
-              >
+    <!-- Feature 3: Finanzas & CRM -->
+    <section class="py-28 bg-slate-50 border-t border-slate-100">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <span class="inline-flex items-center gap-2 text-indigo-600 font-semibold text-sm tracking-wide uppercase mb-6">
+              <i class="pi pi-wallet text-xs"></i> Finanzas & CRM
+            </span>
+            <h2 class="text-4xl md:text-5xl font-bold text-slate-900 leading-tight mb-6">
+              Finanzas claras.<br/>Ventas que cierran.
             </h2>
-            <p class="text-gray-400 text-lg leading-relaxed mb-8">
-              Controla el flujo de caja, gestiona clientes potenciales y convierte cotizaciones en
-              proyectos activos.
+            <p class="text-slate-500 text-lg leading-relaxed mb-8">
+              Controla el flujo de caja, gestiona oportunidades y convierte cotizaciones en proyectos activos en un solo clic.
             </p>
-
-            <div class="flex flex-col gap-4">
-              <div
-                class="flex items-center gap-4 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group/item"
-              >
-                <div
-                  class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 group-hover/item:scale-110 transition-transform"
-                >
-                  <i class="pi pi-dollar"></i>
+            <div class="space-y-3">
+              <div class="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-xl hover:border-indigo-200 hover:shadow-sm transition-all">
+                <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+                  <i class="pi pi-dollar text-emerald-600"></i>
                 </div>
                 <div>
-                  <h4 class="font-bold text-white">Flujo de Caja Proyectado</h4>
-                  <p class="text-xs text-gray-500">
-                    Anticipa déficits y superávits con datos de proyectos en curso.
-                  </p>
+                  <h4 class="font-semibold text-slate-900 text-sm">Flujo de Caja Proyectado</h4>
+                  <p class="text-xs text-slate-500">Anticipa déficits y superávits con datos de proyectos en curso.</p>
                 </div>
               </div>
-              <div
-                class="flex items-center gap-4 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group/item"
-              >
-                <div
-                  class="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover/item:scale-110 transition-transform"
-                >
-                  <i class="pi pi-users"></i>
+              <div class="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-xl hover:border-indigo-200 hover:shadow-sm transition-all">
+                <div class="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center shrink-0">
+                  <i class="pi pi-users text-violet-600"></i>
                 </div>
                 <div>
-                  <h4 class="font-bold text-white">Pipeline de Ventas</h4>
-                  <p class="text-xs text-gray-500">
-                    Seguimiento automatizado de oportunidades y clientes.
-                  </p>
+                  <h4 class="font-semibold text-slate-900 text-sm">Pipeline de Ventas Visual</h4>
+                  <p class="text-xs text-slate-500">Seguimiento automatizado de oportunidades y clientes.</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-xl hover:border-indigo-200 hover:shadow-sm transition-all">
+                <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
+                  <i class="pi pi-verified text-amber-600"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-slate-900 text-sm">Consulta SUNAT / RENIEC</h4>
+                  <p class="text-xs text-slate-500">Validación de RUC y DNI integrada en cotizaciones.</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="w-full md:w-1/2 relative">
-            <!-- Cards Stack Effect -->
-            <div
-              class="relative w-full max-w-md mx-auto aspect-square flex items-center justify-center"
-            >
-              <!-- Back Card -->
-              <div
-                class="absolute inset-0 bg-neutral-900 border border-white/5 rounded-2xl transform rotate-6 scale-90 opacity-40 z-0"
-              ></div>
-              <!-- Middle Card -->
-              <div
-                class="absolute inset-0 bg-neutral-900 border border-white/5 rounded-2xl transform -rotate-3 scale-95 opacity-70 z-10 shadow-2xl"
-              ></div>
-
-              <!-- Front Card (Invoice/Chart) -->
-              <div
-                class="absolute inset-0 bg-[#0a0a0a] border border-white/10 rounded-2xl z-20 shadow-2xl overflow-hidden flex flex-col transform hover:-translate-y-2 transition-transform duration-500"
-              >
-                <div class="p-6 border-b border-white/5 flex justify-between items-center">
-                  <div class="text-sm font-bold text-gray-300">Resumen Financiero</div>
-                  <div
-                    class="px-2 py-1 bg-green-500/10 rounded text-[10px] text-green-400 uppercase tracking-wider"
-                  >
-                    Mensual
-                  </div>
-                </div>
-                <div class="p-6 flex-1 flex flex-col justify-end relative">
-                  <!-- Chart Bars -->
-                  <div class="flex justify-between items-end h-32 mb-6 gap-2">
-                    <div
-                      class="w-full bg-white/5 rounded-t hover:bg-green-500/50 transition-colors h-[40%] relative group/bar"
-                    >
-                      <div
-                        class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] text-white opacity-0 group-hover/bar:opacity-100 transition-opacity"
-                      >
-                        $4k
-                      </div>
-                    </div>
-                    <div
-                      class="w-full bg-white/5 rounded-t hover:bg-green-500/50 transition-colors h-[60%] relative group/bar"
-                    >
-                      <div
-                        class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] text-white opacity-0 group-hover/bar:opacity-100 transition-opacity"
-                      >
-                        $6k
-                      </div>
-                    </div>
-                    <div
-                      class="w-full bg-white/5 rounded-t hover:bg-green-500/50 transition-colors h-[30%] relative group/bar"
-                    >
-                      <div
-                        class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] text-white opacity-0 group-hover/bar:opacity-100 transition-opacity"
-                      >
-                        $3k
-                      </div>
-                    </div>
-                    <div
-                      class="w-full bg-green-500 rounded-t shadow-[0_0_20px_rgba(34,197,94,0.3)] h-[80%] relative group/bar"
-                    >
-                      <div
-                        class="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-black px-2 py-1 rounded text-[10px] font-bold shadow-lg"
-                      >
-                        $8.2k
-                      </div>
-                    </div>
-                    <div
-                      class="w-full bg-white/5 rounded-t hover:bg-green-500/50 transition-colors h-[50%] relative group/bar"
-                    ></div>
-                  </div>
-                  <div class="flex justify-between text-xs text-gray-500">
-                    <span>Ene</span><span>Feb</span><span>Mar</span><span>Abr</span><span>May</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Floating Badge -->
-              <div
-                class="absolute -right-8 top-1/2 bg-neutral-800 border border-white/10 p-3 rounded-lg shadow-xl z-30 flex items-center gap-3 animate-bounce-slow"
-              >
-                <div
-                  class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-black font-bold text-xs"
-                >
-                  <i class="pi pi-arrow-up"></i>
-                </div>
+          <div class="relative">
+            <div class="absolute -inset-4 bg-emerald-50 rounded-3xl blur-2xl opacity-50 pointer-events-none"></div>
+            <div class="relative bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+              <div class="p-5 border-b border-slate-100 flex justify-between items-center">
                 <div>
-                  <div class="text-[10px] text-gray-500">Ingresos</div>
-                  <div class="text-sm font-bold text-white">+24.5%</div>
+                  <div class="text-xs text-slate-400 mb-0.5">Flujo de Caja</div>
+                  <div class="font-semibold text-slate-900">Resumen Mayo 2026</div>
+                </div>
+                <span class="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-medium">+24.5%</span>
+              </div>
+              <div class="p-6">
+                <div class="flex items-end justify-between h-32 gap-2 mb-4">
+                  <div class="flex-1 flex flex-col items-center gap-1.5">
+                    <div class="w-full bg-slate-100 rounded-t-lg" style="height:45%"></div>
+                    <span class="text-xs text-slate-400">Ene</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center gap-1.5">
+                    <div class="w-full bg-slate-100 rounded-t-lg" style="height:60%"></div>
+                    <span class="text-xs text-slate-400">Feb</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center gap-1.5">
+                    <div class="w-full bg-slate-100 rounded-t-lg" style="height:35%"></div>
+                    <span class="text-xs text-slate-400">Mar</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center gap-1.5 relative">
+                    <div class="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded-lg whitespace-nowrap">S/ 82k</div>
+                    <div class="w-full bg-indigo-600 rounded-t-lg shadow-lg shadow-indigo-500/20" style="height:82%"></div>
+                    <span class="text-xs font-semibold text-indigo-600">Abr</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center gap-1.5">
+                    <div class="w-full bg-slate-100 rounded-t-lg" style="height:50%"></div>
+                    <span class="text-xs text-slate-400">May</span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3 pt-4 border-t border-slate-100">
+                  <div>
+                    <div class="text-xs text-slate-400 mb-1">Ingresos</div>
+                    <div class="font-semibold text-slate-900 text-sm">S/ 284k</div>
+                  </div>
+                  <div>
+                    <div class="text-xs text-slate-400 mb-1">Egresos</div>
+                    <div class="font-semibold text-slate-900 text-sm">S/ 198k</div>
+                  </div>
+                  <div>
+                    <div class="text-xs text-slate-400 mb-1">Neto</div>
+                    <div class="font-semibold text-emerald-600 text-sm">S/ 86k</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -868,363 +519,221 @@
     </section>
   </div>
 
-  <!-- All Modules Grid Section (NEW) -->
-  <section class="py-32 bg-white relative">
-    <!-- Background Effects -->
-    <div
-      class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 mix-blend-multiply pointer-events-none"
-    ></div>
-    <div
-      class="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"
-    ></div>
-    <div
-      class="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"
-    ></div>
-
-    <div class="container mx-auto px-6 relative z-10">
-      <div class="text-center mb-20">
-        <span class="text-purple-600 font-bold tracking-widest text-xs uppercase mb-4 block"
-          >Ecosistema Completo</span
-        >
-        <h2 class="text-4xl md:text-5xl font-bold mb-6 font-playfair text-gray-900">
-          Todo lo que tu empresa necesita<br /><span class="text-gray-500"
-            >en una sola plataforma.</span
-          >
-        </h2>
-        <p class="text-gray-600 max-w-2xl mx-auto text-lg font-light">
-          Momentum unifica todas las áreas operativas en un sistema ERP modular, seguro y escalable.
-        </p>
+  <!-- Testimonials -->
+  <section class="py-28 bg-white border-t border-slate-100">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-14 max-w-xl mx-auto">
+        <span class="text-indigo-600 font-semibold text-sm tracking-wide uppercase mb-3 block">Testimonios</span>
+        <h2 class="text-4xl font-bold text-slate-900 mb-4">Lo que dicen nuestros clientes</h2>
+        <p class="text-slate-500">Empresas constructoras en Perú que ya transformaron su operación.</p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- 1. Contabilidad -->
-        <div
-          class="group relative bg-white border border-gray-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500 hover:-translate-y-1"
-        >
-          <div
-            class="absolute inset-0 bg-gradient-to-br from-purple-50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-duration-500 rounded-3xl"
-          ></div>
-
-          <!-- Icon -->
-          <div
-            class="w-14 h-14 bg-purple-50 rounded-2xl border border-purple-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300"
-          >
-            <i class="pi pi-book text-2xl text-purple-600"></i>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-8 hover:shadow-lg hover:border-slate-200 transition-all duration-300">
+          <div class="flex gap-0.5 mb-6">
+            <i class="pi pi-star-fill text-amber-400 text-sm"></i>
+            <i class="pi pi-star-fill text-amber-400 text-sm"></i>
+            <i class="pi pi-star-fill text-amber-400 text-sm"></i>
+            <i class="pi pi-star-fill text-amber-400 text-sm"></i>
+            <i class="pi pi-star-fill text-amber-400 text-sm"></i>
           </div>
-
-          <h3
-            class="text-xl font-bold text-gray-900 mb-3 font-playfair group-hover:text-purple-600 transition-colors"
-          >
-            Contabilidad
-          </h3>
-          <p class="text-gray-600 text-sm leading-relaxed mb-4">
-            Automatización de asientos contables, libros electrónicos (PLE/SIRE) y estados
-            financieros en tiempo real.
+          <p class="text-slate-600 leading-relaxed mb-8">
+            "Antes perdíamos horas calculando planillas a mano. Con Momentum, el cierre mensual lo hacemos en minutos. El FaceID en campo cambió completamente la operación."
           </p>
-
-          <ul class="space-y-2">
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-purple-600"></i> IFRS / NIIF
-            </li>
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-purple-600"></i> Libros Electrónicos
-            </li>
-          </ul>
+          <div class="flex items-center gap-3 pt-6 border-t border-slate-200">
+            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm shrink-0">R</div>
+            <div>
+              <div class="font-semibold text-slate-900 text-sm">Roberto Quispe</div>
+              <div class="text-xs text-slate-400">Gerente General, Constructora Andes SAC</div>
+            </div>
+          </div>
         </div>
 
-        <!-- 2. Administración -->
-        <div
-          class="group relative bg-white border border-gray-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:-translate-y-1"
-        >
-          <div
-            class="absolute inset-0 bg-gradient-to-br from-blue-50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-duration-500 rounded-3xl"
-          ></div>
-
-          <div
-            class="w-14 h-14 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300"
-          >
-            <i class="pi pi-building text-2xl text-blue-600"></i>
+        <div class="bg-indigo-600 rounded-2xl p-8 shadow-xl shadow-indigo-500/20 md:-mt-4">
+          <div class="flex gap-0.5 mb-6">
+            <i class="pi pi-star-fill text-indigo-200 text-sm"></i>
+            <i class="pi pi-star-fill text-indigo-200 text-sm"></i>
+            <i class="pi pi-star-fill text-indigo-200 text-sm"></i>
+            <i class="pi pi-star-fill text-indigo-200 text-sm"></i>
+            <i class="pi pi-star-fill text-indigo-200 text-sm"></i>
           </div>
-
-          <h3
-            class="text-xl font-bold text-gray-900 mb-3 font-playfair group-hover:text-blue-600 transition-colors"
-          >
-            Administración
-          </h3>
-          <p class="text-gray-600 text-sm leading-relaxed mb-4">
-            Gobierno corporativo digital. Gestión de sucursales, usuarios, permisos granulares y
-            auditoría de eventos.
+          <p class="text-indigo-50 leading-relaxed mb-8">
+            "El módulo de proyectos nos dio visibilidad total sobre avance de obra y costo real vs. presupuestado. Ahora tomamos decisiones con datos, no con suposiciones."
           </p>
-
-          <ul class="space-y-2">
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-blue-600"></i> Multi-empresa
-            </li>
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-blue-600"></i> Roles y Permisos
-            </li>
-          </ul>
+          <div class="flex items-center gap-3 pt-6 border-t border-indigo-500">
+            <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-sm shrink-0">M</div>
+            <div>
+              <div class="font-semibold text-white text-sm">Maria Fernandez</div>
+              <div class="text-xs text-indigo-300">Directora de Proyectos, Infratech Peru</div>
+            </div>
+          </div>
         </div>
 
-        <!-- 3. Recursos Humanos -->
-        <div
-          class="group relative bg-white border border-gray-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-500 hover:-translate-y-1"
-        >
-          <div
-            class="absolute inset-0 bg-gradient-to-br from-pink-50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-duration-500 rounded-3xl"
-          ></div>
-
-          <div
-            class="w-14 h-14 bg-pink-50 rounded-2xl border border-pink-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300"
-          >
-            <i class="pi pi-users text-2xl text-pink-600"></i>
+        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-8 hover:shadow-lg hover:border-slate-200 transition-all duration-300">
+          <div class="flex gap-0.5 mb-6">
+            <i class="pi pi-star-fill text-amber-400 text-sm"></i>
+            <i class="pi pi-star-fill text-amber-400 text-sm"></i>
+            <i class="pi pi-star-fill text-amber-400 text-sm"></i>
+            <i class="pi pi-star-fill text-amber-400 text-sm"></i>
+            <i class="pi pi-star-fill text-amber-400 text-sm"></i>
           </div>
-
-          <h3
-            class="text-xl font-bold text-gray-900 mb-3 font-playfair group-hover:text-pink-600 transition-colors"
-          >
-            Recursos Humanos
-          </h3>
-          <p class="text-gray-600 text-sm leading-relaxed mb-4">
-            Gestión de talento 360°. Planillas, asistencia biométrica, legajos digitales y
-            evaluación de desempeño.
+          <p class="text-slate-600 leading-relaxed mb-8">
+            "Integramos CRM, proyectos y contabilidad en una sola plataforma. Eliminamos 4 softwares distintos y redujimos errores de doble digitación en un 90%."
           </p>
+          <div class="flex items-center gap-3 pt-6 border-t border-slate-200">
+            <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm shrink-0">C</div>
+            <div>
+              <div class="font-semibold text-slate-900 text-sm">Carlos Mendoza</div>
+              <div class="text-xs text-slate-400">CFO, Edificar Group</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-          <ul class="space-y-2">
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-pink-600"></i> FaceID Assist
-            </li>
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-pink-600"></i> Planillas Auto
-            </li>
+  <!-- All Modules Grid -->
+  <section class="py-28 bg-slate-50 border-t border-slate-100">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-14 max-w-2xl mx-auto">
+        <span class="text-indigo-600 font-semibold text-sm tracking-wide uppercase mb-3 block">Modulos</span>
+        <h2 class="text-4xl md:text-5xl font-bold text-slate-900 mb-4">8 modulos. Un solo sistema.</h2>
+        <p class="text-slate-500 text-lg">Implementa los que necesitas hoy y activa mas a medida que creces.</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
+          <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-100 transition-colors">
+            <i class="pi pi-book text-xl text-indigo-600"></i>
+          </div>
+          <h3 class="font-bold text-slate-900 mb-2">Contabilidad</h3>
+          <p class="text-slate-500 text-sm mb-4">NIIF, libros electrónicos PLE/SIRE y estados financieros en tiempo real.</p>
+          <ul class="space-y-1.5">
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-indigo-500 text-[10px]"></i>IFRS / NIIF</li>
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-indigo-500 text-[10px]"></i>Libros Electrónicos</li>
           </ul>
         </div>
-
-        <!-- 4. Ventas -->
-        <div
-          class="group relative bg-white border border-gray-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500 hover:-translate-y-1"
-        >
-          <div
-            class="absolute inset-0 bg-gradient-to-br from-orange-50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-duration-500 rounded-3xl"
-          ></div>
-
-          <div
-            class="w-14 h-14 bg-orange-50 rounded-2xl border border-orange-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300"
-          >
-            <i class="pi pi-verified text-2xl text-orange-600"></i>
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
+          <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-blue-100 transition-colors">
+            <i class="pi pi-building text-xl text-blue-600"></i>
           </div>
-
-          <h3
-            class="text-xl font-bold text-gray-900 mb-3 font-playfair group-hover:text-orange-600 transition-colors"
-          >
-            Ventas
-          </h3>
-          <p class="text-gray-600 text-sm leading-relaxed mb-4">
-            Pipeline comercial inteligente. Cotizaciones, facturación electrónica integrada y
-            seguimiento de clientes.
-          </p>
-
-          <ul class="space-y-2">
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-orange-600"></i> Facturación Elec.
-            </li>
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-orange-600"></i> CRM Integrado
-            </li>
+          <h3 class="font-bold text-slate-900 mb-2">Administración</h3>
+          <p class="text-slate-500 text-sm mb-4">Gobierno corporativo, sucursales, usuarios y roles granulares.</p>
+          <ul class="space-y-1.5">
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-blue-500 text-[10px]"></i>Multi-empresa</li>
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-blue-500 text-[10px]"></i>Roles y Permisos</li>
           </ul>
         </div>
-
-        <!-- 5. Marketing -->
-        <div
-          class="group relative bg-white border border-gray-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-red-500/10 transition-all duration-500 hover:-translate-y-1"
-        >
-          <div
-            class="absolute inset-0 bg-gradient-to-br from-red-50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-duration-500 rounded-3xl"
-          ></div>
-
-          <div
-            class="w-14 h-14 bg-red-50 rounded-2xl border border-red-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300"
-          >
-            <i class="pi pi-megaphone text-2xl text-red-600"></i>
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
+          <div class="w-12 h-12 bg-violet-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-violet-100 transition-colors">
+            <i class="pi pi-users text-xl text-violet-600"></i>
           </div>
-
-          <h3
-            class="text-xl font-bold text-gray-900 mb-3 font-playfair group-hover:text-red-600 transition-colors"
-          >
-            Marketing
-          </h3>
-          <p class="text-gray-600 text-sm leading-relaxed mb-4">
-            Gestión de campañas y leads. Analítica de conversión y segmentación de clientes para
-            campañas dirigidas.
-          </p>
-
-          <ul class="space-y-2">
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-red-600"></i> Lead Tracking
-            </li>
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-red-600"></i> Embudos
-            </li>
+          <h3 class="font-bold text-slate-900 mb-2">Recursos Humanos</h3>
+          <p class="text-slate-500 text-sm mb-4">Planillas, asistencia biométrica y evaluación de desempeño.</p>
+          <ul class="space-y-1.5">
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-violet-500 text-[10px]"></i>FaceID Assist</li>
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-violet-500 text-[10px]"></i>Planillas Auto</li>
           </ul>
         </div>
-
-        <!-- 6. Tesorería -->
-        <div
-          class="group relative bg-white border border-gray-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 hover:-translate-y-1"
-        >
-          <div
-            class="absolute inset-0 bg-gradient-to-br from-emerald-50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-duration-500 rounded-3xl"
-          ></div>
-
-          <div
-            class="w-14 h-14 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300"
-          >
-            <i class="pi pi-wallet text-2xl text-emerald-600"></i>
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
+          <div class="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-orange-100 transition-colors">
+            <i class="pi pi-verified text-xl text-orange-600"></i>
           </div>
-
-          <h3
-            class="text-xl font-bold text-gray-900 mb-3 font-playfair group-hover:text-emerald-600 transition-colors"
-          >
-            Tesorería
-          </h3>
-          <p class="text-gray-600 text-sm leading-relaxed mb-4">
-            Control de flujo de caja, conciliación bancaria automática y programación de pagos a
-            proveedores.
-          </p>
-
-          <ul class="space-y-2">
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-emerald-600"></i> Cash Flow
-            </li>
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-emerald-600"></i> Bancos
-            </li>
+          <h3 class="font-bold text-slate-900 mb-2">Ventas</h3>
+          <p class="text-slate-500 text-sm mb-4">Pipeline comercial, cotizaciones y facturación electrónica.</p>
+          <ul class="space-y-1.5">
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-orange-500 text-[10px]"></i>Facturación Elec.</li>
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-orange-500 text-[10px]"></i>CRM Integrado</li>
           </ul>
         </div>
-
-        <!-- 7. Logística -->
-        <div
-          class="group relative bg-white border border-gray-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-500 hover:-translate-y-1"
-        >
-          <div
-            class="absolute inset-0 bg-gradient-to-br from-amber-50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-duration-500 rounded-3xl"
-          ></div>
-
-          <div
-            class="w-14 h-14 bg-amber-50 rounded-2xl border border-amber-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300"
-          >
-            <i class="pi pi-box text-2xl text-amber-600"></i>
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
+          <div class="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-rose-100 transition-colors">
+            <i class="pi pi-megaphone text-xl text-rose-600"></i>
           </div>
-
-          <h3
-            class="text-xl font-bold text-gray-900 mb-3 font-playfair group-hover:text-amber-600 transition-colors"
-          >
-            Logística
-          </h3>
-          <p class="text-gray-600 text-sm leading-relaxed mb-4">
-            Cadena de suministro optimizada. Compras, inventarios, kardex valorizado y gestión de
-            activos fijos.
-          </p>
-
-          <ul class="space-y-2">
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-amber-600"></i> Stock Real
-            </li>
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-amber-600"></i> Órdenes de Compra
-            </li>
+          <h3 class="font-bold text-slate-900 mb-2">Marketing</h3>
+          <p class="text-slate-500 text-sm mb-4">Campañas, leads y analítica de conversión segmentada.</p>
+          <ul class="space-y-1.5">
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-rose-500 text-[10px]"></i>Lead Tracking</li>
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-rose-500 text-[10px]"></i>Embudos</li>
           </ul>
         </div>
-
-        <!-- 8. Proyectos -->
-        <div
-          class="group relative bg-white border border-gray-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-500 hover:-translate-y-1"
-        >
-          <div
-            class="absolute inset-0 bg-gradient-to-br from-cyan-50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-duration-500 rounded-3xl"
-          ></div>
-
-          <div
-            class="w-14 h-14 bg-cyan-50 rounded-2xl border border-cyan-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300"
-          >
-            <i class="pi pi-briefcase text-2xl text-cyan-600"></i>
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
+          <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-emerald-100 transition-colors">
+            <i class="pi pi-wallet text-xl text-emerald-600"></i>
           </div>
-
-          <h3
-            class="text-xl font-bold text-gray-900 mb-3 font-playfair group-hover:text-cyan-600 transition-colors"
-          >
-            Proyectos
-          </h3>
-          <p class="text-gray-600 text-sm leading-relaxed mb-4">
-            Gestión integral de obras. Presupuestos, control de costos, avance de obra y tareos de
-            campo.
-          </p>
-
-          <ul class="space-y-2">
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-cyan-600"></i> Costos
-            </li>
-            <li class="flex items-center gap-2 text-xs text-gray-500">
-              <i class="pi pi-check text-[10px] text-cyan-600"></i> Cronogramas
-            </li>
+          <h3 class="font-bold text-slate-900 mb-2">Tesorería</h3>
+          <p class="text-slate-500 text-sm mb-4">Flujo de caja, conciliación bancaria y pagos a proveedores.</p>
+          <ul class="space-y-1.5">
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-emerald-500 text-[10px]"></i>Cash Flow</li>
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-emerald-500 text-[10px]"></i>Bancos</li>
+          </ul>
+        </div>
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
+          <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-amber-100 transition-colors">
+            <i class="pi pi-box text-xl text-amber-600"></i>
+          </div>
+          <h3 class="font-bold text-slate-900 mb-2">Logística</h3>
+          <p class="text-slate-500 text-sm mb-4">Compras, inventarios, kardex valorizado y activos fijos.</p>
+          <ul class="space-y-1.5">
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-amber-500 text-[10px]"></i>Stock Real</li>
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-amber-500 text-[10px]"></i>Órdenes de Compra</li>
+          </ul>
+        </div>
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
+          <div class="w-12 h-12 bg-cyan-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-cyan-100 transition-colors">
+            <i class="pi pi-briefcase text-xl text-cyan-600"></i>
+          </div>
+          <h3 class="font-bold text-slate-900 mb-2">Proyectos</h3>
+          <p class="text-slate-500 text-sm mb-4">Presupuestos, control de costos, avance y tareos de campo.</p>
+          <ul class="space-y-1.5">
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-cyan-500 text-[10px]"></i>Costos</li>
+            <li class="flex items-center gap-2 text-xs text-slate-400"><i class="pi pi-check text-cyan-500 text-[10px]"></i>Cronogramas</li>
           </ul>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- FAQ Section with Accordion -->
-  <section id="faq" class="py-32 border-t border-white/5">
-    <div class="container mx-auto px-6 max-w-4xl">
-      <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-5xl font-bold mb-4 font-playfair">Preguntas Frecuentes</h2>
-        <p class="text-gray-400">Todo lo que necesitas saber antes de empezar.</p>
+  <!-- FAQ -->
+  <section id="faq" class="py-28 bg-white border-t border-slate-100">
+    <div class="max-w-3xl mx-auto px-6">
+      <div class="text-center mb-14">
+        <span class="text-indigo-600 font-semibold text-sm tracking-wide uppercase mb-3 block">FAQ</span>
+        <h2 class="text-4xl font-bold text-slate-900 mb-4">Preguntas frecuentes</h2>
+        <p class="text-slate-500">Todo lo que necesitas saber antes de empezar.</p>
       </div>
 
       <div class="faq-accordion-wrapper">
         <p-accordion [multiple]="true" styleClass="w-full">
           <p-accordion-panel value="0">
-            <p-accordion-header
-              >¿Es necesario instalar software en mis servidores?</p-accordion-header
-            >
+            <p-accordion-header>¿Es necesario instalar software en mis servidores?</p-accordion-header>
             <p-accordion-content>
-              <p class="m-0 text-gray-400 leading-relaxed">
-                No. Momentum es una plataforma 100% en la nube. Solo necesitas un navegador web para
-                acceder desde cualquier lugar y dispositivo. Nosotros nos encargamos de la
-                infraestructura, seguridad y actualizaciones.
+              <p class="m-0 leading-relaxed">
+                No. Momentum es 100% en la nube. Solo necesitas un navegador web para acceder desde cualquier lugar. Nosotros gestionamos la infraestructura, seguridad y actualizaciones.
               </p>
             </p-accordion-content>
           </p-accordion-panel>
-
           <p-accordion-panel value="1">
             <p-accordion-header>¿Cómo funciona el reconocimiento facial?</p-accordion-header>
             <p-accordion-content>
-              <p class="m-0 text-gray-400 leading-relaxed">
-                Utilizamos librerías avanzadas de IA directamente en el navegador. El trabajador se
-                toma una foto y el sistema valida su identidad contra el perfil registrado.
-                Opcionalmente, podemos validar la ubicación por GPS al momento del marcaje.
+              <p class="m-0 leading-relaxed">
+                Utilizamos IA directamente en el navegador. El trabajador se toma una foto y el sistema valida su identidad contra el perfil registrado. Opcionalmente se registra la ubicación GPS al momento del marcaje.
               </p>
             </p-accordion-content>
           </p-accordion-panel>
-
           <p-accordion-panel value="2">
             <p-accordion-header>¿Puedo migrar mis datos actuales?</p-accordion-header>
             <p-accordion-content>
-              <p class="m-0 text-gray-400 leading-relaxed">
-                Sí. Ofrecemos herramientas de importación masiva mediante Excel para empleados,
-                clientes y proveedores. Para migraciones históricas complejas, nuestro equipo de
-                soporte puede asistirte.
+              <p class="m-0 leading-relaxed">
+                Sí. Ofrecemos importación masiva via Excel para empleados, clientes y proveedores. Para migraciones históricas complejas, nuestro equipo te acompaña durante todo el proceso.
               </p>
             </p-accordion-content>
           </p-accordion-panel>
-
           <p-accordion-panel value="3">
             <p-accordion-header>¿Qué medidas de seguridad utilizan?</p-accordion-header>
             <p-accordion-content>
-              <p class="m-0 text-gray-400 leading-relaxed">
-                Todos los datos viajan encriptados (SSL/TLS). Realizamos backups diarios automáticos
-                y utilizamos infraestructura de clase mundial (AWS) para garantizar la
-                disponibilidad y protección de tu información.
+              <p class="m-0 leading-relaxed">
+                Todos los datos viajan encriptados (SSL/TLS). Backups diarios automáticos e infraestructura en AWS para garantizar disponibilidad y protección de tu información.
               </p>
             </p-accordion-content>
           </p-accordion-panel>
@@ -1233,58 +742,62 @@
     </div>
   </section>
 
-  <!-- CTA / Form Section -->
-  <section id="contact-form" class="py-32 relative overflow-hidden bg-gray-50">
-    <!-- Background glow removed for cleaner white look or adapted -->
-    <div
-      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-500/5 blur-[120px] rounded-full pointer-events-none"
-    ></div>
-
-    <div class="container lg:mx-auto px-2 lg:px-6 relative z-10">
+  <!-- CTA / Form -->
+  <section id="contact-form" class="py-28 bg-slate-900">
+    <div class="max-w-7xl mx-auto px-6">
       <div class="max-w-5xl mx-auto">
-        <div
-          class="grid grid-cols-1 lg:grid-cols-5 bg-white rounded-[2.5rem] overflow-hidden shadow-2xl border border-gray-100"
-        >
-          <!-- Left: CTA Text -->
-          <div
-            class="lg:col-span-2 bg-black text-white p-12 flex flex-col justify-center relative overflow-hidden"
-          >
-            <div class="absolute inset-0 bg-neutral-900">
-              <div
-                class="absolute inset-0 opacity-30 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"
-              ></div>
+        <div class="grid grid-cols-1 lg:grid-cols-5 rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
+          <!-- Left panel -->
+          <div class="lg:col-span-2 bg-indigo-600 p-10 flex flex-col justify-center">
+            <div class="flex items-center gap-2 mb-6">
+              <div class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></div>
+              <span class="text-xs text-indigo-200 font-semibold uppercase tracking-widest">Disponible ahora</span>
             </div>
-            <div class="relative z-10">
-              <h3 class="text-3xl font-bold mb-6 font-playfair">Solicita tu Demo</h3>
-              <p class="text-gray-400 mb-8 leading-relaxed">
-                Descubre cómo Momentum puede transformar la operatividad de tu empresa en menos de
-                30 días.
-              </p>
-              <div class="flex flex-col gap-4 text-sm text-gray-300">
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                    <i class="pi pi-check text-xs"></i>
-                  </div>
-                  <span>Acceso completo por 14 días</span>
+            <h3 class="text-3xl font-bold text-white mb-4 leading-tight">Habla con un especialista en construcción</h3>
+            <p class="text-indigo-100 mb-8 text-sm leading-relaxed">
+              En 30 minutos te mostramos cómo Momentum se adapta exactamente a los procesos de tu empresa.
+            </p>
+            <div class="flex flex-col gap-4 text-sm">
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shrink-0 mt-0.5">
+                  <i class="pi pi-check text-[10px] text-white"></i>
                 </div>
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                    <i class="pi pi-check text-xs"></i>
-                  </div>
-                  <span>Onboarding personalizado</span>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                    <i class="pi pi-check text-xs"></i>
-                  </div>
-                  <span>Sin tarjeta de crédito</span>
+                <div>
+                  <div class="text-white font-medium">Demo con tus datos reales</div>
+                  <div class="text-indigo-200 text-xs mt-0.5">Adaptada a tu rubro y tamaño</div>
                 </div>
               </div>
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shrink-0 mt-0.5">
+                  <i class="pi pi-check text-[10px] text-white"></i>
+                </div>
+                <div>
+                  <div class="text-white font-medium">Onboarding incluido</div>
+                  <div class="text-indigo-200 text-xs mt-0.5">Acompañamiento desde el primer día</div>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shrink-0 mt-0.5">
+                  <i class="pi pi-check text-[10px] text-white"></i>
+                </div>
+                <div>
+                  <div class="text-white font-medium">14 días gratis, sin tarjeta</div>
+                  <div class="text-indigo-200 text-xs mt-0.5">Sin compromiso</div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-10 pt-8 border-t border-indigo-500 flex items-center gap-3">
+              <div class="flex -space-x-2">
+                <div class="w-8 h-8 rounded-full bg-indigo-500 border-2 border-indigo-600 flex items-center justify-center text-xs text-white font-bold">R</div>
+                <div class="w-8 h-8 rounded-full bg-indigo-400 border-2 border-indigo-600 flex items-center justify-center text-xs text-white font-bold">M</div>
+                <div class="w-8 h-8 rounded-full bg-indigo-300 border-2 border-indigo-600 flex items-center justify-center text-xs text-indigo-900 font-bold">C</div>
+              </div>
+              <p class="text-xs text-indigo-200">Únete a <span class="text-white font-semibold">50+</span> empresas constructoras</p>
             </div>
           </div>
 
           <!-- Right: Form -->
-          <div class="lg:col-span-3 bg-white lg:p-8 md:p-12">
+          <div class="lg:col-span-3 bg-white p-8 md:p-12">
             <app-lead-form></app-lead-form>
           </div>
         </div>
@@ -1293,22 +806,39 @@
   </section>
 
   <!-- Footer -->
-  <footer class="border-t border-white/5 py-8 bg-black relative z-10">
-    <div
-      class="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6"
-    >
-      <div class="flex items-center gap-4">
-        <img
-          src="/images/logo_b.png"
-          alt="Momentum"
-          class="h-14 md:h-20 opacity-60 grayscale hover:grayscale-0 transition-all duration-500"
-        />
-        <span class="text-xs text-gray-600 uppercase tracking-widest"
-          >© 2026 Momentum Platform</span
-        >
+  <footer class="bg-slate-900 border-t border-white/5 py-16">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+        <div class="md:col-span-2">
+          <img src="/images/logo_b.png" alt="Momentum" class="h-9 opacity-70 mb-4" />
+          <p class="text-slate-500 text-sm leading-relaxed max-w-xs">
+            ERP especializado para empresas constructoras en Perú. Proyectos, RRHH, Finanzas y CRM en una sola plataforma.
+          </p>
+          <div class="flex items-center gap-2 mt-5 text-xs text-slate-600">
+            <i class="pi pi-shield-check text-emerald-500/60"></i>
+            <span>Infraestructura AWS · Encriptación SSL/TLS</span>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Plataforma</div>
+          <div class="flex flex-col gap-2.5">
+            <a href="#ecosystem" class="text-sm text-slate-400 hover:text-white transition-colors">Modulos</a>
+            <a href="#features" class="text-sm text-slate-400 hover:text-white transition-colors">Funcionalidades</a>
+            <a href="#faq" class="text-sm text-slate-400 hover:text-white transition-colors">FAQ</a>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Empresa</div>
+          <div class="flex flex-col gap-2.5">
+            <a href="#contact-form" class="text-sm text-slate-400 hover:text-white transition-colors">Solicitar Demo</a>
+            <a routerLink="/ingreso" class="text-sm text-slate-400 hover:text-white transition-colors">Iniciar sesión</a>
+          </div>
+        </div>
       </div>
-
-      <div class="flex gap-8"></div>
+      <div class="border-t border-white/5 pt-8">
+        <span class="text-xs text-slate-600">© 2026 Momentum Platform — Tecmeing</span>
+      </div>
     </div>
   </footer>
+
 </div>
