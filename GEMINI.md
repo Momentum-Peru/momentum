@@ -1,0 +1,10 @@
+- Read existing files before writing. Don't re-read unless changed.
+- Thorough in reasoning, concise in output.
+- Skip files over 100KB unless required.
+- No sycophantic openers ("Sure!", "Great question!") or closing fluff ("Let me know!").
+- No emojis or em-dashes.
+- Write complete solutions.
+- Test once before declaring done.
+- No over-engineering. Favor simple direct fixes.
+- Do not guess APIs, versions, flags, commit SHAs, or package names. Verify by reading code or docs before asserting.
+- For UI, ALWAYS follow `stitch-ui.mdc` rules and the Modern SaaS Design System tokens (Inter/Plus Jakarta Sans, Electric Indigo Blue, ample whitespace, 8px/12px border radius, ambient shadows).

@@ -1,0 +1,35 @@
+---
+description: "Modern SaaS Design System rules for the frontend. Apply these to any UI modifications to maintain the stitch backoffice UI kit aesthetics."
+globs: ["**/*.html", "**/*.ts", "**/*.scss", "**/*.css"]
+---
+
+# Stitch Complete Backoffice UI Kit - Modern SaaS Design System
+
+## Core Aesthetics
+- **Vibe:** Composed, precise, premium, and mature corporate. High-end backoffice environment.
+- **Goal:** Clarity, speed, reduced cognitive load. "Calm control."
+- **Whitespace:** High-End Whitespace. Fluid Grid with strict 4px baseline shift. 24px gutters, 32px page padding.
+
+## Colors
+- **Primary:** Electric Indigo Blue (`#2563EB`) and `#004ac6` for interactive elements.
+- **Surface:** `#F8FAFC` (Slate-50) for background, `#FFFFFF` for cards.
+- **Text:** `#0b1c30` (On-surface / headings), `#434655` (Body text).
+- **Subtle borders:** `#e5eeff` or `#F1F5F9`.
+
+## Typography
+- **Headings & Display:** `Plus Jakarta Sans`
+- **Body & Data/Tables:** `Inter`
+- **Styling:** Generous letter spacing for labels (`0.03em` to `0.05em`).
+
+## Elevation & Shapes (No Borders)
+- Hierarchy through ambient shadows, not structural borders.
+- **Cards (Low Elevation):** Soft shadow (`0 4px 12px rgba(0,0,0,0.04)`), `12px` border-radius (`rounded-xl` in Tailwind if applicable), `24px` internal padding. White background.
+- **Modals (High Elevation):** Diffused shadow (10% opacity, 24px blur).
+- **Interactive Elements (Buttons/Inputs):** `8px` border-radius (`rounded-lg`).
+- **Input Fields:** Soft background (`#F8FAFC`), 1px border that turns primary blue on focus.
+- **Buttons:** Solid Indigo fill for primary, "ghost" style for secondary. `300ms` transition on hover with slight upward lift.
+
+## Layout Components
+- **Sidebar:** Minimalist, fixed-width (240px-280px), surface color `#F8FAFC` to separate without vertical lines.
+- **Lists/Tables:** Generous vertical padding (16px), hover state (`#F8FAFC`). No vertical grid lines.
+- **Badges/Chips:** Pill-shaped (`rounded-full`), low-saturation backgrounds (e.g. light green bg with dark green text).

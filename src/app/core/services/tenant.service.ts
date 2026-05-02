@@ -52,7 +52,9 @@ export class TenantService {
   userHasAccess(tenantId: string | null | undefined): boolean {
     if (!tenantId || !this.isValidObjectId(tenantId)) return false;
     const user = this.auth.getCurrentUser();
-    if (!user || typeof user !== 'object' || !('tenantIds' in user)) return false;
+    if (!user || typeof user !== 'object') return false;
+    // Campo ausente → sin restricción (igual que applyFilter en select-company)
+    if (!('tenantIds' in user)) return true;
     const ids = (user as { tenantIds?: string[] }).tenantIds;
     if (!ids || ids.length === 0) return true; // sin restricción
     return ids.includes(tenantId);
